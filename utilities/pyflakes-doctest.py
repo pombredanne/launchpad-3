@@ -69,7 +69,12 @@ GLOBAL_NAMES = set([
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests
-    'test_dbuser'
+    'test_dbuser',
+    # For Mailman tests
+    'xmlrpc_watcher',
+    # For archiveuploader tests.
+    'getUploadForSource',
+    'getUploadForBinary',
     ])
 
 

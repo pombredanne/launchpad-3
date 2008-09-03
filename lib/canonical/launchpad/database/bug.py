@@ -573,7 +573,8 @@ class Bug(SQLBase):
     def addChangeNotification(self, text, person, recipients=None, when=None):
         """See `IBug`."""
         if recipients is None:
-            recipients = self.getBugNotificationRecipients()
+            recipients = self.getBugNotificationRecipients(
+                level=BugNotificationLevel.METADATA)
         if when is None:
             when = UTC_NOW
         message = MessageSet().fromText(
@@ -764,7 +765,6 @@ class Bug(SQLBase):
             return valid_bugtask
         else:
             return None
-
 
     def convertToQuestion(self, person, comment=None):
         """See `IBug`."""
@@ -1099,6 +1099,15 @@ class Bug(SQLBase):
         Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
+
+    @staticmethod
+    def getBugTasksByPackageName(bugtasks):
+        """See IBugTask."""
+        bugtasks_by_package = {}
+        for bugtask in bugtasks:
+            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
+            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
+        return bugtasks_by_package
 
 
 class BugSet:

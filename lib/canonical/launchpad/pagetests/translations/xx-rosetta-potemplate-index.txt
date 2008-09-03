@@ -50,16 +50,18 @@ that there are alternates that may be translated.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "evolution/trunk/+pots/evolution-2.2-test")
-    >>> alternate_notice = find_main_content(
-    ...     anon_browser.contents).findAll('p')[1]
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> alternate_notice = main_content.findAll('p')[1]
     >>> print extract_text(alternate_notice)
     Other templates from the same source: evolution-2.2.
 
 The notice links to the alternate template.
 
     >>> print alternate_notice
-    <p>...Other templates from the same source:
-    <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...</p>
+    <p...>
+    Other templates from the same source:
+    <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...
+    </p>
 
 English is not translatable. We do not display English in the list of
 languages when the user speaks English or even when English

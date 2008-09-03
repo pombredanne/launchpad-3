@@ -61,13 +61,6 @@
 	/>
 
     <adapter
-        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        factory="canonical.launchpad.browser.ProductSeriesSOP"
-        permission="zope.Public"
-        />
-
-    <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
         for="canonical.launchpad.interfaces.IProductSeries"
         factory="canonical.launchpad.components.productseries.productseries_to_product"
@@ -80,6 +73,13 @@
         factory="canonical.launchpad.components.productseries.productseries_to_product"
         permission="zope.Public"
         />
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      factory="canonical.launchpad.browser.ProductSeriesBreadcrumbBuilder"
+      permission="zope.Public"
+      />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -391,13 +391,5 @@
       template="../templates/sources-index.pt"
       />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IProductSeries"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.ProductSeriesShortLink"
-    attribute="__call__"
-    />
 
 </configure>

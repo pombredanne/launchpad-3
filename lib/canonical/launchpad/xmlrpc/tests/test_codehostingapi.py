@@ -44,10 +44,7 @@ class TestExpandURL(TestCaseWithFactory):
             self.factory.makeBranch(BranchType.HOSTED, product=self.product))
 
     def makePrivateBranch(self, **kwargs):
-        """Create an arbitrary private branch using `makeBranch`.
-
-        See `BranchTestCase`.
-        """
+        """Create an arbitrary private branch using `makeBranch`."""
         branch = self.factory.makeBranch(**kwargs)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.private = True

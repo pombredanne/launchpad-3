@@ -25,6 +25,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
 
 
@@ -106,6 +107,12 @@ class BranchPullerTest(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.storage = BranchPuller(None, None)
 
+    def assertFaultEqual(self, expected_fault, observed_fault):
+        """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
+        self.assertEqual(
+            expected_fault.faultString, observed_fault.faultString)
+
     def assertMirrorFailed(self, branch, failure_message, num_failures=1):
         """Assert that `branch` failed to mirror.
 
@@ -140,6 +147,13 @@ class BranchPullerTest(TestCaseWithFactory):
         self.assertEqual(0, branch.mirror_failures)
         self.assertIs(None, branch.mirror_status_message)
 
+    def getUnusedBranchID(self):
+        """Return a branch ID that isn't in the database."""
+        branch_id = 999
+        # We can't be sure until the sample data is gone.
+        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        return branch_id
+
     def test_startMirroring(self):
         # startMirroring updates last_mirror_attempt to 'now', leaves
         # last_mirrored alone and returns True when passed the id of an
@@ -154,15 +168,12 @@ class BranchPullerTest(TestCaseWithFactory):
             branch, 'last_mirror_attempt', UTC_NOW)
         self.assertIs(None, branch.last_mirrored)
 
-    def test_startMirroring_invalid_branch(self):
+    def test_startMirroringInvalidBranch(self):
         # startMirroring returns False when given a branch id which does not
         # exist.
-        invalid_id = -1
-        branch = getUtility(IBranchSet).get(invalid_id)
-        self.assertIs(None, branch)
-
-        success = self.storage.startMirroring(invalid_id)
-        self.assertEqual(success, False)
+        invalid_id = self.getUnusedBranchID()
+        fault = self.storage.startMirroring(invalid_id)
+        self.assertFaultEqual(faults.NoBranchWithID(invalid_id), fault)
 
     def test_mirrorFailed(self):
         branch = self.factory.makeBranch()
@@ -173,6 +184,12 @@ class BranchPullerTest(TestCaseWithFactory):
         success = self.storage.mirrorFailed(branch.id, failure_message)
         self.assertEqual(True, success)
         self.assertMirrorFailed(branch, failure_message)
+
+    def test_mirrorFailedWithNotBranchID(self):
+        branch_id = self.getUnusedBranchID()
+        failure_message = self.factory.getUniqueString()
+        fault = self.storage.mirrorFailed(branch_id, failure_message)
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete(self):
         # mirrorComplete marks the branch as having been successfully
@@ -185,6 +202,14 @@ class BranchPullerTest(TestCaseWithFactory):
         success = self.storage.mirrorComplete(branch.id, revision_id)
         self.assertEqual(True, success)
         self.assertMirrorSucceeded(branch, revision_id)
+
+    def test_mirrorCompleteWithNoBranchID(self):
+        # mirrorComplete returns a Fault if there's no branch with the given
+        # ID.
+        branch_id = self.getUnusedBranchID()
+        fault = self.storage.mirrorComplete(
+            branch_id, self.factory.getUniqueString())
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete_resets_failure_count(self):
         # mirrorComplete marks the branch as successfully mirrored and removes
@@ -234,6 +259,51 @@ class BranchPullerTest(TestCaseWithFactory):
         self.assertEqual('vostok', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
+
+    def test_setStackedOnDefaultURLFragment(self):
+        # setStackedOn records that one branch is stacked on another. One way
+        # to find the stacked-on branch is by the URL fragment that's
+        # generated as part of Launchpad's default stacking.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch()
+        self.storage.setStackedOn(
+            stacked_branch.id, '/%s' % stacked_on_branch.unique_name)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnExternalURL(self):
+        # If setStackedOn is passed an external URL, rather than a URL
+        # fragment, it will mark the branch as being stacked on the branch in
+        # Launchpad registered with that external URL.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        self.storage.setStackedOn(stacked_branch.id, stacked_on_branch.url)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnExternalURLWithTrailingSlash(self):
+        # If setStackedOn is passed an external URL with a trailing slash, it
+        # won't make a big deal out of it, it will treat it like any other
+        # URL.
+        stacked_branch = self.factory.makeBranch()
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        url = stacked_on_branch.url + '/'
+        self.storage.setStackedOn(stacked_branch.id, url)
+        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
+
+    def test_setStackedOnBranchNotFound(self):
+        # If setStackedOn can't find a branch for the given location, it will
+        # return a Fault.
+        stacked_branch = self.factory.makeBranch()
+        url = self.factory.getUniqueURL()
+        fault = self.storage.setStackedOn(stacked_branch.id, url)
+        self.assertFaultEqual(faults.NoSuchBranch(url), fault)
+
+    def test_setStackedOnNoBranchWithID(self):
+        # If setStackedOn is called for a branch that doesn't exist, it will
+        # return a Fault.
+        stacked_on_branch = self.factory.makeBranch(BranchType.MIRRORED)
+        branch_id = self.getUnusedBranchID()
+        fault = self.storage.setStackedOn(branch_id, stacked_on_branch.url)
+        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
 
 
 class BranchPullQueueTest(TestCaseWithFactory):
@@ -602,4 +672,3 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -233,11 +233,21 @@ class IStructuredString(Interface):
 
 
 class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+    """A breadcrumb link."""
 
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
+
+
+class IBreadcrumbBuilder(IBreadcrumb):
+    """An object that builds `IBreadcrumb` objects."""
+    # We subclass IBreadcrumb to minimize interface drift.
+
+    def make_breadcrumb():
+        """Return an object implementing the `IBreadcrumb` interface."""
 
 
 #
@@ -369,10 +379,6 @@ class IBasicLaunchpadRequest(Interface):
     stepstogo = Attribute(
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
-
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
 
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
@@ -609,7 +615,7 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # XXX mpt 2006-03-22 bugs=36287:
     # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
@@ -783,13 +789,6 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
-
-
-class IBreadcrumbProvider(Interface):
-    """Object that provides breadcrumb text."""
-
-    def breadcrumb():
-        """Breadcrumb text."""
 
 class IPrimaryContext(Interface):
     """The primary context that used to determine the tabs for the web UI."""

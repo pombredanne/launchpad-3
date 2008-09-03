@@ -21,6 +21,12 @@ entered within Launchpad itself.
     gnome-volume-manager: dvd+rw unreadable when automounted
     in burner because mounted read/write (permalink)
 
+Remote comments are decorated with the bug watch icon, to distinguish
+them from comments posted directly by Launchpad users.
+
+    >>> print details.find('img')['src']
+    /@@/bug-remote
+
 Since it's possible to reply to imported comments and have them
 synchronized with the remote bug tracker, we display a simple reply form
 inlined, to make it clear that the comment will end up on the remote

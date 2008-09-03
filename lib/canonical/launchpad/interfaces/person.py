@@ -64,7 +64,7 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.location import (
-    IHasLocation, IObjectWithLocation, ISetLocation)
+    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -522,13 +522,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: salgado, 2008-06-19: This should probably be removed from here as
-    # it's already defined in IHasLocation (from which IPerson extends).
-    time_zone = exported(
-        Choice(title=_('Time zone'), required=True, readonly=False,
-               description=_('The time zone of where you live.'),
-               vocabulary='TimezoneName'))
-
     openid_identifier = TextLine(
         title=_("Key used to generate opaque OpenID identities."),
         readonly=True, required=False)
@@ -562,9 +555,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
-    otherwikis = Attribute(
-        "All WikiNames of this Person that are not the Ubuntu one.")
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
@@ -875,7 +865,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
-    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
     # unfunge for this one attribute.
@@ -1313,6 +1303,12 @@ class IPersonEditRestricted(Interface):
         a team administrator.
         """
 
+    @operation_parameters(
+        visible=copy_field(ILocationRecord['visible'], required=True))
+    @export_write_operation()
+    def setLocationVisibility(visible):
+        """Specify the visibility of a person's location and time zone."""
+
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
         """Set the attributes of the person's membership on this team.
@@ -1580,8 +1576,9 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def topPeople():
-        """Return the top 5 people by Karma score in the Launchpad."""
+    @collection_default_content()
+    def getTopContributors(limit=50):
+        """Return the top contributors in Launchpad, up to the given limit."""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -1703,10 +1700,6 @@ class IPersonSet(Interface):
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
         """
-
-    @collection_default_content()
-    def getAllValidPersonsAndTeams():
-        """Return all valid persons and teams."""
 
     def updateStatistics(ztm):
         """Update statistics caches and commit."""

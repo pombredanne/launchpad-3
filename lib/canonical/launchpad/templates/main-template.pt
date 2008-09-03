@@ -22,6 +22,7 @@
   tal:define="
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
+      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
@@ -87,7 +88,22 @@
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
-    <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
+    <tal:needs_json tal:condition="request/needs_json">
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
+    </tal:needs_json>
+    <tal:comment condition="nothing">
+      XXX: salgado, 2008-08-19: For some reason the 2.122 and above versions of
+      the gmap javascript don't work properly when displaying a team's map, so we
+      use v=2.121 rather than v=2 for now.
+    </tal:comment>
+    <script tal:condition="request/needs_gmap2"
+            type="text/javascript"
+            tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2.121&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+            ></script>
+    <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
@@ -118,7 +134,7 @@
       class="clearfix"
     >
       <tal:XXX replace="nothing">
-        # XXX mpt 20080702: The HTML comment works around bug 229931.
+        # XXX mpt 2008-07-02 bug=229931: The HTML comment works.
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
@@ -156,7 +172,7 @@
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
           <tal:XXX condition="nothing">
-            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # XXX mpt 2008-07-16 bug=249032: This conditional comment should
             # not be necessary.
           </tal:XXX>
 

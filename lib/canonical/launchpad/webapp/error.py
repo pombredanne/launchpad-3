@@ -60,7 +60,7 @@ class SystemErrorView:
         # if canonical.launchpad.layers.PageTestLayer.providedBy(
         #     self.request):
         #     self.pagetesting = True
-        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
+        # XXX mpt 20080109 bug=181472: We don't use this any more.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer

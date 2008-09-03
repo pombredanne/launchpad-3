@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -31,14 +32,12 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
-    'ProductSetSOP',
     'ProductSetView',
-    'ProductShortLink',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
     'ProductView',
@@ -54,12 +53,14 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
+from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -87,8 +88,6 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -100,12 +99,14 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -115,9 +116,6 @@ class ProductNavigation(
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -149,9 +147,6 @@ class ProductNavigation(
 class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
-
-    def breadcrumb(self):
-        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -243,20 +238,11 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # product series, most recent first
-        return list(self.context.serieses[:num])
-
-    def listAltChildren(self, num):
-        return None
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -534,7 +520,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'table', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -546,12 +532,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
         summary = 'List all complete informational specifications'
         return Link('+documentation', text, summary,
             icon='info')
-
-    def roadmap(self):
-        text = 'Roadmap'
-        summary = (
-            'Show the recommended sequence of specification implementation')
-        return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
         text = 'Assignments'
@@ -623,19 +603,9 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):
@@ -1054,6 +1024,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             driver = None
         return driver
 
+    @cachedproperty
+    def show_commercial_subscription_info(self):
+        """Should subscription information be shown?
+
+        Subscription information is only shown to the project maintainers,
+        Launchpad admins, and members of the Launchpad commercial team.  The
+        first two are allowed via the Launchpad.Edit permission.  The latter
+        is allowed via Launchpad.Commercial.
+        """
+        return (check_permission('launchpad.Edit', self.context) or
+                check_permission('launchpad.Commercial', self.context))
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
@@ -1200,6 +1182,40 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
+    custom_widget('registrant', SinglePopupWidget)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema plus adds 'Registrant'.
+
+        The registrant is normally a read-only field and thus does not have a
+        proper widget created by default.  Even though it is read-only, admins
+        need the ability to change it.
+        """
+        super(ProductAdminView, self).setUpFields()
+        self.form_fields += self._createRegistrantField()
+
+    def _createRegistrantField(self):
+        """Return a popup widget person selector for the registrant.
+
+        This custom field is necessary because *normally* the registrant is
+        read-only but we want the admins to have the ability to correct legacy
+        data that was set before the registrant field existed.
+        """
+        return form.Fields(
+            PublicPersonChoice(
+                __name__='registrant',
+                title=_('Project Registrant'),
+                description=_('The person who originally registered the '
+                              'product.  Distinct from the current '
+                              'owner.  This is historical data and should '
+                              'not be changed without good cause.'),
+                vocabulary='ValidPersonOrTeam',
+                required=True,
+                readonly=False,
+                default=self.context.registrant
+                ),
+            custom_widget=self.custom_widgets['registrant']
+            )
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bug_supervisor is None:
@@ -1214,7 +1230,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductAdminView):
+class ProductReviewLicenseView(ProductEditView):
     label = "Review project licensing"
     field_names = [
         "active",
@@ -1539,6 +1555,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
+            registrant=self.user,
             license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
@@ -1566,7 +1583,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
             self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
-                "Successfully changed the owner to %s"
+                "Successfully changed the maintainer to %s"
                 % self.context.owner.displayname)
         if self.context.driver != old_driver:
             if self.context.driver is not None:
@@ -1599,12 +1616,6 @@ class ProductEditPeopleView(LaunchpadEditFormView):
         for release in product.releases:
             if release.owner == oldOwner:
                 release.owner = newOwner
-
-class ProductShortLink(DefaultShortLink):
-
-    def getLinkText(self):
-        return self.context.displayname
-
 
 class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""

@@ -376,16 +376,17 @@ class NotFoundRequestPublicationFactory:
 
 
 class BasicLaunchpadRequest:
-    """Mixin request class to provide stepstogo and breadcrumbs."""
+    """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, environ, response=None):
-        self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -612,6 +613,14 @@ class LaunchpadTestRequest(TestRequest):
     False
     >>> request.needs_datepicker_iframe
     False
+
+    And for JSON and GMap2:
+
+    >>> request.needs_json
+    False
+    >>> request.needs_gmap2
+    False
+
     """
     implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -624,10 +633,11 @@ class LaunchpadTestRequest(TestRequest):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
-        self.breadcrumbs = []
         self.traversed_objects = []
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
+        self.needs_json = False
+        self.needs_gmap2 = False
 
     @property
     def uuid(self):
@@ -1075,7 +1085,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
             scope=token.context)
 
         # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
         # Once we launch the web service this code will be removed.
         people = getUtility(IPersonSet)
         webservice_beta_team_name = config.vhost.api.beta_test_team

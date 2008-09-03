@@ -18,9 +18,13 @@ from email.Header import decode_header, make_header
 from itertools import repeat
 from string import Template
 
+from storm.expr import And, LeftJoin
+from storm.store import Store
+
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements, providedBy
 
 from canonical.cachedproperty import cachedproperty
@@ -30,6 +34,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.person import Person, ValidPersonCache
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
@@ -37,7 +44,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IHeldMessageDetails,
     ILaunchpadCelebrities, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    IMessageSet, MailingListStatus, PostedMessageStatus)
+    MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -49,7 +56,9 @@ class MessageApproval(SQLBase):
 
     implements(IMessageApproval)
 
-    message_id = StringCol(notNull=True)
+    message = ForeignKey(
+        dbName='message', foreignKey='Message',
+        notNull=True)
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
@@ -76,6 +85,11 @@ class MessageApproval(SQLBase):
         default=None)
 
     disposal_date = UtcDateTimeCol(default=None)
+
+    @property
+    def message_id(self):
+        """See `IMessageApproval`."""
+        return self.message.rfc822msgid
 
     def approve(self, reviewer):
         """See `IMessageApproval`."""
@@ -245,7 +259,6 @@ class MailingList(SQLBase):
                 # We also need to remove the email's security proxy because
                 # this method will be called via the internal XMLRPC rather
                 # than as a response to a user action.
-                from zope.security.proxy import removeSecurityProxy
                 removeSecurityProxy(email).status = (
                     EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
@@ -390,8 +403,6 @@ class MailingList(SQLBase):
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
-        # Import here to avoid circular imports.
-        from canonical.launchpad.database.emailaddress import EmailAddress
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -425,40 +436,67 @@ class MailingList(SQLBase):
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
-        # Import here to avoid circular imports.
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        team_members = EmailAddress.select("""
-            TeamParticipation.team = %s AND
-            TeamParticipation.person = EmailAddress.person AND
-            EmailAddress.person = Person.id AND
-            Person.teamowner is NULL AND
-            MailingList.team = TeamParticipation.team AND
-            MailingList.status <> %s AND
-            EmailAddress.status IN %s
-            """ % sqlvalues(self.team, MailingListStatus.INACTIVE,
-                            (EmailAddressStatus.VALIDATED,
-                             EmailAddressStatus.PREFERRED)),
-            distinct=True, prejoins=['person'],
-            clauseTables=['MailingList', 'TeamParticipation', 'Person'])
-        # In addition, anyone who's had a held message approved for the list
-        # gets to post to the list.
-        approved_posters = EmailAddress.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status IN %s AND
-            MessageApproval.posted_by = EmailAddress.person AND
-            EmailAddress.status IN %s
-            """ % sqlvalues(self,
-                            (PostedMessageStatus.APPROVED,
-                             PostedMessageStatus.APPROVAL_PENDING),
-                            (EmailAddressStatus.VALIDATED,
-                             EmailAddressStatus.PREFERRED)),
-            distinct=True, prejoins=['person'],
-            clauseTables=['MessageApproval'])
-        return team_members.union(approved_posters)
+        store = Store.of(self)
+        # Here are two useful conveniences for the queries below.
+        email_address_statuses = (
+            EmailAddressStatus.VALIDATED,
+            EmailAddressStatus.PREFERRED)
+        message_approval_statuses = (
+            PostedMessageStatus.APPROVED,
+            PostedMessageStatus.APPROVAL_PENDING)
+        # First, we need to find all the members of the team this mailing list
+        # is associated with.  Of those team members with valid person
+        # accounts, find all of their validated and preferred email
+        # addresses.  Every one of those email addresses are allowed to post
+        # to the mailing list.
+        tables = (
+            Person,
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID == Person.id),
+            LeftJoin(MailingList,
+                     MailingList.teamID == TeamParticipation.teamID),
+            )
+        team_members = store.using(*tables).find(
+            (EmailAddress, Person),
+            And(TeamParticipation.teamID == self.team.id,
+                MailingList.status != MailingListStatus.INACTIVE,
+                Person.teamowner == None,
+                EmailAddress.status.is_in(email_address_statuses),
+                ))
+        # Second, find all of the email addresses for all of the people who
+        # have been explicitly approved for posting to this mailing list.
+        # This occurs as part of first post moderation, but since they've
+        # already been approved for this list, we don't need to wait for three
+        # global approvals.
+        tables = (
+            Person,
+            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
+            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
+            LeftJoin(MessageApproval,
+                     MessageApproval.posted_byID == Person.id),
+            )
+        approved_posters = store.using(*tables).find(
+            (EmailAddress, Person),
+            And(MessageApproval.mailing_listID == self.id,
+                MessageApproval.status.is_in(message_approval_statuses),
+                EmailAddress.status.is_in(email_address_statuses),
+                ))
+        # Union the two queries together to give us the complete list of email
+        # addresses allowed to post.  Note that while we're retrieving both
+        # the EmailAddress and Person records, this method is defined as only
+        # returning EmailAddresses.  The reason why we include the Person in
+        # the query is because the consumer of this method will access
+        # email_address.person.displayname, so the prejoin to Person is
+        # critical to acceptable performance.  Indeed, without the prejoin, we
+        # were getting tons of timeout OOPSes.  See bug 259440.
+        for email_address, person in team_members.union(approved_posters):
+            yield email_address
 
     def holdMessage(self, message):
         """See `IMailingList`."""
-        held_message = MessageApproval(message_id=message.rfc822msgid,
+        held_message = MessageApproval(message=message,
                                        posted_by=message.owner,
                                        posted_message=message.raw,
                                        posted_date=message.datecreated,
@@ -470,9 +508,11 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         return MessageApproval.select("""
             MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s
+            MessageApproval.status = %s AND
+            MessageApproval.message = Message.id
             """ % sqlvalues(self, PostedMessageStatus.NEW),
-            orderBy=['posted_date', 'message_id'])
+            clauseTables=['Message'],
+            orderBy=['posted_date', 'Message.rfc822msgid'])
 
 
 class MailingListSet:
@@ -585,10 +625,11 @@ class MessageApprovalSet:
 
     def getMessageByMessageID(self, message_id):
         """See `IMessageApprovalSet`."""
-        response = MessageApproval.selectBy(message_id=message_id)
-        if response.count() == 0:
-            return None
-        return response[0]
+        return MessageApproval.selectOne("""
+            MessageApproval.message = Message.id AND
+            Message.rfc822msgid = %s
+            """ % sqlvalues(message_id),
+            distinct=True, clauseTables=['Message'])
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
@@ -602,14 +643,8 @@ class HeldMessageDetails:
 
     def __init__(self, message_approval):
         self.message_approval = message_approval
+        self.message = message_approval.message
         self.message_id = message_approval.message_id
-        # We need to get the IMessage object associated with this
-        # IMessageApproval object.  The tie-in is the Message-ID.
-        messages = getUtility(IMessageSet).get(self.message_id)
-        assert len(messages) == 1, (
-            'Expected exactly one message with Message-ID: %s' %
-            self.message_id)
-        self.message = messages[0]
         self.subject = self.message.subject
         self.date = self.message.datecreated
         self.author = self.message.owner

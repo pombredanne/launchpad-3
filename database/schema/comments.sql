@@ -461,7 +461,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
-COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.message IS 'Foreign key to message table pointing to the posted message.';
 COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
 COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';

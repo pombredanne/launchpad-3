@@ -11,11 +11,15 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
+    'TeamMapView',
+    'TeamMapData',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
 
 from urllib import quote
+from datetime import datetime
+import pytz
 
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -31,9 +35,10 @@ from canonical.widgets import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView)
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
@@ -791,3 +796,95 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
+
+
+class TeamMapView(LaunchpadView):
+    """Show all people with known locations on a map. 
+    
+    Also provides links to edit the locations of people in the team without
+    known locations.
+    """
+
+    def initialize(self):
+        # Tell our main-template to include Google's gmap2 javascript so that
+        # we can render the map.
+        self.request.needs_gmap2 = True
+
+    @cachedproperty
+    def mapped_participants(self):
+        """Participants with locations."""
+        return self.context.mapped_participants
+
+    @cachedproperty
+    def unmapped_participants(self):
+        """Participants (ordered by name) with no recorded locations."""
+        return sorted(list(self.context.unmapped_participants),
+                      key=lambda p: p.browsername)
+
+    @cachedproperty
+    def times(self):
+        """The current times in time zones with members."""
+        zones = set(participant.time_zone
+                    for participant in self.mapped_participants)
+        times = [datetime.now(pytz.timezone(zone))
+                 for zone in zones]
+        timeformat = '%H:%M'
+        return [time.strftime(timeformat)
+                for time in sorted(times, key=lambda time: str(time))]
+
+    @cachedproperty
+    def bounds(self):
+        """A dictionary with the bounds and center of the map.
+
+        We look at the set of latitudes and longitudes for the people who
+        have coordinates, start out with a maximum minimum, and vice
+        versa, so each coordinate we examine should expand the area.
+        """
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        latitudes = sorted(
+            participant.latitude for participant in self.mapped_participants)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(
+            participant.longitude for participant in self.mapped_participants)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
+
+    @property
+    def map_html(self):
+        """HTML which shows the map with location of the team's members."""
+        return """
+            <script type="text/javascript">
+                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
+                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
+            </script>""" % self.bounds
+
+    @property
+    def map_portlet_html(self):
+        """The HTML which shows a small version of the team's map."""
+        return """
+            <script type="text/javascript">
+                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
+            </script>""" % self.bounds
+
+
+class TeamMapData(TeamMapView):
+    """An XML dump of the locations of all team members."""
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'application/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
