@@ -814,10 +814,10 @@ class SpecGraph:
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
             bgcolor='#ffffff',  # Same as Launchpad page background.
-            size='9.2,9',  # Width fits in centre of 3 col layout, 1024x768.
+            size='9.2,9',  # Width fits of 2 col layout, 1024x768.
             ratio='compress',
             ranksep=0.25,
-            nodesep=0.01
+            nodesep=0.01 # Separation between nodes
             )
 
         # Global node and edge attributes.
