@@ -203,6 +203,8 @@ the ws.op=search parameter.
     ...   "/projects?ws.op=search&text=gnome").jsonBody()
     >>> project_collection['total_size']
     4
+
+
 == Project series entry ==
 
 The entry for a project series is available at its canonical URL on the
@@ -254,36 +256,18 @@ Project releases are available at their canonical URL on the API virtual host.
     True
 
 
-== Project release file entry ==
-
-Project release files are available at their canonical URL on the API
-virtual host.
-
-    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
-    >>> ff_tgz = webservice.get(url).jsonBody()
-    >>> pprint_entry(ff_tgz)
-    date_uploaded: u'2005-06-06T08:59:51.926792+00:00'∆
-    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
-    file_type: u'Code Release Tarball'
-    project_release_link: u'http://.../firefox/trunk/0.9.2'
-    resource_type_link: u'http://.../#project_release_file'
-    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
-    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
-
-
-== Project release file entries ==
+== Project release file collection ==
 
     >>> pr_files = webservice.get(
-    ...     '/beta/firefox/trunk/0.9.2/files').jsonBody()
+    ...     '/firefox/trunk/0.9.2/files').jsonBody()
     >>> pprint_entry(pr_files)
     entries: [...]
-    resource_type_link: u'http://.../beta/#project_release_file-page-resource'
+    resource_type_link: u'http://.../#project_release_file-page-resource'
     start: 0
     total_size: 1
-    >>> entries = releases['entries']
-    >>> len(entries) == releases['total_size']
+    >>> entries = pr_files['entries']
+    >>> len(entries) == pr_files['total_size']
     True
-
 
 == Milestone entry ==
 
@@ -310,9 +294,45 @@ host.
     ...     '/firefox/1.0/releases').jsonBody()
     >>> pprint_entry(releases)
     entries: [...]
-    resource_type_link: u'http://.../#product_release-page-resource'
+    resource_type_link: u'http://.../#project_release-page-resource'
     start: 0
     total_size: 1
     >>> entries = releases['entries']
     >>> len(entries) == releases['total_size']
     True
+
+
+== Project release file entry ==
+
+Project release files are available at their canonical URL on the API
+virtual host.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    >>> result = webservice.get(url).jsonBody()
+    >>> pprint_entry(result)
+    date_uploaded: u'2005-06-06T08:59:51.926792+00:00'
+    description: None
+    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    file_type: u'Code Release Tarball'
+    project_release_link: u'http://.../firefox/trunk/0.9.2'
+    resource_type_link: u'http://.../#project_release_file'
+    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+
+The actual file redirects to the librarian when accessed.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/.../firefox-0.9.2.orig.tar.gz
+
+The signature file will redirect too, if found.  In this case there is
+no signature so we get a 404.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 404 Not Found
+    ...
