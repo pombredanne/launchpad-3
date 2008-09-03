@@ -180,13 +180,19 @@ URL.
 New Accounts are created using the AccountSet.new() method. The account
 rational and displayname are required.
 
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.account import (
     ...     AccountCreationRationale)
 
+    # Login as a user that may see the accounts of other users.
+    >>> login('foo.bar@canonical.com')
     >>> passwordless_account = account_set.new(
     ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
-    >>> passwordless_account.status.name
-    xxx
+    >>> syncUpdate(passwordless_account)
+    >>> passwordless_account.creation_rationale.name
+    'USER_CREATED'
+    >>> passwordless_account.displayname
+    u'Passwordless'
     >>> print passwordless_account.password
     None
 
@@ -194,20 +200,34 @@ The new() method accepts the optional parameters of password and
 password_is_encrypted. The password is encrypted when
 password_is_encrypted is False, which is the default value.
 
-    >>> passwordful_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passwordful',
-    ...     password='clear_password')
-    >>> passwordful_account.status.name
-    xxx
-    >>> passwordful_account.password
-    xxx
+    >>> passworded_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
+    ...     password=u'clear_password')
+    >>> syncUpdate(passworded_account)
+    >>> passworded_account.password == u'clear_password'
+    False
 
 The password is not encrypted when password_is_encrypted is True. It
 is assumed the password was already encrypted.
 
     >>> clear_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
-    ...     password='clear_password', password_is_encrypted=True)
+    ...     password=u'clear_password', password_is_encrypted=True)
+    >>> syncUpdate(clear_account)
     >>> clear_account.password
-    'clear_password'
+    u'clear_password'
 
+
+== OpenID identifiers ==
+
+The old and new openid identifiers are created directly in the database.
+They are not available until the account object is synced.
+
+    >>> new_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
+    ...     password=u'clear_password')
+    >>> syncUpdate(new_account)
+    >>> len(new_account.openid_identifier) == 7
+    True
+    >>> new_account.new_openid_identifier
+    u'.../oid-account'
