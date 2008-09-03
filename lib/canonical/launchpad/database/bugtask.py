@@ -71,7 +71,8 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
+from canonical.launchpad.searchbuilder import (
+    all, any, greater_than, NULL, not_equals)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
@@ -1029,6 +1030,8 @@ def search_value_to_where_condition(search_value):
         True
         >>> search_value_to_where_condition(not_equals('foo'))
         "!= 'foo'"
+        >>> search_value_to_where_condition(greater_than('foo'))
+        "> 'foo'"
         >>> search_value_to_where_condition(1)
         '= 1'
         >>> search_value_to_where_condition(NULL)
@@ -1043,6 +1046,8 @@ def search_value_to_where_condition(search_value):
         return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
     elif zope_isinstance(search_value, not_equals):
         return "!= %s" % sqlvalues(search_value.value)
+    elif zope_isinstance(search_value, greater_than):
+        return "> %s" % sqlvalues(search_value.value)
     elif search_value is not NULL:
         return "= %s" % sqlvalues(search_value)
     else:
