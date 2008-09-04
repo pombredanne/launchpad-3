@@ -6,6 +6,11 @@ bugs.
 
     >>> from canonical.launchpad.browser.bug import MaloneView
     >>> class TestMaloneView(MaloneView):
+    ...     """Test version of MaloneView.
+    ...
+    ...     Override the user attribute, so we don't need the component
+    ...     architecture set up.
+    ...     """
     ...     user = None
 
 MaloneView.getMostRecentlyFixedBugs() calls the context's searchTasks()
