@@ -374,7 +374,7 @@ class CodeImportEditView(CodeImportBaseView):
 
     @property
     def initial_values(self):
-        return {'whiteboard':self.context.whiteboard}
+        return {'whiteboard': self.context.whiteboard}
 
     def initialize(self):
         """Show a 404 if the branch has no code import."""

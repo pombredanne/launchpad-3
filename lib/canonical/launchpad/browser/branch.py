@@ -336,7 +336,7 @@ class BranchContextMenu(ContextMenu):
 
     def edit_import(self):
         text = 'Edit import source or review import'
-        return Link('+edit-import', text, enabled=True)
+        return Link('+edit-import', text, icon='edit', enabled=True)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
