@@ -24,7 +24,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IProduct, IProject,
+    EmailAddressStatus, IEmailAddressSet,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
@@ -310,7 +310,7 @@ class RevisionSet:
                        (Branch, BranchRevision))))
 
     @staticmethod
-    def getPublicRevisionsForPerson(person):
+    def getPublicRevisionsForPerson(person, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -327,9 +327,14 @@ class RevisionSet:
         else:
             person_query = RevisionAuthor.person == person
 
+        now = datetime.now(pytz.UTC)
+        earliest = now - timedelta(days=day_limit)
+
         result_set = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
+            Revision.revision_date <= now,
+            Revision.revision_date > earliest,
             person_query,
             Exists(
                 Select(True,
@@ -340,14 +345,19 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProduct(product):
+    def getPublicRevisionsForProduct(product, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
+        now = datetime.now(pytz.UTC)
+        earliest = now - timedelta(days=day_limit)
+
         result_set = Store.of(product).find(
             Revision,
+            Revision.revision_date <= now,
+            Revision.revision_date > earliest,
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -358,15 +368,20 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProject(project):
+    def getPublicRevisionsForProject(project, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
+        now = datetime.now(pytz.UTC)
+        earliest = now - timedelta(days=day_limit)
+
         result_set = Store.of(project).find(
             Revision,
+            Revision.revision_date <= now,
+            Revision.revision_date > earliest,
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,

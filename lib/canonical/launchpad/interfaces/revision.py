@@ -153,28 +153,37 @@ class IRevisionSet(Interface):
            * revision in a branch associated with a product
         """
 
-    def getPublicRevisionsForPerson(person):
+    def getPublicRevisionsForPerson(person, day_limit=30):
         """Get the public revisions for the person or team specified.
 
+        :param person: A person or team.
+        :param day_limit: A hard limit for the revision_date.
         :return: ResultSet containing all revisions that are in a public
             branch somewhere where the person is the revision author, or
-            the revision author is in the team.  The results are ordered
+            the revision author is in the team, where the revision_date is
+            within `day_limit` number of days of now.  The results are ordered
             with the most recent revision_date first.
         """
 
-    def getPublicRevisionsForProduct(product):
+    def getPublicRevisionsForProduct(product, day_limit=30):
         """Get the public revisions for the product specified.
 
+        :param product: A valid `Product`.
+        :param day_limit: A hard limit for the revision_date.
         :return: ResultSet containing all revisions that are in a public
-            branch associated with the product.  The results are ordered
+            branch associated with the product, where the revision_date is
+            within `day_limit` number of days of now.  The results are ordered
             with the most recent revision_date first.
         """
 
-    def getPublicRevisionsForProject(project):
+    def getPublicRevisionsForProject(project, day_limit=30):
         """Get the public revisions for the project specified.
 
+        :param project: A valid `Project`.
+        :param day_limit: A hard limit for the revision_date.
         :return: ResultSet containing all revisions that are in a public
             branch associated with a product that is associated with the
-            project.  The results are ordered with the most recent
+            project, where the revision_date is within `day_limit` number
+            of days of now.  The results are ordered with the most recent
             revision_date first.
         """
