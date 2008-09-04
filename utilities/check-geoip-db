@@ -1,0 +1,12 @@
+#! /bin/bash
+# Check that we have a GeoIP city database.
+
+if [ ! -e /usr/share/GeoIP/GeoLiteCity.dat -a \
+     ! -e /usr/share/GeoIP/GeoIPCity.dat ]
+  then 
+    echo "*********************************************************"
+    echo "No GeoIP db found.  Please install launchpad-dependencies"
+    echo "*********************************************************"
+    exit 1
+fi
+exit 0

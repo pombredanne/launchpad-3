@@ -262,6 +262,9 @@ We can create new products with the createProduct() method:
     ...     description='A description of the test product',
     ...     licenses=(License.GNU_GPL_V2,))
 
+    >>> verifyObject(IProduct, product)
+    True
+
 When creating a product, a default product series is created for it:
 
     >>> product.serieses.count()

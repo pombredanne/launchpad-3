@@ -22,8 +22,8 @@
 
   <div metal:fill-slot="main">
 
-    <p tal:condition="view/error_message" 
-      tal:content="view/error_message" class="error message" />
+    <p tal:condition="view/error_message"
+       tal:content="structure view/error_message/escapedtext" class="error message" />
 
     <form name="edit_irc" action="" method="POST">
     <table>

@@ -4,9 +4,9 @@ __all__ = ['HARDCODED_COMPONENT_ORDER', 'ELIGIBLE_DOMINATION_STATES']
 
 from canonical.launchpad.interfaces import PackagePublishingStatus
 
-# XXX: if people actually start seriously using ComponentSelections this
-# will need to be revisited. For instance, adding new components will
-# break places which use this list. -- kiko, 2006-08-23
+# XXX: kiko 2006-08-23: if people actually start seriously using
+# ComponentSelections this will need to be revisited. For instance, adding
+# new components will break places which use this list.
 HARDCODED_COMPONENT_ORDER = [
     'main', 'restricted', 'universe', 'multiverse', 'partner']
 

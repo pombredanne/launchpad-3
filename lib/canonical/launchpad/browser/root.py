@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.z3batching.batch import _Batch
@@ -303,9 +304,12 @@ class LaunchpadSearchView(LaunchpadFormView):
             numeric_token = self._getNumericToken(self.text)
             if numeric_token is not None:
                 try:
-                    self._bug = getUtility(IBugSet).get(numeric_token)
+                    bug = getUtility(IBugSet).get(numeric_token)
+                    if check_permission("launchpad.View", bug):
+                        self._bug = bug
                 except NotFoundError:
-                    self._bug = None
+                    # Let self._bug remain None.
+                    pass
                 self._question = getUtility(IQuestionSet).get(numeric_token)
 
             name_token = self._getNameToken(self.text)

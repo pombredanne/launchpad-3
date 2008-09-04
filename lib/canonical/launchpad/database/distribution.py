@@ -299,9 +299,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    # XXX: This is used in a number of places and given it's already
-    # listified, why not spare the trouble of regenerating this as a
-    # cachedproperty? Answer: because it breaks tests. -- kiko, 2008-01-29
+    # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
+    # already listified, why not spare the trouble of regenerating this as a
+    # cachedproperty? Answer: because it breaks tests.
     @property
     def serieses(self):
         """See `IDistribution`."""
@@ -1163,9 +1163,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+            COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
                   RelatedBugTask.bug END) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
                   RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch

@@ -10,16 +10,18 @@ Imports and test setup:
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from storm.zope.interfaces import IZStorm
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> from canonical.config import config
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
     ...     set_request_started)
 
-The Launchpad database connection is registered as the store named
-"main":
+There are several possible database connections available via the
+IStoreSelector utility.
 
-    >>> store = getUtility(IZStorm).get("main")
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
     >>> print store.execute("SELECT current_database()").get_one()[0]
     launchpad_ftest
 
@@ -57,7 +59,8 @@ the Postgres statement timeout (a value of zero means no timeout):
     ...     zstorm.remove(store)
     ...     transaction.abort()
     ...     store.close()
-    ...     store = zstorm.get("main")
+    ...     store = getUtility(IStoreSelector).get(
+    ...         MAIN_STORE, MASTER_FLAVOR)
 
     >>> set_request_started()
     >>> print current_statement_timeout(store)

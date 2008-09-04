@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'archive_to_structuralheading',
     'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBadges',
@@ -20,12 +19,13 @@ __all__ = [
     ]
 
 
+import urllib
+
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IStructuralHeaderPresentation, NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
@@ -61,6 +61,58 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+def construct_redirect_params(data):
+    '''Get part of the URL needed for package copy/delete page redirection.
+
+    After an archive package copy/delete request concludes we need to
+    redirect to the same page while preserving any context that the
+    user may have established.
+
+    The context that needs to be preserved is comprised of the name and the
+    publishing status filter variables (which are part of the original POST
+    request data).
+
+    :param data: POST request data passed to the original package
+        copy/delete request, contains the name and the publishing status
+        filter values.
+
+    :return: a part of the URL needed to redirect to the same page (the
+        encoded HTTP GET parameters)
+    '''
+    url_params_string = ''
+    url_params = dict()
+
+    # Handle the name filter if set.
+    name_filter = data.get('name_filter')
+    if name_filter is not None:
+        url_params['field.name_filter'] = name_filter
+
+    # Handle the publishing status filter which must be one of: any,
+    # published or superseded.
+    status_filter = data.get('status_filter')
+    if status_filter is not None:
+        # Please note: the default value is 'any'.
+        status_filter_value = 'any'
+
+        # Was the status filter perhaps set to published or superseded?
+        if status_filter.collection is not None:
+            # The collection property is of type archive.StatusCollection,
+            # we just want to figure out whether it contains either a
+            # published or superseded status however.
+            status_filter_string = str(status_filter.collection)
+            terms_sought = ('Published', 'Superseded')
+            for term in terms_sought:
+                if term in status_filter_string:
+                    status_filter_value = term.lower()
+                    break
+        url_params['field.status_filter'] = status_filter_value
+
+    if url_params:
+        url_params_string = '?%s' % urllib.urlencode(url_params)
+
+    return url_params_string
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -121,7 +173,7 @@ class ArchiveContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def copy(self):
         text = 'Copy packages'
-        return Link('+copy-packages', text, icon='info')
+        return Link('+copy-packages', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
@@ -451,10 +503,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         if len(data.get('selected_sources', [])) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
 
-        if data.get('deletion_comment') is None:
-            self.setFieldError(
-                'deletion_comment', 'Deletion comment is required.')
-
     @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
@@ -472,13 +520,6 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         publishing_set = getUtility(IPublishingSet)
         publishing_set.requestDeletion(selected_sources, self.user, comment)
 
-        # We end up issuing the published_source query twice this way,
-        # because we need the original available source vocabulary to
-        # validade the the submitted deletion request. Once the deletion
-        # request is validated and performed we call 'flush_database_caches'
-        # and rebuild the 'selected_sources' widget.
-        self.refreshSelectedSourcesWidget()
-
         # Present a page notification describing the action.
         messages = []
         messages.append(
@@ -494,6 +535,9 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         notification = "\n".join(messages)
         self.request.response.addNotification(
             structured(notification, comment=comment))
+
+        url_params_string = construct_redirect_params(data)
+        self.next_url = '%s%s' % (self.request.URL, url_params_string)
 
 
 class DestinationArchiveRadioWidget(LaunchpadDropdownWidget):
@@ -674,10 +718,6 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             selected_sources, destination_archive, destination_series,
             destination_pocket, include_binaries)
 
-        # Refresh the selected_sources, it changes when sources get
-        # copied within the PPA.
-        self.refreshSelectedSourcesWidget()
-
         # Present a page notification describing the action.
         messages = []
         messages.append(
@@ -690,6 +730,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
+
+        url_params_string = construct_redirect_params(data)
+        self.next_url = '%s%s' % (self.request.URL, url_params_string)
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
@@ -952,12 +995,3 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'buildd_secret',
                 'Do not specify for non-private archives')
-
-
-def archive_to_structuralheading(archive):
-    """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
-    if archive.purpose == ArchivePurpose.PPA:
-        return IStructuralHeaderPresentation(archive.owner)
-    else:
-        return IStructuralHeaderPresentation(archive.distribution)
-

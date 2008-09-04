@@ -105,6 +105,9 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
+xxxreport:
+	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+
 check-configs:
 	${PYTHON} utilities/check-configs.py
 
@@ -227,7 +230,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean

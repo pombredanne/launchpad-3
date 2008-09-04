@@ -12,7 +12,6 @@
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
-    <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
