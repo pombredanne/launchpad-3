@@ -18,6 +18,9 @@ CREATE INDEX archiveauthtoken__date_expires__idx
     ON archiveauthtoken (date_expires)
     WHERE date_expires IS NOT NULL;
 
+CREATE INDEX archiveauthtoken__date_created__idx
+    ON archiveauthtoken (date_created);
+
 ALTER TABLE Archive
     ADD COLUMN dirty_tokens boolean NOT NULL DEFAULT FALSE;
 
