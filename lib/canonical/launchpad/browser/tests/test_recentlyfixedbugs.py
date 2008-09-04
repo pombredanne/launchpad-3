@@ -11,6 +11,7 @@ import unittest
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, tearDown)
 
+
 def test_suite():
     suite = unittest.TestSuite()
     test = LayeredDocFileSuite('recently-fixed-bugs.txt')
