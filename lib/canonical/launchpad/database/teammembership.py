@@ -18,7 +18,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.database.sqlbase import (
-    flush_database_updates, SQLBase, sqlvalues)
+    cursor, flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -522,74 +522,114 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _cleanTeamParticipation(person, team):
-    """Remove relevant entries in TeamParticipation for <person> and <team>.
+def _cleanTeamParticipation(member, team):
+    """Remove TeamParticipation entries for the given person and team.
 
-    If the given person is not a team then we only need to remove that person
-    from the given team and its super teams.
-
-    If the person is a team, though, we will remove all its participants from
-    the given team as well, but only if they're not active members of that
-    team or participants through teams other than the given person.
+    Removing a member from a team is basically a two-step process. First we
+    change the status of the TeamMembership entry and then call
+    _cleanTeamParticipation() to make sure the member is actually removed from
+    the given team and its superteams.
     """
-    # First of all, we remove <person> from <team> (and its superteams).
-    _removeParticipantFromTeamAndSuperTeams(person, team)
-    if not person.is_team:
-        # Nothing else to do.
+    # First we'll remove our member (and all its members, in case it's a team)
+    # from the given team.
+    active_states = "%s,%s" % sqlvalues(
+        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
+    member_team_and_subteams = list(
+        itertools.chain([member, team], member.sub_teams))
+    member_team_and_subteams_ids = ",".join(
+        str(person.id) for person in member_team_and_subteams)
+    query = """
+        DELETE FROM TeamParticipation
+        WHERE team = %(team_id)s AND person IN (
+            -- All the people that /may/ be kicked (participants of the
+            -- given member).
+            SELECT person
+            FROM TeamParticipation
+            WHERE team = %(member_id)s
+
+            EXCEPT
+
+            (
+                SELECT person
+                FROM TeamParticipation
+                WHERE team IN (
+                    -- Other subteams of the given team. If the member is a
+                    -- participant in any of them, he shall not be kicked.
+                    SELECT person
+                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    WHERE team = %(team_id)s
+                        AND person NOT IN (%(member_team_and_subteams_ids)s)
+                        AND teamowner IS NOT NULL)
+
+                UNION
+
+                -- Direct members of our team.
+                SELECT person
+                FROM TeamMembership
+                WHERE status IN (%(active_states)s)
+                    AND team = %(team_id)s
+            )
+        )""" % dict(team_id=team.id, member_id=member.id,
+                    active_states=active_states,
+                    member_team_and_subteams_ids=member_team_and_subteams_ids)
+    cur = cursor()
+    cur.execute(query)
+
+    # Now we remove the member (and its members, if they exist) from each
+    # superteam of the given team, but only if there are no other paths from
+    # the member to the team and if he's not a direct member of the team.
+    superteams = list(team.super_teams)
+    if len(superteams) == 0:
         return
 
-    # The person is actually a team, so we must remove all its participants
-    # as well.
-    all_person_members = set(person.allmembers)
+    superteams_ids = ",".join(str(team.id) for team in superteams)
+    team_and_member_and_superteams_ids = ",".join(
+        str(team.id) for team in [member, team] + superteams)
+    replacements = dict(
+        active_states=active_states, member_id=member.id,
+        team_and_member_and_superteams_ids=team_and_member_and_superteams_ids,
+        superteams_ids=superteams_ids)
+    query = """
+        DELETE FROM TeamParticipation
+        WHERE team = %(superteam_id)s AND person IN (
+            -- All the people that /may/ be kicked (participants of the
+            -- given member).
+            SELECT person
+            FROM TeamParticipation
+            WHERE team = %(member_id)s
 
-    # Obviously, we must not remove anybody who's a participant through our
-    # person if that participant is also a direct member of the team.
-    members_to_skip = set(team.activemembers)
+            EXCEPT
 
-    # We also don't want to remove somebody who's a participant through our
-    # person if he's also a participant through other team.
-    member_subteams = list(person.sub_teams)
-    for member in team.allmembers:
-        if (member.is_team and member != person
-                and member not in member_subteams):
-            members_to_skip.update(member.allmembers)
-    to_remove = all_person_members - members_to_skip
+            (
+                SELECT person
+                FROM TeamParticipation
+                WHERE team IN (
+                    -- Teams in which our dear member must be a participant in
+                    -- order not to be kicked from this superteam.
+                    SELECT person
+                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    WHERE team = %(superteam_id)s
+                        AND person NOT IN (
+                            %(team_and_member_and_superteams_ids)s)
+                        AND teamowner IS NOT NULL)
 
-    for person in to_remove:
-        _removeParticipantFromTeamAndSuperTeams(person, team)
+                UNION
 
-
-def _removeParticipantFromTeamAndSuperTeams(person, team):
-    """Remove the given person from team and all its super teams.
-
-    Delete the TeamParticipation entry for the given person and team, if it
-    exists and then delete the TeamParticipation for that person on each super
-    team of the given team, only if the person is not an active member of that
-    super team or is a participant through a team other than the given one.
-    """
-    result = TeamParticipation.selectOneBy(person=person, team=team)
-    if result is not None:
-        result.destroySelf()
-
-    for superteam in team.super_teams:
-        if person not in superteam.activemembers:
-            # XXX: Having just this call here will cause some tests in
-            # doc/teammembership.txt to fail
-            # ./test.py -vvt doc/teammembership.txt
-            _removeParticipantFromTeamAndSuperTeams(person, superteam)
-
-            # XXX: Replacing the above with this one will cause the new test
-            # (in tests/test_teammembership) to fail.
-            # ./test.py -vvt canonical.launchpad.tests.test_teammembership.TestTeamMembership
-#             for subteam in superteam.sub_teams:
-#                 if (person != subteam
-#                         and person.hasParticipationEntryFor(subteam)):
-#                     # This is a participant through a team other than the
-#                     # given one, so we must not remove his participation entry
-#                     # for that team.
-#                     break
-#             else:
-#                 _removeParticipantFromTeamAndSuperTeams(person, superteam)
+                -- We shouldn't attempt to kick any members that have an
+                -- active membership record for a given superteam.
+                SELECT person
+                FROM TeamMembership
+                WHERE status IN (%(active_states)s)
+                    AND team = %(superteam_id)s
+            )
+        )"""
+    for superteam in superteams:
+        if member in superteam.activemembers:
+            # The member is a direct member of this superteam, so
+            # don't even attempt to kick the member from the superteam.
+            continue
+        replacements.update(dict(superteam_id=superteam.id))
+        cur.execute(query % replacements)
 
 
 def _fillTeamParticipation(member, team):
