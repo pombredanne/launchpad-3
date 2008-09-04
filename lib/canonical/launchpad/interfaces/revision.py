@@ -157,7 +157,8 @@ class IRevisionSet(Interface):
         """Get the public revisions for the person or team specified.
 
         :param person: A person or team.
-        :param day_limit: A hard limit for the revision_date.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
         :return: ResultSet containing all revisions that are in a public
             branch somewhere where the person is the revision author, or
             the revision author is in the team, where the revision_date is
@@ -169,7 +170,8 @@ class IRevisionSet(Interface):
         """Get the public revisions for the product specified.
 
         :param product: A valid `Product`.
-        :param day_limit: A hard limit for the revision_date.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
         :return: ResultSet containing all revisions that are in a public
             branch associated with the product, where the revision_date is
             within `day_limit` number of days of now.  The results are ordered
@@ -180,7 +182,8 @@ class IRevisionSet(Interface):
         """Get the public revisions for the project specified.
 
         :param project: A valid `Project`.
-        :param day_limit: A hard limit for the revision_date.
+        :param day_limit: Defines a time boundary for the revision_date, where
+            (now - day_limit) < revision_date <= now.
         :return: ResultSet containing all revisions that are in a public
             branch associated with a product that is associated with the
             project, where the revision_date is within `day_limit` number

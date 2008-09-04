@@ -327,14 +327,10 @@ class RevisionSet:
         else:
             person_query = RevisionAuthor.person == person
 
-        now = datetime.now(pytz.UTC)
-        earliest = now - timedelta(days=day_limit)
-
         result_set = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
-            Revision.revision_date <= now,
-            Revision.revision_date > earliest,
+            revision_time_limit(day_limit),
             person_query,
             Exists(
                 Select(True,
@@ -351,13 +347,9 @@ class RevisionSet:
         from canonical.launchpad.database.branch import Branch
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        now = datetime.now(pytz.UTC)
-        earliest = now - timedelta(days=day_limit)
-
         result_set = Store.of(product).find(
             Revision,
-            Revision.revision_date <= now,
-            Revision.revision_date > earliest,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -375,13 +367,9 @@ class RevisionSet:
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.branchrevision import BranchRevision
 
-        now = datetime.now(pytz.UTC)
-        earliest = now - timedelta(days=day_limit)
-
         result_set = Store.of(project).find(
             Revision,
-            Revision.revision_date <= now,
-            Revision.revision_date > earliest,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -392,3 +380,12 @@ class RevisionSet:
                        (Branch, BranchRevision, Product))))
         return result_set.order_by(Desc(Revision.revision_date))
 
+
+def revision_time_limit(day_limit):
+    """The storm fragment to limit the revision_date field of the Revision."""
+    now = datetime.now(pytz.UTC)
+    earliest = now - timedelta(days=day_limit)
+
+    return And(
+        Revision.revision_date <= now,
+        Revision.revision_date > earliest)
