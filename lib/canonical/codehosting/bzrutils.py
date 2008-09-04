@@ -39,8 +39,8 @@ def get_branch_stacked_on_url(a_bzrdir):
     # this possible (see below). Alternatively, Bazaar could provide us with a
     # way to open a Branch without opening the stacked-on branch.
 
-    # XXX: JonathanLange 2008-09-04: In Bazaar 1.6, there's no generic way to
-    # get the format of a branch from a BzrDir. Here, we just assume that if
+    # XXX: JonathanLange 2008-09-04: In Bazaar 1.6, there's no way to get the
+    # format of a branch from a generic BzrDir. Here, we just assume that if
     # you can't get the branch format using the newer API (i.e.
     # BzrDir.find_branch_format()), then the branch is not stackable. Bazaar
     # post-1.6 has 'get_branch_format' to the pre-split-out formats, which we

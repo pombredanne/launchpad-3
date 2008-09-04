@@ -13,6 +13,7 @@ from bzrlib import errors
 from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
+from bzrlib import urlutils
 import bzrlib.ui
 
 from canonical.config import config
@@ -241,6 +242,7 @@ class BranchOpener(object):
                 url = get_branch_stacked_on_url(bzrdir)
             except (errors.NotStacked, errors.UnstackableBranchFormat):
                 break
+            url = urlutils.join(resolved_url, url)
 
     def checkSource(self, url):
         """Check `url` is safe to pull a branch from.

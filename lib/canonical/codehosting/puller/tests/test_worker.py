@@ -284,9 +284,10 @@ class TestBranchOpenerCheckSource(TestCase):
 class TestBranchOpenerStacking(TestCaseWithTransport):
 
     def makeBranchOpener(self, allowed_urls):
+        allowed_urls = [url.rstrip('/') for url in allowed_urls]
         opener = BranchOpener()
         def checkOneURL(url):
-            if url not in allowed_urls:
+            if url.rstrip('/') not in allowed_urls:
                 raise BadUrl(url)
         opener.checkOneURL = checkOneURL
         return opener
@@ -294,7 +295,7 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
         # branches with allowed URLs.
-        stacked_on_branch = self.make_branch('base_branch', format='1.6')
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
         stacked_branch = self.make_branch('stacked-branch', format='1.6')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener(
@@ -302,10 +303,36 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         # This doesn't raise an exception.
         opener.checkSource(stacked_branch.base)
 
+    def testAllowedRelativeURL(self):
+        # checkSource passes on absolute urls to checkOneURL, even if the
+        # value of stacked_on_location in the config is set to a relative URL.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../base-branch')
+        opener = self.makeBranchOpener(
+            [stacked_branch.base, stacked_on_branch.base])
+        # Note that stacked_on_branch.base is not '../base-branch', it's an
+        # absolute URL.
+        self.assertNotEqual('../base-branch', stacked_on_branch.base)
+        # This doesn't raise an exception.
+        opener.checkSource(stacked_branch.base)
+
+    def testAllowedRelativeNested(self):
+        # Relative URLs are resolved relative to the stacked branch.
+        self.get_transport().mkdir('subdir')
+        a = self.make_branch('subdir/a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        b.set_stacked_on_url('../subdir/a')
+        c = self.make_branch('subdir/c', format='1.6')
+        c.set_stacked_on_url('../../b')
+        opener = self.makeBranchOpener([c.base, b.base, a.base])
+        # This doesn't raise an exception.
+        opener.checkSource(c.base)
+
     def testForbiddenURL(self):
         # checkSource raises a BadUrl exception if a branch is stacked on a
         # branch with a forbidden URL.
-        stacked_on_branch = self.make_branch('base_branch', format='1.6')
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
         stacked_branch = self.make_branch('stacked-branch', format='1.6')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener([stacked_branch.base])
