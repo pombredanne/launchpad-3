@@ -1262,6 +1262,7 @@ class BugTaskSet:
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
+            'date_closed': params.date_closed,
         }
 
         # Loop through the standard, "normal" arguments and build the
