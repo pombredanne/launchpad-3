@@ -89,15 +89,20 @@ The table includes a number of convenience links:
     linux-source-2.6.15 **/+source/linux-source-2.6.15
     (find) http://bugs.launchpad.dev/projects
     (link) **/hoary/+source/linux-source-2.6.15/+edit-packaging
-    2 **/+source/linux-source-2.6.15
-    2 **/+source/linux-source-2.6.15?field.status%3Alist=TRIAGED
-    0 **/+source/linux-source-2.6.15?field.status%3Alist=NEW
-        &field.status%3Alist=INCOMPLETE_WITH_RESPONSE
-        &field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE
-        &field.status%3Alist=CONFIRMED
-    2 **/+source/linux-source-2.6.15?field.status_upstream=open_upstream...
-    0 **/+source/linux-source-2.6.15?field.status_upstream=hide_upstream...
-    1 **/+source/linux-source-2.6.15?field.status_upstream=pending_bugwatch...
+    2 **/+source/linux-source-2.6.15/+bugs?search=Search
+    2 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status=TRIAGED
+    0 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status=CONFIRMED
+        &field.status=INCOMPLETE_WITHOUT_RESPONSE
+        &field.status=INCOMPLETE_WITH_RESPONSE
+        &field.status=NEW
+    2 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=open_upstream
+    0 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=hide_upstream
+    1 **/+source/linux-source-2.6.15/+bugs?search=Search
+        &field.status_upstream=pending_bugwatch
     ...
 
 
@@ -279,11 +284,11 @@ them, though:
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
     >>> print extract_text(table)
     mozilla-firefox  Missing corresponding product.  (find)  (link)
-        3    0     0.00  3  0      0.00    0    0    0.00  0
+        3    0     0.00  3  2      66.67    1    0    0.00  2
 
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
     >>> print extract_text(table)
-        Totals: 3    0     0.00  3  0      0.00    0    0    0.00  0
+        Totals: 3    0     0.00  3  2      66.67    1    0    0.00  2
 
     >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report')

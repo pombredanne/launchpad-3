@@ -11,6 +11,7 @@ __all__ = [
 
 import os
 import shutil
+import tempfile
 
 import canonical
 from canonical.config import config
@@ -160,8 +161,20 @@ class TacLibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.pid')
 
     @property
+    def _log_directory(self):
+        # Since the root gets deleted after the tests complete, and since we
+        # may still want to access the log file for post-mortem debugging, put
+        # the log file in the parent directory of root, or the temporary
+        # directory if that doesn't exist.
+        log_directory = os.path.dirname(self.root)
+        if os.path.isdir(log_directory):
+            return log_directory
+        else:
+            return tempfile.tempdir
+
+    @property
     def logfile(self):
-        return os.path.join(self.root, 'librarian.log')
+        return os.path.join(self._log_directory, 'librarian.log')
 
 
 class TacRestrictedLibrarianTestSetup(TacLibrarianTestSetup):
@@ -180,7 +193,7 @@ class TacRestrictedLibrarianTestSetup(TacLibrarianTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join(self.root, 'restricted-librarian.log')
+        return os.path.join(self._log_directory, 'restricted-librarian.log')
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):

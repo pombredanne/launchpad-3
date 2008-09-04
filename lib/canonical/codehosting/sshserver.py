@@ -78,17 +78,17 @@ class SubsystemOnlySession(session.SSHSession, object):
 class LaunchpadAvatar(avatar.ConchUser):
     """An account on the SSH server, corresponding to a Launchpad person.
 
-    :ivar authserver: A Twisted XML-RPC client for the authserver. The server
-        must implement `IUserDetailsStorageV2` and `IHostedBranchStorage`.
+    :ivar branchfs_proxy: A Twisted XML-RPC client for the authserver. The
+        server must implement `IBranchFileSystem`.
     :ivar channelLookup: See `avatar.ConchUser`.
     :ivar subsystemLookup: See `avatar.ConchUser`.
     :ivar user_id: The Launchpad database ID of the Person for this account.
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, userDict, authserver):
+    def __init__(self, userDict, branchfs_proxy):
         avatar.ConchUser.__init__(self)
-        self.authserver = authserver
+        self.branchfs_proxy = branchfs_proxy
         self.user_id = userDict['id']
         self.username = userDict['name']
         logging.getLogger('codehosting.ssh').info(
@@ -116,16 +116,17 @@ class Realm:
 
     avatarFactory = LaunchpadAvatar
 
-    def __init__(self, authserver):
-        self.authserver = authserver
+    def __init__(self, authentication_proxy, branchfs_proxy):
+        self.authentication_proxy = authentication_proxy
+        self.branchfs_proxy = branchfs_proxy
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
-        deferred = self.authserver.getUser(avatarId)
+        deferred = self.authentication_proxy.callRemote('getUser', avatarId)
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(userDict, self.authserver.proxy)
+            avatar = self.avatarFactory(userDict, self.branchfs_proxy)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
@@ -206,7 +207,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
-        d = self.authserver.getUser(credentials.username)
+        d = self.authserver.callRemote('getUser', credentials.username)
         return d.addCallback(self._checkUserExistence, credentials)
 
     def _checkUserExistence(self, userDict, credentials):
@@ -214,7 +215,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             raise UserDisplayedUnauthorizedLogin(
                 "No such Launchpad account: %s" % credentials.username)
 
-        authorizedKeys = self.authserver.getSSHKeys(credentials.username)
+        authorizedKeys = self.authserver.callRemote(
+            'getSSHKeys', credentials.username)
 
         # Add callback to try find the authorized key
         authorizedKeys.addCallback(self._checkForAuthorizedKey, credentials)

@@ -60,7 +60,7 @@ branches.
        title="Latest Bugs for Steve Alexander" />,
     <link rel="alternate" type="application/atom+xml"
        href="http://feeds.launchpad.dev/~stevea/revisions.atom"
-       title="Revisions by Steve Alexander" />]
+       title="Latest Revisions by Steve Alexander" />]
 
 On the bugs subdomain, only a link to the bugs feed will be included,
 not the branches link.
@@ -92,7 +92,10 @@ main product page.
         title="Latest Bugs for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/jokosher/branches.atom"
-	title="Latest Branches for Jokosher" />]
+        title="Latest Branches for Jokosher" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/jokosher/revisions.atom"
+	title="Latest Revisions for Jokosher" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 
@@ -134,7 +137,10 @@ it must have quotes and html escaped.
         title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/branches.atom"
-        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
+        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/bad-displayname/revisions.atom"
+        title="Latest Revisions for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
 
 == Latest Bugs for a Project ==
 
@@ -155,7 +161,10 @@ on the main project page.
         title="Latest Bugs for GNOME" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/gnome/branches.atom"
-	title="Latest Branches for GNOME" />]
+        title="Latest Branches for GNOME" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/gnome/revisions.atom"
+        title="Latest Revisions for GNOME" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 
@@ -256,8 +265,11 @@ to the atom feed for that project's latest branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/mozilla/branches.atom" 
-        title="Latest Branches for the Mozilla Project" />]
+        href="http://feeds.launchpad.dev/mozilla/branches.atom"
+        title="Latest Branches for the Mozilla Project" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/mozilla/revisions.atom"
+        title="Latest Revisions for the Mozilla Project" />]
 
 
 == Latest Branches for a Product ==
@@ -270,7 +282,10 @@ to the atom feed for that product's latest branches.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/firefox/branches.atom"
-	title="Latest Branches for Mozilla Firefox" />]
+        title="Latest Branches for Mozilla Firefox" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/firefox/revisions.atom"
+        title="Latest Revisions for Mozilla Firefox" />]
 
 
 == Latest Branches for a Person ==
@@ -283,7 +298,10 @@ to the atom feed for that person's latest branches.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/~sabdfl/branches.atom"
-	title="Latest Branches for Mark Shuttleworth" />]
+        title="Latest Branches for Mark Shuttleworth" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/~sabdfl/revisions.atom"
+        title="Latest Revisions by Mark Shuttleworth" />]
 
 
 == Latest Revisions on a Branch ==

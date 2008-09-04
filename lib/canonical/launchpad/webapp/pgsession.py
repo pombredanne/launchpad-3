@@ -63,16 +63,13 @@ class PGSessionDataContainer(PGSessionBase):
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
         self._sweep()
-        # Ensure the row in session_data_table_name exists in the database.
-        # __setitem__ handles this for us.
-        self[client_id] = 'ignored'
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        self.store.execute(
-                "SELECT ensure_session_client_id(?)", (client_id,),
-                noresult=True)
+        # The SessionData / SessionPkgData objects know how to store
+        # themselves.
+        pass
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
@@ -99,6 +96,8 @@ class PGSessionData(PGSessionBase):
 
     lastAccessTime = None
 
+    _have_ensured_client_id = False
+
     def __init__(self, session_data_container, client_id):
         self.session_data_container = session_data_container
         self.client_id = client_id
@@ -112,6 +111,14 @@ class PGSessionData(PGSessionBase):
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
         self.store.execute(query, (client_id,), noresult=True)
+
+    def _ensureClientId(self):
+        if self._have_ensured_client_id:
+            return
+        self.store.execute(
+            "SELECT ensure_session_client_id(?)", (self.client_id,),
+            noresult=True)
+        self._have_ensured_client_id = True
 
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
@@ -135,8 +142,8 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def __init__(self, session_data, product_id):
         self.session_data = session_data
         self.product_id = product_id
-        self.table_name = \
-                session_data.session_data_container.session_pkg_data_table_name
+        self.table_name = (
+            session_data.session_data_container.session_pkg_data_table_name)
         self._populate()
 
     _data_cache = None
@@ -159,6 +166,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def __setitem__(self, key, value):
         pickled_value =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
 
+        self.session_data._ensureClientId()
         self.store.execute("SELECT set_session_pkg_data(?, ?, ?, ?)",
                            (self.session_data.client_id, self.product_id,
                             key, pickled_value), noresult=True)

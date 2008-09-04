@@ -34,6 +34,8 @@ from canonical.launchpad.interfaces import (
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
+from canonical.launchpad.interfaces.codehosting import (
+    IBranchFileSystemApplication, IBranchPullerApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -42,6 +44,20 @@ class AuthServerApplication:
     implements(IAuthServerApplication)
 
     title = "Auth Server"
+
+
+class BranchFileSystemApplication:
+    """BranchFileSystem End-Point."""
+    implements(IBranchFileSystemApplication)
+
+    title = "Branch File System"
+
+
+class BranchPullerApplication:
+    """BranchPuller End-Point."""
+    implements(IBranchPullerApplication)
+
+    title = "Puller API"
 
 
 class CodeImportSchedulerApplication:
