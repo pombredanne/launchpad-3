@@ -14,6 +14,8 @@
 
 <div metal:fill-slot="main">
 
+  <h1>Members' location</h1>
+
   <p tal:condition="not: view/mapped_participants">
     None of the current participants in
     <tal:teamname replace="context/browsername" /> have a recorded
@@ -28,6 +30,13 @@
     <tal:map replace="structure view/map_html" />
   </tal:some_mapped>
 
+  <p tal:condition="view/mapped_participants">
+    <strong>Members' local time:</strong><br />
+    <tal:time_set repeat="time view/times">
+      <tal:times replace="time" /><br />
+    </tal:time_set>
+  </p>
+
   <tal:unmapped condition="view/unmapped_participants">
     <p style="margin: 4px;">
       <strong>Complete the map!</strong><br />
@@ -35,22 +44,26 @@
       locations for:
     </p>
 
-    <ul>
-      <li tal:repeat="tomap view/unmapped_participants">
-        <a tal:attributes="
-          href string:${tomap/fmt:url}/+editlocation?for_team=${context/name}"
-           tal:content="tomap/browsername"
-           style="white-space: nowrap;">Joe Bloggs</a>
-      </li>
-    </ul>
+    <!-- I don't know how to place this below the map. Please help. -->
+    <table>
+      <thead>
+      <tr>
+        <th>Update</th>
+        <th>Member</th>
+      </tr>
+      </thead>
+      <tr tal:repeat="person view/unmapped_participants">
+        <td>
+          <a tal:attributes="
+            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+          ><img src="/@@/edit" title="Set this person's location" /></a>
+        </td>
+        <td>
+          <tal:person replace="structure person/fmt:link" />
+        </td>
+      </tr>
+    </table>
   </tal:unmapped>
-
-  <p tal:condition="view/mapped_participants">
-    <strong>Times:</strong><br />
-    <tal:time_set repeat="time view/times">
-      <tal:time replace="time" /><br />
-    </tal:time_set>
-  </p>
 
 </div>
 
