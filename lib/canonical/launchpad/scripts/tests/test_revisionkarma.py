@@ -26,7 +26,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Use an administrator for the factory
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
-    def assertKarmaEvent(self, person, product):
+    def assertOneKarmaEvent(self, person, product):
         # Make sure there is one and only one karma event for the person and
         # product.
         result = Store.of(person).find(
@@ -52,7 +52,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        self.assertKarmaEvent(author, branch.product)
+        self.assertOneKarmaEvent(author, branch.product)
 
     def test_newRevisionAuthor(self):
         # When a user validates an email address that is part of a revision
@@ -74,7 +74,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        self.assertKarmaEvent(author, branch.product)
+        self.assertOneKarmaEvent(author, branch.product)
 
     def test_ownerJunkBranchWithAnotherProductBranch(self):
         # If the revision author has the revision in a junk branch but someone
@@ -110,7 +110,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
-        self.assertKarmaEvent(author, b2.product)
+        self.assertOneKarmaEvent(author, b2.product)
 
 
 def test_suite():
