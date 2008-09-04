@@ -1,12 +1,15 @@
 SET client_min_messages=ERROR;
 
+-- This schema is deliberately very similar to oauthaccesstoken so that when
+-- we add the code it can be refactored into a generalised token management
+-- system.
 CREATE TABLE ArchiveAuthToken (
     id serial PRIMARY KEY,
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_expires timestamp without time zone,
     archive integer NOT NULL REFERENCES Archive(id),
-    token text UNIQUE NOT NULL,
+    key text UNIQUE NOT NULL,
     description text
 );
 
