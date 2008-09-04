@@ -3,7 +3,7 @@ SET client_min_messages=ERROR;
 -- Derived archives are generalized copy archives with a parent. We envision
 -- they will be used for point releases, rebuilds, stable snapshots etc.
 
--- The concept of rebuild archives is being extended to generalised copy
+-- The concept of rebuild archives is being extended to generalized copy
 -- archives.
 -- Table 'archiverebuild' will hence be renamed to 'derivedarchive'.
 
