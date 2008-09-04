@@ -136,6 +136,159 @@ class TestTeamMembershipSet(unittest.TestCase):
         self.failIf(sample_person.inTeam(motu))
 
 
+class TeamParticipationTestCase(unittest.TestCase):
+    """Tests for team participation using 5 teams."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login('foo.bar@canonical.com')
+        person_set = getUtility(IPersonSet)
+        self.foo_bar = person_set.getByEmail('foo.bar@canonical.com')
+        self.no_priv = person_set.getByName('no-priv')
+        self.team1 = person_set.newTeam(self.foo_bar, 'team1', 'team1')
+        self.team2 = person_set.newTeam(self.foo_bar, 'team2', 'team2')
+        self.team3 = person_set.newTeam(self.foo_bar, 'team3', 'team3')
+        self.team4 = person_set.newTeam(self.foo_bar, 'team4', 'team4')
+        self.team5 = person_set.newTeam(self.foo_bar, 'team5', 'team5')
+
+    def assertParticipantsEquals(self, participant_names, team):
+        """Assert that the participants names in team are the expected ones.
+        """
+        self.assertEquals(
+            sorted(participant_names),
+            sorted([participant.name for participant in team.allmembers]))
+
+
+class TestTeamParticipationHierarchy(TeamParticipationTestCase):
+    """Participation management tests using 5 nested teams.
+
+    Create a team hierarchy with 5 teams and one person (no-priv) as
+    member of the last team in the chain.
+        team1
+           team2
+              team3
+                 team4
+                    team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationHierarchy, self).setUp()
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv'], self.team5)
+
+    def testSevereHierarchyByRemovingTeam3FromTeam2(self):
+        """Make sure that the participations is updated correctly when
+        the hierarchy is severed in the two.
+
+        This is similar to what was experienced in bug 261915.
+        """
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(['name16', 'team2'],self.team1)
+        self.assertParticipantsEquals(['name16'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+    def testRemovingLeafTeam(self):
+        """Make sure that participations are updated correctly when removing
+        the leaf team.
+        """
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'team3', 'team4'], self.team2)
+        self.assertParticipantsEquals(['name16', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+
+class TestTeamParticipationTree(TeamParticipationTestCase):
+    """Participation management tests using 5 nested teams
+
+    Create a team hierarchy looking like this:
+        team1
+           team2
+         team5  team3
+                  team4
+                     team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationTree, self).setUp()
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team5, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv'], self.team5)
+
+    def testRemoveTeam3FromTeam2(self):
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team5'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+    def testRemoveTeam5FromTeam4(self):
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+
+
 class TestTeamMembership(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
@@ -174,132 +327,6 @@ class TestTeamMembership(unittest.TestCase):
                         "teamA is not a participant of itself")
         self.failUnless(teamB.hasParticipationEntryFor(teamB),
                         "teamB is not a participant of itself")
-
-    def test_bug_261915(self):
-        """
-        # Relevant memberships
-        https://pastebin.canonical.com/8611/
-
-        # Data that will need to be fixed
-        https://pastebin.canonical.com/8606/plain/
-        # SQL to fix the data.
-        https://pastebin.canonical.com/8613/plain/
-
-        Events in chronological order:
-            1. Mythbuntu added as member of -bugs, -docs and -hotfixes
-            2. u-d-w-b created (2008-08-26)
-            3. ubuntu-dev proposed/invited as member of u-d-w-b
-                (2008-08-26 17:26:44)
-            4. u-d accepted as a member of u-d-w-b
-                (2008-08-26 17:31:48)
-            5. u-d-w-b proposed/invited as member of mythbuntu
-                (2008-08-26 17:35:14)
-            6. u-d-w-b accepted as a member of mythbuntu
-                (2008-08-26 17:38:49)
-
-        - The superteams of mythbuntu
-            mythbuntu-bugs
-                mythbuntu
-            mythbuntu-documentation
-                mythbuntu
-            mythbuntu-hotfixes
-                mythbuntu
-
-        - The subteams of mythbuntu
-            mythbuntu
-                ubuntu-dev-without-bugmail (created yesterday)
-                    ubuntu-dev
-                        ubuntu-core-dev
-                            # Here's where the members are.
-        """
-        login('mark@hbd.com')
-        person_set = getUtility(IPersonSet)
-        name12 = person_set.getByName('name12')
-        no_priv = person_set.getByName('no-priv')
-        mythbuntu_bugs = person_set.newTeam(name12, 'myth-bugs', 'team1')
-        mythbuntu = person_set.newTeam(name12, 'myth', 'team2')
-        ubuntu_dev_w_b = person_set.newTeam(name12, 'u-d-w-b', 'team3')
-        ubuntu_dev = person_set.newTeam(name12, 'u-d', 'team4')
-        ubuntu_core_dev = person_set.newTeam(name12, 'u-c-d', 'team5')
-
-        # Add no_priv to ubuntu-core-dev.
-        ubuntu_core_dev.addMember(no_priv, name12)
-        self.failUnless(no_priv in ubuntu_core_dev.activemembers)
-        # Add ubuntu-core-dev to ubuntu-dev
-        ubuntu_dev.addMember(ubuntu_core_dev, name12, force_team_add=True)
-        self.failUnless(ubuntu_core_dev in ubuntu_dev.activemembers)
-
-        # 1. Add mythbuntu to mythbuntu-bugs
-        mythbuntu_bugs.addMember(mythbuntu, name12, force_team_add=True)
-        self.failUnless(mythbuntu in mythbuntu_bugs.activemembers)
-
-        # 4 and 5. Add ubuntu-dev to ubuntu-dev-w-b
-        ubuntu_dev_w_b.addMember(ubuntu_dev, name12, force_team_add=True)
-        self.failUnless(ubuntu_dev in ubuntu_dev_w_b.activemembers)
-
-        # 6 and 7. Add ubuntu_dev_w_b to mythbuntu
-        mythbuntu.addMember(ubuntu_dev_w_b, name12, force_team_add=True)
-        self.failUnless(ubuntu_dev_w_b in mythbuntu.activemembers)
-
-        # Kick ubuntu_dev_w_b from mythbuntu
-        mythbuntu.setMembershipData(
-            ubuntu_dev_w_b, TeamMembershipStatus.DEACTIVATED, name12)
-        flush_database_updates()
-
-        self.failIf(no_priv in mythbuntu.allmembers)
-        # This is the one which fails, showing that no_priv hasn't been kicked
-        # from mythbuntu_bugs as it should.
-        self.failIf(no_priv in mythbuntu_bugs.allmembers)
-
-    def test_indirect_members_are_kicked_when_kicking_team(self):
-        """Indirect members are kicked when the team in which they are a
-        direct member is kicked.
-
-        Create a team hierarchy with 5 teams and one person (no-priv) as
-        member of the last team in the chain.
-            team1
-               team2
-                  team3
-                     team4
-                        team5
-                           no-priv
-
-        Then kick the latest team (team5) from team4 and check that neither
-        no-priv nor team5 are indirect members of any other teams.
-        """
-        login('mark@hbd.com')
-        person_set = getUtility(IPersonSet)
-        sabdfl = person_set.getByName('sabdfl')
-        no_priv = person_set.getByName('no-priv')
-        team1 = person_set.newTeam(sabdfl, 'team1', 'team1')
-        team2 = person_set.newTeam(sabdfl, 'team2', 'team2')
-        team3 = person_set.newTeam(sabdfl, 'team3', 'team3')
-        team4 = person_set.newTeam(sabdfl, 'team4', 'team4')
-        team5 = person_set.newTeam(sabdfl, 'team5', 'team5')
-        team5.addMember(no_priv, sabdfl)
-        self.failUnless(no_priv in team5.activemembers)
-        team1.addMember(team2, sabdfl, force_team_add=True)
-        team2.addMember(team3, sabdfl, force_team_add=True)
-        team3.addMember(team4, sabdfl, force_team_add=True)
-        team4.addMember(team5, sabdfl, force_team_add=True)
-        self.failUnless(team3 in team2.activemembers)
-        self.failUnless(team4 in team3.activemembers)
-        self.failUnless(team5 in team4.activemembers)
-        self.failUnless(no_priv in team4.allmembers)
-        self.failUnless(no_priv in team3.allmembers)
-        self.failUnless(no_priv in team2.allmembers)
-        self.failUnless(no_priv in team1.allmembers)
-        team4.setMembershipData(
-            team5, TeamMembershipStatus.DEACTIVATED, sabdfl)
-        flush_database_updates()
-        self.failIf(team5 in team4.allmembers)
-        self.failIf(team5 in team3.allmembers)
-        self.failIf(team5 in team2.allmembers)
-        self.failIf(team5 in team1.allmembers)
-        self.failIf(no_priv in team4.allmembers)
-        self.failIf(no_priv in team3.allmembers)
-        self.failIf(no_priv in team2.allmembers)
-        self.failIf(no_priv in team1.allmembers)
 
     def test_membership_status_changes_are_immediately_flushed_to_db(self):
         """Any changes to a membership status must be imediately flushed.
