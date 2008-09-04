@@ -122,11 +122,13 @@ class IProductReleaseFile(Interface):
     libraryfile = exported(
         Bytes(title=_("File"),
               description=_("The file contents."),
+              readonly=True,
               required=True),
         exported_as='file')
     signature = exported(
         Bytes(title=_("File signature"),
               description=_("The file signature."),
+              readonly=True,
               required=False))
     filetype = exported(
         Choice(title=_("Upstream file type"), required=True,
