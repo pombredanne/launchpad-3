@@ -38,7 +38,6 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams,
     IBug,
     IBugSet,
-    IBugTaskSet,
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
