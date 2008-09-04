@@ -64,11 +64,18 @@ CREATE TABLE archivecopyjob (
     source_archive integer NOT NULL,
     -- Copy packages belonging to this component.
     source_component integer NOT NULL,
+    -- Copy packages belonging to this pocket.
+    source_pocket integer NOT NULL,
 
     -- This is the target archive to which packages are to be copied.
     target_archive integer NOT NULL,
     -- This is the target component.
     target_component integer NOT NULL,
+    -- This is the target pocket.
+    target_pocket integer NOT NULL,
+
+    -- Whether binary packages should be copied as well.
+    copy_binaries boolean DEFAULT FALSE NOT NULL,
 
     -- The person who requested the inter-archive package copy operation.
     registrant integer NOT NULL,
@@ -79,16 +86,13 @@ CREATE TABLE archivecopyjob (
 
     -- When was this copy job requested?
     date_created timestamp without time zone
-    DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
-    NOT NULL,
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     -- When was this copy job started?
     date_started timestamp without time zone
-    DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
-    NOT NULL,
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     -- When did this copy job conclude?
     date_completed timestamp without time zone
-    DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
-    NOT NULL
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 );
 
 ALTER TABLE ONLY archivecopyjob
@@ -106,5 +110,35 @@ ALTER TABLE ONLY archivecopyjob
 ALTER TABLE ONLY archivecopyjob
     ADD CONSTRAINT archivecopyjob_targetcomponent_fk
     FOREIGN KEY (target_component) REFERENCES component(id);
+
+-- Create new ArchiveCopyJobArch table.
+
+-- Inter-archive package copy jobs can be source only or including binary
+-- packages.
+
+-- In the first case the user may want to specify a list of DistroArchSeries
+-- for which Build records should be created after the source packages have
+-- been copied.
+
+-- In the second case the user may want to specify a list of DistroArchSeries
+-- for which to copy the binary packages.
+
+-- We will need to insert one ArchiveCopyJobArch row For each
+-- DistroArchSeries specified.
+
+
+CREATE TABLE archivecopyjobarch (
+    -- The inter-archive package copy job in question.
+    archivecopyjob integer NOT NULL,
+    -- An architecture specified for the copy operation.
+    distroarchseries integer NOT NULL
+);
+
+ALTER TABLE ONLY archivecopyjobarch
+    ADD CONSTRAINT archivecopyjobarch__archivecopyjob__fk
+    FOREIGN KEY (archivecopyjob) REFERENCES archive(id);
+ALTER TABLE ONLY archivecopyjobarch
+    ADD CONSTRAINT archivecopyjobarch__distroarchseries__fk
+    FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 81, 0);

@@ -1808,7 +1808,7 @@ COMMENT ON COLUMN DerivedArchive.date_created IS 'Date of creation for this deri
 COMMENT ON TABLE ArchiveCopyJob IS 'ArchiveCopyJob: A table that captures the details of inter-archive package copy jobs';
 COMMENT ON COLUMN ArchiveCopyJob.registrant IS 'The person who requested the copy operation.';
 COMMENT ON COLUMN ArchiveCopyJob.source_archive IS 'The archive from which packages are to be copied.';
-COMMENT ON COLUMN ArchiveCopyJob.source_component IS 'The component to which the packages belong in the source archive.';
+COMMENT ON COLUMN ArchiveCopyJob.source_component IS 'The component to which the packages to be copied belong in the source archive.';
 COMMENT ON COLUMN ArchiveCopyJob.target_archive IS 'The archive to which packages are to be copied.';
 COMMENT ON COLUMN ArchiveCopyJob.target_component IS 'The component to which the packages will belong in the target archive.';
 COMMENT ON COLUMN ArchiveCopyJob.status IS 'Copy job status, may be one of: new, in-progress, cancelled, succeeded, failed.';
@@ -1817,6 +1817,11 @@ COMMENT ON COLUMN ArchiveCopyJob.date_created IS 'Date of creation for this pack
 COMMENT ON COLUMN ArchiveCopyJob.date_started IS 'Start date/time of this package copy job.';
 COMMENT ON COLUMN ArchiveCopyJob.date_completed IS 'When did this package copy job conclude?';
 
+-- ArchiveCopyJobArch
+
+COMMENT ON TABLE ArchiveCopyJobArch IS 'ArchiveCopyJob: A table that captures the DistroArchSeries to be used for an inter-archive package copy job, requires one row per DistroArchSeries.';
+COMMENT ON COLUMN ArchiveCopyJobArch.archivecopyjob IS 'The archive copy job in question.';
+COMMENT ON COLUMN ArchiveCopyJobArch.distroarchseries IS 'The DistroArchSeries to be used.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
