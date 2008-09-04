@@ -79,7 +79,7 @@ class Revision(SQLBase):
             karma = author.assignKarma('revisionadded', branch.product)
             # Backdate the karma to the time the revision was created.
             if karma is not None:
-                karma.datecreated = self.revision_date
+                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
 
     def getBranch(self, allow_private=False, allow_junk=True):
