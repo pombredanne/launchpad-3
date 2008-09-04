@@ -1773,6 +1773,7 @@ COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need buildin
 COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
+COMMENT ON COLUMN Archive.dirty_tokens IS 'True if the archive has tokens that need publishing.';
 
 -- ArchiveAuthToken
 COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';

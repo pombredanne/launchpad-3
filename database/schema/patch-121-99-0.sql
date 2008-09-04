@@ -18,4 +18,7 @@ CREATE INDEX archiveauthtoken__date_expires__idx
     ON archiveauthtoken (date_expires)
     WHERE date_expires IS NOT NULL;
 
+ALTER TABLE Archive
+    ADD COLUMN dirty_tokens boolean NOT NULL DEFAULT FALSE;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
