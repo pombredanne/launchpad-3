@@ -292,42 +292,50 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         return opener
 
     def testAllowedURL(self):
-        stacked_on_branch = self.make_branch(
-            'base_branch', format='development')
-        stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+        # checkSource does not raise an exception for branches stacked on
+        # branches with allowed URLs.
+        stacked_on_branch = self.make_branch('base_branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener(
             [stacked_branch.base, stacked_on_branch.base])
+        # This doesn't raise an exception.
         opener.checkSource(stacked_branch.base)
 
     def testForbiddenURL(self):
-        stacked_on_branch = self.make_branch(
-            'base_branch', format='development')
-        stacked_branch = self.make_branch(
-            'stacked-branch', format='development')
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch with a forbidden URL.
+        stacked_on_branch = self.make_branch('base_branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchOpener([stacked_branch.base])
         self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
 
     def testForbiddenURLNested(self):
-        a = self.make_branch('a', format='development')
-        b = self.make_branch('b', format='development')
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch that is in turn stacked on a branch with a forbidden URL.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
         b.set_stacked_on_url(a.base)
-        c = self.make_branch('c', format='development')
+        c = self.make_branch('c', format='1.6')
         c.set_stacked_on_url(b.base)
         opener = self.makeBranchOpener([c.base, b.base])
         self.assertRaises(BadUrl, opener.checkSource, c.base)
 
     def testSelfStackedBranch(self):
-        a = self.make_branch('a', format='development')
+        # checkSource raises StackingLoopError if a branch is stacked on
+        # itself. This avoids infinite recursion errors.
+        a = self.make_branch('a', format='1.6')
         a.set_stacked_on_url(a.base)
         opener = self.makeBranchOpener([a.base])
         self.assertRaises(StackingLoopError, opener.checkSource, a.base)
 
     def testLoopStackedBranch(self):
-        a = self.make_branch('a', format='development')
-        b = self.make_branch('b', format='development')
+        # checkSource raises StackingLoopError if a branch is stacked in such
+        # a way so that it is ultimately stacked on itself. e.g. a stacked on
+        # b stacked on a.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
         a.set_stacked_on_url(b.base)
         b.set_stacked_on_url(a.base)
         opener = self.makeBranchOpener([a.base, b.base])
