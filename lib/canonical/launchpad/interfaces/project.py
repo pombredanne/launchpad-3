@@ -39,13 +39,10 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, collection_default_content,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_factory_operation, export_read_operation, exported,
-    rename_parameters_as, operation_parameters,
-    operation_returns_collection_of)
+    collection_default_content, export_as_webservice_collection,
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 
 class ProjectNameField(PillarNameField):
@@ -301,11 +298,6 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    @rename_parameters_as(
-        displayname='display_name', homepageurl='homepage_url')
-    @export_factory_operation(
-        IProject, ['name', 'displayname', 'title', 'homepageurl', 'summary',
-                   'description', 'owner'])
     def new(name, displayname, title, homepageurl, summary, description,
             owner, mugshot=None, logo=None, icon=None, registrant=None):
         """Create and return a project with the given arguments.

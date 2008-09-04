@@ -30,17 +30,10 @@ It's possible to search the list and get a subset of the project groups.
     ...   print project_group['display_name']
     Apache
 
-It's also possible to create a new project group.
+You must specify a value for "text".
 
-    >>> owner = webservice.get('/~salgado').jsonBody()
-    >>> print webservice.named_post(
-    ...     "/projectgroups", "new", name="mygroup", display_name="My group",
-    ...     homepage_url="http://www.example.com/", summary="Summary",
-    ...     description="Description", title="Title",
-    ...     owner=owner['self_link']).getOutput()
-    HTTP/1.1 201 Created
-    ...
-    Location: http://.../mygroup
+    >>> print webservice.named_get("/projectgroups", "search").getBody()
+    text: Required input is missing.
 
 
 == Project group entry ==
