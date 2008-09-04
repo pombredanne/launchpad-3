@@ -585,9 +585,9 @@ class Archive(SQLBase):
         # Compiled regexp to remove puntication.
         clean_text = re.compile('(,|;|:|\.|\?|!)')
 
-        # XXX cprov 20080402: The set() is only used because we have
-        # a limitation in our FTI setup, it only indexes the first 2500
-        # chars of the target columns. See bug 207969. When such limitation
+        # XXX cprov 20080402 bug=207969: The set() is only used because we
+        # have a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. When such limitation
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
