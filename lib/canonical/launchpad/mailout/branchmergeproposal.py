@@ -7,10 +7,13 @@
 __metaclass__ = type
 
 
+from zope.component import getUtility
+
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
-from canonical.launchpad.interfaces import CodeReviewNotificationLevel
+from canonical.launchpad.interfaces import (
+    CodeReviewNotificationLevel, IPendingCodeMailSource)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -171,3 +174,21 @@ class BMPMailer(BaseMailer):
             'edit_subscription': '',
             })
         return params
+
+    def queueAll(self):
+        pending = []
+        source = getUtility(IPendingCodeMailSource)
+        for email, to_address in self.iterRecipients():
+            headers = self._getHeaders(email)
+            reason, rationale = self._recipients.getReason(email)
+            mail = source.create(
+                from_address=self.from_address,
+                to_address=to_address,
+                rationale=rationale,
+                branch_url=reason.branch.unique_name,
+                subject=self._getSubject(email),
+                body=self._getBody(email),
+                footer=''
+                )
+            pending.append(mail)
+        return pending

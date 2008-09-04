@@ -3,7 +3,7 @@
 """Database objects for PendingCodeMail"""
 
 __metaclass__ = type
-__all__ = ['PendingCodeMail']
+__all__ = ['PendingCodeMail', 'PendingCodeMailSource']
 
 
 from calendar import timegm
@@ -17,7 +17,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPendingCodeMail
+from canonical.launchpad.interfaces import (
+    IPendingCodeMail, IPendingCodeMailSource)
 from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mail.sendmail import sendmail
 
@@ -67,3 +68,15 @@ class PendingCodeMail(SQLBase):
     def sendMail(self):
         sendmail(self.toMessage())
         self.destroySelf()
+
+
+class PendingCodeMailSource:
+
+    implements(IPendingCodeMailSource)
+
+    def create(self, from_address, to_address, rationale, branch_url, subject,
+               body, footer):
+        """See `IPendingCodeMailSource`"""
+        return PendingCodeMail(from_address=from_address,
+            to_address=to_address, rationale=rationale, branch_url=branch_url,
+            subject=subject, body=body, footer=footer)

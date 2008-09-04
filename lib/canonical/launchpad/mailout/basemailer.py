@@ -92,10 +92,14 @@ class BaseMailer:
         template = get_email_template(self._template_name)
         return template % self._getTemplateParams(email)
 
-    def sendAll(self):
-        """Send notifications to all recipients."""
+    def iterRecipients(self):
         for email, recipient in self._recipients.getRecipientPersons():
             to_address = format_address(recipient.displayname, email)
+            yield email, to_address
+
+    def sendAll(self):
+        """Send notifications to all recipients."""
+        for email, to_address in self.iterRecipients():
             headers, subject, body = self.generateEmail(email)
             simple_sendmail(
                 self.from_address, to_address, subject, body, headers)

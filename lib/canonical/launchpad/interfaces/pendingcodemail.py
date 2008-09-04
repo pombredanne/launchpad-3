@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IPendingCodeMail'
+    'IPendingCodeMail', 'IPendingCodeMailSource'
     ]
 
 from zope.interface import Interface
@@ -28,3 +28,9 @@ class IPendingCodeMail(Interface):
     footer = Text(title=_('Footer'), )
     rationale = TextLine(title=_('Machine-readable rationale for message'))
     branch_url = TextLine(title=_('URL of a related branch'))
+
+
+class IPendingCodeMailSource(Interface):
+
+    def create():
+        """Create a PendingCodeMail"""

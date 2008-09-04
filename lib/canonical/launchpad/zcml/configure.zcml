@@ -100,6 +100,7 @@
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
+    <include file="pendingcodemail.zcml" />
     <include file="person.zcml" />
     <include file="personnotification.zcml" />
     <include file="poexportrequest.zcml" />

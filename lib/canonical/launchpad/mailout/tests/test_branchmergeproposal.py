@@ -69,6 +69,16 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
 
+    def test_queueAll(self):
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        pending = removeSecurityProxy(mailer.queueAll()[0])
+        self.assertEqual(
+            bmp.target_branch.unique_name, pending.branch_url)
+        self.assertEqual('Subscriber', pending.rationale)
+#            'X-Launchpad-Project': bmp.source_branch.product.name,
+#             'Reply-To': bmp.address},
+
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
