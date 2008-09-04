@@ -17,6 +17,7 @@ import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.codehosting.transport import get_puller_server
 from canonical.launchpad.interfaces import BranchType
@@ -191,6 +192,56 @@ class BranchOpener(object):
         """
         return Branch.open(url)
 
+    def _iter_references(self, url):
+        """Iterate over branch references starting at 'url'.
+
+        The iterator will include 'url' and keep iterating until a real branch
+        is finally referenced.
+
+        :raise BranchReferenceLoopError: If the branch references form a loop.
+        :raise BranchReferenceForbidden: If this opener forbids branch
+            references.
+        """
+        traversed_urls = set()
+        while True:
+            if url in traversed_urls:
+                raise BranchReferenceLoopError()
+            yield url
+            traversed_urls.add(url)
+            url = self.followReference(url)
+            if url is None:
+                break
+            if not self.shouldFollowReferences():
+                raise BranchReferenceForbidden(url)
+
+    def _iter_stacked_on(self, url):
+        """Iterate over stacked-on branches, starting at 'url'.
+
+        The iterator will start with 'url' and iterate over any branch
+        references it finds until it reaches a real branch. Once it gets
+        there, it yield the stacked-on url (if any), and then check *that* for
+        branch references.
+
+        :raise BranchReferenceLoopError: If the branch references form a loop.
+        :raise BranchReferenceForbidden: If this opener forbids branch
+            references.
+        :raise StackingLoopError: If the stacked branches form a loop.
+        """
+        traversed_urls = set()
+        while True:
+            if url in traversed_urls:
+                raise StackingLoopError()
+            resolved_url = None
+            for url in self._iter_references(url):
+                traversed_urls.add(url)
+                yield url
+                resolved_url = url
+            bzrdir = BzrDir.open(resolved_url)
+            try:
+                url = get_branch_stacked_on_url(bzrdir)
+            except (errors.NotStacked, errors.UnstackableBranchFormat):
+                break
+
     def checkSource(self, url):
         """Check `url` is safe to pull a branch from.
 
@@ -202,26 +253,9 @@ class BranchOpener(object):
             reference that leads to a reference cycle.
         :raise BadUrl: `checkOneURL` is expected to raise this or a subclass
             when it finds a URL it deems to be unsafe.
+        :raise StackingLoopError: If the stacked branches form a loop.
         """
-        self.checkOneURL(url)
-        traversed_urls = set()
-        while True:
-            while True:
-                reference_value = self.followReference(url)
-                if reference_value is None:
-                    break
-                if not self.shouldFollowReferences():
-                    raise BranchReferenceForbidden(reference_value)
-                traversed_urls.add(url)
-                if reference_value in traversed_urls:
-                    raise BranchReferenceLoopError()
-                self.checkOneURL(reference_value)
-                url = reference_value
-            branch = Branch.open(url)
-            try:
-                url = branch.get_stacked_on_url()
-            except (errors.NotStacked, errors.UnstackableBranchFormat):
-                break
+        for url in self._iter_stacked_on(url):
             self.checkOneURL(url)
 
     def shouldFollowReferences(self):
