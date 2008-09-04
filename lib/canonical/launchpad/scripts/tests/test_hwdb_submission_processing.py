@@ -2091,8 +2091,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected result for driver.package_name. Got %r, expected '
             'linux-image-2.6.24-19-generic' % driver.name)
 
-    def testEnsureVendorIDVendorNameExistRegularCase(self):
-        """Test of ensureVendorIDVendorNameExist(self), regular case."""
+    def testEnsureVendorIDVendorNameExistsRegularCase(self):
+        """Test of ensureVendorIDVendorNameExists(self), regular case."""
         devices = [
             self.HAL_COMPUTER,
             ]
@@ -2117,15 +2117,15 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
                          'Expected None looking up vendor ID "Lenovo" in '
                          'HWVendorID, got %r.' % vendor_id)
 
-        # HALDevice.ensureVendorIDVendorNameExist() creates these
+        # HALDevice.ensureVendorIDVendorNameExists() creates these
         # records.
         hal_system = parser.hal_devices[self.UDI_COMPUTER]
-        hal_system.ensureVendorIDVendorNameExist()
+        hal_system.ensureVendorIDVendorNameExists()
 
         vendor_name = vendor_name_set.getByName('Lenovo')
         self.assertEqual(vendor_name.name, 'Lenovo',
-                            'Expected to find vendor name "Lenovo" in '
-                            'HWVendorName, got %r.' % vendor_name.name)
+                         'Expected to find vendor name "Lenovo" in '
+                         'HWVendorName, got %r.' % vendor_name.name)
 
         vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SYSTEM, 'Lenovo')
         self.assertEqual(vendor_id.vendor_id_for_bus, 'Lenovo',
@@ -2135,12 +2135,12 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
                          'Expected HWBUS.SYSTEM as bus, got %s.'
                          % vendor_id.bus.title)
 
-    def runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+    def runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
         self, devices, test_bus, test_vendor_id, test_udi):
-        """Test of ensureVendorIDVendorNameExist(self), special case.
+        """Test of ensureVendorIDVendorNameExists(self), special case.
 
         A HWVendorID record is not created by
-        HALDevice.ensureVendorIDVendorNameExist for certain buses.
+        HALDevice.ensureVendorIDVendorNameExists for certain buses.
         """
         self.setHALDevices(devices)
         parser = SubmissionParser(self.log)
@@ -2148,7 +2148,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         parser.buildDeviceList(self.parsed_data)
 
         hal_device = parser.hal_devices[test_udi]
-        hal_device.ensureVendorIDVendorNameExist()
+        hal_device.ensureVendorIDVendorNameExists()
 
         vendor_id_set = getUtility(IHWVendorIDSet)
         vendor_id = vendor_id_set.getByBusAndVendorID(
@@ -2157,34 +2157,34 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Expected None looking up vendor ID %s for bus %s in HWVendorID, '
             'got %r.' % (test_vendor_id, test_bus.title, vendor_id))
 
-    def testEnsureVendorIDVendorNameExistVendorPCI(self):
-        """Test of ensureVendorIDVendorNameExist(self), PCI bus."""
+    def testEnsureVendorIDVendorNameExistsVendorPCI(self):
+        """Test of ensureVendorIDVendorNameExists(self), PCI bus."""
         devices = [
             self.HAL_COMPUTER,
             self.HAL_PCI_PCCARD_BRIDGE
             ]
-        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+        self.runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
             devices, HWBus.PCI, '0x8086', self.UDI_PCI_PCCARD_BRIDGE)
 
-    def testEnsureVendorIDVendorNameExistVendorPCCARD(self):
-        """Test of ensureVendorIDVendorNameExist(self), PCCARD bus."""
+    def testEnsureVendorIDVendorNameExistsVendorPCCARD(self):
+        """Test of ensureVendorIDVendorNameExists(self), PCCARD bus."""
         devices = [
             self.HAL_COMPUTER,
             self.HAL_PCI_PCCARD_BRIDGE,
             self.HAL_PCCARD_DEVICE,
             ]
-        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+        self.runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
             devices, HWBus.PCCARD, '0x8086', self.UDI_PCCARD_DEVICE)
 
     def testEnsureVendorIDVendorNameExistVendorUSB(self):
-        """Test of ensureVendorIDVendorNameExist(self), USB bus."""
+        """Test of ensureVendorIDVendorNameExists(self), USB bus."""
         devices = [
             self.HAL_COMPUTER,
             self.HAL_USB_CONTROLLER_PCI_SIDE,
             self.HAL_USB_CONTROLLER_USB_SIDE,
             self.HAL_USB_STORAGE_DEVICE,
             ]
-        self.runTestEnsureVendorIDVendorNameExistVendorNameUnknown(
+        self.runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
             devices, HWBus.USB, '0x1307', self.UDI_USB_STORAGE)
 
     def testCreateDBDataForSimpleDevice(self):

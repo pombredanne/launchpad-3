@@ -1473,11 +1473,11 @@ class HALDevice:
     def getDriver(self):
         """Return the HWDriver instance associated with this device.
 
-        Create a HWDriver record, if it does not already exists.
+        Create a HWDriver record, if it does not already exist.
         """
         # HAL and the HWDB client know at present only about kernel
         # drivers, so there is currently no need to search for
-        # example for user space printer drivers.
+        # for user space printer drivers, for example.
         driver_name = self.getProperty('info.linux.driver')
         if driver_name is not None:
             kernel_package_name = self.parser.getKernelPackageName()
@@ -1486,7 +1486,7 @@ class HALDevice:
         else:
             return None
 
-    def ensureVendorIDVendorNameExist(self):
+    def ensureVendorIDVendorNameExists(self):
         """Ensure that a useful HWVendorID record for self.vendor_id exists.
 
         A vendor ID is associated with a vendor name. For many devices
@@ -1499,7 +1499,7 @@ class HALDevice:
         """
         bus = self.getBus()
         if (self.vendor is not None and
-            not bus in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
+            bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
             hw_vendor_id_set = getUtility(IHWVendorIDSet)
             hw_vendor_id = hw_vendor_id_set.getByBusAndVendorID(
                 bus, self.vendor_id)
@@ -1546,20 +1546,17 @@ class HALDevice:
                 self.parser.submission_key)
             return
 
-        self.ensureVendorIDVendorNameExist()
+        self.ensureVendorIDVendorNameExists()
 
-        db_device_set = getUtility(IHWDeviceSet)
-        db_device = db_device_set.getOrCreate(bus, vendor_id, product_id,
-                                              product_name)
-        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
-        submission_device_set = getUtility(IHWSubmissionDeviceSet)
+        db_device = getUtility(IHWDeviceSet).getOrCreate(
+            bus, vendor_id, product_id, product_name)
         # Create a HWDeviceDriverLink record without an associated driver
         # for each real device. This will allow us to relate tests and
         # bugs to a device in general as well as to a specific
         # combination of a device and a driver.
-        device_driver_link = device_driver_link_set.getOrCreate(
+        device_driver_link = getUtility(IHWDeviceDriverLinkSet).getOrCreate(
             db_device, None)
-        submission_device = submission_device_set.create(
+        submission_device = getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent_submission_device,
             self.id)
         self.createDBDriverData(submission, db_device, submission_device)
@@ -1575,8 +1572,7 @@ class HALDevice:
             device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
             device_driver_link = device_driver_link_set.getOrCreate(
                 db_device, driver)
-            submission_device_set = getUtility(IHWSubmissionDeviceSet)
-            submission_device = submission_device_set.create(
+            submission_device = getUtility(IHWSubmissionDeviceSet).create(
                 device_driver_link, submission, submission_device, self.id)
         for sub_device in self.children:
             if sub_device.is_real_device:
