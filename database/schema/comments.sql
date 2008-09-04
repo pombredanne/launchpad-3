@@ -1774,6 +1774,14 @@ COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were buil
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 
+-- ArchiveAuthToken
+COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';
+COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
+COMMENT ON COLUMN ArchiveAuthToken.date_expires IS 'The date and time this token will expire. If NULL, it does not expire.';
+COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
+COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
+COMMENT ON COLUMN ArchiveAuthToken.description IS 'An optional note for the archive owner to describe the token.';
+
 
 -- ArchiveDependency
 COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
