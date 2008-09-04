@@ -47,3 +47,11 @@ def text_delta(instance_delta, delta_names, state_names, interface):
             output.append('')
         output.append('%s changed to:\n\n%s' % (title, delta))
     return '\n'.join(output)
+
+
+def append_footer(main, footer):
+    if '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))

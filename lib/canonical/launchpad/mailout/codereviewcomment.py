@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
+from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -63,10 +64,6 @@ class CodeReviewCommentMailer(BMPMailer):
             prefix = 'Vote: %s%s\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         main = self.message.text_contents
-        if '\n-- \n' in main:
-            footer_separator = '\n'
-        else:
-            footer_separator = '\n-- \n'
 
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
@@ -75,7 +72,7 @@ class CodeReviewCommentMailer(BMPMailer):
             'proposal_url': canonical_url(self.merge_proposal),
             'reason': reason.getReason()}
         return ''.join((
-            prefix, main, footer_separator, footer))
+            prefix, append_footer(main, footer)))
 
     def _getHeaders(self, email):
         """Return the mail headers to use."""

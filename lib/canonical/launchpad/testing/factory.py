@@ -144,16 +144,29 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePendingCodeMail(self):
+    def makePendingCodeMail(self, to_address=None, from_address=None,
+        subject=None, body=None, footer=None, msgid=None, rationale=None,
+        branch_url=None):
+        if to_address is None:
+            to_address = self.getUniqueEmailAddress()
+        if from_address is None:
+            from_address = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        if body is None:
+            body = self.getUniqueString('body')
+        if footer is None:
+            footer = self.getUniqueString('footer')
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        if rationale is None:
+            rationale = self.getUniqueString('rationale')
+        if branch_url is None:
+            branch_url = self.getUniqueURL()
         return PendingCodeMail(
-            from_address=self.getUniqueEmailAddress(),
-            to_address=self.getUniqueEmailAddress(),
-            subject=self.getUniqueString('subject'),
-            body=self.getUniqueString('body'),
-            footer=self.getUniqueString('footer'),
-            rationale=self.getUniqueString('rationale'),
-            branch_url=self.getUniqueURL(),
-            rfc822msgid=make_msgid('launchpad'))
+            to_address=to_address, from_address=from_address, subject=subject,
+            body=body, footer=footer, rationale=rationale,
+            branch_url=branch_url, rfc822msgid=msgid)
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):
