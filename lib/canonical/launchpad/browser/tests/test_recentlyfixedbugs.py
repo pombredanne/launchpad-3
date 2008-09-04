@@ -8,8 +8,7 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, tearDown)
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 
 def test_suite():
