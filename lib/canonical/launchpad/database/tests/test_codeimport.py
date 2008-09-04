@@ -14,7 +14,6 @@ from zope.component import getUtility
 from canonical.codehosting.codeimport.publish import ensure_series_branch
 from canonical.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
@@ -30,13 +29,13 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestCodeImportCreation(unittest.TestCase):
     """Test the creation of CodeImports."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -626,7 +625,7 @@ class TestNewFromProductSeries(unittest.TestCase):
     # to the new code import system, and should be deleted after that process
     # is done.
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         self.code_import_set = getUtility(ICodeImportSet)
@@ -819,20 +818,28 @@ def make_active_import(factory, project_name=None, product_name=None,
 
 def make_import_active(factory, code_import, last_update=None):
     """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
-    code_import.approve({}, factory.makePerson(password='whatever'))
     from zope.security.proxy import removeSecurityProxy
+    naked_import = removeSecurityProxy(code_import)
+    naked_import.updateFromData(
+        {'review_status': CodeImportReviewStatus.REVIEWED},
+        factory.makePerson())
     if last_update is None:
         # If last_update is not specfied, presumably we don't care what it is
         # so we just use some made up value.
         last_update = datetime(2008, 1, 1, tzinfo=pytz.UTC)
-    removeSecurityProxy(code_import).date_last_successful = last_update
-    flush_database_updates()
+    naked_import.date_last_successful = last_update
+
+
+def deactivate(project_or_product):
+    """Mark `project_or_product` as not active."""
+    from zope.security.proxy import removeSecurityProxy
+    removeSecurityProxy(project_or_product).active = False
 
 
 class TestGetActiveImports(TestCaseWithFactory):
     """Tests for CodeImportSet.getActiveImports()."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Prepare by deleting all the import data in the sample data.
@@ -869,8 +876,7 @@ class TestGetActiveImports(TestCaseWithFactory):
         self.failUnless(code_import.product.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        code_import.product.active = False
-        flush_database_updates()
+        deactivate(code_import.product)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -882,8 +888,7 @@ class TestGetActiveImports(TestCaseWithFactory):
         self.failUnless(code_import.product.project.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        code_import.product.project.active = False
-        flush_database_updates()
+        deactivate(code_import.product.project)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -956,13 +961,13 @@ class TestGetActiveImports(TestCaseWithFactory):
                     project_name = None
                 code_import = make_active_import(
                     self.factory, project_name=project_name)
-                if code_import.branch.product.project:
-                    code_import.branch.product.project.active = project_active
-                code_import.branch.product.active = product_active
+                if code_import.branch.product.project and not project_active:
+                    deactivate(code_import.branch.product.project)
+                if not product_active:
+                    deactivate(code_import.branch.product)
                 if project_active != False and product_active:
                     expected.add(code_import)
                 source[code_import] = (product_active, project_active)
-        flush_database_updates()
         results = set(getUtility(ICodeImportSet).getActiveImports())
         errors = []
         for extra in results - expected:
