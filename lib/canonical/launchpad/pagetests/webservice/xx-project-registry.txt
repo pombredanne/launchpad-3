@@ -22,6 +22,26 @@ It is possible to get a batched list of all the project groups.
     ...
     the Mozilla Project
 
+It's possible to search the list and get a subset of the project groups.
+
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search", text="Apache").jsonBody()
+    >>> for project_group in group_collection['entries']:
+    ...   print project_group['display_name']
+    Apache
+
+It's also possible to create a new project group.
+
+    >>> owner = webservice.get('/~salgado').jsonBody()
+    >>> print webservice.named_post(
+    ...     "/projectgroups", "new", name="mygroup", display_name="My group",
+    ...     homepage_url="http://www.example.com/", summary="Summary",
+    ...     description="Description", title="Title",
+    ...     owner=owner['self_link']).getOutput()
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../mygroup
+
 
 == Project group entry ==
 
