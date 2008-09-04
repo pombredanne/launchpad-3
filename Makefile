@@ -39,7 +39,7 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-apidoc: build
+apidoc: compile
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
 		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
 		> ./lib/canonical/launchpad/apidoc/index.html
@@ -111,9 +111,11 @@ check-configs:
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
 
-inplace: build apidoc
+inplace: build
 
-build: bzr_version_info
+build: bzr_version_info compile apidoc
+
+compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
