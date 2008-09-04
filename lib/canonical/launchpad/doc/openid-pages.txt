@@ -35,7 +35,7 @@ It also exposes both the new and old openid identifiers.
 
     >>> sample_identity.new_openid_identifier
     u'123/name12'
-    >>> sample_identity.new_openid_identifier
+    >>> sample_identity.openid_identifier
     u'+id/name12_oid'
 
 Most importantly, OpenIDPersistentIdentity provides access to the user's
@@ -43,41 +43,33 @@ old and new openid identity URLs.
 
     >>> sample_identity.new_openid_identity_url
     'http://id.launchpad.dev/123/name12'
-    >>> sample_identity.new_openid_identity_url
+    >>> sample_identity.old_openid_identity_url
     'http://openid.launchpad.dev/+id/name12_oid'
+
+
+== Identity URLs ==
 
 The openid_identity_url property is the identity URL for the vhost. It
 is the canonical URL for the XRDS discovery end point. It will return
 either the new or the old openid identity URL based on the vhost in
 the current request. A request is always associated with a Layer.
 
+    >>> from zope.interface import implements
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.layers import NewOpenIdLayer, OldOpenIdLayer
+    >>> from canonical.launchpad.layers import OpenIdLayer, IdLayer
 
-When the current request is associated with the NewOpenIdLayer,
+When the current request is associated with the IdLayer,
 openid_identity_url is the new URL format.
 
-    >>> class NewOpenIdTestRequest(LaunchpadTestRequest):
-    ...     implements(canonical.launchpad.layers.NewOpenIdLayer)
+    >>> class IdTestRequest(LaunchpadTestRequest):
+    ...     implements(IdLayer)
 
-    >>> request = NewOpenIdTestRequest(
+    >>> request = IdTestRequest(
     ...     SERVER_URL='http://id.launchpad.dev',
     ...     PATH_INFO='/123/name12')
+    >>> login('test@canonical.com', request)
     >>> sample_identity.openid_identity_url
     'http://id.launchpad.dev/123/name12'
-
-When the current request is associated with the OldOpenIdLayer,
-openid_identity_url is the old URL format.
-
-    >>> class OldOpenIdTestRequest(LaunchpadTestRequest):
-    ...     implements(canonical.launchpad.layers.OldOpenIdLayer)
-
-    >>> request = OldOpenIdTestRequest(
-    ...     SERVER_URL='http://openid.launchpad.dev',
-    ...     PATH_INFO='/+id/name12_oid')
-
-    >>> sample_identity.openid_identity_url
-    'http://openid.launchpad.dev/+id/name12_oid'
 
 The OpenIDPersistentIdentity class provides the supportsURL()
 staticmethod to test if the format of the identity URL is supported.
@@ -90,18 +82,38 @@ This verifies that the vhost and path are a valid combination.
     ...     'http://id.launchpad.dev/123/name12')
     True
 
-    >>> OpenIDPersistentIdentity.supportsURL(
-    ...     'http://login.launchpad.dev/+id/name12_oid')
-    True
-
-The old path is not valid for the new vhost, and vise versa.
-
-    >>> OpenIDPersistentIdentity.supportsURL(
-    ...     'http://login.launchpad.dev/123/name12')
-    False
+The old path is not valid for the new vhost.
 
     >>> OpenIDPersistentIdentity.supportsURL(
     ...     'http://id.launchpad.dev/+id/name12_oid')
+    False
+
+
+== Old identity URLs ==
+
+When the current request is associated with the OpenIdLayer,
+openid_identity_url is the old URL format.
+
+    >>> class OpenIdTestRequest(LaunchpadTestRequest):
+    ...     implements(OpenIdLayer)
+
+    >>> old_request = OpenIdTestRequest(
+    ...     SERVER_URL='http://openid.launchpad.dev',
+    ...     PATH_INFO='/+id/name12_oid')
+    >>> login('test@canonical.com', old_request)
+    >>> sample_identity.openid_identity_url
+    'http://openid.launchpad.dev/+id/name12_oid'
+
+The old vhost supports the old identity URL path.
+
+    >>> OpenIDPersistentIdentity.supportsURL(
+    ...     'http://openid.launchpad.dev/+id/name12_oid')
+    True
+
+The new path is not valid for the old vhost.
+
+    >>> OpenIDPersistentIdentity.supportsURL(
+    ...     'http://openid.launchpad.dev/123/name12')
     False
 
 

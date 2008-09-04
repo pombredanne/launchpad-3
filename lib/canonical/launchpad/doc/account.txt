@@ -231,3 +231,4 @@ They are not available until the account object is synced.
     True
     >>> new_account.new_openid_identifier
     u'.../oid-account'
+

@@ -208,6 +208,12 @@ class IAccountPrivate(Interface):
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=True)
 
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove this attribute.
+    new_openid_identifier = TextLine(
+            title=_("Key used to generate New opaque OpenID identities."),
+            readonly=True, required=True)
+
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
 

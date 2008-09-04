@@ -44,6 +44,11 @@ class Account(SQLBase):
     openid_identifier = StringCol(
             dbName='openid_identifier', notNull=True, default=DEFAULT)
 
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove this attribute, in the DB, drop openid_identifier, then
+    # rename new_openid_identifier => openid_identifier.
+    new_openid_identifier = StringCol(
+            dbName='old_openid_identifier', notNull=True, default=DEFAULT)
 
     # The password is actually stored in a seperate table for security
     # reasons, so use a property to hide this implementation detail.
