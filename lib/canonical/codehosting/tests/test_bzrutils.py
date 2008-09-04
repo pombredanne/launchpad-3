@@ -38,6 +38,8 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
             stacked_branch.set_stacked_on_url('../stacked-on')
         except errors.UnstackableBranchFormat:
             raise TestNotApplicable('This format does not support stacking.')
+        # Deleting the stacked-on branch ensures that Bazaar will raise an
+        # error if it tries to open the stacked-on branch.
         self.get_transport('.').delete_tree('stacked-on')
         self.assertEqual(
             '../stacked-on',
