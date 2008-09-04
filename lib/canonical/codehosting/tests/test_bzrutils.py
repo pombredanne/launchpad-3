@@ -6,12 +6,14 @@ __metaclass__ = type
 
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib import errors
-from bzrlib.tests import adapt_tests, default_transport, TestLoader
+from bzrlib.tests import (
+    adapt_tests, default_transport, TestLoader, TestNotApplicable)
 from bzrlib.tests.bzrdir_implementations import (
     BzrDirTestProviderAdapter, TestCaseWithBzrDir)
 from bzrlib.transport.memory import MemoryServer
 
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
+from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
 class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
@@ -21,6 +23,13 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         """Return the test id so that Zope test output shows the format."""
         return self.id()
 
+    def run(self, result=None):
+        """Run the test, with the result wrapped so that it knows about skips.
+        """
+        if result is None:
+            result = self.defaultTestResult()
+        super(TestGetBranchStackedOnURL, self).run(TestResultWrapper(result))
+
     def testGetBranchStackedOnUrl(self):
         # get_branch_stacked_on_url returns the URL of the stacked-on branch.
         stacked_on_branch = self.make_branch('stacked-on')
@@ -28,8 +37,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         try:
             stacked_branch.set_stacked_on_url('../stacked-on')
         except errors.UnstackableBranchFormat:
-            return
-            #raise TestNotApplicable('This format does not support stacking.')
+            raise TestNotApplicable('This format does not support stacking.')
         self.get_transport('.').delete_tree('stacked-on')
         self.assertEqual(
             '../stacked-on',
@@ -42,8 +50,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         try:
             branch.get_stacked_on_url()
         except errors.NotStacked:
-            return
-            #raise TestNotApplicable('This format supports stacked branches.')
+            raise TestNotApplicable('This format supports stacked branches.')
         except errors.UnstackableBranchFormat:
             pass
         self.assertRaises(
@@ -59,9 +66,8 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         except errors.NotStacked:
             pass
         except errors.UnstackableBranchFormat:
-            return
-#             raise TestNotApplicable(
-#                 'This format does not support stacked branches')
+            raise TestNotApplicable(
+                'This format does not support stacked branches')
         self.assertRaises(
             errors.NotStacked, get_branch_stacked_on_url, branch.bzrdir)
 
@@ -70,9 +76,8 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         # a bzrdir that's not got a branch.
         a_bzrdir = self.make_bzrdir('source')
         if a_bzrdir.has_branch():
-            return
-#             raise TestNotApplicable(
-#                 'This format does not support branchless bzrdirs.')
+            raise TestNotApplicable(
+                'This format does not support branchless bzrdirs.')
         self.assertRaises(
             errors.NotBranchError, get_branch_stacked_on_url, a_bzrdir)
 
