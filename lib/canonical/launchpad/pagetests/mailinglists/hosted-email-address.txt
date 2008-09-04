@@ -5,11 +5,9 @@ the EmailAddress table.  These are not deleted when a team's contact address
 is changed from a hosted ML to an external address, in order to ensure that
 the address is reserved for the team which owns the ML.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
-    >>> owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> team, mailing_list = factory.makeTeamAndMailingList('aardvarks', owner)
+    >>> team, mailing_list = factory.makeTeamAndMailingList(
+    ...     'aardvarks', 'no-priv')
     >>> logout()
     >>> transaction.commit()
 

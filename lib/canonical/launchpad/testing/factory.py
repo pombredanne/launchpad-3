@@ -850,16 +850,17 @@ class LaunchpadObjectFactory:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
-    def makeTeamAndMailingList(self, team_name, owner):
+    def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
 
         :param team_name: The new team's name.
         :type team_name: string
-        :param owner: The owner of the team.
-        :type owner: `IPerson`
+        :param owner_name: The name of the team's owner.
+        :type owner: string
         :return: The new team and mailing list.
         :rtype: (`ITeam`, `IMailingList`)
         """
+        owner = getUtility(IPersonSet).getByName(owner_name)
         display_name = SPACE.join(
             word.capitalize() for word in team_name.split('-'))
         team = self.makeTeam(owner, displayname=display_name, name=team_name)
