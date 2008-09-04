@@ -10,7 +10,6 @@ __all__ = [
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
-    'CurrentTranslationMessageSOP',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
     'TranslationMessageSuggestions',
@@ -38,8 +37,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.potemplate import (
-    POTemplateFacets, POTemplateSOP)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
@@ -298,12 +296,6 @@ class CurrentTranslationMessageFacets(POTemplateFacets):
 
     def __init__(self, context):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
-
-
-class CurrentTranslationMessageSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class CurrentTranslationMessageAppMenus(ApplicationMenu):

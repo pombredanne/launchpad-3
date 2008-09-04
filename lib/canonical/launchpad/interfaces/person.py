@@ -712,7 +712,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     title = Attribute('Person Page Title')
 
     is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'))
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(

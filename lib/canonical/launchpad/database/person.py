@@ -22,6 +22,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -95,7 +96,6 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -126,8 +126,7 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.shipit import (
-    MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
+from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -145,6 +144,12 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
+
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ValidPersonCache(SQLBase):
@@ -857,7 +862,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
-    # XXX: TomBerger 2008-02-14, 2008-04-14 bug=191799:
+    # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
     # rather than package bug supervisors.
@@ -942,7 +947,18 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def is_trusted_on_shipit(self):
         """See `IPerson`."""
         min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
-        return Karma.selectBy(person=self).count() >= min_entries
+        if Karma.selectBy(person=self).count() >= min_entries:
+            return True
+        ubuntu_members = Person.selectOneBy(name='ubuntumembers')
+        if ubuntu_members is None:
+            error = AssertionError(
+                "No team named 'ubuntumembers' found; it's likely it has "
+                "been renamed.")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return self.inTeam(ubuntu_members)
 
     def shippedShipItRequestsOfCurrentSeries(self):
         """See `IPerson`."""
@@ -1737,9 +1753,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             if bug_task.conjoined_master is not None:
                 continue
 
-            # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure.
-            # See bug #164635.
+            # XXX flacoste 2007-11-26 bug=164635 The comparison using id in
+            # the assert below works around a nasty intermittent failure.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
@@ -1751,8 +1766,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
-            # XXX flacoste 2007/11/26 The comparison using id below
-            # works around a nasty intermittent failure. See bug #164635.
+            # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
+            # works around a nasty intermittent failure.
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
             elif pillar.driver.id == self.id:
@@ -2058,7 +2073,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        # XXX stevea 2005-07-05:
+        # XXX Steve Alexander 2005-07-05:
         # This is here because of an SQLobject comparison oddity.
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)

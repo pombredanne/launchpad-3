@@ -140,6 +140,23 @@ class TestCodeReviewComment(TestCaseWithFactory):
             self.assertEqual(headers[header], value)
         self.assertEqual(expected, headers)
 
+    def test_useRootMessageId(self):
+        """Ensure mailer's generateEmail method produces expected values."""
+        mailer, subscriber = self.makeMailer(as_reply=False)
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual(mailer.merge_proposal.root_message_id,
+                         headers['In-Reply-To'])
+
+    def test_nonReplyCommentUsesRootMessageId(self):
+        """Ensure mailer's generateEmail method produces expected values."""
+        comment, subscriber = self.makeCommentAndSubscriber()
+        second_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        mailer = CodeReviewCommentMailer.forCreation(second_comment)
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual(comment.branch_merge_proposal.root_message_id,
+                         headers['In-Reply-To'])
+
     def test_appendToFooter(self):
         """If there is an existing footer, we append to it."""
         mailer, subscriber = self.makeMailer(

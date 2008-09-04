@@ -319,9 +319,9 @@ def get_bugmail_from_address(person, bug):
     email_addresses = shortlist(
         getUtility(IEmailAddressSet).getByPerson(person))
     if not email_addresses:
-        # XXX: Bjorn Tillenius 2006-05-21:
+        # XXX: Bjorn Tillenius 2006-05-21 bug=33427:
         # A user should always have at least one email address,
-        # but due to bug 33427, this isn't always the case.
+        # but due to bug #33427, this isn't always the case.
         return format_address(person.displayname,
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 

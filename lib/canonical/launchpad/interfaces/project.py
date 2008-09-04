@@ -65,152 +65,166 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 
     id = Int(title=_('ID'), readonly=True)
 
-    owner = exported(PublicPersonChoice(
-        title=_('Maintainer'),
-        required=True,
-        vocabulary='ValidOwner',
-        description=_("""Project group owner. Must be either a
-            Launchpad Person or Team.""")))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Maintainer'),
+            required=True,
+            vocabulary='ValidOwner',
+            description=_("Project group owner. Must be either a "
+                          "Launchpad Person or Team.")))
 
-    registrant = exported(PublicPersonChoice(
-        title=_('Registrant'),
-        required=True,
-        readonly=True,
-        vocabulary='ValidPersonOrTeam',
-        description=_("""Project group registrant. Must be a valid
-            Launchpad Person.""")))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Registrant'),
+            required=True,
+            readonly=True,
+            vocabulary='ValidPersonOrTeam',
+            description=_("Project group registrant. Must be a valid "
+                          "Launchpad Person.")))
 
     name = exported(
         ProjectNameField(
             title=_('Name'),
             required=True,
             description=_(
-                """A unique name, used in URLs, identifying the project
-                group.  All lowercase, no special characters.
-                Examples: apache, mozilla, gimp."""),
+                "A unique name, used in URLs, identifying the project "
+                "group.  All lowercase, no special characters. "
+                "Examples: apache, mozilla, gimp."),
             constraint=name_validator))
 
     displayname = exported(
         TextLine(
             title=_('Display Name'),
             description=_(
-                """Appropriately capitalised,
-                and typically ending in "Project".
-                Examples: the Apache Project, the Mozilla Project,
-                the Gimp Project.""")),
+                "Appropriately capitalised, "
+                'and typically ending in "Project". '
+                "Examples: the Apache Project, the Mozilla Project, "
+                "the Gimp Project.")),
         exported_as="display_name")
 
-    title = exported(Title(
-        title=_('Title'),
-        description=_("""The full name of the project group,
-            which can contain spaces, special characters etc.""")))
+    title = exported(
+        Title(
+            title=_('Title'),
+            description=_("The full name of the project group, "
+                          "which can contain spaces, special characters, "
+                          "etc.")))
 
-    summary = exported(Summary(
-        title=_('Project Group Summary'),
-        description=_(
-            """A brief (one-paragraph) summary of the project group.""")))
+    summary = exported(
+        Summary(
+            title=_('Project Group Summary'),
+            description=_(
+                "A brief (one-paragraph) summary of the project group.")))
 
-    description = exported(Text(
-        title=_('Description'),
-        description=_("""A detailed description of the project group,
-            including details like when it was founded,
-            how many contributors there are,
-            and how it is organised and coordinated.""")))
+    description = exported(
+        Text(
+            title=_('Description'),
+            description=_("A detailed description of the project group, "
+                          "including details like when it was founded, "
+                          "how many contributors there are, "
+                          "and how it is organised and coordinated.")))
 
     datecreated = exported(
         TextLine(
             title=_('Date Created'),
             description=_(
-                """The date this project group was created in Launchpad.""")),
+                "The date this project group was created in Launchpad."),
+            readonly=True),
         exported_as="date_created")
 
-    driver = exported(PublicPersonChoice(
-        title=_("Driver"),
-        description=_(
-            "This is a project group-wide appointment, think carefully here! "
-            "This person or team will be able to set feature goals and "
-            "approve bug targeting and backporting for ANY series in "
-            "ANY project in this group. You can also appoint drivers "
-            "at the level of a specific project or series. So you may "
-            "just want to leave this space blank, and instead let the "
-            "individual projects and series have drivers."),
-        required=False, vocabulary='ValidPersonOrTeam'))
+    driver = exported(
+        PublicPersonChoice(
+            title=_("Driver"),
+            description=_(
+                "This is a project group-wide appointment. Think carefully "
+                "here! This person or team will be able to set feature goals "
+                "and approve bug targeting and backporting for ANY series in "
+                "ANY project in this group. You can also appoint drivers "
+                "at the level of a specific project or series. So you may "
+                "just want to leave this space blank, and instead let the "
+                "individual projects and series have drivers."),
+            required=False, vocabulary='ValidPersonOrTeam'))
 
     homepageurl = exported(
         URIField(
             title=_('Homepage URL'),
             required=False,
-            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+            allowed_schemes=['http', 'https', 'ftp'],
+            allow_userinfo=False,
             description=_(
-                """The project group home page.
-                Please include the http://""")),
+                "The project group home page. "
+                "Please include the http://")),
         exported_as="homepage_url")
 
     wikiurl = exported(
         URIField(
             title=_('Wiki URL'),
             required=False,
-            allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-            description=_("""The URL of this project group's wiki,
-                          if it has one. Please include the http://""")),
+            allowed_schemes=['http', 'https', 'ftp'],
+            allow_userinfo=False,
+            description=_("The URL of this project group's wiki, "
+                          "if it has one. Please include the http://")),
         exported_as="wiki_url"
         )
 
     lastdoap = TextLine(
         title=_('Last-parsed RDF fragment'),
-        description=_("""The last RDF fragment for this
-           entity that we received and parsed, or
-           generated."""),
+        description=_("The last RDF fragment for this "
+                      "entity that we received and parsed, or "
+                      "generated."),
         required=False)
 
     sourceforgeproject = exported(
         TextLine(
             title=_("SourceForge Project Name"),
-            description=_("""The SourceForge project name for this
-                          project group, if it is in sourceforge."""),
+            description=_("The SourceForge project name for this "
+                          "project group, if it is in SourceForge."),
             required=False),
         exported_as="sourceforge_project")
 
     freshmeatproject = exported(
         TextLine(
             title=_("Freshmeat Project Name"),
-            description=_("""The Freshmeat project name for this
-            project group, if it is in Freshmeat."""),
+            description=_("The Freshmeat project name for this "
+                          "project group, if it is in Freshmeat."),
             required=False),
         exported_as="freshmeat_project")
 
-    homepage_content = exported(Text(
+    homepage_content = exported(
+        Text(
             title=_("Homepage Content"), required=False,
             description=_(
                 "The content of this project group's home page. Edit this "
                 "and it will be displayed for all the world to see. It is "
                 "NOT a wiki so you cannot undo changes.")))
 
-    icon = exported(IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/project',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project group. The icon will "
-            "be displayed in Launchpad everywhere that we link to this "
-            "project group. For example in listings or tables of active "
-            "project groups.")))
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/project',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project group. The "
+                "icon will be displayed in Launchpad everywhere that we link "
+                "to this project group. For example in listings or tables of "
+                "active project groups.")))
 
-    logo = exported(LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/project-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project group. It "
-            "should be no bigger than 50kb in size.")))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/project-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project group. It "
+                "should be no bigger than 50kb in size.")))
 
-    mugshot = exported(MugshotImageUpload(
-        title=_("Brand"), required=False,
-        default_image_resource='/@@/project-mugshot',
-        description=_(
-            "A large image of exactly 192x192 pixels, that will be displayed "
-            "on this project group's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. ")))
+    mugshot = exported(
+        MugshotImageUpload(
+            title=_("Brand"), required=False,
+            default_image_resource='/@@/project-mugshot',
+            description=_(
+                "A large image of exactly 192x192 pixels, that will be "
+                "displayed on this project group's home page in Launchpad. "
+                "It should be no bigger than 100kb in size. ")))
 
     reviewed = exported(
         Bool(

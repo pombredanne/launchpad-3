@@ -101,6 +101,7 @@ Projects are available at their canonical URL on the API virtual host.
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     branches_collection_link: u'http://.../firefox/branches'
+    brand_link: u'http://.../firefox/brand'
     bug_tracker_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
@@ -110,8 +111,10 @@ Projects are available at their canonical URL on the API virtual host.
     driver_link: None
     freshmeat_project: None
     homepage_url: None
+    icon_link: u'http://.../firefox/icon'
     license_info: None
     licenses: []
+    logo_link: u'http://.../firefox/logo'
     name: u'firefox'
     owner_link: u'http://.../~name12'
     programming_language: None
