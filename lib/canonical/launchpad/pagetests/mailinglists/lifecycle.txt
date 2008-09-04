@@ -74,6 +74,7 @@ we'll ask the user to contact a Launchpad administrator.
     # getUtility(IMailingListSet) here because we want non-security-proxied
     # objects so that we can call syncUpdate on them and change their status
     # at our discretion.
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.database import MailingListSet
     >>> list_set = MailingListSet()
     >>> mailing_list = list_set.get('landscape-developers')
@@ -357,6 +358,7 @@ archives of an INACTIVE list, this must be done manually.
     >>> team = mailinglists_helper.new_team('aardvarks')
     >>> logout()
 
+    >>> from canonical.launchpad.interfaces.mailinglist import IMailingListSet
     >>> def print_list_state(team_name='aardvarks'):
     ...     login('foo.bar@canonical.com')
     ...     mailing_list = getUtility(IMailingListSet).get(team_name)
@@ -434,6 +436,15 @@ Nobody can purge an approved or active mailing list.
 
 A constructing, modified, updating, or deactivating or mod-failed list cannot
 be purged.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> def set_list_state(team_name, status):
+    ...     login('foo.bar@canonical.com')
+    ...     mailing_list = getUtility(IMailingListSet).get(team_name)
+    ...     naked_list = removeSecurityProxy(mailing_list)
+    ...     naked_list.status = status
+    ...     transaction.commit()
+    ...     logout()
 
     >>> def show_states(*states):
     ...     url = 'http://launchpad.dev/~aardvarks/+mailinglist'
