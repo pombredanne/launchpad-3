@@ -56,7 +56,6 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb
             pdb.set_trace()
         try:
             return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)

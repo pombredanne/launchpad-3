@@ -24,7 +24,6 @@ from storm.store import Store
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility, queryAdapter
 from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements, providedBy
 from zope.security.proxy import removeSecurityProxy
 
