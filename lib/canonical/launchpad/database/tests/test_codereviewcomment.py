@@ -79,8 +79,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',
             CodeReviewVote.ABSTAIN)
-        self.assertEqual(
-            self.bmp.root_comment.message, new_comment.message.parent)
+        self.assertEqual(None, new_comment.message.parent)
 
     def test_replyWithWrongMergeProposal(self):
         comment = self.bmp.createComment(

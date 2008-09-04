@@ -1241,8 +1241,8 @@ class HALDevice:
             if vendor_id == 0 and product_id == 0:
                 # double-check: The parent device should be a PCI host
                 # controller, identifiable by its device class and subclass.
-                # XXX Abel Deuring 20080428: This ignores other possible
-                # bridges, like ISA->USB. Bug 237039.
+                # XXX Abel Deuring 2008-04-28 Bug=237039: This ignores other
+                # possible bridges, like ISA->USB..
                 parent = self.parent
                 parent_bus = parent.getProperty('info.bus')
                 parent_class = parent.getProperty('pci.device_class')

@@ -1,6 +1,7 @@
 = ShipIt Pages =
 
-    >>> from canonical.launchpad.database import ShippingRequest
+    >>> from canonical.launchpad.database import (
+    ...     ShippingRequest, StandardShipItRequestSet)
     >>> from canonical.launchpad.layers import (
     ...     ShipItKUbuntuLayer, ShipItUbuntuLayer)
     >>> jordis_request = ShippingRequest.get(16)
@@ -38,6 +39,48 @@ StandardShipItRequests.
     >>> headers = BeautifulSoup(html).findAll('h1')
     >>> 'ShipIt is currently closed' in headers
     False
+
+
+=== Non-existent options ===
+
+Sometimes a user may submit a stale page with an option that doesn't
+exist anymore.  If that's the case, we will present an error message to
+the user but we will not create a new ShippingRequest.
+
+Our logged in user, Sample Person, doesn't have a current shipit order,
+so he'll make one now.
+
+    >>> myrequest_view = create_view(
+    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
+    >>> print myrequest_view.current_order
+    None
+
+    # First we need to delete one of the options shown.
+    >>> option_id = myrequest_view.selected_standardrequest
+    >>> StandardShipItRequestSet().get(option_id).destroySelf()
+    >>> print StandardShipItRequestSet().get(option_id)
+    None
+
+And now Sample Person tries to make a new request using the standard
+option we just deleted.
+
+    >>> form = {'field.province': 'SP', 'field.city': 'Sampa',
+    ...         'field.recipientdisplayname': 'Pablo Escobar',
+    ...         'field.addressline1': 'Rua Pablo Escobar, 1',
+    ...         'field.phone': '4325125', 'field.postcode': '12343',
+    ...         'field.country': 31, 'FORM_SUBMIT': 'Submit',
+    ...         'ordertype': option_id}
+    >>> myrequest_view = create_view(
+    ...     shipit, 'myrequest', form=form, layer=ShipItUbuntuLayer,
+    ...     method='POST')
+    >>> myrequest_view._setUpWidgets()
+
+As expected, he gets an error message and he still has no current order.
+
+    >>> print myrequest_view.process_form()
+    The option you chose was not found...
+    >>> print myrequest_view.current_order
+    None
 
 
 == /shipit/requests/$request.id ==

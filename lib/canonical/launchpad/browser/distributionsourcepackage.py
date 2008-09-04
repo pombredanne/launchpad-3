@@ -7,7 +7,6 @@ __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageSOP',
     'DistributionSourcePackageView'
     ]
 
@@ -24,7 +23,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageRelease,
     IPackageDiffSet, IPackagingUtil, pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -34,22 +32,6 @@ from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 
 from canonical.lazr import decorates
 from canonical.lazr.utils import smartquote
-
-
-class DistributionSourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.title + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: package releases, most recent first
-        return self.context.releases
-
-    def listAltChildren(self, num):
-        return None
 
 
 class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):

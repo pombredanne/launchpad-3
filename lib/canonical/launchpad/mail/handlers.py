@@ -131,9 +131,8 @@ class IncomingEmailError(Exception):
 def reformat_wiki_text(text):
     """Transform moin formatted raw text to readable text."""
 
-    # XXX Tom Berger 2008-02-20:
+    # XXX Tom Berger 2008-02-20 bug=193646:
     # This implementation is neither correct nor complete.
-    # See https://bugs.launchpad.net/launchpad/+bug/193646
 
     # Strip macros (anchors, TOC, etc'...)
     re_macro = re.compile('\[\[.*?\]\]')

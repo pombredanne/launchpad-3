@@ -28,12 +28,6 @@
         module="canonical.launchpad.browser.build"
         classes="BuildContextMenu" />
 
-    <adapter
-       for="canonical.launchpad.interfaces.IBuild"
-       provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
-       factory="canonical.launchpad.browser.build_to_structuralheading"
-       />
-
     <browser:navigation
         module="canonical.launchpad.browser.build"
         classes="BuildNavigation"
