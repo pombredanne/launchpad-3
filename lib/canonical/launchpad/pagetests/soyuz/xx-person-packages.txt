@@ -320,7 +320,7 @@ Then delete the 'iceweasel' package.
     ...    name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl(
     ...     "Deletion comment").value = "Bug 184490"
-    >>> admin_browser.getControl("Delete Selected Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
