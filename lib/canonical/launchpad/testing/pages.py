@@ -10,6 +10,7 @@ import os
 import pdb
 import re
 import simplejson
+import transaction
 import sys
 import unittest
 import urllib
@@ -623,6 +624,7 @@ def stop():
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
+    test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'salgado-change-anything', port=9000)
@@ -667,6 +669,7 @@ def setUpGlobs(test):
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
+    test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
 
 

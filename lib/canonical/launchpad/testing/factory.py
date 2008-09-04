@@ -13,6 +13,7 @@ __all__ = [
 
 from datetime import datetime, timedelta
 from email.Utils import make_msgid, formatdate
+from itertools import count
 from StringIO import StringIO
 
 import pytz
@@ -42,12 +43,17 @@ from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
+
+SPACE = ' '
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -87,15 +93,14 @@ class LaunchpadObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = 0
+        self._integer = count()
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
-        self._integer += 1
-        return self._integer
+        return self._integer.next()
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -688,17 +693,20 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
@@ -845,3 +853,26 @@ class LaunchpadObjectFactory:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeTeamAndMailingList(self, team_name, owner_name):
+        """Make a new active mailing list for the named team.
+
+        :param team_name: The new team's name.
+        :type team_name: string
+        :param owner_name: The name of the team's owner.
+        :type owner: string
+        :return: The new team and mailing list.
+        :rtype: (`ITeam`, `IMailingList`)
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        display_name = SPACE.join(
+            word.capitalize() for word in team_name.split('-'))
+        team = self.makeTeam(owner, displayname=display_name, name=team_name)
+        # Any member of the mailing-list-experts team can review a list
+        # registration.  It doesn't matter which one.
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        reviewer = list(experts.allmembers)[0]
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.review(reviewer, MailingListStatus.APPROVED)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team, team_list

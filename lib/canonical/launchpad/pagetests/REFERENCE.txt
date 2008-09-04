@@ -30,6 +30,7 @@ Manipulating content:
     >>> "foo" in browser.contents
     True
 
+
 == Parsing content ==
 
 Parsing specific sections of pages:
@@ -92,6 +93,7 @@ Using BeautifulSoup in all its glory:
     ...     print extract_text(tag)
   Quantities must be greater than or equal 0.
 
+
 == Links ==
 
 Manipulating links:
@@ -130,6 +132,7 @@ Extracting link pointers:
     >>> extract_link_from_tag(link, 'http://launchpad.dev/blah/blah/')
     u'http://launchpad.dev/foo'
 
+
 == Form Controls ==
 
 Basics:
@@ -167,6 +170,18 @@ Posting without submit buttons:
     >>> browser.getForm(id="text_form").submit()
     >>> browser.url
     'http://where-you-went-after-posting/'
+
+
+== Committing transactions ==
+
+The transaction module is already imported into your pagetest's globals, so
+just do:
+
+
+    >>> transaction.commit()
+
+You do not need to be logged in to do this.
+
 
 == Gotchas ==
 
