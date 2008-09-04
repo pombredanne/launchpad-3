@@ -24,7 +24,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 
-from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class ArchiveDependencyError(Exception):
@@ -340,23 +340,9 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
         description=_("The reason why the package is being deleted."))
 
 
-class ArchiveCopyOptions(EnumeratedType):
-    """Archive copy options."""
-
-    REBUILD_SOURCE = Item("Rebuild the copied sources")
-
-    COPY_BINARIES = Item("Copy existing binaries")
-
-
 class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
     """Schema used to copy packages across archive."""
 
-    copy_how = Choice(
-        title=_('Copy options'), required=True,
-        vocabulary=ArchiveCopyOptions,
-        default=ArchiveCopyOptions.REBUILD_SOURCE,
-        description=_("How the selected sources should be copied to "
-                      "the destination archive."))
 
 
 class IArchiveEditDependenciesForm(Interface):

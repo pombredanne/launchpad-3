@@ -39,10 +39,9 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchiveCopyOptions, ArchivePurpose, IArchive,
-    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
-    IArchivePackageDeletionForm, IArchiveSet, IArchiveSourceSelectionForm,
-    IPPAActivateForm)
+    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -563,7 +562,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
-    custom_widget('copy_how', LaunchpadRadioWidget)
+    custom_widget('include_binaries', LaunchpadRadioWidget)
 
     # Maximum number of 'sources' presented.
     max_sources_presented = 20
@@ -592,6 +591,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         self.form_fields = (
             self.createDestinationArchiveField() +
             self.createDestinationSeriesField() +
+            self.createIncludeBinariesField() +
             self.form_fields)
 
     @cachedproperty
@@ -653,6 +653,25 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    required=False),
             custom_widget=self.custom_widgets['destination_series'])
 
+    def createIncludeBinariesField(self):
+        """Create the 'include_binaries' field."""
+        rebuild_sources = SimpleTerm(
+                False, 'REBUILD_SOURCES', _('Rebuild the copied sources'))
+        copy_binaries = SimpleTerm(
+            True, 'COPY_BINARIES', _('Copy existing binaries'))
+        terms = [rebuild_sources, copy_binaries]
+
+        return form.Fields(
+            Choice(__name__='include_binaries',
+                   title=_('Copy options'),
+                   vocabulary=SimpleVocabulary(terms),
+                   description=_("How the selected sources should be copied "
+                                 "to the destination archive."),
+                   missing_value=rebuild_sources,
+                   default=False,
+                   required=True),
+            custom_widget=self.custom_widgets['include_binaries'])
+
     @action(_("Update"), name="update")
     def action_update(self, action, data):
         """Simply re-issue the form with the new values."""
@@ -673,10 +692,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources', [])
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
+        include_binaries = data.get('include_binaries')
         destination_pocket = self.default_pocket
-
-        copy_how = data.get('copy_how')
-        include_binaries = copy_how is ArchiveCopyOptions.COPY_BINARIES
 
         if len(selected_sources) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
@@ -717,10 +734,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         selected_sources = data.get('selected_sources')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
+        include_binaries = data.get('include_binaries')
         destination_pocket = self.default_pocket
-
-        copy_how = data.get('copy_how')
-        include_binaries = copy_how is ArchiveCopyOptions.COPY_BINARIES
 
         copies = do_copy(
             selected_sources, destination_archive, destination_series,
