@@ -242,6 +242,10 @@ class BranchOpener(object):
                 url = get_branch_stacked_on_url(bzrdir)
             except (errors.NotStacked, errors.UnstackableBranchFormat):
                 break
+            # Join here so that we are always yielding an absolute URL -- the
+            # stacked-on url can be relative to the base of the stacked
+            # branch. Doing this lets us use the same check for stacked-on
+            # URLs as we do for branch references.
             url = urlutils.join(resolved_url, url)
 
     def checkSource(self, url):

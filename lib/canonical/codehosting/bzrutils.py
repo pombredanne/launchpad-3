@@ -43,8 +43,8 @@ def get_branch_stacked_on_url(a_bzrdir):
     # format of a branch from a generic BzrDir. Here, we just assume that if
     # you can't get the branch format using the newer API (i.e.
     # BzrDir.find_branch_format()), then the branch is not stackable. Bazaar
-    # post-1.6 has 'get_branch_format' to the pre-split-out formats, which we
-    # could use instead.
+    # post-1.6 has added 'get_branch_format' to the pre-split-out formats,
+    # which we could use instead.
     find_branch_format = getattr(a_bzrdir, 'find_branch_format', None)
     if find_branch_format is None:
         raise UnstackableBranchFormat(
