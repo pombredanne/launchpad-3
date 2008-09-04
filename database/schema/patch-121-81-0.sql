@@ -21,7 +21,9 @@ ALTER TABLE ONLY archiverebuild DROP
     CONSTRAINT archiverebuild__requestor__fk ;
 
 -- Step 2: rename the table and the associated index.
+ALTER TABLE ONLY archiverebuild RENAME COLUMN status TO rebuild_status;
 ALTER TABLE ONLY archiverebuild RENAME TO derivedarchive;
+
 ALTER INDEX archiverebuild__registrant__idx RENAME TO
     derivedarchive__registrant__idx;
 

@@ -1794,11 +1794,11 @@ COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package nam
 
 -- DerivedArchive
 
-COMMENT ON TABLE DerivedArchive IS 'DerivedArchive: A link table that ties a "derived archive" to a DistroSeries and that captures the life cycle data of a rebuild where appropriate.';
+COMMENT ON TABLE DerivedArchive IS 'DerivedArchive: derived archives are generalized copy archives with a parent and will be used for point releases, rebuilds, stable snapshots etc.';
 COMMENT ON COLUMN DerivedArchive.archive IS 'The parent archive.';
-COMMENT ON COLUMN DerivedArchive.distroseries IS 'The DistroSeries in question.';
+COMMENT ON COLUMN DerivedArchive.distroseries IS 'The associated DistroSeries.';
 COMMENT ON COLUMN DerivedArchive.registrant IS 'The person who created the derived archive.';
-COMMENT ON COLUMN DerivedArchive.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
+COMMENT ON COLUMN DerivedArchive.rebuild_status IS 'The rebuild status (none, in-progress, cancelled, succeeded, failed).';
 COMMENT ON COLUMN DerivedArchive.reason IS 'The reason why this derived archive was created (one-liner).';
 COMMENT ON COLUMN DerivedArchive.date_created IS 'Date of creation for this derived archive.';
 
