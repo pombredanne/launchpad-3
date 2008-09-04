@@ -924,11 +924,11 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
 
 
-ALTER TABLE archiverebuild DISABLE TRIGGER ALL;
+ALTER TABLE derivedarchive DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE archiverebuild ENABLE TRIGGER ALL;
+ALTER TABLE derivedarchive ENABLE TRIGGER ALL;
 
 
 ALTER TABLE binarypackagefile DISABLE TRIGGER ALL;

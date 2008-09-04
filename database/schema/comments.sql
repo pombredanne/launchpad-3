@@ -1791,15 +1791,31 @@ COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the pe
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
--- ArchiveRebuild
 
-COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
-COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
-COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
-COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
-COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+-- DerivedArchive
+
+COMMENT ON TABLE DerivedArchive IS 'DerivedArchive: A link table that ties a "derived archive" to a DistroSeries and that captures the life cycle data of a rebuild where appropriate.';
+COMMENT ON COLUMN DerivedArchive.archive IS 'The parent archive.';
+COMMENT ON COLUMN DerivedArchive.distroseries IS 'The DistroSeries in question.';
+COMMENT ON COLUMN DerivedArchive.registrant IS 'The person who created the derived archive.';
+COMMENT ON COLUMN DerivedArchive.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
+COMMENT ON COLUMN DerivedArchive.reason IS 'The reason why this derived archive was created (one-liner).';
+COMMENT ON COLUMN DerivedArchive.date_created IS 'Date of creation for this derived archive.';
+
+
+-- ArchiveCopyJob
+
+COMMENT ON TABLE ArchiveCopyJob IS 'ArchiveCopyJob: A table that captures the details of inter-archive package copy jobs';
+COMMENT ON COLUMN ArchiveCopyJob.registrant IS 'The person who requested the copy operation.';
+COMMENT ON COLUMN ArchiveCopyJob.source_archive IS 'The archive from which packages are to be copied.';
+COMMENT ON COLUMN ArchiveCopyJob.source_component IS 'The component to which the packages belong in the source archive.';
+COMMENT ON COLUMN ArchiveCopyJob.target_archive IS 'The archive to which packages are to be copied.';
+COMMENT ON COLUMN ArchiveCopyJob.target_component IS 'The component to which the packages will belong in the target archive.';
+COMMENT ON COLUMN ArchiveCopyJob.status IS 'Copy job status, may be one of: new, in-progress, cancelled, succeeded, failed.';
+COMMENT ON COLUMN ArchiveCopyJob.reason IS 'The reason why this copy job was requested.';
+COMMENT ON COLUMN ArchiveCopyJob.date_created IS 'Date of creation for this package copy job.';
+COMMENT ON COLUMN ArchiveCopyJob.date_started IS 'Start date/time of this package copy job.';
+COMMENT ON COLUMN ArchiveCopyJob.date_completed IS 'When did this package copy job conclude?';
 
 
 -- Component
