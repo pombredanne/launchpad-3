@@ -683,7 +683,7 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def target_uses_malone(self):
         """See `IBugTask`"""
-        # XXX sinzui 2007-10-4 bug=149009:
+        # XXX sinzui 2007-10-04 bug=149009:
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
 

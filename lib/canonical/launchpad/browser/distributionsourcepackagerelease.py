@@ -3,26 +3,17 @@
 __metaclass__ = type
 
 __all__ = [
-    'distributionsourcepackagerelease_to_structuralheading',
     'DistributionSourcePackageReleaseNavigation',
     ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistributionSourcePackageRelease,
-    IStructuralHeaderPresentation, NotFoundError)
+    IBuildSet, IDistributionSourcePackageRelease, NotFoundError)
 
 
 from canonical.launchpad.webapp import (
     ApplicationMenu, Navigation, stepthrough)
-
-
-def distributionsourcepackagerelease_to_structuralheading(dspr):
-    """Adapts an `IDistributionSourcePackageRelease` into an
-    `IStructuralHeaderPresentation`.
-    """
-    return IStructuralHeaderPresentation(dspr.sourcepackage)
 
 
 class DistributionSourcePackageReleaseOverviewMenu(ApplicationMenu):

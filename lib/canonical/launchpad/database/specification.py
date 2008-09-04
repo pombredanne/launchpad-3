@@ -782,7 +782,7 @@ class SpecificationSet(HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            # XXX: this is untested and was broken. -- kiko 2007-02-07
+            # XXX: kiko 2007-02-07: this is untested and was broken.
             query += (
                 ' AND Specification.definition_status NOT IN ( %s, %s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,

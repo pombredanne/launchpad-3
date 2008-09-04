@@ -141,9 +141,16 @@ link. Instead of entering the unique name of a branch, you can enter a URL:
     >>> printBugBranchLinks(browser)
     No bug branch links
 
-Here we use 'http://example.org/branch' as the URL:
+If we go to register a branch and change our mind, there is a cancel
+link that points back to the bug page:
 
     >>> browser.getLink('Link a related branch').click()
+    >>> cancel_link = browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/thunderbird/+bug/15'
+
+But we're here to register a branch:
+
     >>> browser.getControl('Branch').value = (
     ...     "http://example.org/branch")
     >>> browser.getControl('Continue').click()
@@ -155,7 +162,6 @@ This registers a branch and links it to the bug:
     ...
     >>> printBugBranchLinks(browser)
     ~name12/thunderbird/branch (New) - Fix In Progress
-
 
 However, if the bug isn't on a project, we don't (can't!) register a branch.
 

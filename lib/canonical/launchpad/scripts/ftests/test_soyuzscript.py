@@ -225,10 +225,9 @@ class TestSoyuzScript(unittest.TestCase):
         soyuz.txn = LaunchpadZopelessLayer.txn
         soyuz.options.confirm_all = True
         self.assertTrue(soyuz.finishProcedure())
-        # XXX Julian Edwards 2007-11-29
+        # XXX Julian 2007-11-29 bug=172869:
         # Setting confirm_all to False is pretty untestable because it
         # asks the user for confirmation via raw_input.
-        # See bug 172869 for ideas on how to fix.
         soyuz.options.dryrun = True
         self.assertFalse(soyuz.finishProcedure())
 

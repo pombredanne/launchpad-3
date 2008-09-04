@@ -5,21 +5,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'sourcepackagerelease_to_structuralheading',
     'SourcePackageReleaseView',
     ]
 
 import cgi
 import re
 
-from canonical.launchpad.interfaces import IStructuralHeaderPresentation
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.tales import FormattersAPI
-
-
-def sourcepackagerelease_to_structuralheading(sourcepackagerelease):
-    """Adapt an `ISourcePackage` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(sourcepackagerelease.sourcepackage)
 
 
 class SourcePackageReleaseView(LaunchpadView):
