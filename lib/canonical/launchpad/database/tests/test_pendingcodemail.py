@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
+import pytz
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces import IPendingCodeMail
@@ -23,9 +25,11 @@ class TestPendingCodeMail(TestCaseWithFactory):
         verifyObject(IPendingCodeMail, self.factory.makePendingCodeMail())
 
     def makeExampleMail(self):
+        UTC = pytz.timezone('UTC')
         return self.factory.makePendingCodeMail('jrandom@example.com',
             'person@example.com', 'My subject', 'My body', 'My footer',
-            '<msg-id@foo>', 'for-fun', 'http://example.com')
+            '<msg-id@foo>', 'for-fun', 'http://example.com',
+            '<parent-id@foo>', datetime.fromtimestamp(0, UTC))
 
     def test_toMessage(self):
         pending_mail = self.makeExampleMail()
@@ -38,7 +42,9 @@ class TestPendingCodeMail(TestCaseWithFactory):
         self.assertEqual('for-fun', message['X-Launchpad-Message-Rationale'])
         self.assertEqual('http://example.com', message['X-Launchpad-Branch'])
         self.assertEqual('<msg-id@foo>', message['Message-Id'])
+        self.assertEqual('<parent-id@foo>', message['In-Reply-To'])
         self.assertEqual('My subject', message['Subject'])
+        self.assertEqual('Thu, 01 Jan 1970 00:00:00 -0000', message['Date'])
         self.assertEqual(
             'My body\n-- \nMy footer', message.get_payload(decode=True))
 

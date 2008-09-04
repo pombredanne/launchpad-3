@@ -6,7 +6,9 @@ __metaclass__ = type
 __all__ = ['PendingCodeMail']
 
 
+from calendar import timegm
 from email.Message import Message
+from email.Utils import formatdate
 
 from sqlobject import IntCol, StringCol
 from zope.interface import implements
@@ -51,11 +53,14 @@ class PendingCodeMail(SQLBase):
     def toMessage(self):
         mail = Message()
         mail['Message-Id'] = self.rfc822msgid
+        if self.in_reply_to is not None:
+            mail['In-Reply-To'] = self.in_reply_to
         mail['To'] = self.to_address
         mail['From'] = self.from_address
         mail['X-Launchpad-Message-Rationale'] = self.rationale
         mail['X-Launchpad-Branch'] = self.branch_url
         mail['Subject'] = self.subject
+        mail['Date'] = formatdate(timegm(self.date_created.utctimetuple()))
         mail.set_payload(append_footer(self.body, self.footer))
         return mail
 
