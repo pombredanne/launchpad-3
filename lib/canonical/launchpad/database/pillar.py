@@ -15,17 +15,17 @@ from zope.interface import implements
 
 from storm.expr import LeftJoin, NamedFunc, Select
 from storm.locals import SQL
-from storm.zope.interfaces import IZStorm
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.featuredproject import FeaturedProject
+from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPillarName, IPillarNameSet, IProduct,
     IProductSet, IProjectSet, License, NotFoundError)
-
-from canonical.launchpad.database.featuredproject import FeaturedProject
-from canonical.launchpad.database.productlicense import ProductLicense
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 __all__ = [
     'pillar_sort_key',
@@ -60,7 +60,7 @@ class PillarNameSet:
         """See `IPillarNameSet`."""
         # XXX flacoste 2007-10-09 bug=90983: Workaround.
         name = name.encode('ASCII')
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
@@ -93,7 +93,7 @@ class PillarNameSet:
         name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         cur = cursor()
         query = """
             SELECT id, product, project, distribution
@@ -153,7 +153,7 @@ class PillarNameSet:
                  lower(Distribution.title) = lower(%(text)s)
                 )
             ''' % sqlvalues(text=text))
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [PillarName, Product, Project, Distribution]
         for column in extra_columns:
             columns.append(column)
