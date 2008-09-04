@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 import psycopg2
 import pytz
 from storm.store import Store
-import transaction
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

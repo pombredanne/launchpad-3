@@ -29,11 +29,11 @@ class TestRevisionKarma(TestCaseWithFactory):
     def assertKarmaEvent(self, person, product):
         # Make sure there is one and only one karma event for the person and
         # product.
-       result = Store.of(person).find(
+        result = Store.of(person).find(
             Karma,
             Karma.person == person,
             Karma.product == product)
-       self.assertEqual(1, result.count())
+        self.assertEqual(1, result.count())
 
     def test_junkBranchMoved(self):
         # When a junk branch is moved to a product, the revision author will

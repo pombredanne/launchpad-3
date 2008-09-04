@@ -24,9 +24,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IProduct, IProject,
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
+    IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.person import validate_public_person
 
