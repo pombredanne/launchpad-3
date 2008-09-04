@@ -69,13 +69,23 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
 
-    def test_queueAll(self):
+    def test_queue(self):
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        pending = removeSecurityProxy(mailer.queueAll()[0])
+        mailer.from_address = 'from@example.com'
+        (pending,) = [
+            removeSecurityProxy(p) for p in mailer.queue([subscriber])]
         self.assertEqual(
-            bmp.target_branch.unique_name, pending.branch_url)
+            bmp.source_branch.unique_name, pending.branch_url)
         self.assertEqual('Subscriber', pending.rationale)
+        self.assertEqual('from@example.com', pending.from_address)
+        self.assertEqual('Baz Quxx <baz.quxx@example.com>', pending.to_address)
+        self.assertEqual(
+            mailer._getSubject('baz.quxx@example.com'), pending.subject)
+        self.assertEqual(
+            mailer._getBody('baz.quxx@example.com'), pending.body)
+        self.assertEqual('', pending.footer)
+
 #            'X-Launchpad-Project': bmp.source_branch.product.name,
 #             'Reply-To': bmp.address},
 

@@ -175,10 +175,10 @@ class BMPMailer(BaseMailer):
             })
         return params
 
-    def queueAll(self):
+    def queue(self, recipient_people=None):
         pending = []
         source = getUtility(IPendingCodeMailSource)
-        for email, to_address in self.iterRecipients():
+        for email, to_address in self.iterRecipients(recipient_people):
             headers = self._getHeaders(email)
             reason, rationale = self._recipients.getReason(email)
             mail = source.create(

@@ -92,8 +92,12 @@ class BaseMailer:
         template = get_email_template(self._template_name)
         return template % self._getTemplateParams(email)
 
-    def iterRecipients(self):
-        for email, recipient in self._recipients.getRecipientPersons():
+    def iterRecipients(self, recipient_people=None):
+        if recipient_people is None:
+            iterator = self._recipients.getRecipientPersons()
+        else:
+            iterator = ((r.preferredemail.email, r) for r in recipient_people)
+        for email, recipient in iterator:
             to_address = format_address(recipient.displayname, email)
             yield email, to_address
 
