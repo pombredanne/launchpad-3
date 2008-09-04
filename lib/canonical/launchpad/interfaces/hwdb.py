@@ -638,6 +638,13 @@ class IHWSubmissionDeviceSet(Interface):
         :return: The new IHWSubmissionDevice instance.
         """
 
+    def getDevices(submission):
+        """Return the IHWSubmissionDevice records of a submission
+
+        :return: A sequence of IHWSubmissionDevice records.
+        :param submission: An IHWSubmission instance.
+        """
+
 
 class IHWSubmissionBug(Interface):
     """Link a HWDB submission to a bug."""

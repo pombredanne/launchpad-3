@@ -13,10 +13,13 @@ class TestLaunchpadLib(unittest.TestCase):
 
     layer = AppServerLayer
     launchpad = None
+    project = None
 
     def setUp(self):
         if self.launchpad is None:
             self.launchpad = salgado_with_full_permissions.login()
+        if self.project is None:
+            self.project = self.launchpad.projects['firefox']
 
     def verifyAttributes(self, element):
         """Verify that launchpadlib can parse the element's attributes."""
@@ -27,7 +30,7 @@ class TestLaunchpadLib(unittest.TestCase):
 
     def test_project(self):
         """Test project attributes."""
-        self.verifyAttributes(self.launchpad.projects['firefox'])
+        self.verifyAttributes(self.project)
 
     def test_person(self):
         """Test person attributes."""
@@ -36,6 +39,20 @@ class TestLaunchpadLib(unittest.TestCase):
     def test_bug(self):
         """Test bug attributes."""
         self.verifyAttributes(self.launchpad.bugs[1])
+
+    def test_branch(self):
+        """Test branch attributes."""
+        # launchpadlib can only slice and not subscript
+        # so project.branches[0] doesn't work.
+        branch = self.project.branches[:1][0]
+        self.verifyAttributes(branch)
+
+    def test_milestone(self):
+        """Test milestone attributes."""
+        # launchpadlib can only slice and not subscript
+        # so project.milestones[0] doesn't work.
+        milestone = self.project.active_milestones[:1][0]
+        self.verifyAttributes(milestone)
 
 
 def test_suite():

@@ -1,0 +1,58 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <p tal:condition="not: view/mapped_participants">
+    None of the current participants in
+    <tal:teamname replace="context/browsername" /> have a recorded
+    location.
+  </p>
+
+  <tal:some_mapped condition="view/mapped_participants">
+    <p id="team_map_div"
+       style="width: 75%; height: 250px; border: 1px; float: left;
+              margin: 0 14px 0 0;"
+       ></p>
+    <tal:map replace="structure view/map_html" />
+  </tal:some_mapped>
+
+  <tal:unmapped condition="view/unmapped_participants">
+    <p style="margin: 4px;">
+      <strong>Complete the map!</strong><br />
+      Do you know the current location for these team members?  Update
+      locations for:
+    </p>
+
+    <ul>
+      <li tal:repeat="tomap view/unmapped_participants">
+        <a tal:attributes="
+          href string:${tomap/fmt:url}/+editlocation?for_team=${context/name}"
+           tal:content="tomap/browsername"
+           style="white-space: nowrap;">Joe Bloggs</a>
+      </li>
+    </ul>
+  </tal:unmapped>
+
+  <p tal:condition="view/mapped_participants">
+    <strong>Times:</strong><br />
+    <tal:time_set repeat="time view/times">
+      <tal:time replace="time" /><br />
+    </tal:time_set>
+  </p>
+
+</div>
+
+</body>
+</html>
