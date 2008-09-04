@@ -12,7 +12,6 @@ import email
 import pytz
 from storm.expr import And, Asc, Desc, Exists, Not, Select
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
@@ -27,6 +26,8 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
     IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -298,7 +299,7 @@ class RevisionSet:
         from canonical.launchpad.database.branchrevision import BranchRevision
         from canonical.launchpad.database.person import ValidPersonCache
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # XXX: Tim Penhey 2008-08-12, bug 244768
         # Using Not(column == None) rather than column != None.
