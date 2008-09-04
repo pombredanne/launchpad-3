@@ -88,7 +88,7 @@ def report_profile_stats():
         hits, duration = value
         total_profiled_duration += duration
         if duration < 0.1:
-            duration = 'negligable time'
+            duration = 'negligible time'
         else:
             duration = '%0.1fs' % duration
         print '%-45s %4d calls taking %s.' % (

@@ -105,6 +105,9 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
+xxxreport:
+	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+
 check-configs:
 	${PYTHON} utilities/check-configs.py
 

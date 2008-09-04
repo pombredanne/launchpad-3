@@ -25,7 +25,7 @@ from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
@@ -67,6 +67,9 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
+    DEV_SERVER_URL = 'http://api.launchpad.dev'
+    DEFAULT_API_VERSION = 'beta'
+
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
                  handle_errors=True, *args, **kwargs):
         """Create a WebServiceCaller.
@@ -93,16 +96,37 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+    def getAbsoluteUrl(self, resource_path, api_version=DEFAULT_API_VERSION):
+        """Convenience method for creating a url in tests.
+
+        :param resource_path: This is the url section to be joined to hostname
+                              and api version.
+        :param api_version: This is the first part of the absolute
+                            url after the hostname.
+        """
+        if resource_path.startswith('/'):
+            # Prevent os.path.join() from interpreting resource_path as an
+            # absolute url. This allows paths that appear consistent with urls
+            # from other *.launchpad.dev virtual hosts.
+            # For example:
+            #   /firefox = http://launchpad.dev/firefox
+            #   /firefox = http://api.launchpad.dev/beta/firefox
+            resource_path = resource_path[1:]
+        url_with_version = os.path.join(api_version, resource_path)
+        return urljoin(self.DEV_SERVER_URL, url_with_version)
+
+    def __call__(self, path_or_url, method='GET', data=None, headers=None,
+                 api_version=DEFAULT_API_VERSION):
+        path_or_url = str(path_or_url)
         if path_or_url.startswith('http:'):
-            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+            full_url = path_or_url
         else:
-            path = path_or_url
-        path = str(path)
+            full_url = self.getAbsoluteUrl(path_or_url,
+                                           api_version=api_version)
+        scheme, netloc, path, query, fragment = urlsplit(full_url)
         # Make an HTTP request.
-        full_headers = {'Host' : 'api.launchpad.dev'}
+        full_headers = {'Host' : netloc}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev/' + path
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -113,7 +137,10 @@ class WebServiceCaller:
             full_headers.update(headers)
         header_strings = ["%s: %s" % (header, str(value))
                           for header, value in full_headers.items()]
-        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path,
+        path_and_query = path
+        if len(query) != 0:
+            path_and_query += '?%s' % query
+        request_string = "%s %s HTTP/1.1\n%s\n" % (method, path_and_query,
                                                    "\n".join(header_strings))
         if data:
             request_string += "\n" + data
@@ -122,50 +149,60 @@ class WebServiceCaller:
             request_string, handle_errors=self.handle_errors)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, media_type='application/json', headers=None):
+    def get(self, path, media_type='application/json', headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a GET request."""
         full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
-        return self(path, 'GET', headers=full_headers)
+        return self(path, 'GET', headers=full_headers,
+                    api_version=api_version)
 
-    def head(self, path, headers=None):
+    def head(self, path, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a HEAD request."""
-        return self(path, 'HEAD', headers=headers)
+        return self(path, 'HEAD', headers=headers, api_version=api_version)
 
-    def delete(self, path, headers=None):
+    def delete(self, path, headers=None,
+               api_version=DEFAULT_API_VERSION):
         """Make a DELETE request."""
-        return self(path, 'DELETE', headers=headers)
+        return self(path, 'DELETE', headers=headers, api_version=api_version)
 
-    def put(self, path, media_type, data, headers=None):
+    def put(self, path, media_type, data, headers=None,
+            api_version=DEFAULT_API_VERSION):
         """Make a PUT request."""
         return self._make_request_with_entity_body(
-            path, 'PUT', media_type, data, headers)
+            path, 'PUT', media_type, data, headers, api_version=api_version)
 
-    def post(self, path, media_type, data, headers=None):
+    def post(self, path, media_type, data, headers=None,
+             api_version=DEFAULT_API_VERSION):
         """Make a POST request."""
         return self._make_request_with_entity_body(
-            path, 'POST', media_type, data, headers)
+            path, 'POST', media_type, data, headers, api_version=api_version)
 
-    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+    def named_get(self, path_or_url, operation_name, headers=None,
+                  api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, urllib.quote(value))
                          for key, value in kwargs.items()])
-        return self.get("%s?%s" % (path_or_url, data), data, headers)
+        return self.get("%s?%s" % (path_or_url, data), data, headers,
+                        api_version=api_version)
 
-    def named_post(self, path, operation_name, headers=None, **kwargs):
+    def named_post(self, path, operation_name, headers=None,
+                   api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
         data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
-                         headers)
+                         headers, api_version=api_version)
 
-    def patch(self, path, media_type, data, headers=None):
+    def patch(self, path, media_type, data, headers=None,
+              api_version=DEFAULT_API_VERSION):
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
-            path, 'PATCH', media_type, data, headers)
+            path, 'PATCH', media_type, data, headers, api_version=api_version)
 
     def _make_request_with_entity_body(self, path, method, media_type, data,
-                                       headers):
+                                       headers, api_version):
         """A helper method for requests that include an entity-body.
 
         This means PUT, PATCH, and POST requests.
@@ -173,7 +210,7 @@ class WebServiceCaller:
         real_headers = {'Content-type' : media_type }
         if headers is not None:
             real_headers.update(headers)
-        return self(path, method, data, real_headers)
+        return self(path, method, data, real_headers, api_version=api_version)
 
 
 class WebServiceResponseWrapper(ProxyBase):
@@ -603,6 +640,7 @@ def setUpGlobs(test):
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_action_links'] = print_action_links
@@ -666,8 +704,8 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # XXX RBC 20060117 we can hook in pre and post story actions
-            # here much more tidily (and in self.debug too)
+            # XXX Robert Collins 2006-01-17: we can hook in pre and post
+            # story actions here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)
         finally:

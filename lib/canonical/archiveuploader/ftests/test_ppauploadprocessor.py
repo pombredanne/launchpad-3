@@ -716,7 +716,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "Upload rejected because it contains binary packages. "
             "Ensure you are using `debuild -S`, or an equivalent command, "
             "to generate only the source package before re-uploading. "
-            "See https://help.launchpad.net/PPAQuickStart/ for more "
+            "See https://help.launchpad.net/Packaging/PPA for more "
             "information."]
         self.assertEmail(contents)
 
@@ -1068,21 +1068,23 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
+            "File bar_1.0.orig.tar.gz already exists in Primary Archive "
+                 "for Ubuntu Linux, but uploaded version has different "
+                 "contents.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)
 
         self.log.lines = []
-        # The happens with higher versions of 'bar' depending on the
+        # The same happens with higher versions of 'bar' depending on the
         # unofficial 'orig.tar.gz'.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: bar_1.0-10_source.changes rejected",
-            "MD5 sum of uploaded file does not match existing file "
-                 "in archive",
+            "File bar_1.0.orig.tar.gz already exists in Primary Archive "
+                 "for Ubuntu Linux, but uploaded version has different "
+                 "contents.",
             "Files specified in DSC are broken or missing, skipping package "
                  "unpack verification."]
         self.assertEmail(contents)

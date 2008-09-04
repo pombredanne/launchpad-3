@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'milestone_to_structuralheading',
     'MilestoneSetNavigation',
     'MilestoneNavigation',
     'MilestoneContextMenu',
@@ -19,8 +18,7 @@ from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
-    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone,
-    IStructuralHeaderPresentation)
+    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, ContextMenu, Link,
@@ -42,11 +40,6 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation):
 
     usedfor = IMilestone
-
-
-def milestone_to_structuralheading(milestone):
-    """Adapts an `IMilestone` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(milestone.target)
 
 
 class MilestoneContextMenu(ContextMenu):

@@ -11,7 +11,6 @@ __all__ = [
     'POTemplateExportView',
     'POTemplateNavigation',
     'POTemplateSetNavigation',
-    'POTemplateSOP',
     'POTemplateSubsetNavigation',
     'POTemplateSubsetURL',
     'POTemplateSubsetView',
@@ -30,13 +29,10 @@ from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.productseries import (
-    ProductSeriesSOP, ProductSeriesFacets)
+from canonical.launchpad.browser.productseries import ProductSeriesFacets
 from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.browser.sourcepackage import (
-    SourcePackageSOP, SourcePackageFacets)
+from canonical.launchpad.browser.sourcepackage import SourcePackageFacets
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
     ITranslationImporter, ITranslationImportQueue, IProductSeries,
@@ -148,38 +144,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         return branches_link
 
 
-class POTemplateSOP(StructuralObjectPresentation):
-
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        target = context.translationtarget
-        if IProductSeries.providedBy(target):
-            self.target_sop = ProductSeriesSOP(target)
-        elif ISourcePackage.providedBy(target):
-            self.target_sop = SourcePackageSOP(target)
-        else:
-            # We don't know yet how to handle this target.
-            raise NotImplementedError
-
-    def getIntroHeading(self):
-        return self.target_sop.getIntroHeading()
-
-    def getMainHeading(self):
-        return self.target_sop.getMainHeading()
-
-    def listChildren(self, num):
-        return self.target_sop.listChildren(num)
-
-    def countChildren(self):
-        return self.parent.countChildren()
-
-    def listAltChildren(self, num):
-        return self.parent.listAltChildren(num)
-
-    def countAltChildren(self):
-        return self.parent.countAltChildren()
-
-
 class POTemplateAppMenus(ApplicationMenu):
     usedfor = IPOTemplate
     facet = 'translations'
@@ -254,7 +218,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         """
         # This inline import is needed to workaround a circular import problem
         # because canonical.launchpad.browser.pofile imports
-        # canonical.launchpad.browser.potemplate.POTemplateSOP
+        # canonical.launchpad.browser.potemplate.
         from canonical.launchpad.browser.pofile import POFileView
 
         languages = self.translatable_languages
@@ -304,13 +268,12 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     "Your upload was ignored because you didn't select a "
                     "file. Please select a file and try again.")
             else:
-                # XXX: Carlos Perello Marin 2004-12-30
+                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
                 # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
                 self.request.response.addErrorNotification(
                     "Your upload failed because there was a problem receiving"
                     " data. Please try again.")

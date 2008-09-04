@@ -27,7 +27,7 @@ class BugLinkTargetMixin:
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug #175545:
+        # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
         #     permissions should have been checked before this method
         #     was called. Also, we shouldn't be relying on the logged-in
@@ -45,7 +45,7 @@ class BugLinkTargetMixin:
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug #175545:
+        # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
         #     permissions should have been checked before this method
         #     was called. Also, we shouldn't be relying on the logged-in
@@ -60,7 +60,6 @@ class BugLinkTargetMixin:
             if buglink.bug.id == bug.id:
                 notify(SQLObjectDeletedEvent(buglink))
                 self.buglinkClass.delete(buglink.id)
-                # XXX: We shouldn't return the object that we just
-                #      deleted from the db.
-                #      -- Bjorn Tillenius, 2005-11-21
+                # XXX: Bjorn Tillenius 2005-11-21: We shouldn't return the
+                #      object that we just deleted from the db.
                 return buglink

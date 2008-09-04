@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
     ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
 from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
@@ -605,17 +606,40 @@ class EditPersonLocation(AuthorizationBase):
         changed by the person himself or admins.
         """
         location = self.obj.location
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user == self.obj or user.inTeam(admins):
-            # The person himself and LP admins can always change that person's
-            # location.
+        if location is None:
+            # No PersonLocation entry exists for this person, so anybody can
+            # change this person's location.
             return True
-        elif location is None or location.last_modified_by != self.obj:
-            # No location has been specified yet or it has been specified by a
-            # non-authoritative source (not the person himself).
+
+        # There is a PersonLocation entry for this person, so we'll check its
+        # details to find out whether or not the user can edit them.
+        if (location.visible
+            and (location.latitude is None
+                 or location.last_modified_by != self.obj)):
+            # No location has been specified yet or it has been specified
+            # by a non-authoritative source (not the person himself), so
+            # anybody can change it.
             return True
         else:
-            return False
+            admins = getUtility(ILaunchpadCelebrities).admin
+            # The person himself and LP admins can always change that person's
+            # location.
+            return user == self.obj or user.inTeam(admins)
+
+
+class ViewPersonLocation(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPersonLocation
+
+    def checkUnauthenticated(self):
+        return self.obj.visible
+
+    def checkAuthenticated(self, user):
+        if self.obj.visible:
+            return True
+        else:
+            admins = getUtility(ILaunchpadCelebrities).admin
+            return user == self.obj.person or user.inTeam(admins)
 
 
 class EditPersonBySelf(AuthorizationBase):

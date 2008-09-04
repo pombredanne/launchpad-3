@@ -19,7 +19,7 @@ def request_country(request):
     """
     ipaddress = ipaddress_from_request(request)
     if ipaddress is not None:
-        return getUtility(IGeoIP).country_by_addr(ipaddress)
+        return getUtility(IGeoIP).getCountryByAddr(ipaddress)
     return None
 
 _ipaddr_re = re.compile('\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?')
@@ -62,7 +62,8 @@ def ipaddress_from_request(request):
     ipaddresses = [addr.strip() for addr in ipaddresses.split(',')]
     ipaddresses = [
         addr for addr in ipaddresses
-            if not (addr.startswith('127.') or _ipaddr_re.search(addr) is None)
+            if not (addr.startswith('127.')
+                    or _ipaddr_re.search(addr) is None)
         ]
 
     if ipaddresses:
