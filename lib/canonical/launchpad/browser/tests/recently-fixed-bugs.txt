@@ -97,3 +97,8 @@ days, the date_closed limit is removed.
     Searching for bugs with date_closed:
         greater_than(datetime.datetime(2008, 8, 1, 12, 0, tzinfo=<UTC>))
     Searching for bugs with date_closed: None
+
+It doesn't matter that less than 4 bugs were returned.
+
+    >>> len(fixed_bugs)
+    4
