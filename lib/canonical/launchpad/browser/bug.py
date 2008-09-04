@@ -322,7 +322,7 @@ class MaloneView(LaunchpadFormView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
+        fixed_bugtasks = self.context.searchTasks(search_params)
         # XXX: Bjorn Tillenius 2006-12-13:
         #      We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent

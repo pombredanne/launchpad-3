@@ -1,0 +1,30 @@
+= Displaying recently fixed bugs =
+
+On the Bugs frontpage, the 5 most recently fixed bugs are displayed.
+There's a view class called MaloneView that helps getting the list of
+bugs.
+
+    >>> from canonical.launchpad.browser.bug import MaloneView
+    >>> class TestMaloneView(MaloneView):
+    ...     user = None
+
+MaloneView.getMostRecentlyFixedBugs() calls the context's searchTasks()
+method, getting all the FIXRELEASED bugs, ordered by date_closed, with
+the newly closed bugs first.
+
+    >>> class FakeBugTask:
+    ...     def __init__(self):
+    ...         self.bug = object()
+
+    >>> class FakeContext:
+    ...     def searchTasks(self, search_params):
+    ...         print "status: %s" % search_params.status.name
+    ...         print "order by: %s" % search_params.orderby
+    ...         return [FakeBugTask() for dummy in range(5)]
+    >>> view = TestMaloneView(FakeContext(), None)
+    >>> view.user = None
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs()
+    status: FIXRELEASED
+    order by: -date_closed
+    >>> len(fixed_bugs)
+    5
