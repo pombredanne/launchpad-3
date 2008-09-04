@@ -19,10 +19,7 @@ class TestPendingCodeMail(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_ProvidesInterface(self):
-        mail = PendingCodeMail(
-            from_address='example@foo', to_address='example@foo',
-            subject='subj', body='bod', footer='foot', rationale='fun',
-            branch_url='branch', rfc822msgid='msgid')
+        mail = self.factory.makePendingCodeMail()
         verifyObject(IPendingCodeMail, mail)
 
 

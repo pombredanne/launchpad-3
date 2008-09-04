@@ -72,7 +72,8 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.database import (
+    Message, MessageChunk, PendingCodeMail)
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 
@@ -142,6 +143,17 @@ class LaunchpadObjectFactory:
         """Return a URL unique to this run of the test case."""
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
+
+    def makePendingCodeMail(self):
+        return PendingCodeMail(
+            from_address=self.getUniqueEmailAddress(),
+            to_address=self.getUniqueEmailAddress(),
+            subject=self.getUniqueString('subject'),
+            body=self.getUniqueString('body'),
+            footer=self.getUniqueString('footer'),
+            rationale=self.getUniqueString('rationale'),
+            branch_url=self.getUniqueURL(),
+            rfc822msgid=make_msgid('launchpad'))
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):
