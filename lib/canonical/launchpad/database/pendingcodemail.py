@@ -66,3 +66,4 @@ class PendingCodeMail(SQLBase):
 
     def sendMail(self):
         sendmail(self.toMessage())
+        self.destroySelf()

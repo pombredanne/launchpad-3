@@ -7,8 +7,9 @@ __metaclass__ = type
 from datetime import datetime
 import unittest
 
-import pytz
 from canonical.testing import LaunchpadFunctionalLayer
+import pytz
+from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import IPendingCodeMail
 from canonical.launchpad.database import PendingCodeMail
@@ -50,9 +51,11 @@ class TestPendingCodeMail(TestCaseWithFactory):
 
     def testSend(self):
         pending_mail = self.makeExampleMail()
+        db_id = pending_mail.id
         pending_mail.sendMail()
         message = pop_notifications()[0]
         self.checkMessageFromExample(message)
+        self.assertRaises(SQLObjectNotFound, PendingCodeMail.get, db_id)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
