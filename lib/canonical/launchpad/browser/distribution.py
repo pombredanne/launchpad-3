@@ -9,25 +9,23 @@ __all__ = [
     'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
-    'DistributionCountryArchiveMirrorsView',
     'DistributionBreadcrumbBuilder',
+    'DistributionCountryArchiveMirrorsView',
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
     'DistributionFacets',
     'DistributionLanguagePackAdminView',
     'DistributionNavigation',
-    'DistributionPPASearchView',
     'DistributionPendingReviewMirrorsView',
-    'DistributionSOP',
-    'DistributionSpecificationsMenu',
-    'DistributionSeriesMirrorsView',
+    'DistributionPPASearchView',
     'DistributionSeriesMirrorsRSSView',
+    'DistributionSeriesMirrorsView',
     'DistributionSetBreadcrumbBuilder',
     'DistributionSetContextMenu',
     'DistributionSetFacets',
     'DistributionSetNavigation',
-    'DistributionSetSOP',
     'DistributionSetView',
+    'DistributionSpecificationsMenu',
     'DistributionUnofficialMirrorsView',
     'DistributionView',
     'UsesLaunchpadMixin',
@@ -48,7 +46,6 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
@@ -157,21 +154,6 @@ class DistributionSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(distribution))
 
 
-class DistributionSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return self.context.serieses[:num]
-
-    def listAltChildren(self, num):
-        return None
-
-
 class DistributionBreadcrumbBuilder(BreadcrumbBuilder):
     """Builds a breadcrumb for an `IDistribution`."""
     @property
@@ -190,21 +172,6 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link('', text, summary)
-
-
-class DistributionSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'Distributions in Launchpad'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class DistributionSetBreadcrumbBuilder(BreadcrumbBuilder):

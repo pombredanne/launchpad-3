@@ -653,7 +653,7 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko 2005-09-05 Bug 1690:
+        # XXX kiko 2005-09-05 bug=1690:
         # We could fix this by making createTask be a method on
         # IBugTarget, but I'm not going to do this now.
         bugtaskset = getUtility(IBugTaskSet)

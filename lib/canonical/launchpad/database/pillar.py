@@ -58,7 +58,7 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 20071009 Workaround bug #90983.
+        # XXX flacoste 2007-10-09 bug=90983: Workaround.
         name = name.encode('ASCII')
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.execute("""
@@ -70,7 +70,7 @@ class PillarNameSet:
 
     def __getitem__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 20071009 Workaround bug #90983.
+        # XXX flacoste 2007-10-09 bug=90983: Workaround.
         name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
         if pillar is None:
@@ -89,7 +89,7 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-        # XXX flacoste 20071009 Workaround bug #90983.
+        # XXX flacoste 2007-10-09 bug=90983: Workaround.
         name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
