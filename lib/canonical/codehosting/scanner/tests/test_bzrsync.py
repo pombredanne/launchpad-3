@@ -11,28 +11,23 @@ import random
 import time
 import unittest
 
-from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
 from bzrlib.transport import (
     get_transport, register_transport, unregister_transport)
 from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
-from bzrlib.urlutils import (
-    local_path_from_url, join as urljoin)
 from bzrlib.tests import TestCaseWithTransport
 import pytz
 from zope.component import getUtility
 
-from canonical.codehosting.bzrutils import HttpAsLocalTransport
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType,
-    CodeReviewNotificationLevel, ControlFormat, IBranchSet, IPersonSet,
-    IRevisionSet, RepositoryFormat)
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, get_diff, get_revision_message)
