@@ -24,9 +24,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IProduct, IProject,
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
+    IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -77,9 +76,15 @@ class Revision(SQLBase):
             # No karma for junk branches as we need a product to link
             # against.
             karma = author.assignKarma('revisionadded', branch.product)
-            # Backdate the karma to the time the revision was created.
+            # Backdate the karma to the time the revision was created.  If the
+            # revision_date on the revision is in future (for whatever weird
+            # reason) we will use the date_created from the revision (which
+            # will be now) as the karma date created.  Having future karma
+            # events is both wrong, as the revision has been created (and it
+            # is lying), and a problem with the way the Launchpad code
+            # currently does its karma degradation over time.
             if karma is not None:
-                karma.datecreated = self.revision_date
+                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
 
     def getBranch(self, allow_private=False, allow_junk=True):
