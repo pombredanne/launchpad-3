@@ -28,3 +28,6 @@ class greater_than:
 
     def __init__(self, value):
         self.value = value
+
+    def __repr__(self):
+        return "greater_than(%r)" % (self.value,)
