@@ -1573,6 +1573,15 @@ COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. 
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 COMMENT ON COLUMN GPGKey.can_encrypt IS 'Whether the key has been validated for use in encryption (as opposed to just signing)';
 
+-- PrivateGPGKey
+
+COMMENT ON TABLE PrivateGPGKey IS 'The private part of a launchpad-hosted GPG keys';
+COMMENT ON COLUMN PrivateGPGKey.date_created IS 'Instant when the private key was created.';
+COMMENT ON COLUMN PrivateGPGKey.owner IS 'User who requested the hosted key creaction.';
+COMMENT ON COLUMN PrivateGPGKey.gpg_key IS 'The corresponding public GPG key part.';
+COMMENT ON COLUMN PrivateGPGKey.comment IS 'Text to be included when generating the private GPG key.';
+COMMENT ON COLUMN PrivateGPGKey.status IS 'The status of the private GPG key, PENDING_GENERATION, ACTIVE, PENDING_REVOCATION or REVOKED.';
+
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
 COMMENT ON COLUMN Poll.team IS 'The team this poll belongs to';
@@ -1800,6 +1809,13 @@ COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started
 COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
 COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
 COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+
+
+-- ArchiveSiginingKey
+
+COMMENT ON TABLE ArchiveSigningKey IS 'This table specificy a GPG key that should be used when signing a archive.';
+COMMENT ON COLUMN ArchiveSigningKey.archive IS 'The targeted Archive.';
+COMMENT ON COLUMN ArchiveSigningKey.gpg_key IS 'The GpgKey used to sign the targeted archive .';
 
 
 -- Component
