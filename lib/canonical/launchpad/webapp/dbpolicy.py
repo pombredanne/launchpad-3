@@ -67,7 +67,7 @@ class LaunchpadDatabasePolicy:
         else:
             da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
-    def endRequest(self):
+    def afterCall(self):
         """Cleanup.
 
         This method is invoked by LaunchpadBrowserPublication.endRequest.

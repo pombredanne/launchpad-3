@@ -810,7 +810,7 @@ class IDatabasePolicy(Interface):
     def startRequest():
         """Install the database policy into the current thread."""
 
-    def endRequest():
+    def afterCall():
         """Perform any necessary cleanup of the database policy."""
 
 

@@ -362,6 +362,10 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
+        if self.db_policy is not None:
+            self.db_policy.afterCall()
+            self.db_policy = None
+
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
 
@@ -444,10 +448,6 @@ class LaunchpadBrowserPublication(
         self.endProfilingHook(request)
 
         da.clear_request_started()
-
-        if self.db_policy is not None:
-            self.db_policy.endRequest()
-            self.db_policy = None
 
         if config.debug.references:
             self.debugReferencesLeak(request)
