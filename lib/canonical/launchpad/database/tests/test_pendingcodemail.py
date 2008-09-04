@@ -25,9 +25,7 @@ class TestPendingCodeMail(TestCaseWithFactory):
     def makeExampleMail(self):
         return self.factory.makePendingCodeMail('jrandom@example.com',
             'person@example.com', 'My subject', 'My body', 'My footer',
-            '<msg-id@foo>',
-            rationale='for-fun',
-            branch_url='http://example.com')
+            '<msg-id@foo>', 'for-fun', 'http://example.com')
 
     def test_toMessage(self):
         pending_mail = self.makeExampleMail()
