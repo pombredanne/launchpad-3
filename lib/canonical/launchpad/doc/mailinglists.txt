@@ -664,8 +664,6 @@ By deactivating the mailing list, we make it safe to purge.
 It's as if the mailing list never existed, so we can re-request that the list
 be created.
 
-    >>> import transaction
-
     >>> registration_date = datetime.now(pytz.timezone('UTC'))
     >>> list_six = list_set.new(team_six)
     >>> print list_six.team.name
@@ -692,8 +690,10 @@ purged.
 
 But a list that has been approved, or is being constructed cannot be purged.
 
+    >>> import transaction
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.APPROVED
+    >>> naked_list = removeSecurityProxy(list_six)
+    >>> naked_list.status = MailingListStatus.APPROVED
     >>> transaction.commit()
     >>> logout()
     >>> print list_six.status.name
@@ -703,7 +703,7 @@ But a list that has been approved, or is being constructed cannot be purged.
     ...
     UnsafeToPurge: Cannot purge mailing list in APPROVED state: team-canonical
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.CONSTRUCTING
+    >>> naked_list.status = MailingListStatus.CONSTRUCTING
     >>> transaction.commit()
     >>> print list_six.status.name
     CONSTRUCTING
@@ -716,7 +716,7 @@ A list in the FAILED state can be purged, but a list in the MOD_FAILED state
 cannot.  This is because the latter still means that a mailing list is active
 for the team.
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.FAILED
+    >>> naked_list.status = MailingListStatus.FAILED
     >>> transaction.commit()
     >>> print list_six.status.name
     FAILED
@@ -724,7 +724,7 @@ for the team.
     >>> print list_six.status.name
     PURGED
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.MOD_FAILED
+    >>> naked_list.status = MailingListStatus.MOD_FAILED
     >>> transaction.commit()
     >>> print list_six.status.name
     MOD_FAILED
@@ -735,7 +735,7 @@ for the team.
 
 Modified, updating, and deactivating mailing lists are also unsafe to purge.
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.MODIFIED
+    >>> naked_list.status = MailingListStatus.MODIFIED
     >>> transaction.commit()
     >>> print list_six.status.name
     MODIFIED
@@ -744,7 +744,7 @@ Modified, updating, and deactivating mailing lists are also unsafe to purge.
     ...
     UnsafeToPurge: Cannot purge mailing list in MODIFIED state: team-canonical
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.UPDATING
+    >>> naked_list.status = MailingListStatus.UPDATING
     >>> transaction.commit()
     >>> print list_six.status.name
     UPDATING
@@ -753,7 +753,7 @@ Modified, updating, and deactivating mailing lists are also unsafe to purge.
     ...
     UnsafeToPurge: Cannot purge mailing list in UPDATING state: team-canonical
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.DEACTIVATING
+    >>> naked_list.status = MailingListStatus.DEACTIVATING
     >>> transaction.commit()
     >>> print list_six.status.name
     DEACTIVATING
@@ -764,7 +764,7 @@ Modified, updating, and deactivating mailing lists are also unsafe to purge.
 
 You should never be able to purge an already purged mailing list.
 
-    >>> removeSecurityProxy(list_six).status = MailingListStatus.PURGED
+    >>> naked_list.status = MailingListStatus.PURGED
     >>> transaction.commit()
     >>> print list_six.status.name
     PURGED

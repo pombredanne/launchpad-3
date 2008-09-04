@@ -4,11 +4,12 @@ __metaclass__ = type
 
 import unittest
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.component import getMultiAdapter, getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
@@ -322,6 +323,73 @@ class TestShippingRun(unittest.TestCase):
         self.failUnlessEqual(request.status, ShippingRequestStatus.SHIPPED)
         self.failUnlessEqual(
             set(request.getContainedFlavours()), set([ShipItFlavour.UBUNTU]))
+
+
+class TestPeopleTrustedOnShipIt(unittest.TestCase):
+    """Tests for the 'is_trusted_on_shipit' property of IPerson."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_person_with_karma_when_ubuntumembers_do_not_exist(self):
+        """Return True and do not record an OOPS when the 'ubuntumembers' team
+        doesn't exist.
+
+        Since the person has karma, there's no need to check for membership in
+        the ubuntumembers team, so we don't care whether it exists or not.
+        """
+        login(ANONYMOUS)
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(sabdfl.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
+
+    def test_person_without_karma_when_ubuntumembers_do_not_exist(self):
+        """Return False and record an OOPS when the 'ubuntumembers' team
+        doesn't exist.
+
+        Note that we store the OOPS but don't raise any exception because we
+        don't want to fail the request -- instead we just move on as if the
+        user was not trusted on shipit.
+        """
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIfEqual(report.id, report2.id)
+        self.failUnless(
+            report2.value.startswith("No team named 'ubuntumembers'"))
+
+    def test_person_without_karma_and_not_in_ubuntumembers(self):
+        """Return False and do not log an OOPS as the team exists."""
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        self.failIf(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failIf(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
+
+    def test_person_without_karma_and_in_ubuntumembers(self):
+        """Return True and do not log an OOPS as the team exists."""
+        login(ANONYMOUS)
+        salgado = getUtility(IPersonSet).getByName('salgado')
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        ubuntumembers = LaunchpadObjectFactory().makeTeam(
+            sabdfl, name='ubuntumembers')
+        login_person(sabdfl)
+        ubuntumembers.addMember(salgado, sabdfl)
+        self.failUnless(salgado.inTeam(ubuntumembers))
+        self.failUnlessEqual(salgado.karma, 0)
+        report = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnless(salgado.is_trusted_on_shipit)
+        report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+        self.failUnlessEqual(report.id, report2.id)
 
 
 class TestShippingRequest(unittest.TestCase):
