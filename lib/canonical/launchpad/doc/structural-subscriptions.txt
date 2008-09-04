@@ -127,11 +127,12 @@ the recipients set. Each subscriber is only added once.
     >>> print_bug_recipients(recipients)
     name12 "Subscriber (evolution in ubuntu)"
 
+
+
 Foo Bar subscribes to Ubuntu.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu.addBugSubscription(foobar, foobar)
-    <StructuralSubscription ...>
+    >>> foobar_subscription = ubuntu.addBugSubscription(foobar, foobar)
     >>> recipients = BugNotificationRecipients()
 
 The set of subscribers to the evolution package for ubuntu now includes
@@ -141,6 +142,18 @@ both subscribers to the package, and subscribers to the distribution.
     ...     recipients=recipients)
     >>> print_bug_recipients(recipients)
     name16 "Subscriber (Ubuntu)"
+    name12 "Subscriber (evolution in ubuntu)"
+
+We can pass the the parameter `level` to getBugNotificationsRecipients().
+Subscribers whose subscription level is lower than the given parameter
+are not returned.
+
+    >>> foobar_subscription.bug_notification_level = (
+    ...     BugNotificationLevel.METADATA)
+    >>> recipients = BugNotificationRecipients()
+    >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
+    ...     recipients=recipients, level=BugNotificationLevel.COMMENTS)
+    >>> print_bug_recipients(recipients)
     name12 "Subscriber (evolution in ubuntu)"
 
 We remove Sample Person's bug subscription to the package.

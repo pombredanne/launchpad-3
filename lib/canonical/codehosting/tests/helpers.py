@@ -15,6 +15,7 @@ __all__ = [
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'ServerTestCase',
+    'TestResultWrapper',
     ]
 
 import os
@@ -24,7 +25,7 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport, TestSkipped
 from bzrlib.errors import SmartProtocolError
 
 from canonical.authserver.interfaces import (
@@ -402,3 +403,26 @@ def create_branch_with_one_revision(branch_dir):
     f.close()
     tree.commit('message')
     return tree
+
+
+class TestResultWrapper:
+    """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
+
+    def __init__(self, result):
+        self.result = result
+
+    def addError(self, test_case, exc_info):
+        if not isinstance(exc_info[1], TestSkipped):
+            self.result.addError(test_case, exc_info)
+
+    def addFailure(self, test_case, exc_info):
+        self.result.addFailure(test_case, exc_info)
+
+    def addSuccess(self, test_case):
+        self.result.addSuccess(test_case)
+
+    def startTest(self, test_case):
+        self.result.startTest(test_case)
+
+    def stopTest(self, test_case):
+        self.result.stopTest(test_case)

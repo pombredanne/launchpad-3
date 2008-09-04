@@ -210,11 +210,18 @@ class StructuralSubscriptionTargetMixin:
                               min_blueprint_notification_level))]
         return subscriptions
 
-    def getBugNotificationsRecipients(self, recipients=None):
+    def getBugNotificationsRecipients(self, recipients=None, level=None):
         """See `IStructuralSubscriptionTarget`."""
         subscribers = set()
-        subscriptions = self.bug_subscriptions
+        if level is None:
+            subscriptions = self.bug_subscriptions
+        else:
+            subscriptions = self.getSubscriptions(
+                min_bug_notification_level=level)
         for subscription in subscriptions:
+            if (level is not None and
+                subscription.bug_notification_level < level):
+                continue
             subscriber = subscription.subscriber
             subscribers.add(subscriber)
             if recipients is not None:
@@ -223,7 +230,7 @@ class StructuralSubscriptionTargetMixin:
         parent = self.parent_subscription_target
         if parent is not None:
             subscribers.update(
-                parent.getBugNotificationsRecipients(recipients))
+                parent.getBugNotificationsRecipients(recipients, level))
         return subscribers
 
     @property

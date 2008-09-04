@@ -17,13 +17,6 @@
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
   </securedutility>
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
-    factory="canonical.launchpad.browser.LaunchpadStatisticSetSOP"
-    permission="zope.Public"
-    />
-
   <browser:url
     for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
     path_expression="string:+statistics"

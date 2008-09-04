@@ -167,7 +167,7 @@ class NascentUpload:
                     ]
                 if self.is_ppa:
                     messages.append(
-                    "See https://help.launchpad.net/PPAQuickStart/ for more "
+                    "See https://help.launchpad.net/Packaging/PPA for more "
                     "information.")
                 self.reject(" ".join(messages))
 
@@ -821,11 +821,12 @@ class NascentUpload:
                     # XXX cprov 2007-02-12: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
+                    # XXX cprov 2007-03-05 bug=89846:
                     # For binary versions verification we should only
                     # use ancestries in the same architecture. If none
                     # was found we can go w/o any checks, since it's
                     # a NEW binary in this architecture, any version is
-                    # fine. See bug #89846 for further info.
+                    # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
                     if ancestry is not None:
