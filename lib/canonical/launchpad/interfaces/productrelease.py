@@ -206,12 +206,15 @@ class IProductRelease(Interface):
         """Delete the link between this product and a library file alias."""
 
     def getFileAliasByName(name):
-        """Return the `LibraryFileAlias` by file name or None if not found."""
+        """Return the `LibraryFileAlias` by file name.
+
+        Raises a NotFoundError if no matching ProductReleaseFile exists.
+        """
 
     def getProductReleaseFileByName(name):
-        """Return the `ProductReleaseFile` by file name or None.
+        """Return the `ProductReleaseFile` by file name.
 
-        This method supports traversal for the API.
+        Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
 
 # Set the schema for IProductReleaseFile now that IProductRelease is defined.

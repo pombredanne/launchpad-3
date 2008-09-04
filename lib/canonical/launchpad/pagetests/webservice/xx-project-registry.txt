@@ -246,28 +246,17 @@ Project releases are available at their canonical URL on the API virtual host.
 
     >>> releases = webservice.get(
     ...     '/firefox/1.0/releases').jsonBody()
-    >>> pprint_entry(releases)
-    entries: [...]
-    resource_type_link: u'http://.../#project_release-page-resource'
-    start: 0
-    total_size: 1
-    >>> entries = releases['entries']
-    >>> len(entries) == releases['total_size']
-    True
+    >>> print_self_link_of_entries(releases)
+    http://.../firefox/1.0/1.0.0
 
 
 == Project release file collection ==
 
     >>> pr_files = webservice.get(
     ...     '/firefox/trunk/0.9.2/files').jsonBody()
-    >>> pprint_entry(pr_files)
-    entries: [...]
-    resource_type_link: u'http://.../#project_release_file-page-resource'
-    start: 0
-    total_size: 1
-    >>> entries = pr_files['entries']
-    >>> len(entries) == pr_files['total_size']
-    True
+    >>> print_self_link_of_entries(pr_files)
+    http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz
+
 
 == Milestone entry ==
 
@@ -346,7 +335,6 @@ Trying to put new content will result in a ForbiddenAttribute error.
     HTTP/1.1 500 Internal Server Error
     ...
     ForbiddenAttribute: ('libraryfile', <ProductReleaseFile...
-
 
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
     >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')

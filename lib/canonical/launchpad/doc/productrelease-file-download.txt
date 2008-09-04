@@ -101,6 +101,20 @@ Attempting to retrieve an alias that does not exist is an error.
     ...
     NotFoundError: 'bar.txt'
 
+The ProductReleaseFile can also be retrieved by name.
+
+    >>> prf = rel.getProductReleaseFileByName('foo.txt')
+    >>> print prf.libraryfile.filename
+    foo.txt
+
+Attempting to retrieve a ProductReleaseFile  that does not exist is an
+error.
+
+    >>> prf = rel.getProductReleaseFileByName('bar.txt')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'bar.txt'
+
 Deleting the file alias results in the file count being reduced.
 
     >>> rel.deleteFileAlias(file_alias)
