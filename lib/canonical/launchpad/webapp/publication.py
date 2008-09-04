@@ -351,7 +351,12 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
+        if self.db_policy is not None:
+            self.db_policy.afterCall()
+            self.db_policy = None
+
         # Abort the transaction on a read-only request.
+        # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
         else:
@@ -361,10 +366,6 @@ class LaunchpadBrowserPublication(
         # by zope.app.publication.browser.BrowserPublication
         if request.method == 'HEAD':
             request.response.setResult('')
-
-        if self.db_policy is not None:
-            self.db_policy.afterCall()
-            self.db_policy = None
 
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
