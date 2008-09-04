@@ -26,10 +26,14 @@ except ImportError:
 
 import pytz
 
+from zope.component import getUtility
+
 from canonical.lazr.xml import RelaxNGValidator
 
 from canonical.config import config
-from canonical.launchpad.interfaces.hwdb import HWBus
+from canonical.launchpad.interfaces.hwdb import (
+    HWBus, IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
+    IHWSubmissionDeviceSet, IHWVendorIDSet, IHWVendorNameSet)
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -1465,3 +1469,114 @@ class HALDevice:
             return self.product_id
         else:
             return format % self.product_id
+
+    def getDriver(self):
+        """Return the HWDriver instance associated with this device.
+
+        Create a HWDriver record, if it does not already exist.
+        """
+        # HAL and the HWDB client know at present only about kernel
+        # drivers, so there is currently no need to search for
+        # for user space printer drivers, for example.
+        driver_name = self.getProperty('info.linux.driver')
+        if driver_name is not None:
+            kernel_package_name = self.parser.getKernelPackageName()
+            db_driver_set = getUtility(IHWDriverSet)
+            return db_driver_set.getOrCreate(kernel_package_name, driver_name)
+        else:
+            return None
+
+    def ensureVendorIDVendorNameExists(self):
+        """Ensure that a useful HWVendorID record for self.vendor_id exists.
+
+        A vendor ID is associated with a vendor name. For many devices
+        we rely on the information from the submission to create this
+        association in the HWVendorID table.
+
+        We do _not_ use the submitted vendor name for USB, PCI and
+        PCCard devices, because we can get them from independent
+        sources. See l/c/l/doc/hwdb-device-tables.txt.
+        """
+        bus = self.getBus()
+        if (self.vendor is not None and
+            bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
+            hw_vendor_id_set = getUtility(IHWVendorIDSet)
+            hw_vendor_id = hw_vendor_id_set.getByBusAndVendorID(
+                bus, self.vendor_id)
+            if hw_vendor_id is None:
+                hw_vendor_name_set = getUtility(IHWVendorNameSet)
+                hw_vendor_name = hw_vendor_name_set.getByName(self.vendor)
+                if hw_vendor_name is None:
+                    hw_vendor_name = hw_vendor_name_set.create(self.vendor)
+                hw_vendor_id_set.create(
+                    self.getBus(), self.vendor_id, hw_vendor_name)
+
+    def createDBData(self, submission, parent_submission_device):
+        """Create HWDB records for this HAL device and its children.
+
+        A HWDevice record for (bus, vendor ID, product ID) of this
+        device and a HWDeviceDriverLink record (device, None) are
+        created, if they do not already exist.
+
+        A HWSubmissionDevice record is created for (HWDeviceDriverLink,
+        submission).
+
+        HWSubmissionDevice records and missing HWDeviceDriverLink
+        records for known drivers of this device are created.
+
+        createDBData is called recursively for all real child devices.
+
+        This method may only be called, if self.real_device == True.
+        """
+        assert self.is_real_device, ('HALDevice.createDBData must be called '
+                                     'for real devices only.')
+        if not self.has_reliable_data:
+            return
+        bus = self.getBus()
+        vendor_id = self.vendor_id_for_db
+        product_id = self.product_id_for_db
+        product_name = self.product
+        if (bus is None or vendor_id is None or product_id is None
+            or product_name is None):
+            self.parser._logWarning(
+                'A HALDevice that is supposed to be a real device does '
+                'not provide bus, vendor ID, product ID or product name: '
+                '%r %r %r %r %s'
+                % (bus, vendor_id, product_id, product_name, self.udi),
+                self.parser.submission_key)
+            return
+
+        self.ensureVendorIDVendorNameExists()
+
+        db_device = getUtility(IHWDeviceSet).getOrCreate(
+            bus, vendor_id, product_id, product_name)
+        # Create a HWDeviceDriverLink record without an associated driver
+        # for each real device. This will allow us to relate tests and
+        # bugs to a device in general as well as to a specific
+        # combination of a device and a driver.
+        device_driver_link = getUtility(IHWDeviceDriverLinkSet).getOrCreate(
+            db_device, None)
+        submission_device = getUtility(IHWSubmissionDeviceSet).create(
+            device_driver_link, submission, parent_submission_device,
+            self.id)
+        self.createDBDriverData(submission, db_device, submission_device)
+
+    def createDBDriverData(self, submission, db_device, submission_device):
+        """Create HWDB records for drivers of this device and its children.
+
+        This method creates HWDeviceDriverLink and HWSubmissionDevice
+        records for this device and its children.
+        """
+        driver = self.getDriver()
+        if driver is not None:
+            device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+            device_driver_link = device_driver_link_set.getOrCreate(
+                db_device, driver)
+            submission_device = getUtility(IHWSubmissionDeviceSet).create(
+                device_driver_link, submission, submission_device, self.id)
+        for sub_device in self.children:
+            if sub_device.is_real_device:
+                sub_device.createDBData(submission, submission_device)
+            else:
+                sub_device.createDBDriverData(submission, db_device,
+                                              submission_device)

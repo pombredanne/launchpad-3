@@ -6,10 +6,11 @@ In this case, let's add a simple comment to bug #2 as user Foo
 Bar. First, let's clear out the notification table:
 
   >>> from zope.component import getUtility
-  >>> from storm.zope.interfaces import IZStorm
   >>> from canonical.launchpad.database import BugNotification
+  >>> from canonical.launchpad.webapp.interfaces import (
+  ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-  >>> store = getUtility(IZStorm).get('main')
+  >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
   >>> store.execute("DELETE FROM BugNotification", noresult=True)
 
   >>> user_browser.open(
