@@ -1809,13 +1809,16 @@ COMMENT ON TABLE ArchiveCopyJob IS 'ArchiveCopyJob: A table that captures the de
 COMMENT ON COLUMN ArchiveCopyJob.registrant IS 'The person who requested the copy operation.';
 COMMENT ON COLUMN ArchiveCopyJob.source_archive IS 'The archive from which packages are to be copied.';
 COMMENT ON COLUMN ArchiveCopyJob.source_component IS 'The component to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN ArchiveCopyJob.source_pocket IS 'The pocket for the packages to be copied.';
 COMMENT ON COLUMN ArchiveCopyJob.target_archive IS 'The archive to which packages are to be copied.';
 COMMENT ON COLUMN ArchiveCopyJob.target_component IS 'The component to which the packages will belong in the target archive.';
+COMMENT ON COLUMN ArchiveCopyJob.target_pocket IS 'The pocket for the copied packages.';
 COMMENT ON COLUMN ArchiveCopyJob.status IS 'Copy job status, may be one of: new, in-progress, cancelled, succeeded, failed.';
 COMMENT ON COLUMN ArchiveCopyJob.reason IS 'The reason why this copy job was requested.';
 COMMENT ON COLUMN ArchiveCopyJob.date_created IS 'Date of creation for this package copy job.';
 COMMENT ON COLUMN ArchiveCopyJob.date_started IS 'Start date/time of this package copy job.';
 COMMENT ON COLUMN ArchiveCopyJob.date_completed IS 'When did this package copy job conclude?';
+COMMENT ON COLUMN ArchiveCopyJob.copy_binaries IS 'This flag should be set if binary packages are to be copied as well.';
 
 -- ArchiveCopyJobArch
 
