@@ -193,6 +193,10 @@ class BMPMailer(BaseMailer):
                 message_id = get_msgid()
             headers = self._getHeaders(email)
             reason, rationale = self._recipients.getReason(email)
+            if reason.branch.product is not None:
+                branch_project_name = reason.branch.product.name
+            else:
+                branch_project_name = None
             mail = source.create(
                 from_address=self.from_address,
                 to_address=to_address,
@@ -202,8 +206,8 @@ class BMPMailer(BaseMailer):
                 body=self._getBody(email),
                 footer='',
                 message_id=message_id,
+                reply_to_address = self._getReplyToAddress(),
+                branch_project_name = branch_project_name,
                 )
             pending.append(mail)
         return pending
-
-

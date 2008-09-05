@@ -120,9 +120,9 @@ I think this would be good.
         self.assertEqual(
             mailer._getBody('baz.quxx@example.com'), pending.body)
         self.assertEqual('', pending.footer)
-
-#            'X-Launchpad-Project': bmp.source_branch.product.name,
-#             'Reply-To': bmp.address},
+        self.assertEqual(bmp.source_branch.product.name,
+                         pending.branch_project_name)
+        self.assertEqual(bmp.address, pending.reply_to_address)
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

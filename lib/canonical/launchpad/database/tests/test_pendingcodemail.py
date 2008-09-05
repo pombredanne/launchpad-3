@@ -29,8 +29,9 @@ class TestPendingCodeMail(TestCaseWithFactory):
         UTC = pytz.timezone('UTC')
         return self.factory.makePendingCodeMail('jrandom@example.com',
             'person@example.com', 'My subject', 'My body', 'My footer',
-            '<msg-id@foo>', 'for-fun', 'http://example.com',
-            '<parent-id@foo>', datetime.fromtimestamp(0, UTC))
+            '<msg-id@foo>', 'for-fun', 'http://example.com', 'Project',
+            '<parent-id@foo>', '<mp1@example.com>',
+            datetime.fromtimestamp(0, UTC))
 
     def test_toMessage(self):
         pending_mail = self.makeExampleMail()
@@ -40,8 +41,10 @@ class TestPendingCodeMail(TestCaseWithFactory):
     def checkMessageFromExample(self, message):
         self.assertEqual('jrandom@example.com', message['To'])
         self.assertEqual('person@example.com', message['From'])
+        self.assertEqual('<mp1@example.com>', message['Reply-To'])
         self.assertEqual('for-fun', message['X-Launchpad-Message-Rationale'])
         self.assertEqual('http://example.com', message['X-Launchpad-Branch'])
+        self.assertEqual('Project', message['X-Launchpad-Project'])
         self.assertEqual('<msg-id@foo>', message['Message-Id'])
         self.assertEqual('<parent-id@foo>', message['In-Reply-To'])
         self.assertEqual('My subject', message['Subject'])

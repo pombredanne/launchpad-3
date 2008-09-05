@@ -39,6 +39,8 @@ class PendingCodeMail(SQLBase):
 
     from_address = StringCol(notNull=True)
 
+    reply_to_address = StringCol()
+
     to_address = StringCol(notNull=True)
 
     subject = StringCol(notNull=True)
@@ -51,6 +53,8 @@ class PendingCodeMail(SQLBase):
 
     branch_url = StringCol()
 
+    branch_project_name = StringCol()
+
     def toMessage(self):
         mail = Message()
         mail['Message-Id'] = self.rfc822msgid
@@ -58,8 +62,12 @@ class PendingCodeMail(SQLBase):
             mail['In-Reply-To'] = self.in_reply_to
         mail['To'] = self.to_address
         mail['From'] = self.from_address
+        if self.reply_to_address is not None:
+            mail['Reply-To'] = self.reply_to_address
         mail['X-Launchpad-Message-Rationale'] = self.rationale
         mail['X-Launchpad-Branch'] = self.branch_url
+        if self.branch_project_name is not None:
+            mail['X-Launchpad-Project'] = self.branch_project_name
         mail['Subject'] = self.subject
         mail['Date'] = formatdate(timegm(self.date_created.utctimetuple()))
         mail.set_payload(append_footer(self.body, self.footer))
@@ -74,9 +82,12 @@ class PendingCodeMailSource:
 
     implements(IPendingCodeMailSource)
 
-    def create(self, from_address, to_address, rationale, branch_url, subject,
-               body, footer, message_id):
+    def create(self, from_address, reply_to_address, to_address, rationale,
+               branch_url, branch_project_name, subject, body, footer,
+               message_id):
         """See `IPendingCodeMailSource`"""
         return PendingCodeMail(from_address=from_address,
-            to_address=to_address, rationale=rationale, branch_url=branch_url,
-            subject=subject, body=body, footer=footer, rfc822msgid=message_id)
+            reply_to_address=reply_to_address, to_address=to_address,
+            rationale=rationale, branch_url=branch_url,
+            branch_project_name=branch_project_name, subject=subject,
+            body=body, footer=footer, rfc822msgid=message_id)
