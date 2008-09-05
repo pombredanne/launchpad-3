@@ -22,7 +22,7 @@ def send(comment, event):
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients):
+    def __init__(self, code_review_comment, recipients, message_id=None):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -32,7 +32,7 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         BMPMailer.__init__(
             self, self.message.subject, None, recipients, merge_proposal,
-            from_address)
+            from_address, message_id=message_id)
 
     @classmethod
     def forCreation(klass, code_review_comment):
@@ -40,7 +40,8 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        return klass(code_review_comment, recipients)
+        return klass(code_review_comment, recipients,
+            code_review_comment.message.rfc822msgid)
 
     def _getSubject(self, email):
         """Don't do any string template insertions on subjects."""
@@ -73,12 +74,6 @@ class CodeReviewCommentMailer(BMPMailer):
             'reason': reason.getReason()}
         return ''.join((
             prefix, append_footer(main, footer)))
-
-    def _getHeaders(self, email):
-        """Return the mail headers to use."""
-        headers = BMPMailer._getHeaders(self, email)
-        headers['Message-Id'] = self.message.rfc822msgid
-        return headers
 
     def _getInReplyTo(self):
         if self.message.parent is not None:

@@ -50,7 +50,9 @@ def text_delta(instance_delta, delta_names, state_names, interface):
 
 
 def append_footer(main, footer):
-    if '\n-- \n' in main:
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
         footer_separator = '\n'
     else:
         footer_separator = '\n-- \n'
