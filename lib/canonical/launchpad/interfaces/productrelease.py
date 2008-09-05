@@ -6,12 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IProductReleaseSet',
     'IProductRelease',
-    'IProductReleaseEditRestricted',
     'IProductReleaseFile',
     'IProductReleaseFileAddForm',
-    'IProductReleasePublic',
-    'IProductReleaseSet',
     'UpstreamFileType',
     ]
 
@@ -110,21 +108,10 @@ class ProductReleaseVersionField(ContentNameField):
         return releaseset.getBySeriesAndVersion(productseries, version)
 
 
-class IProductReleaseEditRestricted(Interface):
-    """IProductRelease properties which require launchpad.Edit."""
-
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
-
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
-
-
-class IProductReleasePublic(Interface):
-    """Public IProductRelease properties."""
+class IProductRelease(Interface):
+    """A specific release (i.e. has a version) of a product. For example,
+    Mozilla 1.7.2 or Apache 2.0.48."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
@@ -166,16 +153,17 @@ class IProductReleasePublic(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
+    def addFileAlias(alias, signature,
+                     uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
+                     description=None):
+        """Add a link between this product and a library file alias."""
+
+    def deleteFileAlias(alias):
+        """Delete the link between this product and a library file alias."""
+
     def getFileAliasByName(name):
         """Return the LibraryFileAlias by file name or None if not found."""
-
-
-class IProductRelease(IProductReleaseEditRestricted,
-                      IProductReleasePublic):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
-
-    export_as_webservice_entry()
 
 
 class IProductReleaseFile(Interface):
