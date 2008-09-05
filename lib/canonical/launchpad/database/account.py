@@ -5,6 +5,8 @@
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
+import random
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -21,6 +23,8 @@ from canonical.launchpad.interfaces.account import (
         IAccount, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
@@ -48,7 +52,7 @@ class Account(SQLBase):
     # Remove this attribute, in the DB, drop openid_identifier, then
     # rename new_openid_identifier => openid_identifier.
     new_openid_identifier = StringCol(
-            dbName='old_openid_identifier', notNull=True, default=DEFAULT)
+            dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
     # The password is actually stored in a seperate table for security
     # reasons, so use a property to hide this implementation detail.
@@ -81,16 +85,21 @@ class Account(SQLBase):
 
 
 class AccountSet:
+    """See `IAccountSet`."""
     implements(IAccountSet)
 
-    def new(self, rationale, displayname,
+    def new(self, rationale, displayname, memonic=None,
             password=None, password_is_encrypted=False):
         """See `IAccountSet`."""
 
         account = Account(
                 displayname=displayname, creation_rationale=rationale)
 
-        # Create the password record
+        # Create the openid_identifier for the OpenID identity URL.
+        if memonic is not None:
+            account.new_openid_identifier = self.createOpenIdentifier(memonic)
+
+        # Create the password record.
         if password is not None:
             if not password_is_encrypted:
                 password = getUtility(IPasswordEncryptor).encrypt(password)
@@ -115,6 +124,31 @@ class AccountSet:
                 EmailAddress.q.accountID == Account.q.id,
                 EmailAddress.q.status == EmailAddressStatus.PREFERRED,
                ),)
+
+    def createOpenIdentifier(self, memonic):
+        """See `IAccountSet`."""
+        assert isinstance(memonic, (str, unicode)) and memonic is not '', (
+            "The memonic must be a non-empty string.")
+        identity_url_root = allvhosts.configs['id'].rooturl
+        openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
+        tokens = range(0, 999)
+        random.shuffle(tokens)
+        # This method might be faster by collecting all accounts and summaries
+        # that end with the memonic. The chances of collision seem minute,
+        # given that the intended memonic is a unique user name.
+        for token in tokens:
+            token = '%03d' % token
+            openid_identifier = '%s/%s' % (token, memonic)
+            account = self.getByOpenIdIdentifier(openid_identifier)
+            if account is not None:
+                continue
+            summaries = openidrpsummaryset.getByIdentifier(
+                identity_url_root + openid_identifier)
+            if summaries.count() == 0:
+                return openid_identifier
+        raise AssertionError(
+            "An openid_identifier could not be created with the memonic '%s'."
+            % memonic)
 
 
 class AccountPassword(SQLBase):

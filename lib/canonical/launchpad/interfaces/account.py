@@ -225,7 +225,7 @@ class IAccount(IAccountPublic, IAccountPrivate):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname,
+    def new(rationale, displayname, memonic=None,
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
@@ -250,3 +250,14 @@ class IAccountSet(Interface):
     def getByOpenIdIdentifier(openid_identity):
         """Return the `IAccount` with the given OpenID identifier, or None."""
 
+    def createOpenIdentifier(memonic):
+        """Return a unique openid_identifier for OpenID identity URIs.
+
+        The identifier takes for form of 'nnn/memonic', where 'nnn' is
+        a random three digit sequence.
+
+        :param memonic: A string token that a user can remember.
+            eg. his user name.
+        :return: a unique string that no other user has, nor has ever been
+            used in the past.
+        """

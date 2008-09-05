@@ -220,15 +220,15 @@ is assumed the password was already encrypted.
 
 == OpenID identifiers ==
 
-The old and new openid identifiers are created directly in the database.
-They are not available until the account object is synced.
+The account is given a old and new openid identifiers. The old
+identifier is created directly in the database; it not available until
+the account object is synced.
 
     >>> new_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     password=u'clear_password')
+    ...     memonic='oid-account', password=u'clear_password')
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
     >>> new_account.new_openid_identifier
     u'.../oid-account'
-
