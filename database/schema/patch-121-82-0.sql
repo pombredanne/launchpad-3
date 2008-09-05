@@ -7,12 +7,16 @@ CREATE TABLE BugAffectsPerson (
     CONSTRAINT bugaffectsperson_bug_person_uniq UNIQUE (bug, person)
 );
 
+CREATE INDEX bugaffectsperson__person__idx ON BugAffectsPerson(person);
+
 ALTER TABLE Bug
     ADD COLUMN users_affected_count INTEGER DEFAULT 0;
+
+CREATE INDEX bug__users_affected_count__idx ON Bug(users_affected_count);
 
 CREATE TRIGGER set_bug_users_affected_count_t
     AFTER INSERT OR DELETE ON BugAffectsPerson
     FOR EACH ROW
     EXECUTE PROCEDURE set_bug_users_affected_count();
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 82, 0);
