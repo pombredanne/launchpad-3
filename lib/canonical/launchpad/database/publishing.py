@@ -47,7 +47,8 @@ from canonical.launchpad.interfaces import (
     ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+    PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
+    PoolFileOverwriteError)
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
@@ -1067,6 +1068,39 @@ class PublishingSet:
             SourcePackagePublishingHistory.id,
             Desc(PackageDiff.date_requested))
 
+        return result_set
+
+    def getChangesFilesForSources(
+        self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import PackageUpload and PackageUploadSource locally
+        # to avoid circular imports, since PackageUpload uses
+        # {Secure}SourcePackagePublishingHistory.
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+        from canonical.launchpad.database.queue import (
+            PackageUpload, PackageUploadSource)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IZStorm).get('main')
+        result_set = store.find(
+            (SourcePackagePublishingHistory, PackageUpload,
+             SourcePackageRelease, LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == PackageUpload.changesfileID,
+            PackageUpload.id == PackageUploadSource.packageuploadID,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.distroseriesID ==
+                SourcePackageRelease.upload_distroseriesID,
+            PackageUploadSource.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):

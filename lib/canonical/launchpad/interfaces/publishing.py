@@ -610,6 +610,25 @@ class IPublishingSet(Interface):
              `LibraryFileAlias`, `LibraryFileContent`)
         """
 
+    def getChangesFilesForSources(one_or_more_source_publications):
+        """Return all changesfiles for each given source publication.
+
+        The returned ResultSet contains entries with the wanted changesfiles
+        as `LibraryFileAlias`es associated with the corresponding source
+        publication and its corresponding `LibraryFileContent`,
+        `PackageUpload` and `SourcePackageRelease` in a 5-element tuple.
+        This way the extra information will be cached and the callsites can
+        group chnagesfiles in any convenient form.
+
+        The result is ordered by ascending `SourcePackagePublishingHistory.id`
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing tuples as
+            (`SourcePackagePublishingHistory`, `PackageUpload`,
+             `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
+        """
 
     def requestDeletion(sources, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
