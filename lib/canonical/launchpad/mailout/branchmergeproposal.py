@@ -96,7 +96,8 @@ class BMPMailer(BaseMailer):
         self.merge_proposal = merge_proposal
 
     def sendAll(self):
-        BaseMailer.sendAll(self)
+        for pending in self.queue():
+            pending.sendMail()
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
 
@@ -187,6 +188,9 @@ class BMPMailer(BaseMailer):
         pending = []
         source = getUtility(IPendingCodeMailSource)
         for email, to_address in self.iterRecipients(recipient_people):
+            message_id = self.message_id
+            if message_id is None:
+                message_id = get_msgid()
             headers = self._getHeaders(email)
             reason, rationale = self._recipients.getReason(email)
             mail = source.create(
@@ -196,7 +200,10 @@ class BMPMailer(BaseMailer):
                 branch_url=reason.branch.unique_name,
                 subject=self._getSubject(email),
                 body=self._getBody(email),
-                footer=''
+                footer='',
+                message_id=message_id,
                 )
             pending.append(mail)
         return pending
+
+

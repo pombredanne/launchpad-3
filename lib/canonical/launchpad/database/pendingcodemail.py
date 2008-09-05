@@ -75,8 +75,8 @@ class PendingCodeMailSource:
     implements(IPendingCodeMailSource)
 
     def create(self, from_address, to_address, rationale, branch_url, subject,
-               body, footer):
+               body, footer, message_id):
         """See `IPendingCodeMailSource`"""
         return PendingCodeMail(from_address=from_address,
             to_address=to_address, rationale=rationale, branch_url=branch_url,
-            subject=subject, body=body, footer=footer)
+            subject=subject, body=body, footer=footer, rfc822msgid=message_id)

@@ -9,4 +9,9 @@
       provides="canonical.launchpad.interfaces.IPendingCodeMailSource" >
     <allow interface="canonical.launchpad.interfaces.IPendingCodeMailSource" />
   </securedutility>
+
+  <content class="canonical.launchpad.database.PendingCodeMail">
+    <allow attributes="sendMail"/>
+  </content>
+
 </configure>
