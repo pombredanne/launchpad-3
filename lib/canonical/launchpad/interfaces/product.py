@@ -492,10 +492,6 @@ class IProductPublic(
     def userCanEdit(user):
         """Can the user edit this product?"""
 
-# Fix cyclic references.
-IProject['products'].value_type = Reference(IProduct)
-
-
 class IProduct(IProductEditRestricted, IProductPublic):
     """A Product.
 
@@ -506,6 +502,9 @@ class IProduct(IProductEditRestricted, IProductPublic):
     """
 
     export_as_webservice_entry('project')
+
+# Fix cyclic references.
+IProject['products'].value_type = Reference(IProduct)
 
 
 class IProductSet(Interface):
