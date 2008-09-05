@@ -606,16 +606,21 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
     con_str = config.database.main_master
+    con_str_overrides = []
     assert 'user=' not in con_str, (
             'Connection string already contains username')
     if user is not None:
-        con_str += ' user=%s' % user
+        con_str_overrides.append('user=%s' % user)
     if lp.dbhost is not None:
-        con_str = re.sub(r'host=\S*', r'host=%s' % lp.dbhost, con_str)
+        con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
+        con_str_overrides.append('host=%s' % lp.dbhost)
     if dbname is None:
         dbname = lp.dbname # Note that lp.dbname may be None.
     if dbname is not None:
-        con_str = re.sub(r'dbname=\S*', r'dbname=%s' % dbname, con_str)
+        con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
+        con_str_overrides.append('dbname=%s' % dbname)
+
+    con_str = ' '.join([con_str] + con_str_overrides)
 
     con = psycopg2.connect(con_str)
     con.set_isolation_level(isolation)
