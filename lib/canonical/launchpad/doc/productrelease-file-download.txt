@@ -149,8 +149,8 @@ reverse order.
     >>> from canonical.launchpad.interfaces.productrelease import (
     ...     IProductReleaseSet)
     >>> series = firefox.serieses
-    >>> releases_set = getUtility(IProductReleaseSet)
-    >>> releases = releases_set.getReleasesForSerieses(series)
+    >>> release_set = getUtility(IProductReleaseSet)
+    >>> releases = release_set.getReleasesForSerieses(series)
     >>> for release in releases:
     ...     date = release.datereleased.strftime('%Y-%m-%d %H:%M:%S')
     ...     print release.version, date
@@ -175,7 +175,7 @@ Let's add some release files to the releases for firefox.
     ...     pr_file = add_file_alias(release, content, name,
     ...         description, date_uploaded=upload_date)
 
-    >>> files = releases_set.getFilesForReleases(releases)
+    >>> files = release_set.getFilesForReleases(releases)
     >>> for file in files:
     ...     print file.libraryfile.filename
     name3

@@ -23,7 +23,10 @@
 
     <!-- This is class ProductRelease -->
     <content class="canonical.launchpad.database.ProductRelease">
-        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
+        <allow interface="canonical.launchpad.interfaces.IProductReleasePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseEditRestricted" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductRelease" />

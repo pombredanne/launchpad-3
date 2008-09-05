@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesStatus',
     'IDistroSeries',
+    'IDistroSeriesEditRestricted',
+    'IDistroSeriesPublic',
     'IDistroSeriesSet',
     ]
 
@@ -96,9 +98,17 @@ class DistroSeriesStatus(DBEnumeratedType):
         """)
 
 
-class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal, IHasMilestones):
-    """A series of an operating system distribution."""
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    def newMilestone(name, dateexpected=None, description=None):
+        """Create a new milestone for this DistroSeries."""
+
+
+class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
+                          IBugTarget, ISpecificationGoal, IHasMilestones):
+    """Public IDistroSeries properties."""
+
     id = Attribute("The distroseries's unique number.")
     name = TextLine(
         title=_("Name"), required=True,
@@ -558,9 +568,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
-
     def initialiseFromParent():
         """Copy in all of the parent distroseries's configuration. This
         includes all configuration for distroseries and distroarchseries
@@ -603,6 +610,11 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         This method starts and commits transactions, so don't rely on `self`
         or any other database object remaining valid across this call!
         """
+
+
+class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
+    """A series of an operating system distribution."""
+
 
 class IDistroSeriesSet(Interface):
     """The set of distro seriess."""

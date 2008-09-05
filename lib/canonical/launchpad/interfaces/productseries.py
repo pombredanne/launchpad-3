@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'ImportStatus',
     'IProductSeries',
+    'IProductSeriesEditRestricted',
+    'IProductSeriesPublic',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
+    'ImportStatus',
     'RevisionControlSystems',
     'validate_cvs_module',
     'validate_cvs_root',
@@ -186,11 +188,16 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal, IHasMilestones):
-    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
-    export_as_webservice_entry('project_series')
+class IProductSeriesEditRestricted(Interface):
+    """IProductSeries properties which require launchpad.Edit."""
 
+    def newMilestone(name, dateexpected=None, description=None):
+        """Create a new milestone for this DistroSeries."""
+
+
+class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal, IHasMilestones):
+    """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
@@ -361,9 +368,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
-
     # revision control items
     import_branch = Choice(
         title=_('Import Branch'),
@@ -449,6 +453,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
+
+
+class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
+    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
+    export_as_webservice_entry('project_series')
+
 
 # We are forced to define this now to avoid circular import problems.
 from canonical.launchpad.interfaces.milestone import IMilestone

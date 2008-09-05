@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'IProduct',
-    'IProductSet',
+    'IProductEditRestricted',
+    'IProductPublic',
     'IProductReviewSearch',
+    'IProductSet',
     'License',
     'LicenseStatus',
     ]
@@ -114,20 +116,20 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-               IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker,
-               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
-    """A Product.
+class IProductEditRestricted(Interface):
+    """IProduct properties which require launchpad.Edit permission."""
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
-    For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others.
-    """
-    export_as_webservice_entry('project')
+    def newSeries(owner, name, summary, branch=None):
+        """Creates a new ProductSeries for this product."""
+
+
+class IProductPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -461,9 +463,6 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
-
     def getSeries(name):
         """Returns the series for this product that has the name given, or
         None."""
@@ -488,6 +487,18 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 
     def userCanEdit(user):
         """Can the user edit this product?"""
+
+
+class IProduct(IProductEditRestricted, IProductPublic):
+    """A Product.
+
+    The Launchpad Registry describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
+    """
+
+    export_as_webservice_entry('project')
 
 
 class IProductSet(Interface):
