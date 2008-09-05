@@ -126,9 +126,6 @@ is issued.
     ...     print msg
     There is 1 error.
     No sources selected.
-    Package deletion can take some time before the packages are actually
-        removed.
-    See the full PPA help page.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
@@ -152,9 +149,6 @@ entirely readable content.
     Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
-    Package deletion can take some time before the packages are actually
-        removed.
-    See the full PPA help page.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source            Published     Status     Series          Section  Built
