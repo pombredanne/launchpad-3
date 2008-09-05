@@ -405,6 +405,7 @@ def quote(x):
         x = list(x)
     return sqlrepr(x, 'postgres')
 
+
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
@@ -442,6 +443,7 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
 
 def sqlvalues(*values, **kwvalues):
     """Return a tuple of converted sql values for each value in some_tuple.
@@ -536,8 +538,6 @@ def flush_database_updates():
     _get_sqlobject_store().flush()
 
 
-
-
 def flush_database_caches():
     """Flush all cached values from the database for the current connection.
     SQLObject compatibility - DEPRECATED.
@@ -606,10 +606,10 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
     con_str = config.database.main_master
-    if user is None:
-        con_str = re.sub(r'user=\S*', r'', con_str)
-    else:
-        con_str = re.sub(r'user=\S*', r'user=%s' % user, con_str)
+    assert 'user=' not in con_str, (
+            'Connection string already contains username')
+    if user is not None:
+        con_str += ' user=%s' % user
     if lp.dbhost is not None:
         con_str = re.sub(r'host=\S*', r'host=%s' % lp.dbhost, con_str)
     if dbname is None:
