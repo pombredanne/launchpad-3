@@ -39,12 +39,11 @@ from canonical.config import config
 from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPrimaryContext)
 import canonical.launchpad.webapp.adapter as da
+from canonical.launchpad.webapp.interfaces import (
+    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -86,6 +85,8 @@ class LaunchpadBrowserPublication(
     # pylint: disable-msg=W0231,W0702
 
     root_object_interface = ILaunchpadRoot
+
+    db_policy = None
 
     def __init__(self, db):
         self.db = db
@@ -148,7 +149,11 @@ class LaunchpadBrowserPublication(
         da.set_request_started()
 
         newInteraction(request)
+
         transaction.begin()
+
+        self.db_policy = IDatabasePolicy(request)
+        self.db_policy.beforeTraversal()
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -346,7 +351,12 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
+        if self.db_policy is not None:
+            self.db_policy.afterCall()
+            self.db_policy = None
+
         # Abort the transaction on a read-only request.
+        # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
         else:
@@ -380,23 +390,6 @@ class LaunchpadBrowserPublication(
             request._traversalticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
 
-        # Debugging code. Please leave. -- StuartBishop 20050622
-        # Set 'threads 1' in launchpad.conf if you are using this.
-        # from canonical.mem import printCounts, mostRefs, memory
-        # from datetime import datetime
-        # mem = memory()
-        # try:
-        #     delta = mem - self._debug_mem
-        # except AttributeError:
-        #     print '= Startup memory %d bytes' % mem
-        #     delta = 0
-        # self._debug_mem = mem
-        # now = datetime.now().strftime('%H:%M:%S')
-        # print '== %s (%.1f MB/%+d bytes) %s' % (
-        #         now, mem/(1024*1024), delta, str(request.URL))
-        # print str(request.URL)
-        # printCounts(mostRefs(4))
-
     def _maybePlacefullyAuthenticate(self, request, ob):
         """ This should never be called because we've excised it in
         favor of dealing with auth in events; if it is called for any
@@ -427,8 +420,6 @@ class LaunchpadBrowserPublication(
             pass
 
         # Reraise Retry exceptions rather than log.
-        # XXX stub 20070317: Remove this when the standard
-        # handleException method we call does this (bug to be fixed upstream)
         if retry_allowed and isinstance(
             exc_info[1], (Retry, DisconnectionError, IntegrityError,
                           TransactionRollbackError)):
@@ -485,9 +476,11 @@ class LaunchpadBrowserPublication(
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
-        # a much more painful task.
-        if threading.currentThread().getName() != 'MainThread':
-            for name, store in getUtility(IZStorm).iterstores():
+        # a much more painful task. We still reset the slave stores though
+        # to minimize stale cache issues.
+        thread_name = threading.currentThread().getName()
+        for name, store in getUtility(IZStorm).iterstores():
+            if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
     def startProfilingHook(self):

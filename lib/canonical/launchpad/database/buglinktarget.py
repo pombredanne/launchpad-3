@@ -27,7 +27,7 @@ class BugLinkTargetMixin:
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug #175545:
+        # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
         #     permissions should have been checked before this method
         #     was called. Also, we shouldn't be relying on the logged-in
@@ -45,7 +45,7 @@ class BugLinkTargetMixin:
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
-        # XXX gmb 2007-12-11 bug #175545:
+        # XXX gmb 2007-12-11 bug=175545:
         #     We shouldn't be calling check_permission here. The user's
         #     permissions should have been checked before this method
         #     was called. Also, we shouldn't be relying on the logged-in

@@ -181,7 +181,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        # XXX: StuartBishop 2008-03-12 Bug=193253: The first argument used to
+        # XXX: StuartBishop 2008-03-12 bug=193253: The first argument used to
         # be db_branch.url, but this triggered Bug #193253 where for some
         # reason Branch.open via HTTP makes an incomplete request to the
         # HttpServer leaving a dangling thread. Our test suite now fails

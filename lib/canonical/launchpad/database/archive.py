@@ -44,10 +44,11 @@ from canonical.launchpad.interfaces.build import (
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
-from storm.zope.interfaces import IZStorm
 
 
 class Archive(SQLBase):
@@ -378,7 +379,7 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             SourcePackagePublishingHistory.archive == self.id,
@@ -539,7 +540,7 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             BinaryPackagePublishingHistory.archive == self.id,
@@ -585,9 +586,9 @@ class Archive(SQLBase):
         # Compiled regexp to remove puntication.
         clean_text = re.compile('(,|;|:|\.|\?|!)')
 
-        # XXX cprov 20080402: The set() is only used because we have
-        # a limitation in our FTI setup, it only indexes the first 2500
-        # chars of the target columns. See bug 207969. When such limitation
+        # XXX cprov 20080402 bug=207969: The set() is only used because we
+        # have a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. When such limitation
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
