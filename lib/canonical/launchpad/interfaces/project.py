@@ -309,7 +309,7 @@ class IProjectSet(Interface):
         """Return the total number of projects registered in Launchpad."""
 
     @collection_default_content()
-    @operation_parameters(text=TextLine(title=_("Search text"), default=u""))
+    @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProject)
     @export_read_operation()
     def search(text=None, soyuz=None,
