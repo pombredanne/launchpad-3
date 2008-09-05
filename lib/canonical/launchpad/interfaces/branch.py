@@ -475,8 +475,6 @@ class IBranch(IHasOwner):
             title=_("Branch Type"), required=True, readonly=True,
             vocabulary=UICreatableBranchType))
 
-    # XXX: Need to fix the branch_name_validator.
-    # It doesn't check for name clashes with other branches for the owner/product
     name = exported(
         TextLine(
             title=_('Name'), required=True, constraint=branch_name_validator,
