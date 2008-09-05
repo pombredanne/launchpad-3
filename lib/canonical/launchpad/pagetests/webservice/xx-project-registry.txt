@@ -30,10 +30,19 @@ It's possible to search the list and get a subset of the project groups.
     ...   print project_group['display_name']
     Apache
 
-You must specify a value for "text".
+Searching without providing a search string is the same as getting all
+the project groups.
 
-    >>> print webservice.named_get("/projectgroups", "search").getBody()
-    text: Required input is missing.
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search").jsonBody()
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
 
 
 == Project group entry ==
