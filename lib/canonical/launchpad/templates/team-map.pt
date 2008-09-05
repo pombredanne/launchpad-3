@@ -15,37 +15,37 @@
 <div metal:fill-slot="main">
 
   <h1>Members' location</h1>
-
-  <p tal:condition="not: view/mapped_participants">
+<div style="height:420px;">
+  <div tal:condition="not: view/mapped_participants">
     None of the current participants in
     <tal:teamname replace="context/browsername" /> have a recorded
     location.
-  </p>
+  </div>
 
   <tal:some_mapped condition="view/mapped_participants">
-    <p id="team_map_div"
+    <div id="team_map_div"
        style="width: 75%; height: 250px; border: 1px; float: left;
-              margin: 0 14px 0 0;"
-       ></p>
+       margin: 0 14px 0 0;">
+    </div>
     <tal:map replace="structure view/map_html" />
+
   </tal:some_mapped>
 
-  <p tal:condition="view/mapped_participants">
+  <div tal:condition="view/mapped_participants">
     <strong>Members' local time:</strong><br />
     <tal:time_set repeat="time view/times">
       <tal:times replace="time" /><br />
     </tal:time_set>
-  </p>
-
+  </div>
+</div>
   <tal:unmapped condition="view/unmapped_participants">
-    <!-- XXX: I don't know how to place this below the map. Please help. -->
-    <p style="margin: 4px;">
-      <strong>Complete the map!</strong><br />
-      Do you know the current location for these team members?  Update
-      locations for:
-    </p>
+    <div style="margin: 4px;">
+      <h2><strong>Complete the map!</strong></h2>
+      Do you know the current location for these team members? Set their
+      Locations!
+    </div>
 
-    <table width="80%">
+    <table class="listing" style="width: 75%;">
       <tr tal:repeat="person view/unmapped_participants">
         <td>
           <tal:person replace="structure person/fmt:link" />
@@ -53,7 +53,7 @@
         <td>
           <tal:email replace="person/preferredemail/email|nothing" />
         </td>
-        <td>
+        <td width="100">
           <!-- XXX: Do we have a css class for not making this link blue or
           are we going to inline it here? -->
           <a tal:attributes="
