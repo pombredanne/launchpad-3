@@ -85,7 +85,7 @@ session.
   >>> package_names = []
   >>>
 
-  # XXX cprov 2006-01-25 Bug=29645: poppy still having a weird behaviour
+  # XXX cprov 2006-01-25 bug=29645: poppy still having a weird behaviour
   # during the file transfer, it suddenly closes the connection due
   # inactivity. That's why we keep polling the 'ftp.sock' attribute and
   # reconnect if it is gone.

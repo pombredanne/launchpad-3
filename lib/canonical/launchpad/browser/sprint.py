@@ -7,15 +7,16 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
+    'SprintBreadcrumbBuilder',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
+    'SprintSetBreadcrumbBuilder',
     'SprintSetContextMenu',
     'SprintSetFacets',
     'SprintSetNavigation',
-    'SprintSetSOP',
     'SprintSetView',
     'SprintSpecificationsMenu',
     'SprintTopicSetView',
@@ -43,9 +44,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation)
 from canonical.widgets.date import DateTimeWidget
 
 
@@ -65,7 +65,11 @@ class SprintNavigation(Navigation):
 
     usedfor = ISprint
 
-    def breadcrumb(self):
+
+class SprintBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprint`."""
+    @property
+    def text(self):
         return self.context.title
 
 
@@ -137,8 +141,10 @@ class SprintSetNavigation(GetitemNavigation):
 
     usedfor = ISprintSet
 
-    def breadcrumb(self):
-        return 'Meetings'
+
+class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISprintSet`."""
+    text = 'Meetings'
 
 
 class SprintSetFacets(StandardLaunchpadFacets):
@@ -146,21 +152,6 @@ class SprintSetFacets(StandardLaunchpadFacets):
 
     usedfor = ISprintSet
     enable_only = ['overview', ]
-
-
-class SprintSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'Meetings and Sprints'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
 
 
 class SprintSetContextMenu(ContextMenu):

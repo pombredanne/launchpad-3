@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 import psycopg2
 import pytz
 from storm.store import Store
-import transaction
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -63,7 +62,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         # If the revision author is known, allocate karma.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+            author=author.preferredemail.email,
+            revision_date=datetime.now(pytz.UTC) - timedelta(days=5))
         branch = self.factory.makeBranch()
         branch.createBranchRevision(1, rev)
         self.failUnless(rev.karma_allocated)
@@ -99,7 +99,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         self.failIf(rev.karma_allocated)
         # Nor is this revision identified as needing karma allocated.
@@ -111,7 +111,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
             author=author.preferredemail.email)
-        branch = self.factory.makeBranch(explicit_junk=True)
+        branch = self.factory.makeBranch(product=None)
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
@@ -138,6 +138,22 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_karmaDateForFutureRevisions(self):
+        # If the revision date is some time in the future, then the karma date
+        # is set to be the time that the revision was created.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(
+            author=author.preferredemail.email,
+            revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
+        branch = self.factory.makeBranch()
+        branch.createBranchRevision(1, rev)
+        # Get the karma event.
+        [karma] = list(Store.of(author).find(
+            Karma,
+            Karma.person == author,
+            Karma.product == branch.product))
+        self.assertEqual(karma.datecreated, rev.date_created)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
@@ -207,7 +223,7 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # not returned.
         b1 = self.makeBranchWithRevision(1)
         b2 = self.makeBranchWithRevision(
-            1, owner=self.author, explicit_junk=True)
+            1, owner=self.author, product=None)
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 

@@ -10,7 +10,7 @@
   <div class="navigation menu">
 
   <tal:XXX replace="nothing">
-    # XXX mpt 20080513: The HTML comment works around bug 229931.
+    # XXX mpt 2008-05-13 bug=229931: The HTML comment works.
   </tal:XXX>
   <!-- :-) --><tal:item repeat="link view/links"
     ><tal:if-enabled condition="link/enabled"><a

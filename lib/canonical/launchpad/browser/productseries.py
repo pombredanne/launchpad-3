@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
+    'ProductSeriesBreadcrumbBuilder',
     'ProductSeriesBugsMenu',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
@@ -14,7 +15,6 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSOP',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSpecificationsMenu',
@@ -34,7 +34,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -48,6 +47,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -59,9 +59,6 @@ def quote(text):
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = IProductSeries
-
-    def breadcrumb(self):
-        return 'Series ' + self.context.name
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -79,26 +76,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.product.displayname + ' series:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Releases, most recent first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProductSeries`."""
+    @property
+    def text(self):
+        return 'Series ' + self.context.name
 
 
 class ProductSeriesFacets(StandardLaunchpadFacets):

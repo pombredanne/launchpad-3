@@ -7,12 +7,12 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
+    'DistroSeriesBreadcrumbBuilder',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
     'DistroSeriesNavigation',
-    'DistroSeriesSOP',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
     ]
@@ -31,7 +31,6 @@ from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
@@ -45,6 +44,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
@@ -57,9 +57,6 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroSeries
-
-    def breadcrumb(self):
-        return self.context.version
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
@@ -124,27 +121,11 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             return self.context.last_delta_language_pack_exported.file
 
 
-class DistroSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.fullseriesname
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: list architectures, alphabetically
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        # XXX mpt 2006-10-04: list series, most recent first
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistroSeries`."""
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):

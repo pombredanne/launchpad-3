@@ -8,27 +8,26 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectAnswersMenu',
+    'ProjectBountiesMenu',
     'ProjectBranchesView',
     'ProjectBrandingView',
-    'ProjectNavigation',
+    'ProjectBreadcrumbBuilder',
     'ProjectEditView',
-    'ProjectReviewView',
-    'ProjectSetNavigation',
-    'ProjectSOP',
     'ProjectFacets',
+    'ProjectMaintainerReassignmentView',
+    'ProjectNavigation',
+    'ProjectRdfView',
+    'ProjectReviewView',
     'ProjectOverviewMenu',
     'ProjectSeriesSpecificationsMenu',
-    'ProjectSpecificationsMenu',
-    'ProjectBountiesMenu',
-    'ProjectAnswersMenu',
-    'ProjectTranslationsMenu',
+    'ProjectSetBreadcrumbBuilder',
     'ProjectSetContextMenu',
-    'ProjectView',
-    'ProjectEditView',
-    'ProjectAddProductView',
+    'ProjectSetNavigation',
     'ProjectSetView',
-    'ProjectRdfView',
-    'ProjectMaintainerReassignmentView',
+    'ProjectSpecificationsMenu',
+    'ProjectTranslationsMenu',
+    'ProjectView',
     ]
 
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -49,7 +48,6 @@ from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
@@ -60,15 +58,13 @@ from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
     Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.widgets.popup import SinglePopupWidget
 
 
 class ProjectNavigation(Navigation):
 
     usedfor = IProject
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     def traverse(self, name):
         return self.context.getProduct(name)
@@ -90,9 +86,6 @@ class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
-    def breadcrumb(self):
-        return 'Project Groups'
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
         project = self.context.getByName(name)
@@ -101,20 +94,16 @@ class ProjectSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(project))
 
 
-class ProjectSOP(StructuralObjectPresentation):
+class ProjectBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProject`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
-    def getIntroHeading(self):
-        return None
 
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Products, alphabetically
-        return list(self.context.products[:num])
-
-    def listAltChildren(self, num):
-        return None
+class ProjectSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProjectSet`."""
+    text = 'Project Groups'
 
 
 class ProjectSetContextMenu(ContextMenu):

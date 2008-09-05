@@ -64,8 +64,11 @@ if startup:
 # Bring in useful bits of Storm
 from storm.locals import *
 from storm.expr import *
-from storm.zope.interfaces import IZStorm
-store = getUtility(IZStorm).get('main')
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
+        SLAVE_FLAVOR, DEFAULT_FLAVOR)
+store_selector = getUtility(IStoreSelector)
+store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
 
 #
 # Let's get a few handy objects going

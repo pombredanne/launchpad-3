@@ -51,7 +51,10 @@ After joining the launchpad developers team, sabdfl can now see the
 comments.
 
     >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> launchpad_developers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_developers
     >>> launchpad_developers.addMember(sabdfl, reviewer=foo_bar)
     >>> sabdfl.inTeam(launchpad_developers)
     True
@@ -113,6 +116,7 @@ If sabdfl leaves the Launchpad Developers team the comment will no longer
 be visible to him:
 
     >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.leave(launchpad_developers)
     >>> sabdfl.inTeam(launchpad_developers)
     False

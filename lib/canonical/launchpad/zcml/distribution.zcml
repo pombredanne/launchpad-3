@@ -69,6 +69,20 @@
       factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
       />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistribution"
+    factory="canonical.launchpad.browser.DistributionBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    factory="canonical.launchpad.browser.DistributionSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser.distribution"
     classes="
@@ -116,13 +130,6 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistributionNavigation"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistribution"
-    factory="canonical.launchpad.browser.DistributionSOP"
-    permission="zope.Public"
     />
 
   <browser:pages
@@ -496,13 +503,6 @@
     provides="canonical.launchpad.interfaces.IDistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistributionSet"
-    factory="canonical.launchpad.browser.DistributionSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSet"

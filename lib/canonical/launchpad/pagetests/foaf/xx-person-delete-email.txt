@@ -1,0 +1,23 @@
+= Removing an email address =
+
+Any email address other than the preferred one can be removed from
+a person's +editemails page.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+editemails')
+    >>> browser.getControl('test@canonical.com').selected = True
+    >>> browser.getControl('Remove', index=0).click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    There is 1 error.
+    You can't remove test@canonical.com because it's your contact email
+    address.
+
+    >>> browser.getControl('testing@canonical.com').selected = True
+    >>> browser.getControl('Remove', index=0).click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    The email address 'testing@canonical.com' has been removed.
+
+    >>> browser.getControl('testing@canonical.com')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'testing@canonical.com'

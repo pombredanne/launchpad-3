@@ -12,7 +12,9 @@ import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError
+from bzrlib.remote import RemoteBranch
 from bzrlib.revision import NULL_REVISION
+from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
@@ -21,13 +23,57 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    get_canonical_url_for_branch_name, install_worker_ui_factory)
+    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
-from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from canonical.testing import reset_logging
+
+
+def get_netstrings(line):
+    """Parse `line` as a sequence of netstrings.
+
+    :return: A list of strings.
+    """
+    strings = []
+    while len(line) > 0:
+        colon_index = line.find(':')
+        length = int(line[:colon_index])
+        strings.append(line[colon_index+1:colon_index+1+length])
+        assert ',' == line[colon_index+1+length], (
+            'Expected %r == %r' % (',', line[colon_index+1+length]))
+        line = line[colon_index+length+2:]
+    return strings
+
+
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        import gc
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        self.transport_server = server.SmartTCPServer_for_testing
+        vfs_branch = self.make_branch('.')
+        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
 
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
@@ -54,7 +100,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('dest'))
         source_tree.commit('commit message')
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -64,7 +111,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     def testMirrorEmptyBranch(self):
         # We can mirror an empty branch.
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest'))
         to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
@@ -73,7 +121,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # We can mirror a branch even if the destination exists, and contains
         # data but is not a branch.
         source_tree = self.make_branch_and_tree('source-branch')
-        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('destdir'))
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
@@ -82,7 +131,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # 'dest' is not a branch.
         self.assertRaises(
             NotBranchError, bzrlib.branch.Branch.open, to_mirror.dest)
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
             source_tree.last_revision(), mirrored_branch.last_revision())
@@ -92,15 +141,55 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # still available after mirroring.
         http = get_transport('http://example.com')
         source_branch = self.make_branch('source-branch')
-        to_mirror = self.makePullerWorker(source_branch.base)
-        to_mirror.mirror()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'))
+        to_mirror.mirrorWithoutChecks()
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
 
+    def testDoesntSendStackedInfoUnstackableFormat(self):
+        # Mirroring an unstackable branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testDoesntSendStackedInfoNotStacked(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch(
+            'source-branch', format='development')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testSendsStackedInfo(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        base_branch = self.make_branch('base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(base_branch.base)
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id),
+             stacked_branch.get_stacked_on_url()],
+            get_netstrings(protocol_output.getvalue()))
 
 
-class TestBranchOpenerCheckSource(unittest.TestCase):
+class TestBranchOpenerCheckSource(TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
     class StubbedBranchOpener(BranchOpener):
@@ -144,8 +233,9 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         # When branch references are forbidden, checkSource does not raise on
         # non-references.
         opener = self.StubbedBranchOpener(False, ['a', None])
-        # This must not raise.
-        opener.checkSource('a')
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
@@ -160,8 +250,9 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
         # checkSource does not raise if following references is allowed and
         # the source URL points to a branch reference to a permitted location.
         opener = self.StubbedBranchOpener(True, ['a', 'b', None])
-        # This must not raise.
-        opener.checkSource('a')
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
@@ -189,6 +280,96 @@ class TestBranchOpenerCheckSource(unittest.TestCase):
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
+
+class TestBranchOpenerStacking(TestCaseWithTransport):
+
+    def makeBranchOpener(self, allowed_urls):
+        allowed_urls = [url.rstrip('/') for url in allowed_urls]
+        opener = BranchOpener()
+        def checkOneURL(url):
+            if url.rstrip('/') not in allowed_urls:
+                raise BadUrl(url)
+        opener.checkOneURL = checkOneURL
+        return opener
+
+    def testAllowedURL(self):
+        # checkSource does not raise an exception for branches stacked on
+        # branches with allowed URLs.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchOpener(
+            [stacked_branch.base, stacked_on_branch.base])
+        # This doesn't raise an exception.
+        opener.checkSource(stacked_branch.base)
+
+    def testAllowedRelativeURL(self):
+        # checkSource passes on absolute urls to checkOneURL, even if the
+        # value of stacked_on_location in the config is set to a relative URL.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../base-branch')
+        opener = self.makeBranchOpener(
+            [stacked_branch.base, stacked_on_branch.base])
+        # Note that stacked_on_branch.base is not '../base-branch', it's an
+        # absolute URL.
+        self.assertNotEqual('../base-branch', stacked_on_branch.base)
+        # This doesn't raise an exception.
+        opener.checkSource(stacked_branch.base)
+
+    def testAllowedRelativeNested(self):
+        # Relative URLs are resolved relative to the stacked branch.
+        self.get_transport().mkdir('subdir')
+        a = self.make_branch('subdir/a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        b.set_stacked_on_url('../subdir/a')
+        c = self.make_branch('subdir/c', format='1.6')
+        c.set_stacked_on_url('../../b')
+        opener = self.makeBranchOpener([c.base, b.base, a.base])
+        # This doesn't raise an exception.
+        opener.checkSource(c.base)
+
+    def testForbiddenURL(self):
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch with a forbidden URL.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchOpener([stacked_branch.base])
+        self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
+
+    def testForbiddenURLNested(self):
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch that is in turn stacked on a branch with a forbidden URL.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        b.set_stacked_on_url(a.base)
+        c = self.make_branch('c', format='1.6')
+        c.set_stacked_on_url(b.base)
+        opener = self.makeBranchOpener([c.base, b.base])
+        self.assertRaises(BadUrl, opener.checkSource, c.base)
+
+    def testSelfStackedBranch(self):
+        # checkSource raises StackingLoopError if a branch is stacked on
+        # itself. This avoids infinite recursion errors.
+        a = self.make_branch('a', format='1.6')
+        a.set_stacked_on_url(a.base)
+        opener = self.makeBranchOpener([a.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+
+    def testLoopStackedBranch(self):
+        # checkSource raises StackingLoopError if a branch is stacked in such
+        # a way so that it is ultimately stacked on itself. e.g. a stacked on
+        # b stacked on a.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        a.set_stacked_on_url(b.base)
+        b.set_stacked_on_url(a.base)
+        opener = self.makeBranchOpener([a.base, b.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+        self.assertRaises(StackingLoopError, opener.checkSource, b.base)
+
+
 class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
 
@@ -198,9 +379,9 @@ class TestReferenceMirroring(TestCaseWithTransport):
         :param url: target of the branch reference.
         :return: file url to the created pure branch reference.
         """
-        # XXX DavidAllouche 2007-09-12
+        # XXX DavidAllouche 2007-09-12 bug=139109:
         # We do this manually because the bzrlib API does not support creating
-        # a branch reference without opening it. See bug 139109.
+        # a branch reference without opening it.
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
@@ -247,7 +428,7 @@ class TestReferenceMirroring(TestCaseWithTransport):
         self.assertIs(None, opener.followReference(branch_url))
 
 
-class TestMirroredBranchOpener(unittest.TestCase):
+class TestMirroredBranchOpener(TestCase):
     """Tests specific to `MirroredBranchOpener`."""
 
     def setUp(self):
@@ -309,22 +490,8 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
-        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        observed_netstrings = get_netstrings(self.output.getvalue())
         self.assertEqual(expected_netstrings, observed_netstrings)
-
-    def getNetstrings(self, line):
-        """Parse `line` as a sequence of netstrings.
-
-        :return: A list of strings.
-        """
-        strings = []
-        while len(line) > 0:
-            colon_index = line.find(':')
-            length = int(line[:colon_index])
-            strings.append(line[colon_index+1:colon_index+1+length])
-            self.assertEqual(',', line[colon_index+1+length])
-            line = line[colon_index+length+2:]
-        return strings
 
     def resetBuffers(self):
         # Empty the test output and error buffers.
@@ -361,6 +528,12 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # progress.
         self.protocol.progressMade()
         self.assertSentNetstrings(['progressMade', '0'])
+
+    def test_setStackedOn(self):
+        # Calling 'setStackedOn' sends the location of the stacked-on branch,
+        # if any.
+        self.protocol.setStackedOn('/~foo/bar/baz')
+        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

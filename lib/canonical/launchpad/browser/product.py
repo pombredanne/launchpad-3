@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductBranchesView',
     'ProductBrandingView',
+    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
@@ -31,12 +32,11 @@ __all__ = [
     'ProductOverviewMenu',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSOP',
+    'ProductSetBreadcrumbBuilder',
     'ProductSetContextMenu',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
-    'ProductSetSOP',
     'ProductSetView',
     'ProductSpecificationsMenu',
     'ProductTranslationsMenu',
@@ -88,7 +88,6 @@ from canonical.launchpad.browser.distribution import UsesLaunchpadMixin
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import (
     FeedsMixin, ProductBranchesFeedLink)
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -100,6 +99,7 @@ from canonical.launchpad.webapp import (
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.date import DateWidget
@@ -116,9 +116,6 @@ class ProductNavigation(
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
-
-    def breadcrumb(self):
-        return self.context.displayname
 
     @stepto('.bzr')
     def dotbzr(self):
@@ -150,9 +147,6 @@ class ProductNavigation(
 class ProductSetNavigation(Navigation):
 
     usedfor = IProductSet
-
-    def breadcrumb(self):
-        return 'Projects'
 
     def traverse(self, name):
         # Raise a 404 on an invalid product name
@@ -244,20 +238,11 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        # product series, most recent first
-        return list(self.context.serieses[:num])
-
-    def listAltChildren(self, num):
-        return None
+class ProductBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IProduct`."""
+    @property
+    def text(self):
+        return self.context.displayname
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -618,19 +603,9 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
+class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Return a breadcrumb for an `IProductSet`."""
+    text = "Projects"
 
 
 class ProductSetFacets(StandardLaunchpadFacets):
@@ -1048,6 +1023,18 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         else:
             driver = None
         return driver
+
+    @cachedproperty
+    def show_commercial_subscription_info(self):
+        """Should subscription information be shown?
+
+        Subscription information is only shown to the project maintainers,
+        Launchpad admins, and members of the Launchpad commercial team.  The
+        first two are allowed via the Launchpad.Edit permission.  The latter
+        is allowed via Launchpad.Commercial.
+        """
+        return (check_permission('launchpad.Edit', self.context) or
+                check_permission('launchpad.Commercial', self.context))
 
 
 class ProductDownloadFilesView(LaunchpadView,
