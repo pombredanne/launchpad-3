@@ -1110,8 +1110,10 @@ methods:
 
 The 'sourcepackagerelease' attribute from a decorated
 `ArchiveSourcePublication` object is also another decorated object,
-this way we can cache information refered to
-`ISourcePackageRelease.package_diffs`.
+this way we can cache information refered to:
+
+ * package_diffs;
+ * upload_changesfile.
 
     >>> decorated_pub_with_diff = list(decorated_set)[-1]
     >>> print decorated_pub_with_diff.sourcepackagerelease
@@ -1128,3 +1130,37 @@ this way we can cache information refered to
     ...     pub_with_diff.sourcepackagerelease.package_diffs,
     ...     decorated_pub_with_diff.sourcepackagerelease.package_diffs)
     Matches
+
+Currently there are no suitable publications with a reachable
+changesfiles in our sampledata.
+
+    >>> pub_with_changes = cprov_published_sources[-1]
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> print the_source.upload_changesfile
+    None
+
+    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
+    >>> print decorated_source.upload_changesfile
+    None
+
+We can create a PackageUpload and a corresponding chnagesfiles for a
+publication.
+
+    >>> queue_record = the_source.upload_distroseries.createQueueEntry(
+    ...     PackagePublishingPocket.RELEASE, 'foo.changes', 'boing',
+    ...     pub_with_diff.archive)
+    >>> queue_source = queue_record.addSource(the_source)
+    >>> queue_record.setDone()
+    >>> print queue_record.changesfile.filename
+    foo.changes
+
+That done, the real and the decorated changesfile match.
+
+    >>> print the_source.upload_changesfile.filename
+    foo.changes
+
+    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
+    >>> print decorated_source.upload_changesfile.filename
+    foo.changes
