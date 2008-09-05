@@ -32,9 +32,9 @@
   </tal:some_mapped>
 
   <div tal:condition="view/mapped_participants">
-    <strong>Members' local time:</strong><br />
+    <div style="margin-bottom: 4px;"><strong>Members' current local time:</strong></div>
     <tal:time_set repeat="time view/times">
-      <tal:times replace="time" /><br />
+      <tal:times replace="time" /><span><br />
     </tal:time_set>
   </div>
 </div>
@@ -53,11 +53,12 @@
         <td>
           <tal:email replace="person/preferredemail/email|nothing" />
         </td>
-        <td width="100">
+        <td width="100" class="discrete-link">
           <!-- XXX: Do we have a css class for not making this link blue or
           are we going to inline it here? -->
           <a tal:attributes="
-            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+                 href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+             class="discrete-link"
             ><img src="/@@/edit" title="Set this person's location" />
           Set location</a>
         </td>

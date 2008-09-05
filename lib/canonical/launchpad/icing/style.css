@@ -358,6 +358,18 @@ th.descending {
   http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
 */
 
+/* --- Discrete Links --- */
+/*
+  These links are mainly used in listings, where we need to tone down
+  the color so the page doesn't look like a christmas tree.
+*/
+.discrete-link a:link {
+  color: #a2a2a2;
+}
+.discrete-link a:hover {
+  color: #03a;
+}
+
 /* --- Batch navigation links --- */
 
 /* Next links have icons: */
