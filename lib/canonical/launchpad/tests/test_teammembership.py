@@ -289,6 +289,78 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
 
 
+class TestTeamParticipationMesh(TeamParticipationTestCase):
+    """Participation management tests using two roots and some duplicated
+    branches.
+
+    Create a team hierarchy looking like this:
+        team1    /--team6
+            team2        \
+             |  team3    |
+             \--- team4-/
+                     team5
+                       no-priv
+    """
+
+    def setUp(self):
+        """Setup the team hierarchy."""
+        super(TestTeamParticipationMesh, self).setUp()
+        self.team6 = getUtility(IPersonSet).newTeam(
+            self.foo_bar, 'team6', 'team6')
+        self.team5.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team3, self.foo_bar, force_team_add=True)
+        self.team2.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
+        self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
+        self.team6.addMember(self.team2, self.foo_bar, force_team_add=True)
+        self.team6.addMember(self.team4, self.foo_bar, force_team_add=True)
+
+    def testTeamParticipationSetUp(self):
+        """Make sure that the TeamParticipation are sane after setUp."""
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+
+    def testRemoveTeam3FromTeam2(self):
+        self.team2.setMembershipData(
+            self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team4', 'team5'], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
+
+    def testRemoveTeam5FromTeam4(self):
+        self.team4.setMembershipData(
+            self.team5, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'team3', 'team4'], self.team2)
+        self.assertParticipantsEquals(['name16', 'team4'], self.team3)
+        self.assertParticipantsEquals(['name16'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'team2', 'team3', 'team4'], self.team6)
+
+
 class TestTeamMembership(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
