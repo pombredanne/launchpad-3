@@ -240,6 +240,24 @@ class TestExpandURL(TestCaseWithFactory):
         longer_path = os.path.join(arbitrary_branch.unique_name, 'qux')
         self.assertResolves(longer_path, longer_path)
 
+    def test_tooManySegmentsNoSuchBranch(self):
+        """If we have more segments than are necessary to refer to a branch,
+        then attach these segments to the resolved url, even if there is no
+        branch corresponding to the start of the URL.
+
+        This means the users will probably get a normal Bazaar 'no such
+        branch' error when they try a command like 'bzr cat
+        lp:path/to/branch/README.txt', which probably is the least surprising
+        thing that we can do.
+        """
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString()
+        extra_path = self.factory.getUniqueString()
+        longer_path = os.path.join(
+            '~' + person.name, product.name, branch_name, extra_path)
+        self.assertResolves(longer_path, longer_path)
+
     def test_emptyPath(self):
         """An empty path is an invalid identifier."""
         self.assertFault('', faults.InvalidBranchIdentifier(''))
