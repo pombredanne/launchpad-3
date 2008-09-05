@@ -361,7 +361,8 @@ class NoUrlForBranch(LaunchpadFault):
     """resolve_lp_path resolved to a remote branch with no URL."""
 
     error_code = 280
-    msg_template = 'The remote branch at %(unique_name)s has no URL specified.'
+    msg_template = (
+        'The remote branch at %(unique_name)s has no URL specified.')
 
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
