@@ -283,6 +283,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         :return: {'urls': [list_of_branch_urls]}.
         """
         if branch.branch_type == BranchType.REMOTE:
+            if branch.url is None:
+                return faults.NoUrlForBranch(branch.unique_name)
             return dict(urls=[branch.url])
         else:
             result = dict(urls=[])
