@@ -282,9 +282,9 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
             self.team1)
         self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team4', 'team5'], self.team2)
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
         self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team4'], self.team3)
+            ['name16', 'team4'], self.team3)
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
 
