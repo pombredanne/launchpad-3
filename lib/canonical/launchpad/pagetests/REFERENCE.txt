@@ -90,7 +90,7 @@ Using BeautifulSoup in all its glory:
   >>> strainer = SoupStrainer({'class': ['error']})
   >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
   >>> for tag in soup:
-    ...     print extract_text(tag)
+  ...     print extract_text(tag)
   Quantities must be greater than or equal 0.
 
 

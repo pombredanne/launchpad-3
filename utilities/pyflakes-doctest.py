@@ -147,6 +147,7 @@ def check_doctest(filename):
         script = extract_script(data)
     except ValueError:
         print >> sys.__stderr__, 'PARSING:', filename
+        raise
 
     try:
         tree = compiler.parse(script)
