@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -426,7 +426,7 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False):
+                private=False, date_closed=None, title=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -442,7 +442,8 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
@@ -450,6 +451,10 @@ class LaunchpadObjectFactory:
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        if date_closed is not None:
+            [bugtask] = bug.bugtasks
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
     def makeBugTask(self, bug=None, target=None):
