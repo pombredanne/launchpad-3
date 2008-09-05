@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
