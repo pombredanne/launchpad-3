@@ -47,6 +47,9 @@ ALTER TABLE ONLY derivedarchive
     ADD CONSTRAINT derivedarchive__requestor__fk
     FOREIGN KEY (registrant) REFERENCES person(id);
 
+CREATE INDEX derivedarchive__registrant__idx ON
+    derivedarchive USING btree (registrant);
+
 -- Create new ArchiveCopyJob table.
 
 -- Once a derived archive has been put into place the user will want to copy
