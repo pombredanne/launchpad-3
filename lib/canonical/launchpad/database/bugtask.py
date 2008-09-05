@@ -70,7 +70,8 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
-from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
+from canonical.launchpad.searchbuilder import (
+    all, any, greater_than, NULL, not_equals)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
@@ -716,7 +717,7 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
-    def transitionToStatus(self, new_status, user):
+    def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the
@@ -751,8 +752,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
             return
 
-        UTC = pytz.timezone('UTC')
-        now = datetime.datetime.now(UTC)
+        if when is None:
+            UTC = pytz.timezone('UTC')
+            when = datetime.datetime.now(UTC)
 
         # Record the date of the particular kinds of transitions into
         # certain states.
@@ -763,19 +765,19 @@ class BugTask(SQLBase, BugTaskMixin):
             # confirmed date at the same time anyway, otherwise we get
             # a strange gap in our data, and potentially misleading
             # reports.
-            self.date_confirmed = now
+            self.date_confirmed = when
 
         if ((old_status < BugTaskStatus.INPROGRESS) and
             (new_status >= BugTaskStatus.INPROGRESS)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
-            self.date_inprogress = now
+            self.date_inprogress = when
 
         if (old_status == BugTaskStatus.NEW and
             new_status > BugTaskStatus.NEW and
             self.date_left_new is None):
             # This task is leaving the NEW status for the first time
-            self.date_left_new = now
+            self.date_left_new = when
 
         # If the new status is equal to or higher
         # than TRIAGED, we record a `date_triaged`
@@ -784,7 +786,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if (old_status < BugTaskStatus.TRIAGED and
             new_status >= BugTaskStatus.TRIAGED):
             # This task is now marked as TRIAGED
-            self.date_triaged = now
+            self.date_triaged = when
 
         # If the new status is equal to or higher
         # than FIXCOMMITTED, we record a `date_fixcommitted`
@@ -793,7 +795,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if (old_status < BugTaskStatus.FIXCOMMITTED and
             new_status >= BugTaskStatus.FIXCOMMITTED):
             # This task is now marked as FIXCOMMITTED
-            self.date_fix_committed = now
+            self.date_fix_committed = when
 
         # If the new status is equal to or higher
         # than FIXRELEASED, we record a `date_fixreleased`
@@ -802,19 +804,19 @@ class BugTask(SQLBase, BugTaskMixin):
         if (old_status < BugTaskStatus.FIXRELEASED and
             new_status >= BugTaskStatus.FIXRELEASED):
             # This task is now marked as FIXRELEASED
-            self.date_fix_released = now
+            self.date_fix_released = when
 
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
         if new_status == BugTaskStatus.INCOMPLETE:
-            self.date_incomplete = now
+            self.date_incomplete = when
         else:
             self.date_incomplete = None
 
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
-            self.date_closed = now
+            self.date_closed = when
 
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
@@ -1029,6 +1031,8 @@ def search_value_to_where_condition(search_value):
         True
         >>> search_value_to_where_condition(not_equals('foo'))
         "!= 'foo'"
+        >>> search_value_to_where_condition(greater_than('foo'))
+        "> 'foo'"
         >>> search_value_to_where_condition(1)
         '= 1'
         >>> search_value_to_where_condition(NULL)
@@ -1043,6 +1047,8 @@ def search_value_to_where_condition(search_value):
         return "IN (%s)" % ",".join(sqlvalues(*search_value.query_values))
     elif zope_isinstance(search_value, not_equals):
         return "!= %s" % sqlvalues(search_value.value)
+    elif zope_isinstance(search_value, greater_than):
+        return "> %s" % sqlvalues(search_value.value)
     elif search_value is not NULL:
         return "= %s" % sqlvalues(search_value)
     else:
@@ -1256,6 +1262,7 @@ class BugTaskSet:
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
+            'date_closed': params.date_closed,
         }
 
         # Loop through the standard, "normal" arguments and build the

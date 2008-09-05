@@ -20,10 +20,13 @@ __all__ = [
     'MaloneView',
     ]
 
+from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import operator
 import re
+
+import pytz
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -38,7 +41,6 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams,
     IBug,
     IBugSet,
-    IBugTaskSet,
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
@@ -49,7 +51,7 @@ from canonical.launchpad.interfaces.bugattachment import IBugAttachmentSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
@@ -316,26 +318,38 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5):
+    def getMostRecentlyFixedBugs(self, limit=5, when=None):
         """Return the ten most recently fixed bugs."""
-        fixed_bugs = []
-        search_params = BugTaskSearchParams(
-            self.user, status=BugTaskStatus.FIXRELEASED,
-            orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
-        # XXX: Bjorn Tillenius 2006-12-13:
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting bugs instead of bugtasks.
-        #      If fixed_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over just 10, because
-        #      Transaction.iterSelect() listifies the result.
-        for bugtask in fixed_bugtasks[:4*limit]:
-            if bugtask.bug not in fixed_bugs:
-                fixed_bugs.append(bugtask.bug)
-                if len(fixed_bugs) >= limit:
-                    break
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        date_closed_limits = [
+            timedelta(days=1),
+            timedelta(days=7),
+            timedelta(days=30),
+            None,
+        ]
+        for date_closed_limit in date_closed_limits:
+            fixed_bugs = []
+            search_params = BugTaskSearchParams(
+                self.user, status=BugTaskStatus.FIXRELEASED,
+                orderby='-date_closed')
+            if date_closed_limit is not None:
+                search_params.date_closed = greater_than(
+                    when - date_closed_limit)
+            fixed_bugtasks = self.context.searchTasks(search_params)
+            # XXX: Bjorn Tillenius 2006-12-13:
+            #      We might end up returning less than :limit: bugs, but in
+            #      most cases we won't, and '4*limit' is here to prevent
+            #      this page from timing out in production. Later I'll fix
+            #      this properly by selecting bugs instead of bugtasks.
+            #      If fixed_bugtasks isn't sliced, it will take a long time
+            #      to iterate over it, even over just 10, because
+            #      Transaction.iterSelect() listifies the result.
+            for bugtask in fixed_bugtasks[:4*limit]:
+                if bugtask.bug not in fixed_bugs:
+                    fixed_bugs.append(bugtask.bug)
+                    if len(fixed_bugs) >= limit:
+                        return fixed_bugs
         return fixed_bugs
 
     def getCveBugLinkCount(self):
