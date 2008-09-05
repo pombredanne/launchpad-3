@@ -367,6 +367,15 @@ class TestExpandURL(TestCaseWithFactory):
         result = self.api.resolve_lp_path(branch.unique_name)
         self.assertEqual([branch.url], result['urls'])
 
+    def test_remoteBranchNoURL(self):
+        """Raise a Fault for remote branches with no URL.
+        """
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.REMOTE, url=None)
+        self.assertFault(
+            branch.unique_name,
+            faults.NoUrlForBranch(branch.unique_name))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -32,6 +32,7 @@ __all__ = [
     'NoSuchSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
+    'NoUrlForBranch',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
@@ -354,3 +355,13 @@ class NoBranchWithID(LaunchpadFault):
 
     def __init__(self, branch_id):
         LaunchpadFault.__init__(self, branch_id=branch_id)
+
+
+class NoUrlForBranch(LaunchpadFault):
+    """resolve_lp_path resolved to a remote branch with no URL."""
+
+    error_code = 280
+    msg_template = 'The remote branch at %(unique_name)s has no URL specified.'
+
+    def __init__(self, unique_name):
+        LaunchpadFault.__init__(self, unique_name=unique_name)
