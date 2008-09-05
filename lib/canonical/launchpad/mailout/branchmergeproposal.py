@@ -15,6 +15,7 @@ from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IPendingCodeMailSource)
 from canonical.launchpad.webapp import canonical_url
+from zope.security.proxy import removeSecurityProxy
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
@@ -166,9 +167,13 @@ class BMPMailer(BaseMailer):
         headers['X-Launchpad-Branch'] = reason.branch.unique_name
         if reason.branch.product is not None:
             headers['X-Launchpad-Project'] = reason.branch.product.name
-        if self.merge_proposal.root_message_id is not None:
-            headers['In-Reply-To'] = self.merge_proposal.root_message_id
+        in_reply_to = self._getInReplyTo()
+        if in_reply_to is not None:
+            headers['In-Reply-To'] = in_reply_to
         return headers
+
+    def _getInReplyTo(self):
+        return self.merge_proposal.root_message_id
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
@@ -183,6 +188,13 @@ class BMPMailer(BaseMailer):
             'whiteboard': self.merge_proposal.whiteboard
             })
         return params
+
+    def generateEmail(self, subscriber):
+        """Rather roundabout.  Best not to use..."""
+        pending = removeSecurityProxy(self.queue([subscriber])[0])
+        message = pending.toMessage()
+        pending.destroySelf()
+        return (message, message['Subject'], message.get_payload(decode=True))
 
     def queue(self, recipient_people=None):
         pending = []
@@ -206,6 +218,7 @@ class BMPMailer(BaseMailer):
                 body=self._getBody(email),
                 footer='',
                 message_id=message_id,
+                in_reply_to=self._getInReplyTo(),
                 reply_to_address = self._getReplyToAddress(),
                 branch_project_name = branch_project_name,
                 )

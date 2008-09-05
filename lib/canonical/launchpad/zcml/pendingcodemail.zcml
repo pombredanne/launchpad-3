@@ -11,7 +11,7 @@
   </securedutility>
 
   <content class="canonical.launchpad.database.PendingCodeMail">
-    <allow attributes="sendMail"/>
+    <allow attributes="destroySelf sendMail toMessage"/>
   </content>
 
 </configure>

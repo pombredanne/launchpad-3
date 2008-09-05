@@ -78,6 +78,10 @@ class CodeReviewCommentMailer(BMPMailer):
         """Return the mail headers to use."""
         headers = BMPMailer._getHeaders(self, email)
         headers['Message-Id'] = self.message.rfc822msgid
-        if self.message.parent is not None:
-            headers['In-Reply-To'] = self.message.parent.rfc822msgid
         return headers
+
+    def _getInReplyTo(self):
+        if self.message.parent is not None:
+            return self.message.parent.rfc822msgid
+        else:
+            return BMPMailer._getInReplyTo(self)

@@ -84,10 +84,11 @@ class PendingCodeMailSource:
 
     def create(self, from_address, reply_to_address, to_address, rationale,
                branch_url, branch_project_name, subject, body, footer,
-               message_id):
+               message_id, in_reply_to):
         """See `IPendingCodeMailSource`"""
         return PendingCodeMail(from_address=from_address,
             reply_to_address=reply_to_address, to_address=to_address,
             rationale=rationale, branch_url=branch_url,
             branch_project_name=branch_project_name, subject=subject,
-            body=body, footer=footer, rfc822msgid=message_id)
+            body=body, footer=footer, rfc822msgid=message_id,
+            in_reply_to=in_reply_to)
