@@ -194,7 +194,12 @@ class BMPMailer(BaseMailer):
         pending = removeSecurityProxy(self.queue([subscriber])[0])
         message = pending.toMessage()
         pending.destroySelf()
-        return (message, message['Subject'], message.get_payload(decode=True))
+        headers = dict(message.items())
+        del headers['Date']
+        del headers['From']
+        del headers['To']
+        del headers['Subject']
+        return (headers, message['Subject'], message.get_payload(decode=True))
 
     def queue(self, recipient_people=None):
         pending = []
