@@ -36,12 +36,14 @@ CREATE TABLE PreviewDiffReference (
 CREATE TABLE PendingCodeMail (
   id serial PRIMARY KEY,
   from_address text NOT NULL,
+  reply_to_address text,
   to_address text NOT NULL,
   subject text NOT NULL,
   body text NOT NULL,
   footer text NOT NULL,
   rationale text NOT NULL,
   branch_url text NOT NULL,
+  branch_project_name text,
   date_created timestamp without time zone NOT NULL
       DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   rfc822msgid text NOT NULL,
