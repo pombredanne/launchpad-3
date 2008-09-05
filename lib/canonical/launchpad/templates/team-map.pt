@@ -38,28 +38,28 @@
   </p>
 
   <tal:unmapped condition="view/unmapped_participants">
+    <!-- XXX: I don't know how to place this below the map. Please help. -->
     <p style="margin: 4px;">
       <strong>Complete the map!</strong><br />
       Do you know the current location for these team members?  Update
       locations for:
     </p>
 
-    <!-- I don't know how to place this below the map. Please help. -->
-    <table>
-      <thead>
-      <tr>
-        <th>Update</th>
-        <th>Member</th>
-      </tr>
-      </thead>
+    <table width="80%">
       <tr tal:repeat="person view/unmapped_participants">
         <td>
-          <a tal:attributes="
-            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
-          ><img src="/@@/edit" title="Set this person's location" /></a>
+          <tal:person replace="structure person/fmt:link" />
         </td>
         <td>
-          <tal:person replace="structure person/fmt:link" />
+          <tal:email replace="person/preferredemail/email|nothing" />
+        </td>
+        <td>
+          <!-- XXX: Do we have a css class for not making this link blue or
+          are we going to inline it here? -->
+          <a tal:attributes="
+            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+            ><img src="/@@/edit" title="Set this person's location" />
+          Set location</a>
         </td>
       </tr>
     </table>
