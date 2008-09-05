@@ -2014,6 +2014,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
 
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
+
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson
 IJabberID['person'].schema = IPerson
