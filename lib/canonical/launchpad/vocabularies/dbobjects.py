@@ -181,7 +181,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             # Attempt a search, and if there is one and only one result
             # just use that instead.
             search_result = self.search(token)
-            if search_result.count() == 1:
+            if search_result.limit(2).count() == 1:
                 [branch] = list(search_result)
             else:
                 raise LookupError(token)
