@@ -1575,12 +1575,14 @@ COMMENT ON COLUMN GPGKey.can_encrypt IS 'Whether the key has been validated for 
 
 -- PrivateGPGKey
 
-COMMENT ON TABLE PrivateGPGKey IS 'The private part of a launchpad-hosted GPG keys';
-COMMENT ON COLUMN PrivateGPGKey.date_created IS 'Instant when the private key was created.';
-COMMENT ON COLUMN PrivateGPGKey.owner IS 'User who requested the hosted key creaction.';
-COMMENT ON COLUMN PrivateGPGKey.gpg_key IS 'The corresponding public GPG key part.';
-COMMENT ON COLUMN PrivateGPGKey.comment IS 'Text to be included when generating the private GPG key.';
+COMMENT ON TABLE PrivateGPGKey IS 'Represents the request and the existence of the private part of launchpad-generated (and hosted) GPG keys.';
+COMMENT ON COLUMN PrivateGPGKey.date_requested IS 'Instant when a hosted key was requested.';
+COMMENT ON COLUMN PrivateGPGKey.requestor IS 'User who requested a hosted key generation.';
+COMMENT ON COLUMN PrivateGPGKey.comment IS 'Text to be included when generating the private GPG key. It will be set as the embedded identification of the public key.';
 COMMENT ON COLUMN PrivateGPGKey.status IS 'The status of the private GPG key, PENDING_GENERATION, ACTIVE, PENDING_REVOCATION or REVOKED.';
+COMMENT ON COLUMN PrivateGPGKey.gpg_key IS 'The corresponding public GPG key part which gets set once the key is generated.';
+COMMENT ON COLUMN PrivateGPGKey.date_created IS 'Instant when the private key was created.';
+
 
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';

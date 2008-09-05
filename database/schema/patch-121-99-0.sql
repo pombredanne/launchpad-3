@@ -1,15 +1,17 @@
 SET client_min_messages=ERROR;
 
--- A table for requesting and storing private GPG keys.
+-- A table for requesting and recording the existence of private
+-- GPG keys hosted by Launchpad.
 
 CREATE TABLE PrivateGpgKey (
     id serial PRIMARY KEY,
-    date_created timestamp without time zone
+    date_requested timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    owner integer NOT NULL REFERENCES Person(id),
-    gpg_key integer UNIQUE REFERENCES GpgKey(id),
+    requestor integer NOT NULL REFERENCES Person(id),
+    comment text,
     status integer,
-    comment text
+    gpg_key integer UNIQUE REFERENCES GpgKey(id),
+    date_created timestamp without time zone
 );
 
 
