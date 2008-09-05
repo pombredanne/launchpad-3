@@ -242,7 +242,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return self._getSeriesBranch(series)
 
     def _getBranch(self, unique_name):
-        """Return the branch specified by the given unique name.
+        """Return a branch or _NonexistentBranch for the given unique name.
 
         :param unique_name: A string of the form "~user/project/branch".
         :return: The corresponding Branch object if the branch exists, a
@@ -255,7 +255,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if check_permission('launchpad.View', branch):
             return branch
         else:
-            return None
+            return self._getNonexistentBranch(unique_name)
 
     def _getNonexistentBranch(self, unique_name):
         """Return an appropriate response for a non-existent branch.
@@ -313,9 +313,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         else:
             suffix = path_segments.pop()
             result = self._getBranch('/'.join(path_segments))
-
-        if result is None:
-            result = self._getNonexistentBranch(strip_path)
 
         if isinstance(result, faults.LaunchpadFault):
             return result

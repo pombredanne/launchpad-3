@@ -18,13 +18,13 @@ from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestExpandURL(TestCaseWithFactory):
     """Test the way that URLs are expanded."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Set up the fixture for these unit tests.
