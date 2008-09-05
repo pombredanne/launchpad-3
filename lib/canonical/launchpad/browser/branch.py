@@ -841,6 +841,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
+    for_input = True
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
                    'summary', 'lifecycle_status', 'whiteboard']
 
