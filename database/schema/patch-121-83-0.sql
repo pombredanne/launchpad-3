@@ -7,4 +7,4 @@ ALTER TABLE BugTracker
     ADD COLUMN has_lp_plugin BOOLEAN;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 83, 0);
