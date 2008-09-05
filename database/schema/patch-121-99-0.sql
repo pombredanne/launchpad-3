@@ -5,29 +5,33 @@ SET client_min_messages=ERROR;
 
 -- The concept of rebuild archives is being extended to generalized copy
 -- archives.
--- Table 'archiverebuild' will hence be renamed to 'derivedarchive'.
 
--- Step 1: get rid of the old constraints
-ALTER TABLE ONLY archiverebuild DROP
-    CONSTRAINT archiverebuild__archive__key ;
+-- Table 'archiverebuild' will hence be dropped and recreated as table
+-- 'derivedarchive'.
 
-ALTER TABLE ONLY archiverebuild DROP
-    CONSTRAINT archiverebuild__archive__fk ;
+-- Step 1: get rid of the old table ('archiverebuild')
+DROP TABLE archiverebuild CASCADE;
 
-ALTER TABLE ONLY archiverebuild DROP
-    CONSTRAINT archiverebuild__distroseries__fk ;
+-- Step 2: recreate the table as 'derivedarchive'.
+CREATE TABLE derivedarchive (
+    id serial PRIMARY KEY,
+    -- The parent archive.
+    archive integer NOT NULL,
+    -- The associated DistroSeries.
+    distroseries integer NOT NULL,
+    -- The person who created the derived archive.
+    registrant integer NOT NULL,
+    -- The rebuild status if applicable (one of: new, in-progress, cancelled,
+    -- succeeded, failed).
+    rebuild_status integer NOT NULL,
+    -- The reason why this derived archive was created (one-liner).
+    reason text,
+    -- When was this derived archive created?
+    date_created timestamp without time zone
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
+);
 
-ALTER TABLE ONLY archiverebuild DROP
-    CONSTRAINT archiverebuild__requestor__fk ;
-
--- Step 2: rename the table and the associated index.
-ALTER TABLE ONLY archiverebuild RENAME COLUMN status TO rebuild_status;
-ALTER TABLE ONLY archiverebuild RENAME TO derivedarchive;
-
-ALTER INDEX archiverebuild__registrant__idx RENAME TO
-    derivedarchive__registrant__idx;
-
--- Step 3: now recreate the constraints with proper names
+-- Step 3: define the appropriate constraints.
 ALTER TABLE ONLY derivedarchive
     ADD CONSTRAINT derivedarchive__archive__key UNIQUE (archive);
 
@@ -141,4 +145,4 @@ ALTER TABLE ONLY archivecopyjobarch
     ADD CONSTRAINT archivecopyjobarch__distroarchseries__fk
     FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 81, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);

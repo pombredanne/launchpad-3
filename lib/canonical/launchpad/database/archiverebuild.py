@@ -52,6 +52,8 @@ class ArchiveRebuild(SQLBase):
 
     implements(IArchiveRebuild)
 
+    _table = 'DerivedArchive'
+
     archive = ForeignKey(
         dbName='archive', foreignKey='Archive', notNull=True)
 
@@ -62,7 +64,7 @@ class ArchiveRebuild(SQLBase):
         dbName='registrant', foreignKey='Person', notNull=True)
 
     status = EnumCol(
-        dbName='status', notNull=True, schema=ArchiveRebuildStatus,
+        dbName='rebuild_status', notNull=True, schema=ArchiveRebuildStatus,
         default=ArchiveRebuildStatus.INPROGRESS,
         storm_validator=validate_status)
 
@@ -123,7 +125,7 @@ class ArchiveRebuildSet:
     def getByDistributionAndArchiveName(self, distribution, archive_name):
         """See `IArchiveRebuildSet`."""
         query = """
-            ArchiveRebuild.archive = Archive.id AND
+            DerivedArchive.archive = Archive.id AND
             Archive.distribution = %s AND
             Archive.name = %s
         """ % sqlvalues(distribution, archive_name)
