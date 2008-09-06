@@ -227,7 +227,7 @@ class WebServiceResponseWrapper(ProxyBase):
             # Return a useful ValueError that displays the problematic
             # string, instead of one that just says the string wasn't
             # JSON.
-            raise ValueError(self.getBody())
+            raise ValueError(self.getOutput())
 
 
 def extract_url_parameter(url, parameter):
