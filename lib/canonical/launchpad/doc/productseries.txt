@@ -62,8 +62,8 @@ A ProductSeries can also be fetched with the IProductSeriesSet utility.
     >>> print firefox_1_0.name
     1.0
 
-New ProductSeries are created using Product.newSeries. Only the product owner
-can call Product.newSeries.
+New ProductSeries are created using Product.newSeries. Only the product
+owner can call Product.newSeries.
 
     >>> owner = getUtility(IPersonSet).getByName('carlos')
     >>> summary = "Experimental port of Firefox to the Emacs operating system."
@@ -72,7 +72,6 @@ can call Product.newSeries.
     ...
     Unauthorized: (..., 'newSeries', 'launchpad.Edit')
 
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login('test@canonical.com')
     >>> emacs = firefox.newSeries(owner, 'emacs', summary)
     >>> login(ANONYMOUS)

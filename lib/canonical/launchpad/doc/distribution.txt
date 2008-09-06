@@ -512,7 +512,7 @@ series of a distribution.
 
     >>> woody = debian['woody']
 
-Only the distro owner or the distroseries owner can create a milestone.
+Milestones for distros can only be created by distro owners or admins.
 
     >>> login('no-priv@canonical.com')
     >>> woody.newMilestone(

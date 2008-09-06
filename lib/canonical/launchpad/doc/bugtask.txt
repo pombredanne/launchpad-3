@@ -329,6 +329,7 @@ demonstrate.
     >>> print ubuntu.currentseries.name
     hoary
 
+    # Only owners, experts, or admins can create a milestone.
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
     >>> login('test@canonical.com')
@@ -435,6 +436,8 @@ A distroseries/productseries task that isn't the current development
 focus, doesn't have any conjoined masters or slaves.
 
     >>> from storm.store import Store
+
+    # Only owners, experts, or admins can create a series.
     >>> login('foo.bar@canonical.com')
     >>> alsa_utils_stable = alsa_utils.newSeries(
     ...     launchbag.user, 'stable', 'The stable series.')

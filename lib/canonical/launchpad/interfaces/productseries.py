@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'ImportStatus',
     'IProductSeries',
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
-    'ImportStatus',
     'RevisionControlSystems',
     'validate_cvs_module',
     'validate_cvs_root',
@@ -195,8 +195,8 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this DistroSeries."""
 
 
-class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal, IHasMilestones):
+class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
+                           IBugTarget, ISpecificationGoal, IHasMilestones):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

@@ -361,7 +361,8 @@ ProductSeries of a product.
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
-Only the product owner or the productseries owner can create a milestone.
+Milestones for products can only be created by product/project owners,
+registry experts, or admins.
 
     >>> firefox_one_zero = firefox.getSeries('1.0')
     >>> product_owner_email = firefox.owner.preferredemail.email
@@ -374,7 +375,6 @@ Only the product owner or the productseries owner can create a milestone.
     >>> login(product_owner_email)
     >>> firefox_milestone = firefox_one_zero.newMilestone(
     ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
-    >>> login('foo.bar@canonical.com')
 
 They're ordered by dateexpected.
 
@@ -429,6 +429,10 @@ no longer appear in the result set.
     >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
     ...     context=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
+
+    # Only an owner, admin, or a bazaar expert can set the
+    # branch.lifecycle_status.
+    >>> login('foo.bar@canonical.com')
     >>> for branch_view in thunderbird_branches:
     ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
     ...     # returns objects from BranchWithSortKeys, which is a view and so
