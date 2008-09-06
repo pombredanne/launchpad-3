@@ -294,7 +294,7 @@ class MailingList(SQLBase):
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
         if email == self.team.preferredemail:
             self.team.setContactAddress(None)
-        removeSecurityProxy(email).status = EmailAddressStatus.NEW
+        email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""
