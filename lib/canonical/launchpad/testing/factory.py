@@ -620,8 +620,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
