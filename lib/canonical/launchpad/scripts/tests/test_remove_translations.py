@@ -104,12 +104,11 @@ class TestRemoveTranslations(TestCase):
 
     def setUp(self):
         # Acquire privileges to delete TranslationMessages.  That's not
-        # something we normally do.
-        # XXX JeroenVermeulen 2008-09-06 bug=261507: This should be
-        # "rosettaadmin" but bug 261507 currently breaks translations
-        # activity that creates accounts as a side effect.  (We really
-        # don't want to create accounts, but that currently still
-        # happens as a side effect of creating persons).
+        # something we normally do.  Actually we should test under
+        # rosettaadmin, but that user does not have all the privileges
+        # needed to set up this test.  A separate doctest tests a
+        # realistic run of the remove-translations-by.py script under
+        # the actual rosettaadmin db user.
         self.layer.switchDbUser('postgres')
 
         # Set up a template with Dutch and German translations.  The

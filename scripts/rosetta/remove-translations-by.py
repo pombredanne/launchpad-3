@@ -29,6 +29,23 @@ def get_origin(name):
     """Look up `RosettaTranslationOrigin` by name."""
     return getattr(RosettaTranslationOrigin, name).value
 
+def get_bool(self, string_value):
+    """Convert option value string_value to bool representation."""
+    if string_value is None:
+        return None
+    string_value = string_value.lower()
+    bool_representations = {
+        'true': True,
+        '1': True,
+        'false': False,
+        '0': False,
+        }
+
+    if string_value not in bool_representations:
+        raise ValueError("Invalid boolean value: %s" % string_value)
+
+    return bool_representations[string_value]
+
 
 class RemoveTranslations(LaunchpadScript):
     """Remove specific `TranslationMessage`s from the database.
@@ -106,22 +123,6 @@ class RemoveTranslations(LaunchpadScript):
         else:
             self.logger.debug("'%s' has id %d." % (identifier, result))
         return result
-
-    def get_bool(self, string_value):
-        """Convert option value string_value to bool representation."""
-        if string_value is None:
-            return None
-        bool_representations = {
-            'True': True,
-            'true': True,
-            '1': True,
-            'False': False,
-            'false': False,
-            '0': False,
-            }
-        if string_value not in bool_representations:
-            raise ValueError("Invalid boolean value: %s" % string_value)
-        return bool_representations[string_value]
 
     def _check_option_type(self, option_name, option_type):
         """Check that argument is of given type, or None."""
