@@ -29,7 +29,8 @@ def get_origin(name):
     """Look up `RosettaTranslationOrigin` by name."""
     return getattr(RosettaTranslationOrigin, name).value
 
-def get_bool(self, string_value):
+
+def get_bool(string_value):
     """Convert option value string_value to bool representation."""
     if string_value is None:
         return None
@@ -160,8 +161,8 @@ class RemoveTranslations(LaunchpadScript):
         self.options.potemplate = self.get_id(self.options.potemplate)
         self.options.origin = self.get_id(self.options.origin, get_origin)
 
-        self.options.is_current = self.get_bool(self.options.is_current)
-        self.options.is_imported = self.get_bool(self.options.is_imported)
+        self.options.is_current = get_bool(self.options.is_current)
+        self.options.is_imported = get_bool(self.options.is_imported)
 
     def main(self):
         """See `LaunchpadScript`."""
