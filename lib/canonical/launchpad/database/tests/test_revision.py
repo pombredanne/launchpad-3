@@ -276,6 +276,10 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
     def _getRevisions(self, day_limit=30):
         raise NotImplementedError('_getRevisions')
 
+
+class RevisionTestMixin:
+    """Common tests for the different GetPublicRevision test cases."""
+
     def testNewestRevisionFirst(self):
         # The revisions are ordered with the newest first.
         rev1 = self._makeRevision()
@@ -332,7 +336,8 @@ class GetPublicRevisionsTestCase(TestCaseWithFactory):
         self.assertEqual([rev2],  self._getRevisions(day_limit))
 
 
-class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase):
+class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,
+                                      RevisionTestMixin):
     """Test the `getPublicRevisionsForPerson` method of `RevisionSet`."""
 
     def setUp(self):
@@ -372,7 +377,8 @@ class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase):
                          list(RevisionSet.getPublicRevisionsForPerson(team)))
 
 
-class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase):
+class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
+                                       RevisionTestMixin):
     """Test the `getPublicRevisionsForProduct` method of `RevisionSet`."""
 
     def setUp(self):
@@ -392,7 +398,8 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase):
         self.assertEqual([rev1], self._getRevisions())
 
 
-class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase):
+class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
+                                       RevisionTestMixin):
     """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
 
     def setUp(self):
