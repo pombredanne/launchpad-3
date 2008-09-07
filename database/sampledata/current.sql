@@ -4557,7 +4557,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 13, 7, 0, 1, NULL, 12, NULL, 'es.po', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
+', true, 13, 6, 0, 2, NULL, 12, NULL, 'es.po', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
@@ -4668,7 +4668,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 36, 35, 0, 0, NULL, 31, NULL, 'cs.po', '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
+', true, 36, 56, 0, 0, NULL, 31, NULL, 'cs.po', '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
 INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
@@ -5153,12 +5153,9 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touc
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (13, 33, 7, 72, '2005-05-06 20:09:31.825695');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (14, 34, 5, 135, '2005-05-06 20:09:51.386766');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (15, 35, 10, 198, '2005-05-06 20:10:18.431259');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (16, 36, 9, 261, '2005-05-06 20:10:41.732277');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (17, 37, 3, 324, '2005-05-06 20:11:16.591589');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (18, 38, 4, 387, '2005-05-06 20:11:41.773683');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (19, 39, 6, 450, '2005-05-06 20:12:08.283113');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (20, 40, 8, 499, '2005-05-06 20:12:35.976807');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (21, 41, 11, 561, '2005-05-06 20:13:10.405056');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (22, 42, 13, 579, '2005-05-06 21:12:18.833057');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (23, 43, 15, 588, '2005-05-06 21:12:20.874654');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (24, 44, 25, 603, '2005-05-06 21:12:25.930403');
@@ -5173,6 +5170,9 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touc
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (33, 52, 1, 697, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (34, 56, 31, 688, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (35, 66, 30, 684, '2006-12-13 21:19:06.369142');
+INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (36, 36, 9, 257, '2005-05-06 20:10:41.732277');
+INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (37, 39, 6, 446, '2005-05-06 20:12:08.283113');
+INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (38, 41, 11, 557, '2005-05-06 20:13:10.405056');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -8992,7 +8992,7 @@ ALTER TABLE translationmessage DISABLE TRIGGER ALL;
 
 INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (1, 1, 1, '2005-04-07 13:19:17.601068', 13, '2005-04-07 13:19:17.601068', 13, 1, NULL, NULL, NULL, '', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (2, 1, 2, '2005-04-07 13:19:17.601068', 13, '2005-04-07 13:19:17.601068', 13, 2, NULL, NULL, NULL, '', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (3, 1, 3, '2005-04-07 13:19:17.601068', 13, '2007-01-04 11:02:02.844658', 13, 3, NULL, NULL, NULL, '', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (3, 1, 3, '2005-04-07 13:19:17.601068', 13, '2007-01-04 11:02:02.844658', 13, 3, NULL, NULL, NULL, '', 1, 0, true, true, false, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (4, 1, 5, '2005-04-07 13:19:17.601068', 13, '2005-04-07 13:19:17.601068', 13, 4, NULL, NULL, NULL, '', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (5, 1, 14, '2005-04-07 13:19:17.601068', 13, '2005-04-07 13:19:17.601068', 13, 5, NULL, NULL, NULL, ' This is an example of commenttext for a multiline msgset', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO translationmessage (id, pofile, potmsgset, date_created, submitter, date_reviewed, reviewer, msgstr0, msgstr1, msgstr2, msgstr3, comment, origin, validation_status, is_current, is_imported, was_obsolete_in_last_import, msgstr4, msgstr5, potemplate, language, variant) VALUES (6, 1, 16, '2005-04-07 13:19:17.601068', 13, '2005-04-07 13:19:17.601068', 13, 8, 9, NULL, NULL, '', 1, 1, true, true, false, NULL, NULL, NULL, NULL, NULL);

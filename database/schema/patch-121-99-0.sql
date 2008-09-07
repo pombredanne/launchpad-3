@@ -1,7 +1,7 @@
 SET client_min_messages=ERROR;
 
 UPDATE TranslationMessage
-  SET is_current=FALSE
+  SET is_current=FALSE, is_fuzzy=FALSE
   WHERE (
     is_current IS TRUE AND
     is_imported IS FALSE AND
