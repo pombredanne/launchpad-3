@@ -22,6 +22,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
+from canonical.codehosting.puller.worker import BranchOpener
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
@@ -29,6 +30,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
+from canonical.launchpad.webapp.uri import URI
+
 
 UTC = pytz.timezone('UTC')
 # Use at most the first 100 characters of the commit message.
@@ -42,6 +45,10 @@ class BadLineInBugsProperty(Exception):
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+class InvalidStackedBranchURL(Exception):
+    """Raised when we try to scan a branch stacked on an invalid URL."""
 
 
 def set_bug_branch_status(bug, branch, status):
@@ -323,6 +330,20 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
+class WarehouseBranchOpener(BranchOpener):
+
+    def checkOneURL(self, url):
+        """See `BranchOpener.checkOneURL`.
+
+        If the URL we are mirroring from is anything but a
+        lp-mirrored:///~user/project/branch URL, something has gone badly
+        wrong.
+        """
+        uri = URI(url)
+        if uri.scheme != 'lp-mirrored':
+            raise InvalidStackedBranchURL(url)
+
+
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
     """
@@ -343,7 +364,8 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = Branch.open(self.db_branch.warehouse_url)
+            bzr_branch = WarehouseBranchOpener().open(
+                self.db_branch.warehouse_url)
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)
