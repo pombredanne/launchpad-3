@@ -520,7 +520,7 @@ class TestScanStackedBranches(BzrSyncTestCase):
         # The scanner will raise an InvalidStackedBranchURL when it tries to
         # open a branch stacked on a non- lp-mirrored:// schema.
         db_branch = self.makeDatabaseBranch()
-        stacked_on_branch = self.make_branch('stacked-on')
+        stacked_on_branch = self.make_branch('stacked-on', format='1.6')
         self.assertFalse(stacked_on_branch.base.startswith('lp-mirrored://'))
         bzr_tree = self.makeBzrBranchAndTree(db_branch, format='1.6')
         bzr_tree.branch.set_stacked_on_url(stacked_on_branch.base)
@@ -532,9 +532,11 @@ class TestScanStackedBranches(BzrSyncTestCase):
         # We can scan a stacked branch that's stacked on a branch that has an
         # lp-mirrored:// URL.
         db_stacked_on_branch = self.factory.makeBranch()
-        stacked_on_tree = self.makeBzrBranchAndTree(db_stacked_on_branch)
+        stacked_on_tree = self.makeBzrBranchAndTree(
+            db_stacked_on_branch, format='1.6')
         db_stacked_branch = self.factory.makeBranch()
-        stacked_tree = self.makeBzrBranchAndTree(db_stacked_branch)
+        stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format='1.6')
         stacked_tree.branch.set_stacked_on_url(
             'lp-mirrored:///%s' % db_stacked_on_branch.unique_name)
         scanner = self.makeBzrSync(db_stacked_branch)
