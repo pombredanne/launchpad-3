@@ -66,7 +66,7 @@ class FatLocalTransport(LocalTransport):
     def local_realPath(self, path):
         """Return the absolute path to `path`."""
         abspath = self._abspath(path)
-        return os.path.realpath(abspath)
+        return urlutils.escape(os.path.realpath(abspath))
 
 
 def with_sftp_error(func):
@@ -287,7 +287,11 @@ class TransportSFTPServer:
 
     def realPath(self, relpath):
         """See `ISFTPServer`."""
-        return self.transport.local_realPath(urlutils.escape(relpath))
+        deferred = self.transport.local_realPath(urlutils.escape(relpath))
+        def _cb(path):
+            unescaped_path = urlutils.unescape(path)
+            return str(unescaped_path)
+        return deferred.addCallback(_cb)
 
     def setAttrs(self, path, attrs):
         """See `ISFTPServer`.

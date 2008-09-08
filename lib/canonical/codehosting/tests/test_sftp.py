@@ -60,6 +60,14 @@ class TestFatLocalTransport(TestCaseInTempDir):
         self.transport.writeChunk(filename, 1, 'razy')
         self.assertEqual('crazynt', self.transport.get_bytes(filename))
 
+    def test_localRealPath(self):
+        # localRealPath takes a URL-encoded relpath and returns a URL-encoded
+        # absolute path.
+        filename = '~foo'
+        realpath = self.transport.local_realPath(urlutils.escape(filename))
+        self.assertEqual(
+            urlutils.escape(os.path.abspath(filename)), realpath)
+
 
 class TestSFTPAdapter(TrialTestCase):
 
