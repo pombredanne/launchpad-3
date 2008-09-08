@@ -343,10 +343,10 @@ class UserDetailsStorageTest(DatabaseTest):
             INSERT INTO AccountPassword (account, password)
             VALUES (
                 (SELECT account FROM EmailAddress
-                WHERE email='justdave@bugzilla.org'), %s
+                WHERE email='matsubara@async.com.br'), %s
                 )
             """ % sqlvalues(ssha))
-        userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
+        userDict = storage._authUserInteraction('matsubara@async.com.br', ssha)
         self.assertEqual({}, userDict)
 
     def test_authUser(self):
@@ -1016,11 +1016,11 @@ class UserDetailsStorageV2Test(DatabaseTest):
             INSERT INTO AccountPassword (account, password)
             VALUES (
                 (SELECT account FROM EmailAddress
-                WHERE email = 'justdave@bugzilla.org'), %s
+                WHERE email = 'matsubara@async.com.br'), %s
                 )
             """, (ssha,))
         userDict = storage._authUserInteraction(
-            'justdave@bugzilla.org', 'supersecret!')
+            'matsubara@async.com.br', 'supersecret!')
         self.assertEqual({}, userDict)
 
     def test_nameInV2UserDict(self):
