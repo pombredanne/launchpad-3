@@ -65,7 +65,7 @@
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
-  <p condition="context/merged_revno">
+  <p id="proposal-merged" tal:condition="context/merged_revno">
     This proposal was merged at revision
     <tal:revno replace="context/merged_revno" />
     <a href="+merged">
