@@ -316,7 +316,7 @@ class RevisionSet:
                        (Branch, BranchRevision))))
 
     @staticmethod
-    def getPublicRevisionsForPerson(person):
+    def getPublicRevisionsForPerson(person, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -336,6 +336,7 @@ class RevisionSet:
         result_set = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
+            revision_time_limit(day_limit),
             person_query,
             Exists(
                 Select(True,
@@ -346,7 +347,7 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProduct(product):
+    def getPublicRevisionsForProduct(product, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -354,6 +355,7 @@ class RevisionSet:
 
         result_set = Store.of(product).find(
             Revision,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -364,7 +366,7 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProject(project):
+    def getPublicRevisionsForProject(project, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -373,6 +375,7 @@ class RevisionSet:
 
         result_set = Store.of(project).find(
             Revision,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -383,3 +386,12 @@ class RevisionSet:
                        (Branch, BranchRevision, Product))))
         return result_set.order_by(Desc(Revision.revision_date))
 
+
+def revision_time_limit(day_limit):
+    """The storm fragment to limit the revision_date field of the Revision."""
+    now = datetime.now(pytz.UTC)
+    earliest = now - timedelta(days=day_limit)
+
+    return And(
+        Revision.revision_date <= now,
+        Revision.revision_date > earliest)

@@ -227,7 +227,7 @@ class WebServiceResponseWrapper(ProxyBase):
             # Return a useful ValueError that displays the problematic
             # string, instead of one that just says the string wasn't
             # JSON.
-            raise ValueError(self.getBody())
+            raise ValueError(self.getOutput())
 
 
 def extract_url_parameter(url, parameter):
@@ -552,14 +552,25 @@ def print_ppa_packages(contents):
 
 
 def print_location(contents):
-    """Print the hierarchy, application tabs, and main heading of the page."""
+    """Print the hierarchy, application tabs, and main heading of the page.
+    
+    The hierarchy shows your position in the Launchpad structure:
+    for example, Launchpad > Ubuntu > 8.04.
+    The application tabs represent the major facets of an object:
+    for example, Overview, Bugs, and Translations.
+    The main heading is the first <h1> element in the page.
+    """
     doc = find_tag_by_id(contents, 'document')
     hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
                 for step in hierarchy
                 if step.name != 'small']
-    print 'Location:', ' > '.join(segments[2:])
+    # The first segment is spurious (used for styling), and the second
+    # contains only <img alt="Launchpad"> that extract_text() doesn't
+    # pick up. So we replace the first two elements with 'Launchpad':
+    segments = ['Launchpad'] + segments[2:]
+    print 'Hierarchy:', ' > '.join(segments)
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
@@ -575,11 +586,14 @@ def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
     for tab in location_apps.findAll('span'):
+        tab_text = extract_text(tab)
+        if tab['class'].find('active') != -1:
+            tab_text += ' (selected)'
         if tab.a:
             link = tab.a['href']
         else:
-            link = 'Not active'
-        print "* %s (%s)" % (extract_text(tab), link)
+            link = 'not linked'
+        print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):
