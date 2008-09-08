@@ -1792,39 +1792,24 @@ COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this up
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
 
--- DerivedArchive
+-- ArchiveOperation
 
-COMMENT ON TABLE DerivedArchive IS 'DerivedArchive: derived archives are generalized copy archives with a parent and will be used for point releases, rebuilds, stable snapshots etc.';
-COMMENT ON COLUMN DerivedArchive.archive IS 'The parent archive.';
-COMMENT ON COLUMN DerivedArchive.distroseries IS 'The associated DistroSeries.';
-COMMENT ON COLUMN DerivedArchive.registrant IS 'The person who created the derived archive.';
-COMMENT ON COLUMN DerivedArchive.rebuild_status IS 'The rebuild status (none, in-progress, cancelled, succeeded, failed).';
-COMMENT ON COLUMN DerivedArchive.reason IS 'The reason why this derived archive was created (one-liner).';
-COMMENT ON COLUMN DerivedArchive.date_created IS 'Date of creation for this derived archive.';
-
-
--- ArchiveCopyJob
-
-COMMENT ON TABLE ArchiveCopyJob IS 'ArchiveCopyJob: A table that captures the details of inter-archive package copy jobs';
-COMMENT ON COLUMN ArchiveCopyJob.registrant IS 'The person who requested the copy operation.';
-COMMENT ON COLUMN ArchiveCopyJob.source_archive IS 'The archive from which packages are to be copied.';
-COMMENT ON COLUMN ArchiveCopyJob.source_component IS 'The component to which the packages to be copied belong in the source archive.';
-COMMENT ON COLUMN ArchiveCopyJob.source_pocket IS 'The pocket for the packages to be copied.';
-COMMENT ON COLUMN ArchiveCopyJob.target_archive IS 'The archive to which packages are to be copied.';
-COMMENT ON COLUMN ArchiveCopyJob.target_component IS 'The component to which the packages will belong in the target archive.';
-COMMENT ON COLUMN ArchiveCopyJob.target_pocket IS 'The pocket for the copied packages.';
-COMMENT ON COLUMN ArchiveCopyJob.status IS 'Copy job status, may be one of: new, in-progress, cancelled, succeeded, failed.';
-COMMENT ON COLUMN ArchiveCopyJob.reason IS 'The reason why this copy job was requested.';
-COMMENT ON COLUMN ArchiveCopyJob.date_created IS 'Date of creation for this package copy job.';
-COMMENT ON COLUMN ArchiveCopyJob.date_started IS 'Start date/time of this package copy job.';
-COMMENT ON COLUMN ArchiveCopyJob.date_completed IS 'When did this package copy job conclude?';
-COMMENT ON COLUMN ArchiveCopyJob.copy_binaries IS 'This flag should be set if binary packages are to be copied as well.';
-
--- ArchiveCopyJobArch
-
-COMMENT ON TABLE ArchiveCopyJobArch IS 'ArchiveCopyJob: A table that captures the DistroArchSeries to be used for an inter-archive package copy job, requires one row per DistroArchSeries.';
-COMMENT ON COLUMN ArchiveCopyJobArch.archivecopyjob IS 'The archive copy job in question.';
-COMMENT ON COLUMN ArchiveCopyJobArch.distroarchseries IS 'The DistroArchSeries to be used.';
+COMMENT ON TABLE ArchiveOperation IS 'ArchiveOperation: A table that captures the status and the details of an archive operation.';
+COMMENT ON COLUMN ArchiveOperation.requester IS 'The person who requested the archive operation.';
+COMMENT ON COLUMN ArchiveOperation.source_archive IS 'Package copy operation only: the archive from which packages are to be copied.';
+COMMENT ON COLUMN ArchiveOperation.source_component IS 'Package copy operation only: the component to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN ArchiveOperation.source_pocket IS 'Package copy operation only: the pocket for the packages to be copied.';
+COMMENT ON COLUMN ArchiveOperation.target_archive IS 'The archive to which the operation applies.';
+COMMENT ON COLUMN ArchiveOperation.target_distroseries IS 'The target distroseries.';
+COMMENT ON COLUMN ArchiveOperation.target_component IS 'The target component.';
+COMMENT ON COLUMN ArchiveOperation.target_pocket IS 'The target pocket.';
+COMMENT ON COLUMN ArchiveOperation.status IS 'Archive operation status, may be one of: new, in-progress, cancelled, succeeded, failed.';
+COMMENT ON COLUMN ArchiveOperation.reason IS 'The reason why this archive operation was requested.';
+COMMENT ON COLUMN ArchiveOperation.date_created IS 'Date of creation for this archive operation.';
+COMMENT ON COLUMN ArchiveOperation.date_started IS 'Start date/time of this archive operation.';
+COMMENT ON COLUMN ArchiveOperation.date_completed IS 'When did this archive operation conclude?';
+COMMENT ON COLUMN ArchiveOperation.copy_binaries IS 'This flag should be set if binary packages are to be copied as well.';
+COMMENT ON COLUMN ArchiveOperation.operation_type IS 'The archive operation type, may be one of: copypackages, cancelbuilds, resumebuilds, retrybuilds.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

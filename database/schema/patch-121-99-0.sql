@@ -1,151 +1,131 @@
 SET client_min_messages=ERROR;
 
--- Derived archives are generalized copy archives with a parent. We envision
--- they will be used for point releases, rebuilds, stable snapshots etc.
-
 -- The concept of rebuild archives is being extended to generalized copy
 -- archives.
 
--- Table 'archiverebuild' will hence be dropped and recreated as table
--- 'derivedarchive'.
+-- Table 'archiverebuild' will hence be dropped. Some of the columns needed
+-- for copy archives are of general interest and will be added to the archive
+-- table proper.
 
 -- Step 1: get rid of the old table ('archiverebuild')
 DROP TABLE archiverebuild CASCADE;
 
--- Step 2: recreate the table as 'derivedarchive'.
-CREATE TABLE derivedarchive (
-    id serial PRIMARY KEY,
-    -- The parent archive.
-    archive integer NOT NULL,
-    -- The associated DistroSeries.
-    distroseries integer NOT NULL,
-    -- The person who created the derived archive.
-    registrant integer NOT NULL,
-    -- The rebuild status if applicable (one of: new, in-progress, cancelled,
-    -- succeeded, failed).
-    rebuild_status integer NOT NULL,
-    -- The reason why this derived archive was created (one-liner).
-    reason text,
-    -- When was this derived archive created?
+-- We want to be able to capture archive creation times.
+ALTER TABLE archive ADD COLUMN
     date_created timestamp without time zone
-    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
-);
+    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL;
 
--- Step 3: define the appropriate constraints.
-ALTER TABLE ONLY derivedarchive
-    ADD CONSTRAINT derivedarchive__archive__key UNIQUE (archive);
+-- All copy archive workflows identified so far are tied to a single
+-- distroseries. Since this is not necessarily the case for other archive
+-- types the foreign key below is optional.
+ALTER TABLE archive ADD COLUMN
+    distroseries integer REFERENCES distroseries(id);
 
-ALTER TABLE ONLY derivedarchive
-    ADD CONSTRAINT derivedarchive__archive__fk
-    FOREIGN KEY (archive) REFERENCES archive(id);
+CREATE INDEX archive__distroseries__idx
+    ON archive (distroseries)
+    WHERE distroseries IS NOT NULL;
 
-ALTER TABLE ONLY derivedarchive
-    ADD CONSTRAINT derivedarchive__distroseries__fk
-    FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+-- Create new ArchiveOperation table.
 
-ALTER TABLE ONLY derivedarchive
-    ADD CONSTRAINT derivedarchive__requestor__fk
-    FOREIGN KEY (registrant) REFERENCES person(id);
+-- Once an archive has been put into place the user will want to carry
+-- out certain operations on it like e.g.
 
-CREATE INDEX derivedarchive__registrant__idx ON
-    derivedarchive USING btree (registrant);
+--   * copy packages to it; some workflows may well result in multiple copy
+--     operations.
+--   * cancel or resume builds given an archive/distroseries/component/pocket
+--   * retry failed builds given an archive/distroseries/component/pocket
 
--- Create new ArchiveCopyJob table.
+-- These archive level operations may take quite a bit of time and should
+-- not be tied to a web GUI request because the latter is likely to time
+-- out.
 
--- Once a derived archive has been put into place the user will want to copy
--- packages to it (from the parent archive or any other archive of choice).
--- Some workflows may well result in multiple copy operations.
+-- Instead the user is to *specify* the operation he wants performed on an
+-- archive along with any parameters needed. That will be picked up by a
+-- service and performed in the background.
 
--- These inter-archive package copy operations may take quite a bit of time
--- and should hence not be tied to a web GUI request because the latter is
--- likely to time out.
+-- The GUI will facilitate the monitoring (progress) and manipulation
+-- (cancellation) of these archive operations
 
--- Instead the user is to *specify* what packages should be copied and then
--- some background package copy service will pick up the archive copy job
--- specification and perform the actual copying of packages.
-
-CREATE TABLE archivecopyjob (
+CREATE TABLE archiveoperation (
     id serial PRIMARY KEY,
 
-    -- This is the source archive from which packages are to be copied.
-    source_archive integer NOT NULL,
-    -- Copy packages belonging to this component.
-    source_component integer NOT NULL,
-    -- Copy packages belonging to this pocket.
-    source_pocket integer NOT NULL,
-
-    -- This is the target archive to which packages are to be copied.
+    -- This is the target archive to which this operation applies.
     target_archive integer NOT NULL,
+    -- This is the target distroseries.
+    target_distroseries integer,
     -- This is the target component.
-    target_component integer NOT NULL,
+    target_component integer,
     -- This is the target pocket.
-    target_pocket integer NOT NULL,
+    target_pocket integer,
 
-    -- Whether binary packages should be copied as well.
-    copy_binaries boolean DEFAULT FALSE NOT NULL,
-
-    -- The person who requested the inter-archive package copy operation.
-    registrant integer NOT NULL,
-    -- The copy job's status (new, in-progress, cancelled, succeeded, failed).
+    -- The person who requested the archive operation.
+    requester integer NOT NULL,
+    -- The archive operation's status (new, in-progress, cancelled, succeeded,
+    -- failed).
     status integer NOT NULL,
-    -- The reason why this copy job was requested (one-liner).
+    -- The archive operation type, may be one of: copypackages, cancelbuilds, -- resumebuilds, retrybuilds.
+    operation_type integer NOT NULL,
+    -- The reason why this archive operation was requested (one-liner).
     reason text,
 
-    -- When was this copy job requested?
+    -- Package copy operation only: the source archive from which packages are
+    -- to be copied.
+    source_archive integer,
+    -- Package copy operation only: copy packages belonging to this component.
+    source_component integer,
+    -- Package copy operation only: copy packages belonging to this pocket.
+    source_pocket integer,
+
+    -- Package copy operation only: whether binary packages should be copied
+    -- as well.
+    copy_binaries boolean DEFAULT FALSE,
+
+    -- When was this archive operation requested?
     date_created timestamp without time zone
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    -- When was this copy job started?
+    -- When was this archive operation started?
     date_started timestamp without time zone
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    -- When did this copy job conclude?
+    -- When did this archive operation conclude?
     date_completed timestamp without time zone
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 );
 
-ALTER TABLE ONLY archivecopyjob
-    ADD CONSTRAINT archivecopyjob__sourcearchive__fk
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation__sourcearchive__fk
     FOREIGN KEY (source_archive) REFERENCES archive(id);
 
-ALTER TABLE ONLY archivecopyjob
-    ADD CONSTRAINT archivecopyjob_sourcecomponent_fk
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation_sourcecomponent_fk
     FOREIGN KEY (source_component) REFERENCES component(id);
 
-ALTER TABLE ONLY archivecopyjob
-    ADD CONSTRAINT archivecopyjob__targetarchive__fk
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation__targetarchive__fk
     FOREIGN KEY (target_archive) REFERENCES archive(id);
 
-ALTER TABLE ONLY archivecopyjob
-    ADD CONSTRAINT archivecopyjob_targetcomponent_fk
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation_targetcomponent_fk
     FOREIGN KEY (target_component) REFERENCES component(id);
 
--- Create new ArchiveCopyJobArch table.
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation_targetdistroseries_fk
+    FOREIGN KEY (target_distroseries) REFERENCES distroseries(id);
 
--- Inter-archive package copy jobs can be source only or including binary
--- packages.
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation_requester_fk
+    FOREIGN KEY (requester) REFERENCES person(id);
 
--- In the first case the user may want to specify a list of DistroArchSeries
--- for which Build records should be created after the source packages have
--- been copied.
+CREATE INDEX archiveoperation__targetarchive__idx
+    ON archiveoperation (target_archive);
 
--- In the second case the user may want to specify a list of DistroArchSeries
--- for which to copy the binary packages.
+CREATE INDEX archiveoperation__requester__idx
+    ON archiveoperation (requester);
 
--- We will need to insert one ArchiveCopyJobArch row For each
--- DistroArchSeries specified.
+CREATE INDEX archiveoperation__datecreated__idx
+    ON archiveoperation (date_created);
 
-
-CREATE TABLE archivecopyjobarch (
-    -- The inter-archive package copy job in question.
-    archivecopyjob integer NOT NULL,
-    -- An architecture specified for the copy operation.
-    distroarchseries integer NOT NULL
-);
-
-ALTER TABLE ONLY archivecopyjobarch
-    ADD CONSTRAINT archivecopyjobarch__archivecopyjob__fk
-    FOREIGN KEY (archivecopyjob) REFERENCES archive(id);
-ALTER TABLE ONLY archivecopyjobarch
-    ADD CONSTRAINT archivecopyjobarch__distroarchseries__fk
-    FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
+CREATE INDEX archiveoperation__targetdistroseries__idx
+    ON archiveoperation (target_distroseries)
+    WHERE target_distroseries IS NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
