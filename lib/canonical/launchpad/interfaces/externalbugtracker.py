@@ -143,7 +143,14 @@ class ISupportsCommentPushing(IExternalBugTracker):
 class ISupportsBackLinking(IExternalBugTracker):
 
     def getLaunchpadBugId(remote_bug):
-        """XXX"""
+        """Return a Launchpad bug ID for a given remote bug.
+
+        The bug ID returned is that which the remote tracker has a
+        record of after setLaunchpadBugId() has been called.
+
+        Return None if there is no recorded Launchpad bug ID for
+        `remote_bug`.
+        """
 
     def setLaunchpadBugId(remote_bug):
-        """XXX"""
+        """Set the Launchpad bug ID for a bug on the remote bug tracker."""
