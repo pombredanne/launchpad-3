@@ -157,18 +157,19 @@ class TransportSFTPFile:
             self._escaped_path, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        deferred.addCallback(get_first_chunk)
-        return deferred.addErrback(self._check_for_eof)
+        def handle_short_read(failure):
+            """Handle short reads by reading what was available.
 
-    def _check_for_eof(self, failure):
-        failure.trap(bzr_errors.ShortReadvError)
-        if failure.value.actual:
+            Doing things this way around, by trying to read all the data
+            requested and then handling the short read error, might be a bit
+            inefficient, but the bzrlib sftp transport doesn't read past the
+            end of files, so we don't need to worry too much about performance
+            here.
+            """
+            failure.trap(bzr_errors.ShortReadvError)
             return self.readChunk(failure.value.offset, failure.value.actual)
-        # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
-        # even if we weren't, current versions of Bazaar wouldn't actually use
-        # it. If Bazaar changes to include the returned data in a
-        # ShortReadvError, we should consider changing this method.
-        return ''
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(handle_short_read)
 
     def setAttrs(self, attrs):
         """See `ISFTPFile`.
