@@ -30,7 +30,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
+    LaunchpadEditFormView, LaunchpadFormView, Link)
 
 
 class DistributionMirrorOverviewMenu(ApplicationMenu):
