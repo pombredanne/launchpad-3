@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'IProductReleaseSet',
     'IProductRelease',
+    'IProductReleaseEditRestricted',
     'IProductReleaseFile',
     'IProductReleaseFileAddForm',
+    'IProductReleasePublic',
+    'IProductReleaseSet',
     'UpstreamFileType',
     ]
 
@@ -108,10 +110,23 @@ class ProductReleaseVersionField(ContentNameField):
         return releaseset.getBySeriesAndVersion(productseries, version)
 
 
-class IProductRelease(Interface):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
-    export_as_webservice_entry()
+class IProductReleaseEditRestricted(Interface):
+    """IProductRelease properties which require launchpad.Edit."""
+
+    def addReleaseFile(bytes, signature, uploader,
+                       file_type=UpstreamFileType.CODETARBALL,
+                       description=None):
+        """Add file to the library, and link to this ProductRelease.
+
+        The signature file will also be added if available.
+        """
+
+    def deleteReleaseFile(release_file):
+        """Delete from the librarian, and remove the reference."""
+
+
+class IProductReleasePublic(Interface):
+    """Public IProductRelease properties."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
@@ -166,6 +181,14 @@ class IProductRelease(Interface):
         """Return the LibraryFileAlias by file name or None if not found."""
 
 
+class IProductRelease(IProductReleaseEditRestricted,
+                      IProductReleasePublic):
+    """A specific release (i.e. has a version) of a product. For example,
+    Mozilla 1.7.2 or Apache 2.0.48."""
+
+    export_as_webservice_entry()
+
+
 class IProductReleaseFile(Interface):
     """A file associated with a ProductRelease."""
 
@@ -207,12 +230,9 @@ class IProductReleaseFileAddForm(Interface):
                          vocabulary=UpstreamFileType,
                          default=UpstreamFileType.CODETARBALL)
 
+
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
-
-    def new(version, owner, productseries, codename=None, shortdesc=None,
-            description=None, changelog=None):
-        """Create a new ProductRelease"""
 
     def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.

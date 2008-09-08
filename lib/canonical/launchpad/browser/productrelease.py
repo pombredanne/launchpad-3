@@ -26,7 +26,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 # launchpad
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductRelease,
-    IProductReleaseFileAddForm, IProductReleaseSet)
+    IProductReleaseFileAddForm)
+from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
@@ -80,12 +81,13 @@ class ProductReleaseAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        prset = getUtility(IProductReleaseSet)
         user = getUtility(ILaunchBag).user
-        newrelease = prset.new(
-            data['version'], data['productseries'], user,
-            codename=data['codename'], summary=data['summary'],
-            description=data['description'], changelog=data['changelog'])
+        product_series_set = getUtility(IProductSeriesSet)
+        product_series = product_series_set[data['productseries']]
+        newrelease = product_series.addRelease(
+            data['version'], user, codename=data['codename'],
+            summary=data['summary'], description=data['description'],
+            changelog=data['changelog'])
         self._nextURL = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 

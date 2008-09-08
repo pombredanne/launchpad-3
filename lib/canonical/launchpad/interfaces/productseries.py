@@ -194,6 +194,10 @@ class IProductSeriesEditRestricted(Interface):
     def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
+    def addRelease(version, owner, codename=None, shortdesc=None,
+                   description=None, changelog=None):
+        """Create a new ProductRelease"""
+
 
 class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                            IBugTarget, ISpecificationGoal, IHasMilestones):

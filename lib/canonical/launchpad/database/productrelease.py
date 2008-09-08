@@ -120,18 +120,6 @@ class ProductReleaseSet(object):
     """See `IProductReleaseSet`."""
     implements(IProductReleaseSet)
 
-    def new(self, version, productseries, owner, codename=None, summary=None,
-            description=None, changelog=None):
-        """See `IProductReleaseSet`."""
-        return ProductRelease(version=version,
-                              productseries=productseries,
-                              owner=owner,
-                              codename=codename,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
-
-
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""
         query = AND(ProductRelease.q.version==version,
