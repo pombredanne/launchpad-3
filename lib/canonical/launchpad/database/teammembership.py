@@ -332,9 +332,6 @@ class TeamMembership(SQLBase):
         if status in active_states:
             _fillTeamParticipation(self.person, self.team)
         elif old_status in active_states:
-            # Need to flush db updates because _cleanTeamParticipation() will
-            # manipulate the database directly, bypassing the ORM.
-            flush_database_updates()
             _cleanTeamParticipation(self.person, self.team)
         else:
             # Changed from an inactive state to another inactive one, so no
@@ -540,26 +537,33 @@ def _cleanTeamParticipation(person, team):
         return
 
     store = Store.of(person)
-    # Remove all of our participants from the team, unless they are an
-    # active member in it.
+
+    # Clean the participation of all our participant subteams, that are
+    # not a direct members of the target team.
     query = """
-        -- All of my participants
+        -- All of my participant subteams...
         SELECT person
-        FROM TeamParticipation
+        FROM TeamParticipation JOIN Person ON (person = Person.id)
         WHERE team = %(person_id)s AND person != %(person_id)s
+            AND teamowner IS NOT NULL
         EXCEPT
-        --- The one who are an active member of the team
+        -- that aren't a direct member of the team.
         SELECT person
         FROM TeamMembership
         WHERE team = %(team_id)s AND status IN (%(active_states)s)
         """ % dict(
-            team_id=team.id, person_id=person.id,
+            person_id=person.id, team_id=team.id,
             active_states="%s, %s" % sqlvalues(
                 TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN))
+
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
-    for participant in store.find(Person, "id IN (%s)" % query):
-        _cleanTeamParticipation(participant, team)
+    for subteam in store.find(Person, "id IN (%s)" % query):
+        _cleanTeamParticipation(subteam, team)
+
+    # Then clean-up all the non-team participants. We can remove those
+    # in a single query when the team graph is up to date.
+    _removeAllIndividualParticipantsFromTeamAndSuperTeams(person, team)
 
 
 def _removeParticipantFromTeamAndSuperTeams(person, team):
@@ -594,6 +598,56 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
         (TeamParticipation.team == team) &
         (TeamParticipation.person == person))).remove()
 
+    for superteam in _getSuperTeamsExcludingDirectMembership(person, team):
+        _removeParticipantFromTeamAndSuperTeams(person, superteam)
+
+
+def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
+    """Remove all non-team participants in <team> from <target_team>.
+
+    All the non-team participants of <team> are removed from <target_team>
+    and its super teams, unless they participate in <target_team> also from
+    one of its sub team.
+    """
+    query = """
+        DELETE FROM TeamParticipation
+        WHERE team = %(target_team_id)s AND person IN (
+            -- All the individual participants.
+            SELECT person
+            FROM TeamParticipation JOIN Person ON (person = Person.id)
+            WHERE team = %(team_id)s AND teamowner IS NULL
+            EXCEPT
+            -- people participating through a subteam of target_team;
+            SELECT person
+            FROM TeamParticipation
+            WHERE team IN (
+                -- The subteams of target_team.
+                SELECT person
+                FROM TeamParticipation JOIN Person ON (person = Person.id)
+                WHERE team = %(target_team_id)s
+                    AND person NOT IN (%(target_team_id)s, %(team_id)s)
+                    AND teamowner IS NOT NULL
+                 )
+            -- or people directly a member of the target team.
+            EXCEPT
+            SELECT person
+            FROM TeamMembership
+            WHERE team = %(target_team_id)s AND status IN (%(active_states)s)
+        )
+        """ % dict(
+            team_id=team.id, target_team_id=target_team.id,
+            active_states="%s, %s" % sqlvalues(
+                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN))
+    store = Store.of(team)
+    store.execute(query)
+
+    super_teams = _getSuperTeamsExcludingDirectMembership(team, target_team)
+    for superteam in super_teams:
+        _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, superteam)
+
+
+def _getSuperTeamsExcludingDirectMembership(person, team):
+    """Return all the super teams of <team> where person isn't a member."""
     query = """
         -- All the super teams...
         SELECT team
@@ -611,8 +665,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
 
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
-    for superteam in store.find(Person, "id IN (%s)" % query):
-        _removeParticipantFromTeamAndSuperTeams(person, superteam)
+    return Store.of(person).find(Person, "id IN (%s)" % query)
 
 
 def _fillTeamParticipation(member, team):
