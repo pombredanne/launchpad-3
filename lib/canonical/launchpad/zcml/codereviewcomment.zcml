@@ -4,15 +4,20 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- CodeReviewComment -->
-    <content class="canonical.launchpad.database.CodeReviewComment">
-        <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"
-        />
-    </content>
-    <subscriber
+  <!-- CodeReviewComment -->
+  <content class="canonical.launchpad.database.CodeReviewComment">
+    <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"
+           />
+  </content>
+  <subscriber
       for="canonical.launchpad.interfaces.ICodeReviewComment
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
       handler="canonical.launchpad.mailout.codereviewcomment.send" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ICodeReviewComment
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.subscribers.karma.code_review_comment_added" />
 
     <browser:url
         for="canonical.launchpad.interfaces.ICodeReviewComment"
