@@ -34,13 +34,13 @@
   <div tal:condition="view/mapped_participants">
     <div style="margin-bottom: 4px;"><strong>Members' current local time:</strong></div>
     <tal:time_set repeat="time view/times">
-      <tal:times replace="time" /><span><br />
+      <tal:times replace="time" /><br />
     </tal:time_set>
   </div>
 </div>
   <tal:unmapped condition="view/unmapped_participants">
     <div style="margin: 4px;">
-      <h2><strong>Complete the map!</strong></h2>
+      <h2>Complete the map!</h2>
       Do you know the current location for these team members? Set their
       Locations!
     </div>
