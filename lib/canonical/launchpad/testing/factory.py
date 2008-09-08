@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -72,12 +72,12 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# NOTE:
-#
-# The LaunchpadObjectFactory is driven purely by use.  The version here
-# is by no means complete for Launchpad objects.  If you need to create
-# anonymous objects for your tests then add methods to the factory.
-#
+# We use this for default paramters where None has a specific meaning.  For
+# example, makeBranch(product=None) means "make a junk branch".
+# None, because None means "junk branch".
+_DEFAULT = object()
+
+
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -280,16 +280,12 @@ class LaunchpadObjectFactory:
             owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, registrant=None,
-                   explicit_junk=False, private=False,
-                   **optional_branch_args):
+                   product=_DEFAULT, url=_DEFAULT, registrant=None,
+                   private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
-
-        :param explicit_junk: If set to True, a product is not created
-            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -299,13 +295,13 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None and not explicit_junk:
+        if product is _DEFAULT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
         elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
-            if url is None:
+            if url is _DEFAULT:
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
@@ -315,12 +311,14 @@ class LaunchpadObjectFactory:
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
+        if stacked_on is not None:
+            removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = None
+        product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -429,7 +427,7 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False):
+                private=False, date_closed=None, title=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -445,7 +443,8 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
@@ -453,6 +452,10 @@ class LaunchpadObjectFactory:
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        if date_closed is not None:
+            [bugtask] = bug.bugtasks
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
     def makeBugTask(self, bug=None, target=None):
@@ -618,8 +621,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
@@ -691,17 +693,20 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 

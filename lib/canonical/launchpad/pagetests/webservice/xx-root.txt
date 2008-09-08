@@ -4,15 +4,15 @@ The service root (/[version]/) is a resource that responds to GET by
 describing the web service. The description is a JSON map full of
 links to the top-level web service objects.
 
-  >>> top_level_response = webservice.get("/beta/")
+  >>> top_level_response = webservice.get("/")
   >>> top_level_links = top_level_response.jsonBody()
   >>> sorted(top_level_links.keys())
   [u'bugs_collection_link', u'me_link', u'people_collection_link',
-   u'projects_collection_link']
+   u'project_groups_collection_link', u'projects_collection_link']
   >>> top_level_links['bugs_collection_link']
-  u'http://api.launchpad.dev/beta/bugs'
+  u'http://.../bugs'
   >>> top_level_links['me_link']
-  u'http://api.launchpad.dev/beta/people/+me'
+  u'http://.../people/+me'
 
 The client can explore the entire web service by following these links
 to other resources, and following the links served in those resources'
@@ -26,7 +26,7 @@ particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
   >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print webservice("/beta/", method)
+  ...     print webservice("/", method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
@@ -59,14 +59,14 @@ The value of 'ETag' can be used in a subsequent request as the
 current ETag, the representation won't be served again.
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : etag})
+  ...     '/', headers={'If-None-Match' : etag})
   >>> conditional_response.getStatus()
   304
   >>> conditional_response.getBody()
   ''
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/', headers={'If-None-Match' : '"a-very-old-etag"'})
+  ...     '/', headers={'If-None-Match' : '"a-very-old-etag"'})
   >>> conditional_response.getStatus()
   200
   >>> conditional_response.jsonBody()
@@ -76,13 +76,13 @@ You can specify a number of etags in If-None-Match. You'll get a new
 representation only if *none* of them match:
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/',
+  ...     '/',
   ...     headers={'If-None-Match' : '"a-very-old-etag", %s' %  etag})
   >>> conditional_response.getStatus()
   304
 
   >>> conditional_response = webservice.get(
-  ...     '/beta/',
+  ...     '/',
   ...     headers={'If-None-Match' : '"a-very-old-etag", "another-etag"'})
   >>> conditional_response.getStatus()
   200
@@ -97,7 +97,7 @@ header will show the compression algorithm used.
   >>> from cStringIO import StringIO
   >>> from gzip import GzipFile
   >>> gzipped_response = webservice.get(
-  ...     '/beta/', headers={'TE' : 'gzip'})
+  ...     '/', headers={'TE' : 'gzip'})
   >>> gzipped_response.getHeader("Transfer-Encoding")
   'gzip'
   >>> GzipFile(fileobj=StringIO(gzipped_response.getBody())).read()
@@ -105,7 +105,7 @@ header will show the compression algorithm used.
 
   >>> import zlib
   >>> deflated_response = webservice.get(
-  ...     '/beta/', headers={'TE' : 'deflate'})
+  ...     '/', headers={'TE' : 'deflate'})
   >>> deflated_response.getHeader("Transfer-Encoding")
   'deflate'
   >>> zlib.decompress(deflated_response.getBody())
@@ -117,12 +117,12 @@ and rank them in order of preference. (See
 http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1)
 
   >>> response = webservice.get(
-  ...     '/beta/', headers={'TE' : 'deflate, gzip'})
+  ...     '/', headers={'TE' : 'deflate, gzip'})
   >>> response.getHeader("Transfer-Encoding")
   'deflate'
 
   >>> response = webservice.get(
-  ...     '/beta/',
+  ...     '/',
   ...     headers={'TE' : 'deflate;q=0.8, unsupported;q=1.0, gzip;q=0.9'})
   >>> response.getHeader("Transfer-Encoding")
   'gzip'

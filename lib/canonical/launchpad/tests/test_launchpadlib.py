@@ -51,7 +51,7 @@ class TestLaunchpadLib(unittest.TestCase):
         """Test milestone attributes."""
         # launchpadlib can only slice and not subscript
         # so project.milestones[0] doesn't work.
-        milestone = self.project.milestones[:1][0]
+        milestone = self.project.active_milestones[:1][0]
         self.verifyAttributes(milestone)
 
 

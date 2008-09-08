@@ -178,7 +178,7 @@ Get the token we'll have to use to finish the registration process.
     >>> assert not stub.test_emails
     >>> token_url = get_token_url_from_email(raw_msg)
 
-    # XXX: SteveA 2006-10-21: To prevent spurious failures in PQM.
+    # XXX: Steve Alexander 2006-10-21: To prevent spurious failures in PQM.
     #>>> browser.open(token_url)
     #>>> browser.getControl('Confirm').click()
     #>>> 'The accounts have been merged successfully' in browser.contents

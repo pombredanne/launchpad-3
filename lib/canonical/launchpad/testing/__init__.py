@@ -95,8 +95,9 @@ class TestCase(unittest.TestCase):
             associated to this object.
         :param date: `datetime.datetime` object or `UTC_NOW`.
         """
-        # XXX Probably does not belong here, but better location not clear.
-        # Used primarily for testing ORM objects, which ought to use factory.
+        # XXX: Aaron Bentley 2008-04-14: Probably does not belong here, but
+        # better location not clear. Used primarily for testing ORM objects,
+        # which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
         sql_object.syncUpdate()
         sql_class = type(sql_object)
@@ -121,6 +122,11 @@ class TestCase(unittest.TestCase):
         """Assert that `expected` is the same object as `observed`."""
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
+
+    def assertIsNot(self, expected, observed):
+        """Assert that `expected` is not the same object as `observed`."""
+        self.assertTrue(expected is not observed,
+                        "%r is %r" % (expected, observed))
 
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""

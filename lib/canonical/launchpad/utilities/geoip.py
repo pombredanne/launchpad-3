@@ -13,8 +13,9 @@ import GeoIP as libGeoIP
 
 from zope.interface import implements
 from zope.component import getUtility
-
 from zope.i18n.interfaces import IUserPreferredLanguages
+
+from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request)
@@ -30,11 +31,12 @@ class GeoIP:
     """See `IGeoIP`."""
     implements(IGeoIP)
 
-    def __init__(self):
+    @cachedproperty
+    def _gi(self):
         if not os.path.exists(GEOIP_CITY_DB):
             raise NoGeoIPDatabaseFound(
                 "No GeoIP DB found. Please install launchpad-dependencies.")
-        self._gi = libGeoIP.open(GEOIP_CITY_DB, libGeoIP.GEOIP_MEMORY_CACHE)
+        return libGeoIP.open(GEOIP_CITY_DB, libGeoIP.GEOIP_MEMORY_CACHE)
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
