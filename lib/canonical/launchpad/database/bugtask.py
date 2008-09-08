@@ -1537,10 +1537,14 @@ class BugTaskSet:
             upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 
         if params.has_no_upstream_bugtask:
+            # Find all bugs that has no product bugtask. We limit the
+            # SELECT by matching against BugTask.bug to make the query
+            # faster.
             has_no_upstream_bugtask_clause = """
-                BugTask.bug NOT IN (
-                    SELECT DISTINCT bug FROM BugTask
-                    WHERE product IS NOT NULL)
+                NOT EXISTS (SELECT TRUE
+                            FROM BugTask AS OtherBugTask
+                            WHERE OtherBugTask.bug = BugTask.bug
+                                AND OtherBugTask.product IS NOT NULL)
             """
             upstream_clauses.append(has_no_upstream_bugtask_clause)
 

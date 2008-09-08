@@ -40,8 +40,11 @@ class ProductReleaseNavigation(Navigation):
 
     @stepthrough('+download')
     def download(self, name):
-        newlocation = self.context.getFileAliasByName(name)
-        return newlocation
+        return self.context.getFileAliasByName(name)
+
+    @stepthrough('+file')
+    def fileaccess(self, name):
+        return self.context.getProductReleaseFileByName(name)
 
 
 class ProductReleaseContextMenu(ContextMenu):

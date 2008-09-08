@@ -95,6 +95,20 @@ Attempting to retrieve an alias that does not exist is an error.
     ...
     NotFoundError: 'bar.txt'
 
+The ProductReleaseFile can also be retrieved by name.
+
+    >>> prf = rel.getProductReleaseFileByName('foo.txt')
+    >>> print prf.libraryfile.filename
+    foo.txt
+
+Attempting to retrieve a ProductReleaseFile  that does not exist is an
+error.
+
+    >>> prf = rel.getProductReleaseFileByName('bar.txt')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'bar.txt'
+
 Deleting the release file results in the file count being reduced.
 Only the product owner, product series owner, admins, or experts can
 delete a product file.

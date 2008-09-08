@@ -335,13 +335,13 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
     series_branch = Choice(
         title=_('Series Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         readonly=True,
         description=_("The Bazaar branch for this series."))
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))
