@@ -98,6 +98,54 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         self.assertEqual(commenter, event.person)
         self.assertEqual('codereviewcomment', event.action.name)
 
+    def test_approveCodeReview(self):
+        # Approving a code review is a significant event, and as such gets its
+        # own karma event.
+        proposal = self.factory.makeBranchMergeProposal()
+        reviewer = proposal.target_branch.owner
+        self.karma_events = []
+        proposal.approveBranch(reviewer, "A rev id.")
+        [event] = self.karma_events
+        self.assertEqual(reviewer, event.person)
+        self.assertEqual('branchmergeapproved', event.action.name)
+
+    def test_approvingOwnCodeReview(self):
+        # Approving your own merge proposal isn't such a significant event.
+        reviewer = self.factory.makePerson()
+        target_branch = self.factory.makeBranch(owner=reviewer)
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, registrant=reviewer)
+        self.karma_events = []
+        proposal.approveBranch(reviewer, "A rev id.")
+        [event] = self.karma_events
+        self.assertEqual(reviewer, event.person)
+        self.assertEqual('branchmergeapprovedown', event.action.name)
+
+    def test_rejectedCodeReview(self):
+        # Rejecting a code review is also a significant event, and as such
+        # gets its own karma event.
+        proposal = self.factory.makeBranchMergeProposal()
+        reviewer = proposal.target_branch.owner
+        self.karma_events = []
+        proposal.rejectBranch(reviewer, "A rev id.")
+        [event] = self.karma_events
+        self.assertEqual(reviewer, event.person)
+        self.assertEqual('branchmergerejected', event.action.name)
+
+    def test_rejectedOwnCodeReview(self):
+        # Rejecting your own merge proposal isn't such a significant event
+        # either, and I don't know why someone would, but hey, people are
+        # strange.
+        reviewer = self.factory.makePerson()
+        target_branch = self.factory.makeBranch(owner=reviewer)
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, registrant=reviewer)
+        self.karma_events = []
+        proposal.rejectBranch(reviewer, "A rev id.")
+        [event] = self.karma_events
+        self.assertEqual(reviewer, event.person)
+        self.assertEqual('branchmergerejectedown', event.action.name)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
