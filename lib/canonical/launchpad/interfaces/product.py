@@ -494,6 +494,9 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     def userCanEdit(user):
         """Can the user edit this product?"""
 
+# Fix cyclic references.
+IProject['products'].value_type = Reference(IProduct)
+
 
 class IProductSet(Interface):
     """The collection of products."""

@@ -247,9 +247,15 @@ class RepositoryFormat(DBEnumeratedType):
         205, RepositoryFormatKnitPack5,
         description='Packs 5 (needs bzr 1.6, supports stacking)\n')
 
-    BZR_KNITPACK_5_RR = _format_enum(
-        206, RepositoryFormatKnitPack5RichRoot,
-        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
+    BZR_KNITPACK_5_RRB = DBItem(206,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
+        'Packs 5-Rich Root (needs bzr 1.6, supports stacking)'
+        )
+
+    BZR_KNITPACK_5_RR = DBItem(207,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6.1)\n',
+        'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
+        )
 
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
