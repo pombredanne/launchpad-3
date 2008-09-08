@@ -288,10 +288,10 @@ class TransportSFTPServer:
     def realPath(self, relpath):
         """See `ISFTPServer`."""
         deferred = self.transport.local_realPath(urlutils.escape(relpath))
-        def _cb(path):
+        def unescape_path(path):
             unescaped_path = urlutils.unescape(path)
-            return str(unescaped_path)
-        return deferred.addCallback(_cb)
+            return unescaped_path.encode('utf-8')
+        return deferred.addCallback(unescape_path)
 
     def setAttrs(self, path, attrs):
         """See `ISFTPServer`.
