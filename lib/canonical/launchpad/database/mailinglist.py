@@ -35,6 +35,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -44,7 +45,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PostedMessageStatus)
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
