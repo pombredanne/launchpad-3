@@ -81,7 +81,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def switchDbUser(self, user):
         """We need to reset the config warehouse root after a switch."""
         LaunchpadZopelessLayer.switchDbUser(user)
-        self.txn = LaunchpadZopelessLayer.txn
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -111,9 +110,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def _setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
         if not self.db_author:
-            self.txn.begin()
+            LaunchpadZopelessLayer.txn.begin()
             self.db_author = RevisionAuthor(name=self.AUTHOR)
-            self.txn.commit()
+            LaunchpadZopelessLayer.txn.commit()
 
     def getCounts(self):
         """Return the number of rows in core revision-related tables.
@@ -159,7 +158,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(self.txn, db_branch)
+        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -339,7 +338,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
