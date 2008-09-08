@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsBackLinking)
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
@@ -511,6 +513,9 @@ class BugWatchUpdater(object):
                         self.importBugComments(remotesystem, bug_watch)
                     if can_push_comments:
                         self.pushBugComments(remotesystem, bug_watch)
+                    if ISupportsBackLinking.providedBy(remotesystem):
+                        remotesystem.setLaunchpadBugId(
+                            bug_id, bug_watch.bug.id)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.

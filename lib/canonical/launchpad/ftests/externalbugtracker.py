@@ -152,6 +152,9 @@ class TestExternalBugTracker(ExternalBugTracker):
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
 
+    def getRemoteBug(self, remote_bug):
+        return None, None
+
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
 

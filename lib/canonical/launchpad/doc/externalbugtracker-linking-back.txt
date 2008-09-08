@@ -1,0 +1,45 @@
+= Remote bugs linking back to Launchpad =
+
+Some bug trackers support linking back to bugs in Launchpad. This way we
+can tell external bug trackers that we're watching the bug, and make it
+easier to users of the external bug tracker to get more information
+about the bug.
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestExternalBugTracker)
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsBackLinking)
+
+    >>> class BackLinkingExternalBugTracker(TestExternalBugTracker):
+    ...     implements(ISupportsBackLinking)
+    ...
+    ...     def getLaunchpadBugId(self, remote_bug):
+    ...         print "Getting Launchpad id for bug %s" % remote_bug
+    ...         return 64
+    ...
+    ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    ...         self.last_launchad_bug_id = launchpad_bug_id
+    ...         print "Setting Launchpad id for bug %s" % remote_bug
+
+
+The methods are called by ...
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('42')
+    >>> txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
+
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> external_bugtracker = BackLinkingExternalBugTracker()
+    >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
+    Setting Launchpad id for bug 42
+
+    >>> external_bugtracker.last_launchad_bug_id == bug_watch.bug.id
+    True
