@@ -203,7 +203,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         """
         self.team2.setMembershipData(
             self.team3, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
-        self.assertParticipantsEquals(['name16', 'team2'],self.team1)
+        self.assertParticipantsEquals(['name16', 'team2'], self.team1)
         self.assertParticipantsEquals(['name16'], self.team2)
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team4', 'team5'], self.team3)

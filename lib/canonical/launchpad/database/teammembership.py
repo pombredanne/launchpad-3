@@ -20,7 +20,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.database.sqlbase import (
-    cursor, flush_database_updates, SQLBase, sqlvalues)
+    flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
