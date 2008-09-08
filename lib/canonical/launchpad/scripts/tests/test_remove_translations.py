@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import logging
 from datetime import datetime
 from pytz import timezone
 from unittest import TestLoader
@@ -14,7 +13,7 @@ from zope.component import getUtility
 
 from storm.store import Store
 
-from canonical.launchpad.ftests import login, logout, sync
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
 from canonical.launchpad.scripts.remove_translations import (
@@ -62,7 +61,7 @@ class TestRemoveTranslationsConstraints(TestCase):
         approval, message = check_constraints_safety(opts)
         self.assertTrue(approval)
 
-    def test_RemoveBySubmitter(self):
+    def test_RemoveByReviewer(self):
         # Removing all translations by one reviewer is allowed.
         opts = MockOptions(reviewer=1)
         approval, message = check_constraints_safety(opts)
