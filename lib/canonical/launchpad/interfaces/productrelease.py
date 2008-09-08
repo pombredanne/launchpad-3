@@ -10,6 +10,8 @@ __all__ = [
     'IProductReleaseEditRestricted',
     'IProductReleaseFile',
     'IProductReleaseFileAddForm',
+    'IProductReleaseFileEditRestricted',
+    'IProductReleaseFilePublic',
     'IProductReleasePublic',
     'IProductReleaseSet',
     'UpstreamFileType',
@@ -121,9 +123,6 @@ class IProductReleaseEditRestricted(Interface):
         The signature file will also be added if available.
         """
 
-    def deleteReleaseFile(release_file):
-        """Delete from the librarian, and remove the reference."""
-
 
 class IProductReleasePublic(Interface):
     """Public IProductRelease properties."""
@@ -189,8 +188,15 @@ class IProductRelease(IProductReleaseEditRestricted,
     export_as_webservice_entry()
 
 
-class IProductReleaseFile(Interface):
-    """A file associated with a ProductRelease."""
+class IProductReleaseFileEditRestricted(Interface):
+    """IProductReleaseFile properties which require launchpad.Edit."""
+
+    def destroySelf():
+        """Delete the product release file."""
+
+
+class IProductReleaseFilePublic(Interface):
+    """Public properties for IProductReleaseFile."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = Choice(title=_('Project release'),
@@ -211,6 +217,11 @@ class IProductReleaseFile(Interface):
     date_uploaded = Datetime(title=_('Upload date'),
         description=_('The date this file was uploaded'),
         required=True, readonly=True)
+
+
+class IProductReleaseFile(IProductReleaseFileEditRestricted,
+                          IProductReleaseFilePublic):
+    """A file associated with a ProductRelease."""
 
 
 class IProductReleaseFileAddForm(Interface):

@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 import mimetypes
-from StringIO import StringIO
 
 # zope3
 from zope.event import notify
@@ -134,10 +133,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     custom_widget('description', TextWidget, width=62)
 
-    def normalizeFilename(self, filename):
-        # Replace slashes in the filename with less problematic dashes.
-        return filename.replace('/', '-')
-
     @action('Upload', name='add')
     def add_action(self, action, data):
         form = self.request.form
@@ -146,39 +141,33 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         filetype = data['contenttype']
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
-        if file_upload and data['description']:
-            contentType, encoding = mimetypes.guess_type(file_upload.filename)
+        if file_upload is not None and len(data['description']) > 0:
+            content_type, encoding = mimetypes.guess_type(file_upload.filename)
 
-            if contentType is None:
-                contentType = "text/plain"
+            if content_type is None:
+                content_type = "text/plain"
 
-            filename = self.normalizeFilename(file_upload.filename)
-
-            # Create the alias for the file.
-            alias = getUtility(ILibraryFileAliasSet).create(
-                name=filename,
-                size=len(data['filecontent']),
-                file=StringIO(data['filecontent']),
-                contentType=contentType)
-
-            # Create the alias for the signature file, if one was uploaded.
-            if signature_upload:
-                sig_filename = self.normalizeFilename(
-                    signature_upload.filename)
-                sig_alias = getUtility(ILibraryFileAliasSet).create(
-                    name=sig_filename,
-                    size=len(data['signature']),
-                    file=StringIO(data['signature']),
-                    contentType='application/pgp-signature')
+            if signature_upload is None:
+                signature_filename = None
+                signature_content = None
             else:
-                sig_alias = None
-            self.context.addFileAlias(alias=alias,
-                                      signature=sig_alias,
-                                      uploader=self.user,
-                                      file_type=filetype,
-                                      description=data['description'])
+                signature_filename = signature_upload.filename
+                signature_content = data['signature']
+
+            release_file = self.context.addReleaseFile(
+                filename=file_upload.filename,
+                file_content=data['filecontent'],
+                content_type=content_type,
+                signature_filename=signature_filename,
+                signature_content=signature_content,
+                uploader=self.user,
+                file_type=filetype,
+                description=data['description'])
+
             self.request.response.addNotification(
-                "Your file '%s' has been uploaded." % filename)
+                "Your file '%s' has been uploaded."
+                % release_file.libraryfile.filename)
+
         self.next_url = canonical_url(self.context)
 
 

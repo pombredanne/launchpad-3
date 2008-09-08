@@ -130,7 +130,10 @@
 
     <!-- This is class ProductReleaseFile -->
     <content class="canonical.launchpad.database.ProductReleaseFile">
-        <allow interface="canonical.launchpad.interfaces.IProductReleaseFile" />
+        <allow interface="canonical.launchpad.interfaces.IProductReleaseFilePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseFileEditRestricted" />
     </content>
 
 </configure>
