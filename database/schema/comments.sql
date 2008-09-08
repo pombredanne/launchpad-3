@@ -1776,13 +1776,13 @@ COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at p
 COMMENT ON COLUMN Archive.dirty_tokens IS 'True if the archive has tokens that need publishing.';
 
 -- ArchiveAuthToken
-COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';
-COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
-COMMENT ON COLUMN ArchiveAuthToken.date_expires IS 'The date and time this token will expire. If NULL, it does not expire.';
-COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
-COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
-COMMENT ON COLUMN ArchiveAuthToken.description IS 'An optional note for the archive owner to describe the token.';
 
+COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';
+COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
+COMMENT ON COLUMN ArchiveAuthToken.person IS 'The person to which this token applies.';
+COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
+COMMENT ON COLUMN ArchiveAuthToken.date_revoked IS 'The date and time this token was revoked.';
+COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
 
 -- ArchiveDependency
 COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
@@ -1809,6 +1809,19 @@ COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started
 COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
 COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
 COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+
+-- ArchiveSubscriber
+
+COMMENT ON TABLE ArchiveSubscriber IS 'An authorised person or team subscription to an archive.';
+COMMENT ON COLUMN ArchiveSubscriber.archive IS 'The archive that the subscriber is authorised to see.';
+COMMENT ON COLUMN ArchiveSubscriber.registrant IS 'The person who authorised this subscriber.';
+COMMENT ON COLUMN ArchiveSubscriber.date_created IS 'The date and time this subscription was created.';
+COMMENT ON COLUMN ArchiveSubscriber.subscriber IS 'The person or team that this subscription refers to.';
+COMMENT ON COLUMN ArchiveSubscriber.date_expires IS 'The date and time this subscription will expire. If NULL, it does not expire.';
+COMMENT ON COLUMN ArchiveSubscriber.status IS 'The status of the subscription, e.g. PENDING, CURRENT, REVOKED.';
+COMMENT ON COLUMN ArchiveSubscriber.description IS 'An optional note for the archive owner to describe the token.';
+COMMENT ON COLUMN ArchiveSubscriber.date_cancelled IS 'The date and time this subscription was revoked.';
+COMMENT ON COLUMN ArchiveSubscriber.cancelled_by IS 'The person who revoked this subscription.';
 
 
 -- Component
