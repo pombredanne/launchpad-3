@@ -8,7 +8,7 @@ SET client_min_messages=ERROR;
 -- table proper.
 
 -- Step 1: get rid of the old table ('archiverebuild')
-DROP TABLE archiverebuild CASCADE;
+DROP TABLE archiverebuild;
 
 -- We want to be able to capture archive creation times.
 ALTER TABLE archive ADD COLUMN
@@ -39,7 +39,7 @@ CREATE INDEX archive__distroseries__idx
 -- not be tied to a web GUI request because the latter is likely to time
 -- out.
 
--- Instead the user is to *specify* the operation he wants performed on an
+-- Instead the user will *specify* the operation he wants performed on an
 -- archive along with any parameters needed. That will be picked up by a
 -- service and performed in the background.
 
@@ -48,6 +48,20 @@ CREATE INDEX archive__distroseries__idx
 
 CREATE TABLE archiveoperation (
     id serial PRIMARY KEY,
+
+    -- The archive operation type, may be one of:
+    --  * copy source and binary
+    --  * copy source only
+    --  * cancel builds
+    --  * resume (cancelled) builds
+    --  * retry builds
+    operation_type integer NOT NULL,
+
+    -- Please note: the user may use a number of optional "filters" (e.g.
+    -- target distroseries, component, pocket) in order to define the scope
+    -- for the archive operation on hand.
+    -- If neither of these are set, the operation will apply to the target
+    -- archive at large.
 
     -- This is the target archive to which this operation applies.
     target_archive integer NOT NULL,
@@ -63,22 +77,18 @@ CREATE TABLE archiveoperation (
     -- The archive operation's status (new, in-progress, cancelled, succeeded,
     -- failed).
     status integer NOT NULL,
-    -- The archive operation type, may be one of: copypackages, cancelbuilds, -- resumebuilds, retrybuilds.
-    operation_type integer NOT NULL,
     -- The reason why this archive operation was requested (one-liner).
     reason text,
 
     -- Package copy operation only: the source archive from which packages are
     -- to be copied.
     source_archive integer,
+    -- Package copy operation only: this is the source distroseries.
+    source_distroseries integer,
     -- Package copy operation only: copy packages belonging to this component.
     source_component integer,
     -- Package copy operation only: copy packages belonging to this pocket.
     source_pocket integer,
-
-    -- Package copy operation only: whether binary packages should be copied
-    -- as well.
-    copy_binaries boolean DEFAULT FALSE,
 
     -- When was this archive operation requested?
     date_created timestamp without time zone
@@ -110,6 +120,10 @@ ALTER TABLE ONLY archiveoperation
 ALTER TABLE ONLY archiveoperation
     ADD CONSTRAINT archiveoperation_targetdistroseries_fk
     FOREIGN KEY (target_distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY archiveoperation
+    ADD CONSTRAINT archiveoperation_sourcedistroseries_fk
+    FOREIGN KEY (source_distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY archiveoperation
     ADD CONSTRAINT archiveoperation_requester_fk

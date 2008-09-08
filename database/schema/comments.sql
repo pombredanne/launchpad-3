@@ -1797,6 +1797,7 @@ COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package nam
 COMMENT ON TABLE ArchiveOperation IS 'ArchiveOperation: A table that captures the status and the details of an archive operation.';
 COMMENT ON COLUMN ArchiveOperation.requester IS 'The person who requested the archive operation.';
 COMMENT ON COLUMN ArchiveOperation.source_archive IS 'Package copy operation only: the archive from which packages are to be copied.';
+COMMENT ON COLUMN ArchiveOperation.source_distroseries IS 'Package copy operation only: the distroseries to which the packages to be copied belong in the source archive.';
 COMMENT ON COLUMN ArchiveOperation.source_component IS 'Package copy operation only: the component to which the packages to be copied belong in the source archive.';
 COMMENT ON COLUMN ArchiveOperation.source_pocket IS 'Package copy operation only: the pocket for the packages to be copied.';
 COMMENT ON COLUMN ArchiveOperation.target_archive IS 'The archive to which the operation applies.';
@@ -1808,8 +1809,7 @@ COMMENT ON COLUMN ArchiveOperation.reason IS 'The reason why this archive operat
 COMMENT ON COLUMN ArchiveOperation.date_created IS 'Date of creation for this archive operation.';
 COMMENT ON COLUMN ArchiveOperation.date_started IS 'Start date/time of this archive operation.';
 COMMENT ON COLUMN ArchiveOperation.date_completed IS 'When did this archive operation conclude?';
-COMMENT ON COLUMN ArchiveOperation.copy_binaries IS 'This flag should be set if binary packages are to be copied as well.';
-COMMENT ON COLUMN ArchiveOperation.operation_type IS 'The archive operation type, may be one of: copypackages, cancelbuilds, resumebuilds, retrybuilds.';
+COMMENT ON COLUMN ArchiveOperation.operation_type IS 'The archive operation type, may be one of: copy source and binary, copy source only, cancel builds, resume (cancelled) builds, retry builds.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
