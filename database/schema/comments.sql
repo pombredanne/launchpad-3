@@ -1573,7 +1573,6 @@ COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. 
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 COMMENT ON COLUMN GPGKey.can_encrypt IS 'Whether the key has been validated for use in encryption (as opposed to just signing)';
 
-
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
 COMMENT ON COLUMN Poll.team IS 'The team this poll belongs to';
