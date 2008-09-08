@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
+
+# (Suppressing pylint "relative import" warning 0403 for _pythonpath)
 
 __metaclass__ = type
 
