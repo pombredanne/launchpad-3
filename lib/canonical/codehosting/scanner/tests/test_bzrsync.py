@@ -53,7 +53,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.lp_db_user = config.launchpad.dbuser
         self.switchDbUser(config.branchscanner.dbuser)
         self._setUpFakeTransport()
-        self._setUpAuthor()
 
     def _setUpFakeTransport(self):
         # The scanner tests assume that branches live on a Launchpad virtual
@@ -106,13 +105,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
-
-    def _setUpAuthor(self):
-        self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
-        if not self.db_author:
-            LaunchpadZopelessLayer.txn.begin()
-            self.db_author = RevisionAuthor(name=self.AUTHOR)
-            LaunchpadZopelessLayer.txn.commit()
 
     def getCounts(self):
         """Return the number of rows in core revision-related tables.
@@ -307,13 +299,13 @@ class TestBzrSync(BzrSyncTestCase):
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
@@ -325,7 +317,7 @@ class TestBzrSync(BzrSyncTestCase):
         # 1 (in this case) revision has been removed,
         # and another email with the diff and log message.
         self.commitRevision('first')
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         self.uncommitRevision()
         self.commitRevision('second')
@@ -340,7 +332,7 @@ class TestBzrSync(BzrSyncTestCase):
         counts = self.getCounts()
         bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertCounts(counts, new_revisions=1, new_numbers=1)
+        self.assertCounts(counts, new_revisions=1, new_numbers=1, new_authors=1)
 
     def test_new_author(self):
         # Importing a different committer adds it as an author.
@@ -348,14 +340,14 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(committer=author)
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         db_author = RevisionAuthor.selectOneBy(name=author)
-        self.assertTrue(db_author)
         self.assertEquals(db_author.name, author)
 
     def test_new_parent(self):
         # Importing two revisions should import a new parent.
         self.commitRevision()
         self.commitRevision()
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=1)
 
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
@@ -364,7 +356,7 @@ class TestBzrSync(BzrSyncTestCase):
         last_modified = self.db_branch.date_last_modified
         last_scanned = self.db_branch.last_scanned
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
         self.assertTrue(self.db_branch.last_scanned > last_scanned,
@@ -379,7 +371,8 @@ class TestBzrSync(BzrSyncTestCase):
                             timestamp=1000000000.0, timezone=0)
         self.commitRevision(rev_id='rev-2',
                             timestamp=1000000000.0, timezone=28800)
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=1)
         rev_1 = Revision.selectOneBy(revision_id='rev-1')
         rev_2 = Revision.selectOneBy(revision_id='rev-2')
         UTC = pytz.timezone('UTC')
@@ -564,7 +557,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
-            new_parents=len(parent_ids), new_authors=0)
+            new_parents=len(parent_ids), new_authors=1)
         return fake_revision
 
     def test_sync_twice(self):
