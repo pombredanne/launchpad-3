@@ -1573,16 +1573,6 @@ COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. 
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 COMMENT ON COLUMN GPGKey.can_encrypt IS 'Whether the key has been validated for use in encryption (as opposed to just signing)';
 
--- PrivateGPGKey
-
-COMMENT ON TABLE PrivateGPGKey IS 'Represents the request and the existence of the private part of launchpad-generated (and hosted) GPG keys.';
-COMMENT ON COLUMN PrivateGPGKey.date_requested IS 'Instant when a hosted key was requested.';
-COMMENT ON COLUMN PrivateGPGKey.requestor IS 'User who requested a hosted key generation.';
-COMMENT ON COLUMN PrivateGPGKey.comment IS 'Text to be included when generating the private GPG key. It will be set as the embedded identification of the public key.';
-COMMENT ON COLUMN PrivateGPGKey.status IS 'The status of the private GPG key, PENDING_GENERATION, ACTIVE, PENDING_REVOCATION or REVOKED.';
-COMMENT ON COLUMN PrivateGPGKey.gpg_key IS 'The corresponding public GPG key part which gets set once the key is generated.';
-COMMENT ON COLUMN PrivateGPGKey.date_created IS 'Instant when the private key was created.';
-
 
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
@@ -1784,6 +1774,7 @@ COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need buildin
 COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
+COMMENT ON COLUMN Archive.gpg_key IS 'The GpgKey used to sign the this archive .';
 
 
 -- ArchiveDependency
@@ -1811,13 +1802,6 @@ COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started
 COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
 COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
 COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
-
-
--- ArchiveSiginingKey
-
-COMMENT ON TABLE ArchiveSigningKey IS 'This table specificy a GPG key that should be used when signing a archive.';
-COMMENT ON COLUMN ArchiveSigningKey.archive IS 'The targeted Archive.';
-COMMENT ON COLUMN ArchiveSigningKey.gpg_key IS 'The GpgKey used to sign the targeted archive .';
 
 
 -- Component
