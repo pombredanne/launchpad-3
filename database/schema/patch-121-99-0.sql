@@ -8,12 +8,12 @@ CREATE TABLE ArchiveSubscriber (
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     subscriber integer NOT NULL REFERENCES Person(id),
     date_expires timestamp without time zone,
-    status integer NOT NULL,
+    status integer NOT NULL, -- PENDING, ACTIVE, CANCELLING, CANCELLED
     description text,
     date_cancelled timestamp without time zone,
     cancelled_by integer REFERENCES Person(id)
 );
-    
+
 CREATE INDEX archivesubscriber__archive__idx
     ON archivesubscriber (archive);
 
@@ -44,8 +44,5 @@ CREATE INDEX archiveauthtoken__person__idx
 CREATE INDEX archiveauthtoken__date_created__idx
     ON ArchiveAuthToken (date_created);
 
-
-ALTER TABLE Archive
-    ADD COLUMN dirty_tokens boolean NOT NULL DEFAULT FALSE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
