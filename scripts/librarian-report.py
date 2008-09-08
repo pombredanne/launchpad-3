@@ -20,27 +20,32 @@ def main():
 
     # Collect direct references to the LibraryFileAlias table.
     references = set(
-        (from_tab, from_col)
-        for from_tab, from_col, to_tab, to_col, update, delete
+        (from_table, from_column)
+        # Note that listReferences is recursive, which we don't
+        # care about in this simple report. We also ignore the
+        # irrelevant constraint type update and delete flags.
+        for from_table, from_column, to_table, to_column, update, delete
             in listReferences(cur, 'libraryfilealias', 'id')
-        if to_tab == 'libraryfilealias'
+        if to_table == 'libraryfilealias'
         )
 
     totals = set()
-    for ref_tab, ref_col in sorted(references):
-        q_ref_tab = quoteIdentifier(ref_tab)
-        q_ref_col = quoteIdentifier(ref_col)
+    for referring_table, referring_column in sorted(references):
+        quoted_referring_table = quoteIdentifier(referring_table)
+        quoted_referring_column = quoteIdentifier(referring_column)
         cur.execute("""
             SELECT
                 COALESCE(SUM(filesize), 0),
                 pg_size_pretty(COALESCE(SUM(filesize), 0)),
                 COUNT(*)
-            FROM LibraryFileContent, LibraryFileAlias, %(q_ref_tab)s
+            FROM LibraryFileContent, LibraryFileAlias, %s
             WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND %(q_ref_tab)s.%(q_ref_col)s = LibraryFileContent.id
-            """ % vars())
+                AND %s.%s = LibraryFileContent.id
+            """ % (
+                quoted_referring_table, quoted_referring_table,
+                quoted_referring_column))
         total_bytes, formatted_size, num_files = cur.fetchone()
-        totals.add((total_bytes, ref_tab, formatted_size, num_files))
+        totals.add((total_bytes, referring_table, formatted_size, num_files))
 
     for total_bytes, tab_name, formatted_size, num_files in sorted(
         totals, reverse=True):
