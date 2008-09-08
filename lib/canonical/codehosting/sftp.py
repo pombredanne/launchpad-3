@@ -26,7 +26,6 @@ from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
-from twisted.web.xmlrpc import Proxy
 from zope.interface import implements
 
 from canonical.codehosting.transport import (
