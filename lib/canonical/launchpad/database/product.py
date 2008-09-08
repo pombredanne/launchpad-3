@@ -16,6 +16,7 @@ import operator
 import datetime
 import calendar
 import pytz
+import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -957,13 +958,16 @@ class ProductSet:
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self.all_active[:quantity]
+        if quantity is None:
+            return self.all_active
+        else:
+            return self.all_active[:quantity]
 
     @property
     def all_active(self):
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it in
+        # The main product listings include owner, so we prejoin it.
         return results.prejoin(["owner"])
 
     def get(self, productid):
@@ -1013,7 +1017,7 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      icon=None, licenses=sets.Set(), license_info=None,
                       registrant=None):
         """See `IProductSet`."""
         if registrant is None:
