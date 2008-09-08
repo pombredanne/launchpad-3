@@ -11,17 +11,15 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import OR
 
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.account import (
         AccountCreationRationale, AccountStatus,
         IAccount, IAccountSet)
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
 from canonical.launchpad.webapp.vhosts import allvhosts
