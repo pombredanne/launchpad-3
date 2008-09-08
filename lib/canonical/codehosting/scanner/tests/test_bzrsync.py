@@ -40,7 +40,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     layer = LaunchpadZopelessLayer
 
-    AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
 
     def setUp(self):
@@ -169,7 +168,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         if message is None:
             message = self.LOG
         if committer is None:
-            committer = self.AUTHOR
+            committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
@@ -321,7 +320,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(self.db_branch.revision_count, 1)
         self.uncommitRevision()
         self.commitRevision('second')
-        self.syncAndCount(new_revisions=1)
+        self.syncAndCount(new_revisions=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
@@ -347,7 +346,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision()
         self.commitRevision()
         self.syncAndCount(
-            new_revisions=2, new_numbers=2, new_parents=1, new_authors=1)
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
 
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
@@ -372,7 +371,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(rev_id='rev-2',
                             timestamp=1000000000.0, timezone=28800)
         self.syncAndCount(
-            new_revisions=2, new_numbers=2, new_parents=1, new_authors=1)
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
         rev_1 = Revision.selectOneBy(revision_id='rev-1')
         rev_2 = Revision.selectOneBy(revision_id='rev-2')
         UTC = pytz.timezone('UTC')
@@ -514,8 +513,8 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         # Fake revision with negative timestamp.
         fake_rev = BzrRevision(
             revision_id='rev42', parent_ids=['rev1', 'rev2'],
-            committer=self.AUTHOR, message=self.LOG, timestamp=old_timestamp,
-            timezone=0, properties={})
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=old_timestamp, timezone=0, properties={})
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
@@ -540,9 +539,9 @@ class TestBzrSyncModified(BzrSyncTestCase):
         """Make a fake Bazaar revision for testing `syncOneRevision`."""
         return BzrRevision(
             revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
-            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
-            timezone=0, properties={})
-
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=1000000000.0, timezone=0, properties={})
+    
     def makeSyncedRevision(self):
         """Return a fake revision that has already been synced.
 
@@ -641,7 +640,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
                          contents="Hello World\n")
-        self.commitRevision('second')
+        author = self.factory.getUniqueString()
+        self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(len(stub.test_emails), 2)
         [uncommit_email, recommit_email] = stub.test_emails
@@ -656,7 +656,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'Subject: [Branch %s] Rev 1: second'
             % self.db_branch.unique_name,
             'revno: 1',
-            'committer: Revision Author <author@example.com>',
+            'committer: %s' % author,
             'branch nick: %s'  % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
