@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -88,7 +88,7 @@ class AccountSet:
     """See `IAccountSet`."""
     implements(IAccountSet)
 
-    def new(self, rationale, displayname, memonic=None,
+    def new(self, rationale, displayname, openid_mnemonic=None,
             password=None, password_is_encrypted=False):
         """See `IAccountSet`."""
 
@@ -96,8 +96,9 @@ class AccountSet:
                 displayname=displayname, creation_rationale=rationale)
 
         # Create the openid_identifier for the OpenID identity URL.
-        if memonic is not None:
-            account.new_openid_identifier = self.createOpenIdentifier(memonic)
+        if openid_mnemonic is not None:
+            account.new_openid_identifier = self.createOpenIDIdentifier(
+                openid_mnemonic)
 
         # Create the password record.
         if password is not None:
@@ -118,37 +119,39 @@ class AccountSet:
     def getByOpenIdIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         return Account.selectOne(
-            AND(
+            OR(
                 Account.q.openid_identifier == openid_identifier,
-                Account.q.status == AccountStatus.ACTIVE,
-                EmailAddress.q.accountID == Account.q.id,
-                EmailAddress.q.status == EmailAddressStatus.PREFERRED,
-               ),)
+                Account.q.new_openid_identifier == openid_identifier),)
 
-    def createOpenIdentifier(self, memonic):
-        """See `IAccountSet`."""
-        assert isinstance(memonic, (str, unicode)) and memonic is not '', (
-            "The memonic must be a non-empty string.")
+    _MAX_RANDOM_TOKEN_RANGE = 1000
+
+    def createOpenIDIdentifier(self, mnemonic):
+        """See `IAccountSet`.
+
+        The random component of the identifier is a number betwee 000 and 999.
+        """
+        assert isinstance(mnemonic, (str, unicode)) and mnemonic is not '', (
+            'The mnemonic must be a non-empty string.')
         identity_url_root = allvhosts.configs['id'].rooturl
         openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
-        tokens = range(0, 999)
+        tokens = range(0, self._MAX_RANDOM_TOKEN_RANGE)
         random.shuffle(tokens)
         # This method might be faster by collecting all accounts and summaries
         # that end with the memonic. The chances of collision seem minute,
         # given that the intended memonic is a unique user name.
         for token in tokens:
             token = '%03d' % token
-            openid_identifier = '%s/%s' % (token, memonic)
+            openid_identifier = '%s/%s' % (token, mnemonic)
             account = self.getByOpenIdIdentifier(openid_identifier)
             if account is not None:
                 continue
             summaries = openidrpsummaryset.getByIdentifier(
                 identity_url_root + openid_identifier)
             if summaries.count() == 0:
-                return openid_identifier
+                return openid_identifier.encode('ascii')
         raise AssertionError(
-            "An openid_identifier could not be created with the memonic '%s'."
-            % memonic)
+            'An openid_identifier could not be created with the mnemonic '
+            "'%s'." % mnemonic)
 
 
 class AccountPassword(SQLBase):

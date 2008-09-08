@@ -2440,7 +2440,7 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname,
+                account_rationale, displayname, openid_mnemonic=name,
                 password=password, password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(

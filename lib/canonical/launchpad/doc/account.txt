@@ -57,27 +57,18 @@ look up the user.
     >>> print account.displayname
     No Privileges Person
 
+The getByOpenIdIdentifier() method supports the human readable
+openid identifiers.
+
+    >>> account.new_openid_identifier
+    u'123/no-priv'
+    >>> account_2 = account_set.getByOpenIdIdentifier('123/no-priv')
+    >>> account_2 == account
+    True
+
 None is returned if the identifier is not used by any account.
 
     >>> print account_set.getByOpenIdIdentifier('no-such-identifier')
-    None
-
-Accounts that have not been validated are not returned either.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     PersonCreationRationale, IPersonSet)
-    >>> personset = getUtility(IPersonSet)
-
-    >>> person, email = personset.createPersonAndEmail(
-    ...     email='whatever@example.com', name='whatever',
-    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
-    >>> person.is_valid_person
-    False
-
-    >>> person.openid_identifier is not None
-    True
-
-    >>> print account_set.getByOpenIdIdentifier(person.openid_identifier)
     None
 
 
@@ -149,6 +140,10 @@ The Account's displayname is synced to the Person's displayname if there
 is one. If the Person.displayname is changed, the Account.displayname is
 changed too.
 
+    >>> from canonical.launchpad.interfaces import (
+    ...     PersonCreationRationale, IPersonSet)
+
+    >>> personset = getUtility(IPersonSet)
     >>> person = personset.getByEmail('no-priv@canonical.com')
     >>> person.displayname = 'Something New'
     >>> account.displayname
@@ -226,9 +221,68 @@ the account object is synced.
 
     >>> new_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     memonic='oid-account', password=u'clear_password')
+    ...     openid_mnemonic='oid-account', password=u'clear_password')
     >>> syncUpdate(new_account)
     >>> len(new_account.openid_identifier) == 7
     True
     >>> new_account.new_openid_identifier
     u'.../oid-account'
+
+The IAccountSet object can create a human-readable openid identifier
+using the createOpenIDIdentifier() method. It requires a string argument
+that is used as the mnemonic in the URL. A user name is a example of
+a mnemonic that would be used to create a new openid identifier.
+
+    >>> first_identifier = account_set.createOpenIDIdentifier('user-name')
+    >>> first_identifier
+    '.../user-name'
+
+The openid_identifier is unique for all accounts
+
+    >>> second_identifier = account_set.createOpenIDIdentifier('user-name')
+    >>> second_identifier
+    '.../user-name'
+    >>> first_identifier == second_identifier
+    False
+
+There is no distinction between using a string mnemonic and a unicode
+mnemonic. A str is always returned.
+
+    >>> account_set.createOpenIDIdentifier(u'user-name')
+    '.../user-name'
+
+The mnemonic must be a string or a unicode string, otherwise An error is
+raised.
+
+    >>> account_set.createOpenIDIdentifier(None)
+    Traceback (most recent call last):
+     ...
+    AssertionError: The mnemonic must be a non-empty string.
+
+
+An error is raised if non-unique openid identifier cannot be created
+for the mnemonic.
+
+    # Instrument the random number range to ensure a duplicate will
+    # be generated.
+    >>> naked_account_set = removeSecurityProxy(account_set)
+    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE
+    1000
+    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1
+
+    >>> non_unique_account = naked_account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'Non Unique',
+    ...     openid_mnemonic='non-unique', password=u'clear_password')
+    >>> syncUpdate(non_unique_account)
+    >>> non_unique_account.new_openid_identifier
+    u'000/non-unique'
+
+    >>> naked_account_set.createOpenIDIdentifier('non-unique')
+    Traceback (most recent call last):
+     ...
+    AssertionError: An openid_identifier could not be created with the
+                    mnemonic 'non-unique'.
+
+    # Restore random number range.
+    >>> removeSecurityProxy(account_set)._MAX_RANDOM_TOKEN_RANGE = 1000
+
