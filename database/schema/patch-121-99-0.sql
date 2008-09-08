@@ -142,4 +142,33 @@ CREATE INDEX archiveoperation__targetdistroseries__idx
     ON archiveoperation (target_distroseries)
     WHERE target_distroseries IS NOT NULL;
 
+-- Create table ArchiveArch
+
+-- This table allows a user to specify which architectures an archive
+-- requires or supports. There will be one row per archive/architecture
+-- combination.
+
+-- In case where architectures are specified for an archive in conjunction
+-- with e.g. a distroseries, the intersection between the archive's
+-- architectures and the appropriate distroarchseries' will determine what
+-- builds/binary packages are supported in the archive.
+CREATE TABLE archivearch (
+    id serial PRIMARY KEY,
+    archive integer NOT NULL,
+    processorfamily integer NOT NULL,
+    architecturetag text NOT NULL
+);
+
+ALTER TABLE ONLY archivearch
+    ADD CONSTRAINT archivearch__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
+
+ALTER TABLE ONLY archivearch
+    ADD CONSTRAINT archivearch__processorfamily__fk FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
+
+ALTER TABLE ONLY archivearch
+    ADD CONSTRAINT archivearch__architecturetag__archive__key UNIQUE (architecturetag, archive);
+
+ALTER TABLE ONLY archivearch
+    ADD CONSTRAINT archivearch__processorfamily__archive__key UNIQUE (processorfamily, archive);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);

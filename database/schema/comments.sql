@@ -1811,6 +1811,13 @@ COMMENT ON COLUMN ArchiveOperation.date_started IS 'Start date/time of this arch
 COMMENT ON COLUMN ArchiveOperation.date_completed IS 'When did this archive operation conclude?';
 COMMENT ON COLUMN ArchiveOperation.operation_type IS 'The archive operation type, may be one of: copy source and binary, copy source only, cancel builds, resume (cancelled) builds, retry builds.';
 
+-- ArchiveArch
+
+COMMENT ON TABLE ArchiveArch IS 'ArchiveArch: A table that allows a user to specify which architectures an archive requires or supports.';
+COMMENT ON COLUMN ArchiveArch.archive IS 'The archive for which an architecture is specified.';
+COMMENT ON COLUMN ArchiveArch.processorfamily IS 'The architecture specified for the archive on hand.';
+COMMENT ON COLUMN ArchiveArch.architecturetag IS 'The name of the architecture specified for the archive on hand.';
+
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
