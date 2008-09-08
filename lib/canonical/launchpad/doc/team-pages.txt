@@ -81,7 +81,7 @@ members of that team.  That page also lists the local times of members.
     >>> context = factory.makeTeam(salgado)
     >>> len(context.mapped_participants)
     0
-    >>> view = getMultiAdapter((context, TestRequest()), name='+map')
+    >>> view = create_view(context, '+map')
     >>> view.times
     []
 
@@ -90,7 +90,7 @@ members of that team.  That page also lists the local times of members.
     >>> context.addMember(london_member, sabdfl)
     >>> len(context.mapped_participants)
     1
-    >>> view = getMultiAdapter((context, TestRequest()), name='+map')
+    >>> view = create_view(context, '+map')
     >>> len(view.times)
     1
 
@@ -99,11 +99,11 @@ members of that team.  That page also lists the local times of members.
     >>> context.addMember(brazil_member, sabdfl)
     >>> len(context.mapped_participants)
     2
-    >>> view = getMultiAdapter((context, TestRequest()), name='+map')
+    >>> view = create_view(context, '+map')
     >>> len(view.times)
     2
 
-If we had two members in london, though, we wouldn't list london's time
+If we had two members in London, though, we wouldn't list London's time
 twice, for obvious reasons.
 
     >>> london_member2 = factory.makePerson(
@@ -111,6 +111,6 @@ twice, for obvious reasons.
     >>> context.addMember(london_member2, sabdfl)
     >>> len(context.mapped_participants)
     3
-    >>> view = getMultiAdapter((context, TestRequest()), name='+map')
+    >>> view = create_view(context, '+map')
     >>> len(view.times)
     2
