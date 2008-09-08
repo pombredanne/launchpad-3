@@ -332,14 +332,6 @@ class ShipItRequestView(GeneralFormView):
             raise AssertionError('Invalid self.flavour: %s' % self.flavour)
 
     @property
-    def is_edubuntu(self):
-        return self.flavour == ShipItFlavour.EDUBUNTU
-
-    @property
-    def is_kubuntu(self):
-        return self.flavour == ShipItFlavour.KUBUNTU
-
-    @property
     def initial_values(self):
         """Initial values from this user's current order, if there's one.
 

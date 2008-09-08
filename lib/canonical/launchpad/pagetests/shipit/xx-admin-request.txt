@@ -56,10 +56,9 @@ correct it by going to the /adminrequest page.
 
 For this request we'll change the approved quantities before approving.
 
-  >>> browser.getControl(name='field.edubuntu_quantityx86approved').value
-  '5'
-  >>> browser.getControl(name='field.edubuntu_quantityx86approved').value = '3'
-
+  >>> browser.getControl(name='field.server_quantityx86approved').value
+  '0'
+  >>> browser.getControl(name='field.server_quantityx86approved').value = '3'
   >>> browser.getControl('Approve & Continue').click()
 
 
@@ -69,7 +68,7 @@ requests.
   >>> browser.url
   'http://shipit.ubuntu.dev/requests/13/'
   
-  >>> browser.getControl(name='field.edubuntu_quantityx86approved').value
+  >>> browser.getControl(name='field.server_quantityx86approved').value
   '3'
 
 

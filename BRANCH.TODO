@@ -2,3 +2,15 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+The changes here will get rid of all user-facing pages that allow people to
+request Edubuntu CDs as well as a new +index page for shipit.edubuntu.dev that
+explains we're not shipping Edubuntu any more.
+
+Change ShipitEdubuntuLayer to not subclass ShipitLayer so that it doesn't
+inherit all the pages defined in the ShipitLayer.
+
+Change tests that used Edubuntu to use Server as the flavour.
+
+As of 8.04 Edubuntu was turned into an add-on CD, so we had to write some
+code to add Ubuntu CDs to requests which had only Edubuntu ones. This is not
+needed anymore and thus have been removed.
