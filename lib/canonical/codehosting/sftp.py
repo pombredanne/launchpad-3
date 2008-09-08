@@ -162,6 +162,8 @@ class TransportSFTPFile:
 
     def _check_for_eof(self, failure):
         failure.trap(bzr_errors.ShortReadvError)
+        if failure.value.actual:
+            return self.readChunk(failure.value.offset, failure.value.actual)
         # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
         # even if we weren't, current versions of Bazaar wouldn't actually use
         # it. If Bazaar changes to include the returned data in a
