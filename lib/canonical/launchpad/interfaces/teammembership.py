@@ -100,10 +100,10 @@ class ITeamMembership(Interface):
     # imports, so we use schema=Interface here and override it in
     # interfaces/person.py.
     team = exported(
-        Reference(title=_("Team"), required=True, readonly=False,
+        Reference(title=_("Team"), required=True, readonly=True,
                   schema=Interface))
     person = exported(
-        Reference(title=_("Member"), required=True, readonly=False,
+        Reference(title=_("Member"), required=True, readonly=True,
                   schema=Interface),
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
@@ -121,7 +121,7 @@ class ITeamMembership(Interface):
                                "active for the first time.")),
         exported_as='date_joined')
     dateexpires = exported(
-        Datetime(title=_("Date expires"), required=False, readonly=False),
+        Datetime(title=_("Date expires"), required=False, readonly=True),
         exported_as='date_expires')
     date_created = Datetime(
         title=_("Date created"), required=False, readonly=True,
@@ -264,8 +264,10 @@ class ITeamParticipation(Interface):
     """
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("The team"), required=True, readonly=False)
-    person = Int(title=_("The member"), required=True, readonly=False)
+    team = Reference(
+        title=_("The team"), required=True, readonly=True, schema=Interface)
+    person = Reference(
+        title=_("The member"), required=True, readonly=True, schema=Interface)
 
 
 class CyclicalTeamMembershipError(Exception):

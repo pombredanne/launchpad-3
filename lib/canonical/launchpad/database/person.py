@@ -22,6 +22,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -95,7 +96,6 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -126,8 +126,7 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.shipit import (
-    MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
+from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -145,6 +144,12 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
+
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ValidPersonCache(SQLBase):
@@ -942,7 +947,18 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def is_trusted_on_shipit(self):
         """See `IPerson`."""
         min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
-        return Karma.selectBy(person=self).count() >= min_entries
+        if Karma.selectBy(person=self).count() >= min_entries:
+            return True
+        ubuntu_members = Person.selectOneBy(name='ubuntumembers')
+        if ubuntu_members is None:
+            error = AssertionError(
+                "No team named 'ubuntumembers' found; it's likely it has "
+                "been renamed.")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return self.inTeam(ubuntu_members)
 
     def shippedShipItRequestsOfCurrentSeries(self):
         """See `IPerson`."""
