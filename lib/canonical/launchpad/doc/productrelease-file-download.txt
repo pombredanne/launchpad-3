@@ -46,8 +46,6 @@ Pick the first release from the set.
 
 Add a file alias to the productrelease.
 
-    >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")

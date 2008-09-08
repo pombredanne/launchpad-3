@@ -24,8 +24,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILibraryFileAliasSet, IProductRelease,
-    IProductReleaseFileAddForm)
+    ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
 from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -142,7 +141,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
         if file_upload is not None and len(data['description']) > 0:
-            content_type, encoding = mimetypes.guess_type(file_upload.filename)
+            content_type, encoding = mimetypes.guess_type(
+                file_upload.filename)
 
             if content_type is None:
                 content_type = "text/plain"
