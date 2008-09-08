@@ -35,7 +35,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -45,6 +44,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -445,13 +445,11 @@ class MailingList(SQLBase):
             PostedMessageStatus.APPROVED,
             PostedMessageStatus.APPROVAL_PENDING)
         # First, we need to find all the members of the team this mailing list
-        # is associated with.  Of those team members with valid person
-        # accounts, find all of their validated and preferred email
-        # addresses.  Every one of those email addresses are allowed to post
-        # to the mailing list.
+        # is associated with.  Find all of their validated and preferred email
+        # addresses of those team members.  Every one of those email addresses
+        # are allowed to post to the mailing list.
         tables = (
             Person,
-            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
             LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID == Person.id),
@@ -472,7 +470,6 @@ class MailingList(SQLBase):
         # global approvals.
         tables = (
             Person,
-            LeftJoin(ValidPersonCache, ValidPersonCache.id == Person.id),
             LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
             LeftJoin(MessageApproval,
                      MessageApproval.posted_byID == Person.id),
