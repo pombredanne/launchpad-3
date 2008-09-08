@@ -10,15 +10,14 @@
   i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>The Common Vulnerabilities and Exposures database</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+      <h1>Launchpad CVE tracker</h1>
 
   <form method="post">
     <div>Find CVEs by number or keywords:</div>

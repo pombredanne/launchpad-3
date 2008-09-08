@@ -72,9 +72,10 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# This is the default for the 'product' parameter of makeBranch. We don't use
+# We use this for default paramters where None has a specific meaning.  For
+# example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
-_DEFAULT_BRANCH_PRODUCT = object()
+_DEFAULT = object()
 
 
 class LaunchpadObjectFactory:
@@ -279,7 +280,7 @@ class LaunchpadObjectFactory:
             owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=_DEFAULT_BRANCH_PRODUCT, url=None, registrant=None,
+                   product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -294,13 +295,13 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is _DEFAULT_BRANCH_PRODUCT:
+        if product is _DEFAULT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
         elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
-            if url is None:
+            if url is _DEFAULT:
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
@@ -317,7 +318,7 @@ class LaunchpadObjectFactory:
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = _DEFAULT_BRANCH_PRODUCT
+        product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -620,8 +621,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
