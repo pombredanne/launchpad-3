@@ -43,6 +43,7 @@ Internet.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../mugshot
+    ...
     >>> initial_url = result.getHeader('Location')
 
 PUT is also used to modify a mugshot.
@@ -143,15 +144,18 @@ by the librarian.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../icon
+    ...
 
     >>> result = webservice.get(project['logo_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../logo
+    ...
 
     >>> result = webservice.get(project['brand_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../brand
+    ...

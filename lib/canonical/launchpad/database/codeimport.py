@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, IBranchSet, ICodeImport, ICodeImportEventSet,
     ICodeImportSet, ILaunchpadCelebrities, ImportStatus, NotFoundError,
     RevisionControlSystems)
-from canonical.launchpad.mailout.codeimport import code_import_status_updated
+from canonical.launchpad.mailout.codeimport import code_import_updated
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -159,47 +159,42 @@ class CodeImport(SQLBase):
         else:
             return None
 
-    def approve(self, data, user):
+    def changeDetails(self, data, user):
         """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.REVIEWED:
-            raise AssertionError('Review status is already reviewed.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
-        CodeImportJobWorkflow().newJob(self)
-
-    def suspend(self, data, user):
-        """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.SUSPENDED:
-            raise AssertionError('Review status is already suspended.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
-        self._removeJob()
-
-    def invalidate(self, data, user):
-        """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.INVALID:
-            raise AssertionError('Review status is already invalid.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
-        self._removeJob()
-
-    def markFailing(self, data, user):
-        """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.FAILING:
-            raise AssertionError('Review status is already failing.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
-        self._removeJob()
-
-    def _setStatusAndEmail(self, data, user, status):
-        """Update the review_status and email interested parties."""
-        data['review_status'] = status
-        self.updateFromData(data, user)
-        code_import_status_updated(self, user)
+        if 'review_status' in data:
+            raise AssertionError(
+                'changeDetails cannot be used to change review_status.')
+        modify_event = self.updateFromData(data, user)
+        if modify_event is not None:
+            code_import_updated(modify_event)
+            return True
+        else:
+            return False
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
         event_set = getUtility(ICodeImportEventSet)
+        new_whiteboard = None
+        if 'whiteboard' in data:
+            whiteboard = data.pop('whiteboard')
+            if whiteboard != self.branch.whiteboard:
+                if whiteboard is None:
+                    new_whiteboard = ''
+                else:
+                    new_whiteboard = whiteboard
+                self.branch.whiteboard = whiteboard
         token = event_set.beginModify(self)
         for name, value in data.items():
             setattr(self, name, value)
-        event_set.newModify(self, user, token)
+        if 'review_status' in data:
+            if data['review_status'] == CodeImportReviewStatus.REVIEWED:
+                CodeImportJobWorkflow().newJob(self)
+            else:
+                self._removeJob()
+        event = event_set.newModify(self, user, token)
+        if event is not None or new_whiteboard is not None:
+            code_import_updated(self, event, new_whiteboard, user)
+        return event
 
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name
