@@ -274,7 +274,7 @@
                tal:condition="link/enabled"
                tal:attributes="href link/url"
                tal:content="structure link/render">
-               Edit import source or review import</a>.
+               Edit import source or review import</a>
           </p>
         </tal:can-edit>
       </tal:has-codeimport>
