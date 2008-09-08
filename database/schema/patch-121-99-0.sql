@@ -3,8 +3,8 @@ SET client_min_messages=ERROR;
 CREATE TABLE PackageBugReportingGuideline (
   id serial PRIMARY KEY,
 
-  distribution integer REFERENCES Distribution,
-  sourcepackagename integer REFERENCES SourcePackageName,
+  distribution integer NOT NULL REFERENCES Distribution,
+  sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
 
   bug_reporting_guidelines TEXT NOT NULL,
 
