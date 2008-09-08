@@ -866,6 +866,44 @@ containing:
     >>> print content.md5
     01234567890123456789012345678900
 
+
+getChangesFilesForSources(), provided by IPublishingSet, allows
+callsites to retrieve all changesfiles related with a set of source
+publications.
+
+    >>> cprov_changes = publishing_set.getChangesFilesForSources(
+    ...     cprov_sources)
+
+    >>> cprov_changes.count()
+    1
+
+The returned ResultSet element is tuple containing:
+
+ * `SourcePackagePublishingHistory`;
+ * `PackageUpload`;
+ * `SourcePackageRelease`;
+ * `LibraryFileAlias`;
+ * `LibraryFileContent`.
+
+    >>> [the_change] = cprov_changes
+
+    >>> source_pub, upload, source, file, content = the_change
+
+    >>> print source_pub.displayname
+    iceweasel 1.0 in warty
+
+    >>> print upload.displayname
+    iceweasel
+
+    >>> print source.title
+    iceweasel - 1.0
+
+    >>> print file.filename
+    mozilla-firefox_0.9_i386.changes
+
+    >>> print content.md5
+    e4a7193a8f72fa2755e2162512069093
+
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
@@ -1019,6 +1057,7 @@ information to be cached in the decorated objects:
   * getFilesBySource;
   * getBinariesBySource;
   * getPackageDiffsBySource.
+  * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
 corresponding `IPublishingSet` methods and group the wanted results as
@@ -1072,6 +1111,22 @@ Package diffs by source.
     ...     diffs_by_source.get(pub_with_diff, []))
     Matches
 
+Changesfiles by source.
+
+    >>> all_cprov_sources = cprov.archive.getPublishedSources()
+    >>> pub_with_changes = all_cprov_sources[-2]
+
+    >>> decorated_changes = ArchiveSourcePublications(all_cprov_sources)
+    >>> changes_by_source = decorated_changes.getChangesFileBySource()
+
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> the_change = the_source.upload_changesfile
+    >>> print the_change.filename
+    mozilla-firefox_0.9_i386.changes
+
+    >>> decorated_change = changes_by_source.get(pub_with_changes, [])
+    >>> print decorated_change.filename
+    mozilla-firefox_0.9_i386.changes
 
 Enough internals! What really matters for callsites is that, when
 iterated, `ArchiveSourcePublications`returns `ArchiveSourcePublication`
@@ -1134,22 +1189,28 @@ this way we can cache information refered to:
 Currently there are no suitable publications with a reachable
 changesfiles in our sampledata.
 
-    >>> pub_with_changes = cprov_published_sources[-1]
+    >>> pub_with_changes = cprov_published_sources[-2]
     >>> the_source = pub_with_changes.sourcepackagerelease
     >>> print the_source.upload_changesfile
     None
 
-    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_pub_with_changes = list(decorated_set)[-2]
     >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
     >>> print decorated_source.upload_changesfile
     None
 
-We can create a PackageUpload and a corresponding chnagesfiles for a
-publication.
+The sampledata doesn't contain any corresponding PackageUpload
+(changesfile) for Celso's PPA published sources. We can create one for
+testing purposes together with a corresponding changesfiles.
+
+    >>> pub_with_changes = cprov_sources[-1]
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> print the_source.upload_changesfile
+    None
 
     >>> queue_record = the_source.upload_distroseries.createQueueEntry(
     ...     PackagePublishingPocket.RELEASE, 'foo.changes', 'boing',
-    ...     pub_with_diff.archive)
+    ...     pub_with_changes.archive)
     >>> queue_source = queue_record.addSource(the_source)
     >>> queue_record.setDone()
     >>> print queue_record.changesfile.filename
