@@ -145,6 +145,9 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 

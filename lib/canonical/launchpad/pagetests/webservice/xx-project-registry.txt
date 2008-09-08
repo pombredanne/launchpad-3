@@ -1,5 +1,49 @@
 = Web Service Project Groups =
 
+== Project group collection ==
+
+It is possible to get a batched list of all the project groups.
+
+    >>> group_collection = webservice.get("/projectgroups").jsonBody()
+    >>> group_collection['resource_type_link']
+    u'http://.../#project_groups'
+    >>> group_collection['total_size']
+    7
+
+    >>> from operator import itemgetter
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> project_group_entries[0]['self_link']
+    u'http://.../apache'
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
+
+It's possible to search the list and get a subset of the project groups.
+
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search", text="Apache").jsonBody()
+    >>> for project_group in group_collection['entries']:
+    ...   print project_group['display_name']
+    Apache
+
+Searching without providing a search string is the same as getting all
+the project groups.
+
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search").jsonBody()
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
+
 
 == Project group entry ==
 
@@ -200,7 +244,6 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['total_size']
     22
 
-    >>> from operator import itemgetter
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('name'))
     >>> len(project_entries)
@@ -254,10 +297,27 @@ Project releases are available at their canonical URL on the API virtual host.
 
     >>> firefox_1_0_0 = webservice.get('/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
+    files_collection_link: u'http://.../firefox/1.0/1.0.0/files'
     project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0/1.0.0'
     version: u'1.0.0'
+
+
+== Project release entries ==
+
+    >>> releases = webservice.get(
+    ...     '/firefox/1.0/releases').jsonBody()
+    >>> print_self_link_of_entries(releases)
+    http://.../firefox/1.0/1.0.0
+
+
+== Project release file collection ==
+
+    >>> pr_files = webservice.get(
+    ...     '/firefox/trunk/0.9.2/files').jsonBody()
+    >>> print_self_link_of_entries(pr_files)
+    http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz
 
 
 == Milestone entry ==
@@ -285,9 +345,66 @@ host.
     ...     '/firefox/1.0/releases').jsonBody()
     >>> pprint_entry(releases)
     entries: [...]
-    resource_type_link: u'http://.../#product_release-page-resource'
+    resource_type_link: u'http://.../#project_release-page-resource'
     start: 0
     total_size: 1
     >>> entries = releases['entries']
     >>> len(entries) == releases['total_size']
     True
+
+
+== Project release file entry ==
+
+Project release files are available at their canonical URL on the API
+virtual host.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    >>> result = webservice.get(url).jsonBody()
+    >>> pprint_entry(result)
+    date_uploaded: u'2005-06-06T08:59:51.926792+00:00'
+    description: None
+    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    file_type: u'Code Release Tarball'
+    project_release_link: u'http://.../firefox/trunk/0.9.2'
+    resource_type_link: u'http://.../#project_release_file'
+    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+
+The actual file redirects to the librarian when accessed.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/.../firefox-0.9.2.orig.tar.gz
+    ...
+
+The signature file will redirect too, if found.  In this case there is
+no signature so we get a 404.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 404 Not Found
+    ...
+
+The file and signature on a Project Release File are 'readonly'.
+Trying to put new content will result in a ForbiddenAttribute error.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
+    >>> print response
+    HTTP/1.1 500 Internal Server Error
+    ...
+    ForbiddenAttribute: ('libraryfile', <ProductReleaseFile...
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
+    >>> print response
+    HTTP/1.1 500 Internal Server Error
+    ...
+    ForbiddenAttribute: ('signature', <ProductReleaseFile...
+
+Soon a new method will be introduced that will allow the file and
+signature attributes to be modified in place.

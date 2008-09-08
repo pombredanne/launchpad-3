@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
@@ -2017,6 +2017,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
+
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
 
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson

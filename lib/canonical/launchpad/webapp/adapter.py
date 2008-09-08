@@ -24,10 +24,12 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
-from zope.interface import classImplements, implements
+from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
@@ -40,6 +42,7 @@ __all__ = [
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
+    'StoreSelector',
     ]
 
 
@@ -205,7 +208,7 @@ def break_main_thread_db_access(*ignored):
     _main_thread_id = thread.get_ident()
 
     try:
-        getUtility(IZStorm).get('main')
+        getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     except StormAccessFromMainThread:
         # LaunchpadDatabase correctly refused to create a connection
         pass
@@ -224,7 +227,16 @@ isolation_level_map = {
     'serializable': ISOLATION_LEVEL_SERIALIZABLE,
     }
 
+
 class LaunchpadDatabase(Postgres):
+
+    def __init__(self, uri):
+        # The uri is just a property name in the config, such as main_master
+        # or auth_slave.
+        # We don't invoke the superclass constructor as it has a very limited
+        # opinion on what uri is.
+        # pylint: disable-msg=W0231
+        self._uri = uri
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -233,9 +245,14 @@ class LaunchpadDatabase(Postgres):
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
 
-        self._dsn = 'dbname=%s user=%s' % (dbconfig.dbname, dbconfig.dbuser)
-        if dbconfig.dbhost:
-            self._dsn += ' host=%s' % dbconfig.dbhost
+        # We set self._dsn here rather than in __init__ so when the Store
+        # is reconnected it pays attention to any config changes.
+        config_entry = self._uri.database.replace('-', '_')
+        connection_string = getattr(dbconfig, config_entry)
+        assert 'user=' not in connection_string, (
+                "Database username should not be specified in "
+                "connection string (%s)." % connection_string)
+        self._dsn = "%s user=%s" % (connection_string, dbconfig.dbuser)
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
@@ -367,3 +384,22 @@ class LaunchpadStatementTracer:
 
 install_tracer(LaunchpadTimeoutTracer())
 install_tracer(LaunchpadStatementTracer())
+
+
+class StoreSelector:
+    classProvides(IStoreSelector)
+
+    @staticmethod
+    def setDefaultFlavor(flavor):
+        """Change what the DEFAULT_FLAVOR is for the current thread."""
+        assert flavor != DEFAULT_FLAVOR, "Can't set DEFAULT to DEFAULT"
+        _local.default_store_flavor = flavor
+
+    @staticmethod
+    def get(name, flavor):
+        """See IStoreSelector."""
+        if flavor == DEFAULT_FLAVOR:
+            flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
+        return getUtility(IZStorm).get('%s-%s' % (name, flavor))
+
+
