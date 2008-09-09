@@ -58,13 +58,6 @@ class UnexpectedStderr(Exception):
         self.error = stderr
 
 
-    def recordSuccess(self, name, hostname, date_started, date_completed):
-        started_tuple = tuple(date_started.utctimetuple())
-        completed_tuple = tuple(date_completed.utctimetuple())
-        return self.proxy.callRemote(
-            'recordSuccess', name, hostname, started_tuple, completed_tuple)
-
-
 class PullerWireProtocol(NetstringReceiver):
     """The wire protocol for receiving events from the puller worker.
 
@@ -300,7 +293,7 @@ class PullerMaster:
         self.unique_name = unique_name
         self.branch_type = branch_type
         self.logger = logger
-        self.branch_status_client = client
+        self.branch_puller_endpoint = client
         self._available_oops_prefixes = available_oops_prefixes
 
     @cachedproperty
@@ -345,7 +338,7 @@ class PullerMaster:
         return deferred
 
     def setStackedOn(self, stacked_on_location):
-        deferred = self.branch_status_client.callRemote(
+        deferred = self.branch_puller_endpoint.callRemote(
             'setStackedOn', self.branch_id, stacked_on_location)
         def no_such_branch(failure):
             # If there's no branch for stacked_on_location, then we just
@@ -358,18 +351,18 @@ class PullerMaster:
         self.logger.info(
             'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
             self.destination_url)
-        return self.branch_status_client.callRemote(
+        return self.branch_puller_endpoint.callRemote(
             'startMirroring', self.branch_id)
 
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)
         self.logger.info('Recorded failure: %s', str(reason))
-        return self.branch_status_client.callRemote(
+        return self.branch_puller_endpoint.callRemote(
             'mirrorFailed', self.branch_id, reason)
 
     def mirrorSucceeded(self, revision_id):
         self.logger.info('Successfully mirrored to rev %s', revision_id)
-        return self.branch_status_client.callRemote(
+        return self.branch_puller_endpoint.callRemote(
             'mirrorComplete', self.branch_id, revision_id)
 
     def unexpectedError(self, failure, now=None):
@@ -400,8 +393,8 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_status_client, logger, branch_type):
-        self.branch_status_client = branch_status_client
+    def __init__(self, branch_puller_endpoint, logger, branch_type):
+        self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
         self.actualLock = None
         self.branch_type = branch_type
@@ -434,7 +427,7 @@ class JobScheduler:
         return deferred
 
     def run(self):
-        deferred = self.branch_status_client.callRemote(
+        deferred = self.branch_puller_endpoint.callRemote(
             'getBranchPullQueue', self.branch_type.name)
         deferred.addCallback(self.getPullerMasters)
         deferred.addCallback(self._run)
@@ -448,7 +441,7 @@ class JobScheduler:
         branch_src = branch_src.strip()
         return PullerMaster(
             branch_id, branch_src, unique_name, self.branch_type, self.logger,
-            self.branch_status_client, self.available_oops_prefixes)
+            self.branch_puller_endpoint, self.available_oops_prefixes)
 
     def getPullerMasters(self, branches_to_pull):
         return [
@@ -468,7 +461,7 @@ class JobScheduler:
         """Record successful completion of the script."""
         started_tuple = tuple(date_started.utctimetuple())
         completed_tuple = tuple(date_completed.utctimetuple())
-        return self.branch_status_client.callRemote(
+        return self.branch_puller_endpoint.callRemote(
             'recordSuccess', self.name, socket.gethostname(), started_tuple,
             completed_tuple)
 

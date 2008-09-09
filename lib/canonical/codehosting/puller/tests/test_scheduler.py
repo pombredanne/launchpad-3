@@ -35,7 +35,7 @@ from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
 
 
-class FakeBranchStatusClient:
+class FakePullerEndpointProxy:
 
     def __init__(self, branch_queues=None):
         self.branch_queues = branch_queues
@@ -77,7 +77,7 @@ class TestJobScheduler(unittest.TestCase):
         reset_logging()
 
     def makeFakeClient(self, hosted, mirrored, imported):
-        return FakeBranchStatusClient(
+        return FakePullerEndpointProxy(
             {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
     def makeJobScheduler(self, branch_type, branch_tuples):
@@ -425,7 +425,7 @@ class TestPullerMaster(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.status_client = FakeBranchStatusClient()
+        self.status_client = FakePullerEndpointProxy()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
@@ -519,7 +519,7 @@ class TestPullerMasterSpawning(TrialTestCase):
 
     def setUp(self):
         from twisted.internet import reactor
-        self.status_client = FakeBranchStatusClient()
+        self.status_client = FakePullerEndpointProxy()
         self.arbitrary_branch_id = 1
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = scheduler.PullerMaster(
@@ -615,7 +615,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
-        self.client = FakeBranchStatusClient()
+        self.client = FakePullerEndpointProxy()
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
