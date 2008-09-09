@@ -519,11 +519,14 @@ class LaunchpadObjectFactory:
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
-        bugtracker = self.makeBugTracker()
+
+        if bugtracker is None:
+            bugtracker = self.makeBugTracker()
+
         bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(

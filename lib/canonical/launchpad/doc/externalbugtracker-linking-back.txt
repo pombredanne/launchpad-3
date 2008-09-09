@@ -36,11 +36,7 @@ The methods are called by the BugWatchUpdater class:
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bug_watch = factory.makeBugWatch('42')
-    >>> bug_watch_2 = factory.makeBugWatch('42')
-
-    # We fudge the bugtracker of bug_watch_2 for the sake of using it
-    # later for bug watch lookups.
-    >>> bug_watch_2.bugtracker = bug_watch.bugtracker
+    >>> bug_watch_2 = factory.makeBugWatch('42', bug_watch.bugtracker)
 
     >>> txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
@@ -66,12 +62,19 @@ current Launchpad bug ID for the remote bug. If the remote bug is
 already linked to a Launchpad bug other than the one that we're trying
 to link it to, the BugWatchUpdater will check that the bug that is
 already linked has a valid watch on the remote bug in question. If it
-does, the link will remain unchanged.  Otherwise it will be updated.
+does, the link will remain unchanged. Otherwise it will be updated.
 
-In our test case, the Launchpad bug ID has been set for the remote bug.
+Bug 42 on the remote bug tracker is linked to using bug_watch.
+
+    >>> external_bugtracker.last_launchpad_bug_id == bug_watch.bug.id
+    True
+
 Trying to link another bug to it will have no effect since the bug that
 is currently linked has a valid bug watch. Only getLaunchpadBugId() will
 be called on our BackLinkingExternalBugTracker.
+
+    >>> bug_watch.bug.id == bug_watch_2.bug.id
+    False
 
     >>> bug_watch_updater.linkLaunchpadBug(
     ...     external_bugtracker, bug_watch_2)
@@ -83,7 +86,22 @@ the remote bug, BugWatchUpdater.linkLaunchpadBug() will call
 getLaunchpadBugId() and then, when it discovers that the current
 Launchpad bug ID isn't valid, setLaunchpadBugId() to correct the error.
 
+Bug 1 doesn't link to bug 42 on the remote bug tracker.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> bug_1 = getUtility(IBugSet).get(1)
+    >>> print bug_1.getBugWatch(bug_watch.bugtracker, bug_watch.remotebug)
+    None
+
+However, the remote bug currently thinks that Launchpad Bug 1 does in
+fact link to it.
+
     >>> external_bugtracker.last_launchpad_bug_id = 1
+
+Calling linkLaunchpadBug() with a bug watch that actually does link to
+bug 42 will correct the error.
+
     >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
     Getting Launchpad id for bug 42
     Setting Launchpad id for bug 42
