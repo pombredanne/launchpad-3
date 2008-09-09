@@ -105,4 +105,4 @@ ALTER TABLE TranslationMessage
     DROP COLUMN was_fuzzy_in_last_import;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 81, 0);
