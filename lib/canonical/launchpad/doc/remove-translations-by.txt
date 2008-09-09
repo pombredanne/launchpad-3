@@ -27,10 +27,10 @@ In this example, we have a template with Dutch and German translations.
 
     >>> def print_pofile_contents(pofile):
     ...     """Return sorted list of (singular) translations in pofile."""
-    ...     contents = sorted([
+    ...     contents = sorted(
     ...         message.msgstr0.translation
     ...         for message in pofile.translation_messages
-    ...         if message.msgstr0 is not None])
+    ...         if message.msgstr0 is not None)
     ...     for item in contents:
     ...         print item
 

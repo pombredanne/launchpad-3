@@ -20,7 +20,7 @@ from canonical.launchpad.scripts.remove_translations import (
     check_constraints_safety, remove_translations)
 
 
-def get_person(name):
+def get_person_id(name):
     """Look up person by name."""
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
@@ -107,9 +107,10 @@ class RemoveTranslations(LaunchpadScript):
 
         :param identifier: String identifying an object.  If entirely
             numeric, taken as id.  Otherwise, passed to lookup_function.
-        :param lookup_function: Callback that will take `identifier` as its
-            argument and return a numeric object id, or raise an error if no
-            object has the given identifier.
+        :param lookup_function: Callback that will take `identifier` as
+            its argument and return a numeric object id.  If no object
+            has the given identifier, may raise an exception or return
+            None.
         :return: Numeric object id, or None if no identifier is given.
         """
         if identifier is None or identifier == '':
@@ -150,15 +151,15 @@ class RemoveTranslations(LaunchpadScript):
             'origin': int,
             'force': bool,
             }
-        for option, expected_type in option_types.iteritems():
+        for option, expected_type in option_types.items():
             self._check_option_type(option, expected_type)
 
     def _normalize_options(self):
         """Normalize options to expected types."""
         self.options.submitter = self.get_id(
-            self.options.submitter, get_person)
+            self.options.submitter, get_person_id)
         self.options.reviewer = self.get_id(
-            self.options.reviewer, get_person)
+            self.options.reviewer, get_person_id)
         self.options.ids = [
             self.get_id(message) for message in self.options.ids]
         self.options.potemplate = self.get_id(self.options.potemplate)

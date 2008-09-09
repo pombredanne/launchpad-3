@@ -105,9 +105,10 @@ class TestRemoveTranslations(TestCase):
         # Acquire privileges to delete TranslationMessages.  That's not
         # something we normally do.  Actually we should test under
         # rosettaadmin, but that user does not have all the privileges
-        # needed to set up this test.  A separate doctest tests a
-        # realistic run of the remove-translations-by.py script under
-        # the actual rosettaadmin db user.
+        # needed to set up this test.  A separate doctest
+        # remove-translations-by.txt tests a realistic run of the
+        # remove-translations-by.py script under the actual rosettaadmin
+        # db user.
         self.layer.switchDbUser('postgres')
 
         # Set up a template with Dutch and German translations.  The
@@ -153,11 +154,11 @@ class TestRemoveTranslations(TestCase):
         return new_nl_message, new_de_message
 
     def _getContents(self, pofile):
-        return sorted([
+        return sorted(
             message.msgstr0.translation
             for message in pofile.translation_messages
             if message.msgstr0 is not None
-            ])
+            )
 
     def _checkInvariant(self):
         """Check that our translations are in their original state.
