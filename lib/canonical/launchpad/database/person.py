@@ -2992,6 +2992,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
+        # Update only the BugAffectsPerson that will not conflict
+        cur.execute('''
+            UPDATE BugAffectsPerson
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bug NOT IN
+                (
+                SELECT bug
+                FROM BugAffectsPerson
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugAffectsPerson WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('bugaffectsperson', 'person'))
+
         # Update only the AnswerContacts that will not conflict.
         cur.execute('''
             UPDATE AnswerContact
@@ -3042,22 +3059,28 @@ class PersonSet:
         cur.execute('''
             UPDATE MentoringOffer
             SET owner=%(to_id)d
-            WHERE owner=%(from_id)d AND id NOT IN
-                (
-                SELECT id
-                FROM MentoringOffer
-                WHERE owner = %(to_id)d
-                )
+            WHERE owner=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
             ''' % vars())
         cur.execute('''
             UPDATE MentoringOffer
             SET team=%(to_id)d
-            WHERE team=%(from_id)d AND id NOT IN
-                (
-                SELECT id
-                FROM MentoringOffer
-                WHERE team = %(to_id)d
-                )
+            WHERE team=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
             ''' % vars())
         # and delete those left over.
         cur.execute('''
@@ -3071,8 +3094,8 @@ class PersonSet:
         cur.execute('''
             UPDATE BugNotificationRecipient
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT id FROM BugNotificationRecipient
+            WHERE person=%(from_id)d AND bug_notification NOT IN (
+                SELECT bug_notification FROM BugNotificationRecipient
                 WHERE person=%(to_id)d
                 )
             ''' % vars())

@@ -157,7 +157,7 @@ Launchpad teams do not have OpenID identifiers:
 People who are not valid Launchpad users do not have OpenID
 identifiers:
 
-    >>> print_endpoints('http://id.launchpad.dev/456/spiv')
+    >>> print_endpoints('http://id.launchpad.dev/456/matsubara_oid')
     Traceback (most recent call last):
       ...
     DiscoveryFailure: ...
