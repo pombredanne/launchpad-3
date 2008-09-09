@@ -16,11 +16,10 @@ CREATE TABLE JobDependency ( -- Rows in this table describe dependencies between
 CREATE TABLE StaticDiffJob ( -- Rows in this table are directions for producing a diff.
   id serial PRIMARY KEY,
   job integer REFERENCES Job,
-  from_branch integer NOT NULL REFERENCES Branch,
+  branch integer NOT NULL REFERENCES Branch,
   from_revision_spec text,
   to_revision_spec text,
-  to_branch integer NOT NULL REFERENCES Branch,
-  lease timestamp without time zone
+  UNIQUE (branch, from_revision_spec, to_revision_spec)
 );
 
 
@@ -36,10 +35,10 @@ CREATE TABLE Diff ( -- Contains information about static and preview diffs
 
 CREATE TABLE StaticDiff ( -- Contains information about static diffs
   id serial PRIMARY KEY,
-  range_start TEXT, -- a revision-id
-  range_end TEXT, -- a revision-id
+  from_revision_id TEXT, -- a revision-id
+  to_revision_id TEXT, -- a revision-id
   diff integer REFERENCES Diff,
-  UNIQUE (range_start, range_end)
+  UNIQUE (from_revision_id, to_revision_id)
 );
 
 
