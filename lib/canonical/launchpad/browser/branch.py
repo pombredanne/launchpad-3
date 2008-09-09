@@ -701,10 +701,13 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  Since most of the time it
-            # will be the owner of the branch deleting it, we should send
-            # them to the code listing for the owner.
-            self.next_url = canonical_url(branch.owner)
+            # somewhere valid to send them next.  If the branch is junk, we
+            # send the user back to the code listing for the branch owner,
+            # otherwise we send them to the branch listing of the product.
+            if branch.product is None:
+                self.next_url = canonical_url(branch.owner)
+            else:
+                self.next_url = canonical_url(branch.product)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
