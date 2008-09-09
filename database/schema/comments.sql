@@ -1792,31 +1792,29 @@ COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this up
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
 
--- ArchiveOperation
+-- PackageCopyRequest
 
-COMMENT ON TABLE ArchiveOperation IS 'ArchiveOperation: A table that captures the status and the details of an archive operation.';
-COMMENT ON COLUMN ArchiveOperation.requester IS 'The person who requested the archive operation.';
-COMMENT ON COLUMN ArchiveOperation.source_archive IS 'Package copy operation only: the archive from which packages are to be copied.';
-COMMENT ON COLUMN ArchiveOperation.source_distroseries IS 'Package copy operation only: the distroseries to which the packages to be copied belong in the source archive.';
-COMMENT ON COLUMN ArchiveOperation.source_component IS 'Package copy operation only: the component to which the packages to be copied belong in the source archive.';
-COMMENT ON COLUMN ArchiveOperation.source_pocket IS 'Package copy operation only: the pocket for the packages to be copied.';
-COMMENT ON COLUMN ArchiveOperation.target_archive IS 'The archive to which the operation applies.';
-COMMENT ON COLUMN ArchiveOperation.target_distroseries IS 'The target distroseries.';
-COMMENT ON COLUMN ArchiveOperation.target_component IS 'The target component.';
-COMMENT ON COLUMN ArchiveOperation.target_pocket IS 'The target pocket.';
-COMMENT ON COLUMN ArchiveOperation.status IS 'Archive operation status, may be one of: new, in-progress, cancelled, succeeded, failed.';
-COMMENT ON COLUMN ArchiveOperation.reason IS 'The reason why this archive operation was requested.';
-COMMENT ON COLUMN ArchiveOperation.date_created IS 'Date of creation for this archive operation.';
-COMMENT ON COLUMN ArchiveOperation.date_started IS 'Start date/time of this archive operation.';
-COMMENT ON COLUMN ArchiveOperation.date_completed IS 'When did this archive operation conclude?';
-COMMENT ON COLUMN ArchiveOperation.operation_type IS 'The archive operation type, may be one of: copy source and binary, copy source only, cancel builds, resume (cancelled) builds, retry builds.';
+COMMENT ON TABLE PackageCopyRequest IS 'PackageCopyRequest: A table that captures the status and the details of an inter-archive package copy operation.';
+COMMENT ON COLUMN PackageCopyRequest.requester IS 'The person who requested the archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.source_archive IS 'The archive from which packages are to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.source_distroseries IS 'The distroseries to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_component IS 'The component to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_pocket IS 'The pocket for the packages to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_archive IS 'The archive to which packages will be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_distroseries IS 'The target distroseries.';
+COMMENT ON COLUMN PackageCopyRequest.target_component IS 'The target component.';
+COMMENT ON COLUMN PackageCopyRequest.target_pocket IS 'The target pocket.';
+COMMENT ON COLUMN PackageCopyRequest.status IS 'Archive operation status, may be one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN PackageCopyRequest.reason IS 'The reason why this copy operation was requested.';
+COMMENT ON COLUMN PackageCopyRequest.date_created IS 'Date of creation for this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_started IS 'Start date/time of this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_completed IS 'When did this archive operation conclude?';
 
 -- ArchiveArch
 
 COMMENT ON TABLE ArchiveArch IS 'ArchiveArch: A table that allows a user to specify which architectures an archive requires or supports.';
 COMMENT ON COLUMN ArchiveArch.archive IS 'The archive for which an architecture is specified.';
 COMMENT ON COLUMN ArchiveArch.processorfamily IS 'The architecture specified for the archive on hand.';
-COMMENT ON COLUMN ArchiveArch.architecturetag IS 'The name of the architecture specified for the archive on hand.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

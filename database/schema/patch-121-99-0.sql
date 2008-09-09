@@ -15,17 +15,7 @@ ALTER TABLE archive ADD COLUMN
     date_created timestamp without time zone
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL;
 
--- All copy archive workflows identified so far are tied to a single
--- distroseries. Since this is not necessarily the case for other archive
--- types the foreign key below is optional.
-ALTER TABLE archive ADD COLUMN
-    distroseries integer REFERENCES distroseries(id);
-
-CREATE INDEX archive__distroseries__idx
-    ON archive (distroseries)
-    WHERE distroseries IS NOT NULL;
-
--- Create new ArchiveOperation table.
+-- Create new PackageCopyRequest table.
 
 -- Once an archive has been put into place the user will want to carry
 -- out certain operations on it like e.g.
@@ -46,16 +36,11 @@ CREATE INDEX archive__distroseries__idx
 -- The GUI will facilitate the monitoring (progress) and manipulation
 -- (cancellation) of these archive operations
 
-CREATE TABLE archiveoperation (
-    id serial PRIMARY KEY,
+-- For now we introduce the PackageCopyRequest since this is what we need to
+-- get the rebuild archives and snapshots working.
 
-    -- The archive operation type, may be one of:
-    --  * copy source and binary
-    --  * copy source only
-    --  * cancel builds
-    --  * resume (cancelled) builds
-    --  * retry builds
-    operation_type integer NOT NULL,
+CREATE TABLE PackageCopyRequest (
+    id serial PRIMARY KEY,
 
     -- Please note: the user may use a number of optional "filters" (e.g.
     -- target distroseries, component, pocket) in order to define the scope
@@ -72,23 +57,25 @@ CREATE TABLE archiveoperation (
     -- This is the target pocket.
     target_pocket integer,
 
+    -- Whether binary packages should be copied.
+    copy_binaries boolean default False NOT NULL,
+
+    -- The source archive from which packages are to be copied.
+    source_archive integer NOT NULL,
+    -- This is the source distroseries.
+    source_distroseries integer,
+    -- Copy packages belonging to this component.
+    source_component integer,
+    -- Copy packages belonging to this pocket.
+    source_pocket integer,
+
     -- The person who requested the archive operation.
     requester integer NOT NULL,
-    -- The archive operation's status (new, in-progress, cancelled, succeeded,
-    -- failed).
+    -- The archive operation's status (new, in-progress, complete, failed,
+    -- cancelling, cancelled).
     status integer NOT NULL,
     -- The reason why this archive operation was requested (one-liner).
     reason text,
-
-    -- Package copy operation only: the source archive from which packages are
-    -- to be copied.
-    source_archive integer,
-    -- Package copy operation only: this is the source distroseries.
-    source_distroseries integer,
-    -- Package copy operation only: copy packages belonging to this component.
-    source_component integer,
-    -- Package copy operation only: copy packages belonging to this pocket.
-    source_pocket integer,
 
     -- When was this archive operation requested?
     date_created timestamp without time zone
@@ -101,45 +88,45 @@ CREATE TABLE archiveoperation (
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 );
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation__sourcearchive__fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest__sourcearchive__fk
     FOREIGN KEY (source_archive) REFERENCES archive(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation_sourcecomponent_fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest_sourcecomponent_fk
     FOREIGN KEY (source_component) REFERENCES component(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation__targetarchive__fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest__targetarchive__fk
     FOREIGN KEY (target_archive) REFERENCES archive(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation_targetcomponent_fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest_targetcomponent_fk
     FOREIGN KEY (target_component) REFERENCES component(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation_targetdistroseries_fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest_targetdistroseries_fk
     FOREIGN KEY (target_distroseries) REFERENCES distroseries(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation_sourcedistroseries_fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest_sourcedistroseries_fk
     FOREIGN KEY (source_distroseries) REFERENCES distroseries(id);
 
-ALTER TABLE ONLY archiveoperation
-    ADD CONSTRAINT archiveoperation_requester_fk
+ALTER TABLE ONLY packagecopyrequest
+    ADD CONSTRAINT packagecopyrequest_requester_fk
     FOREIGN KEY (requester) REFERENCES person(id);
 
-CREATE INDEX archiveoperation__targetarchive__idx
-    ON archiveoperation (target_archive);
+CREATE INDEX packagecopyrequest__targetarchive__idx
+    ON packagecopyrequest (target_archive);
 
-CREATE INDEX archiveoperation__requester__idx
-    ON archiveoperation (requester);
+CREATE INDEX packagecopyrequest__requester__idx
+    ON packagecopyrequest (requester);
 
-CREATE INDEX archiveoperation__datecreated__idx
-    ON archiveoperation (date_created);
+CREATE INDEX packagecopyrequest__datecreated__idx
+    ON packagecopyrequest (date_created);
 
-CREATE INDEX archiveoperation__targetdistroseries__idx
-    ON archiveoperation (target_distroseries)
+CREATE INDEX packagecopyrequest__targetdistroseries__idx
+    ON packagecopyrequest (target_distroseries)
     WHERE target_distroseries IS NOT NULL;
 
 -- Create table ArchiveArch
@@ -152,11 +139,10 @@ CREATE INDEX archiveoperation__targetdistroseries__idx
 -- with e.g. a distroseries, the intersection between the archive's
 -- architectures and the appropriate distroarchseries' will determine what
 -- builds/binary packages are supported in the archive.
+
 CREATE TABLE archivearch (
-    id serial PRIMARY KEY,
     archive integer NOT NULL,
-    processorfamily integer NOT NULL,
-    architecturetag text NOT NULL
+    processorfamily integer NOT NULL
 );
 
 ALTER TABLE ONLY archivearch
@@ -164,9 +150,6 @@ ALTER TABLE ONLY archivearch
 
 ALTER TABLE ONLY archivearch
     ADD CONSTRAINT archivearch__processorfamily__fk FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
-
-ALTER TABLE ONLY archivearch
-    ADD CONSTRAINT archivearch__architecturetag__archive__key UNIQUE (architecturetag, archive);
 
 ALTER TABLE ONLY archivearch
     ADD CONSTRAINT archivearch__processorfamily__archive__key UNIQUE (processorfamily, archive);
