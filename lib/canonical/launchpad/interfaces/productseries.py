@@ -19,13 +19,13 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import  Choice, Date, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, Title, URIField)
+    ContentNameField, Description, PublicPersonChoice, Title, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
@@ -43,8 +43,10 @@ from canonical.launchpad import _
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, rename_parameters_as)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -188,9 +190,19 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
+class ProxyMilestoneNameField(ContentNameField):
+    def bind(self, object):
+        real_field = copy_field(IMilestone['name'])
+        return real_field.bind(object)
+
+
 class IProductSeriesEditRestricted(Interface):
     """IProductSeries properties which require launchpad.Edit."""
 
+    @rename_parameters_as(dateexpected='date_targeted')
+    @operation_parameters(name=ProxyMilestoneNameField(), dateexpected=Date(),
+                          description=Description())
+    @export_write_operation()
     def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
