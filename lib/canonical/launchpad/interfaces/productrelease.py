@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.schema import Bytes, Choice, Datetime, Int, Object, Text, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.component import getUtility
 
 from canonical.launchpad import _
@@ -185,8 +185,8 @@ class IProductRelease(Interface):
     codename = exported(
         TextLine(title=u'Code name', required=False,
                  description=u'The release code-name. Famously, one Gnome '
-                 'release was code-named "that, and a pair of testicles", but '
-                 "you don't have to be as brave with your own release "
+                 'release was code-named "that, and a pair of testicles", '
+                 "but you don't have to be as brave with your own release "
                  'codenames.'),
         exported_as='code_name')
 
