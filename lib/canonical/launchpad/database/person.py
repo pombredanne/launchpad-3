@@ -333,9 +333,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                             intermediateTable='PersonLanguage',
                             orderBy='englishname')
 
-    subscribed_branches = SQLRelatedJoin(
-        'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', prejoins=['product'])
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -348,8 +345,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    authored_branches = SQLMultipleJoin(
-        'Branch', joinColumn='author', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -845,22 +840,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 targets.add(target)
 
         return list(targets)
-
-    @property
-    def branches(self):
-        """See `IPerson`."""
-        ret = self.authored_branches.union(self.registered_branches)
-        ret = ret.union(self.subscribed_branches)
-        return ret.orderBy('-id')
-
-    @property
-    def registered_branches(self):
-        """See `IPerson`."""
-        query = """Branch.owner = %d AND
-                   (Branch.author != %d OR Branch.author is NULL)"""
-        return Branch.select(query % (self.id, self.id),
-                             prejoins=["product"])
-
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions

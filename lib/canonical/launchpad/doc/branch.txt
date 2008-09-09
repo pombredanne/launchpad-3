@@ -362,37 +362,6 @@ unique_name otherwise.
     True
 
 
-== Branches registered and authored ==
-
-You can get the list of branches for a given Launchpad owner. These are called
-the "registered branches", because the owner is initially set to the current
-user by the branch creation forms.
-
-    >>> def getName(branch):
-    ...     return branch.name
-    >>> sorted(ddaa.registered_branches, key=getName) == [gterm_dev, junkcode]
-    True
-
-Branches are associated to an "author" user, which may be different from the
-registrant. You can get the branch authored by a given person. Junk branches
-should generally have at least an author, but that is not enforced.
-
-    >>> list(ddaa.authored_branches)
-    []
-    >>> junkcode.author = ddaa
-    >>> syncUpdate(junkcode)
-
-    >>> list(ddaa.authored_branches) == [junkcode]
-    True
-
-The list of registered branches does not include branches whose registrant is
-also the author. That avoids duplicating the same branch in the registered and
-authored branch listings for a person.
-
-    >>> list(ddaa.registered_branches) == [gterm_dev]
-    True
-
-
 == Branch sort key ==
 
 Branches have a sort_key attribute which is used through Launchpad to order
@@ -468,8 +437,6 @@ BranchSubscriptionNotificationLevel.
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel, IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
-    >>> sabdfl.subscribed_branches.count()
-    0
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
     ...     BranchSubscriptionNotificationLevel.FULL,
@@ -488,8 +455,6 @@ BranchSubscriptionNotificationLevel.
     >>> gterm_dev.subscriptions[1] == subscription
     True
     >>> set(gterm_dev.subscribers) == set([gterm_dev.owner, sabdfl])
-    True
-    >>> list(sabdfl.subscribed_branches) == [gterm_dev]
     True
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
@@ -552,28 +517,6 @@ getting the correct subscriptions.
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionNotificationLevel.FULL]))
     sabdfl
-
-
-== branches_root related to a person ==
-
-Finally, you can get the list of related branches for a person, that includes
-the branches registered, authored and subscribed to by this person.
-
-    >>> lifeless = personset.getByName('lifeless')
-    >>> lifeless.branches.count()
-    0
-    >>> url = 'http://example.com/~lifeless/mesh-merge'
-    >>> title = "Experimental mesh merging algorithm."
-    >>> meshmerge = branchset.new(
-    ...     BranchType.MIRRORED, 'mesh-merge', lifeless, lifeless, None, url,
-    ...     title, summary=title, date_created=now.next())
-    >>> junkcode.author = lifeless
-    >>> syncUpdate(junkcode)
-    >>> unused = gterm_dev.subscribe(lifeless,
-    ...            BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...            CodeReviewNotificationLevel.NOEMAIL)
-    >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
-    True
 
 
 == Branches and revisions ==
@@ -930,8 +873,8 @@ sort order, the sort is by lifecycle, product, author, name).
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~ddaa/gnome-terminal/dev
-    New ~ddaa/+junk/junkcode
     New ~vcs-imports/+junk/junkcode
+    New ~ddaa/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
     >>> branches = branchset.getBranchesForContext(
