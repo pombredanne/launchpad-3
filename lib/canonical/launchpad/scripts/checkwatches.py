@@ -27,6 +27,10 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.interfaces.bug import IBugSet
+from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsBackLinking)
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
@@ -511,6 +515,8 @@ class BugWatchUpdater(object):
                         self.importBugComments(remotesystem, bug_watch)
                     if can_push_comments:
                         self.pushBugComments(remotesystem, bug_watch)
+                    if ISupportsBackLinking.providedBy(remotesystem):
+                        self.linkLaunchpadBug(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -706,6 +712,47 @@ class BugWatchUpdater(object):
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
+
+    def linkLaunchpadBug(self, remotesystem, bug_watch):
+        """Link a Launchpad bug to a given remote bug."""
+        current_launchpad_id = remotesystem.getLaunchpadBugId(
+            bug_watch.remotebug)
+
+        if current_launchpad_id is None:
+            # If no bug is linked to the remote bug, link this one and
+            # then stop.
+            remotesystem.setLaunchpadBugId(
+                bug_watch.remotebug, bug_watch.bug.id)
+            return
+
+        elif current_launchpad_id == bug_watch.bug.id:
+            # If the current_launchpad_id is the same as the ID of the bug
+            # we're trying to link, we can stop.
+            return
+
+        else:
+            # If the current_launchpad_id isn't the same as the one
+            # we're trying to link, check that the other bug actually
+            # links to the remote bug. If it does, we do nothing, since
+            # the first valid link wins. Otherwise we link the bug that
+            # we've been passed, overwriting the previous value of the
+            # Launchpad bug ID for this remote bug.
+            try:
+                other_launchpad_bug = getUtility(IBugSet).get(
+                    current_launchpad_id)
+
+                other_bug_watch = other_launchpad_bug.getBugWatch(
+                    bug_watch.bugtracker, bug_watch.remotebug)
+            except NotFoundError:
+                # If we can't find the bug that's referenced by
+                # current_launchpad_id we simply set other_bug_watch to
+                # None so that the Launchpad ID of the remote bug can be
+                # set correctly.
+                other_bug_watch = None
+
+            if other_bug_watch is None:
+                remotesystem.setLaunchpadBugId(
+                    bug_watch.remotebug, bug_watch.bug.id)
 
     def _getOOPSProperties(self, remotesystem):
         """Return an iterable of 2-tuples (name, value) of OOPS properties.
