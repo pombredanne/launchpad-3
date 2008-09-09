@@ -1259,8 +1259,8 @@ All non-merged people and teams.
 This vocabulary includes both validated and unvalidated profiles, as well
 as teams:
 
-    >>> [(p.name, p.is_valid_person) for p in vocab.search('limi@plone.org')]
-    [(u'limi', False)]
+    >>> [(p.name, p.is_valid_person) for p in vocab.search('matsubara')]
+    [(u'matsubara', False)]
 
     >>> [(p.name, p.is_valid_person) for p in vocab.search('mark@hbd.com')]
     [(u'sabdfl', True)]
@@ -1309,9 +1309,9 @@ one of its email addresses.
     >>> sorted(person.name for person in vocab.search('support'))
     [u'ubuntu-team']
 
-Dave hasn't validated his email address; he's not a valid Person.
+Matsubara doesn't have a preferred email address; he's not a valid Person.
 
-    >>> sorted(person.name for person in vocab.search('dave.miller'))
+    >>> sorted(person.name for person in vocab.search('matsubara'))
     []
 
 'foo.bar@canonical.com' is a valid Person.
