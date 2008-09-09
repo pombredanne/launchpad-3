@@ -64,11 +64,11 @@ contact address.
 
 == Unclaimed users ==
 
-An unclaimed user has no contact email address.
+An unclaimed user will probably have no contact email address.
 
-   >>> admin_browser.open('http://launchpad.dev/~kiko')
+   >>> admin_browser.open('http://launchpad.dev/~matsubara')
    >>> admin_browser.title
-   'Christian Reis does not use Launchpad'
+   'Diogo Matsubara does not use Launchpad'
    >>> admin_browser.getLink('Change e-mail settings').click()
    >>> print find_tag_by_id(admin_browser.contents,
    ...                      'no-contact-address').string
