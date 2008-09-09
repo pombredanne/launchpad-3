@@ -48,7 +48,7 @@ importers = {
 def is_identical_translation(existing_msg, new_msg):
     """Is a new translation substantially the same as the existing one?
 
-    Compares fuzzy flags, msgid and msgid_plural, and all translations.
+    Compares msgid and msgid_plural, and all translations.
 
     :param existing_msg: a `TranslationMessageData` representing a translation
         message currently kept in the database.
@@ -61,8 +61,7 @@ def is_identical_translation(existing_msg, new_msg):
     assert new_msg.msgid_singular == existing_msg.msgid_singular, (
         "Comparing translations for different messages.")
 
-    if ((existing_msg.msgid_plural != new_msg.msgid_plural) or
-        (existing_msg.fuzzy != ('fuzzy' in new_msg.flags))):
+    if (existing_msg.msgid_plural != new_msg.msgid_plural):
         return False
     if len(new_msg.translations) < len(existing_msg.translations):
         return False
@@ -124,10 +123,8 @@ class ExistingPOFileInDatabase:
             POMsgID_Plural.msgid AS msgid_plural,
             context,
             date_reviewed,
-            is_fuzzy,
             is_current,
             is_imported,
-            was_fuzzy_in_last_import,
             %s
           FROM TranslationMessage
             JOIN POFile ON
@@ -150,10 +147,8 @@ class ExistingPOFileInDatabase:
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
-        for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, was_fuzzy_in_last_import,
-             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
-             msgstr5) in rows:
+        for (msgid, msgid_plural, context, date, is_current, is_imported,
+             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4, msgstr5) in rows:
 
             if not is_current and not is_imported:
                 # We don't care about non-current and non-imported messages
@@ -165,7 +160,6 @@ class ExistingPOFileInDatabase:
                 update_caches.append(self.messages)
             if is_imported:
                 update_caches.append(self.imported)
-                is_fuzzy = was_fuzzy_in_last_import
 
             for look_at in update_caches:
                 if (msgid, msgid_plural, context) in look_at:
@@ -193,8 +187,6 @@ class ExistingPOFileInDatabase:
                     message.addTranslation(4, msgstr4)
                 if msgstr5 is not None:
                     message.addTranslation(5, msgstr5)
-
-                message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
@@ -460,6 +452,10 @@ class TranslationImporter:
                     message.msgid_singular, message.msgid_plural,
                     context=message.context)
 
+            # XXX DaniloSegan 20080806: I believe this can now be removed:
+            # we treat messages with same msgid but different msgid_plural
+            # as different now. A note here so reviewer reminds me to
+            # check this.
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
             if (message.msgid_plural is not None and
@@ -498,13 +494,9 @@ class TranslationImporter:
 
             if 'fuzzy' in message.flags:
                 message.flags.remove('fuzzy')
-                fuzzy = True
-                flags_comment = u", fuzzy"
-            else:
-                fuzzy = False
-                flags_comment = u""
-            flags_comment += u", ".join(message.flags)
+                message._translations = None
 
+            flags_comment = u", ".join(message.flags)
 
             if self.pofile is None:
                 # The import is a translation template file
@@ -553,7 +545,7 @@ class TranslationImporter:
             try:
                 translation_message = potmsgset.updateTranslation(
                     use_pofile, last_translator, message.translations,
-                    fuzzy, translation_import_queue_entry.is_published,
+                    translation_import_queue_entry.is_published,
                     lock_timestamp, force_edition_rights=is_editor)
 
             except TranslationConflict:
@@ -581,7 +573,7 @@ class TranslationImporter:
                 # errors.
                 translation_message = potmsgset.updateTranslation(
                     use_pofile, last_translator, message.translations,
-                    fuzzy, translation_import_queue_entry.is_published,
+                    translation_import_queue_entry.is_published,
                     lock_timestamp, ignore_errors=True,
                     force_edition_rights=is_editor)
 
@@ -602,7 +594,6 @@ class TranslationImporter:
                 if translation_import_queue_entry.is_published:
                     translation_message.was_obsolete_in_last_import = (
                         message.is_obsolete)
-                    translation_message.was_fuzzy_in_last_import = fuzzy
 
 
         # Finally, retire messages that we have not seen in the new upload.
