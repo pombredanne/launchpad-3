@@ -7,9 +7,9 @@ CREATE TABLE Job (
 
 
 CREATE TABLE JobDependency ( -- Rows in this table describe dependencies between jobs.
-  dependency INTEGER NOT NULL REFERENCES Job,
+  prerequisite INTEGER NOT NULL REFERENCES Job,
   dependant INTEGER NOT NULL REFERENCES Job,
-  PRIMARY KEY (dependency, dependant)
+  PRIMARY KEY (prerequisite, dependant)
 );
 
 
