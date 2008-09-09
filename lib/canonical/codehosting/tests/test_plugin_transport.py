@@ -378,10 +378,14 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
             os.symlink('prefix_foo', 'prefix_baz/bar')
             return self.transport.clone('baz')
 
-        def check_real_path(transport):
-            self.assertEqual('/baz/bar', transport.local_realPath('bar'))
+        def get_real_path(transport):
+            return transport.local_realPath('bar')
+
+        def check_real_path(real_path):
+            self.assertEqual('/baz/bar', real_path)
 
         deferred.addCallback(symlink_and_clone)
+        deferred.addCallback(get_real_path)
         return deferred.addCallback(check_real_path)
 
     def test_realPathEscaping(self):
@@ -389,12 +393,11 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
         escaped_path = escape('~baz')
         deferred = self.transport.mkdir(escaped_path)
 
-        def check_real_path(ignored):
-            self.assertEqual(
-                '/' + escaped_path,
-                self.transport.local_realPath(escaped_path))
+        def get_real_path(ignored):
+            return self.transport.local_realPath(escaped_path)
 
-        return deferred.addCallback(check_real_path)
+        deferred.addCallback(get_real_path)
+        return deferred.addCallback(self.assertEqual, '/' + escaped_path)
 
     def test_canAccessEscapedPathsOnDisk(self):
         # Sometimes, the paths to files on disk are themselves URL-escaped.

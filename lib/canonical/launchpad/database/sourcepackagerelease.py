@@ -162,9 +162,9 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage.
-        # XXX 20080616 mpt: cprov says this property "won't be as useful as it
-        # looks once we start supporting derivation ... [It] is dangerous and
-        # should be renamed (or removed)". <http://launchpad.net/bugs/241298>
+        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
+        # useful as it looks once we start supporting derivation ... [It] is
+        # dangerous and should be renamed (or removed)".
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 

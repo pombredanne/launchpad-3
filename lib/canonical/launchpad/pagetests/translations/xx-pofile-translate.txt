@@ -127,7 +127,6 @@ constructed as an underscore-separated sequence of:
     msgset_130_en_AU_translation_0
     msgset_130_en_AU_translation_0_new
     msgset_130_en_AU_translation_0_new_select
-    msgset_130_en_AU_translation_0_new_to_textarea
     msgset_130_en_AU_translation_0_radiobutton
     msgset_130_es_suggestion_562_0
     msgset_130_es_suggestion_562_0_origin
@@ -149,7 +148,6 @@ identically-named radio buttons and sundry other HTML tags.
     msgset_198
     msgset_198_es_needsreview
     msgset_198_es_translation_0_new
-    msgset_198_es_translation_0_new_to_textarea
     msgset_198_es_translation_0_radiobutton
     msgset_198_es_translation_0_radiobutton
     msgset_198_es_translation_0_radiobutton

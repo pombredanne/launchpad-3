@@ -222,7 +222,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     def userIsDriver(self):
         """Has the current user driver permissions?"""
-        # XXX 2008-01-30 Tom Berger (intellectronica):
+        # XXX Tom Berger 2008-01-30 spec=subscription-invitation:
         # The semantics of this method are actually a bit vague,
         # since when we talk about driver permissions, we're talking
         # about something different for each structure. For now,
