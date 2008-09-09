@@ -1780,7 +1780,7 @@ COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess f
 COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
 COMMENT ON COLUMN ArchiveAuthToken.person IS 'The person to which this token applies.';
 COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
-COMMENT ON COLUMN ArchiveAuthToken.date_revoked IS 'The date and time this token was revoked.';
+COMMENT ON COLUMN ArchiveAuthToken.date_deactivated IS 'The date and time this token was deactivated.';
 COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
 
 -- ArchiveDependency

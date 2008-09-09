@@ -31,7 +31,7 @@ CREATE TABLE ArchiveAuthToken (
     person integer NOT NULL REFERENCES Person(id),
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    date_revoked timestamp without time zone,
+    date_deactivated timestamp without time zone,
     token text UNIQUE NOT NULL
 );
 
