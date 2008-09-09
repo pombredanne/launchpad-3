@@ -1,40 +1,62 @@
 SET client_min_messages=ERROR;
 
+CREATE TABLE Job (
+  id serial PRIMARY KEY,
+  lease_expires TIMESTAMP WITHOUT TIME ZONE
+);
 
-CREATE TABLE Diff (
+
+CREATE TABLE JobDependency ( -- Rows in this table describe dependencies between jobs.
+  dependency INTEGER NOT NULL REFERENCES Job,
+  dependant INTEGER NOT NULL REFERENCES Job,
+  PRIMARY KEY (dependency, dependant)
+);
+
+
+CREATE TABLE StaticDiffJob ( -- Rows in this table are directions for producing a diff.
+  id serial PRIMARY KEY,
+  job integer REFERENCES Job,
+  branch integer NOT NULL REFERENCES Branch,
+  from_revision_spec text,
+  to_revision_spec text,
+  UNIQUE (branch, from_revision_spec, to_revision_spec)
+);
+
+
+CREATE TABLE Diff ( -- Contains information about static and preview diffs
   id serial PRIMARY KEY,
   diff_text integer NOT NULL REFERENCES LibraryFileAlias,
   diff_lines_count integer,
   diffstat text,
   added_lines_count integer,
-  removed_lines_count integer,
-  conflicts text -- perhaps BYTES, store serialised bzrlib obj or not?
+  removed_lines_count integer
 );
 
 
-CREATE TABLE StaticDiffReference (
+CREATE TABLE StaticDiff ( -- Contains information about static diffs
   id serial PRIMARY KEY,
-  branch integer NOT NULL REFERENCES Branch,
-  from_revision_spec text,
-  to_revision_spec text,
-  diff integer REFERENCES Diff, -- this is populated by the thing that takes the lease
-  lease timestamp without time zone
+  from_revision_id TEXT, -- a revision-id
+  to_revision_id TEXT, -- a revision-id
+  diff integer REFERENCES Diff,
+  UNIQUE (from_revision_id, to_revision_id)
 );
 
 
-CREATE TABLE PreviewDiffReference (
+CREATE TABLE PreviewDiffReference ( -- Contains information about preview diffs, but does not duplicate information with BranchMergeProposal
   id serial PRIMARY KEY,
-  branch_merge_proposal integer NOT NULL REFERENCES BranchMergeProposal, -- UNIQUE?
+  branch_merge_proposal integer UNIQUE NOT NULL REFERENCES BranchMergeProposal,
   last_source_revision integer NOT NULL REFERENCES Revision,
   last_target_revision integer NOT NULL REFERENCES Revision,
   last_dependent_revision integer REFERENCES Revision,
   diff integer REFERENCES Diff,
-  lease timestamp without time zone
+  conflicts text -- perhaps BYTES, store serialised bzrlib obj or not?
 );
 
 
-CREATE TABLE PendingCodeMail (
+CREATE TABLE CodeMailJob (
   id serial PRIMARY KEY,
+  job integer REFERENCES Job,
+  static_diff integer REFERENCES StaticDiff,
   from_address text NOT NULL,
   reply_to_address text,
   to_address text NOT NULL,
@@ -47,13 +69,12 @@ CREATE TABLE PendingCodeMail (
   date_created timestamp without time zone NOT NULL
       DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   rfc822msgid text NOT NULL,
-  in_reply_to text, -- A Message-Id
-  static_diff integer REFERENCES StaticDiffReference
-  );
+  in_reply_to text -- A Message-Id
+);
 
 
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN review_diff integer REFERENCES StaticDiffReference;
+  ADD COLUMN review_diff integer REFERENCES StaticDiff;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
