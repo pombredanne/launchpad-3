@@ -31,6 +31,24 @@ Manipulating content:
     True
 
 
+== Debugging ==
+
+If you need to debug a pagetest, you can use the convenient 'stop()' method
+exported into pagetest globals.  This is essentially the same as importing pdb
+and calling pdb.set_trace(), but it's less typing.
+
+The interesting thing here is that once stopped, you can fire up your browser
+and see the page exactly as the pagetest sees it, by doing this:
+
+    * Add a stop() call at the point you want to look at
+    * Go to a different shell and type: make LPCONFIG=testrunner run_all
+    * Once the appserver starts up, hit your page with your browser
+
+The only gotcha is that you should stop the second appserver before you
+continue in your pagetest because once the testrunner db is wiped, your
+appserver will be unhappy.
+
+
 == Parsing content ==
 
 Parsing specific sections of pages:

@@ -6,17 +6,16 @@ currently.  See lib/canonical/launchpad/pagetests/mailinglists/*.txt
 
 == Purging lists ==
 
-A team mailing list can, under certain circumstances, be purged by a Mailing
-List Expert or Launchpad administrator.  Purging is an assertion that there
-are no data structures on the Mailman side that we care about.  This is not
-enforced by Launchpad, and a purging a list invokes no communication between
-the two systems.
+A team mailing list can, under certain circumstances, be purged by a
+Mailing List Expert or Launchpad administrator.  Purging is an assertion
+that there are no data structures on the Mailman side that we care
+about.  This is not enforced by Launchpad, and a purging a list invokes
+no communication between the two systems.
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team(
     ...     'team-one', with_list=True)
 
-    >>> login('foo.bar@canonical.com')
     >>> the_owner = team_one.teamowner.preferredemail.email
 
     >>> from zope.component import getUtility
@@ -26,18 +25,25 @@ the two systems.
     >>> an_expert = list(celebrities.mailing_list_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]
 
-    >>> def create_view(principal):
-    ...     return create_initialized_view(
-    ...         team_one, '+mailinglist', principal=principal)
-
-Nobody can purge an active mailing list, the team owner...
-
     >>> from canonical.launchpad.testing.systemdocs import (
     ...     create_initialized_view)
+
+    >>> def create_view(principal, form=None):
+    ...     if form is None:
+    ...         method = 'GET'
+    ...     else:
+    ...         method = 'POST'
+    ...     return create_initialized_view(
+    ...         team_one, '+mailinglist',
+    ...         form=form, method=method, principal=principal)
+
+Nobody can purge an active mailing list, the team owner...
 
     >>> view = create_view(the_owner)
     >>> print view.label
     Mailing list configuration
+    >>> view.list_can_be_purged
+    False
 
 ...a mailing list expert...
 
@@ -51,18 +57,33 @@ Nobody can purge an active mailing list, the team owner...
     >>> view.list_can_be_purged
     False
 
+Even subverting the form will not trick Launchpad into purging the list.
+
+    # Commit the current transaction, becuase when the view encounters an
+    # error, it aborts the transaction, blowing away the setup state.
+    >>> transaction.commit()
+
+    >>> view = create_view(
+    ...     an_admin,
+    ...     {'field.actions.purge_list': u'Purge this Mailing List'})
+    >>> print '\n'.join(view.errors)
+    This list cannot be purged.
+
 Now the team owner deactivates the mailing list.  When this completes
 successfully, the mailing list will have been archived and removed on the
 Mailman side.
 
-    >>> import transaction
     >>> view = create_view(an_admin)
+
+    >>> login('no-priv@canonical.com')
     >>> list_one.deactivate()
     >>> mailinglists_helper.mailman.act()
+    >>> logout()
     >>> transaction.commit()
 
 The team owner cannot purge his list...
 
+    >>> login(ANONYMOUS)
     >>> view = create_view(the_owner)
     >>> view.list_can_be_purged
     False
@@ -101,6 +122,3 @@ Of course, while purged, the mailing list cannot be purged again.
     >>> view = create_view(an_expert)
     >>> view.list_can_be_purged
     False
-
-
-== Other mailing list states ==

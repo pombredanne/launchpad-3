@@ -346,11 +346,11 @@ Members who are not owners can see the link.
 
 == Purge permissions ==
 
-A mailing list may be 'purged' when it is in one of several safe states.  By
-'safe' we mean that there are no artifacts of the mailing list on the Mailman
-side that need to be preserved.  This is not guaranteed by the code, except by
-the state of the mailing list, so if for example we want to delete the
-archives of an INACTIVE list, this must be done manually.
+A mailing list may be 'purged' when it is in one of several safe states.
+By 'safe' we mean that there are no artifacts of the mailing list on the
+Mailman side that need to be preserved.  This is not guaranteed by the
+code, except by the state of the mailing list, so if for example we want
+to delete the archives of an INACTIVE list, this must be done manually.
 
     # Create a team without a mailing list owned by no-priv so the owner of
     # the team has no additional privileges.
@@ -378,7 +378,7 @@ The team owner cannot purge a mailing list.
     ...     tag = find_tag_by_id(browser.contents, 'mailing_list_purge')
     ...     if tag is None:
     ...         return None
-    ...     return tag.contents[0].strip()
+    ...     return tag.p.contents[0].strip()
 
     >>> user_browser.getLink('Configure mailing list').click()
     >>> print purge_text(user_browser)
@@ -390,8 +390,11 @@ But a Launchpad administrator can purge a registered list.
     >>> print purge_text(admin_browser)
     You can purge this mailing list...
 
-    # Make Sample Person, who is not a Launchpad administrator, a mailing list
-    # expert for the following tests.
+Mailing list experts can also purge mailing lists.  Sample Person is
+trustworthy enough to become a mailing list expert, but not a Launchpad
+administrator.  He's given mailing list expert authority so that he can
+purge mailing lists.
+
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
@@ -403,7 +406,8 @@ But a Launchpad administrator can purge a registered list.
     >>> logout()
     >>> transaction.commit()
 
-Mailing list experts, such as Sample Person, can also purge a registered list.
+Sample Person, who is now a mailing list expert but not a Launchpad
+administrator, can purge a registered list.
 
     >>> expert_browser = setupBrowser('Basic test@canonical.com:test')
     >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
@@ -612,8 +616,8 @@ A team with an active mailing list cannot be merged with another team.
 But if the mailing list for the team being merge has been purged, then the
 merge is allowed.
 
-    >>> browser.open('http://launchpad.dev/~antelopes/+mailinglist')
-    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> user_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
+    >>> user_browser.getControl('Deactivate this Mailing List').click()
     >>> act()
     >>> admin_browser.open('http://launchpad.dev/~antelopes/+mailinglist')
     >>> admin_browser.getControl('Purge this Mailing List').click()
