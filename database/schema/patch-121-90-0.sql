@@ -6,14 +6,14 @@ CREATE TABLE Job (
 );
 
 
-CREATE TABLE JobDependency ( -- Rows in this table describe dependencies between jobs.
+CREATE TABLE JobDependency (
   prerequisite INTEGER NOT NULL REFERENCES Job,
   dependant INTEGER NOT NULL REFERENCES Job,
   PRIMARY KEY (prerequisite, dependant)
 );
 
 
-CREATE TABLE StaticDiffJob ( -- Rows in this table are directions for producing a diff.
+CREATE TABLE StaticDiffJob (
   id SERIAL PRIMARY KEY,
   job INTEGER REFERENCES Job,
   branch INTEGER NOT NULL REFERENCES Branch,
@@ -23,7 +23,7 @@ CREATE TABLE StaticDiffJob ( -- Rows in this table are directions for producing 
 );
 
 
-CREATE TABLE Diff ( -- Contains information about static and preview diffs
+CREATE TABLE Diff (
   id serial PRIMARY KEY,
   diff_text INTEGER NOT NULL REFERENCES LibraryFileAlias,
   diff_lines_count INTEGER,
@@ -33,23 +33,23 @@ CREATE TABLE Diff ( -- Contains information about static and preview diffs
 );
 
 
-CREATE TABLE StaticDiff ( -- Contains information about static diffs
+CREATE TABLE StaticDiff (
   id serial PRIMARY KEY,
-  from_revision_id TEXT, -- a revision-id
-  to_revision_id TEXT, -- a revision-id
+  from_revision_id TEXT,
+  to_revision_id TEXT,
   diff INTEGER REFERENCES Diff,
   UNIQUE (from_revision_id, to_revision_id)
 );
 
 
-CREATE TABLE PreviewDiffReference ( -- Contains information about preview diffs, but does not duplicate information with BranchMergeProposal
+CREATE TABLE PreviewDiffReference (
   id SERIAL PRIMARY KEY,
   branch_merge_proposal INTEGER UNIQUE NOT NULL REFERENCES BranchMergeProposal,
   last_source_revision INTEGER NOT NULL REFERENCES Revision,
   last_target_revision INTEGER NOT NULL REFERENCES Revision,
   last_dependent_revision INTEGER REFERENCES Revision,
   diff INTEGER REFERENCES Diff,
-  conflicts TEXT -- perhaps BYTES, store serialised bzrlib obj or not?
+  conflicts TEXT
 );
 
 
@@ -70,7 +70,7 @@ CREATE TABLE CodeMailJob (
   date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
       DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   rfc822msgid TEXT NOT NULL,
-  in_reply_to TEXT -- A Message-Id
+  in_reply_to TEXT
 );
 
 
