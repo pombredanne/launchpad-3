@@ -150,15 +150,15 @@ class ArchiveSourcePublications:
         return self.groupBySource(source_and_packagediffs)
 
     def getChangesFileBySource(self):
-        """PackageDiffs for sources."""
+        """Map changesfiles by their corresponding source publications."""
         publishing_set = getUtility(IPublishingSet)
         changesfile_set = publishing_set.getChangesFilesForSources(
             self._source_publications)
-        source_and_changesfile = [
-            (source, changesfile)
-            for source, queue_record, source_release, changesfile, content
-            in changesfile_set]
-        return dict(source_and_changesfile)
+        changesfile_mapping = {}
+        for entry in changesfile_set:
+            source, queue_record, source_release, changesfile, content = entry
+            changesfile_mapping[source] = changesfile
+        return changesfile_mapping
 
     def __nonzero__(self):
         """Are there any sources to iterate?"""

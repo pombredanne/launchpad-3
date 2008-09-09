@@ -617,8 +617,8 @@ class IPublishingSet(Interface):
         as `LibraryFileAlias`es associated with the corresponding source
         publication and its corresponding `LibraryFileContent`,
         `PackageUpload` and `SourcePackageRelease` in a 5-element tuple.
-        This way the extra information will be cached and the callsites can
-        group chnagesfiles in any convenient form.
+        This way the extra information will be cached and the call sites can
+        group changesfiles in any convenient form.
 
         The result is ordered by ascending `SourcePackagePublishingHistory.id`
 
