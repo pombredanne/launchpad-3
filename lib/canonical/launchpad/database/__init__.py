@@ -7,10 +7,10 @@ from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.codeimportresult import *
+from canonical.launchpad.database.codemailjob import *
 from canonical.launchpad.database.codereviewvote import *
 from canonical.launchpad.database.customlanguagecode import *
 from canonical.launchpad.database.milestone import *
-from canonical.launchpad.database.pendingcodemail import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.personlocation import *
 from canonical.launchpad.database.personnotification import *

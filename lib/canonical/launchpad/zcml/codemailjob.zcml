@@ -5,12 +5,12 @@
     i18n_domain="launchpad">
 
   <securedutility
-      class="canonical.launchpad.database.PendingCodeMailSource"
-      provides="canonical.launchpad.interfaces.IPendingCodeMailSource" >
-    <allow interface="canonical.launchpad.interfaces.IPendingCodeMailSource" />
+      class="canonical.launchpad.database.CodeMailJobSource"
+      provides="canonical.launchpad.interfaces.ICodeMailJobSource" >
+    <allow interface="canonical.launchpad.interfaces.ICodeMailJobSource" />
   </securedutility>
 
-  <content class="canonical.launchpad.database.PendingCodeMail">
+  <content class="canonical.launchpad.database.CodeMailJob">
     <allow attributes="destroySelf sendMail toMessage"/>
   </content>
 

@@ -108,21 +108,21 @@ I think this would be good.
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         mailer.from_address = 'from@example.com'
-        (pending,) = [
-            removeSecurityProxy(p) for p in mailer.queue([subscriber])]
+        (job,) = [
+            removeSecurityProxy(j) for j in mailer.queue([subscriber])]
         self.assertEqual(
-            bmp.source_branch.unique_name, pending.branch_url)
-        self.assertEqual('Subscriber', pending.rationale)
-        self.assertEqual('from@example.com', pending.from_address)
-        self.assertEqual('Baz Quxx <baz.quxx@example.com>', pending.to_address)
+            bmp.source_branch.unique_name, job.branch_url)
+        self.assertEqual('Subscriber', job.rationale)
+        self.assertEqual('from@example.com', job.from_address)
+        self.assertEqual('Baz Quxx <baz.quxx@example.com>', job.to_address)
         self.assertEqual(
-            mailer._getSubject('baz.quxx@example.com'), pending.subject)
+            mailer._getSubject('baz.quxx@example.com'), job.subject)
         self.assertEqual(
-            mailer._getBody('baz.quxx@example.com'), pending.body)
-        self.assertEqual('', pending.footer)
+            mailer._getBody('baz.quxx@example.com'), job.body)
+        self.assertEqual('', job.footer)
         self.assertEqual(bmp.source_branch.product.name,
-                         pending.branch_project_name)
-        self.assertEqual(bmp.address, pending.reply_to_address)
+                         job.branch_project_name)
+        self.assertEqual(bmp.address, job.reply_to_address)
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

@@ -1,11 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Interfaces including and related to IPendingCodeMail."""
+"""Interfaces including and related to ICodeMailJob."""
 
 __metaclass__ = type
 
 __all__ = [
-    'IPendingCodeMail', 'IPendingCodeMailSource'
+    'ICodeMailJob', 'ICodeMailJobSource'
     ]
 
 from zope.interface import Interface
@@ -15,7 +15,7 @@ from zope.schema import (
 from canonical.launchpad import _
 
 
-class IPendingCodeMail(Interface):
+class ICodeMailJob(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     rfc822msgid = TextLine(title=_('RFC822 Msg ID'), required=True)
@@ -32,7 +32,7 @@ class IPendingCodeMail(Interface):
     branch_project_name = TextLine(title=_("Branch's project's name"))
 
 
-class IPendingCodeMailSource(Interface):
+class ICodeMailJobSource(Interface):
 
     def create():
-        """Create a PendingCodeMail"""
+        """Create a CodeMailJob."""

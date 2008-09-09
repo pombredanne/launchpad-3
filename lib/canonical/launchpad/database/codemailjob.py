@@ -1,9 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Database objects for PendingCodeMail"""
+"""Database objects for CodeMailJob"""
 
 __metaclass__ = type
-__all__ = ['PendingCodeMail', 'PendingCodeMailSource']
+__all__ = ['CodeMailJob', 'CodeMailJobSource']
 
 
 from calendar import timegm
@@ -18,16 +18,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPendingCodeMail, IPendingCodeMailSource)
+    ICodeMailJob, ICodeMailJobSource)
 from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mail.sendmail import sendmail
 
 
-class PendingCodeMail(SQLBase):
+class CodeMailJob(SQLBase):
 
-    implements(IPendingCodeMail)
+    implements(ICodeMailJob)
 
-    _table = 'PendingCodeMail'
+    _table = 'CodeMailJob'
 
     id = IntCol(notNull=True)
 
@@ -78,15 +78,15 @@ class PendingCodeMail(SQLBase):
         self.destroySelf()
 
 
-class PendingCodeMailSource:
+class CodeMailJobSource:
 
-    implements(IPendingCodeMailSource)
+    implements(ICodeMailJobSource)
 
     def create(self, from_address, reply_to_address, to_address, rationale,
                branch_url, branch_project_name, subject, body, footer,
                message_id, in_reply_to):
-        """See `IPendingCodeMailSource`"""
-        return PendingCodeMail(from_address=from_address,
+        """See `ICodeMailJobSource`"""
+        return CodeMailJob(from_address=from_address,
             reply_to_address=reply_to_address, to_address=to_address,
             rationale=rationale, branch_url=branch_url,
             branch_project_name=branch_project_name, subject=subject,

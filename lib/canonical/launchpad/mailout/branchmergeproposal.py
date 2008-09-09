@@ -13,7 +13,7 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import format_address, get_msgid
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.interfaces import (
-    CodeReviewNotificationLevel, IPendingCodeMailSource)
+    CodeReviewNotificationLevel, ICodeMailJobSource)
 from canonical.launchpad.webapp import canonical_url
 from zope.security.proxy import removeSecurityProxy
 
@@ -97,8 +97,8 @@ class BMPMailer(BaseMailer):
         self.merge_proposal = merge_proposal
 
     def sendAll(self):
-        for pending in self.queue():
-            pending.sendMail()
+        for job in self.queue():
+            job.sendMail()
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
 
@@ -191,9 +191,9 @@ class BMPMailer(BaseMailer):
 
     def generateEmail(self, subscriber):
         """Rather roundabout.  Best not to use..."""
-        pending = removeSecurityProxy(self.queue([subscriber])[0])
-        message = pending.toMessage()
-        pending.destroySelf()
+        job = removeSecurityProxy(self.queue([subscriber])[0])
+        message = job.toMessage()
+        job.destroySelf()
         headers = dict(message.items())
         del headers['Date']
         del headers['From']
@@ -202,8 +202,8 @@ class BMPMailer(BaseMailer):
         return (headers, message['Subject'], message.get_payload(decode=True))
 
     def queue(self, recipient_people=None):
-        pending = []
-        source = getUtility(IPendingCodeMailSource)
+        jobs = []
+        source = getUtility(ICodeMailJobSource)
         for email, to_address in self.iterRecipients(recipient_people):
             message_id = self.message_id
             if message_id is None:
@@ -227,5 +227,5 @@ class BMPMailer(BaseMailer):
                 reply_to_address = self._getReplyToAddress(),
                 branch_project_name = branch_project_name,
                 )
-            pending.append(mail)
-        return pending
+            jobs.append(mail)
+        return jobs

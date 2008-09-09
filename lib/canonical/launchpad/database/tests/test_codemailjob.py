@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Tests of PendingCodeMail"""
+"""Tests of CodeMailJob"""
 
 __metaclass__ = type
 
@@ -11,31 +11,31 @@ from canonical.testing import LaunchpadFunctionalLayer
 import pytz
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import IPendingCodeMail
-from canonical.launchpad.database import PendingCodeMail
+from canonical.launchpad.interfaces import ICodeMailJob
+from canonical.launchpad.database import CodeMailJob
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
 
 
-class TestPendingCodeMail(TestCaseWithFactory):
+class TestCodeMailJob(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def test_ProvidesInterface(self):
-        verifyObject(IPendingCodeMail, self.factory.makePendingCodeMail())
+        verifyObject(ICodeMailJob, self.factory.makeCodeMailJob())
 
     def makeExampleMail(self):
         UTC = pytz.timezone('UTC')
-        return self.factory.makePendingCodeMail('jrandom@example.com',
+        return self.factory.makeCodeMailJob('jrandom@example.com',
             'person@example.com', 'My subject', 'My body', 'My footer',
             '<msg-id@foo>', 'for-fun', 'http://example.com', 'Project',
             '<parent-id@foo>', '<mp1@example.com>',
             datetime.fromtimestamp(0, UTC))
 
     def test_toMessage(self):
-        pending_mail = self.makeExampleMail()
-        message = pending_mail.toMessage()
+        mail_job = self.makeExampleMail()
+        message = mail_job.toMessage()
         self.checkMessageFromExample(message)
 
     def checkMessageFromExample(self, message):
@@ -53,12 +53,12 @@ class TestPendingCodeMail(TestCaseWithFactory):
             'My body\n-- \nMy footer', message.get_payload(decode=True))
 
     def testSend(self):
-        pending_mail = self.makeExampleMail()
-        db_id = pending_mail.id
-        pending_mail.sendMail()
+        mail_job = self.makeExampleMail()
+        db_id = mail_job.id
+        mail_job.sendMail()
         message = pop_notifications()[0]
         self.checkMessageFromExample(message)
-        self.assertRaises(SQLObjectNotFound, PendingCodeMail.get, db_id)
+        self.assertRaises(SQLObjectNotFound, CodeMailJob.get, db_id)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

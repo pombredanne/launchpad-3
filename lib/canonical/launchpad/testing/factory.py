@@ -47,7 +47,7 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import (
-    Message, MessageChunk, PendingCodeMail)
+    Message, MessageChunk, CodeMailJob)
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.database.constants import DEFAULT
 
@@ -121,7 +121,7 @@ class LaunchpadObjectFactory:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
-    def makePendingCodeMail(self, to_address=None, from_address=None,
+    def makeCodeMailJob(self, to_address=None, from_address=None,
         subject=None, body=None, footer=None, msgid=None, rationale=None,
         branch_url=None, branch_project_name=None, in_reply_to=None,
         reply_to_address=None, date_created=DEFAULT):
@@ -141,7 +141,7 @@ class LaunchpadObjectFactory:
             rationale = self.getUniqueString('rationale')
         if branch_url is None:
             branch_url = self.getUniqueURL()
-        return PendingCodeMail(
+        return CodeMailJob(
             to_address=to_address, from_address=from_address,
             reply_to_address=reply_to_address, subject=subject, body=body,
             footer=footer, rationale=rationale, branch_url=branch_url,
