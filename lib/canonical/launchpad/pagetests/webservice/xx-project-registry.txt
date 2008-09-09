@@ -395,16 +395,16 @@ Trying to put new content will result in a ForbiddenAttribute error.
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
     >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
     ...
-    ForbiddenAttribute: ('libraryfile', <ProductReleaseFile...
 
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
     >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
     ...
-    ForbiddenAttribute: ('signature', <ProductReleaseFile...
 
 Soon a new method will be introduced that will allow the file and
 signature attributes to be modified in place.
