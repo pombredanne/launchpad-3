@@ -49,11 +49,19 @@ class ByteStorageResource(HTTPResource):
 
     def do_PUT(self, type, representation):
         """See `IByteStorageResource`."""
-        try:
-            self.context.field.validate(representation)
-        except ValidationError, e:
+        error = None
+        if self.context.field.readonly:
+            error = "You tried to modify a read-only resource."
+        else:
+            try:
+                self.context.field.validate(representation)
+            except ValidationError, e:
+                error = str(e)
+
+        if error is not None:
             self.request.response.setStatus(400) # Bad Request
-            return str(e)
+            return error
+
         self.context.createStored(type, representation)
 
     def do_DELETE(self):

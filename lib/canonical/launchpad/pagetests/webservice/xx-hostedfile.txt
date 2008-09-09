@@ -159,3 +159,15 @@ by the librarian.
     ...
     Location: http://localhost:58000/.../brand
     ...
+
+
+== Error handling ==
+
+If a hosted file is read-only, the client won't be able to modify it.
+
+   >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+   >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
+   >>> print response
+   HTTP/1.1 400 Bad Request
+   ...
+   You tried to modify a read-only resource.
