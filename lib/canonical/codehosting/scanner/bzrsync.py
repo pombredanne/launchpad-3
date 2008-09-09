@@ -15,7 +15,7 @@ import urlparse
 
 import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch, BzrBranchFormat4
+from bzrlib.branch import BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
@@ -335,9 +335,10 @@ class WarehouseBranchOpener(BranchOpener):
     def checkOneURL(self, url):
         """See `BranchOpener.checkOneURL`.
 
-        If the URL we are mirroring from is anything but a
-        lp-mirrored:///~user/project/branch URL, something has gone badly
-        wrong.
+        If the URLs we are mirroring from are anything but a
+        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
+        Opening branches on remote systems takes too long, and we want all of
+        our local access to be channelled through this transport.
         """
         uri = URI(url)
         if uri.scheme != 'lp-mirrored':
