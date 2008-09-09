@@ -303,13 +303,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             pubrec = queue_item.builds[0].publish(self.log)
         return pubrec
 
-    def testImport(self):
-        """UploadProcessor should be importable"""
-        from canonical.archiveuploader.uploadprocessor import UploadProcessor
-
     def testInstantiate(self):
         """UploadProcessor should instantiate"""
-        from canonical.archiveuploader.uploadprocessor import UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
     def testLocateDirectories(self):
@@ -323,7 +318,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             os.mkdir("%s/dir1" % testdir)
             os.mkdir("%s/dir2" % testdir)
 
-            from canonical.archiveuploader.uploadprocessor import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
             located_dirs = up.locateDirectories(testdir)
             self.assertEqual(sorted(located_dirs), ["dir1", "dir2"])
@@ -337,10 +331,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             open("%s/1.changes" % testdir, "w").close()
             open("%s/2.changes" % testdir, "w").close()
             open("%s/3.not_changes" % testdir, "w").close()
-            from canonical.archiveuploader.uploadprocessor import UploadProcessor
             up = UploadProcessor(self.options, None, self.log)
             located_files = up.locateChangesFiles(testdir)
-            self.assertEqual(sorted(located_files), ["1.changes", "2.changes"])
+            self.assertEqual(
+                sorted(located_files), ["1.changes", "2.changes"])
         finally:
             shutil.rmtree(testdir)
 
@@ -359,7 +353,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             target_name = os.path.basename(target)
 
             # Move it
-            from canonical.archiveuploader.uploadprocessor import UploadProcessor
             self.options.base_fsroot = testdir
             up = UploadProcessor(self.options, None, self.log)
             up.moveUpload(upload, target_name)
@@ -375,7 +368,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testOrderFilenames(self):
         """orderFilenames sorts _source.changes ahead of other files."""
-        from canonical.archiveuploader.uploadprocessor import UploadProcessor
         up = UploadProcessor(self.options, None, self.log)
 
         self.assertEqual(["d_source.changes", "a", "b", "c"],

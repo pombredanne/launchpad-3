@@ -28,7 +28,7 @@ Get the current counts of stuff in the database:
 
 Create a distribution series and an arch series for dapper:
 
-    >>> from canonical.launchpad.database import (DistroSeriesSet,
+    >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
     >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
     ... IDistroSeriesSet)
