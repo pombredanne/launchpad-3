@@ -13,9 +13,10 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces.account import IAccountSet
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIdApplication, NotFoundError)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -49,7 +50,10 @@ class OpenIdApplicationNavigation(Navigation):
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
         account = getUtility(IAccountSet).getByOpenIdIdentifier(name)
-        if account is not None:
+        # XXX sinzui 2008-09-09 bug=237280:
+        # Account.status should be public.
+        if (account is not None
+            and removeSecurityProxy(account).status == AccountStatus.ACTIVE):
             return IOpenIDPersistentIdentity(account)
         else:
             return None

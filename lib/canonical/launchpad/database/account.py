@@ -52,7 +52,7 @@ class Account(SQLBase):
     new_openid_identifier = StringCol(
             dbName='old_openid_identifier', notNull=False, default=DEFAULT)
 
-    # The password is actually stored in a seperate table for security
+    # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
         password = AccountPassword.selectOneBy(account=self)
@@ -116,6 +116,8 @@ class AccountSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
+        # XXX sinzui 2008-09-09 bug=264783:
+        # Remove the OR clause, only openid_identifier should be used.
         return Account.selectOne(
             OR(
                 Account.q.openid_identifier == openid_identifier,
