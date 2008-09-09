@@ -63,7 +63,8 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def normalizeFilename(self, filename):
+    @staticmethod
+    def normalizeFilename(filename):
         # Replace slashes in the filename with less problematic dashes.
         return filename.replace('/', '-')
 

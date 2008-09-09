@@ -112,14 +112,14 @@ class ProductReleaseVersionField(ContentNameField):
 
 
 class IProductReleaseFileEditRestricted(Interface):
-    """IProductReleaseFile properties which require launchpad.Edit."""
+    """`IProductReleaseFile` properties which require `launchpad.Edit`."""
 
     def destroySelf():
         """Delete the product release file."""
 
 
 class IProductReleaseFilePublic(Interface):
-    """Public properties for IProductReleaseFile."""
+    """Public properties for `IProductReleaseFile`."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = exported(
@@ -161,19 +161,29 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 
 
 class IProductReleaseEditRestricted(Interface):
-    """IProductRelease properties which require launchpad.Edit."""
+    """`IProductRelease` properties which require `launchpad.Edit`."""
 
-    def addReleaseFile(bytes, signature, uploader,
+    def addReleaseFile(filename, file_content, content_type,
+                       signature_filename, signature_content, uploader,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
-        """Add file to the library, and link to this ProductRelease.
+        """Add file to the library, and link to this `IProductRelease`.
 
         The signature file will also be added if available.
+
+        :param filename: Name of the file being uploaded.
+        :param file_content: String of bytes.
+        :param content_type: A MIME content type string.
+        :param signature_filename: Name of the uploaded gpg signature file.
+        :param uploader: The person who uploaded the file.
+        :param file_type: An `UpstreamFileType` enum value.
+        :param description: Info about the file.
+        :returns: `IProductReleaseFile` object.
         """
 
 
 class IProductReleasePublic(Interface):
-    """Public IProductRelease properties."""
+    """Public `IProductRelease` properties."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(
@@ -246,8 +256,10 @@ class IProductReleasePublic(Interface):
 
 class IProductRelease(IProductReleaseEditRestricted,
                       IProductReleasePublic):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
+    """A specific release (i.e. version) of a product.
+
+    For example: Mozilla 1.7.2 or Apache 2.0.48.
+    """
 
     export_as_webservice_entry('project_release')
 

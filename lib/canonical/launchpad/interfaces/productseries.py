@@ -196,7 +196,16 @@ class IProductSeriesEditRestricted(Interface):
 
     def addRelease(version, owner, codename=None, shortdesc=None,
                    description=None, changelog=None):
-        """Create a new ProductRelease"""
+        """Create a new ProductRelease.
+
+        :param version: Name of the version.
+        :param owner: `IPerson` object who manages the release.
+        :param codename: Alternative name of the version.
+        :param shortdesc: Summary information.
+        :param description: Detailed information.
+        :param changelog: Highlighted changes in each version.
+        :returns: `IProductRelease` object.
+        """
 
 
 class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
