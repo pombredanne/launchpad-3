@@ -4,7 +4,10 @@
 __metaclass__ = type
 __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
+from StringIO import StringIO
+
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 
@@ -16,6 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     NotFoundError, UpstreamFileType)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -59,25 +63,39 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
+    @staticmethod
+    def normalizeFilename(filename):
+        # Replace slashes in the filename with less problematic dashes.
+        return filename.replace('/', '-')
+
+    def addReleaseFile(self, filename, file_content, content_type,
+                       signature_filename, signature_content, uploader,
+                       file_type=UpstreamFileType.CODETARBALL,
+                       description=None):
         """See `IProductRelease`."""
+        # Create the alias for the file.
+        filename = self.normalizeFilename(filename)
+        alias = getUtility(ILibraryFileAliasSet).create(
+            name=filename,
+            size=len(file_content),
+            file=StringIO(file_content),
+            contentType=content_type)
+        if signature_filename is not None and signature_content is not None:
+            signature_filename = self.normalizeFilename(
+                signature_filename)
+            signature_alias = getUtility(ILibraryFileAliasSet).create(
+                name=signature_filename,
+                size=len(signature_content),
+                file=StringIO(signature_content),
+                contentType='application/pgp-signature')
+        else:
+            signature_alias = None
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  signature=signature,
+                                  signature=signature_alias,
                                   filetype=file_type,
                                   description=description,
                                   uploader=uploader)
-
-    def deleteFileAlias(self, alias):
-        """See `IProductRelease`."""
-        for f in self.files:
-            if f.libraryfile.id == alias.id:
-                f.destroySelf()
-                return
-        raise NotFoundError(alias.filename)
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""
@@ -126,18 +144,6 @@ class ProductReleaseFile(SQLBase):
 class ProductReleaseSet(object):
     """See `IProductReleaseSet`."""
     implements(IProductReleaseSet)
-
-    def new(self, version, productseries, owner, codename=None, summary=None,
-            description=None, changelog=None):
-        """See `IProductReleaseSet`."""
-        return ProductRelease(version=version,
-                              productseries=productseries,
-                              owner=owner,
-                              codename=codename,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
-
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""

@@ -511,6 +511,16 @@ series of a distribution.
     [u'3.1', u'3.1-rc1']
 
     >>> woody = debian['woody']
+
+Milestones for distros can only be created by distro owners or admins.
+
+    >>> login('no-priv@canonical.com')
+    >>> woody.newMilestone(
+    ...     name='impossible', dateexpected=datetime(2028, 10, 1))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<DistroSeries at ...>, 'newMilestone', 'launchpad.Edit')
+    >>> login('mark@hbd.com')
     >>> debian_milestone = woody.newMilestone(
     ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))
 
