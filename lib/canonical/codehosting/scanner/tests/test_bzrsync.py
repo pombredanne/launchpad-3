@@ -65,7 +65,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
-        self.switchDbUser(config.branchscanner.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         # The lp-mirrored transport is set up by the branch_scanner module.
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
@@ -93,10 +93,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.assertTrue(url.startswith(self._url_prefix))
         url = self._chroot_server.get_url() + url[len(self._url_prefix):]
         return get_transport(url)
-
-    def switchDbUser(self, user):
-        """We need to reset the config warehouse root after a switch."""
-        LaunchpadZopelessLayer.switchDbUser(user)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -230,7 +226,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
 
-        self.switchDbUser(self.lp_db_user)
+        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
 
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
@@ -251,7 +247,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         LaunchpadZopelessLayer.txn.commit()
-        self.switchDbUser(config.branchscanner.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
@@ -349,7 +345,8 @@ class TestBzrSync(BzrSyncTestCase):
         counts = self.getCounts()
         bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertCounts(counts, new_revisions=1, new_numbers=1, new_authors=1)
+        self.assertCounts(
+            counts, new_revisions=1, new_numbers=1, new_authors=1)
 
     def test_new_author(self):
         # Importing a different committer adds it as an author.
@@ -413,7 +410,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(self.bzr_branch))
         self.assertEqual(
-            [('rev-1', 1)], 
+            [('rev-1', 1)],
             list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
 
     def test_get_revisions_branched(self):
@@ -591,7 +588,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
             committer=self.factory.getUniqueString(), message=self.LOG,
             timestamp=1000000000.0, timezone=0, properties={})
-    
+
     def makeSyncedRevision(self):
         """Return a fake revision that has already been synced.
 
