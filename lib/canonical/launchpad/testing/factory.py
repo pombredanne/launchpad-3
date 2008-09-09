@@ -817,7 +817,7 @@ class LaunchpadObjectFactory:
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries()
+            productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
             productseries.product.official_rosetta = True
@@ -840,9 +840,7 @@ class LaunchpadObjectFactory:
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        if owner is None:
-            owner = potemplate.owner
-        return potemplate.newPOFile(language_code, requester=owner)
+        return potemplate.newPOFile(language_code, requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
