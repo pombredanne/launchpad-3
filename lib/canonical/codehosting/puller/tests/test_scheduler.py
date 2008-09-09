@@ -41,28 +41,27 @@ class FakeBranchStatusClient:
         self.branch_queues = branch_queues
         self.calls = []
 
-    def getBranchPullQueue(self, branch_type):
+    def callRemote(self, method_name, *args):
+        method = getattr(self, '_remote_%s' % method_name, self._default)
+        deferred = method(*args)
+        def append_to_log(pass_through):
+            self.calls.append((method_name,) + tuple(args))
+            return pass_through
+        deferred.addCallback(append_to_log)
+        return deferred
+
+    def _default(self, *args):
+        return defer.succeed(None)
+
+    def _remote_getBranchPullQueue(self, branch_type):
         return defer.succeed(self.branch_queues[branch_type])
 
-    def setStackedOn(self, branch_id, stacked_on_location):
+    def _remote_setStackedOn(self, branch_id, stacked_on_location):
         if stacked_on_location == 'raise-branch-not-found':
             try:
                 raise faults.NoSuchBranch(stacked_on_location)
             except faults.NoSuchBranch:
                 return defer.fail()
-        self.calls.append(('setStackedOn', branch_id, stacked_on_location))
-        return defer.succeed(None)
-
-    def startMirroring(self, branch_id):
-        self.calls.append(('startMirroring', branch_id))
-        return defer.succeed(None)
-
-    def mirrorComplete(self, branch_id, revision_id):
-        self.calls.append(('mirrorComplete', branch_id, revision_id))
-        return defer.succeed(None)
-
-    def mirrorFailed(self, branch_id, revision_id):
-        self.calls.append(('mirrorFailed', branch_id, revision_id))
         return defer.succeed(None)
 
 
