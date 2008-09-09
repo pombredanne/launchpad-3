@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.interfaces.bug import IBugSet
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.scripts.logger import log as default_log
@@ -736,11 +737,18 @@ class BugWatchUpdater(object):
             # the first valid link wins. Otherwise we link the bug that
             # we've been passed, overwriting the previous value of the
             # Launchpad bug ID for this remote bug.
-            other_launchpad_bug = getUtility(IBugSet).get(
-                current_launchpad_id)
+            try:
+                other_launchpad_bug = getUtility(IBugSet).get(
+                    current_launchpad_id)
 
-            other_bug_watch = other_launchpad_bug.getBugWatch(
-                bug_watch.bugtracker, bug_watch.remotebug)
+                other_bug_watch = other_launchpad_bug.getBugWatch(
+                    bug_watch.bugtracker, bug_watch.remotebug)
+            except NotFoundError:
+                # If we can't find the bug that's referenced by
+                # current_launchpad_id we simply set other_bug_watch to
+                # None so that the Launchpad ID of the remote bug can be
+                # set correctly.
+                other_bug_watch = None
 
             if other_bug_watch is None:
                 remotesystem.setLaunchpadBugId(

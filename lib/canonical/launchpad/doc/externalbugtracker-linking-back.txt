@@ -37,6 +37,7 @@ The methods are called by the BugWatchUpdater class:
 
     >>> bug_watch = factory.makeBugWatch('42')
     >>> bug_watch_2 = factory.makeBugWatch('42', bug_watch.bugtracker)
+    >>> unlinked_bug = factory.makeBug()
 
     >>> txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
@@ -86,18 +87,16 @@ the remote bug, BugWatchUpdater.linkLaunchpadBug() will call
 getLaunchpadBugId() and then, when it discovers that the current
 Launchpad bug ID isn't valid, setLaunchpadBugId() to correct the error.
 
-Bug 1 doesn't link to bug 42 on the remote bug tracker.
+unlinked_bug doesn't link to bug 42 on the remote bug tracker.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
-    >>> bug_1 = getUtility(IBugSet).get(1)
-    >>> print bug_1.getBugWatch(bug_watch.bugtracker, bug_watch.remotebug)
+    >>> print unlinked_bug.getBugWatch(
+    ...     bug_watch.bugtracker, bug_watch.remotebug)
     None
 
-However, the remote bug currently thinks that Launchpad Bug 1 does in
+However, the remote bug currently thinks that unlinked_bug does in
 fact link to it.
 
-    >>> external_bugtracker.last_launchpad_bug_id = 1
+    >>> external_bugtracker.last_launchpad_bug_id = unlinked_bug.id
 
 Calling linkLaunchpadBug() with a bug watch that actually does link to
 bug 42 will correct the error.
@@ -106,3 +105,12 @@ bug 42 will correct the error.
     Getting Launchpad id for bug 42
     Setting Launchpad id for bug 42
 
+linkLaunchpadBug() will also handle cases where the current Launchpad
+bug ID for a remote bug references a Launchpad bug that doesn't exist.
+The remote bug's Launchpad bug ID will be overwritten to correct the
+error.
+
+    >>> external_bugtracker.last_launchpad_bug_id = 0
+    >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
+    Getting Launchpad id for bug 42
+    Setting Launchpad id for bug 42
