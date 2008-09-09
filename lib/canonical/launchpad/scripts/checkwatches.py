@@ -514,8 +514,7 @@ class BugWatchUpdater(object):
                     if can_push_comments:
                         self.pushBugComments(remotesystem, bug_watch)
                     if ISupportsBackLinking.providedBy(remotesystem):
-                        remotesystem.setLaunchpadBugId(
-                            bug_id, bug_watch.bug.id)
+                        self.linkLaunchpadBug(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -711,6 +710,10 @@ class BugWatchUpdater(object):
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
+
+    def linkLaunchpadBug(self, remotesystem, bug_watch):
+        """Link a Launchpad bug to a given remote bug."""
+        remotesystem.setLaunchpadBugId(bug_watch.remotebug, bug_watch.bug.id)
 
     def _getOOPSProperties(self, remotesystem):
         """Return an iterable of 2-tuples (name, value) of OOPS properties.
