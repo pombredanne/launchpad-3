@@ -19,7 +19,7 @@ about the bug.
     ...         return 64
     ...
     ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
-    ...         self.last_launchad_bug_id = launchpad_bug_id
+    ...         self.last_launchpad_bug_id = launchpad_bug_id
     ...         print "Setting Launchpad id for bug %s" % remote_bug
 
 
@@ -41,5 +41,5 @@ The methods are called by ...
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
     Setting Launchpad id for bug 42
 
-    >>> external_bugtracker.last_launchad_bug_id == bug_watch.bug.id
+    >>> external_bugtracker.last_launchpad_bug_id == bug_watch.bug.id
     True
