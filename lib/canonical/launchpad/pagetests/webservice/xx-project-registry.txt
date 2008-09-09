@@ -297,6 +297,29 @@ The latest projects registered can be retrieved.
     Mega Money Maker
     Redfish
 
+The project collection has a method for creating a new project.
+
+    >>> def create_project(name, display_name, title, summary):
+    ...     return webservice.named_post(
+    ...         "/projects", "new_project",
+    ...         name=name, display_name=display_name,
+    ...         title=title, summary=summary)
+
+    >>> print webservice.get('/nuevo-project', 'Nuevo Project')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print create_project('nuevo-project', 'Nuevo Project',
+    ...     'Nuevo Project', 'El Project Nuevo')
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../nuevo-project
+    <BLANKLINE>
+
+    >>> print webservice.get('/nuevo-project', 'Nuevo Project')
+    HTTP/1.1 200 Ok
+    ...
+
 
 == Project series entry ==
 
