@@ -59,7 +59,7 @@ Nobody can purge an active mailing list, the team owner...
 
 Even subverting the form will not trick Launchpad into purging the list.
 
-    # Commit the current transaction, becuase when the view encounters an
+    # Commit the current transaction, because when the view encounters an
     # error, it aborts the transaction, blowing away the setup state.
     >>> transaction.commit()
 
