@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.scripts.logger import log as default_log
@@ -713,7 +714,37 @@ class BugWatchUpdater(object):
 
     def linkLaunchpadBug(self, remotesystem, bug_watch):
         """Link a Launchpad bug to a given remote bug."""
-        remotesystem.setLaunchpadBugId(bug_watch.remotebug, bug_watch.bug.id)
+        current_launchpad_id = remotesystem.getLaunchpadBugId(
+            bug_watch.remotebug)
+
+        if current_launchpad_id is None:
+            # If no bug is linked to the remote bug, link this one and
+            # then stop.
+            remotesystem.setLaunchpadBugId(
+                bug_watch.remotebug, bug_watch.bug.id)
+            return
+
+        elif current_launchpad_id == bug_watch.bug.id:
+            # If the current_launchpad_id is the same as the ID of the bug
+            # we're trying to link, we can stop.
+            return
+
+        else:
+            # If the current_launchpad_id isn't the same as the one
+            # we're trying to link, check that the other bug actually
+            # links to the remote bug. If it does, we do nothing, since
+            # the first valid link wins. Otherwise we link the bug that
+            # we've been passed, overwriting the previous value of the
+            # Launchpad bug ID for this remote bug.
+            other_launchpad_bug = getUtility(IBugSet).get(
+                current_launchpad_id)
+
+            other_bug_watch = other_launchpad_bug.getBugWatch(
+                bug_watch.bugtracker, bug_watch.remotebug)
+
+            if other_bug_watch is None:
+                remotesystem.setLaunchpadBugId(
+                    bug_watch.remotebug, bug_watch.bug.id)
 
     def _getOOPSProperties(self, remotesystem):
         """Return an iterable of 2-tuples (name, value) of OOPS properties.

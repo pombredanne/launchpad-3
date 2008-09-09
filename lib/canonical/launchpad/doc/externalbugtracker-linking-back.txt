@@ -20,7 +20,7 @@ about the bug.
     ...
     ...     def getLaunchpadBugId(self, remote_bug):
     ...         print "Getting Launchpad id for bug %s" % remote_bug
-    ...         self.last_launchpad_bug_id
+    ...         return self.last_launchpad_bug_id
     ...
     ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
     ...         self.last_launchpad_bug_id = launchpad_bug_id
@@ -37,6 +37,10 @@ The methods are called by the BugWatchUpdater class:
 
     >>> bug_watch = factory.makeBugWatch('42')
     >>> bug_watch_2 = factory.makeBugWatch('42')
+
+    # We fudge the bugtracker of bug_watch_2 for the sake of using it
+    # later for bug watch lookups.
+    >>> bug_watch_2.bugtracker = bug_watch.bugtracker
 
     >>> txn.commit()
     >>> LaunchpadZopelessLayer.switchDbUser('checkwatches')
