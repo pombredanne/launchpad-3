@@ -59,7 +59,6 @@ class ByteStorageResource(HTTPResource):
         except ValidationError, e:
             self.request.response.setStatus(400) # Bad Request
             return str(e)
-
         self.context.createStored(type, representation)
 
     def do_DELETE(self):
