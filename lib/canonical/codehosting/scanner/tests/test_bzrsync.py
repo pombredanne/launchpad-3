@@ -11,28 +11,23 @@ import random
 import time
 import unittest
 
-from bzrlib.branch import Branch
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
 from bzrlib.transport import (
     get_transport, register_transport, unregister_transport)
 from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
-from bzrlib.urlutils import (
-    local_path_from_url, join as urljoin)
 from bzrlib.tests import TestCaseWithTransport
 import pytz
 from zope.component import getUtility
 
-from canonical.codehosting.bzrutils import HttpAsLocalTransport
 from canonical.config import config
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType,
-    CodeReviewNotificationLevel, ControlFormat, IBranchSet, IPersonSet,
-    IRevisionSet, RepositoryFormat)
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, get_diff, get_revision_message)
@@ -45,7 +40,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     layer = LaunchpadZopelessLayer
 
-    AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
 
     def setUp(self):
@@ -56,9 +50,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
-        self.switchDbUser(config.branchscanner.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self._setUpFakeTransport()
-        self._setUpAuthor()
 
     def _setUpFakeTransport(self):
         # The scanner tests assume that branches live on a Launchpad virtual
@@ -82,11 +75,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.assertTrue(url.startswith(self._url_prefix))
         url = self._chroot_server.get_url() + url[len(self._url_prefix):]
         return get_transport(url)
-
-    def switchDbUser(self, user):
-        """We need to reset the config warehouse root after a switch."""
-        LaunchpadZopelessLayer.switchDbUser(user)
-        self.txn = LaunchpadZopelessLayer.txn
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -112,13 +100,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
-
-    def _setUpAuthor(self):
-        self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
-        if not self.db_author:
-            self.txn.begin()
-            self.db_author = RevisionAuthor(name=self.AUTHOR)
-            self.txn.commit()
 
     def getCounts(self):
         """Return the number of rows in core revision-related tables.
@@ -164,7 +145,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(self.txn, db_branch)
+        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -183,7 +164,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         if message is None:
             message = self.LOG
         if committer is None:
-            committer = self.AUTHOR
+            committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
@@ -227,7 +208,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
 
-        self.switchDbUser(self.lp_db_user)
+        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
 
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
@@ -248,7 +229,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
 
         LaunchpadZopelessLayer.txn.commit()
-        self.switchDbUser(config.branchscanner.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
@@ -313,13 +294,13 @@ class TestBzrSync(BzrSyncTestCase):
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
@@ -331,11 +312,11 @@ class TestBzrSync(BzrSyncTestCase):
         # 1 (in this case) revision has been removed,
         # and another email with the diff and log message.
         self.commitRevision('first')
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         self.uncommitRevision()
         self.commitRevision('second')
-        self.syncAndCount(new_revisions=1)
+        self.syncAndCount(new_revisions=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
@@ -344,9 +325,10 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertCounts(counts, new_revisions=1, new_numbers=1)
+        self.assertCounts(
+            counts, new_revisions=1, new_numbers=1, new_authors=1)
 
     def test_new_author(self):
         # Importing a different committer adds it as an author.
@@ -354,14 +336,14 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(committer=author)
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         db_author = RevisionAuthor.selectOneBy(name=author)
-        self.assertTrue(db_author)
         self.assertEquals(db_author.name, author)
 
     def test_new_parent(self):
         # Importing two revisions should import a new parent.
         self.commitRevision()
         self.commitRevision()
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
 
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
@@ -370,7 +352,7 @@ class TestBzrSync(BzrSyncTestCase):
         last_modified = self.db_branch.date_last_modified
         last_scanned = self.db_branch.last_scanned
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
         self.assertTrue(self.db_branch.last_scanned > last_scanned,
@@ -385,7 +367,8 @@ class TestBzrSync(BzrSyncTestCase):
                             timestamp=1000000000.0, timezone=0)
         self.commitRevision(rev_id='rev-2',
                             timestamp=1000000000.0, timezone=28800)
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
         rev_1 = Revision.selectOneBy(revision_id='rev-1')
         rev_2 = Revision.selectOneBy(revision_id='rev-2')
         UTC = pytz.timezone('UTC')
@@ -409,7 +392,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzr_ancestry, bzr_history = (
             bzrsync.retrieveBranchDetails(self.bzr_branch))
         self.assertEqual(
-            [('rev-1', 1)], 
+            [('rev-1', 1)],
             list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
 
     def test_get_revisions_branched(self):
@@ -527,8 +510,8 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
         # Fake revision with negative timestamp.
         fake_rev = BzrRevision(
             revision_id='rev42', parent_ids=['rev1', 'rev2'],
-            committer=self.AUTHOR, message=self.LOG, timestamp=old_timestamp,
-            timezone=0, properties={})
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=old_timestamp, timezone=0, properties={})
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
@@ -553,8 +536,8 @@ class TestBzrSyncModified(BzrSyncTestCase):
         """Make a fake Bazaar revision for testing `syncOneRevision`."""
         return BzrRevision(
             revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
-            committer=self.AUTHOR, message=self.LOG, timestamp=1000000000.0,
-            timezone=0, properties={})
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=1000000000.0, timezone=0, properties={})
 
     def makeSyncedRevision(self):
         """Return a fake revision that has already been synced.
@@ -570,7 +553,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
             fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
-            new_parents=len(parent_ids), new_authors=0)
+            new_parents=len(parent_ids), new_authors=1)
         return fake_revision
 
     def test_sync_twice(self):
@@ -654,7 +637,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
                          contents="Hello World\n")
-        self.commitRevision('second')
+        author = self.factory.getUniqueString()
+        self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(len(stub.test_emails), 2)
         [uncommit_email, recommit_email] = stub.test_emails
@@ -669,7 +653,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'Subject: [Branch %s] Rev 1: second'
             % self.db_branch.unique_name,
             'revno: 1',
-            'committer: Revision Author <author@example.com>',
+            'committer: %s' % author,
             'branch nick: %s'  % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',

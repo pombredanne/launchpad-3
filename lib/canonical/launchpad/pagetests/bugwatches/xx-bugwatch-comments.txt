@@ -126,3 +126,9 @@ be visible to him:
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(sabdfl_browser.contents)
+
+Anonymous users can't see the comment either.
+
+    >>> anon_browser.open('http://launchpad.dev/redfish/+bug/15/comments/1')
+    >>> print_comments(anon_browser.contents)
+
