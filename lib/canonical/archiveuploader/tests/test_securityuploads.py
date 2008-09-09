@@ -9,7 +9,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.ftests.test_uploadprocessor import (
+from canonical.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
