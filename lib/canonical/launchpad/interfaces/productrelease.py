@@ -13,7 +13,7 @@ __all__ = [
     'UpstreamFileType',
     ]
 
-from zope.schema import Bytes, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface
 from zope.component import getUtility
 
@@ -172,8 +172,8 @@ class IProductRelease(Interface):
         )
 
     owner = exported(
-            Object(title=u"The owner of this release.",
-                   schema=IPerson, required=True)
+            Reference(title=u"The owner of this release.",
+                      schema=IPerson, required=True)
             )
 
     productseries = exported(
@@ -229,8 +229,8 @@ class IProductRelease(Interface):
         )
 
     product = exported(
-        Object(title=u'The upstream project of this release.',
-               schema=Interface),
+        Reference(title=u'The upstream project of this release.',
+                  schema=Interface, readonly=True),
          exported_as="project")
 
     files = exported(
