@@ -654,7 +654,18 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             custom_widget=self.custom_widgets['destination_series'])
 
     def createIncludeBinariesField(self):
-        """Create the 'include_binaries' field."""
+        """Create the 'include_binaries' field.
+
+        'include_binaries' widget is a choice, rendered as radio-buttons,
+        with two options that provides a Boolean as its value:
+
+         ||      Option     || Value ||
+         || REBUILD_SOURCES || False ||
+         || COPY_BINARIES   || True  ||
+
+        When omitted in the form, this widget defaults for REBUILD_SOURCES
+        option when rendered.
+        """
         rebuild_sources = SimpleTerm(
                 False, 'REBUILD_SOURCES', _('Rebuild the copied sources'))
         copy_binaries = SimpleTerm(
