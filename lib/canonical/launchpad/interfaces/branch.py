@@ -69,6 +69,7 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.fields import ReferenceChoice
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -569,9 +570,15 @@ class IBranch(IHasOwner):
         "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
+    # ReferenceChoice is Interface rather than IProduct as IProduct imports
+    # IBranch and we'd get import errors.  IPerson does a similar trick.
+    # The schema is set properly to `IProduct` in _schema_circular_imports.
     product = exported(
-        Choice(
-            title=_('Project'), required=False, vocabulary='Product',
+        ReferenceChoice(
+            title=_('Project'),
+            required=False,
+            vocabulary='Product',
+            schema=Interface,
             description=_("The project this branch belongs to.")),
         exported_as='project')
 
