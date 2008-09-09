@@ -1155,14 +1155,27 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
 # ---- openid
 
-class OpenIdPublication(LaunchpadBrowserPublication):
+class IdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenId requests."""
+
+    root_object_interface = IOpenIdApplication
+
+
+class IdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.IdLayer)
+
+
+# XXX sinzui 2008-09-04 bug=264783:
+# Remove OpenIdPublication and OpenIdBrowserRequest.
+class OpenIdPublication(LaunchpadBrowserPublication):
+    """The publication used for old OpenId requests."""
 
     root_object_interface = IOpenIdApplication
 
 
 class OpenIdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.OpenIdLayer)
+
 
 # ---- xmlrpc
 

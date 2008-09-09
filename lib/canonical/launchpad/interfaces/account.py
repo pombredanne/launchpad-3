@@ -208,6 +208,12 @@ class IAccountPrivate(Interface):
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=True)
 
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove this attribute.
+    new_openid_identifier = TextLine(
+            title=_("Key used to generate New opaque OpenID identities."),
+            readonly=True, required=True)
+
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
 
@@ -219,11 +225,14 @@ class IAccount(IAccountPublic, IAccountPrivate):
 class IAccountSet(Interface):
     """Creation of and access to `IAccount` providers."""
 
-    def new(rationale, displayname,
+    def new(rationale, displayname, openid_mnemonic=None,
             password=None, password_is_encrypted=False):
         """Create a new `IAccount`.
 
         :param rationale: An `AccountStatus` value.
+        :param displayname: The user's display name.
+        :param openid_mnemonic: The human-readable component in the account's
+            openid_identifier.
         :param password: A password.
         :param password_is_encrypted: If True, the password parameter has
             already been encrypted using the `IPasswordEncryptor` utility.
@@ -242,5 +251,22 @@ class IAccountSet(Interface):
         """
 
     def getByOpenIdIdentifier(openid_identity):
-        """Return the `IAccount` with the given OpenID identifier, or None."""
+        """Return the `IAccount` with the given OpenID identifier.
 
+         :param open_identifier: A string that is either the old or new
+            openid_identifier that belongs to an account.
+         :return: An `IAccount`, or None if the the openid_identifier does
+            not belong to an account.
+         """
+
+    def createOpenIDIdentifier(mnemonic):
+        """Return a unique openid_identifier for OpenID identity URIs.
+
+        The identifier takes for form of 'nnn/mnemonic', where 'nnn' is
+        a random three digit sequence.
+
+        :param mnemonic: A string token that a user can remember.
+            eg. his user name.
+        :return: a unique string that no other user has, nor has ever been
+            used in the past.
+        """
