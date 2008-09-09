@@ -344,8 +344,6 @@ Public branches use the lp spec bzr lookup name.
     ...     branch_format=BranchFormat.BZR_BRANCH_5,
     ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
     >>> url = canonical_url(branch)
-    >>> unscanned_branch = factory.makeBranch()
-    >>> unscanned_url = canonical_url(unscanned_branch)
     >>> logout()
     >>> browser.open(url)
 
@@ -359,6 +357,31 @@ The data that we specified is shown on the web page.
     Repository format: Packs containing knits without subtree support
 
 
+=== Stacking ===
+
+Say we have one branch stacked on another:
+
+    >>> login('no-priv@canonical.com')
+    >>> stacked_on_branch = factory.makeBranch()
+    >>> stacked_branch = factory.makeBranch(stacked_on=stacked_on_branch)
+    >>> url = canonical_url(stacked_branch)
+    >>> stacked_on_name = stacked_on_branch.unique_name
+    >>> stacked_on_url = canonical_url(stacked_on_branch)
+    >>> logout()
+
+And we browse to the stacked branch:
+
+    >>> browser.open(url)
+
+The stacked-on information appears in the branch summary:
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'stacked-on'))
+    Stacked on: ...
+
+    >>> browser.getLink(stacked_on_name).url == stacked_on_url
+    True
+
+
 === Navigation Context ===
 
 The tabs shown for a branch depend on whether or not the branch is a junk
@@ -370,24 +393,24 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Location: GNOME Terminal
+    Hierarchy: Launchpad > GNOME Terminal
     Tabs:
-    * Overview (http://launchpad.dev/gnome-terminal)
-    * Code (http://code.launchpad.dev/gnome-terminal)
-    * Bugs (http://bugs.launchpad.dev/gnome-terminal)
-    * Blueprints (http://blueprints.launchpad.dev/gnome-terminal)
-    * Translations (http://translations.launchpad.dev/gnome-terminal)
-    * Answers (http://answers.launchpad.dev/gnome-terminal)
+    * Overview - http://launchpad.dev/gnome-terminal
+    * Code (selected) - http://code.launchpad.dev/gnome-terminal
+    * Bugs - http://bugs.launchpad.dev/gnome-terminal
+    * Blueprints - http://blueprints.launchpad.dev/gnome-terminal
+    * Translations - http://translations.launchpad.dev/gnome-terminal
+    * Answers - http://answers.launchpad.dev/gnome-terminal
     Main heading: ~name12/gnome-terminal/scanned
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Location: Sample Person
+    Hierarchy: Launchpad > Sample Person
     Tabs:
-    * Overview (http://launchpad.dev/~name12)
-    * Code (http://code.launchpad.dev/~name12)
-    * Bugs (http://bugs.launchpad.dev/~name12)
-    * Blueprints (http://blueprints.launchpad.dev/~name12)
-    * Translations (http://translations.launchpad.dev/~name12)
-    * Answers (http://answers.launchpad.dev/~name12)
+    * Overview - http://launchpad.dev/~name12
+    * Code (selected) - http://code.launchpad.dev/~name12
+    * Bugs - http://bugs.launchpad.dev/~name12
+    * Blueprints - http://blueprints.launchpad.dev/~name12
+    * Translations - http://translations.launchpad.dev/~name12
+    * Answers - http://answers.launchpad.dev/~name12
     Main heading: Ubuntu Junk Code

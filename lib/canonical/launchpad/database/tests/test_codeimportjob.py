@@ -761,7 +761,8 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         code_import = running_job.code_import
         ddaa = getUtility(IPersonSet).getByEmail(
             'david.allouche@canonical.com')
-        code_import.suspend({}, ddaa)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED}, ddaa)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertTrue(code_import.import_job is None)
@@ -975,8 +976,8 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         """Cause the code import job associated to the import to be deleted.
         """
         user = self.factory.makePerson()
-        getUtility(ICodeImportSet).get(code_import_id).suspend(
-            {}, user)
+        getUtility(ICodeImportSet).get(code_import_id).updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED}, user)
 
     @logged_in_as(ANONYMOUS)
     def startJob(self, code_import_id):
