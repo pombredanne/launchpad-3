@@ -176,6 +176,10 @@
         <th>Repository format:</th>
         <td tal:content="context/repository_format/description" />
       </tr>
+      <tr id="stacked-on" tal:condition="context/stacked_on">
+        <th>Stacked on:</th>
+        <td tal:content="structure context/stacked_on/fmt:link" />
+      </tr>
       </tbody>
   </table>
   <tal:branch-errors tal:replace="structure context/@@+messages" />
