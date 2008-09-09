@@ -390,7 +390,7 @@
           tal:content="structure link/render">
         All revisions
       </span>
-    <div>
+    </div>
 
   </tal:history-available>
 
