@@ -767,7 +767,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="launchpad.MailingListManager"
     class="canonical.launchpad.browser.TeamMailingListConfigurationView"
     name="+mailinglist"
     template="../templates/team-mailinglist.pt"

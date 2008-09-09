@@ -7,8 +7,11 @@
 __metaclass__ = type
 
 import os
+import pdb
 import re
 import simplejson
+import transaction
+import sys
 import unittest
 import urllib
 
@@ -53,7 +56,6 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb
             pdb.set_trace()
         try:
             return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
@@ -609,8 +611,19 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
+    test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'salgado-change-anything', port=9000)
@@ -656,6 +669,7 @@ def setUpGlobs(test):
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
+    test.globs['stop'] = stop
 
 
 class PageStoryTestCase(unittest.TestCase):
