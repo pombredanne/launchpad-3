@@ -26,7 +26,9 @@ class TestCodeReviewKarma(TestCaseWithFactory):
     karma_listener = None
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        # Use an admin to get launchpad.Edit on all the branches to easily
+        # approve and reject the proposals.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         # The way the zope infrastructure works is that we can register
         # subscribers easily, but there is no way to unregister them (bug
         # 2338).  TestEventListener does this with by setting a property to
