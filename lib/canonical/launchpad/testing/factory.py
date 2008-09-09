@@ -27,15 +27,14 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
-    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
-    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
+    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
+    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
+    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems,
+    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
