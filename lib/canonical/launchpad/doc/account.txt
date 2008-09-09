@@ -258,9 +258,10 @@ raised.
      ...
     AssertionError: The mnemonic must be a non-empty string.
 
-
 An error is raised if non-unique openid identifier cannot be created
-for the mnemonic.
+for the mnemonic. All Accounts are checked for to ensure that an
+openid identifier is not reused. In the unlikely chance that a
+unique random token cannot be found for a mnemonic, an error is raised.
 
     # Instrument the random number range to ensure a duplicate will
     # be generated.
@@ -269,19 +270,48 @@ for the mnemonic.
     1000
     >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1
 
-    >>> non_unique_account = naked_account_set.new(
+    # Use the only random token available for the openid identifier.
+    >>> non_unique_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'Non Unique',
     ...     openid_mnemonic='non-unique', password=u'clear_password')
     >>> syncUpdate(non_unique_account)
     >>> non_unique_account.new_openid_identifier
     u'000/non-unique'
 
-    >>> naked_account_set.createOpenIDIdentifier('non-unique')
+    >>> account_set.createOpenIDIdentifier('non-unique')
+    Traceback (most recent call last):
+     ...
+    AssertionError: An openid_identifier could not be created with the
+                    mnemonic 'non-unique'.
+
+All OpenIDRPSummaries are checked to ensure the openid identifier has
+never been used. An error is raised in the unlikely event that every
+random token for a mnemonic has been used in the past.
+
+    >>> from canonical.launchpad.database import OpenIDRPSummary
+
+    # Change the new_openid_identifier to ensure that the no account
+    # uses '000/non-unique'.
+    >>> removeSecurityProxy(
+    ...     non_unique_account).new_openid_identifier = '111/non-unique'
+    >>> syncUpdate(non_unique_account)
+    >>> print account_set.getByOpenIdIdentifier('000/non-unique')
+    None
+
+    # Add the openid identifier to the history of used openid identifiers.
+    # The model object is used because the OpenIDRPSummarySet.record() may
+    # use the old openid identifier.
+    >>> summary = OpenIDRPSummary(
+    ...     account=non_unique_account,
+    ...     openid_identifier='http://id.launchpad.dev/000/non-unique',
+    ...     trust_root='http://blog.org/')
+
+    >>> account_set.createOpenIDIdentifier('non-unique')
     Traceback (most recent call last):
      ...
     AssertionError: An openid_identifier could not be created with the
                     mnemonic 'non-unique'.
 
     # Restore random number range.
-    >>> removeSecurityProxy(account_set)._MAX_RANDOM_TOKEN_RANGE = 1000
+    >>> naked_account_set._MAX_RANDOM_TOKEN_RANGE = 1000
 
