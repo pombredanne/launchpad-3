@@ -547,12 +547,13 @@ class BaseTranslationView(LaunchpadView):
             # translation submitted, so we don't need to store anything.
             return None
 
-        is_fuzzy = self.form_posted_needsreview.get(potmsgset, False)
+        force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
-                self.pofile, self.user, translations, is_fuzzy,
-                is_imported=False, lock_timestamp=self.lock_timestamp)
+                self.pofile, self.user, translations,
+                is_imported=False, lock_timestamp=self.lock_timestamp,
+                force_suggestion=force_suggestion)
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -595,13 +596,13 @@ class BaseTranslationView(LaunchpadView):
         # so we prepare the new render with the same values.
         if current_translation_message.potmsgset in (
             self.form_posted_needsreview):
-            is_fuzzy = self.form_posted_needsreview[
+            force_suggestion = self.form_posted_needsreview[
                 current_translation_message.potmsgset]
         else:
-            is_fuzzy = current_translation_message.is_fuzzy
+            force_suggestion = False
 
         return view_class(current_translation_message, self.request,
-            plural_indices_to_store, translations, is_fuzzy, error,
+            plural_indices_to_store, translations, force_suggestion, error,
             self.second_lang_code, self.form_is_writeable)
 
     #
@@ -959,8 +960,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     #   self.pluralform_indices
 
     def __init__(self, current_translation_message, request,
-                 plural_indices_to_store, translations, is_fuzzy, error,
-                 second_lang_code, form_is_writeable):
+                 plural_indices_to_store, translations, force_suggestion,
+                 error, second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -969,8 +970,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         :param translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
             translations.
-        :param is_fuzzy: A flag that notes current fuzzy flag overlaid with
-            the form-submitted.
+        :param force_suggestion: Should this be a suggestion even for editors.
         :param error: The error related to self.context submission or None.
         :param second_lang_code: The result of submiting
             field.alternative_value.
@@ -982,7 +982,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
-        self.is_fuzzy = is_fuzzy
+        self.force_suggestion = force_suggestion
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable

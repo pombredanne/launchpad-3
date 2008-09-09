@@ -496,8 +496,10 @@ class POFileTranslateView(BaseTranslationView):
                 self.pofile.language)
             if translationmessage is not None:
                 self.start_offset += 1
-        elif self.show == 'need_review':
-            if not self.form_posted_needsreview.get(potmsgset, False):
+        elif self.show == 'new_suggestions':
+            new_suggestions = potmsgset.getLocalTranslationMessages(
+                self.pofile.language)
+            if len(new_suggestions) == 0:
                 self.start_offset += 1
         else:
             # This change does not mutate the batch.
@@ -531,8 +533,6 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.translatedCount()
         elif self.show == 'untranslated':
             self.shown_count = self.context.untranslatedCount()
-        elif self.show == 'need_review':
-            self.shown_count = self.context.fuzzy_count
         elif self.show == 'new_suggestions':
             self.shown_count = self.context.unreviewedCount()
         elif self.show == 'changed_in_launchpad':
@@ -566,8 +566,6 @@ class POFileTranslateView(BaseTranslationView):
                 ret = potemplate.getPOTMsgSets()
         elif self.show == 'translated':
             ret = pofile.getPOTMsgSetTranslated()
-        elif self.show == 'need_review':
-            ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
         elif self.show == 'new_suggestions':
