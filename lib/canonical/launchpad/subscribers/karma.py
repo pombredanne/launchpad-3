@@ -273,15 +273,14 @@ def branch_merge_proposed(proposal, event):
 
 @block_implicit_flushes
 def code_review_comment_added(code_review_comment, event):
-    """Assign karma to the user who commented the review."""
+    """Assign karma to the user who commented on the review."""
     proposal = code_review_comment.branch_merge_proposal
     product = proposal.source_branch.product
     # If the user is commenting on their own proposal, then they don't
-    # coun't as a reviewer for that proposal.
+    # count as a reviewer for that proposal.
     user = event.user
-    own_proposal = user.inTeam(proposal.registrant)
     reviewer = user.inTeam(proposal.target_branch.code_reviewer)
-    if reviewer and not own_proposal:
+    if reviewer and user != proposal.registrant:
         user.assignKarma('codereviewreviewercomment', product=product)
     else:
         user.assignKarma('codereviewcomment', product=product)
@@ -293,7 +292,7 @@ def branch_merge_approved(proposal, event):
     product = proposal.source_branch.product
     user = event.reviewer
 
-    if user.inTeam(proposal.registrant):
+    if user == proposal.registrant:
         user.assignKarma('branchmergeapprovedown', product=product)
     else:
         user.assignKarma('branchmergeapproved', product=product)
@@ -305,7 +304,7 @@ def branch_merge_rejected(proposal, event):
     product = proposal.source_branch.product
     user = event.reviewer
 
-    if user.inTeam(proposal.registrant):
+    if user == proposal.registrant:
         user.assignKarma('branchmergerejectedown', product=product)
     else:
         user.assignKarma('branchmergerejected', product=product)

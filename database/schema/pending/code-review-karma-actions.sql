@@ -1,7 +1,7 @@
 insert into karmaaction
 (category, points, name, title, summary)
 values
-(8, 1, 'branchmergeproposed', 'New branch merge proposed',
+(8, 1, 'branchmergeproposed', 'Branch merge proposed',
  'User proposed a branch for merging.');
 
 insert into karmaaction
@@ -38,5 +38,5 @@ insert into karmaaction
 (category, points, name, title, summary)
 values
 (8, 10, 'codereviewreviewercomment', 'Reviewer commented on a review',
- 'User commented on a code review.');
+ 'Reviewer commented on a code review.');
 

@@ -2630,13 +2630,13 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (50,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (51, 8, 5, 'bugbranchcreated', 'Branch linked to a bug', 'User linked a branch to a bug.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (52, 8, 5, 'specbranchcreated', 'Branch linked to a blueprint', 'User linked a branch to a blueprint.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (53, 8, 1, 'revisionadded', 'Revision added', 'A new revision by the user is available through Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (54, 8, 1, 'branchmergeproposed', 'New branch merge proposed', 'User proposed a branch for merging.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (54, 8, 1, 'branchmergeproposed', 'Branch merge proposed', 'User proposed a branch for merging.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (55, 8, 15, 'branchmergeapproved', 'Branch merge approved', 'User approved a branch for merging.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (56, 8, 0, 'branchmergeapprovedown', 'Branch merge approved', 'User approved their own branch for merging.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (57, 8, 15, 'branchmergerejected', 'Branch merge rejected', 'User rejected a proposed branch merge.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (58, 8, 15, 'branchmergerejectedown', 'Branch merge rejected', 'User rejected their own proposed branch merge.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (58, 8, 0, 'branchmergerejectedown', 'Branch merge rejected', 'User rejected their own proposed branch merge.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (59, 8, 0, 'codereviewcomment', 'Commented on a review', 'User commented on a code review.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (60, 8, 10, 'codereviewreviewercomment', 'Reviewer commented on a review', 'User commented on a code review.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (60, 8, 10, 'codereviewreviewercomment', 'Reviewer commented on a review', 'Reviewer commented on a code review.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
