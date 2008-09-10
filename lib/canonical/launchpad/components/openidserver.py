@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_openid_server_url',
+    'get_openid_vhost',
     'OpenIDPersistentIdentity',
     ]
 
@@ -19,12 +21,47 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
+def get_openid_server_url(vhost=None):
+    """The OpenID server URL for the current request.
+
+    The default server URL uses the 'id' vhost's root URL. If the `IRequest`
+    implements the `OpenIdLayer` layer, the 'openid' vhost is used.
+
+    :return: The OpenID server URL in the form of
+        'https://<vhost>.launchpad.net/+openid'
+    """
+    request = get_current_browser_request()
+    if OpenIdLayer.providedBy(request):
+        vhost = 'openid'
+    else:
+        vhost = 'id'
+    return allvhosts.configs[vhost].rooturl + '+openid'
+
+
+def get_openid_vhost():
+    """The OpenID server URL for the current request.
+
+    The default server URL uses the 'id' vhost's root URL. If the `IRequest`
+    implements the `OpenIdLayer` layer, the 'openid' vhost is used.
+
+    :return: The OpenID server URL in the form of
+        'https://<vhost>.launchpad.net/+openid'
+    """
+    request = get_current_browser_request()
+    if OpenIdLayer.providedBy(request):
+        return 'openid'
+    else:
+        return 'id'
+
+
 class OpenIDPersistentIdentity:
     """A persistent OpenID identifier for a user."""
 
     implements(IOpenIDPersistentIdentity)
 
     def __init__(self, account):
+        from canonical.launchpad.interfaces.account import IAccount
+        assert IAccount.providedBy(account), "FUCKING CALLSITE"
         self.account = account
 
     # XXX sinzui 2008-09-04 bug=264783:
@@ -50,7 +87,10 @@ class OpenIDPersistentIdentity:
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
         from zope.security.proxy import removeSecurityProxy
-        return '+id/' + removeSecurityProxy(self.account).openid_identifier
+        token = removeSecurityProxy(self.account).openid_identifier
+        if token is None:
+            return None
+        return '+id/' + token
 
     @property
     def old_openid_identity_url(self):
@@ -62,24 +102,34 @@ class OpenIDPersistentIdentity:
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
         request = get_current_browser_request()
-        if OpenIdLayer.providedBy(request):
+        only_old_identifier = (
+            self.new_openid_identifier is None
+            and self.openid_identifier is not None)
+        if only_old_identifier or OpenIdLayer.providedBy(request):
             # Support the old OpenID URL.
             return self.old_openid_identity_url
         return self.new_openid_identity_url
 
+    @property
+    def selected_openid_identifier(self):
+        """See `IOpenIDPersistentIdentity`."""
+        request = get_current_browser_request()
+        if OpenIdLayer.providedBy(request):
+            return self.openid_identifier
+        else:
+            return self.new_openid_identifier
+
     @staticmethod
     def supportsURL(identity_url):
         """See `IOpenIDPersistentIdentity`."""
-        # XXX sinzui 2008-09-04: This should be a condition that checks
-        # the current request, to learn which vhost is requested.
-        # Return True if the patch can be matched, otherwise False.
         request = get_current_browser_request()
         if OpenIdLayer.providedBy(request):
             identity_url_root = allvhosts.configs['openid'].rooturl
-            return identity_url.startswith(identity_url_root + '+id/')
+            return identity_url.startswith(identity_url_root + '+id')
         identity_url_root = allvhosts.configs['id'].rooturl
-        identity_url_re = re.compile(r'%s\d\d\d/' % identity_url_root)
+        identity_url_re = re.compile(r'%s\d\d\d[/\b]' % identity_url_root)
         return identity_url_re.match(identity_url) is not None
+
 
 def account_to_openidpersistentidentity(account):
     """Adapts an `IAccount` into an `IOpenIDPersistentIdentity`."""

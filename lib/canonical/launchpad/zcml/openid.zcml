@@ -26,6 +26,13 @@
         template="../templates/loginservice-main-template.pt"
         layer="canonical.launchpad.layers.OpenIdLayer" />
 
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="canonical.launchpad.layers.IdLayer" />
+
     <!-- Root document -->
 
     <browser:defaultView
@@ -35,6 +42,15 @@
 
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+index"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
+        template="../templates/openid-index.pt"
+        />
+
+    <browser:page
+        layer="canonical.launchpad.layers.IdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
@@ -59,6 +75,15 @@
         attribute="__call__"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        layer="canonical.launchpad.layers.IdLayer"
+        class="canonical.launchpad.browser.openidserver.PreAuthorizeRPView"
+        name="+pre-authorize-rp"
+        permission="launchpad.AnyPerson"
+        attribute="__call__"
+        />
+
     <!-- OpenID persistent identity URLs -->
     <content
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
@@ -74,9 +99,8 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
-        path_expression="string:${openid_identifier}"
+        path_expression="string:${selected_openid_identifier}"
         parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
-        rootsite="openid"
         />
 
     <browser:defaultView
@@ -100,9 +124,18 @@
         attribute="xrds"
         />
 
-    <!-- OpenID Provider -->
+    <!-- Old OpenID Provider -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+openid"
+        class="canonical.launchpad.browser.openidserver.OpenIdView"
+        />
+
+    <!-- New OpenID Provider -->
+    <browser:page
+        layer="canonical.launchpad.layers.IdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+openid"

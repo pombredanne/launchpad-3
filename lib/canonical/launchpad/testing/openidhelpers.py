@@ -20,6 +20,7 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
+from canonical.launchpad.components.openidserver import get_openid_server_url
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -52,6 +53,16 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
         return self.opener.open(request)
 
 
+def get_requested_server_url(url=None):
+    """Return the OpenID Server URL."""
+    if url is None:
+        # This is a gross hack to let many tests continue to assume there
+        # is only one end pint.
+        url = 'http://openid.launchpad.dev/'
+    vhost, rest_ = url[len('http://'):].split('.', 1)
+    return allvhosts.configs[vhost].rooturl + '+openid'
+
+
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
     """Create an endpoint for use with `Consumer.beginWithoutDiscovery`.
 
@@ -67,7 +78,7 @@ def make_endpoint(protocol_uri, claimed_id, local_id=None):
 
     endpoint = OpenIDServiceEndpoint()
     endpoint.type_uris = [protocol_uri]
-    endpoint.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+    endpoint.server_url = get_requested_server_url(claimed_id)
     endpoint.claimed_id = claimed_id
     endpoint.local_id = local_id or claimed_id
     return endpoint
@@ -88,7 +99,7 @@ def make_identifier_select_endpoint(protocol_uri):
         "Unexpected protocol URI: %s" % protocol_uri)
 
     endpoint = OpenIDServiceEndpoint()
-    endpoint.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+    endpoint.server_url = get_requested_server_url()
     if protocol_uri == OPENID_2_0_TYPE:
         endpoint.type_uris = [OPENID_IDP_2_0_TYPE]
     else:

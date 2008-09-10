@@ -1334,6 +1334,8 @@ def register_launchpad_request_publication_factories():
              TranslationsPublication),
         VHRP('bugs', BugsBrowserRequest, BugsPublication),
         VHRP('answers', AnswersBrowserRequest, AnswersPublication),
+        VHRP('id', IdBrowserRequest, IdPublication),
+        # XXX sinzui 2008-09-04 bug=264783: Remove openid.
         VHRP('openid', OpenIdBrowserRequest, OpenIdPublication),
         VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
              ShipItPublication),

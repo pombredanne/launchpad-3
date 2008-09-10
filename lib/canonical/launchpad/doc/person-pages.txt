@@ -50,6 +50,7 @@ are there any email addresses.
     >>> view.visible_email_addresses
     []
 
+
 Logged in user can see Mark's email addresses. The email addresses
 state is PUBLIC. There is a description of who can see the list of
 email addresses.

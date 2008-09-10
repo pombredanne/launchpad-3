@@ -218,6 +218,8 @@ class IOpenIDPersistentIdentity(Interface):
         'The new OpenID identity URL for the user.')
     openid_identity_url = Attribute(
         'The OpenID identity URL for the user.')
+    selected_openid_identifier = Attribute(
+        'The OpenID identifier used with the request.')
 
     def supportsURL(identity_url):
         """Return True if the identity_url format is supported, or False."""

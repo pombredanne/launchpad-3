@@ -31,7 +31,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
+    get_openid_server_url, OpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -47,7 +47,6 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -87,7 +86,7 @@ class OpenIdMixin:
     def __init__(self, context, request):
         super(OpenIdMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.server_url = get_openid_server_url()
         self.openid_server = Server(store_factory(), self.server_url)
 
     @property
