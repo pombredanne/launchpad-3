@@ -160,18 +160,6 @@ class BMPMailer(BaseMailer):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
-    def _getHeaders(self, email):
-        """Return the mail headers to use."""
-        headers = BaseMailer._getHeaders(self, email)
-        reason, rationale = self._recipients.getReason(email)
-        headers['X-Launchpad-Branch'] = reason.branch.unique_name
-        if reason.branch.product is not None:
-            headers['X-Launchpad-Project'] = reason.branch.product.name
-        in_reply_to = self._getInReplyTo()
-        if in_reply_to is not None:
-            headers['In-Reply-To'] = in_reply_to
-        return headers
-
     def _getInReplyTo(self):
         return self.merge_proposal.root_message_id
 
@@ -208,7 +196,6 @@ class BMPMailer(BaseMailer):
             message_id = self.message_id
             if message_id is None:
                 message_id = get_msgid()
-            headers = self._getHeaders(email)
             reason, rationale = self._recipients.getReason(email)
             if reason.branch.product is not None:
                 branch_project_name = reason.branch.product.name
