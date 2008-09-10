@@ -144,6 +144,10 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
         if file_upload is not None and len(data['description']) > 0:
+            # XXX Edwin Grubbs 2008-09-10 bug=268680
+            # Once python-magic is available on the production servers,
+            # the content-type should be verified instead of trusting
+            # the extension that mimetypes.guess_type() examines.
             content_type, encoding = mimetypes.guess_type(
                 file_upload.filename)
 
