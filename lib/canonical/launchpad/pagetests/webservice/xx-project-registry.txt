@@ -299,25 +299,75 @@ The latest projects registered can be retrieved.
 
 The project collection has a method for creating a new project.
 
-    >>> def create_project(name, display_name, title, summary):
+    >>> def create_project(name, display_name, title, summary,
+    ...                    description=None, project=None, homepage_url=None,
+    ...                    screenshots_url=None, wiki_url=None,
+    ...                    download_url=None, freshmeat_project=None,
+    ...                    sourceforge_project=None, programming_lang=None,
+    ...                    licenses=(), license_info=None,
+    ...                    registrant=None):
     ...     return webservice.named_post(
     ...         "/projects", "new_project",
     ...         name=name, display_name=display_name,
-    ...         title=title, summary=summary)
+    ...         title=title, summary=summary, description=description,
+    ...         homepage_url=homepage_url, screenshots_url=screenshots_url,
+    ...         wiki_url=wiki_url, download_url=download_url,
+    ...         freshmeat_project=freshmeat_project,
+    ...         sourceforge_project=sourceforge_project,
+    ...         programming_lang=programming_lang,
+    ...         licenses=licenses, license_info=license_info,
+    ...         registrant=registrant)
 
-    >>> print webservice.get('/nuevo-project', 'Nuevo Project')
+Verify a project does not exist and then create it.
+
+    >>> print webservice.get('/my-new-project')
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print create_project('nuevo-project', 'Nuevo Project',
-    ...     'Nuevo Project', 'El Project Nuevo')
+    >>> print create_project('my-new-project', 'My New Project',
+    ...     'My New Project', 'My Shiny New Project',
+    ...     licenses=["Zope Public License", "GNU GPL v2"],
+    ...     wiki_url="http://example.com/shiny")
     HTTP/1.1 201 Created
     ...
-    Location: http://.../nuevo-project
+    Location: http://.../my-new-project
     <BLANKLINE>
 
-    >>> print webservice.get('/nuevo-project', 'Nuevo Project')
+    >>> print webservice.get('/my-new-project')
     HTTP/1.1 200 Ok
+    ...
+
+    >>> new_project = webservice.get('/my-new-project').jsonBody()
+    >>> print new_project['name']
+    my-new-project
+    >>> print new_project['display_name']
+    My New Project
+    >>> print new_project['summary']
+    My Shiny New Project
+    >>> print sorted(new_project['licenses'])
+    [u'GNU GPL v2', u'Zope Public License']
+    >>> print new_project['homepage_url']
+    None
+
+Attempting to create a project with a name that has already been used
+is an error.
+
+    >>> print create_project('my-new-project', 'My New Project',
+    ...     'My New Project', 'My Shiny New Project')
+    HTTP/1.1 400 Bad Request
+    ...
+    name: my-new-project is already used by another project
+
+If the fields do not validate a Bad Request error is received.  Here
+the URL is not properly formed.
+
+    >>> print create_project('my-new-project', 'My New Project',
+    ...     'My New Project', 'My Shiny New Project',
+    ...     wiki_url="htp://badurl.example.com")
+    HTTP/1.1 400 Bad Request
+    ...
+    wiki_url: The URI scheme "htp" is not allowed.  Only URIs with the
+    following schemes may be used: ftp, http, https
     ...
 
 

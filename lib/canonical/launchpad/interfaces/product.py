@@ -553,21 +553,18 @@ class IProductSet(Interface):
     @rename_parameters_as(
         displayname='display_name', project='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
-        wikiurl='wiki_url', freshmeatproject='freshmeat_project',
+        freshmeatproject='freshmeat_project', wikiurl='wiki_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
-    @operation_parameters()
-    @export_operation_as('new_project')
     @export_factory_operation(
         IProduct, ['name', 'displayname', 'title', 'summary', 'description',
-                   'project', 'homepageurl', 'screenshotsurl', 'wikiurl',
-                   'downloadurl', 'freshmeatproject',
+                   'project', 'homepageurl', 'screenshotsurl',
+                   'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'license_reviewed', 'mugshot', 'logo',
-                   'icon', 'licenses', 'license_info',
-                   'registrant'])
+                   'licenses', 'license_info', 'registrant'])
+    @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
