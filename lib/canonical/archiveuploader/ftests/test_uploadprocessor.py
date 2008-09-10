@@ -217,8 +217,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         msg = message_from_string(raw_msg)
 
         # This is now a MIMEMultipart message.
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        body = self.extractMIMEPartFromMessage(0, msg)
 
         # Only check recipients if callsite didn't provide an empty list.
         if recipients != []:
@@ -240,6 +239,10 @@ class TestUploadProcessorBase(unittest.TestCase):
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
 
+    def extractMIMEPartFromMessage(self, index, message):
+        """Return `Message` from MIME part at index."""
+        part = message.get_payload(index)
+        return part.get_payload(decode=True)
 
 class TestUploadProcessor(TestUploadProcessorBase):
     """Basic tests on uploadprocessor class.
@@ -308,8 +311,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # This is now a MIMEMultipart message.
         msg = message_from_string(raw_msg)
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        body = self.extractMIMEPartFromMessage(0, msg)
 
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
