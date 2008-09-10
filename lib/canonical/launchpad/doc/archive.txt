@@ -1122,7 +1122,7 @@ including PPA, PRIMARY, PARTNER and COPY:
     14
 
     >>> print sorted(set(archive_purposes))
-    ['PARTNER', 'PPA', 'PRIMARY', 'COPY']
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
 ArchiveSet utility also offers counters for:
 
