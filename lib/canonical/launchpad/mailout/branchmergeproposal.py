@@ -7,15 +7,11 @@
 __metaclass__ = type
 
 
-from zope.component import getUtility
-
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.mail import format_address, get_msgid
-from canonical.launchpad.mailout.basemailer import BaseMailer
-from canonical.launchpad.interfaces import (
-    CodeReviewNotificationLevel, ICodeMailJobSource)
+from canonical.launchpad.mail import get_msgid
+from canonical.launchpad.mailout.branch import BranchMailer
+from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
-from zope.security.proxy import removeSecurityProxy
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
@@ -87,24 +83,19 @@ class RecipientReason:
         return (self.reason_template % template_values)
 
 
-class BMPMailer(BaseMailer):
+class BMPMailer(BranchMailer):
     """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None):
-        BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta, message_id)
+        BranchMailer.__init__(self, subject, template_name, recipients,
+            from_address, delta, message_id)
         self.merge_proposal = merge_proposal
 
     def sendAll(self):
-        for job in self.queue():
-            job.sendMail()
+        BranchMailer.sendAll(self)
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
-
-    @staticmethod
-    def _format_user_address(user):
-        return format_address(user.displayname, user.preferredemail.email)
 
     @classmethod
     def forCreation(klass, merge_proposal, from_user):
@@ -165,7 +156,7 @@ class BMPMailer(BaseMailer):
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
-        params = BaseMailer._getTemplateParams(self, email)
+        params = BranchMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.displayname,
@@ -176,43 +167,3 @@ class BMPMailer(BaseMailer):
             'whiteboard': self.merge_proposal.whiteboard
             })
         return params
-
-    def generateEmail(self, subscriber):
-        """Rather roundabout.  Best not to use..."""
-        job = removeSecurityProxy(self.queue([subscriber])[0])
-        message = job.toMessage()
-        job.destroySelf()
-        headers = dict(message.items())
-        del headers['Date']
-        del headers['From']
-        del headers['To']
-        del headers['Subject']
-        return (headers, message['Subject'], message.get_payload(decode=True))
-
-    def queue(self, recipient_people=None):
-        jobs = []
-        source = getUtility(ICodeMailJobSource)
-        for email, to_address in self.iterRecipients(recipient_people):
-            message_id = self.message_id
-            if message_id is None:
-                message_id = get_msgid()
-            reason, rationale = self._recipients.getReason(email)
-            if reason.branch.product is not None:
-                branch_project_name = reason.branch.product.name
-            else:
-                branch_project_name = None
-            mail = source.create(
-                from_address=self.from_address,
-                to_address=to_address,
-                rationale=rationale,
-                branch_url=reason.branch.unique_name,
-                subject=self._getSubject(email),
-                body=self._getBody(email),
-                footer='',
-                message_id=message_id,
-                in_reply_to=self._getInReplyTo(),
-                reply_to_address = self._getReplyToAddress(),
-                branch_project_name = branch_project_name,
-                )
-            jobs.append(mail)
-        return jobs

@@ -5,12 +5,18 @@
 __metaclass__ = type
 
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch)
-from canonical.launchpad.mail import simple_sendmail, format_address
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
+    ICodeMailJobSource)
+from canonical.launchpad.mail import (get_msgid, simple_sendmail,
+    format_address)
 from canonical.launchpad.mailout import text_delta
+from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -137,3 +143,55 @@ def send_branch_modified_notifications(branch, event):
         event.user.displayname, event.user.preferredemail.email)
     email_branch_modified_notifications(
         branch, to_addresses, from_address, contents, recipients)
+
+
+class BranchMailer(BaseMailer):
+    """Send email notifications about a branch."""
+
+    def sendAll(self):
+        for job in self.queue():
+            job.sendMail()
+
+    def generateEmail(self, subscriber):
+        """Rather roundabout.  Best not to use..."""
+        job = removeSecurityProxy(self.queue([subscriber])[0])
+        message = job.toMessage()
+        job.destroySelf()
+        headers = dict(message.items())
+        del headers['Date']
+        del headers['From']
+        del headers['To']
+        del headers['Subject']
+        return (headers, message['Subject'], message.get_payload(decode=True))
+
+    @staticmethod
+    def _format_user_address(user):
+        return format_address(user.displayname, user.preferredemail.email)
+
+    def queue(self, recipient_people=None):
+        jobs = []
+        source = getUtility(ICodeMailJobSource)
+        for email, to_address in self.iterRecipients(recipient_people):
+            message_id = self.message_id
+            if message_id is None:
+                message_id = get_msgid()
+            reason, rationale = self._recipients.getReason(email)
+            if reason.branch.product is not None:
+                branch_project_name = reason.branch.product.name
+            else:
+                branch_project_name = None
+            mail = source.create(
+                from_address=self.from_address,
+                to_address=to_address,
+                rationale=rationale,
+                branch_url=reason.branch.unique_name,
+                subject=self._getSubject(email),
+                body=self._getBody(email),
+                footer='',
+                message_id=message_id,
+                in_reply_to=self._getInReplyTo(),
+                reply_to_address = self._getReplyToAddress(),
+                branch_project_name = branch_project_name,
+                )
+            jobs.append(mail)
+        return jobs
