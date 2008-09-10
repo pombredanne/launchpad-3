@@ -116,7 +116,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
              'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
-             'resubmit']
+             'resubmit', 'update_merge_revno']
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
@@ -177,6 +177,11 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.MERGED)
         return Link('+merged', text, enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def update_merge_revno(self):
+        text = 'Update revision number'
+        return Link('+merged', text)
 
     @enabled_with_permission('launchpad.Edit')
     def enqueue(self):

@@ -68,9 +68,11 @@
   <p id="proposal-merged" tal:condition="context/merged_revno">
     This proposal was merged at revision
     <tal:revno replace="context/merged_revno" />
-    <a href="+merged">
-      <img src="/@@/edit" alt="Edit merge revision"
-        title="Edit merge revision" />
+
+    <a tal:define="link context_menu/update_merge_revno"
+       tal:condition="link/enabled"
+       tal:attributes="href link/url"
+       ><img src="/@@/edit" tal:attributes="title link/text; alt link/text" />
     </a>
   </p>
 
