@@ -574,6 +574,7 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def translators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
