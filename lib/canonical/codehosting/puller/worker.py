@@ -484,6 +484,8 @@ class PullerWorker:
                     if stacked_on_url is not None:
                         raise AssertionError(
                             "Couldn't set stacked_on_url %r" % stacked_on_url)
+                except errors.NotBranchError:
+                    raise StackedOnBranchNotFound()
                 branch.pull(source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
@@ -497,6 +499,17 @@ class PullerWorker:
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
+        try:
+            stacked_on_branch_url = source_branch.get_stacked_on_url()
+        except (errors.UnstackableBranchFormat,
+                errors.UnstackableBranchFormat,
+                errors.NotStacked):
+            pass
+        else:
+            stacked_on_branch_url = urlutils.join(
+                self.dest, stacked_on_branch_url)
+            if not get_transport(stacked_on_branch_url).has('.'):
+                raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
 

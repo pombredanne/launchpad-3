@@ -149,7 +149,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
 
-    def testRaisesStackedOnBranchNotFoundRemirror(self):
+    def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
         # update, then raise StackedOnBranchNotFound. This will ensure the
         # puller will mirror the stacked branch as soon as the stacked-on
@@ -162,9 +162,25 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.get_transport('mirrored-area').ensure_base()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
+
+    def testRaisesStackedOnBranchNotFoundRemirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # update, then raise StackedOnBranchNotFound. This will ensure the
+        # puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
         # XXX: This should actually raise an error, I think. Talk to mwh about
         # it tomorrow -- brain dead now. 2008-09-10.
         to_mirror.mirrorWithoutChecks()
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
         self.assertRaises(
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
