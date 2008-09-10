@@ -3,11 +3,12 @@
 
 import unittest
 
-from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian import db
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -50,7 +51,8 @@ class TestTransactionDecorators(unittest.TestCase):
 
     def setUp(self):
         self.layer.switchDbUser('librarian')
-        self.store = getUtility(IZStorm).get('main')
+        self.store = getUtility(IStoreSelector).get(
+                MAIN_STORE, DEFAULT_FLAVOR)
         self.content_id = db.Library().add('deadbeef', 1234, 'abababab')
         self.file_content = self._getTestFileContent()
         transaction.commit()

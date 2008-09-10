@@ -55,18 +55,18 @@ is labelled "Launchpad Home" to make clear where it goes.
 
     >>> anon_browser.open('http://code.launchpad.dev/')
     >>> print_location_apps(anon_browser.contents)
-    * Launchpad Home (http://launchpad.dev/)
-    * Code (http://code.launchpad.dev/)
-    * Bugs (http://bugs.launchpad.dev/)
-    * Blueprints (http://blueprints.launchpad.dev/)
-    * Translations (http://translations.launchpad.dev/)
-    * Answers (http://answers.launchpad.dev/)
+    * Launchpad Home - http://launchpad.dev/
+    * Code (selected) - http://code.launchpad.dev/
+    * Bugs - http://bugs.launchpad.dev/
+    * Blueprints - http://blueprints.launchpad.dev/
+    * Translations - http://translations.launchpad.dev/
+    * Answers - http://answers.launchpad.dev/
 
     >>> user_browser.open('http://answers.launchpad.dev/')
     >>> print_location_apps(user_browser.contents)
-    * Launchpad Home (http://launchpad.dev/)
-    * Code (http://code.launchpad.dev/)
-    * Bugs (http://bugs.launchpad.dev/)
-    * Blueprints (http://blueprints.launchpad.dev/)
-    * Translations (http://translations.launchpad.dev/)
-    * Answers (http://answers.launchpad.dev/)
+    * Launchpad Home - http://launchpad.dev/
+    * Code - http://code.launchpad.dev/
+    * Bugs - http://bugs.launchpad.dev/
+    * Blueprints - http://blueprints.launchpad.dev/
+    * Translations - http://translations.launchpad.dev/
+    * Answers (selected) - http://answers.launchpad.dev/

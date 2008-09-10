@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import warnings
 from datetime import datetime
+import re
 
 import psycopg2
 from psycopg2.extensions import (
@@ -12,7 +13,6 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
-from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
 
@@ -21,6 +21,7 @@ from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
 __all__ = [
@@ -103,6 +104,15 @@ class StupidCache:
 storm.store.Cache = StupidCache
 
 
+def _get_sqlobject_store():
+    """Return the store used by the SQLObject compatibility layer."""
+    # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
+    # around a particularly convoluted circular import.
+    from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
     """A SQLObject style for launchpad.
 
@@ -159,7 +169,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @staticmethod
     def _get_store():
-        return getUtility(IZStorm).get('main')
+        return _get_sqlobject_store()
 
     def __repr__(self):
         # XXX jamesh 2008-05-09:
@@ -189,12 +199,35 @@ class ZopelessTransactionManager(object):
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
                      isolation=ISOLATION_LEVEL_DEFAULT):
+        # Get the existing connection info. We use the MAIN MASTER
+        # Store, as this is the only Store code still using this
+        # deprecated code interacts with.
+        connection_string = config.database.main_master
+
+        # Override dbname and dbhost in the connection string if they
+        # have been passed in.
+        if dbname is not None:
+            connection_string = re.sub(
+                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+        else:
+            match = re.search(r'dbname=(\S*)', connection_string)
+            if match is not None:
+                dbname = match.group(1)
+
+        if dbhost is not None:
+            connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+        else:
+            match = re.search(r'host=(\S*)', connection_string)
+            if match is not None:
+                dbhost = match.group(1)
+
+        if dbuser is None:
+            dbuser = config.launchpad.dbuser
+
         # Construct a config fragment:
         overlay = '[database]\n'
-        if dbname:
-            overlay += 'dbname: %s\n' % dbname
-        if dbhost:
-            overlay += 'dbhost: %s\n' % dbhost
+        overlay += 'main_master: %s\n' % connection_string
         overlay += 'isolation_level: %s\n' % {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
@@ -211,7 +244,6 @@ class ZopelessTransactionManager(object):
             # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=3)
         else:
-            from canonical.config import config
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
             cls._dbname = dbname
@@ -224,12 +256,14 @@ class ZopelessTransactionManager(object):
 
     @staticmethod
     def _reset_store():
-        """Reset the main store.
+        """Reset the MAIN DEFAULT store.
 
         This is required for connection setting changes to be made visible.
+
+        Other stores do not need to be reset, as code using other stores
+        or explicit flavors isn't using this compatibility layer.
         """
-        zstorm = getUtility(IZStorm)
-        store = getUtility(IZStorm).get('main')
+        store = _get_sqlobject_store()
         connection = store._connection
         if connection._state == storm.database.STATE_CONNECTED:
             if connection._raw_connection is not None:
@@ -246,7 +280,6 @@ class ZopelessTransactionManager(object):
         """
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
-        from canonical.config import config
         config.pop(cls._CONFIG_OVERLAY_NAME)
         cls._reset_store()
         cls._installed = None
@@ -269,7 +302,7 @@ class ZopelessTransactionManager(object):
 
     @staticmethod
     def conn():
-        store = getUtility(IZStorm).get("main")
+        store = _get_sqlobject_store()
         # Use of the raw connection will not be coherent with Storm's
         # cache.
         connection = store._connection
@@ -293,18 +326,22 @@ class ZopelessTransactionManager(object):
 
 
 def clear_current_connection_cache():
-    """Clear SQLObject's object cache for the current connection."""
-    getUtility(IZStorm).get('main').invalidate()
+    """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.
+    """
+    _get_sqlobject_store().invalidate()
+
 
 def expire_from_cache(obj):
-    """Expires a single object from the SQLObject cache."""
-    getUtility(IZStorm).get('main').invalidate(obj)
+    """Expires a single object from the SQLObject cache.
+    SQLObject compatibility - DEPRECATED."""
+    _get_sqlobject_store().invalidate(obj)
 
 
 def get_transaction_timestamp():
-    """Get the timestamp for the current transaction."""
-    store = getUtility(IZStorm).get('main')
-    timestamp = store.execute(
+    """Get the timestamp for the current transaction on the MAIN DEFAULT
+    store. DEPRECATED - if needed it should become a method on the store.
+    """
+    timestamp = _get_sqlobject_store().execute(
         "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'").get_one()[0]
     return timestamp.replace(tzinfo=pytz.timezone('UTC'))
 
@@ -368,6 +405,7 @@ def quote(x):
         x = list(x)
     return sqlrepr(x, 'postgres')
 
+
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
@@ -405,6 +443,7 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
 
 def sqlvalues(*values, **kwvalues):
     """Return a tuple of converted sql values for each value in some_tuple.
@@ -470,7 +509,11 @@ def quoteIdentifier(identifier):
 
 
 def flush_database_updates():
-    """Flushes all pending database updates for the current connection.
+    """Flushes all pending database updates for the MAIN DEFAULT store.
+
+    We only bother with the MAIN DEFAULT store as this is all that is needed
+    for the SQLObject compatibility layer. Storm aware code should be using
+    the Storm stores directly.
 
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
@@ -492,11 +535,12 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    getUtility(IZStorm).get('main').flush()
+    _get_sqlobject_store().flush()
 
 
 def flush_database_caches():
     """Flush all cached values from the database for the current connection.
+    SQLObject compatibility - DEPRECATED.
 
     SQLObject caches field values from the database in SQLObject
     instances.  If SQL statements are issued that change the state of
@@ -507,7 +551,7 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    store = getUtility(IZStorm).get('main')
+    store = _get_sqlobject_store()
     store.flush()
     store.invalidate()
 
@@ -515,7 +559,7 @@ def flush_database_caches():
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
     def wrapped(*args, **kwargs):
-        store = getUtility(IZStorm).get("main")
+        store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
@@ -530,7 +574,7 @@ def reset_store(func):
         try:
             return func(*args, **kwargs)
         finally:
-            getUtility(IZStorm).get("main").reset()
+            _get_sqlobject_store().reset()
     return mergeFunctionMetadata(func, wrapped)
 
 
@@ -548,19 +592,36 @@ def commit():
     transaction.commit()
 
 def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
-    """Return a fresh DB-API connecction to the database.
+    """Return a fresh DB-API connection to the MAIN MASTER database.
+
+    DEPRECATED - if needed, this should become a method on the Store.
 
     Use None for the user to connect as the default PostgreSQL user.
     This is not the default because the option should be rarely used.
 
     Default database name is the one specified in the main configuration file.
     """
-    from canonical.config import config
-    con_str = 'dbname=%s' % (dbname or config.database.dbname)
-    if user:
-        con_str += ' user=%s' % user
-    if config.database.dbhost:
-        con_str += ' host=%s' % config.database.dbhost
+    from canonical import lp
+    # We start with the config string from the config file, and overwrite
+    # with the passed in dbname or modifications made by db_options()
+    # command line arguments. This will do until db_options gets an overhaul.
+    con_str = config.database.main_master
+    con_str_overrides = []
+    assert 'user=' not in con_str, (
+            'Connection string already contains username')
+    if user is not None:
+        con_str_overrides.append('user=%s' % user)
+    if lp.dbhost is not None:
+        con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
+        con_str_overrides.append('host=%s' % lp.dbhost)
+    if dbname is None:
+        dbname = lp.dbname # Note that lp.dbname may be None.
+    if dbname is not None:
+        con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
+        con_str_overrides.append('dbname=%s' % dbname)
+
+    con_str = ' '.join([con_str] + con_str_overrides)
+
     con = psycopg2.connect(con_str)
     con.set_isolation_level(isolation)
     return con
@@ -569,10 +630,11 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 class cursor:
     """A DB-API cursor-like object for the Storm connection.
 
-    Use of this class is deprecated in favour of using Store.execute().
+    DEPRECATED - use of this class is deprecated in favour of using
+    Store.execute().
     """
     def __init__(self):
-        self._connection = getUtility(IZStorm).get('main')._connection
+        self._connection = _get_sqlobject_store()._connection
         self._result = None
 
     def execute(self, query, params=None):

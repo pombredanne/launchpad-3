@@ -12,7 +12,6 @@ import email
 import pytz
 from storm.expr import And, Asc, Desc, Exists, Not, Select
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
@@ -24,10 +23,11 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IProduct, IProject,
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
+    IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -77,9 +77,15 @@ class Revision(SQLBase):
             # No karma for junk branches as we need a product to link
             # against.
             karma = author.assignKarma('revisionadded', branch.product)
-            # Backdate the karma to the time the revision was created.
+            # Backdate the karma to the time the revision was created.  If the
+            # revision_date on the revision is in future (for whatever weird
+            # reason) we will use the date_created from the revision (which
+            # will be now) as the karma date created.  Having future karma
+            # events is both wrong, as the revision has been created (and it
+            # is lying), and a problem with the way the Launchpad code
+            # currently does its karma degradation over time.
             if karma is not None:
-                karma.datecreated = self.revision_date
+                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
 
     def getBranch(self, allow_private=False, allow_junk=True):
@@ -293,7 +299,7 @@ class RevisionSet:
         from canonical.launchpad.database.branchrevision import BranchRevision
         from canonical.launchpad.database.person import ValidPersonCache
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # XXX: Tim Penhey 2008-08-12, bug 244768
         # Using Not(column == None) rather than column != None.
@@ -310,7 +316,7 @@ class RevisionSet:
                        (Branch, BranchRevision))))
 
     @staticmethod
-    def getPublicRevisionsForPerson(person):
+    def getPublicRevisionsForPerson(person, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -330,6 +336,7 @@ class RevisionSet:
         result_set = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
+            revision_time_limit(day_limit),
             person_query,
             Exists(
                 Select(True,
@@ -340,7 +347,7 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProduct(product):
+    def getPublicRevisionsForProduct(product, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -348,6 +355,7 @@ class RevisionSet:
 
         result_set = Store.of(product).find(
             Revision,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -358,7 +366,7 @@ class RevisionSet:
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getPublicRevisionsForProject(project):
+    def getPublicRevisionsForProject(project, day_limit=30):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from canonical.launchpad.database.branch import Branch
@@ -367,6 +375,7 @@ class RevisionSet:
 
         result_set = Store.of(project).find(
             Revision,
+            revision_time_limit(day_limit),
             Exists(
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
@@ -377,3 +386,12 @@ class RevisionSet:
                        (Branch, BranchRevision, Product))))
         return result_set.order_by(Desc(Revision.revision_date))
 
+
+def revision_time_limit(day_limit):
+    """The storm fragment to limit the revision_date field of the Revision."""
+    now = datetime.now(pytz.UTC)
+    earliest = now - timedelta(days=day_limit)
+
+    return And(
+        Revision.revision_date <= now,
+        Revision.revision_date > earliest)

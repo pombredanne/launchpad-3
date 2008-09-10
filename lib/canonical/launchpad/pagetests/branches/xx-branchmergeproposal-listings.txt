@@ -56,12 +56,6 @@ for these.
     >>> print browser.title
     Active code reviews for Fooix
 
-The listing page also has the summary section.
-
-    >>> print_tag_with_id(browser.contents, 'application-summary')
-    4 branches owned by 3 people, ...
-    2 active reviews, 1 approved merge ...
-
 The proposals are listed in a table that shows the source and target branches,
 who requested the merge, the date the review was requested, and the vote
 summary.
@@ -74,8 +68,10 @@ summary.
     lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
             Bob           ...                     no votes (no comments)
 
-The approved merges has the date the merge was approved.
+We go back to the proposals listing , and check the approved merges has 
+the date the merge was approved.
 
+    >>> browser.open('http://code.launchpad.dev/fooix')
     >>> browser.getLink('approved merge').click()
     >>> print browser.title
     Approved merges for Fooix
