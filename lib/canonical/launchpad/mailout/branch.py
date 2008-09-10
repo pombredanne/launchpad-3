@@ -154,8 +154,8 @@ class BranchMailer(BaseMailer):
 
     def generateEmail(self, subscriber):
         """Rather roundabout.  Best not to use..."""
-        job = removeSecurityProxy(self.queue([subscriber])[0])
-        message = job.toMessage()
+        job = self.queue([subscriber])[0]
+        message = removeSecurityProxy(job.toMessage())
         job.destroySelf()
         headers = dict(message.items())
         del headers['Date']
