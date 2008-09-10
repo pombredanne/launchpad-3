@@ -9,10 +9,13 @@ Pillars are currently Product, Project and Distribution.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int
+from zope.schema import Bool, Int, TextLine
 
 from canonical.launchpad import _
-from canonical.lazr.rest.declarations import exported
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported,
+    operation_parameters, operation_returns_entry, export_read_operation)
 
 
 __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
@@ -26,7 +29,7 @@ class IPillar(Interface):
 
 class IPillarName(Interface):
     id = Int(title=_('The PillarName ID'))
-    name = Attribute('The name')
+    name = TextLine(title=u"The name.")
     product = Attribute('The project that has this name, or None')
     project = Attribute('The project that has this name, or None')
     distribution = Attribute('The distribution that has this name, or None')
@@ -35,6 +38,8 @@ class IPillarName(Interface):
 
 
 class IPillarNameSet(Interface):
+    export_as_webservice_entry()
+
     def __contains__(name):
         """Return True if the given name is an active Pillar."""
 
@@ -45,6 +50,9 @@ class IPillarNameSet(Interface):
         inactive, raise NotFoundError.
         """
 
+    @operation_parameters(name=TextLine(title=u"Pillar name"))
+    @operation_returns_entry(IPillar)
+    @export_read_operation()
     def getByName(name, ignore_inactive=False):
         """Return the pillar with the given name.
 
@@ -75,5 +83,10 @@ class IPillarNameSet(Interface):
     def remove_featured_project(project):
         """Remove a project from the featured project list."""
 
-    featured_projects = Attribute("Return the set of featured projects.")
+    featured_projects = exported(
+        CollectionField(
+            title=_('Projects, project groups, and distributions that are '
+                    'featured on the site.'),
+            value_type=Reference(schema=IPillar))
+        )
 

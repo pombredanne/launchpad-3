@@ -2,6 +2,9 @@
 
 == Project group collection ==
 
+    >>> print webservice.get("/pillars").getOutput()
+    ''
+
 It is possible to get a batched list of all the project groups.
 
     >>> group_collection = webservice.get("/projectgroups").jsonBody()
