@@ -283,6 +283,15 @@ class TestPullerMonitorProtocol(
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
         self.assertProtocolSuccess()
 
+    def test_mirrorDeferred(self):
+        # Receiving a mirrorDeferred message finishes mirroring and doesn't
+        # notify the listener.
+        self.protocol.do_startMirroring()
+        self.listener.calls = []
+        self.protocol.do_mirrorDeferred()
+        self.assertProtocolSuccess()
+        self.assertEqual(True, self.protocol.reported_mirror_finished)
+
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
         self.protocol.do_startMirroring()
