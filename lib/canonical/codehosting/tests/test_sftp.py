@@ -60,6 +60,16 @@ class TestFatLocalTransport(TestCaseInTempDir):
         self.transport.writeChunk(filename, 1, 'razy')
         self.assertEqual('crazynt', self.transport.get_bytes(filename))
 
+    def test_localRealPath(self):
+        # localRealPath takes a URL-encoded relpath and returns a URL-encoded
+        # absolute path.
+        filename = '~foo'
+        escaped_filename = urlutils.escape(filename)
+        self.assertNotEqual(filename, escaped_filename)
+        realpath = self.transport.local_realPath(escaped_filename)
+        self.assertEqual(
+            urlutils.escape(os.path.abspath(filename)), realpath)
+
 
 class TestSFTPAdapter(TrialTestCase):
 
@@ -306,13 +316,22 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         deferred.addCallback(lambda handle: handle.readChunk(1, 2))
         return deferred.addCallback(self.assertEqual, 'ar')
 
-    def test_readChunkEOF(self):
-        # readChunk returns the empty string if it reads past the end-of-file.
-        # See comment in _check_for_eof for more details.
+    def test_readChunkPastEndOfFile(self):
+        # readChunk returns the rest of the file if it is asked to read past
+        # the end of the file.
         filename = self.getPathSegment()
         self.build_tree_contents([(filename, 'bar')])
         deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.readChunk(2, 10))
+        return deferred.addCallback(self.assertEqual, 'r')
+
+    def test_readChunkEOF(self):
+        # readChunk returns the empty string if it encounters end-of-file
+        # before reading any data.
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, 0, {})
+        deferred.addCallback(lambda handle: handle.readChunk(3, 10))
         return deferred.addCallback(self.assertEqual, '')
 
     def test_readChunkError(self):

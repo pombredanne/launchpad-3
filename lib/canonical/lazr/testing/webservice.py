@@ -37,7 +37,7 @@ class FakeResponse(object):
 
 class FakeRequest(object):
     """Simple request object for testing purpose."""
-    # IHTTPApplicationRequest makes us eligible for 
+    # IHTTPApplicationRequest makes us eligible for
     # get_current_browser_request()
     implements(IHTTPApplicationRequest, WebServiceLayer)
 
