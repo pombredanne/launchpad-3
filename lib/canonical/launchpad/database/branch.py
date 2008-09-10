@@ -339,22 +339,6 @@ class Branch(SQLBase):
         else:
             return self.owner
 
-    @property
-    def sort_key(self):
-        """See `IBranch`."""
-        if self.product is None:
-            product = None
-        else:
-            product = self.product.name
-        if self.author is None:
-            author = None
-        else:
-            author = self.author.browsername
-        status = self.lifecycle_status.sortkey
-        name = self.name
-        owner = self.owner.name
-        return (product, status, author, name, owner)
-
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
@@ -692,7 +676,7 @@ LISTING_SORT_TO_COLUMN = {
 
 
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product.name', '-lifecycle_status', 'author.name', 'branch.name']
+    'product.name', '-lifecycle_status', 'owner.name', 'branch.name']
 
 
 class DeletionOperation:

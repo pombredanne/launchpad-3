@@ -584,8 +584,6 @@ class IBranch(IHasOwner):
         "Unique name of the branch, including the owner and project names.")
     displayname = Attribute(
         "The branch title if provided, or the unique_name.")
-    sort_key = Attribute(
-        "Key for sorting branches for display.")
 
     # Stats and status attributes
     lifecycle_status = Choice(

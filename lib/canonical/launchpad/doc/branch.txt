@@ -358,54 +358,6 @@ unique_name otherwise.
     True
 
 
-== Branch sort key ==
-
-Branches have a sort_key attribute which is used through Launchpad to order
-branch listings in a consistent and predictable way.
-
-The sort key is made of:
-
-  * product name (if applicable)
-  * lifecycle status sort key
-  * author's browser name (if applicable)
-  * branch name
-  * owner's nickname
-
-The owner's name is usually not displayed in branch listings, but it is used in
-the sort key to guarantee a predictable sort order. This relies on the fact
-that (owner, product, name) is unique for all branches.
-
-    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
-    >>> gterm_slowness = branchset[19]
-    >>> gterm_slowness.sort_key
-    (u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
-    >>> gterm_slowness.sort_key[1] == BranchLifecycleStatus.MERGED.sortkey
-    True
-
-If the product or author of a branch is NULL, the corresponding item in the
-sort key is None.
-
-Let's demonstrate that on a branch with a NULL product.
-
-    >>> junk_dev = branchset[20]
-    >>> print junk_dev.product
-    None
-    >>> junk_dev.sort_key
-    (None, ..., u'Ubuntu Team', u'junk.dev', u'name12')
-    >>> junk_dev.sort_key[1] == BranchLifecycleStatus.EXPERIMENTAL.sortkey
-    True
-
-And on a branch with a NULL author.
-
-    >>> gterm_24 = branchset[17]
-    >>> print gterm_24.author
-    None
-    >>> gterm_24.sort_key
-    (u'gnome-terminal', ..., None, u'2.4', u'name12')
-    >>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
-    True
-
-
 == Branch subscriptions ==
 
 Branches can be subscribed to and unsubscribed from by a Person.  An
@@ -869,8 +821,8 @@ sort order, the sort is by lifecycle, product, author, name).
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~ddaa/gnome-terminal/dev
-    New ~vcs-imports/+junk/junkcode
     New ~ddaa/+junk/junkcode
+    New ~vcs-imports/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
     >>> branches = branchset.getBranchesForContext(
