@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Join, LeftJoin
+from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -230,6 +230,16 @@ class Branch(SQLBase):
         """See `IBranch`."""
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
+
+    def getStackedBranchesWithIncompleteMirrors(self):
+        """See `IBranch`."""
+        store = Store.of(self)
+        return store.find(
+            Branch, Branch.stacked_on == self,
+            Branch.last_mirror_attempt != None,
+            Branch.mirror_failures == 0,
+            Or(Branch.last_mirrored == None,
+               Branch.last_mirror_attempt > Branch.last_mirrored))
 
     def getMergeQueue(self):
         """See `IBranch`."""

@@ -604,6 +604,64 @@ class StackedBranches(TestCaseWithFactory):
         self.assertEqual(
             set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
 
+    def testStackedBranchesIncompleteMirrorsNoBranches(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # stacked branches that haven't been mirrored at all.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors returns branches
+        # stacked on some_branch that had their mirrors started but not
+        # finished.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrorsNotStacked(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches with incomplete mirrors that are not stacked on
+        # some_branch.
+        branch = self.factory.makeBranch()
+        not_stacked = self.factory.makeBranch()
+        not_stacked.startMirroring()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesCompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have been successfully mirrored.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorComplete(self.factory.getUniqueString())
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that had a failed mirror.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesMirrorRequested(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have only had a mirror requested.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.requestMirror()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
