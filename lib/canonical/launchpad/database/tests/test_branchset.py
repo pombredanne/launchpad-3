@@ -323,6 +323,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """If a branch fails to mirror then mirror again later."""
         branch = self.makeBranch()
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
         self.assertInFuture(branch.next_mirror_time, MIRROR_TIME_INCREMENT)
