@@ -118,7 +118,7 @@ class Archive(SQLBase):
 
     failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
 
-    date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
+    date_created = UtcDateTimeCol(dbName='date_created')
 
     @property
     def is_ppa(self):

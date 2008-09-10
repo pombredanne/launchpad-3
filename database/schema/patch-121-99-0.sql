@@ -12,8 +12,7 @@ DROP TABLE archiverebuild;
 
 -- We want to be able to capture archive creation times.
 ALTER TABLE archive ADD COLUMN
-    date_created timestamp without time zone
-    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL;
+    date_created timestamp without time zone;
 
 -- Create new PackageCopyRequest table.
 
@@ -81,11 +80,9 @@ CREATE TABLE PackageCopyRequest (
     date_created timestamp without time zone
     DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     -- When was this archive operation started?
-    date_started timestamp without time zone
-    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    date_started timestamp without time zone,
     -- When did this archive operation conclude?
     date_completed timestamp without time zone
-    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 );
 
 ALTER TABLE ONLY packagecopyrequest

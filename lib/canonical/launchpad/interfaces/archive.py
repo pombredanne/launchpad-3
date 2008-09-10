@@ -157,7 +157,7 @@ class IArchive(IHasOwner):
         description=_("The number of failed builds in this archive."))
 
     date_created = Datetime(
-        title=_('Date created'), required=True, readonly=True,
+        title=_('Date created'), required=False, readonly=True,
         description=_("The time when the archive was created."))
 
     def getPubConfig():
