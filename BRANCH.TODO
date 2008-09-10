@@ -2,3 +2,11 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+- WARN people that they will have to add an exception every time they
+navigate to a new sub-domain.
+
+- Add "a2enmod ssl" to rocketfuel-setup
+
+- librarian is still on HTTP.  is there any reason for moving it to HTTPS?
+  in production it's on HTTP, btw.

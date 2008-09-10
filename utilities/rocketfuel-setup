@@ -259,6 +259,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+sudo a2enmod ssl > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable ssl module in Apache2"
+  exit 1
+fi
+
 
 echo "Setting up devpad repository..."
 ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
