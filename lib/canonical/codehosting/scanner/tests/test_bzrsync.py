@@ -62,6 +62,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.factory = LaunchpadObjectFactory()
+        self.makeFixtures()
+        self.lp_db_user = config.launchpad.dbuser
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         # The lp-mirrored transport is set up by the branch_scanner module.
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
