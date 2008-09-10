@@ -19,6 +19,8 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
@@ -65,7 +67,7 @@ class Archive(SQLBase):
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.purpose == ArchivePurpose.REBUILD, (
+            assert self.purpose == ArchivePurpose.COPY, (
                 "Only REBUILD archives can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
@@ -115,6 +117,8 @@ class Archive(SQLBase):
         dbName='building_count', notNull=True, default=0)
 
     failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
+
+    date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
 
     @property
     def is_ppa(self):

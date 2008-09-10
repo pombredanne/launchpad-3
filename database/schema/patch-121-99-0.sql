@@ -141,6 +141,7 @@ CREATE INDEX packagecopyrequest__targetdistroseries__idx
 -- builds/binary packages are supported in the archive.
 
 CREATE TABLE archivearch (
+    id serial PRIMARY KEY,
     archive integer NOT NULL,
     processorfamily integer NOT NULL
 );
