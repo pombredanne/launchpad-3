@@ -733,6 +733,9 @@ class IBranch(IHasOwner):
             review right now.
         """
 
+    def getStackedBranches():
+        """The branches that are stacked on this one."""
+
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 

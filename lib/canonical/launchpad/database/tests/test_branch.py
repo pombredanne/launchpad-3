@@ -37,7 +37,8 @@ from canonical.launchpad.database.specificationbranch import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -573,6 +574,18 @@ class TestBranchDeletionConsequences(TestCase):
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+
+class StackedBranches(TestCaseWithFactory):
+    """Tests for showing branches stacked on another."""
+
+    layer = DatabaseFunctionalLayer
+
+    def testNoBranchesStacked(self):
+        # getStackedBranches returns an empty collection if there are no
+        # branches stacked on it.
+        branch = self.factory.makeBranch()
+        self.assertEqual(set(), set(branch.getStackedBranches()))
 
 
 class BranchAddLandingTarget(TestCase):

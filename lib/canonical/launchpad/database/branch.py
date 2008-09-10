@@ -226,6 +226,10 @@ class Branch(SQLBase):
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
+    def getStackedBranches(self):
+        """See `IBranch`."""
+        return set()
+
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""
