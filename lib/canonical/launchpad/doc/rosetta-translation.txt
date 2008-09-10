@@ -232,7 +232,6 @@ seconds.
     >>> noneditor_submission.date_created += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> from zope.security.proxy import removeSecurityProxy
 
 Let's make sure:
 

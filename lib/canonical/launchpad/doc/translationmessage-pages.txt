@@ -5,9 +5,7 @@ ITranslationMessage object.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import TranslationMessage
-    >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> from canonical.launchpad.layers import TranslationsLayer
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
@@ -298,7 +296,6 @@ Now, let's see how the system prevents a submission that has a timestamp older
 than when last current translation was submitted.
 
     >>> from zope.app import datetimeutils
-    >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> old_timestamp_text = '2006-11-28T12:30:00+00:00'
     >>> old_timestamp = datetimeutils.parseDatetimetz(old_timestamp_text)
 
