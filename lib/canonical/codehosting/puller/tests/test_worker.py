@@ -535,6 +535,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.protocol.setStackedOn('/~foo/bar/baz')
         self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
+    def test_mirrorDeferred(self):
+        # Calling 'mirrorDeferred' sends 'mirrorDeferred' as a netstring.
+        self.protocol.mirrorDeferred()
+        self.assertSentNetstrings(['mirrorDeferred', '0'])
+
 
 class TestWorkerProgressReporting(TestCaseWithTransport):
     """Tests for the WorkerProgressBar progress reporting mechanism."""

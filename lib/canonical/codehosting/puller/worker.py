@@ -40,6 +40,7 @@ __all__ = [
     'MirroredURLChecker',
     'PullerWorker',
     'PullerWorkerProtocol',
+    'StackedOnBranchNotFound',
     'StackingLoopError',
     'URLChecker',
     ]
@@ -82,6 +83,10 @@ class StackingLoopError(Exception):
     """Encountered a branch stacking cycle."""
 
 
+class StackedOnBranchNotFound(Exception):
+    """Couldn't find the stacked-on branch."""
+
+
 def get_canonical_url_for_branch_name(unique_name):
     """Custom implementation of canonical_url(branch) for error reporting.
 
@@ -120,6 +125,11 @@ class PullerWorkerProtocol:
 
     def startMirroring(self):
         self.sendEvent('startMirroring')
+
+    def mirrorDeferred(self):
+        # Called when we want to try mirroring again later without indicating
+        # success or failure.
+        self.sendEvent('mirrorDeferred')
 
     def mirrorSucceeded(self, last_revision):
         self.sendEvent('mirrorSucceeded', last_revision)
@@ -600,6 +610,9 @@ class PullerWorker:
 
         except InvalidURIError, e:
             self._mirrorFailed(e)
+
+        except StackedOnBranchNotFound:
+            self.protocol.mirrorDeferred()
 
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.
