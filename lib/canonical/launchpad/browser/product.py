@@ -1629,23 +1629,10 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @cachedproperty
-    def recent_revision_branches(self):
-        """Branches that have the most recent revisions."""
-        branch_set = getUtility(IBranchSet)
-        return branch_set.getBranchesWithRecentRevisionsForProduct(
-            self.context, 5, self.user)
-
     @property
     def codebrowse_root(self):
         """Return the link to codebrowse for this branch."""
         return config.codehosting.codebrowse_root
-
-    @cachedproperty
-    def recent_revisions(self):
-        """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(sequence=branch.revision_count)
-                for branch in self.recent_revision_branches]
 
     @cachedproperty
     def latest_branches(self):
