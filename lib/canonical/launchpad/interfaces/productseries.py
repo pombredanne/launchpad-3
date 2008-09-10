@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -186,7 +187,7 @@ def validate_release_glob(value):
 
 
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal):
+                     ISpecificationGoal, IHasMilestones):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
@@ -283,7 +284,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Specified later.
+            value_type=Reference(schema=Interface)), # Specified later.
+        exported_as='active_milestones')
 
     all_milestones = exported(
         CollectionField(
@@ -322,13 +324,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     series_branch = Choice(
         title=_('Series Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         readonly=True,
         description=_("The Bazaar branch for this series."))
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))

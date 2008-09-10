@@ -57,6 +57,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class Branch(SQLBase):
@@ -235,7 +237,8 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return self.revision_count > 0 and not self.private
+        return ((self.revision_count > 0  or self.last_mirrored != None)
+            and not self.private)
 
     def _getNameDict(self, person):
         """Return a simple dict with the person name or placeholder."""
@@ -1022,6 +1025,20 @@ class BranchSet:
             return default
         else:
             return branch
+
+    def getRewriteMap(self):
+        """See `IBranchSet`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # Left-join Product so that we still publish +junk branches.
+        prejoin = store.using(
+            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        return (branch for (owner, product, branch) in prejoin.find(
+            (Person, Product, Branch),
+            Branch.branch_type != BranchType.REMOTE,
+            Branch.owner == Person.id,
+            Branch.private == False))
 
     def getBranchesToScan(self):
         """See `IBranchSet`"""

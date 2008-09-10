@@ -1,5 +1,49 @@
 = Web Service Project Groups =
 
+== Project group collection ==
+
+It is possible to get a batched list of all the project groups.
+
+    >>> group_collection = webservice.get("/projectgroups").jsonBody()
+    >>> group_collection['resource_type_link']
+    u'http://.../#project_groups'
+    >>> group_collection['total_size']
+    7
+
+    >>> from operator import itemgetter
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> project_group_entries[0]['self_link']
+    u'http://.../apache'
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
+
+It's possible to search the list and get a subset of the project groups.
+
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search", text="Apache").jsonBody()
+    >>> for project_group in group_collection['entries']:
+    ...   print project_group['display_name']
+    Apache
+
+Searching without providing a search string is the same as getting all
+the project groups.
+
+    >>> group_collection = webservice.named_get(
+    ...     "/projectgroups", "search").jsonBody()
+    >>> project_group_entries = sorted(
+    ...     group_collection['entries'], key=itemgetter('name'))
+    >>> for project_group in project_group_entries:
+    ...   print project_group['display_name']
+    Apache
+    GNOME
+    ...
+    the Mozilla Project
+
 
 == Project group entry ==
 
@@ -7,21 +51,59 @@ Project groups are available at their canonical URL on the API virtual host.
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
 
-    >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
-    >>> pprint_entry(mozilla_project)
+    >>> mozilla = webservice.get('/mozilla').jsonBody()
+    >>> pprint_entry(mozilla)
     active: True
+    active_milestones_collection_link: u'http://.../mozilla/active_milestones'
+    all_milestones_collection_link: u'http://.../mozilla/all_milestones'
+    bug_tracker_link: None
+    date_created: u'...'
+    description: u'The Mozilla Project...'
+    display_name: u'the Mozilla Project'
+    driver_link: None
+    freshmeat_project: None
+    homepage_content: None
+    homepage_url: u'http://www.mozilla.org/'
+    icon_link: u'http://.../mozilla/icon'
+    logo_link: u'http://.../mozilla/logo'
+    mugshot_link: u'http://.../mozilla/mugshot'
     name: u'mozilla'
+    owner_link: u'http://.../~name12'
+    projects_collection_link: u'http://.../mozilla/projects'
+    registrant_link: u'http://.../~name12'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/mozilla'
+    reviewed: False
+    self_link: u'http://.../mozilla'
+    sourceforge_project: None
+    summary: u'The Mozilla Project...'
+    title: u'The Mozilla Project'
+    wiki_url: None
+
+The milestones can be accessed through the active_milestones_collection_link
+and the all_milestones_collection_link.
+
+    >>> response = webservice.get(mozilla['active_milestones_collection_link'])
+    >>> active_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(active_milestones)
+    http://.../mozilla/+milestone/1.0
+
+    >>> response = webservice.get(mozilla['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../mozilla/+milestone/1.0
 
 
 == Project entry ==
 
 Projects are available at their canonical URL on the API virtual host.
 
-    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> firefox = webservice.get('/firefox').jsonBody()
     >>> pprint_entry(firefox)
     active: True
+    active_milestones_collection_link: u'http://.../firefox/active_milestones'
+    all_milestones_collection_link: u'http://.../firefox/all_milestones'
+    branches_collection_link: u'http://.../firefox/branches'
+    brand_link: u'http://.../firefox/brand'
     bug_tracker_link: None
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
@@ -31,8 +113,10 @@ Projects are available at their canonical URL on the API virtual host.
     driver_link: None
     freshmeat_project: None
     homepage_url: None
+    icon_link: u'http://.../firefox/icon'
     license_info: None
     licenses: []
+    logo_link: u'http://.../firefox/logo'
     name: u'firefox'
     owner_link: u'http://.../~name12'
     programming_language: None
@@ -47,6 +131,30 @@ Projects are available at their canonical URL on the API virtual host.
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
     wiki_url: None
+
+Branches can be accessed through the branches_collection_link.
+
+    >>> response = webservice.get(firefox['branches_collection_link'])
+    >>> branches = response.jsonBody()
+    >>> print_self_link_of_entries(branches)
+    http://.../~name12/firefox/main
+    http://.../~sabdfl/firefox/release--0.9.1
+    http://.../~sabdfl/firefox/release-0.8
+    http://.../~sabdfl/firefox/release-0.9
+    http://.../~sabdfl/firefox/release-0.9.2
+
+The milestones can be accessed through the active_milestones_collection_link
+and the all_milestones_collection_link.
+
+    >>> response = webservice.get(firefox['active_milestones_collection_link'])
+    >>> active_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(active_milestones)
+    http://.../firefox/+milestone/1.0
+
+    >>> response = webservice.get(firefox['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../firefox/+milestone/1.0
 
 The project group can be accessed through the project_group_link.
 
@@ -86,17 +194,17 @@ Attributes can be edited via the webservice.patch() method.
 
     >>> from simplejson import dumps
     >>> patch = {
-    ...     u'driver_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     u'driver_link': webservice.getAbsoluteUrl('/~sabdfl'),
     ...     u'homepage_url': u'http://sf.net/firefox',
     ...     u'licenses': [u'Python License', u'GNU GPL v2'],
     ...     u'bug_tracker_link':
-    ...         u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org',
+    ...         webservice.getAbsoluteUrl('/bugs/bugtrackers/mozilla.org'),
     ...     }
     >>> print webservice.patch(
-    ...     '/beta/firefox', 'application/json', dumps(patch))
+    ...     '/firefox', 'application/json', dumps(patch))
     HTTP/1.1 200 Ok
     ...
-    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['driver_link']
     u'http://.../~sabdfl'
     >>> firefox['homepage_url']
@@ -113,15 +221,15 @@ Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
     >>> patch = {
-    ...     u'registrant_link': u'http://api.launchpad.dev/beta/~sabdfl',
+    ...     u'registrant_link': webservice.getAbsoluteUrl('/~sabdfl'),
     ...     }
     >>> print webservice.patch(
-    ...     '/beta/firefox', 'application/json', dumps(patch))
+    ...     '/firefox', 'application/json', dumps(patch))
     HTTP/1.1 400 Bad Request
     ...
     registrant_link: You tried to modify a read-only attribute.
 
-    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> firefox = webservice.get('/firefox').jsonBody()
     >>> firefox['registrant_link']
     u'http://.../~name12'
 
@@ -130,13 +238,12 @@ webservice.patch() method.
 
 It is possible to get a batched list of all the projects.
 
-    >>> project_collection = webservice.get("/beta/projects").jsonBody()
+    >>> project_collection = webservice.get("/projects").jsonBody()
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
     >>> project_collection['total_size']
     22
 
-    >>> from operator import itemgetter
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('name'))
     >>> len(project_entries)
@@ -155,7 +262,7 @@ It is possible to search for projects by a text string by adding
 the ws.op=search parameter.
 
     >>> project_collection = webservice.get(
-    ...   "/beta/projects?ws.op=search&text=gnome").jsonBody()
+    ...   "/projects?ws.op=search&text=gnome").jsonBody()
     >>> project_collection['total_size']
     4
 
@@ -165,20 +272,20 @@ the ws.op=search parameter.
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
-    >>> firefox_1_0 = webservice.get('/beta/firefox/1.0').jsonBody()
+    >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
     >>> pprint_entry(firefox_1_0)
-    all_milestones_collection_link: u'http://.../beta/firefox/1.0/all_milestones'
+    active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
+    all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
     date_created: u'2005-06-06T08:59:51.898385+00:00'
     display_name: u'1.0'
     driver_link: None
-    drivers_collection_link: u'http://.../beta/firefox/1.0/drivers'
-    milestones_collection_link: u'http://.../beta/firefox/1.0/milestones'
+    drivers_collection_link: u'http://.../firefox/1.0/drivers'
     name: u'1.0'
-    owner_link: u'http://.../beta/~name12'
-    project_link: u'http://.../beta/firefox'
-    releases_collection_link: u'http://.../beta/firefox/1.0/releases'
+    owner_link: u'http://.../~name12'
+    project_link: u'http://.../firefox'
+    releases_collection_link: u'http://.../firefox/1.0/releases'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/1.0'
+    self_link: u'http://.../firefox/1.0'
     status: u'Active Development'
     summary: u'The 1.0 branch of the Mozilla web browser...'
     title: u'Mozilla Firefox Series: 1.0'
@@ -188,12 +295,39 @@ virtual host.
 
 Project releases are available at their canonical URL on the API virtual host.
 
-    >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
+    >>> firefox_1_0_0 = webservice.get('/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
-    project_series_link: u'http://.../beta/firefox/1.0'
+    changelog: u''
+    code_name: u'First Stable Release'
+    date_created: u'2005-06-06T08:59:51.930201+00:00'
+    date_released: u'2004-06-28T00:00:00+00:00'
+    description: u''
+    display_name: u'Mozilla Firefox 1.0.0'
+    files_collection_link: u'http://.../firefox/1.0/1.0.0/files'
+    owner_link: u'http://.../~name12'
+    project_link: u'http://.../firefox'
+    project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/1.0/1.0.0'
+    self_link: u'http://.../firefox/1.0/1.0.0'
+    summary: u'After four years of work...'
+    title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
     version: u'1.0.0'
+
+
+== Project release entries ==
+
+    >>> releases = webservice.get(
+    ...     '/firefox/1.0/releases').jsonBody()
+    >>> print_self_link_of_entries(releases)
+    http://.../firefox/1.0/1.0.0
+
+
+== Project release file collection ==
+
+    >>> pr_files = webservice.get(
+    ...     '/firefox/trunk/0.9.2/files').jsonBody()
+    >>> print_self_link_of_entries(pr_files)
+    http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz
 
 
 == Milestone entry ==
@@ -202,23 +336,85 @@ The entry for a milestone is available at its canonical URL on the API virtual
 host.
 
     >>> firefox_milestone_1_0 = webservice.get(
-    ...     '/beta/firefox/+milestone/1.0').jsonBody()
+    ...     '/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
+    date_targeted: u'2056-10-16T18:31:44.293448'
+    description: None
+    is_visible: True
     name: u'1.0'
     resource_type_link: u'...'
-    self_link: u'http://.../beta/firefox/+milestone/1.0'
-    target_link: u'http://.../beta/firefox'
+    self_link: u'http://.../firefox/+milestone/1.0'
+    series_target_link: u'http://.../firefox/trunk'
+    target_link: u'http://.../firefox'
+    title: u'Milestone 1.0 for Mozilla Firefox'
 
 
 == ProductRelease entries ==
 
     >>> releases = webservice.get(
-    ...     '/beta/firefox/1.0/releases').jsonBody()
+    ...     '/firefox/1.0/releases').jsonBody()
     >>> pprint_entry(releases)
     entries: [...]
-    resource_type_link: u'http://.../beta/#product_release-page-resource'
+    resource_type_link: u'http://.../#project_release-page-resource'
     start: 0
     total_size: 1
     >>> entries = releases['entries']
     >>> len(entries) == releases['total_size']
     True
+
+
+== Project release file entry ==
+
+Project release files are available at their canonical URL on the API
+virtual host.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    >>> result = webservice.get(url).jsonBody()
+    >>> pprint_entry(result)
+    date_uploaded: u'2005-06-06T08:59:51.926792+00:00'
+    description: None
+    file_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    file_type: u'Code Release Tarball'
+    project_release_link: u'http://.../firefox/trunk/0.9.2'
+    resource_type_link: u'http://.../#project_release_file'
+    self_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz'
+    signature_link: u'http://.../firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+
+The actual file redirects to the librarian when accessed.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/.../firefox-0.9.2.orig.tar.gz
+    ...
+
+The signature file will redirect too, if found.  In this case there is
+no signature so we get a 404.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 404 Not Found
+    ...
+
+The file and signature on a Project Release File are 'readonly'.
+Trying to put new content will result in a ForbiddenAttribute error.
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+    >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
+    >>> print response
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+
+    >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
+    >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
+    >>> print response
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
+    ...
+
+Soon a new method will be introduced that will allow the file and
+signature attributes to be modified in place.

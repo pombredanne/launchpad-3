@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
@@ -712,7 +712,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     title = Attribute('Person Page Title')
 
     is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'))
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
@@ -865,7 +869,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
-    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
     # unfunge for this one attribute.
@@ -2013,6 +2017,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
+
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
 
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson

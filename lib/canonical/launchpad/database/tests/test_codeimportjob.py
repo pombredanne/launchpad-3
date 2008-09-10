@@ -761,7 +761,8 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         code_import = running_job.code_import
         ddaa = getUtility(IPersonSet).getByEmail(
             'david.allouche@canonical.com')
-        code_import.suspend({}, ddaa)
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED}, ddaa)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertTrue(code_import.import_job is None)
@@ -823,7 +824,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
-        # XXX MichaelHudson 2008-02026, bug=193876: When the referenced bug is
+        # XXX MichaelHudson 2008-02-26, bug=193876: When the referenced bug is
         # fixed, we will be able to do this much more nicely than this.
         removeSecurityProxy(code_import).review_status = \
             CodeImportReviewStatus.REVIEWED
@@ -975,8 +976,8 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         """Cause the code import job associated to the import to be deleted.
         """
         user = self.factory.makePerson()
-        getUtility(ICodeImportSet).get(code_import_id).suspend(
-            {}, user)
+        getUtility(ICodeImportSet).get(code_import_id).updateFromData(
+            {'review_status': CodeImportReviewStatus.SUSPENDED}, user)
 
     @logged_in_as(ANONYMOUS)
     def startJob(self, code_import_id):

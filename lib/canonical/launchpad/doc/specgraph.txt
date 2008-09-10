@@ -104,10 +104,10 @@ want a link to the spec we're currently looking at.
        [
        "bgcolor"="#ffffff",
        "mode"="hier",
-       "nodesep"="0.25",
+       "nodesep"="0.01",
        "ranksep"="0.25",
-       "ratio"="auto",
-       "size"="5.2,9"
+       "ratio"="compress",
+       "size"="9.2,9"
        ]
    node
        [

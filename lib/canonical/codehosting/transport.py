@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702
+# pylint: disable-msg=W0702,W0231
 
 """The Launchpad code hosting file system.
 
@@ -563,16 +563,10 @@ class _BaseLaunchpadServer(Server):
         transport = get_transport(memory_server.get_url())
         if stack_on_url == '':
             return transport
-
         format = BzrDirFormat.get_default_format()
-        format.initialize_on_transport(transport)
-        # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
-        # higher-level bzrlib APIs to do this:
-        # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
-        # bzr mainline yet, so...
-        transport.put_bytes(
-            '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
-        return transport
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(stack_on_url)
+        return get_transport('readonly+' + transport.base)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
@@ -953,7 +947,7 @@ class AsyncVirtualTransport(Transport):
         # Here, we assume that the underlying transport has no symlinks
         # (Bazaar transports cannot create symlinks). This means that we can
         # just return the absolute path.
-        return self._abspath(relpath)
+        return defer.succeed(self._abspath(relpath))
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):
@@ -1016,7 +1010,7 @@ class SynchronousAdapter(Transport):
 
     def external_url(self):
         """See `bzrlib.transport.Transport`."""
-        raise InProcessTransport()
+        raise InProcessTransport(self)
 
     def abspath(self, relpath):
         """See `bzrlib.transport.Transport`."""

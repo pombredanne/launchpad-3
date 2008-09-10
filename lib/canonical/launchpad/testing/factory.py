@@ -27,17 +27,18 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
-    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
-    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
+    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
+    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
+    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems,
+    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError,
     )
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -72,12 +73,12 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# NOTE:
-#
-# The LaunchpadObjectFactory is driven purely by use.  The version here
-# is by no means complete for Launchpad objects.  If you need to create
-# anonymous objects for your tests then add methods to the factory.
-#
+# We use this for default paramters where None has a specific meaning.  For
+# example, makeBranch(product=None) means "make a junk branch".
+# None, because None means "junk branch".
+_DEFAULT = object()
+
+
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -121,8 +122,9 @@ class LaunchpadObjectFactory:
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None,
-                   time_zone=None, latitude=None, longitude=None):
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None, time_zone=None, latitude=None,
+                   longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -134,6 +136,8 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param hide_email_addresses: Whether or not to hide the person's email
+            address(es) from other users.
         :param time_zone: This person's time zone, as a string.
         :param latitude: This person's latitude, as a float.
         :param longitude: This person's longitude, as a float.
@@ -152,7 +156,8 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname)
+            password=password, displayname=displayname,
+            hide_email_addresses=hide_email_addresses)
 
         if (time_zone is not None or latitude is not None or
             longitude is not None):
@@ -276,16 +281,12 @@ class LaunchpadObjectFactory:
             owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, registrant=None,
-                   explicit_junk=False, private=False,
-                   **optional_branch_args):
+                   product=_DEFAULT, url=_DEFAULT, registrant=None,
+                   private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
-
-        :param explicit_junk: If set to True, a product is not created
-            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -295,13 +296,13 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None and not explicit_junk:
+        if product is _DEFAULT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
         elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
-            if url is None:
+            if url is _DEFAULT:
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
@@ -311,12 +312,14 @@ class LaunchpadObjectFactory:
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
+        if stacked_on is not None:
+            removeSecurityProxy(branch).stacked_on = stacked_on
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = None
+        product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -425,7 +428,7 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False):
+                private=False, date_closed=None, title=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -441,7 +444,8 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
@@ -449,6 +453,10 @@ class LaunchpadObjectFactory:
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        if date_closed is not None:
+            [bugtask] = bug.bugtasks
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
     def makeBugTask(self, bug=None, target=None):
@@ -502,6 +510,26 @@ class LaunchpadObjectFactory:
 
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
+
+    def makeBugTracker(self):
+        """Make a new bug tracker."""
+        base_url = 'http://%s.example.com/' % self.getUniqueString()
+        owner = self.makePerson()
+        return getUtility(IBugTrackerSet).ensureBugTracker(
+            base_url, owner, BugTrackerType.BUGZILLA)
+
+    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+        """Make a new bug watch."""
+        if remote_bug is None:
+            remote_bug = self.getUniqueInteger()
+
+        if bugtracker is None:
+            bugtracker = self.makeBugTracker()
+
+        bug = self.makeBug()
+        owner = self.makePerson()
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):
@@ -614,8 +642,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
@@ -687,17 +714,20 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
@@ -808,7 +838,7 @@ class LaunchpadObjectFactory:
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries()
+            productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
             productseries.product.official_rosetta = True
@@ -831,9 +861,7 @@ class LaunchpadObjectFactory:
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        if owner is None:
-            owner = potemplate.owner
-        return potemplate.newPOFile(language_code, requester=owner)
+        return potemplate.newPOFile(language_code, requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):

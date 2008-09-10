@@ -67,6 +67,12 @@ from zope.component import getUtility
 from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
+from canonical.lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation, exported)
+
 from canonical.config import config
 
 from canonical.launchpad import _
@@ -76,10 +82,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -95,47 +97,38 @@ class BranchLifecycleStatus(DBEnumeratedType):
     NEW = DBItem(1, """
         New
 
-        This branch has just been created.
+        Has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
         Experimental
 
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
+        Still under active development, and not suitable for merging into
+        release branches.
         """)
 
     DEVELOPMENT = DBItem(30, """
         Development
 
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
+        Shaping up nicely, but incomplete or untested, and not yet ready for
+        merging or production use.
         """)
 
     MATURE = DBItem(50, """
         Mature
 
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
+        Completely addresses the issues it is supposed to, tested, and stable
+        enough for merging into other branches.
         """)
 
     MERGED = DBItem(70, """
         Merged
 
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
+        Successfully merged into its target branch(es). No further development
+        is anticipated.
         """)
 
-    ABANDONED = DBItem(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """)
+    ABANDONED = DBItem(80, "Abandoned")
 
 
 class BranchType(DBEnumeratedType):
@@ -247,9 +240,15 @@ class RepositoryFormat(DBEnumeratedType):
         205, RepositoryFormatKnitPack5,
         description='Packs 5 (needs bzr 1.6, supports stacking)\n')
 
-    BZR_KNITPACK_5_RR = _format_enum(
-        206, RepositoryFormatKnitPack5RichRoot,
-        description='Packs 5-Rich Root (needs bzr 1.6, supports stacking)')
+    BZR_KNITPACK_5_RRB = DBItem(206,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
+        'Packs 5-Rich Root (needs bzr 1.6, supports stacking)'
+        )
+
+    BZR_KNITPACK_5_RR = DBItem(207,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6.1)\n',
+        'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
+        )
 
     BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
@@ -452,6 +451,7 @@ class IBranchNavigationMenu(Interface):
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    # Mark branches as exported entries for the Launchpad API.
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
@@ -466,49 +466,74 @@ class IBranch(IHasOwner):
     #   1) define a separate schema to use in the UI (sledgehammer solution)
     #   2) work out some way to specify a restricted vocabulary in the view
     # Personally I'd like a LAZR way to do number 2.
-    branch_type = Choice(
-        title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType)
+    branch_type = exported(
+        Choice(
+            title=_("Branch Type"), required=True, readonly=True,
+            vocabulary=UICreatableBranchType))
 
-    name = TextLine(
-        title=_('Name'), required=True, description=_("Keep very "
-        "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=branch_name_validator)
-    title = Title(
-        title=_('Title'), required=False, description=_("Describe the "
-        "branch as clearly as possible in up to 70 characters. This "
-        "title is displayed in every branch list or report."))
-    summary = Summary(
-        title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will be "
-        "displayed on the branch page."))
-    url = BranchURIField(
-        title=_('Branch URL'), required=False,
-        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
-        allow_userinfo=False,
-        allow_query=False,
-        allow_fragment=False,
-        trailing_slash=False,
-        description=_("This is the external location where the Bazaar "
-                      "branch is hosted."))
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True, constraint=branch_name_validator,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
 
-    branch_format = Choice(
-        title=_("Branch Format"), required=False, vocabulary=BranchFormat)
+    title = exported(
+        Title(
+            title=_('Title'), required=False,
+            description=_(
+                "Describe the branch as clearly as possible in up to 70 "
+                "characters. This title is displayed in every branch list "
+                "or report.")))
 
-    repository_format = Choice(
-        title=_("Repository Format"), required=False,
-        vocabulary=RepositoryFormat)
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=False,
+            description=_(
+                "A single-paragraph description of the branch. This will be "
+                "displayed on the branch page.")))
 
-    control_format = Choice(
-        title=_("Control Directory"), required=False,
-        vocabulary=ControlFormat)
+    url = exported(
+        BranchURIField(
+            title=_('Branch URL'), required=False,
+            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+            allow_userinfo=False,
+            allow_query=False,
+            allow_fragment=False,
+            trailing_slash=False,
+            description=_(
+                "This is the external location where the Bazaar "
+                "branch is hosted.")))
 
-    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the branch.'))
-    mirror_status_message = Text(
-        title=_('The last message we got when mirroring this branch '
-                'into supermirror.'), required=False, readonly=False)
+    branch_format = exported(
+        Choice(
+            title=_("Branch Format"),
+            required=False, readonly=True,
+            vocabulary=BranchFormat))
+
+    repository_format = exported(
+        Choice(
+            title=_("Repository Format"),
+            required=False, readonly=True,
+            vocabulary=RepositoryFormat))
+
+    control_format = exported(
+        Choice(
+            title=_("Control Directory"),
+            required=False, readonly=True,
+            vocabulary=ControlFormat))
+
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'), required=False,
+            description=_('Notes on the current status of the branch.')))
+
+    mirror_status_message = exported(
+        Text(
+            title=_('The last message we got when mirroring this branch '
+                    'into supermirror.'),
+            required=False, readonly=True))
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
@@ -516,42 +541,66 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    registrant = Attribute("The user that registered the branch.")
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True,
-        vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
-    author = PublicPersonChoice(
-        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The author of the branch. Leave blank if the author "
-                      "does not have a Launchpad account."))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The reviewer of a branch is the person or team that "
-                      "is responsible for authorising code to be merged."))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The user that registered the branch."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'),
+            required=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("Either yourself or a team you are a member of. "
+                        "This controls who can modify the branch.")))
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Reviewer'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for authorising code to be "
+                          "merged.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
-    product = Choice(
-        title=_('Project'), required=False, vocabulary='Product',
-        description=_("The project this branch belongs to."))
+    # ReferenceChoice is Interface rather than IProduct as IProduct imports
+    # IBranch and we'd get import errors.  IPerson does a similar trick.
+    # The schema is set properly to `IProduct` in _schema_circular_imports.
+    product = exported(
+        ReferenceChoice(
+            title=_('Project'),
+            required=False,
+            vocabulary='Product',
+            schema=Interface,
+            description=_("The project this branch belongs to.")),
+        exported_as='project')
+
     product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and project names.")
-    displayname = Attribute(
-        "The branch title if provided, or the unique_name.")
+    unique_name = exported(
+        Text(title=_('Unique name'), readonly=True,
+             description=_("Unique name of the branch, including the "
+                           "owner and project names.")))
+
+    displayname = exported(
+        Text(title=_('Display name'), readonly=True,
+             description=_(
+                "The branch title if provided, or the unique_name.")),
+        exported_as='display_name')
+
     sort_key = Attribute(
         "Key for sorting branches for display.")
 
     # Stats and status attributes
-    lifecycle_status = Choice(
-        title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.NEW))
 
     # Mirroring attributes
     last_mirrored = Datetime(
@@ -626,10 +675,17 @@ class IBranch(IHasOwner):
         "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_last_modified = Datetime(
-        title=_('Date Last Modified'), required=True, readonly=False)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            required=True,
+            readonly=True))
+
+    date_last_modified = exported(
+        Datetime(
+            title=_('Date Last Modified'),
+            required=True,
+            readonly=False))
 
     def destroySelf(break_references=False):
         """Delete the specified branch.
@@ -885,6 +941,14 @@ class IBranchSet(Interface):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
+        """
+
+    def getRewriteMap():
+        """Return the branches that can appear in the rewrite map.
+
+        This returns only public, non-remote branches. The results *will*
+        include branches that aren't explicitly private but are stacked-on
+        private branches. The rewrite map generator filters these out itself.
         """
 
     def getByUrl(url, default=None):
