@@ -240,14 +240,6 @@ class Branch(SQLBase):
         return ((self.revision_count > 0  or self.last_mirrored != None)
             and not self.private)
 
-    def _getNameDict(self, person):
-        """Return a simple dict with the person name or placeholder."""
-        if person is not None:
-            name = person.name
-        else:
-            name = "<name>"
-        return {'user': name}
-
     @property
     def bzr_identity(self):
         """See `IBranch`."""
