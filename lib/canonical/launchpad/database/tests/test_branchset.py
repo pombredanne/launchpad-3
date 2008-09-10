@@ -215,6 +215,17 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.mirrorComplete('rev1')
         self.assertEqual(next_mirror_time, branch.next_mirror_time)
 
+    def test_startMirroringRemovesFromPullQueue(self):
+        # Starting a mirror removes the branch from the pull queue.
+        branch = self.makeBranch()
+        branch.requestMirror()
+        self.assertEqual(
+            set([branch]),
+            set(self.branch_set.getPullQueue(branch.branch_type)))
+        branch.startMirroring()
+        self.assertEqual(
+            set(), set(self.branch_set.getPullQueue(branch.branch_type)))
+
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
         branch = self.makeBranch()

@@ -633,7 +633,7 @@ class Branch(SQLBase):
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
-        self.syncUpdate()
+        self.next_mirror_time = None
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
@@ -644,17 +644,12 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if (self.next_mirror_time != None
-            and self.last_mirror_attempt >= self.next_mirror_time):
+        if (self.next_mirror_time is None
+            and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
-            if self.branch_type == BranchType.MIRRORED:
-                self.next_mirror_time = (
-                    datetime.now(pytz.timezone('UTC')) +
-                    MIRROR_TIME_INCREMENT)
-            else:
-                self.next_mirror_time = None
+            self.next_mirror_time = (
+                datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
         self.last_mirrored_id = last_revision_id
-        self.syncUpdate()
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -1329,7 +1324,7 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
-                Branch.q.next_mirror_time < UTC_NOW),
+                Branch.q.next_mirror_time <= UTC_NOW),
             prejoins=['owner', 'product'], orderBy='next_mirror_time')
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
