@@ -228,7 +228,8 @@ class Branch(SQLBase):
 
     def getStackedBranches(self):
         """See `IBranch`."""
-        return set()
+        store = Store.of(self)
+        return store.find(Branch, Branch.stacked_on == self)
 
     def getMergeQueue(self):
         """See `IBranch`."""

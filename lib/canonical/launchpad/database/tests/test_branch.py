@@ -587,6 +587,23 @@ class StackedBranches(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         self.assertEqual(set(), set(branch.getStackedBranches()))
 
+    def testSingleBranchStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_branch]), set(branch.getStackedBranches()))
+
+    def testMultipleBranchesStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_b = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
+
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
