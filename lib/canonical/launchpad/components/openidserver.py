@@ -127,7 +127,7 @@ class OpenIDPersistentIdentity:
             identity_url_root = allvhosts.configs['openid'].rooturl
             return identity_url.startswith(identity_url_root + '+id')
         identity_url_root = allvhosts.configs['id'].rooturl
-        identity_url_re = re.compile(r'%s\d\d\d[/\b]' % identity_url_root)
+        identity_url_re = re.compile(r'%s\d\d\d' % identity_url_root)
         return identity_url_re.match(identity_url) is not None
 
 
