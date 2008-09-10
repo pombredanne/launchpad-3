@@ -498,6 +498,7 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 
 # Fix cyclic references.
 IProject['products'].value_type = Reference(IProduct)
+IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
