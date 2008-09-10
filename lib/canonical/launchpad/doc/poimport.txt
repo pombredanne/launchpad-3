@@ -6,8 +6,6 @@ Rosetta.
 
 == Test Setup ==
 
-    >>> from zope.app import datetimeutils
-
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.ftests import syncUpdate
