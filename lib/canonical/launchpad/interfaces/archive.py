@@ -481,5 +481,5 @@ class ArchivePurpose(DBEnumeratedType):
     COPY = DBItem(6, """
         Generalized copy archive
 
-        This kind of archive will be used for rebuild, snapshots etc.
+        This kind of archive will be used for rebuilds, snapshots etc.
         """)
