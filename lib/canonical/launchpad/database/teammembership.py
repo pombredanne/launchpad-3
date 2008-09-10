@@ -40,6 +40,9 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
+
+
 class TeamMembership(SQLBase):
     """See `ITeamMembership`."""
 
@@ -290,8 +293,7 @@ class TeamMembership(SQLBase):
             "Bad state transition from %s to %s"
             % (self.status.name, status.name))
 
-        active_states = [approved, admin]
-        if status in active_states and self.team in self.person.allmembers:
+        if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
                 "Cannot make %(person)s a member of %(team)s because "
                 "%(team)s is a member of %(person)s."
@@ -306,12 +308,12 @@ class TeamMembership(SQLBase):
             self.proposed_by = user
             self.proponent_comment = comment
             self.date_proposed = now
-        elif ((status in active_states and old_status not in active_states)
+        elif ((status in ACTIVE_STATES and old_status not in ACTIVE_STATES)
               or status == declined):
             self.reviewed_by = user
             self.reviewer_comment = comment
             self.date_reviewed = now
-            if self.datejoined is None and status in active_states:
+            if self.datejoined is None and status in ACTIVE_STATES:
                 # This is the first time this membership is made active.
                 self.datejoined = now
         else:
@@ -329,9 +331,9 @@ class TeamMembership(SQLBase):
         self.last_change_comment = comment
         self.date_last_changed = now
 
-        if status in active_states:
+        if status in ACTIVE_STATES:
             _fillTeamParticipation(self.person, self.team)
-        elif old_status in active_states:
+        elif old_status in ACTIVE_STATES:
             _cleanTeamParticipation(self.person, self.team)
         else:
             # Changed from an inactive state to another inactive one, so no
@@ -530,6 +532,25 @@ def _cleanTeamParticipation(person, team):
     TeamParticipation table can be found in the TeamParticipationUsage spec or
     the teammembership.txt system doctest.
     """
+    query = """
+        SELECT EXISTS(
+            SELECT 1 FROM TeamParticipation
+            WHERE person = %(person_id)s AND team IN (
+                    SELECT person
+                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    WHERE team = %(team_id)s
+                        AND person NOT IN (%(team_id)s, %(person_id)s)
+                        AND teamowner IS NOT NULL
+                 )
+        )
+        """ % dict(team_id=team.id, person_id=person.id)
+    store = Store.of(person)
+    (result, ) = store.execute(query).get_one()
+    if result:
+        # The person is a participant in this team by virtue of a membership
+        # in another one, so don't attempt to remove anything.
+        return
+
     # First of all, we remove <person> from <team> (and its superteams).
     _removeParticipantFromTeamAndSuperTeams(person, team)
     if not person.is_team:
@@ -553,8 +574,7 @@ def _cleanTeamParticipation(person, team):
         WHERE team = %(team_id)s AND status IN (%(active_states)s)
         """ % dict(
             person_id=person.id, team_id=team.id,
-            active_states="%s, %s" % sqlvalues(
-                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN))
+            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
 
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
@@ -578,21 +598,20 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     # Check if the person is a member of the given team through another team.
     query = """
         SELECT EXISTS(
-            SELECT 1 FROM TeamParticipation
-            WHERE person = %(person_id)s AND team IN (
-                    SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
-                    WHERE team = %(team_id)s
-                        AND person NOT IN (%(team_id)s, %(person_id)s)
-                        AND teamowner IS NOT NULL
-                 )
-        )
-        """ % dict(team_id=team.id, person_id=person.id)
+            SELECT 1
+            FROM TeamParticipation, TeamMembership
+            WHERE
+                TeamMembership.team = %(team_id)s AND
+                TeamMembership.person = TeamParticipation.team AND
+                TeamParticipation.person = %(person_id)s AND
+                TeamMembership.status IN (%(active_states)s))
+        """ % dict(team_id=team.id, person_id=person.id,
+                   active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
     store = Store.of(person)
     (result, ) = store.execute(query).get_one()
     if result:
-        # The person is a member by virtue of another subteams, so don't
-        # remove.
+        # The person is a participant by virtue of a membership on another
+        # team, so don't remove.
         return
     store.find(TeamParticipation, (
         (TeamParticipation.team == team) &
@@ -636,8 +655,7 @@ def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
         )
         """ % dict(
             team_id=team.id, target_team_id=target_team.id,
-            active_states="%s, %s" % sqlvalues(
-                TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN))
+            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
     store = Store.of(team)
     store.execute(query)
 
@@ -654,14 +672,13 @@ def _getSuperTeamsExcludingDirectMembership(person, team):
         FROM TeamParticipation
         WHERE person = %(team_id)s AND team != %(team_id)s
         EXCEPT
-        --- The one where person has an active membership.
+        -- The one where person has an active membership.
         SELECT team
         FROM TeamMembership
         WHERE person = %(person_id)s AND status IN (%(active_states)s)
-    """ % dict(
-        person_id=person.id, team_id=team.id,
-        active_states="%s, %s" % sqlvalues(
-            TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN))
+        """ % dict(
+            person_id=person.id, team_id=team.id,
+            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
 
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
