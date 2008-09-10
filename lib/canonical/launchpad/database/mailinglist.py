@@ -34,6 +34,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.teammembership import TeamParticipation
@@ -45,6 +46,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListSet,
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -403,36 +405,59 @@ class MailingList(SQLBase):
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
+        store = Store.of(self)
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
         # preferred address.
-        clause_tables = ('MailingList',
-                         'MailingListSubscription',
-                         'TeamParticipation')
-        preferred = EmailAddress.select("""
-            EmailAddress.person = MailingListSubscription.person AND
-            MailingList.id = MailingListSubscription.mailing_list AND
-            TeamParticipation.person = MailingListSubscription.person AND
-            MailingListSubscription.mailing_list = %s AND
-            TeamParticipation.team = %s AND
-            MailingList.status <> %s AND
-            MailingListSubscription.email_address IS NULL AND
-            EmailAddress.status = %s
-            """ % sqlvalues(self, self.team,
-                            MailingListStatus.INACTIVE,
-                            EmailAddressStatus.PREFERRED),
-            clauseTables=clause_tables, prejoins=['person'])
-        specific = EmailAddress.select("""
-            EmailAddress.id = MailingListSubscription.email_address AND
-            MailingList.id = MailingListSubscription.mailing_list AND
-            TeamParticipation.person = MailingListSubscription.person AND
-            MailingListSubscription.mailing_list = %s AND
-            TeamParticipation.team = %s AND
-            MailingList.status <> %s
-            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
-            clauseTables=clause_tables, prejoins=['person'])
-        return preferred.union(specific)
+        tables = (
+            EmailAddress,
+            LeftJoin(Account, Account.id == EmailAddress.accountID),
+            LeftJoin(MailingListSubscription,
+                     MailingListSubscription.personID
+                     == EmailAddress.personID),
+            LeftJoin(MailingList,
+                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID
+                     == MailingListSubscription.personID),
+            )
+        preferred = store.using(*tables).find(
+            EmailAddress,
+            And(MailingListSubscription.mailing_listID == self.id,
+                TeamParticipation.teamID == self.team.id,
+                MailingList.status != MailingListStatus.INACTIVE,
+                MailingListSubscription.email_addressID == None,
+                EmailAddress.status == EmailAddressStatus.PREFERRED,
+                Account.status == AccountStatus.ACTIVE))
+        tables = (
+            EmailAddress,
+            LeftJoin(Account, Account.id == EmailAddress.accountID),
+            LeftJoin(MailingListSubscription,
+                     MailingListSubscription.email_addressID
+                     == EmailAddress.id),
+            LeftJoin(MailingList,
+                     MailingList.id == MailingListSubscription.mailing_listID),
+            LeftJoin(TeamParticipation,
+                     TeamParticipation.personID
+                     == MailingListSubscription.personID),
+            )
+        explicit = store.using(*tables).find(
+            EmailAddress,
+            And(MailingListSubscription.mailing_listID == self.id,
+                TeamParticipation.teamID == self.team.id,
+                MailingList.status != MailingListStatus.INACTIVE,
+                Account.status == AccountStatus.ACTIVE))
+        # Union the two queries together to give us the complete list of email
+        # addresses allowed to post.  Note that while we're retrieving both
+        # the EmailAddress and Person records, this method is defined as only
+        # returning EmailAddresses.  The reason why we include the Person in
+        # the query is because the consumer of this method will access
+        # email_address.person.displayname, so the prejoin to Person is
+        # critical to acceptable performance.  Indeed, without the prejoin, we
+        # were getting tons of timeout OOPSes.  See bug 259440.
+        for email_address in preferred.union(explicit):
+            yield email_address
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
@@ -450,6 +475,7 @@ class MailingList(SQLBase):
         # are allowed to post to the mailing list.
         tables = (
             Person,
+            LeftJoin(Account, Account.id == Person.accountID),
             LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
             LeftJoin(TeamParticipation,
                      TeamParticipation.personID == Person.id),
@@ -462,6 +488,7 @@ class MailingList(SQLBase):
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
                 EmailAddress.status.is_in(email_address_statuses),
+                Account.status == AccountStatus.ACTIVE,
                 ))
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to this mailing list.
@@ -470,6 +497,7 @@ class MailingList(SQLBase):
         # global approvals.
         tables = (
             Person,
+            LeftJoin(Account, Account.id == Person.accountID),
             LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
             LeftJoin(MessageApproval,
                      MessageApproval.posted_byID == Person.id),
@@ -479,6 +507,7 @@ class MailingList(SQLBase):
             And(MessageApproval.mailing_listID == self.id,
                 MessageApproval.status.is_in(message_approval_statuses),
                 EmailAddress.status.is_in(email_address_statuses),
+                Account.status == AccountStatus.ACTIVE,
                 ))
         # Union the two queries together to give us the complete list of email
         # addresses allowed to post.  Note that while we're retrieving both
