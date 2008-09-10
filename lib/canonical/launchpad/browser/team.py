@@ -829,8 +829,8 @@ class TeamMapView(LaunchpadView):
         times = [datetime.now(pytz.timezone(zone))
                  for zone in zones]
         timeformat = '%H:%M'
-        return [time.strftime(timeformat)
-                for time in sorted(times, key=lambda time: str(time))]
+        return sorted(
+            set(time.strftime(timeformat) for time in times))
 
     @cachedproperty
     def bounds(self):

@@ -908,4 +908,28 @@ $$
 $$;
 
 COMMENT ON FUNCTION ulower(text) IS
-'Return the lower case version of a UTF-8 encoded string.'
+'Return the lower case version of a UTF-8 encoded string.';
+
+
+CREATE OR REPLACE FUNCTION set_bug_users_affected_count() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE Bug
+        SET users_affected_count = users_affected_count + 1
+        WHERE Bug.id = NEW.bug;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        UPDATE Bug
+        SET users_affected_count = users_affected_count - 1
+        WHERE Bug.id = OLD.bug;
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_message_count() IS
+'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
