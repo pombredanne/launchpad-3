@@ -1039,17 +1039,6 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
 
-    def getProductDevelopmentBranches(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        query = Branch.select('''
-            (Branch.id = ProductSeries.import_branch OR
-            Branch.id = ProductSeries.user_branch) AND
-            ProductSeries.id = Product.development_focus AND
-            Branch.product IN %s''' % sqlvalues(product_ids),
-            clauseTables = ['Product', 'ProductSeries'])
-        return query.prejoin(['author'])
-
     def getActiveUserBranchSummaryForProducts(self, products):
         """See `IBranchSet`."""
         product_ids = [product.id for product in products]
