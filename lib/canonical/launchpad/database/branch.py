@@ -662,9 +662,6 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
-        else:
-            self.next_mirror_time = None
-        self.syncUpdate()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

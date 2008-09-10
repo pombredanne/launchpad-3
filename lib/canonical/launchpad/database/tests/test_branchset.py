@@ -334,6 +334,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         num_failures = 3
         for i in range(num_failures):
             branch.requestMirror()
+            branch.startMirroring()
             branch.mirrorFailed('No particular reason')
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertInFuture(
@@ -347,6 +348,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch = self.makeBranch()
         for i in range(MAXIMUM_MIRROR_FAILURES):
             branch.requestMirror()
+            branch.startMirroring()
             branch.mirrorFailed('No particular reason')
         self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
         self.assertEqual(None, branch.next_mirror_time)
