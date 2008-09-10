@@ -13,7 +13,7 @@ so that we can avoid network traffic in tests.
     >>> test_transport = TestTracXMLRPCTransport('http://example.com/')
     >>> trac = TracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
-    >>> trac.xmlrpc_transport is test_transport
+    >>> trac._xmlrpc_transport is test_transport
     True
 
 
@@ -103,7 +103,7 @@ header in its requests.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     FakeHTTPConnection)
     >>> trac = TracLPPlugin('http://example.com/')
-    >>> transport = trac.xmlrpc_transport
+    >>> transport = trac._xmlrpc_transport
     >>> transport.auth_cookie = 'trac_auth=random_token'
 
 

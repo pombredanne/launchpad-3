@@ -283,18 +283,20 @@ class TracLPPlugin(Trac):
 
         if xmlrpc_transport is None:
             xmlrpc_transport = UrlLib2Transport(baseurl)
-        self.xmlrpc_transport = xmlrpc_transport
-        self.internal_xmlrpc_transport = internal_xmlrpc_transport
+
+        self._xmlrpc_transport = xmlrpc_transport
+        self._internal_xmlrpc_transport = internal_xmlrpc_transport
+
+        xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc')
+        self._server = xmlrpclib.ServerProxy(
+            xmlrpc_endpoint, transport=self._xmlrpc_transport)
 
     @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
 
-        time_snapshot, remote_bugs = server.launchpad.bug_info(
+        time_snapshot, remote_bugs = self._server.launchpad.bug_info(
             LP_PLUGIN_METADATA_AND_COMMENTS, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
@@ -306,7 +308,7 @@ class TracLPPlugin(Trac):
         """Create an authentication token and return it."""
         internal_xmlrpc = xmlrpclib.ServerProxy(
             config.checkwatches.xmlrpc_url,
-            transport=self.internal_xmlrpc_transport)
+            transport=self._internal_xmlrpc_transport)
         return internal_xmlrpc.newBugTrackerToken()
 
     def _extractAuthCookie(self, cookie_header):
@@ -324,15 +326,12 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
         auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
-        self.xmlrpc_transport.setCookie(auth_cookie)
+        self._xmlrpc_transport.setCookie(auth_cookie)
 
     @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-        time_zone, local_time, utc_time = server.launchpad.time_snapshot()
+        time_zone, local_time, utc_time = self._server.launchpad.time_snapshot()
 
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
@@ -342,10 +341,6 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
         """See `IExternalBugTracker`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
         # Convert last_checked into an integer timestamp (which is what
         # the Trac LP plugin expects).
         last_checked_timestamp = int(
@@ -355,7 +350,7 @@ class TracLPPlugin(Trac):
         criteria = {
             'modified_since': last_checked_timestamp,
             'bugs': remote_bug_ids,}
-        time_snapshot, modified_bugs = server.launchpad.bug_info(
+        time_snapshot, modified_bugs = self._server.launchpad.bug_info(
             LP_PLUGIN_BUG_IDS_ONLY, criteria)
 
         return [bug['id'] for bug in modified_bugs]
@@ -376,11 +371,7 @@ class TracLPPlugin(Trac):
 
         # Use the get_comments() method on the remote server to get the
         # comments specified.
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
-        timestamp, remote_comments = server.launchpad.get_comments(
+        timestamp, remote_comments = self._server.launchpad.get_comments(
             comment_ids)
         for remote_comment in remote_comments:
             bug_comments[remote_comment['id']] = remote_comment
@@ -426,11 +417,7 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """See `ISupportsCommentPushing`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
-        timestamp, comment_id = server.launchpad.add_comment(
+        timestamp, comment_id = self._server.launchpad.add_comment(
             remote_bug, comment_body)
 
         return comment_id
