@@ -91,16 +91,16 @@ using default names.
     Unauthorized: (..., 'name', 'launchpad.Admin')
 
 When editable, the 'name' field is protected by a constraint that
-asserts the archive is indeed a REBUILD and if the name is valid.
+asserts the archive is indeed a COPY and if the name is valid.
 
     >>> login("foo.bar@canonical.com")
 
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only REBUILD archives can be renamed.
+    AssertionError: Only COPY archives can be renamed.
 
-We will create a REBUILD archive and modify its name.
+We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> rebuild_archive = getUtility(IArchiveSet).new(
@@ -1115,14 +1115,14 @@ distribution and a person name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, PRIMARY, PARTNER and REBUILDS:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
     14
 
     >>> print sorted(set(archive_purposes))
-    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
+    ['PARTNER', 'PPA', 'PRIMARY', 'COPY']
 
 ArchiveSet utility also offers counters for:
 
@@ -1467,14 +1467,14 @@ Cprov does not have permission, however.
 
 For further information about how ArchiveRebuild works see
 archive-rebuilds.txt. Here we will just document why the creation and
-lookup of REBUILD archives are a little different than the rest of the
+lookup of COPY archives are a little different than the rest of the
 archives.
 
-When creating archives with REBUILD purpose, the 'name' field is
+When creating archives with COPY purpose, the 'name' field is
 mandatory, since it's user defined. There is no default name for
 them.
 
-Creating new REBUILD archive without passing a name results in an
+Creating new COPY archive without passing a name results in an
 AssertionError.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
@@ -1482,7 +1482,7 @@ AssertionError.
     ...     distribution=ubuntutest)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the 'name', in addition to the owner, purpose and
 distribution, does the trick.
@@ -1514,7 +1514,7 @@ however we have to pass 'name', otherwise a error is raised.
     ...     ubuntutest, ArchivePurpose.COPY)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the name it behaves exactly it does for primary archive
 purposes (PRIMARY and PARTNER). When no matching archive is found,

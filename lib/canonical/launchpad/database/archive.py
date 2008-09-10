@@ -62,13 +62,13 @@ class Archive(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
-        """Only allow renaming of REBUILD archives.
+        """Only allow renaming of COPY archives.
 
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
             assert self.purpose == ArchivePurpose.COPY, (
-                "Only REBUILD archives can be renamed.")
+                "Only COPY archives can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
