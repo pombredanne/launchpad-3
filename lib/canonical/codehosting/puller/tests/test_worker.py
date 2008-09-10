@@ -23,7 +23,8 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory)
+    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory,
+    StackedOnBranchNotFound)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
@@ -147,6 +148,25 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
+
+    def testRaisesStackedOnBranchNotFoundRemirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # update, then raise StackedOnBranchNotFound. This will ensure the
+        # puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        # XXX: This should actually raise an error, I think. Talk to mwh about
+        # it tomorrow -- brain dead now. 2008-09-10.
+        to_mirror.mirrorWithoutChecks()
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
     def testDoesntSendStackedInfoUnstackableFormat(self):
         # Mirroring an unstackable branch doesn't send the stacked-on location
