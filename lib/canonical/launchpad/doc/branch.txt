@@ -1,28 +1,26 @@
 = Bazaar Branches =
 
-The Branch table holds information about an Bazaar Branch. It describes the
-Launchpad user model of a branch.
+The Branch table holds information about a Bazaar branch.  It contains
+the metadata associated with the branch -- the owner, the whiteboard
+and so on.  Where the actual branch data lives depends on the branch.
 
-It has a N-N association to the Revision table through the BranchRevision
-table. An association table is required because the sequence of revisions
-listed by "bzr log" is defined by a "revision-history" file which has some
-freedom with respect to the ancestry of revisions.
+It has a N-N association to the Revision table through the
+BranchRevision table. An associated table is required because the
+sequence of revisions listed by "bzr log" is defined by a
+"revision-history" file which has some freedom with respect to the
+ancestry of revisions, at least in Branch5 and older branches.
 
   * Distinct revision histories may point to same revision.
 
-  * Revision histories including the same revision may have different starting
-    points, they need not trace history back to the initial import. Therefore a
-    given revision may have a different order number in different branches.
+  * Revision histories including the same revision may have different
+    starting points, they need not trace history back to the initial
+    import. Therefore a given revision may have a different order
+    number in different branches.
 
   * A revision history is required to follow the ancestry DAG, but two
     different branches may have histories tracing a different path between two
     shared revisions. This is exercised by the "convergence" feature of "bzr
     pull".
-
-A Branch is not tied to an URL, since a branch may change locations over time.
-It's not tied to a specific revision history because each new commit appends to
-the history, and it's not restricted to appending to the history because the
-Bazaar model does not forbid users from replacing the history of a branch.
 
 
 == Interfaces ==
@@ -32,9 +30,9 @@ Bazaar model does not forbid users from replacing the history of a branch.
     ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
     >>> from canonical.launchpad.database import (
     ...     Branch, BranchSet, BranchSubscription,)
-    >>> verifyObject(IBranch, Branch.get(1))
-    True
     >>> verifyObject(IBranchSet, BranchSet())
+    True
+    >>> verifyObject(IBranch, Branch.get(1))
     True
     >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
     True
@@ -43,6 +41,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 == Branch types ==
 
 There are four different types of branches:
+
  * Hosted
  * Mirrored
  * Imported
@@ -77,33 +76,30 @@ utility.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> branchset = getUtility(IBranchSet)
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> gterm_product = productset.get(6)
+The 'get' method on the branch set fetches branches by ID.
+
+    >>> branch = factory.makeBranch(name='foobar')
+    >>> branchset.get(branch.id).name
+    u'foobar'
+
+It returns None if there is no branch with the specified ID.
 
     >>> print branchset.get(-1)
     None
 
-A branch is retrievable via BranchSet's __getitem__
+BranchSet's __getitem__ also fetches branches by ID.
 
-    >>> branchset[24].name
-    u'launchpad'
+    >>> branchset[branch.id].name
+    u'foobar'
 
-If it doesn't exist an exception NotFoundError is raised
+It differs from .get() by the fact that it raises NotFoundError if
+there is no branch with the specified ID.
 
-    >>> import sys
-    >>> try:
-    ...     branchset[-1]
-    ...     print 'ERROR: No exception raised'
-    ... except NotFoundError:
-    ...     print 'NotFoundError raised'
-    ... except:
-    ...     print 'A different exception was raised: %r' % sys.exc_info()
+    >>> branchset[-1]
+    Traceback (most recent call last):
+      ...
     NotFoundError raised
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
-    >>> ddaa = personset.getByName('ddaa')
 
     >>> from canonical.launchpad.testing import time_counter
     >>> now = time_counter()
