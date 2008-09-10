@@ -244,6 +244,25 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.next_mirror_time)
 
+    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
+        # Mirroring branches resets their mirror request times. Before
+        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
+        # and mirrorComplete reset the next_mirror_time based on the old
+        # value. This test confirms that branches which were in the middle of
+        # mirroring during the upgrade will have their next_mirror_time set
+        # properly eventually.
+        branch = self.makeBranch()
+        branch.requestMirror()
+        next_mirror_time = branch.next_mirror_time
+        branch.startMirroring()
+        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
+        branch.mirrorComplete('rev1')
+        self.assertIn(
+            branch, self.branch_set.getPullQueue(branch.branch_type))
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(None, branch.next_mirror_time)
+
     def test_mirrorFailureResetsMirrorRequest(self):
         """If a branch fails to mirror then update failures but don't mirror
         again until asked.
@@ -344,6 +363,26 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         self.assertInFuture(
             branch.next_mirror_time, MIRROR_TIME_INCREMENT)
         self.assertEqual(0, branch.mirror_failures)
+
+    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
+        # Mirroring branches resets their mirror request times. Before
+        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
+        # and mirrorComplete reset the next_mirror_time based on the old
+        # value. This test confirms that branches which were in the middle of
+        # mirroring during the upgrade will have their next_mirror_time set
+        # properly eventually.
+        branch = self.makeBranch()
+        branch.requestMirror()
+        next_mirror_time = branch.next_mirror_time
+        branch.startMirroring()
+        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
+        branch.mirrorComplete('rev1')
+        self.assertIn(
+            branch, self.branch_set.getPullQueue(branch.branch_type))
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertInFuture(
+            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
 
 
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
