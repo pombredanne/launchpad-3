@@ -1634,11 +1634,6 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         """Return the link to codebrowse for this branch."""
         return config.codehosting.codebrowse_root
 
-    @cachedproperty
-    def latest_branches(self):
-        """The lastest branches registered for the product."""
-        return self.context.getLatestBranches(visible_by_user=self.user)
-
 
 class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
