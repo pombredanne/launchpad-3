@@ -27,17 +27,18 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
-    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
-    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
+    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
+    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
+    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems,
+    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -509,6 +510,26 @@ class LaunchpadObjectFactory:
 
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
+
+    def makeBugTracker(self):
+        """Make a new bug tracker."""
+        base_url = 'http://%s.example.com/' % self.getUniqueString()
+        owner = self.makePerson()
+        return getUtility(IBugTrackerSet).ensureBugTracker(
+            base_url, owner, BugTrackerType.BUGZILLA)
+
+    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+        """Make a new bug watch."""
+        if remote_bug is None:
+            remote_bug = self.getUniqueInteger()
+
+        if bugtracker is None:
+            bugtracker = self.makeBugTracker()
+
+        bug = self.makeBug()
+        owner = self.makePerson()
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):
