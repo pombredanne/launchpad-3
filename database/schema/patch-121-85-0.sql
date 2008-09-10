@@ -14,6 +14,16 @@ DROP TABLE archiverebuild;
 ALTER TABLE archive ADD COLUMN
     date_created timestamp without time zone;
 
+UPDATE archive SET date_created = (
+    SELECT MIN(datecreated)
+    FROM securesourcepackagepublishinghistory
+    WHERE securesourcepackagepublishinghistory.archive = archive.id);
+
+UPDATE archive SET date_created = date_updated WHERE date_created IS NULL;
+
+ALTER TABLE archive ALTER COLUMN date_created SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE archive ALTER COLUMN date_created SET NOT NULL;
+
 -- Create new PackageCopyRequest table.
 
 -- Once an archive has been put into place the user will want to carry
@@ -152,4 +162,4 @@ ALTER TABLE ONLY archivearch
 ALTER TABLE ONLY archivearch
     ADD CONSTRAINT archivearch__processorfamily__archive__key UNIQUE (processorfamily, archive);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 85, 0);
