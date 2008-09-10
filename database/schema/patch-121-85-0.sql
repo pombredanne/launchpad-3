@@ -20,8 +20,10 @@ UPDATE archive SET date_created = (
     WHERE securesourcepackagepublishinghistory.archive = archive.id);
 
 UPDATE archive SET date_created = date_updated WHERE date_created IS NULL;
+UPDATE archive SET date_created = date_updated where date_updated < date_created;
 
-ALTER TABLE archive ALTER COLUMN date_created SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE archive ALTER COLUMN date_created
+    SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 ALTER TABLE archive ALTER COLUMN date_created SET NOT NULL;
 
 -- Create new PackageCopyRequest table.
