@@ -243,7 +243,8 @@ def new_person(first_name, set_preferred_email=True,
         person.mailing_list_auto_subscribe_policy = \
             MailingListAutoSubscribePolicy.NEVER
     getUtility(IEmailAddressSet).new(alternative_address, person,
-                                     EmailAddressStatus.VALIDATED)
+                                     EmailAddressStatus.VALIDATED,
+                                     person.account)
     return person
 
 
