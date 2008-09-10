@@ -295,18 +295,6 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
-    def related_bug_tasks(self):
-        """See `IBranch`."""
-        tasks = []
-        for bug in self.related_bugs:
-            task = bug.getBugTask(self.product)
-            if task is None:
-                # Just choose the first task for the bug.
-                task = bug.bugtasks[0]
-            tasks.append(task)
-        return tasks
-
-    @property
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
