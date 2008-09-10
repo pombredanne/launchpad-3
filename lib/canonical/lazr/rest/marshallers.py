@@ -303,6 +303,16 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
             raise ValueError("Value doesn't look like a date.")
 
 
+class DateFieldMarshaller(DateTimeFieldMarshaller):
+    """A marshaller that transforms its value into a datetime.date object."""
+
+    def _marshall_from_json_data(self, value):
+        """Parse the value as a datetime.date object."""
+        date_time = super(DateFieldMarshaller, self)._marshall_from_json_data(
+            value)
+        return date_time.date()
+
+
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller for List, Tuple, Set and other AbstractCollections.
 

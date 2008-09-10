@@ -45,8 +45,8 @@ from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_write_operation, exported,
-    operation_parameters, operation_returns_entry, rename_parameters_as)
+    export_as_webservice_entry, export_factory_operation, exported,
+    operation_parameters, rename_parameters_as)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -190,19 +190,15 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class ProxyMilestoneNameField(ContentNameField):
-    def bind(self, object):
-        real_field = copy_field(IMilestone['name'])
-        return real_field.bind(object)
-
-
 class IProductSeriesEditRestricted(Interface):
     """IProductSeries properties which require launchpad.Edit."""
 
     @rename_parameters_as(dateexpected='date_targeted')
-    @operation_parameters(name=ProxyMilestoneNameField(), dateexpected=Date(),
-                          description=Description())
-    @export_write_operation()
+    # Interface is changed to IMilestone, and
+    # name=Text() is changed to copy_field(IMilestone['name'])
+    # below after IMilestone is imported.
+    @export_factory_operation(Interface,
+                              ['name', 'dateexpected', 'description'])
     def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
@@ -489,6 +485,14 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
 from canonical.launchpad.interfaces.milestone import IMilestone
 IProductSeries['milestones'].value_type.schema = IMilestone
 IProductSeries['all_milestones'].value_type.schema = IMilestone
+# Update the @operations_parameters decorator for
+# IProductSeries.newMilestone() to make the 'name'
+# parameter a copy of IMilestone.name.
+new_milestone_tagged_value = IProductSeries['newMilestone'].queryTaggedValue(
+    'lazr.webservice.exported')
+#new_milestone_tagged_value['params']['name'] = copy_field(IMilestone['name'])
+# Update the @operation_returns_entry decorator.
+new_milestone_tagged_value['return_type'] = IMilestone
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series

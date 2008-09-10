@@ -292,17 +292,23 @@ virtual host.
 
 = Creating a milestone on the product series =
 
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
-    ...     name='alpha1', dateexpected='157.0',
+    ...     name='alpha1', date_targeted=u'2005-06-06T08:59:51.596025Z',
     ...     description='Feature complete but buggy.')
+    >>> print response
     HTTP/1.1 200 Ok
     ...
+    >>> milestone = response.jsonBody()
+    >>> pprint_entry(milestone)
+    u'alpha1'
     >>> response = webservice.get(
     ...     firefox_1_0['active_milestones_collection_link'])
     >>> active_milestones = response.jsonBody()
     >>> print_self_link_of_entries(active_milestones)
     http://api.launchpad.dev/beta/firefox/+milestone/alpha1
+
+The milestone name must be unique on the product series.
 
     >>> print webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
@@ -311,6 +317,9 @@ virtual host.
     HTTP/1.1 400 Bad Request
     ...
     name: The name alpha1 is already used by a milestone in Mozilla Firefox.
+
+The milestone name can only contain letters, numbers, "-", "+", and ".".
+
     >>> print webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
     ...     name='!@#$%^&*()', dateexpected='157.0',
