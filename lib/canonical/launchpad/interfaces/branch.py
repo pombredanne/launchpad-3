@@ -1,5 +1,5 @@
 # Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
