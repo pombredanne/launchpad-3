@@ -381,6 +381,10 @@ class BranchURIField(URIField):
                 mapping={'domain': escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
 
+        if uri.underDomain('localhost') or uri.underDomain('127.0.0.1'):
+            message = _('Launchpad cannot mirror branches from localhost')
+            raise LaunchpadValidationError(structured(message))
+
         # As well as the check against the config, we also need to check
         # against the actual text used in the database constraint.
         constraint_text = 'http://bazaar.launchpad.net'

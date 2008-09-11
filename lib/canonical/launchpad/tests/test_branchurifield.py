@@ -55,6 +55,11 @@ class TestBranchURIField(unittest.TestCase):
         for domain in self.listLaunchpadDomains():
             self.assertInvalid(u'http://%s/user/+junk/branch' % domain)
 
+    def test_notFromLocalhost(self):
+        # URIs from localhost are not allowed to be registered.
+        self.assertInvalid(u'http://localhost/foo/bar')
+        self.assertInvalid(u'http://127.0.0.1/foo/bar')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
