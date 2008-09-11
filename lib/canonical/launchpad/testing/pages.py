@@ -180,22 +180,25 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers, api_version=api_version)
 
+    def _convertArgs(self, operation_name, args):
+        """Encode and convert keyword arguments."""
+        args['ws.op'] = operation_name
+        # To be properly marshalled all values must be strings or converted to
+        # JSON.
+        for key, value in args.items():
+            if not isinstance(value, basestring):
+                args[key] = simplejson.dumps(value)
+        return urllib.urlencode(args)
+
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = urllib.urlencode(kwargs)
+        data = self._convertArgs(operation_name, kwargs)
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
     def named_post(self, path, operation_name, headers=None,
                    api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        # To be properly marshalled all values must be strings or converted to
-        # JSON.
-        for key, value in kwargs.items():
-            if not isinstance(value, basestring):
-                kwargs[key] = simplejson.dumps(value)
-        data = urllib.urlencode(kwargs)
+        data = self._convertArgs(operation_name, kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers, api_version=api_version)
 

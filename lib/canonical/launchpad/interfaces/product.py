@@ -569,7 +569,7 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=sets.Set(), license_info=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
 

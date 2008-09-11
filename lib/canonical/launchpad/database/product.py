@@ -1017,11 +1017,13 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=sets.Set(), license_info=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
+        if licenses is None:
+            licenses = sets.Set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
