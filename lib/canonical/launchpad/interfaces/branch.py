@@ -602,7 +602,9 @@ class IBranch(IHasOwner):
             title=_('Status'), vocabulary=BranchLifecycleStatus,
             default=BranchLifecycleStatus.NEW))
 
-    # Mirroring attributes
+    # Mirroring attributes. For more information about how these all relate to
+    # each other, look at
+    # 'lib/canonical/launchpad/doc/puller-state-table.ods'.
     last_mirrored = Datetime(
         title=_("Last time this branch was successfully mirrored."),
         required=False)
@@ -731,6 +733,16 @@ class IBranch(IHasOwner):
             merge request.
         :param needs_review: Used to specify the the proposal is ready for
             review right now.
+        """
+
+    def getStackedBranches():
+        """The branches that are stacked on this one."""
+
+    def getStackedBranchesWithIncompleteMirrors():
+        """Branches that are stacked on this one but aren't done mirroring.
+
+        In particular, these are branches that have started mirroring but have
+        not yet succeeded. Failed branches are included.
         """
 
     def getMergeQueue():
