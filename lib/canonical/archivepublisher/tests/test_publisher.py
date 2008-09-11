@@ -636,6 +636,57 @@ class TestPublisher(TestNativePublishingBase):
                 self.assertReleaseFileRequested(
                     publisher, 'breezy-autotest', component, dist)
 
+    def testAptSHA256(self):
+        """Test issues with python-apt in Ubuntu/hardy.
+
+        The version of python-apt in Ubuntu/hardy has problems with
+        contents containing '\0' character.
+
+        The documented workaround for it is passing the original
+        file-descriptor to apt_pkg.sha256sum(), instead of its contents.
+
+        The python-apt version in Ubuntu/Intrepid has a fix for this issue,
+        but it already has many other features that makes a backport
+        practically unfeasible. That's mainly why this 'bug' is documented
+        as a LP test, the current code was modified to cope with it.
+
+        Once the issue with python-apt is gone, either by having a backport
+        available in hardy or a production upgrade, this test will fail. At
+        that point we will be able to revert the affected code and remove
+        this test, restoring the balance of the force.
+
+        See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
+        https://bugs.edge.launchpad.net/soyuz/+bug/269014.
+        """
+        from canonical.archivepublisher.publishing import sha256
+
+        def _getSHA256(content):
+            """Return checksums for the given content.
+
+            Return a tuple containing the checksum corresponding to the
+            given content (as string) and a file containing the same string.
+            """
+            # Write the given content in a tempfile.
+            test_filepath = tempfile.mktemp()
+            test_file = open(test_filepath, 'w')
+            test_file.write(content)
+            test_file.close()
+            # Generate the checksums for the two sources.
+            text = sha256(content).hexdigest()
+            file = sha256(open(test_filepath)).hexdigest()
+            # Remove the tempfile.
+            os.unlink(test_filepath)
+            return text, file
+
+        # Apt does the right thing for ordinary strings, both, file and text
+        # checksums are identical.
+        text, file = _getSHA256("foobar")
+        self.assertEqual(text, file)
+
+        # On the other hand, there is a mismatch for strings containing '\0'
+        text, file = _getSHA256("foo\0bar")
+        self.assertNotEqual(text, file)
+
     def testReleaseFile(self):
         """Test release file writing.
 
