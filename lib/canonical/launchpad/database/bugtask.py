@@ -1782,7 +1782,7 @@ class BugTaskSet:
             bug_privacy_filter = get_bug_privacy_filter(user)
             if bug_privacy_filter != '':
                 bug_privacy_filter = "AND " + bug_privacy_filter
-        unconfirmed_bug_join = self._getUnconfirmedBugJoin()
+        unconfirmed_bug_condition = self._getUnconfirmedBugCondition()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
         expirable_bugtasks = BugTask.select("""
             BugTask.bug = Bug.id
@@ -1791,7 +1791,6 @@ class BugTaskSet:
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
                     LEFT JOIN BugWatch on Bug.id = BugWatch.bug
-                """ + unconfirmed_bug_join + """
                 """ + target_join + """
                 WHERE
                 """ + target_clause + """
@@ -1804,17 +1803,16 @@ class BugTaskSet:
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old) +
+            unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
         return expirable_bugtasks
 
-    def _getUnconfirmedBugJoin(self):
-        """Return the SQL to join BugTask to unconfirmed bugs.
+    def _getUnconfirmedBugCondition(self):
+        """Return the SQL to filter out BugTasks that has been confirmed
 
-        This method returns a derived table with the alias UnconfirmedBugs
-        that contains the id of all bugs that that permit expiration.
         A bugtasks cannot expire if the bug is, has been, or
         will be, confirmed to be legitimate. Once the bug is considered
         valid for one target, it is valid for all targets.
@@ -1828,19 +1826,12 @@ class BugTaskSet:
             if status not in statuses_not_preventing_expiration]
 
         return """
-            JOIN (
-                -- ALL bugs with incomplete bugtasks.
-                SELECT BugTask.bug AS bug
-                  FROM BugTask
-                 WHERE BugTask.status = %s
-            EXCEPT
-                -- All valid bugs
-            SELECT DISTINCT Bug.id as bug
-                FROM Bug
-                    JOIN BugTask ON Bug.id = BugTask.bug
-                WHERE BugTask.status IN %s
-            ) UnconfirmedBugs ON BugTask.bug = UnconfirmedBugs.bug
-            """ % sqlvalues(BugTaskStatus.INCOMPLETE, unexpirable_status_list)
+             AND NOT EXISTS (
+                SELECT TRUE
+                FROM BugTask AS RelatedBugTask
+                WHERE RelatedBugTask.bug = BugTask.bug
+                    AND RelatedBugTask.status IN %s)
+            """ % sqlvalues(unexpirable_status_list)
 
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
