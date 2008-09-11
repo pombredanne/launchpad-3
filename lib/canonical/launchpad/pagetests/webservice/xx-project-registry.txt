@@ -1,6 +1,5 @@
 = Web Service Project Groups =
 
-
 == Project group collection ==
 
 It is possible to get a batched list of all the project groups.
