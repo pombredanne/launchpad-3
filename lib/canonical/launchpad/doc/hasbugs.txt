@@ -2,7 +2,7 @@
 
 Objects that are linked to collections of bug tasks provide the IHasBugs
 interface. IHasBugs provides properties representing the relationship
-between object and some of the bug tasks connected to it, and allows
+between the object and some of the bug tasks connected to it, and allows
 searching through the list of bugs.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -25,7 +25,7 @@ Closed bugtasks:
     [8]
 
 For the next couple of examples, we'll temporarily modify some bugtask
-values to have some sample data for examples following.
+values to have some sample data for the examples that follow.
 
     >>> login("foo.bar@canonical.com")
 

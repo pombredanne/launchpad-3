@@ -6,7 +6,6 @@ __all__ = ['Milestone',
            'MilestoneSet',
            'ProjectMilestone']
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -19,7 +18,6 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from canonical.launchpad.interfaces.structuralsubscription import (
