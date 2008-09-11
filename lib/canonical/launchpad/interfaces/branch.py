@@ -602,7 +602,9 @@ class IBranch(IHasOwner):
             title=_('Status'), vocabulary=BranchLifecycleStatus,
             default=BranchLifecycleStatus.NEW))
 
-    # Mirroring attributes
+    # Mirroring attributes. For more information about how these all relate to
+    # each other, look at
+    # 'lib/canonical/launchpad/doc/puller-state-table.ods'.
     last_mirrored = Datetime(
         title=_("Last time this branch was successfully mirrored."),
         required=False)
