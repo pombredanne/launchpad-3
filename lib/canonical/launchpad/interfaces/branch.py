@@ -740,7 +740,7 @@ class IBranch(IHasOwner):
         """Branches that are stacked on this one but aren't done mirroring.
 
         In particular, these are branches that have started mirroring but have
-        not yet succeeded or failed.
+        not yet succeeded. Failed branches are included.
         """
 
     def getMergeQueue():
