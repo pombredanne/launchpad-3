@@ -13,8 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
+from zope.schema import List, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
@@ -23,12 +22,9 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-   call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation,
-   export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns_collection_of,
-   operation_returns_entry, rename_parameters_as, REQUEST_USER,
-   webservice_error)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, exported, operation_parameters,
+    operation_returns_collection_of)
 
 
 class IHasBugs(Interface):
