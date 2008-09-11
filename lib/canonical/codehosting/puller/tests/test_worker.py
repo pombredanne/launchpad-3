@@ -477,6 +477,13 @@ class TestMirroredBranchOpener(TestCase):
             BadUrlLaunchpad, opener.checkOneURL,
             self.factory.getUniqueURL(host='code.launchpad.dev'))
 
+    def testLocalhost(self):
+        opener = MirroredBranchOpener()
+        localhost_url = self.factory.getUniqueURL(host='localhost')
+        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+        localhost_url = self.factory.getUniqueURL(host='127.0.0.1')
+        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     """Tests for the client-side implementation of the protocol used to
