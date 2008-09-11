@@ -414,15 +414,17 @@ BranchSubscriptionNotificationLevel.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel, IBranchSubscription)
-    >>> sabdfl = personset.getByName('sabdfl')
-    >>> subscription = gterm_dev.subscribe(
-    ...     sabdfl,
+    >>> subscriber = factory.makePerson(name='subscriber')
+    >>> branch = factory.makeBranch(
+    ...     owner=user, product=product, name='subscribed')
+    >>> subscription = branch.subscribe(
+    ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
     ...     CodeReviewNotificationLevel.FULL)
     >>> verifyObject(IBranchSubscription, subscription)
     True
-    >>> subscription.branch == gterm_dev and subscription.person == sabdfl
+    >>> subscription.branch == branch and subscription.person == subscriber
     True
     >>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
     True
@@ -430,21 +432,21 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
-    >>> gterm_dev.subscriptions[1] == subscription
+    >>> branch.subscriptions[1] == subscription
     True
-    >>> set(gterm_dev.subscribers) == set([gterm_dev.owner, sabdfl])
+    >>> set(branch.subscribers) == set([branch.owner, subscriber])
     True
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(subscription)
-    http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
+    http://code.launchpad.dev/~user/product/subscribed/+subscription/subscriber
 
-    The settings for a subscription can be changed by re-subscribing.
+The settings for a subscription can be changed by re-subscribing.
 
-    >>> subscription1 = gterm_dev.getSubscription(sabdfl)
+    >>> subscription1 = branch.getSubscription(subscriber)
     >>> subscription1.review_level == CodeReviewNotificationLevel.FULL
     True
-    >>> subscription2 = gterm_dev.subscribe(
-    ...     sabdfl,
+    >>> subscription2 = branch.subscribe(
+    ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
@@ -455,46 +457,38 @@ BranchSubscriptionNotificationLevel.
 
     Unsubscribing is also supported.
 
-    >>> gterm_dev.unsubscribe(sabdfl)
-    >>> gterm_dev.subscribers.count()
+    >>> branch.unsubscribe(subscriber)
+    >>> branch.subscribers.count()
     1
 
-
 We can get the subscribers for a branch based on their level of
-subscription. From the example above, we see that sabdfl has a 'FULL'
-subscription to `gterm_dev`.
+subscription.
 
-Create a subscription to another branch to confirm that we are just
-getting the correct subscriptions.
-
-    >>> factory = LaunchpadObjectFactory()
-    >>> subscription = factory.makeBranchSubscription()
-    >>> subscription.notification_level = BranchSubscriptionNotificationLevel.FULL
-    >>> subscription.max_diff_lines = BranchSubscriptionDiffSize.FIVEKLINES
-    >>> syncUpdate(subscription)
+    >>> branch2 = factory.makeBranch(
+    ...     owner=user, product=product, name='subscribed2')
 
     >>> def print_names(persons):
     ...     """Print the name of each person on a new line."""
     ...     for person in persons:
     ...         print person.person.name
 
-    >>> subscription = gterm_dev.subscribe(
-    ...     sabdfl,
+    >>> subscription = branch2.subscribe(
+    ...     subscriber,
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES,
     ...     CodeReviewNotificationLevel.NOEMAIL)
 
-    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.FULL]))
-    sabdfl
+    subscriber
 
-    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY]))
 
-    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    >>> print_names(branch2.getSubscriptionsByLevel([
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionNotificationLevel.FULL]))
-    sabdfl
+    subscriber
 
 
 == Branches and revisions ==
