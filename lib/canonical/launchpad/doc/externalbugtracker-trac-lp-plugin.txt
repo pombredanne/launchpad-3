@@ -100,8 +100,6 @@ the Set-Cookie header.
 The XML-RPC transport will then take the auth_cookie and set the Cookie
 header in its requests.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     FakeHTTPConnection)
     >>> trac = TracLPPlugin('http://example.com/')
     >>> transport = trac._xmlrpc_transport
     >>> transport.auth_cookie = 'trac_auth=random_token'

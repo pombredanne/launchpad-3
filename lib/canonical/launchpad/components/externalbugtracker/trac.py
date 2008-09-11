@@ -337,7 +337,8 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        time_zone, local_time, utc_time = self._server.launchpad.time_snapshot()
+        time_zone, local_time, utc_time = (
+            self._server.launchpad.time_snapshot())
 
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
