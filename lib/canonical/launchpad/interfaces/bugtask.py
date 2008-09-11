@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
 
@@ -1009,7 +1009,7 @@ class BugTaskSearchParams:
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
-                       scope=None, has_no_package=None):
+                       sourcepackagename=None, has_no_package=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1052,6 +1052,7 @@ class BugTaskSearchParams:
                 search_params.has_no_upstream_bugtask = True
         search_params.milestone = cls._anyfy(milestone)
         search_params.component = cls._anyfy(component)
+        search_params.sourcepackagename = sourcepackagename
         if has_no_package:
             search_params.sourcepackagename = NULL
         search_params.nominated_for = nominated_for

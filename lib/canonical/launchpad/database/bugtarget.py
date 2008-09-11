@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.bugtask import (
 class HasBugsBase:
     """Standard functionality for IHasBugs.
 
-    All IHasBugs implementations should inherit from this class
+    All `IHasBugs` implementations should inherit from this class
     or from `BugTargetBase`.
     """
     def searchTasks(self, search_params, user=None,
@@ -37,10 +37,10 @@ class HasBugsBase:
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    has_no_package=None):
+                    sourcepackagename=None, has_no_package=None):
         """See `IHasBugs`."""
         if search_params is None:
-            kwargs = dict(**locals())
+            kwargs = dict(locals())
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']

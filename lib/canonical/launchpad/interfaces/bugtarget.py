@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,W0102
 
 """Interfaces related to bugs."""
 
@@ -106,7 +106,7 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    has_no_package=None):
+                    sourcepackagename=None, has_no_package=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object

@@ -1899,6 +1899,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         which, when expanded (using **params notation) can serve as the
         input for searchTasks().
         """
+
+        # We force the view to populate the data dictionary by calling
+        # _validate here.
         data = {}
         self._validate(None, data)
 
@@ -1917,7 +1920,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         params = {}
 
         # A mapping of parameters that appear in the destination
-        # with a different name, or are being dropped altogether
+        # with a different name, or are being dropped altogether.
         param_names_map = {
             'searchtext': 'search_text',
             # We're assigning the relevant value to tags_combinator_all
@@ -2460,8 +2463,8 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             'Content-type', 'text/plain')
 
         # This uses the BugTaskSet internal API instead of using the
-        # standard searchTasks() because this can retrieve a lot of
-        # bugs and we don't want to load all of that data in memory.
+        # standard searchTasks() because the latter can retrieve a lot
+        # of bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
 
