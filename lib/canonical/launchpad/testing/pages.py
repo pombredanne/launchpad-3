@@ -192,9 +192,6 @@ class WebServiceCaller:
                    api_version=DEFAULT_API_VERSION, **kwargs):
         kwargs['ws.op'] = operation_name
         data = urlencode(kwargs)
-        print "$" * 72
-        print data
-        print "%" * 72
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers, api_version=api_version)
 

@@ -294,19 +294,19 @@ virtual host.
 
     >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
-    ...     name='alpha1', date_targeted=u'2005-06-06T08:59:51.596025Z',
+    ...     name='alpha1', date_targeted=u'2005-06-06',
     ...     description='Feature complete but buggy.')
     >>> print response
-    HTTP/1.1 200 Ok
+    HTTP/1.1 201 Created
     ...
-    >>> milestone = response.jsonBody()
-    >>> pprint_entry(milestone)
-    u'alpha1'
-    >>> response = webservice.get(
-    ...     firefox_1_0['active_milestones_collection_link'])
-    >>> active_milestones = response.jsonBody()
-    >>> print_self_link_of_entries(active_milestones)
-    http://api.launchpad.dev/beta/firefox/+milestone/alpha1
+    Location: http://.../firefox/+milestone/alpha1
+    >>> milestone = webservice.get(response.getHeader('Location')).jsonBody()
+    >>> print milestone['name']
+    alpha1
+    >>> print milestone['date_targeted']
+    2005-06-06T00:00:00
+    >>> print milestone['description']
+    Feature complete but buggy.
 
 The milestone name must be unique on the product series.
 

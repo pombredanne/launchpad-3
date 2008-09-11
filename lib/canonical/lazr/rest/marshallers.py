@@ -20,7 +20,7 @@ __all__ = [
     'VocabularyLookupFieldMarshaller',
     ]
 
-from datetime import datetime
+from datetime import datetime, date
 import pytz
 from StringIO import StringIO
 import urllib
@@ -303,14 +303,15 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
             raise ValueError("Value doesn't look like a date.")
 
 
-class DateFieldMarshaller(DateTimeFieldMarshaller):
-    """A marshaller that transforms its value into a datetime.date object."""
+class DateFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into a date object."""
 
     def _marshall_from_json_data(self, value):
         """Parse the value as a datetime.date object."""
-        date_time = super(DateFieldMarshaller, self)._marshall_from_json_data(
-            value)
-        return date_time.date()
+        value = DateTimeParser().parse(value)
+        (year, month, day, hours, minutes, secondsAndMicroseconds,
+            timezone) = value
+        return date(year, month, day)
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
