@@ -39,6 +39,13 @@ class IPillarName(Interface):
 
 
 class IPillarNameSet(Interface):
+    """An object for searching across projects, project groups, and distros.
+
+    Projects, project groups, and distros are collectively known as
+    "pillars". This object lets you do a combined search across all
+    types of pillars. It also gives you access to pillars that have
+    been flagged by administrators as "featured" pillars.
+    """
     export_as_webservice_entry('pillars')
 
     def __contains__(name):
@@ -72,14 +79,9 @@ class IPillarNameSet(Interface):
     @operation_returns_collection_of(IPillar)
     @export_read_operation()
     def search(text, limit):
-        """Return at most limit Products/Projects/Distros matching :text:.
+        """Return Projects/Project groups/Distros matching :text:.
 
-        The return value is a sequence of dicts, where each dict contain
-        the name of the object it represents (one of 'product', 'project'
-        or 'distribution'), that object's id, name, title, description and
-        the rank of that object on this specific search.
-
-        If limit is None, config.launchpad.default_batch_size will be used.
+        If :limit: is None, the default batch size will be used.
 
         The results are ordered descending by rank.
         """
