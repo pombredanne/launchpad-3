@@ -385,9 +385,13 @@ that is used rather than the email addresses of the seven members.
     # Another helper function to print out the To, From and Subject headers
     # and the email body
     >>> def print_email_details(email):
+    ...     body = email.get_payload(decode=True)
+    ...     if email.get_charset() is not None:
+    ...         body = body.decode(email.get_charset())
+    ...     else:
+    ...         body = body.decode('iso-8859-1')
     ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
-    ...         email['To'].encode('utf-8'), email['From'].encode('utf-8'), email['Subject'].encode('utf-8'),
-    ...         email.get_payload(decode=True).encode('utf-8'))
+    ...         email['To'], email['From'], email['Subject'], body)
 
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
@@ -515,19 +519,18 @@ must also handle the unicode.
     >>> print_email_details(notifications.pop())
     To: Sample Person <test@canonical.com>
     From: Sample Person <test@canonical.com>
-    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_ti?=
-             =?utf-8?q?tle_?=
-        Title: New title =3D> New =EA=80=80 title =
+    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_title_?=
+        Title: New title => New  00 title 
     <BLANKLINE>
     Summary changed to:
     <BLANKLINE>
-    A new =EA=80=80 summary
+    A new  00 summary
     <BLANKLINE>
     --
-    New =EA=80=80 title =
+    New  00 title 
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are receiving this branch notification because you are subscribed to it.
+    You are subscribed to branch New  00 title.
     To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
 
