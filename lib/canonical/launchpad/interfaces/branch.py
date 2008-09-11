@@ -737,7 +737,11 @@ class IBranch(IHasOwner):
         """The branches that are stacked on this one."""
 
     def getStackedBranchesWithIncompleteMirrors():
-        """Branches that are stacked on this one but aren't done mirroring."""
+        """Branches that are stacked on this one but aren't done mirroring.
+
+        In particular, these are branches that have started mirroring but have
+        not yet succeeded or failed.
+        """
 
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""

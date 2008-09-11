@@ -250,15 +250,25 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         # and mirrorComplete reset the next_mirror_time based on the old
         # value. This test confirms that branches which were in the middle of
         # mirroring during the upgrade will have their next_mirror_time set
-        # properly eventually.
+        # properly eventually. This test can be removed after the 2.1.9
+        # release.
         branch = self.makeBranch()
+        # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
+        # In the new code, startMirroring sets next_mirror_time to None...
         branch.startMirroring()
+        # ... so we make it behave like the old code by restoring the previous
+        # value. This simulates a branch that was in the middle of mirroring
+        # during the 2.1.9 upgrade.
         removeSecurityProxy(branch).next_mirror_time = next_mirror_time
         branch.mirrorComplete('rev1')
+        # Even though the mirror is complete, the branch is still in the pull
+        # queue. This is not normal behaviour.
         self.assertIn(
             branch, self.branch_set.getPullQueue(branch.branch_type))
+        # But on the next mirror, everything is OK, since startMirroring does
+        # the right thing.
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.next_mirror_time)
@@ -375,13 +385,22 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         # mirroring during the upgrade will have their next_mirror_time set
         # properly eventually.
         branch = self.makeBranch()
+        # Set next_mirror_time to NOW, putting the branch in the pull queue.
         branch.requestMirror()
         next_mirror_time = branch.next_mirror_time
+        # In the new code, startMirroring sets next_mirror_time to None...
         branch.startMirroring()
+        # ... so we make it behave like the old code by restoring the previous
+        # value. This simulates a branch that was in the middle of mirroring
+        # during the 2.1.9 upgrade.
         removeSecurityProxy(branch).next_mirror_time = next_mirror_time
         branch.mirrorComplete('rev1')
+        # Even though the mirror is complete, the branch is still in the pull
+        # queue. This is not normal behaviour.
         self.assertIn(
             branch, self.branch_set.getPullQueue(branch.branch_type))
+        # But on the next mirror, everything is OK, since startMirroring does
+        # the right thing.
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertInFuture(
