@@ -87,3 +87,13 @@ NameVirtualHost 127.0.0.88:80
 
   ProxyPass / http://localhost:8086/ retry=1
 </VirtualHost>
+
+<VirtualHost 127.0.0.88:80>
+  ServerName launchpad.dev
+  ServerAlias *.launchpad.dev
+  ServerAlias shipit.edubuntu.dev
+  ServerAlias shipit.kubuntu.dev
+  ServerAlias shipit.ubuntu.dev
+  RewriteEngine On
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</VirtualHost>
