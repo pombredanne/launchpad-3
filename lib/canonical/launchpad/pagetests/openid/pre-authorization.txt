@@ -39,7 +39,7 @@ As an example we'll pre-authorize our own OpenID consumer:
 From now on, and until that authorization expires, the user won't need
 to authorize that consumer when he wants to log into it.
 
-    # XXX sinzui 2008-09-09 bug=264783: 
+    # XXX sinzui 2008-09-09 bug=264783:
     # Switch this test to the new openid_identifier and remove the
     # OldIdTestRequest.
     >>> from zope.interface import implements

@@ -22,7 +22,7 @@ OpenIDRPSummary objects.
 The getByIdentifier() method returns an iterator of all the summaries
 for an identifier.
 
-    # XXX sinzui 2008-09-09 bug=264783: 
+    # XXX sinzui 2008-09-09 bug=264783:
     # Switch this test to the new openid_identifier and remove the
     # OldIdTestRequest.
     >>> from zope.interface import implements
