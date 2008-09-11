@@ -242,8 +242,8 @@ mnemonic. A str is always returned.
     >>> account_set.createOpenIDIdentifier(u'user-name')
     '.../user-name'
 
-The mnemonic must be a string or a unicode string, otherwise An error is
-raised. The unicode string must contain only ascii compatible
+The mnemonic must be a string or a unicode string, otherwise an error is
+raised. The unicode string must contain only ASCII compatible
 characters, otherwise an error is raised.
 
     >>> account_set.createOpenIDIdentifier(None)
