@@ -175,8 +175,6 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.get_transport('mirrored-area').ensure_base()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
-        # XXX: This should actually raise an error, I think. Talk to mwh about
-        # it tomorrow -- brain dead now. 2008-09-10.
         to_mirror.mirrorWithoutChecks()
         stacked_on_branch = self.make_branch(
             'stacked-on-branch', format='1.6')
