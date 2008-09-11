@@ -61,7 +61,7 @@ also sends the email to the list of recipients.
     ~name12/firefox/main
     >>> print branch_notification['X-Launchpad-Message-Rationale']
     Subscriber
-    >>> notification_body = branch_notification.get_payload()
+    >>> notification_body = branch_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     The contents.
     <BLANKLINE>
@@ -70,8 +70,7 @@ also sends the email to the list of recipients.
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are receiving this branch notification because you are subscribed to it.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
-    efox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
     <BLANKLINE>
     >>> branch.unsubscribe(branch.owner)
 
@@ -204,7 +203,7 @@ to allow email filtering.
     # A helper function to print out the To header and
     # email body
     >>> def print_to_and_body(email):
-    ...     print 'To: %s\n%s' % (email['To'], email.get_payload())
+    ...     print 'To: %s\n%s' % (email['To'], email.get_payload(decode=True))
 
 We need to create some sufficiently large diffs to compare against.
 
@@ -232,15 +231,15 @@ Send the revision notifications.
     To: celso.providelo@canonical.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of 10=
-    00 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of
+    1000 lines...
 
     >>> print_to_and_body(notifications.pop(0))
     To: daf@canonical.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of 50=
-    00 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of
+    5000 lines...
 
 Foo Bar is getting the email due to his membership in the Launchpad
 developers team.  Since the email is due to a team, there is no
@@ -257,8 +256,8 @@ unsubscribe link.
     To: jeff.waugh@ubuntulinux.com
     Test message.
     <BLANKLINE>
-    The size of the diff (6000 lines) is larger than your specified limit of 50=
-    0 lines...
+    The size of the diff (6000 lines) is larger than your specified limit of
+    500 lines...
 
 Mark's unsubscription link is to his personal branch subscription.
 
@@ -267,8 +266,7 @@ Mark's unsubscription link is to his personal branch subscription.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
-    efox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
 
 And just to be sure, lets create one with 800 lines.
 
@@ -318,8 +316,8 @@ Limit hit for jeff:
     To: jeff.waugh@ubuntulinux.com
     Test message.
     <BLANKLINE>
-    The size of the diff (800 lines) is larger than your specified limit of 500=
-     lines...
+    The size of the diff (800 lines) is larger than your specified limit of 500
+    lines...
 
 And everything for mark:
 
@@ -387,8 +385,9 @@ that is used rather than the email addresses of the seven members.
     # Another helper function to print out the To, From and Subject headers
     # and the email body
     >>> def print_email_details(email):
-    ...     print 'To: %s\nFrom: %s\nSubject: %s\n%s' % (
-    ...         email['To'], email['From'], email['Subject'], email.get_payload())
+    ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
+    ...         email['To'].encode('utf-8'), email['From'].encode('utf-8'), email['Subject'].encode('utf-8'),
+    ...         email.get_payload(decode=True).encode('utf-8'))
 
 It is the form infrastructure that fires off the SQLObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails
