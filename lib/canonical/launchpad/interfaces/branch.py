@@ -97,47 +97,38 @@ class BranchLifecycleStatus(DBEnumeratedType):
     NEW = DBItem(1, """
         New
 
-        This branch has just been created.
+        Has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
         Experimental
 
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
+        Still under active development, and not suitable for merging into
+        release branches.
         """)
 
     DEVELOPMENT = DBItem(30, """
         Development
 
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
+        Shaping up nicely, but incomplete or untested, and not yet ready for
+        merging or production use.
         """)
 
     MATURE = DBItem(50, """
         Mature
 
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
+        Completely addresses the issues it is supposed to, tested, and stable
+        enough for merging into other branches.
         """)
 
     MERGED = DBItem(70, """
         Merged
 
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
+        Successfully merged into its target branch(es). No further development
+        is anticipated.
         """)
 
-    ABANDONED = DBItem(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """)
+    ABANDONED = DBItem(80, "Abandoned")
 
 
 class BranchType(DBEnumeratedType):
