@@ -22,6 +22,11 @@ __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
+    """An object that might be a project, a project group, or a distribution.
+
+    This is a polymorphic object served by the pillar set. Check the
+    individual object to see what type it is.
+    """
     export_as_webservice_entry()
     active = exported(
         Bool(title=_('Active'),
@@ -29,6 +34,11 @@ class IPillar(Interface):
 
 
 class IPillarName(Interface):
+    """A data structure for identifying a pillar.
+
+    This includes the pillar object, as well as information about whether
+    it's a project, project group, or distribution.
+    """
     id = Int(title=_('The PillarName ID'))
     name = TextLine(title=u"The name.")
     product = Attribute('The project that has this name, or None')
@@ -41,7 +51,7 @@ class IPillarName(Interface):
 class IPillarNameSet(Interface):
     """An object for searching across projects, project groups, and distros.
 
-    Projects, project groups, and distros are collectively known as
+    Projects, project groups, and distributions are collectively known as
     "pillars". This object lets you do a combined search across all
     types of pillars. It also gives you access to pillars that have
     been flagged by administrators as "featured" pillars.
