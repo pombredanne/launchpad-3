@@ -505,6 +505,7 @@ class IProduct(IProductEditRestricted, IProductPublic):
 
 # Fix cyclic references.
 IProject['products'].value_type = Reference(IProduct)
+IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
