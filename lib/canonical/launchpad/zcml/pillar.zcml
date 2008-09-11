@@ -18,21 +18,13 @@
       class="canonical.launchpad.rest.PillarSetLink"
       provides="canonical.launchpad.rest.IPillarSetLink">
       <allow interface="canonical.lazr.interfaces.ITopLevelEntryLink" />
-      <allow
-        interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />
     </securedutility>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IPillarNameSet"
-        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
-        factory="canonical.launchpad.rest.PillarSetLink"
-        />
-
-<!--    <browser:url
+    <browser:url
       for="canonical.launchpad.interfaces.IPillarNameSet"
-      path_expression="pillars"
+      path_expression="string:pillars"
       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-      /> -->
+      />
 
     <browser:page
         for="canonical.launchpad.interfaces.IPillar"

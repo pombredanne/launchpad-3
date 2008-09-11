@@ -14,14 +14,15 @@ from zope.schema import Bool, Int, TextLine
 from canonical.launchpad import _
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported,
-    operation_parameters, operation_returns_entry, export_read_operation)
+    call_with, export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 
 __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
+    export_as_webservice_entry()
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
@@ -38,7 +39,7 @@ class IPillarName(Interface):
 
 
 class IPillarNameSet(Interface):
-    export_as_webservice_entry()
+    export_as_webservice_entry('pillars')
 
     def __contains__(name):
         """Return True if the given name is an active Pillar."""
@@ -50,9 +51,6 @@ class IPillarNameSet(Interface):
         inactive, raise NotFoundError.
         """
 
-    @operation_parameters(name=TextLine(title=u"Pillar name"))
-    @operation_returns_entry(IPillar)
-    @export_read_operation()
     def getByName(name, ignore_inactive=False):
         """Return the pillar with the given name.
 
@@ -64,6 +62,15 @@ class IPillarNameSet(Interface):
     def count_search_matches(text):
         """Return the total number of Pillars matching :text:"""
 
+
+    @operation_parameters(text=TextLine(title=u"Search text"),
+                          limit=Int(title=u"Maximum number of items to "
+                                    "return. This is a hard limit: any "
+                                    "pagination you request will happen "
+                                    "within this limit.",
+                                    required=False))
+    @operation_returns_collection_of(IPillar)
+    @export_read_operation()
     def search(text, limit):
         """Return at most limit Products/Projects/Distros matching :text:.
 
@@ -87,6 +94,7 @@ class IPillarNameSet(Interface):
         CollectionField(
             title=_('Projects, project groups, and distributions that are '
                     'featured on the site.'),
-            value_type=Reference(schema=IPillar))
+            value_type=Reference(schema=IPillar)),
+        exported_as="featured_pillars"
         )
 
