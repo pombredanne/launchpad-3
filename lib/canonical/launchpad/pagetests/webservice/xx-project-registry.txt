@@ -1,53 +1,5 @@
 = Web Service Project Groups =
 
-    >>> from canonical.lazr.testing.webservice import pprint_entry
-    >>> from operator import itemgetter
-
-== The pillar set ==
-
-A few features are common to projects, project groups, and
-distributions. We call all three "pillars", and publish the common
-functionality at an object called the pillar set.
-
-    >>> pillar_set = webservice.get("/pillars").jsonBody()
-    >>> pprint_entry(pillar_set)
-    featured_pillars_collection_link: u'http://.../pillars/featured_pillars'
-    resource_type_link: u'...'
-    self_link: u'...'
-
-The featured pillars are available as a separate collection. Because
-they're of different resource types, the best way to compare them is
-by comparing the self_link, which every resource has.
-
-    >>> featured_link = pillar_set['featured_pillars_collection_link']
-    >>> featured_pillars = webservice.get(featured_link).jsonBody()
-    >>> featured_pillars['total_size']
-    9
-    >>> featured_entries = sorted(
-    ...     featured_pillars['entries'], key=itemgetter('self_link'))
-    >>> for pillar in featured_entries:
-    ...     print pillar['self_link']
-    http://.../applets
-    http://.../bazaar
-    ...
-    http://.../gnome
-
-    >>> search_result = webservice.named_get(
-    ...     "/pillars", "search", text="bazaar").jsonBody()
-    >>> found_entries = sorted(search_result['entries'],
-    ...     key=itemgetter('self_link'))
-    >>> for pillar in found_entries:
-    ...     print pillar['self_link']
-    http://.../bazaar
-    http://.../bzr
-    http://.../launchpad
-
-    >>> search_result = webservice.named_get(
-    ...     "/pillars", "search", text="bazaar", limit="1").jsonBody()
-    >>> for pillar in search_result['entries']:
-    ...     print pillar['self_link']
-    http://.../bazaar
-
 
 == Project group collection ==
 
@@ -314,6 +266,52 @@ the ws.op=search parameter.
     ...   "/projects?ws.op=search&text=gnome").jsonBody()
     >>> project_collection['total_size']
     4
+
+
+== The pillar set ==
+
+A few features are common to projects, project groups, and
+distributions. We call all three "pillars", and publish the common
+functionality at an object called the pillar set.
+
+    >>> pillar_set = webservice.get("/pillars").jsonBody()
+    >>> pprint_entry(pillar_set)
+    featured_pillars_collection_link: u'http://.../pillars/featured_pillars'
+    resource_type_link: u'...'
+    self_link: u'...'
+
+The featured pillars are available as a separate collection. Because
+they're of different resource types, the best way to compare them is
+by comparing the self_link, which every resource has.
+
+    >>> featured_link = pillar_set['featured_pillars_collection_link']
+    >>> featured_pillars = webservice.get(featured_link).jsonBody()
+    >>> featured_pillars['total_size']
+    9
+    >>> featured_entries = sorted(
+    ...     featured_pillars['entries'], key=itemgetter('self_link'))
+    >>> for pillar in featured_entries:
+    ...     print pillar['self_link']
+    http://.../applets
+    http://.../bazaar
+    ...
+    http://.../gnome
+
+    >>> search_result = webservice.named_get(
+    ...     "/pillars", "search", text="bazaar").jsonBody()
+    >>> found_entries = sorted(search_result['entries'],
+    ...     key=itemgetter('self_link'))
+    >>> for pillar in found_entries:
+    ...     print pillar['self_link']
+    http://.../bazaar
+    http://.../bzr
+    http://.../launchpad
+
+    >>> search_result = webservice.named_get(
+    ...     "/pillars", "search", text="bazaar", limit="1").jsonBody()
+    >>> for pillar in search_result['entries']:
+    ...     print pillar['self_link']
+    http://.../bazaar
 
 
 == Project series entry ==
