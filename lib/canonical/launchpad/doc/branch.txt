@@ -250,81 +250,99 @@ identified by new revisions detected by the branch scanner.
 Branches that have been recently registered have either been created by a user
 using the web UI, or by pushing a new branch directly to the supermirror.
 
-In order to determine changes in the branches the last_scanned timestamp
-is used.  This is set by the branch scanner when it has finished
-scanning the branches and recording the branch data in the launchpad
-database.  Some of the sample data has this value set, but it was introduced
-after this document was written, so we'll fake it here anyway to get some
-interesting results.
+In order to determine changes in the branches the last_scanned
+timestamp is used.  This is set by the branch scanner when it has
+finished scanning the branches and recording the branch data in the
+launchpad database.  We don't want any of the branches in the sample
+data to mess up our tests, so we clear the last_scanned data in all
+existing branches.
 
-    >>> for branch in branchset.getRecentlyChangedBranches(5):
-    ...     print branch.unique_name
-    ~name12/gnome-terminal/scanned
-    >>> list(branchset.getRecentlyImportedBranches(5))
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IStoreSelector, MAIN_STORE, AUTH_STORE,
+    ...     MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> store.find(Branch).set(last_scanned=None)
+
+    >>> list(branchset.getRecentlyChangedBranches(5))
     []
+
+Now we create a few branches that we pretend were updated over the
+last few days.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
-    >>> branch = branchset.getByUniqueName('~ddaa/gnome-terminal/dev')
-    >>> branch.last_scanned = today - timedelta(3)
-    >>> syncUpdate(branch)
-    >>> branch = branchset.getByUniqueName('~ddaa/+junk/junkcode')
-    >>> branch.last_scanned = today - timedelta(2)
-    >>> syncUpdate(branch)
-    >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
-    >>> branch.last_scanned = today - timedelta(1)
-    >>> syncUpdate(branch)
-    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/scanned')
-    >>> branch.last_scanned = today
-    >>> syncUpdate(branch)
+    >>> product = factory.makeProduct(name='product')
+    >>> user = factory.makePerson(name='user')
+
+    >>> three_days_ago = factory.makeBranch(
+    ...     owner=user, product=product, name='three_days')
+    >>> three_days_ago.last_scanned = today - timedelta(3)
+
+    >>> two_days_ago = factory.makeBranch(
+    ...     owner=user, product=product, name='two_days')
+    >>> two_days_ago.last_scanned = today - timedelta(3)
+
+    >>> one_day_ago = factory.makeBranch(
+    ...     owner=user, product=product, name='one_day')
+    >>> one_day_ago.last_scanned = today - timedelta(3)
+
+    >>> today_ago = factory.makeBranch(
+    ...     owner=user, product=product, name='today')
+    >>> today_ago.last_scanned = today - timedelta(3)
+
 
     >>> for branch in branchset.getRecentlyChangedBranches(5):
     ...   print branch.unique_name
-    ~name12/gnome-terminal/scanned
-    ~ddaa/+junk/junkcode
-    ~ddaa/gnome-terminal/dev
+    ~user/product/today
+    ~user/product/one_day
+    ~user/product/two_days
+    ~user/product/three_days
 
     >>> for branch in branchset.getRecentlyImportedBranches(5):
     ...   print branch.unique_name
-    ~vcs-imports/evolution/main
 
     >>> for branch in branchset.getRecentlyRegisteredBranches(3):
     ...   print branch.unique_name
-    ~vcs-imports/+junk/junkcode
-    ~ddaa/+junk/junkcode
-    ~ddaa/gnome-terminal/dev
+    ~user/product/today
+    ~user/product/one_day
+    ~user/product/two_days
 
 
 == Finding a branch by URL ==
 
 It is possible to find a branch by URL. Either using the pull URL:
 
-    >>> branchset.getByUrl(gterm_dev_url) == gterm_dev
+    >>> new_url = factory.getUniqueURL()
+    >>> new_mirrored_branch = factory.makeBranch(
+    ...     branch_type=BranchType.MIRRORED, url=new_url)
+    >>> branchset.getByUrl(new_url) == new_mirrored_branch
     True
 
 Or using the Supermirror URL of the same branch:
 
-    >>> gterm_dev_supermirror = \
-    ...     u'http://bazaar.launchpad.dev/~ddaa/gnome-terminal/dev'
-    >>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
+    >>> new_branch_supermirror = (
+    ...     u'http://bazaar.launchpad.dev/' +
+    ...     new_mirrored_branch.unique_name)
+    >>> branchset.getByUrl(new_branch_supermirror) == new_mirrored_branch
     True
-    >>> junkcode_supermirror = \
-    ...     u'http://bazaar.launchpad.dev/~ddaa/+junk/junkcode'
-    >>> branchset.getByUrl(junkcode_supermirror) == junkcode or \
-    ...     ('failed', branchset.getByUrl(junkcode_supermirror))
+    >>> new_junk_branch = factory.makeBranch(product=None)
+    >>> junkcode_supermirror = (
+    ...     u'http://bazaar.launchpad.dev/' +
+    ...     new_junk_branch.unique_name)
+    >>> branchset.getByUrl(junkcode_supermirror) == new_junk_branch
     True
 
 The provided URL must not have any trailing slash:
 
-    >>> try: branchset.getByUrl(gterm_dev_url + '/')
+    >>> try: branchset.getByUrl(new_url + '/')
     ... except AssertionError: print 'trailing slash not allowed'
     trailing slash not allowed
 
 If no branch is found for the specified URL, the specified default value is
 returned.
 
-    >>> not_there_url = 'http//example.com/not-in-the-sample-data'
+    >>> not_there_url = factory.getUniqueURL()
     >>> print branchset.getByUrl(not_there_url)
     None
     >>> print branchset.getByUrl(not_there_url, 123)
@@ -337,10 +355,10 @@ Branch not associated to a product are called "junk" branch and treated for
 navigation purposes as if they were associated to a magic product named
 "+junk".
 
-    >>> junkcode.product_name
+    >>> factory.makeBranch(product=None).product_name
     '+junk'
-    >>> gterm_dev.product_name
-    u'gnome-terminal'
+    >>> factory.makeBranch(product=product).product_name
+    u'product'
 
 
 == Branch names ==
@@ -348,20 +366,23 @@ navigation purposes as if they were associated to a magic product named
 Branches have a unique name, that is based on the names of the owner, product
 and branch.
 
-    >>> pushed = branchset[25]
-    >>> pushed.unique_name
-    u'~name12/gnome-terminal/pushed'
-    >>> junkcode.unique_name
-    u'~ddaa/+junk/junkcode'
+    >>> new_branch = factory.makeBranch(
+    ...     owner=user, product=product, name='name')
+    >>> new_branch.unique_name
+    u'~user/product/name'
+    >>> junk_branch = factory.makeBranch(
+    ...     owner=user, product=None, name='name')
+    >>> junk_branch.unique_name
+    u'~user/+junk/name'
 
 Branches have a display name that is the Branch.title if it's provided, and the
 unique_name otherwise.
 
-    >>> assert gterm_dev.title is not None
-    >>> gterm_dev.displayname == gterm_dev.title
+    >>> titled_branch = factory.makeBranch(title=factory.getUniqueString())
+    >>> titled_branch.displayname == titled_branch.title
     True
-    >>> assert pushed.title is None
-    >>> pushed.displayname == pushed.unique_name
+    >>> untitled_branch = factory.makeBranch(title=None)
+    >>> untitled_branch.displayname == untitled_branch.unique_name
     True
 
 
@@ -372,10 +393,12 @@ implicit subscription to the branch is created when the branch is created
 so that the branch owner can be informed of merge proposals or code review
 messages relating to their branches.
 
-    >>> subscriptions = list(gterm_dev.subscriptions)
+    >>> owner = factory.makePerson()
+    >>> branch = factory.makeBranch(owner=owner)
+    >>> subscriptions = list(branch.subscriptions)
     >>> print len(subscriptions)
     1
-    >>> subscriptions[0].person == gterm_dev.owner
+    >>> subscriptions[0].person == owner
     True
 
 Branch subscriptions have attributes associated with them.
