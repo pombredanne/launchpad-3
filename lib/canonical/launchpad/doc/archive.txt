@@ -74,7 +74,7 @@ Inquire what Distribution Series this archive has published sources to:
 once a IArchive is created. Changing those values would affect the way
 archives are published on disk.
 
-    >>> cprov_archive.purpose = ArchivePurpose.REBUILD
+    >>> cprov_archive.purpose = ArchivePurpose.COPY
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
@@ -91,20 +91,20 @@ using default names.
     Unauthorized: (..., 'name', 'launchpad.Admin')
 
 When editable, the 'name' field is protected by a constraint that
-asserts the archive is indeed a REBUILD and if the name is valid.
+asserts the archive is indeed a COPY and if the name is valid.
 
     >>> login("foo.bar@canonical.com")
 
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only REBUILD archives can be renamed.
+    AssertionError: Only COPY archives can be renamed.
 
-We will create a REBUILD archive and modify its name.
+We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
 Only 'valid' (traversable) names can be set.
@@ -1115,14 +1115,14 @@ distribution and a person name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, PRIMARY, PARTNER and REBUILDS:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
     14
 
     >>> print sorted(set(archive_purposes))
-    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
 ArchiveSet utility also offers counters for:
 
@@ -1467,35 +1467,35 @@ Cprov does not have permission, however.
 
 For further information about how ArchiveRebuild works see
 archive-rebuilds.txt. Here we will just document why the creation and
-lookup of REBUILD archives are a little different than the rest of the
+lookup of COPY archives are a little different than the rest of the
 archives.
 
-When creating archives with REBUILD purpose, the 'name' field is
+When creating archives with COPY purpose, the 'name' field is
 mandatory, since it's user defined. There is no default name for
 them.
 
-Creating new REBUILD archive without passing a name results in an
+Creating new COPY archive without passing a name results in an
 AssertionError.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the 'name', in addition to the owner, purpose and
 distribution, does the trick.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='test-rebuild-one')
 
 As mentioned before, the rebuild archive name should be traversable
 otherwise an error is raised.
 
     >>> getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='Very@Wrong!Name')
     Traceback (most recent call last):
     ...
@@ -1511,23 +1511,23 @@ Another difference is the lookup, we can use getByDistroPurpose(),
 however we have to pass 'name', otherwise a error is raised.
 
     >>> getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD)
+    ...     ubuntutest, ArchivePurpose.COPY)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the name it behaves exactly it does for primary archive
 purposes (PRIMARY and PARTNER). When no matching archive is found,
 None is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exist")
+    ...     ubuntutest, ArchivePurpose.COPY, name="does-not-exist")
     >>> print candidate
     None
 
 If there is a matching archive it is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="test-rebuild-one")
+    ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one

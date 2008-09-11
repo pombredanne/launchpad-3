@@ -152,6 +152,14 @@ class TestExternalBugTracker(ExternalBugTracker):
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
 
+    def getRemoteBug(self, remote_bug):
+        """Return the tuple (None, None) as a representation of a remote bug.
+
+        We add this method here to prevent tests which need to call it,
+        but which make no use of the output, from failing.
+        """
+        return None, None
+
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
 
