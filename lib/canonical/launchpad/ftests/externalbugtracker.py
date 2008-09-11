@@ -837,6 +837,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
+    launchpad_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
@@ -1045,6 +1046,38 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         comments.append(comment_dict)
 
         return [self.utc_time, comment_id]
+
+    def get_launchpad_bug(self, bugid):
+        """Get the Launchpad bug ID for a given remote bug.
+
+        The remote bug to Launchpad bug mappings are stored in the
+        launchpad_bugs dict.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        If a remote bug doesn't have a Launchpad bug mapped to it,
+        return 0. Otherwise return the mapped Launchpad bug ID.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(1001, 'Ticket does not exist')
+
+        return [self.utc_time, self.launchpad_bugs.get(bugid, 0)]
+
+    def set_launchpad_bug(self, bugid, launchpad_bug):
+        """Set the Launchpad bug ID for a remote bug.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        Return the current UTC timestamp.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(1001, 'Ticket does not exist')
+
+        self.launchpad_bugs[bugid] = launchpad_bug
+
+        return self.utc_time
 
 
 class TestRoundup(Roundup):
