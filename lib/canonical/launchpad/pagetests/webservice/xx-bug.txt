@@ -817,8 +817,8 @@ searches for bugs with any of the given tags.
         ...
      (u'total_size', 3)]
 
-It can be used for searching for bugs with any of the given tags by
-setting the tags_combinator_all parameter to false.
+It can be used for searching for bugs with all of the given tags by
+setting the tags_combinator parameter to 'All'.
 
     >>> show(webservice.named_get(
     ...     '/beta/ubuntu', 'searchTasks',
