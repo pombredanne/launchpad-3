@@ -32,9 +32,6 @@
         attributes="createComment createCommentFromMessage"
     />
   </content>
-  <content class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
-      <allow attributes="getReason branch mail_header" />
-  </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"

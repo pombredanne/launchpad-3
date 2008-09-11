@@ -68,6 +68,9 @@ class BaseMailer:
         """Return the address to use for the reply-to header."""
         return None
 
+    def _getInReplyTo(self):
+        return None
+
     def _getHeaders(self, email):
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)

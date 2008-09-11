@@ -7,7 +7,8 @@ __metaclass__ = type
 from zope.interface import implements
 
 from canonical.launchpad.components import ObjectDelta
-from canonical.launchpad.interfaces import IBranchDelta, IBranchMergeProposal
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchDelta, IBranchMergeProposal)
 from canonical.launchpad.webapp import snapshot
 
 # XXX: thumper 2006-12-20: This needs to be extended
@@ -16,7 +17,15 @@ from canonical.launchpad.webapp import snapshot
 
 class BranchDelta:
     """See canonical.launchpad.interfaces.IBranchDelta."""
+
     implements(IBranchDelta)
+
+    delta_values = ('name', 'title', 'url', 'lifecycle_status')
+
+    new_values = ('summary', 'whiteboard')
+
+    interface = IBranch
+
     def __init__(self, branch, user,
                  name=None, title=None, summary=None, url=None,
                  whiteboard=None, lifecycle_status=None):
