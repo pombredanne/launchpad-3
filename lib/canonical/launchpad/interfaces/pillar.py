@@ -14,7 +14,7 @@ from zope.schema import Bool, Int, TextLine
 from canonical.launchpad import _
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation, exported,
+    export_as_webservice_entry, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of)
 
 
