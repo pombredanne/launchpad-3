@@ -852,4 +852,4 @@ And what follows is the content of the attachment.
 
   >>> attachment_lines = attachment.get_payload(decode=True)
   >>> print attachment_lines # doctest: -NORMALIZE_WHITESPACE
-  Sorry, the 'changesfile' is not available.
+  Sorry, changesfile not available.
