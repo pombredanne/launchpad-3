@@ -8,6 +8,7 @@ __all__ = ['CodeMailJob', 'CodeMailJobSource']
 
 from calendar import timegm
 from email.Message import Message
+from email.Header import Header
 from email.Utils import formatdate
 
 from sqlobject import IntCol, StringCol
@@ -60,21 +61,23 @@ class CodeMailJob(SQLBase):
         mail['Message-Id'] = self.rfc822msgid
         if self.in_reply_to is not None:
             mail['In-Reply-To'] = self.in_reply_to
-        mail['To'] = self.to_address
-        mail['From'] = self.from_address
+        mail['To'] = Header(self.to_address, 'iso-8859-1')
+        mail['From'] = Header(self.from_address, 'iso-8859-1')
         if self.reply_to_address is not None:
-            mail['Reply-To'] = self.reply_to_address
-        mail['X-Launchpad-Message-Rationale'] = self.rationale
+            mail['Reply-To'] = Header(self.reply_to_address, 'iso-8859-1')
+        mail['X-Launchpad-Message-Rationale'] = Header(self.rationale,
+            'iso-8859-1')
         mail['X-Launchpad-Branch'] = self.branch_url
         if self.branch_project_name is not None:
-            mail['X-Launchpad-Project'] = self.branch_project_name
-        mail['Subject'] = self.subject
+            mail['X-Launchpad-Project'] = Header(self.branch_project_name,
+                'iso-8859-1')
+        mail['Subject'] = Header(self.subject, 'iso-8859-1')
         mail['Date'] = formatdate(timegm(self.date_created.utctimetuple()))
-        mail.set_payload(append_footer(self.body, self.footer))
+        mail.set_payload(append_footer(self.body, self.footer), 'utf-8')
         return mail
 
     def sendMail(self):
-        sendmail(self.toMessage())
+        sendmail(self.toMessage(), [self.to_address])
         self.destroySelf()
 
 
