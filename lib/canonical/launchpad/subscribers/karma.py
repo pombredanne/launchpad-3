@@ -268,7 +268,8 @@ def spec_branch_created(spec_branch, event):
 def branch_merge_proposed(proposal, event):
     """Assign karma to the user who proposed the merge."""
     product = proposal.source_branch.product
-    event.user.assignKarma('branchmergeproposed', product=product)
+    if event.user is not None:
+        event.user.assignKarma('branchmergeproposed', product=product)
 
 
 @block_implicit_flushes
@@ -279,6 +280,8 @@ def code_review_comment_added(code_review_comment, event):
     # If the user is commenting on their own proposal, then they don't
     # count as a reviewer for that proposal.
     user = event.user
+    if user is None:
+        return
     reviewer = user.inTeam(proposal.target_branch.code_reviewer)
     if reviewer and user != proposal.registrant:
         user.assignKarma('codereviewreviewercomment', product=product)
