@@ -151,8 +151,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
-        # update, then raise StackedOnBranchNotFound. This will ensure the
-        # puller will mirror the stacked branch as soon as the stacked-on
+        # initial mirror, then raise StackedOnBranchNotFound. This will ensure
+        # the puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
         stacked_on_branch = self.make_branch(
             'stacked-on-branch', format='1.6')
