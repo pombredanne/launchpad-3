@@ -779,21 +779,21 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* For example, a distribution has "Details / Announcements / Mentoring..." */
 /* Navigation menus appear as a segmented pill overlaid on a groove: */
 .navigation.menu {
-  background: url(navigation-menu-groove.png) repeat-x center left;
-  margin: 1em 0 2em;
+  margin: 0.5em 0 1em;
   text-align: center;
 }
 /* Segments have slight padding, and are normally light grey: */
 .navigation.menu * {
-  background: #eee url(navigation-n.png) top left repeat-x;
+  background: #4c4c4c url(navigation-n.png) top left repeat-x;
   padding: 0.25em 0;
+  color: #fff;
 }
 /* But the selected element is slightly darker: */
-.navigation.menu strong * {background-color: #ddd;}
+.navigation.menu strong * {background-color: #000;}
 /* All segments have a border, and padding around their text: */
 .navigation.menu * * {
   border-right: 1px solid #ccc;
-  border-bottom: 1px solid #bbb;
+  border-bottom: 1px solid #0d0d0d;
   padding: 0.25em 0.5em;
 }
 /* For text browsers, there's a " / " separator, hidden from CSS browsers: */
