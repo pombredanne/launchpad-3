@@ -250,7 +250,8 @@ unsubscribe link.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    You are receiving this branch notification because you are subscribed to it.
+    You are receiving this branch notification because you are subscribed to
+    it.
 
     >>> print_to_and_body(notifications.pop(0))
     To: jeff.waugh@ubuntulinux.com
@@ -266,7 +267,8 @@ Mark's unsubscription link is to his personal branch subscription.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
 
 And just to be sure, lets create one with 800 lines.
 
@@ -438,7 +440,8 @@ names just now, we'll pass them through anyway
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are subscribed to branch Mozilla Firefox Mainline.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
 
 
 The fields that are currently tracked with the delta, and cause
@@ -490,14 +493,16 @@ something like this:
     Whiteboard changed to:
     <BLANKLINE>
     This is a multiline whiteboard
-    with a really long line that should invoke the splitting algorithm in the mail wrapper to make sure that the line is not too long
+    with a really long line that should invoke the splitting algorithm in the
+    mail wrapper to make sure that the line is not too long
     <BLANKLINE>
     --
     New title
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
     You are subscribed to branch New title.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
 
 == Unicode in emails ==
@@ -530,8 +535,9 @@ must also handle the unicode.
     New  00 title 
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You are subscribed to branch New  00 title.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    You are subscribed to branch New  00 title .
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
 
 
 == Blank titles ==
@@ -562,7 +568,8 @@ by pushing the branch to launchpad.
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
     You are subscribed to branch ~name12/firefox/foo.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
 
 == Overwriting Nones  ==
@@ -591,7 +598,8 @@ We don't want to show None in the email, so we show (not set) instead.
     http://code.launchpad.dev/~name12/firefox/foo
     <BLANKLINE>
     You are subscribed to branch A new title.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
+    To unsubscribe from this branch go to
+    http://code.launchpad.dev/~name12/firefox/foo/+edit-subscription.
 
 
 == Modifications by users other than the branch owner ==
@@ -638,4 +646,5 @@ Login as an admin user so we can alter the branch.
     GNOME Terminal Mainline
     http://code.launchpad.dev/~name12/gnome-terminal/main
     <BLANKLINE>
-    You are getting this email as you are the owner of the branch and someone has edited the details.
+    You are getting this email as you are the owner of the branch and someone
+    has edited the details.
