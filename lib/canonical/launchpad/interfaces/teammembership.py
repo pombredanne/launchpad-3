@@ -236,13 +236,16 @@ class ITeamMembershipSet(Interface):
         equal to :when: and its status is either ADMIN or APPROVED.
         """
 
-    def new(person, team, status, dateexpires=None, reviewer=None,
-            reviewercomment=None):
-        """Create and return a new TeamMembership object.
+    def new(person, team, status, user, dateexpires=None, comment=None):
+        """Create and return a TeamMembership for the given person and team.
 
-        The status of this new object must be APPROVED, PROPOSED or ADMIN. If
-        the status is APPROVED or ADMIN, this method will also take care of
-        filling the TeamParticipation table.
+        :param status: The TeamMembership's status. Must be one of APPROVED,
+            PROPOSED or ADMIN. If the status is APPROVED or ADMIN, this method
+            will also take care of filling the TeamParticipation table.
+        :param user: The person whose action triggered this membership's
+            creation.
+        :param dateexpires: The date in which the membership should expire.
+        :param comment: The rationale for this membership's creation.
         """
 
     def getByPersonAndTeam(person, team):
