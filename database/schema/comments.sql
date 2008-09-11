@@ -388,6 +388,11 @@ COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on th
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
 
+-- DistributionSourcepackage
+
+COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
+
 
 -- DistributionSourcePackageCache
 
