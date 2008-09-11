@@ -59,7 +59,8 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from canonical.widgets.itemswidgets import (
+    LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -540,7 +541,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         self.next_url = '%s%s' % (self.request.URL, url_params_string)
 
 
-class DestinationArchiveRadioWidget(LaunchpadDropdownWidget):
+class DestinationArchiveDropdownWidget(LaunchpadDropdownWidget):
     """Redefining default display value as 'This PPA'."""
     _messageNoValue = _("vocabulary-copy-to-context-ppa", "This PPA")
 
@@ -558,8 +559,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """
     schema = IArchivePackageCopyingForm
 
-    custom_widget('destination_archive', DestinationArchiveRadioWidget)
+    custom_widget('destination_archive', DestinationArchiveDropdownWidget)
     custom_widget('destination_series', DestinationSeriesDropdownWidget)
+    custom_widget('include_binaries', LaunchpadRadioWidget)
 
     # Maximum number of 'sources' presented.
     max_sources_presented = 20
@@ -588,6 +590,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         self.form_fields = (
             self.createDestinationArchiveField() +
             self.createDestinationSeriesField() +
+            self.createIncludeBinariesField() +
             self.form_fields)
 
     @cachedproperty
@@ -649,6 +652,36 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    required=False),
             custom_widget=self.custom_widgets['destination_series'])
 
+    def createIncludeBinariesField(self):
+        """Create the 'include_binaries' field.
+
+        'include_binaries' widget is a choice, rendered as radio-buttons,
+        with two options that provides a Boolean as its value:
+
+         ||      Option     || Value ||
+         || REBUILD_SOURCES || False ||
+         || COPY_BINARIES   || True  ||
+
+        When omitted in the form, this widget defaults for REBUILD_SOURCES
+        option when rendered.
+        """
+        rebuild_sources = SimpleTerm(
+                False, 'REBUILD_SOURCES', _('Rebuild the copied sources'))
+        copy_binaries = SimpleTerm(
+            True, 'COPY_BINARIES', _('Copy existing binaries'))
+        terms = [rebuild_sources, copy_binaries]
+
+        return form.Fields(
+            Choice(__name__='include_binaries',
+                   title=_('Copy options'),
+                   vocabulary=SimpleVocabulary(terms),
+                   description=_("How the selected sources should be copied "
+                                 "to the destination archive."),
+                   missing_value=rebuild_sources,
+                   default=False,
+                   required=True),
+            custom_widget=self.custom_widgets['include_binaries'])
+
     @action(_("Update"), name="update")
     def action_update(self, action, data):
         """Simply re-issue the form with the new values."""
@@ -667,9 +700,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         form.getWidgetsData(self.widgets, 'field', data)
 
         selected_sources = data.get('selected_sources', [])
-        include_binaries = data.get('include_binaries')
         destination_archive = data.get('destination_archive')
         destination_series = data.get('destination_series')
+        include_binaries = data.get('include_binaries')
         destination_pocket = self.default_pocket
 
         if len(selected_sources) == 0:
@@ -720,13 +753,22 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
         # Present a page notification describing the action.
         messages = []
-        messages.append(
-            '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                canonical_url(destination_archive),
-                destination_archive.title))
-
-        for copy in copies:
-            messages.append('<br/>%s' % copy.displayname)
+        if len(copies) == 0:
+            messages.append(
+                '<p>All packages already copied to '
+                '<a href="%s">%s</a>.</p>' % (
+                    canonical_url(destination_archive),
+                    destination_archive.title))
+        else:
+            messages.append(
+                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                    canonical_url(destination_archive),
+                    destination_archive.title))
+            messages.append('<ul>')
+            messages.append(
+                "\n".join(['<li>%s</li>' % copy.displayname
+                           for copy in copies]))
+            messages.append('</ul>')
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
