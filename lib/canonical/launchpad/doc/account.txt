@@ -140,7 +140,7 @@ The Account's displayname is synced to the Person's displayname if there
 is one. If the Person.displayname is changed, the Account.displayname is
 changed too.
 
-    >>> from canonical.launchpad.interfaces import  IPersonSet
+    >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> personset = getUtility(IPersonSet)
     >>> person = personset.getByEmail('no-priv@canonical.com')
@@ -172,7 +172,7 @@ URL.
 = Creating new accounts =
 
 New Accounts are created using the AccountSet.new() method. The account
-rational and displayname are required.
+rationale and displayname are required.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.account import (
@@ -191,8 +191,8 @@ rational and displayname are required.
     None
 
 The new() method accepts the optional parameters of password and
-password_is_encrypted. The password is encrypted when
-password_is_encrypted is False, which is the default value.
+password_is_encrypted. If password_is_encrypted is False, the default,
+then the method encrypts it for us.
 
     >>> passworded_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
@@ -201,8 +201,8 @@ password_is_encrypted is False, which is the default value.
     >>> passworded_account.password == u'clear_password'
     False
 
-The password is not encrypted when password_is_encrypted is True. It
-is assumed the password was already encrypted.
+The method does not encrypt the password if told that it is already
+encrypted, by setting password_is_encrypted to True.
 
     >>> clear_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
@@ -214,7 +214,7 @@ is assumed the password was already encrypted.
 
 == OpenID identifiers ==
 
-The account is given a old and new openid identifiers. The old
+The account is given old and new openid identifiers. The old
 identifier is created directly in the database; it not available until
 the account object is synced.
 
@@ -236,14 +236,6 @@ a mnemonic that would be used to create a new openid identifier.
     >>> first_identifier
     '.../user-name'
 
-The openid_identifier is unique for all accounts
-
-    >>> second_identifier = account_set.createOpenIDIdentifier('user-name')
-    >>> second_identifier
-    '.../user-name'
-    >>> first_identifier == second_identifier
-    False
-
 There is no distinction between using a string mnemonic and a unicode
 mnemonic. A str is always returned.
 
@@ -251,17 +243,25 @@ mnemonic. A str is always returned.
     '.../user-name'
 
 The mnemonic must be a string or a unicode string, otherwise An error is
-raised.
+raised. The unicode string must contain only ascii compatible
+characters, otherwise an error is raised.
 
     >>> account_set.createOpenIDIdentifier(None)
     Traceback (most recent call last):
      ...
     AssertionError: The mnemonic must be a non-empty string.
 
-An error is raised if non-unique openid identifier cannot be created
-for the mnemonic. All Accounts are checked for to ensure that an
-openid identifier is not reused. In the unlikely chance that a
-unique random token cannot be found for a mnemonic, an error is raised.
+    >>> account_set.createOpenIDIdentifier(u'b\xe4d')
+    Traceback (most recent call last):
+     ...
+    UnicodeEncodeError: 'ascii' codec can't encode character u'\xe4' in
+                         position 5: ordinal not in range(128)
+
+An error is raised if a non-unique openid identifier cannot be created
+for the mnemonic. All accounts and OpenID relying parties summaries are
+checked for to ensure that an openid identifier is not reused. In the
+unlikely chance that a unique random token cannot be found for a
+mnemonic, an error is raised.
 
     # Instrument the random number range to ensure a duplicate will
     # be generated.

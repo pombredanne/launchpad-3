@@ -253,10 +253,10 @@ class IAccountSet(Interface):
     def getByOpenIDIdentifier(openid_identity):
         """Return the `IAccount` with the given OpenID identifier.
 
-         :param open_identifier: A string that is either the old or new
-            openid_identifier that belongs to an account.
+         :param open_identifier: An ascii compatible string that is either
+             the old or new openid_identifier that belongs to an account.
          :return: An `IAccount`, or None if the the openid_identifier does
-            not belong to an account.
+             not belong to an account.
          """
 
     def createOpenIDIdentifier(mnemonic):
