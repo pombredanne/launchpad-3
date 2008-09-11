@@ -257,3 +257,7 @@ Only one email is generated:
   >>> len(stub.test_emails)
   1
 
+Clean up, otherwise stuff is left lying around in /var/tmp.
+
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()
