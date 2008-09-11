@@ -1923,8 +1923,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         # with a different name, or are being dropped altogether.
         param_names_map = {
             'searchtext': 'search_text',
-            # We're assigning the relevant value to tags_combinator_all
-            'tags_combinator': None,
             'omit_dupes': 'omit_duplicates',
             'subscriber': 'bug_subscriber',
             'tag': 'tags',
@@ -1944,10 +1942,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         assignee_option = self.request.form.get("assignee_option")
         if assignee_option == "none":
             params['assignee'] = NULL
-
-        params['tags_combinator_all'] = (
-            'tags_combinator' in data and
-            data['tags_combinator'] == BugTagsSearchCombinator.ALL)
 
         params['order_by'] = get_sortorder_from_request(self.request)
 

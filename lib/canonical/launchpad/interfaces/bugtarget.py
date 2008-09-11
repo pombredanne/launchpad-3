@@ -18,7 +18,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtask import (
-    IBugTask, IBugTaskSearch)
+    BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
@@ -82,8 +82,7 @@ class IHasBugs(Interface):
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
-        tags_combinator_all=Bool(
-            title=_('All tags?'), required=False),
+        tags_combinator=copy_field(IBugTaskSearch['tags_combinator']),
         omit_duplicates=copy_field(IBugTaskSearch['omit_dupes']),
         omit_targeted=copy_field(IBugTaskSearch['omit_targeted']),
         status_upstream=copy_field(IBugTaskSearch['status_upstream']),
@@ -102,7 +101,7 @@ class IHasBugs(Interface):
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
                     has_patch=None, has_cve=None,
-                    tags=None, tags_combinator_all=True,
+                    tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,

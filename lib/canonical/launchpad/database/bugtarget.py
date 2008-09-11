@@ -16,9 +16,9 @@ from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus, IBugTaskSet,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-
+    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, IBugTaskSet, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -33,7 +33,7 @@ class HasBugsBase:
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
                     has_patch=None, has_cve=None,
-                    tags=None, tags_combinator_all=True,
+                    tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,

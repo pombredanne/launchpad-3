@@ -1006,7 +1006,7 @@ class BugTaskSearchParams:
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
                        has_patch=None, has_cve=None,
-                       tags=None, tags_combinator_all=True,
+                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
@@ -1029,7 +1029,7 @@ class BugTaskSearchParams:
         search_params.has_cve = has_cve
         if zope_isinstance(tags, (list, tuple)):
             if len(tags) > 0:
-                if tags_combinator_all:
+                if tags_combinator == BugTagsSearchCombinator.ALL:
                     search_params.tag = all(*tags)
                 else:
                     search_params.tag = any(*tags)
