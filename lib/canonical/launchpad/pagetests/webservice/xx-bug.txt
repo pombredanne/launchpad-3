@@ -627,7 +627,7 @@ the same time.
 
 == Collections of bugs ==
 
-Bug targets have convenience properties which allow us to iterated over
+Bug targets have convenience properties which allow us to iterate over
 common collections of bugtasks, grouped by status, importance or assignee,
 as well as a collection of all bug tasks raised on this target.
 

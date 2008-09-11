@@ -603,8 +603,11 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         This method starts and commits transactions, so don't rely on `self`
         or any other database object remaining valid across this call!
         """
-IHasBugs['searchTasks'].queryTaggedValue(
-        'lazr.webservice.exported')['params']['nominated_for'].schema = IDistroSeries
+
+# We assign the schema for an `IHasBugs` method argument here
+# in order to avoid circular dependencies.
+IHasBugs['searchTasks'].queryTaggedValue('lazr.webservice.exported')[
+    'params']['nominated_for'].schema = IDistroSeries
 
 
 class IDistroSeriesSet(Interface):

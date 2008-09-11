@@ -174,6 +174,8 @@ class IBugTarget(IHasBugs):
         canonical.launchpad.interfaces.CreateBugParams.
         """
 
+# We assign the schema for an `IBugTask` attribute here
+# in order to avoid circular dependencies.
 IBugTask['target'].schema = IBugTarget
 
 

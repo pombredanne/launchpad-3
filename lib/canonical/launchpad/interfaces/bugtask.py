@@ -973,7 +973,8 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         # Import this here to avoid circular dependencies
-        from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+        from canonical.launchpad.interfaces.sourcepackage import (
+            ISourcePackage)
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
