@@ -584,14 +584,14 @@ class PackageUpload(SQLBase):
             """Perform substitutions on a template and send the email."""
             # Add the debian 'Changed-By:' field.
             changed_by = changes.get('changed-by')
-            if changed_by:
+            if changed_by is not None:
                 changed_by = sanitize_string(changed_by)
                 message.CHANGEDBY = (
                     ' -- %s  %s' % (changed_by, changes['date']))
 
             # If the maintainer is set, make it available to the template.
             maintainer = changes.get('maintainer')
-            if maintainer:
+            if maintainer is not None:
                 maintainer = sanitize_string(maintainer)
                 if maintainer != changed_by:
                     message.MAINTAINER = '\n\nMaintainer: %s' % maintainer
@@ -611,10 +611,10 @@ class PackageUpload(SQLBase):
                     message.SIGNER = '\nSigned-By: %s' % signer_signature
 
             # Add the debian 'Origin:' field if present.
-            if changes.get('origin'):
+            if changes.get('origin') is not None:
                 message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
-            if self.sources or self.builds:
+            if self.sourcepackagerelease is not None:
                 message.SPR_URL = (
                     'Source package release: %s' %
                     canonical_url(self.sourcepackagerelease))
