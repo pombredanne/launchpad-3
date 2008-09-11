@@ -2,6 +2,9 @@
 
 """Common helpers for replication scripts."""
 
+__metaclass__ = type
+__all__ = []
+
 import os.path
 import subprocess
 import sys
@@ -12,9 +15,6 @@ from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema
     )
 from canonical.launchpad.scripts.logger import log
-
-__metaclass__ = type
-__all__ = []
 
 
 # The Slony-I clustername we use with Launchpad.
@@ -70,21 +70,17 @@ def slony_installed(con):
     return cur.fetchone() is not None
 
 
-def sync(timeout=60):
+def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
    
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
 
-    Specify a timeout of 0 to block indefinitely.
+    :param timeout: Number of seconds to wait for the sync. 0 to block
+                    indefinitely.
     """
-    return execute_slonik("""
-        sync (id = 1);
-        wait for event (
-            origin = ALL, confirmed = ALL,
-            wait on = @master_id, timeout = %d);
-        """ % timeout)
+    return execute_slonik("", sync=timeout)
 
 
 def execute_slonik(script, sync=None, exit_on_fail=True):
@@ -94,6 +90,12 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
 
     :param sync: Number of seconds to wait for sync before failing. 0 to
                  block indefinitely.
+
+    :param exit_on_fail: If True, on failure of the slonik script
+                         sys.exit is invoked using the slonik return code.
+
+    :returns: True if the script completed successfully. False it
+              exit_on_fail is False and the script failed for any reason.
     """
 
     # Add the preamble and optional sync to the script.
@@ -163,17 +165,28 @@ def calculate_replication_set(cur, seeds):
         cur.execute("""
             SELECT ref_namespace.nspname, ref_class.relname
             FROM
+                -- One of the seed tables
                 pg_class AS seed_class,
                 pg_namespace AS seed_namespace,
+
+                -- A table referencing the seed, or being referenced by
+                -- the seed.
                 pg_class AS ref_class,
                 pg_namespace AS ref_namespace,
+
                 pg_constraint
             WHERE
                 seed_class.relnamespace = seed_namespace.oid
                 AND ref_class.relnamespace = ref_namespace.oid
-                AND pg_constraint.contype = 'f'
+
                 AND seed_namespace.nspname = %s
                 AND seed_class.relname = %s
+
+                -- Foreign key constraints are all we care about
+                AND pg_constraint.contype = 'f'
+
+                -- We want tables referenced by, or referred to, the
+                -- seed table.
                 AND ((pg_constraint.conrelid = ref_class.oid
                         AND pg_constraint.confrelid = seed_class.oid)
                     OR (pg_constraint.conrelid = seed_class.oid

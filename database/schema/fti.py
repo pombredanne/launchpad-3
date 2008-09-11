@@ -666,7 +666,7 @@ def main():
     is_replicated_db = replication.helpers.slony_installed(con)
 
     if options.liverebuild and is_replicated_db:
-        parser.error("--liverebuild does not work with Slony-I install.")
+        parser.error("--live-rebuild does not work with Slony-I install.")
 
     if is_replicated_db:
         global slonik_sql

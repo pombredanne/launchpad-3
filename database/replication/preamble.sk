@@ -15,6 +15,7 @@ define slave1_conninfo 'host=localhost user=slony dbname=launchpad_dev_slave1';
 # Symbolic ids for our replication sets.
 define authdb_set_id 1;
 define lpmain_set_id 2;
+define holding_set_id 666;
 
 # Define the connection info for all nodes
 node @master_id admin conninfo = @master_conninfo;

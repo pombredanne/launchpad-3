@@ -420,7 +420,10 @@ def allow_sequential_scans(cur, permission):
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
 def all_tables_in_schema(cur, schema):
-    """Return a set of all tables in the given schema."""
+    """Return a set of all tables in the given schema.
+   
+    :returns: A set of quoted, fully qualified table names.
+    """
     cur.execute("""
         SELECT nspname, relname
         FROM pg_class, pg_namespace
@@ -435,7 +438,10 @@ def all_tables_in_schema(cur, schema):
 
 
 def all_sequences_in_schema(cur, schema):
-    """Return a set of all sequences in the given schema."""
+    """Return a set of all sequences in the given schema.
+
+    :returns: A set of quoted, fully qualified table names.
+    """
     cur.execute("""
         SELECT nspname, relname
         FROM pg_class, pg_namespace

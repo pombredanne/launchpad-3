@@ -53,7 +53,7 @@ def main():
         "pg_dump -x -s -U slony launchpad_dev "
         "| psql -q -U slony launchpad_dev_slave1", shell=True)
     if rv != 0:
-        print >> sys.stderr, "ERR: Schema duplication returned %d" % rv
+        log.fatal("Schema duplication failed, pg_dump returned %d" % rv)
         sys.exit(rv)
 
     # Generate lists of sequences and tables for our replication sets.
@@ -133,7 +133,7 @@ def main():
         """)
 
     log.info('Ensuring slon daemons are live and propagating events.')
-    helpers.sync()
+    helpers.sync(120)
 
     # Create the replication sets
     log.info('Creating Slony-I replication sets.')
@@ -175,6 +175,7 @@ def main():
             comment='Launchpad tables and sequences');
         """)
 
+    assert entry_id < 200, 'authdb replcation set has > 200 objects???'
     entry_id = 200
     for table in sorted(lpmain_tables):
         script.append("""
@@ -202,9 +203,6 @@ def main():
     script.append("""
         }
         on error { echo 'Failed.'; exit 1; }
-        echo 'Syncing';
-        sync (id=1);
-        wait for event(origin=ALL, CONFIRMED=ALL);
         """)
     helpers.execute_slonik('\n'.join(script), sync=600)
 
@@ -228,11 +226,7 @@ def main():
     log.info('Sets subscribed. Master usable but slaves still being setup.')
 
     log.info('Waiting for synchronization.')
-    helpers.execute_slonik("""
-        sync (id=1);
-        wait for event (
-            origin=ALL, confirmed=ALL, wait on=@master_id);
-        """)
+    helpers.sync(0)
     log.info('Synchronized. Slave now usable.')
 
     helpers.validate_replication(cur) # Explode now if we have messed up.

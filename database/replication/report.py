@@ -3,6 +3,9 @@
 
 """Generate a report on the replication setup."""
 
+__metaclass__ = type
+__all__ = []
+
 import _pythonpath
 
 from cgi import escape as html_escape
@@ -12,9 +15,6 @@ import sys
 
 from canonical.database.sqlbase import connect, quote_identifier, sqlvalues
 from canonical.launchpad.scripts import db_options
-
-__metaclass__ = type
-__all__ = []
 
 
 class Table:
@@ -90,7 +90,10 @@ class TextReport:
 
 
 def node_overview_report(cur, options):
+    """Dumps the sl_node table in a human readable format.
 
+    This report tells us which nodes are active and which are inactive.
+    """
     report = options.mode()
     table = Table(["Node", "Comment", "Active"])
 
@@ -111,6 +114,13 @@ def node_overview_report(cur, options):
 
 
 def paths_report(cur, options):
+    """Dumps the sl_paths table in a human readable format.
+
+    This report describes how nodes will attempt to connect to each other
+    if they need to, allowing you to sanity check the settings and pick up
+    obvious misconfigurations that would stop Slony daemons from being able
+    to connect to one or more nodes, blocking replication.
+    """
     report = options.mode()
     table = Table(["From client node", "To server node", "Via connection"])
 
@@ -126,6 +136,11 @@ def paths_report(cur, options):
 
 
 def listen_report(cur, options):
+    """Dumps the sl_listen table in a human readable format.
+
+    This report shows you the tree of which nodes a node needs to check
+    for events on.
+    """
     report = options.mode()
     table = Table(["Node", "Listens To", "Via"])
 
@@ -139,9 +154,15 @@ def listen_report(cur, options):
 
 
 def subscribe_report(cur, options):
+    """Dumps the sl_subscribe table in a human readable format.
+
+    This report shows the subscription tree - which nodes provide
+    a replication set to which subscriber.
+    """
+
     report = options.mode()
     table = Table([
-        "Set", "Is Privided By", "Is Received By",
+        "Set", "Is Provided By", "Is Received By",
         "Is Forwardable", "Is Active"])
     cur.execute("""
         SELECT sub_set, sub_provider, sub_receiver, sub_forward, sub_active
@@ -159,6 +180,13 @@ def subscribe_report(cur, options):
 
 
 def tables_report(cur, options):
+    """Dumps the sl_table table in a human readable format.
+
+    This report shows which tables are being replicated and in which
+    replication set. It also importantly shows the internal Slony id used
+    for a table, which is needed for slonik scripts as slonik is incapable
+    of doing the tablename -> Slony id mapping itself.
+    """
     report = options.mode()
     table = Table(["Set", "Schema", "Table", "Table Id"])
     cur.execute("""
@@ -174,6 +202,13 @@ def tables_report(cur, options):
 
 
 def sequences_report(cur, options):
+    """Dumps the sl_sequences table in a human readable format.
+
+    This report shows which sequences are being replicated and in which
+    replication set. It also importantly shows the internal Slony id used
+    for a sequence, which is needed for slonik scripts as slonik is incapable
+    of doing the tablename -> Slony id mapping itself.
+    """
     report = options.mode()
     table = Table(["Set", "Schema", "Sequence", "Sequence Id"])
     cur.execute("""

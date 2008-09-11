@@ -69,11 +69,6 @@ def apply_patches_replicated():
     # worry about blocking locks needed by Slony-I.
     con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
-    # Put our connection into autocommit mode so it doesn't conflict
-    # with the locks Slony-I will need to make.
-    con.rollback()
-    con.set_isolation_level(0)
-
     # We use three slonik scripts to apply our DB patches.
     # The first script applies the DB patches to all nodes.
 
@@ -195,7 +190,7 @@ def apply_patches_replicated():
         print >> outf, dedent("""\
             try {
                 create set (
-                    id = 666, origin = @master_id,
+                    id = @holding_set_id, origin = @master_id,
                     comment = 'Temporary set to merge'
                     );
             """)
@@ -209,7 +204,7 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Adding %s to holding set for lpmain merge.';
                 set add table (
-                    set id = 666, origin = @master_id, id=%d,
+                    set id = @holding_set_id, origin = @master_id, id=%d,
                     fully qualified name = '%s',
                     comment = '%s'
                     );
@@ -223,7 +218,7 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Adding %s to holding set for lpmain merge.';
                 set add sequence (
-                    set id = 666, origin = @master_id, id=%d,
+                    set id = @holding_set_id, origin = @master_id, id=%d,
                     fully qualified name = '%s',
                     comment = '%s'
                     );
@@ -239,7 +234,7 @@ def apply_patches_replicated():
         print >> outf, dedent("""\
             echo 'Subscribing holding set to slave.';
             subscribe set (
-                id=666, provider=@master_id, receiver=@slave1_id,
+                id=@holding_set_id, provider=@master_id, receiver=@slave1_id,
                 forward=yes);
             } on error {
                 echo 'Failed to create or subscribe holding set! Aborting.';
@@ -252,7 +247,7 @@ def apply_patches_replicated():
                 );
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set_id, add id=666, origin=@master_id
+                id=@lpmain_set_id, add id=@holding_set_id, origin=@master_id
                 );
             """)
 
