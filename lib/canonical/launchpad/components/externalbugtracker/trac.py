@@ -434,11 +434,16 @@ class TracLPPlugin(Trac):
 
         If `remote_bug` doesn't exist, raise BugNotFound.
         """
-        if int(remote_bug) not in self.bugs:
-            raise BugNotFound(remote_bug)
-
-        timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
-            remote_bug)
+        try:
+            timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
+                remote_bug)
+        except xmlrpclib.Fault, fault:
+            # Deal with "Ticket does not exist" faults. We re-raise
+            # anything else, since they're a sign of a bigger problem.
+            if fault.faultCode == 1001:
+                raise BugNotFound(remote_bug)
+            else:
+                raise
 
         # If the returned bug ID is 0, return None, since a 0 means that
         # no LP bug is linked to the remote bug.
@@ -453,14 +458,19 @@ class TracLPPlugin(Trac):
 
         If `remote_bug` doesn't exist, raise BugNotFound.
         """
-        if int(remote_bug) not in self.bugs:
-            raise BugNotFound(remote_bug)
-
         # If the launchpad_bug_id is None, pass 0 to set_launchpad_bug
         # to delete the bug link, since we can't send None over XML-RPC.
         if launchpad_bug_id == None:
             launchpad_bug_id = 0
 
-        timestamp = self._server.launchpad.set_launchpad_bug(
-            remote_bug, launchpad_bug_id)
+        try:
+            timestamp = self._server.launchpad.set_launchpad_bug(
+                remote_bug, launchpad_bug_id)
+        except xmlrpclib.Fault, fault:
+            # Deal with "Ticket does not exist" faults. We re-raise
+            # anything else, since they're a sign of a bigger problem.
+            if fault.faultCode == 1001:
+                raise BugNotFound(remote_bug)
+            else:
+                raise
 
