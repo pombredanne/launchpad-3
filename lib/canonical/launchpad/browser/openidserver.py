@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin',
+    'OpenIDMixin',
     ]
 
 import cgi
@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces.person import (
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, IOpenIdAuthorizationSet, IOpenIDRPConfigSet,
+    ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
+    ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
     IOpenIDRPSummarySet)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
@@ -79,13 +79,13 @@ sreg_data_fields_order = [
     ]
 
 
-class OpenIdMixin:
+class OpenIDMixin:
 
     openid_request = None
 
     def __init__(self, context, request):
-        super(OpenIdMixin, self).__init__(context, request)
-        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+        super(OpenIDMixin, self).__init__(context, request)
+        store_factory = getUtility(ILaunchpadOpenIDStoreFactory)
         self.server_url = get_openid_server_url()
         self.openid_server = Server(store_factory(), self.server_url)
 
@@ -122,7 +122,7 @@ class OpenIdMixin:
           ...     'y': (11000, 'bar'),
           ...     'z': (100, 'baz')
           ...     }
-          >>> OpenIdMixin._sweep(now, session)
+          >>> OpenIDMixin._sweep(now, session)
           >>> for key in sorted(session):
           ...     print key, session[key]
           x (9999, 'foo')
@@ -164,7 +164,7 @@ class OpenIdMixin:
         session[key] = (now, query)
 
     def trashRequestInSession(self, key):
-        """Remove the OpenIdRequest from the session using the given key."""
+        """Remove the OpenIDRequest from the session using the given key."""
         session = self.getSession()
         try:
             del session[key]
@@ -265,7 +265,7 @@ class OpenIdMixin:
         openid_response.fields.setArg(
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
 
-    def renderOpenIdResponse(self, openid_response):
+    def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
@@ -325,7 +325,7 @@ class OpenIdMixin:
         return response
 
 
-class OpenIdView(OpenIdMixin, LaunchpadView):
+class OpenIDView(OpenIDMixin, LaunchpadView):
     """An OpenID Provider endpoint for Launchpad.
 
     This class implemnts an OpenID endpoint using the python-openid
@@ -338,7 +338,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         "../templates/openid-invalid-identity.pt")
 
     def render(self):
-        """Handle all OpenId requests and form submissions
+        """Handle all OpenID requests and form submissions
 
         Returns the page contents after setting all relevant headers in
         self.request.response
@@ -384,9 +384,9 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 
         # If the above code has not already returned or raised an exception,
         # openid_respose is filled out ready for the openid library to render.
-        return self.renderOpenIdResponse(openid_response)
+        return self.renderOpenIDResponse(openid_response)
 
-    def storeOpenIdRequestInSession(self):
+    def storeOpenIDRequestInSession(self):
         # To ensure that the user has seen this page and it was actually the
         # user that clicks the 'Accept' button, we generate a nonce and
         # use it to store the openid_request in the session. The nonce
@@ -404,7 +404,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         This should be done if the user has not yet authenticated to
         Launchpad.
         """
-        self.storeOpenIdRequestInSession()
+        self.storeOpenIDRequestInSession()
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()
 
@@ -415,7 +415,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         We need to explain what they are doing here and ask them if they
         want to allow Launchpad to authenticate them with the OpenID consumer.
         """
-        self.storeOpenIdRequestInSession()
+        self.storeOpenIDRequestInSession()
         return LoginServiceAuthorizeView(
             self.context, self.request, self.nonce)()
 
@@ -433,13 +433,13 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
             return False
 
         client_id = getUtility(IClientIdManager).getClientId(self.request)
-        auth_set = getUtility(IOpenIdAuthorizationSet)
+        auth_set = getUtility(IOpenIDAuthorizationSet)
 
         return auth_set.isAuthorized(
                 self.user, self.openid_request.trust_root, client_id)
 
 
-class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
+class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
     """Common functionality for the OpenID login and authorize forms."""
 
     def __init__(self, context, request, nonce=None):
@@ -509,12 +509,12 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
         self.trashRequest()
-        return self.renderOpenIdResponse(self.createPositiveResponse())
+        return self.renderOpenIDResponse(self.createPositiveResponse())
 
     @action("Not Now", name='deny')
     def deny_action(self, action, data):
         self.trashRequest()
-        return self.renderOpenIdResponse(self.createFailedResponse())
+        return self.renderOpenIDResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
     # XXX mpt 2007-06-18: "I'm" should use a typographical apostrophe.
@@ -631,7 +631,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPerson(self.request, principal, email)
-            return self.renderOpenIdResponse(self.createPositiveResponse())
+            return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
         elif action == 'createaccount':
@@ -710,7 +710,7 @@ class PreAuthorizeRPView(LaunchpadView):
             client_id = getUtility(IClientIdManager).getClientId(self.request)
             expires = (datetime.now(pytz.timezone('UTC'))
                        + timedelta(hours=self.PRE_AUTHORIZATION_VALIDITY))
-            getUtility(IOpenIdAuthorizationSet).authorize(
+            getUtility(IOpenIDAuthorizationSet).authorize(
                 self.user, trust_root, expires, client_id)
             # Need to commit the transaction because this will always be
             # processing GET requests.

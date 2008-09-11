@@ -114,7 +114,7 @@ class AccountSet:
             ''' % sqlvalues(email),
             clauseTables=['EmailAddress'])
 
-    def getByOpenIdIdentifier(self, openid_identifier):
+    def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         # XXX sinzui 2008-09-09 bug=264783:
         # Remove the OR clause, only openid_identifier should be used.
@@ -137,12 +137,11 @@ class AccountSet:
         tokens = range(0, self._MAX_RANDOM_TOKEN_RANGE)
         random.shuffle(tokens)
         # This method might be faster by collecting all accounts and summaries
-        # that end with the memonic. The chances of collision seem minute,
-        # given that the intended memonic is a unique user name.
+        # that end with the mnemonic. The chances of collision seem minute,
+        # given that the intended mnemonic is a unique user name.
         for token in tokens:
-            token = '%03d' % token
-            openid_identifier = '%s/%s' % (token, mnemonic)
-            account = self.getByOpenIdIdentifier(openid_identifier)
+            openid_identifier = '%03d/%s' % (token, mnemonic)
+            account = self.getByOpenIDIdentifier(openid_identifier)
             if account is not None:
                 continue
             summaries = openidrpsummaryset.getByIdentifier(

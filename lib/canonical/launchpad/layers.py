@@ -48,8 +48,8 @@ class AnswersLayer(LaunchpadLayer):
 
 # XXX sinzui 2008-09-04 bug=264783:
 # Remove this layer.
-class OpenIdLayer(LaunchpadLayer):
-    """The `OpenId` layer."""
+class OpenIDLayer(LaunchpadLayer):
+    """The `OpenID` layer."""
 
 
 class IdLayer(LaunchpadLayer):
