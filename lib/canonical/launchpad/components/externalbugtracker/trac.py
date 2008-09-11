@@ -17,15 +17,20 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.components.externalbugtracker import (
+from canonical.launchpad.components.externalbugtracker.base import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData)
+    UnknownRemoteStatusError, UnparseableBugData
+    )
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTaskImportance, IMessageSet,
-    ISupportsCommentImport, ISupportsCommentPushing,
-    UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, BugTaskImportance
+    )
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsBackLinking, ISupportsCommentImport,
+    ISupportsCommentPushing, UNKNOWN_REMOTE_IMPORTANCE
+    )
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
 
@@ -275,7 +280,8 @@ def needs_authentication(func):
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
-    implements(ISupportsCommentImport, ISupportsCommentPushing)
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -421,3 +427,40 @@ class TracLPPlugin(Trac):
             remote_bug, comment_body)
 
         return comment_id
+
+    @needs_authentication
+    def getLaunchpadBugId(self, remote_bug):
+        """Return the Launchpad bug for a given remote bug.
+
+        If `remote_bug` doesn't exist, raise BugNotFound.
+        """
+        if int(remote_bug) not in self.bugs:
+            raise BugNotFound(remote_bug)
+
+        timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
+            remote_bug)
+
+        # If the returned bug ID is 0, return None, since a 0 means that
+        # no LP bug is linked to the remote bug.
+        if lp_bug_id == 0:
+            return None
+        else:
+            return lp_bug_id
+
+    @needs_authentication
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug ID for a given remote bug.
+
+        If `remote_bug` doesn't exist, raise BugNotFound.
+        """
+        if int(remote_bug) not in self.bugs:
+            raise BugNotFound(remote_bug)
+
+        # If the launchpad_bug_id is None, pass 0 to set_launchpad_bug
+        # to delete the bug link, since we can't send None over XML-RPC.
+        if launchpad_bug_id == None:
+            launchpad_bug_id = 0
+
+        timestamp = self._server.launchpad.set_launchpad_bug(
+            remote_bug, launchpad_bug_id)
+

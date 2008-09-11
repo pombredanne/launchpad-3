@@ -486,6 +486,7 @@ links to a given one of its bugs.
     ...     ISupportsBackLinking)
     >>> from zope.interface.verify import verifyObject
     >>> verifyObject(ISupportsBackLinking, trac)
+    True
 
 The getLaunchpadBugId() method will return the Launchpad bug ID for a
 given remote bug. If no Launchpad bug has been linked to the remote bug,
@@ -513,7 +514,7 @@ Calling getLaunchpadBugId() for remote bug 3 will now return 10, since
 that's the Launchpad bug ID that we've just set.
 
     >>> print trac.getLaunchpadBugId('3')
-    10
+    15
 
 Passing a Launchpad bug ID of None to setLaunchpadBugId() will unset the
 Launchpad bug ID for the remote bug.

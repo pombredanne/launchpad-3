@@ -1085,7 +1085,9 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
 
         self.launchpad_bugs[bugid] = launchpad_bug
 
-        return self.utc_time
+        # Return a list, since xmlrpclib insists on trying to expand
+        # results.
+        return [self.utc_time]
 
 
 class TestRoundup(Roundup):
