@@ -644,14 +644,29 @@ class StackedBranches(TestCaseWithFactory):
             set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
     def testStackedBranchesFailedMirrors(self):
-        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
-        # branches that had a failed mirror.
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that failed to mirror. This is not directly desired, but is
+        # a consequence of wanting to include branches that have started,
+        # failed, then started again.
         branch = self.factory.makeBranch()
         stacked_a = self.factory.makeBranch(stacked_on=branch)
         stacked_a.startMirroring()
         stacked_a.mirrorFailed(self.factory.getUniqueString())
         self.assertEqual(
-            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedThenStartedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that had a failed mirror but have since been started.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
 
     def testStackedBranchesMirrorRequested(self):
         # some_branch.getStackedBranchesWithIncompleteMirrors does not include
