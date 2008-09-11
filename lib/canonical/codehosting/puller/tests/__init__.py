@@ -79,7 +79,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def pushToBranch(self, branch, tree=None):
+    def pushToBranch(self, branch, tree=None, format=None):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.
 
         Use this to test mirroring a hosted branch.
@@ -88,7 +88,8 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         """
         hosted_path = self.getHostedPath(branch)
         if tree is None:
-            tree = self.make_branch_and_tree('branch-path')
+            tree = self.make_branch_and_tree(
+                self.factory.getUniqueString(), format=format)
             tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
