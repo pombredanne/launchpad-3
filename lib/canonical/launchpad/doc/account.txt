@@ -51,24 +51,24 @@ Each Launchpad user is assigned an permanent OpenID identity URL. The
 last component of this URL is specific to the user, and can be used to
 look up the user.
 
-    >>> account = account_set.getByOpenIdIdentifier('no-priv_oid')
+    >>> account = account_set.getByOpenIDIdentifier('no-priv_oid')
     >>> IAccount.providedBy(account)
     True
     >>> print account.displayname
     No Privileges Person
 
-The getByOpenIdIdentifier() method supports the human readable
+The getByOpenIDIdentifier() method supports the human readable
 openid identifiers.
 
     >>> account.new_openid_identifier
     u'123/no-priv'
-    >>> account_2 = account_set.getByOpenIdIdentifier('123/no-priv')
+    >>> account_2 = account_set.getByOpenIDIdentifier('123/no-priv')
     >>> account_2 == account
     True
 
 None is returned if the identifier is not used by any account.
 
-    >>> print account_set.getByOpenIdIdentifier('no-such-identifier')
+    >>> print account_set.getByOpenIDIdentifier('no-such-identifier')
     None
 
 
@@ -295,7 +295,7 @@ random token for a mnemonic has been used in the past.
     >>> removeSecurityProxy(
     ...     non_unique_account).new_openid_identifier = '111/non-unique'
     >>> syncUpdate(non_unique_account)
-    >>> print account_set.getByOpenIdIdentifier('000/non-unique')
+    >>> print account_set.getByOpenIDIdentifier('000/non-unique')
     None
 
     # Add the openid identifier to the history of used openid identifiers.

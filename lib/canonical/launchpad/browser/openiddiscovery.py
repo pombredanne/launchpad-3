@@ -18,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
-    IOpenIdApplication, NotFoundError)
+    IOpenIDApplication, NotFoundError)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
@@ -30,8 +30,8 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-class OpenIdApplicationURL:
-    """Canonical URL data for `IOpenIdApplication`"""
+class OpenIDApplicationURL:
+    """Canonical URL data for `IOpenIDApplication`"""
     implements(ICanonicalUrlData)
 
     path = ''
@@ -42,14 +42,14 @@ class OpenIdApplicationURL:
         self.context = context
 
 
-class OpenIdApplicationNavigation(Navigation):
-    """Navigation for `IOpenIdApplication`"""
-    usedfor = IOpenIdApplication
+class OpenIDApplicationNavigation(Navigation):
+    """Navigation for `IOpenIDApplication`"""
+    usedfor = IOpenIDApplication
 
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        account = getUtility(IAccountSet).getByOpenIdIdentifier(name)
+        account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
         # XXX sinzui 2008-09-09 bug=237280:
         # Account.status should be public.
         if (account is not None
@@ -153,7 +153,7 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
         return canonical_url(self.context)
 
 
-class OpenIdApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
+class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID index page."""
 
     xrds_template = ViewPageTemplateFile(

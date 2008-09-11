@@ -406,8 +406,8 @@ the registered factories.)
     FeedsPublication
 
     >>> print_request_and_publication('openid.launchpad.dev')
-    OpenIdBrowserRequest
-    OpenIdPublication
+    OpenIDBrowserRequest
+    OpenIDPublication
 
     >>> print_request_and_publication('translations.launchpad.dev')
     TranslationsBrowserRequest

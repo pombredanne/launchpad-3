@@ -1,18 +1,18 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
-"""OpenId related interfaces."""
+"""OpenID related interfaces."""
 
 __metaclass__ = type
 __all__ = [
-    'IOpenIdAuthorization',
-    'IOpenIdAuthorizationSet',
+    'IOpenIDAuthorization',
+    'IOpenIDAuthorizationSet',
     'IOpenIDPersistentIdentity',
     'IOpenIDRPConfig',
     'IOpenIDRPConfigSet',
     'IOpenIDRPSummary',
     'IOpenIDRPSummarySet',
-    'ILaunchpadOpenIdStoreFactory',
+    'ILaunchpadOpenIDStoreFactory',
     'ILoginServiceAuthorizeForm',
     'ILoginServiceLoginForm',
     ]
@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.lazr.fields import Reference
 
 
-class IOpenIdAuthorization(Interface):
+class IOpenIDAuthorization(Interface):
     id = Int(title=u'ID', required=True)
 
     personID = Int(title=u'Person', required=True, readonly=True)
@@ -46,7 +46,7 @@ class IOpenIdAuthorization(Interface):
     trust_root = TextLine(title=u'OpenID Trust Root', required=True)
 
 
-class IOpenIdAuthorizationSet(Interface):
+class IOpenIDAuthorizationSet(Interface):
     def isAuthorized(person, trust_root, client_id):
         """Check to see if the trust_root is authorized.
 
@@ -67,11 +67,11 @@ class IOpenIdAuthorizationSet(Interface):
         """
 
 
-class ILaunchpadOpenIdStoreFactory(Interface):
-    """Factory to create LaunchpadOpenIdStore instances."""
+class ILaunchpadOpenIDStoreFactory(Interface):
+    """Factory to create LaunchpadOpenIDStore instances."""
 
     def __call__():
-        """Create a LaunchpadOpenIdStore instance."""
+        """Create a LaunchpadOpenIDStore instance."""
 
 
 class TrustRootField(UniqueField):
@@ -146,16 +146,16 @@ class IOpenIDRPConfigSet(Interface):
     def new(trust_root, displayname, description, logo=None,
             allowed_sreg=None, creation_rationale=PersonCreationRationale
             .OWNER_CREATED_UNKNOWN_TRUSTROOT):
-        """Create a new IOpenIdRPConfig"""
+        """Create a new IOpenIDRPConfig"""
 
     def get(id):
-        """Get the IOpenIdRPConfig with a particular ID."""
+        """Get the IOpenIDRPConfig with a particular ID."""
 
     def getAll():
-        """Return a sequence of all IOpenIdRPConfigs."""
+        """Return a sequence of all IOpenIDRPConfigs."""
 
     def getByTrustRoot(trust_root):
-        """Return the IOpenIdRPConfig for a particular trust root"""
+        """Return the IOpenIDRPConfig for a particular trust root"""
 
 
 class IOpenIDRPSummary(Interface):

@@ -114,7 +114,7 @@ class AccountSet:
             ''' % sqlvalues(email),
             clauseTables=['EmailAddress'])
 
-    def getByOpenIdIdentifier(self, openid_identifier):
+    def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         # XXX sinzui 2008-09-09 bug=264783:
         # Remove the OR clause, only openid_identifier should be used.
@@ -142,7 +142,7 @@ class AccountSet:
         for token in tokens:
             token = '%03d' % token
             openid_identifier = '%s/%s' % (token, mnemonic)
-            account = self.getByOpenIdIdentifier(openid_identifier)
+            account = self.getByOpenIDIdentifier(openid_identifier)
             if account is not None:
                 continue
             summaries = openidrpsummaryset.getByIdentifier(
