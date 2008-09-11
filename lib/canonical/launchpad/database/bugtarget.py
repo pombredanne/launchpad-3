@@ -27,8 +27,8 @@ class HasBugsBase:
     or from `BugTargetBase`.
     """
     def searchTasks(self, search_params, user=None,
-                    order_by=('-importance',), search_text=None,
-                    status=list(UNRESOLVED_BUGTASK_STATUSES),
+                    order_by=None, search_text=None,
+                    status=None,
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
@@ -39,6 +39,15 @@ class HasBugsBase:
                     milestone=None, component=None, nominated_for=None,
                     sourcepackagename=None, has_no_package=None):
         """See `IHasBugs`."""
+        if status is None:
+            # If no statuses are supplied, default to the
+            # list of all unreolved statuses.
+            status = list(UNRESOLVED_BUGTASK_STATUSES)
+
+        if order_by is None:
+            # If no order_by value is supplied, default to importance.
+            order_by = ['-importance']
+
         if search_params is None:
             kwargs = dict(locals())
             del kwargs['self']

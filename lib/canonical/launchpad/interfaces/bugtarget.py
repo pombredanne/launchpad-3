@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213,W0102
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
@@ -91,9 +91,8 @@ class IHasBugs(Interface):
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
-                    order_by=['-importance'], search_text=None,
-                    status=[],
-                    importance=None,
+                    order_by=None, search_text=None,
+                    status=None, importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
                     has_patch=None, has_cve=None,
