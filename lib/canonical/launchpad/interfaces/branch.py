@@ -382,7 +382,7 @@ class BranchURIField(URIField):
             raise LaunchpadValidationError(structured(message))
 
         if uri.underDomain('localhost') or uri.underDomain('127.0.0.1'):
-            message = _('Launchpad cannot mirror branches from localhost')
+            message = _('Launchpad cannot mirror branches from localhost.')
             raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
