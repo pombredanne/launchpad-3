@@ -1806,16 +1806,30 @@ COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the pe
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
--- ArchiveRebuild
 
-COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
-COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
-COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
-COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
-COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
-COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+-- PackageCopyRequest
 
+COMMENT ON TABLE PackageCopyRequest IS 'PackageCopyRequest: A table that captures the status and the details of an inter-archive package copy operation.';
+COMMENT ON COLUMN PackageCopyRequest.requester IS 'The person who requested the archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.source_archive IS 'The archive from which packages are to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.source_distroseries IS 'The distroseries to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_component IS 'The component to which the packages to be copied belong in the source archive.';
+COMMENT ON COLUMN PackageCopyRequest.source_pocket IS 'The pocket for the packages to be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_archive IS 'The archive to which packages will be copied.';
+COMMENT ON COLUMN PackageCopyRequest.target_distroseries IS 'The target distroseries.';
+COMMENT ON COLUMN PackageCopyRequest.target_component IS 'The target component.';
+COMMENT ON COLUMN PackageCopyRequest.target_pocket IS 'The target pocket.';
+COMMENT ON COLUMN PackageCopyRequest.status IS 'Archive operation status, may be one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN PackageCopyRequest.reason IS 'The reason why this copy operation was requested.';
+COMMENT ON COLUMN PackageCopyRequest.date_created IS 'Date of creation for this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_started IS 'Start date/time of this archive operation.';
+COMMENT ON COLUMN PackageCopyRequest.date_completed IS 'When did this archive operation conclude?';
+
+-- ArchiveArch
+
+COMMENT ON TABLE ArchiveArch IS 'ArchiveArch: A table that allows a user to specify which architectures an archive requires or supports.';
+COMMENT ON COLUMN ArchiveArch.archive IS 'The archive for which an architecture is specified.';
+COMMENT ON COLUMN ArchiveArch.processorfamily IS 'The architecture specified for the archive on hand.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
