@@ -14,7 +14,7 @@ import re
 
 from zope.interface import implements
 
-from canonical.launchpad.layers import OpenIdLayer
+from canonical.launchpad.layers import OpenIDLayer
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -25,13 +25,13 @@ def get_openid_server_url(vhost=None):
     """The OpenID server URL for the current request.
 
     The default server URL uses the 'id' vhost's root URL. If the `IRequest`
-    implements the `OpenIdLayer` layer, the 'openid' vhost is used.
+    implements the `OpenIDLayer` layer, the 'openid' vhost is used.
 
     :return: The OpenID server URL in the form of
         'https://<vhost>.launchpad.net/+openid'
     """
     request = get_current_browser_request()
-    if OpenIdLayer.providedBy(request):
+    if OpenIDLayer.providedBy(request):
         vhost = 'openid'
     else:
         vhost = 'id'
@@ -42,13 +42,13 @@ def get_openid_vhost():
     """The OpenID server URL for the current request.
 
     The default server URL uses the 'id' vhost's root URL. If the `IRequest`
-    implements the `OpenIdLayer` layer, the 'openid' vhost is used.
+    implements the `OpenIDLayer` layer, the 'openid' vhost is used.
 
     :return: The OpenID server URL in the form of
         'https://<vhost>.launchpad.net/+openid'
     """
     request = get_current_browser_request()
-    if OpenIdLayer.providedBy(request):
+    if OpenIDLayer.providedBy(request):
         return 'openid'
     else:
         return 'id'
@@ -68,7 +68,7 @@ class OpenIDPersistentIdentity:
     # Remove old_openid_identity_url.
     # Rename new_openid_identifier => openid_identifier.
     # Rename new_openid_identity_url => openid_identity_url.
-    # Remove OpenIdLayer clause from supportsURL().
+    # Remove OpenIDLayer clause from supportsURL().
     @property
     def new_openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
@@ -105,7 +105,7 @@ class OpenIDPersistentIdentity:
         only_old_identifier = (
             self.new_openid_identifier is None
             and self.openid_identifier is not None)
-        if only_old_identifier or OpenIdLayer.providedBy(request):
+        if only_old_identifier or OpenIDLayer.providedBy(request):
             # Support the old OpenID URL.
             return self.old_openid_identity_url
         return self.new_openid_identity_url
@@ -114,7 +114,7 @@ class OpenIDPersistentIdentity:
     def selected_openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         request = get_current_browser_request()
-        if OpenIdLayer.providedBy(request):
+        if OpenIDLayer.providedBy(request):
             return self.openid_identifier
         else:
             return self.new_openid_identifier
@@ -123,7 +123,7 @@ class OpenIDPersistentIdentity:
     def supportsURL(identity_url):
         """See `IOpenIDPersistentIdentity`."""
         request = get_current_browser_request()
-        if OpenIdLayer.providedBy(request):
+        if OpenIDLayer.providedBy(request):
             identity_url_root = allvhosts.configs['openid'].rooturl
             return identity_url.startswith(identity_url_root + '+id')
         identity_url_root = allvhosts.configs['id'].rooturl

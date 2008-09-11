@@ -56,7 +56,7 @@ the current request. A request is always associated with a Layer.
 
     >>> from zope.interface import implements
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.layers import OpenIdLayer, IdLayer
+    >>> from canonical.launchpad.layers import OpenIDLayer, IdLayer
 
 When the current request is associated with the IdLayer,
 openid_identity_url is the new URL format.
@@ -91,13 +91,13 @@ The old path is not valid for the new vhost.
 
 == Old identity URLs ==
 
-When the current request is associated with the OpenIdLayer,
+When the current request is associated with the OpenIDLayer,
 openid_identity_url is the old URL format.
 
-    >>> class OpenIdTestRequest(LaunchpadTestRequest):
-    ...     implements(OpenIdLayer)
+    >>> class OpenIDTestRequest(LaunchpadTestRequest):
+    ...     implements(OpenIDLayer)
 
-    >>> old_request = OpenIdTestRequest(
+    >>> old_request = OpenIDTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/+id/name12_oid')
     >>> login('test@canonical.com', old_request)

@@ -89,7 +89,7 @@ class OpenIDApplicationNavigation(Navigation):
             # Retreive the IOpenIDPersistentIdentity for /nnn/user-name.
             identifier = '%s/%s' % (name, self.request.stepstogo.consume())
             account = getUtility(
-                IAccountSet).getByOpenIdIdentifier(identifier)
+                IAccountSet).getByOpenIDIdentifier(identifier)
             # XXX sinzui 2008-09-09 bug=237280:
             # Account.status should be public.
             if (account is not None
