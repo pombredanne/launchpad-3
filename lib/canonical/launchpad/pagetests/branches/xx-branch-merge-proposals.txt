@@ -481,7 +481,7 @@ about the proposal having been marked as merged.
     The proposal has now been marked as merged.
     >>> tag = find_tag_by_id(nopriv_browser.contents, 'proposal-merged')
     >>> print extract_text(tag)
-    This proposal was merged at revision 42
+    The proposed merge was performed at revision 42
 
 An email notification is also created.
 

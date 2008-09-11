@@ -66,7 +66,7 @@
   </div>
 
   <p id="proposal-merged" tal:condition="context/merged_revno">
-    This proposal was merged at revision
+    The proposed merge was performed at revision
     <tal:revno replace="context/merged_revno" />
 
     <a tal:define="link context_menu/update_merge_revno"
