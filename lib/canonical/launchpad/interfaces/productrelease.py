@@ -232,15 +232,6 @@ class IProductReleasePublic(Interface):
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
 
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
-
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
-
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.
 
