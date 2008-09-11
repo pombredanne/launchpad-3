@@ -159,3 +159,20 @@ by the librarian.
     ...
     Location: http://localhost:58000/.../brand
     ...
+
+
+== Error handling ==
+
+If a hosted file is read-only, the client won't be able to modify or
+delete it.
+
+   >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
+   >>> print webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
+   HTTP/1.1 405 Method Not Allowed
+   Allow: GET
+   ...
+
+   >>> print webservice.delete(url)
+   HTTP/1.1 405 Method Not Allowed
+   Allow: GET
+   ...

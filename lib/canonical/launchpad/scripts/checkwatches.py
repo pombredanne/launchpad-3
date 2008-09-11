@@ -12,6 +12,7 @@ import sys
 import pytz
 
 from zope.component import getUtility
+from zope.event import notify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -21,6 +22,7 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
@@ -643,7 +645,10 @@ class BugWatchUpdater(object):
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)
 
-            bug_watch.addComment(comment_id, comment_message)
+            bug_message = bug_watch.addComment(comment_id, comment_message)
+            notify(SQLObjectCreatedEvent(
+                bug_message,
+                user=getUtility(ILaunchpadCelebrities).bug_watch_updater))
             imported_comments += 1
 
         if imported_comments > 0:

@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -155,6 +155,10 @@ class IArchive(IHasOwner):
         title=_("Number of failed builds in archive"), required=True,
         default=0,
         description=_("The number of failed builds in this archive."))
+
+    date_created = Datetime(
+        title=_('Date created'), required=False, readonly=True,
+        description=_("The time when the archive was created."))
 
     def getPubConfig():
         """Return an overridden Publisher Configuration instance.
@@ -343,10 +347,6 @@ class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
 class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
     """Schema used to copy packages across archive."""
 
-    include_binaries = Bool(
-        title=_("Copy binaries"), required=False, default=False,
-        description=_("Whether or not to copy the binary packages for "
-                      "the selected sources."))
 
 
 class IArchiveEditDependenciesForm(Interface):
@@ -474,8 +474,8 @@ class ArchivePurpose(DBEnumeratedType):
         This is the archive for partner packages.
         """)
 
-    REBUILD = DBItem(6, """
-        Rebuild Archive
+    COPY = DBItem(6, """
+        Generalized copy archive
 
-        This kind of archive is used for rebuilding packages.
+        This kind of archive will be used for rebuilds, snapshots etc.
         """)
