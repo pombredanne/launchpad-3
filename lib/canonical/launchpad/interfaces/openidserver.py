@@ -221,9 +221,6 @@ class IOpenIDPersistentIdentity(Interface):
     selected_openid_identifier = Attribute(
         'The OpenID identifier used with the request.')
 
-    def supportsURL(identity_url):
-        """Return True if the identity_url format is supported, or False."""
-
 
 class ILoginServiceAuthorizeForm(Interface):
     """A schema used for the authorisation form showed to

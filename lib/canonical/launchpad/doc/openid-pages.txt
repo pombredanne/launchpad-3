@@ -76,15 +76,15 @@ staticmethod to test if the format of the identity URL is supported.
 This verifies that the vhost and path are a valid combination.
 
     >>> from canonical.launchpad.components.openidserver import (
-    ...     OpenIDPersistentIdentity)
+    ...     OpenIDPersistentIdentity, OpenIDVHost)
 
-    >>> OpenIDPersistentIdentity.supportsURL(
+    >>> OpenIDVHost.supportsURL(
     ...     'http://id.launchpad.dev/123/name12')
     True
 
 The old path is not valid for the new vhost.
 
-    >>> OpenIDPersistentIdentity.supportsURL(
+    >>> OpenIDVHost.supportsURL(
     ...     'http://id.launchpad.dev/+id/name12_oid')
     False
 
@@ -106,13 +106,13 @@ openid_identity_url is the old URL format.
 
 The old vhost supports the old identity URL path.
 
-    >>> OpenIDPersistentIdentity.supportsURL(
+    >>> OpenIDVHost.supportsURL(
     ...     'http://openid.launchpad.dev/+id/name12_oid')
     True
 
 The new path is not valid for the old vhost.
 
-    >>> OpenIDPersistentIdentity.supportsURL(
+    >>> OpenIDVHost.supportsURL(
     ...     'http://openid.launchpad.dev/123/name12')
     False
 

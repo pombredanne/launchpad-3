@@ -20,9 +20,8 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
-from canonical.launchpad.components.openidserver import get_openid_server_url
+from canonical.launchpad.components.openidserver import OpenIDVHost
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class ConsumerView(LaunchpadView):
@@ -53,17 +52,13 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
         return self.opener.open(request)
 
 
-def get_requested_server_url(url=None):
+def get_requested_server_url(url='http://openid.launchpad.dev/'):
     """Return the OpenID Server URL."""
-    if url is None:
-        # This is a gross hack to let many tests continue to assume there
-        # is only one end point.
-        url = 'http://openid.launchpad.dev/'
     vhost, rest_ = url[len('http://'):].split('.', 1)
-    if vhost not in allvhosts.configs:
+    if vhost not in ('id', 'openid'):
         # The claimed URL is not on Launchpad, fallback to the beta rules.
         vhost = 'openid'
-    return allvhosts.configs[vhost].rooturl + '+openid'
+    return OpenIDVHost.getServiceURL(vhost)
 
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):

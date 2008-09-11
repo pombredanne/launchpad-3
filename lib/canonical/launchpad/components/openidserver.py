@@ -5,9 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_openid_server_url',
-    'get_openid_vhost',
     'OpenIDPersistentIdentity',
+    'OpenIDVHost',
     ]
 
 import re
@@ -21,37 +20,47 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-def get_openid_server_url(vhost=None):
-    """The OpenID server URL for the current request.
+class OpenIDVHost:
+    """A utility for working with multiple OpenID End Points."""
 
-    The default server URL uses the 'id' vhost's root URL. If the `IRequest`
-    implements the `OpenIDLayer` layer, the 'openid' vhost is used.
+    @staticmethod
+    def getVHost():
+        """The name of the vhost for the current request."""
+        request = get_current_browser_request()
+        if OpenIDLayer.providedBy(request):
+            return 'openid'
+        else:
+            return 'id'
 
-    :return: The OpenID server URL in the form of
-        'https://<vhost>.launchpad.net/+openid'
-    """
-    request = get_current_browser_request()
-    if OpenIDLayer.providedBy(request):
-        vhost = 'openid'
-    else:
-        vhost = 'id'
-    return allvhosts.configs[vhost].rooturl + '+openid'
+    @staticmethod
+    def getRootURL(vhost=None):
+        """The OpenID root URL for the current request.
 
+        :param vhost: The preferred vhost configuration to use, otherwise
+            use the vhost associated with the current request.
+        """
+        if vhost is None:
+            vhost = OpenIDVHost.getVHost()
+        return allvhosts.configs[vhost].rooturl
 
-def get_openid_vhost():
-    """The OpenID server URL for the current request.
+    @staticmethod
+    def getServiceURL(vhost=None):
+        """The OpenID server URL (/+openid) for the current request.
 
-    The default server URL uses the 'id' vhost's root URL. If the `IRequest`
-    implements the `OpenIDLayer` layer, the 'openid' vhost is used.
+        :param vhost: The preferred vhost configuration to use, otherwise
+            use the vhost associated with the current request.
+        """
+        return OpenIDVHost.getRootURL(vhost=vhost) + '+openid'
 
-    :return: The OpenID server URL in the form of
-        'https://<vhost>.launchpad.net/+openid'
-    """
-    request = get_current_browser_request()
-    if OpenIDLayer.providedBy(request):
-        return 'openid'
-    else:
-        return 'id'
+    @staticmethod
+    def supportsURL(identity_url):
+        """Does the OpenID current vhost support the identity_url?"""
+        if OpenIDVHost.getVHost() == 'openid':
+            root_url = OpenIDVHost.getRootURL(vhost='openid')
+            return identity_url.startswith(root_url + '+id')
+        root_url = OpenIDVHost.getRootURL(vhost='id')
+        identity_url_re = re.compile(r'%s\d\d\d' % root_url)
+        return identity_url_re.match(identity_url) is not None
 
 
 class OpenIDPersistentIdentity:
@@ -68,7 +77,6 @@ class OpenIDPersistentIdentity:
     # Remove old_openid_identity_url.
     # Rename new_openid_identifier => openid_identifier.
     # Rename new_openid_identity_url => openid_identity_url.
-    # Remove OpenIDLayer clause from supportsURL().
     @property
     def new_openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
@@ -118,17 +126,6 @@ class OpenIDPersistentIdentity:
             return self.openid_identifier
         else:
             return self.new_openid_identifier
-
-    @staticmethod
-    def supportsURL(identity_url):
-        """See `IOpenIDPersistentIdentity`."""
-        request = get_current_browser_request()
-        if OpenIDLayer.providedBy(request):
-            identity_url_root = allvhosts.configs['openid'].rooturl
-            return identity_url.startswith(identity_url_root + '+id')
-        identity_url_root = allvhosts.configs['id'].rooturl
-        identity_url_re = re.compile(r'%s\d\d\d' % identity_url_root)
-        return identity_url_re.match(identity_url) is not None
 
 
 def account_to_openidpersistentidentity(account):

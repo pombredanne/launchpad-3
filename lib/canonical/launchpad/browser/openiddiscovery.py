@@ -16,8 +16,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.openidserver import (
-    get_openid_server_url, get_openid_vhost, OpenIDPersistentIdentity)
+from canonical.launchpad.components.openidserver import OpenIDVHost
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
@@ -33,36 +32,38 @@ from canonical.launchpad.webapp.publisher import (
 
 class OpenIDApplicationURL:
     """Canonical URL data for `IOpenIDApplication`"""
-    from canonical.launchpad.webapp.vhosts import allvhosts
     implements(ICanonicalUrlData)
 
     path = ''
     inside = None
 
-    @cachedproperty
-    def rootsite(self):
-        return get_openid_vhost()
-
     def __init__(self, context):
         self.context = context
+
+    @cachedproperty
+    def rootsite(self):
+        """The root site of the application."""
+        return OpenIDVHost.getVHost()
 
 
 class OpenIDApplicationNavigation(Navigation):
     """Navigation for `IOpenIDApplication`"""
     usedfor = IOpenIDApplication
 
+    def _get_active_identity(self, openid_identifier):
+        """Return the IOpenIDPersistentIdentity if it is active, or None."""
+        account = getUtility(IAccountSet).getByOpenIDIdentifier(
+            openid_identifier)
+        if (account is None
+            or removeSecurityProxy(account).status != AccountStatus.ACTIVE):
+            return None
+        return IOpenIDPersistentIdentity(account)
+
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        if OpenIDPersistentIdentity.supportsURL(self.request.getURL()):
-            account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
-            # XXX sinzui 2008-09-09 bug=237280:
-            # Account.status should be public.
-            if (account is not None
-                and removeSecurityProxy(
-                    account).status == AccountStatus.ACTIVE):
-                return IOpenIDPersistentIdentity(account)
-            return None
+        if OpenIDVHost.supportsURL(self.request.getURL()):
+            return self._get_active_identity(name)
         else:
             raise NotFoundError(name)
 
@@ -85,19 +86,13 @@ class OpenIDApplicationNavigation(Navigation):
         If an IOpenIDPersistentIdentity cannot be retrieved, redirect person
         names to equivalent persistent identity URLs.
         """
-        if OpenIDPersistentIdentity.supportsURL(self.request.getURL()):
+        if OpenIDVHost.supportsURL(self.request.getURL()):
             # Retreive the IOpenIDPersistentIdentity for /nnn/user-name.
             identifier = '%s/%s' % (name, self.request.stepstogo.consume())
-            account = getUtility(
-                IAccountSet).getByOpenIDIdentifier(identifier)
-            # XXX sinzui 2008-09-09 bug=237280:
-            # Account.status should be public.
-            if (account is not None
-                and removeSecurityProxy(
-                    account).status == AccountStatus.ACTIVE):
-                return IOpenIDPersistentIdentity(account)
-        # Redirect person names to equivalent persistent identity URLs.
-        # eg. /~user-name
+            identity = self._get_active_identity(identifier)
+            if identity is not None:
+                return identity
+        # Redirect /~user-name to equivalent persistent identity URLs.
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
             openid_identity = IOpenIDPersistentIdentity(person.account)
@@ -165,7 +160,7 @@ class XRDSContentNegotiationMixin:
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return get_openid_server_url()
+        return OpenIDVHost.getServiceURL()
 
 
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
