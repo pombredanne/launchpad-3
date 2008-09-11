@@ -424,8 +424,8 @@ class MailingList(SQLBase):
             )
         preferred = store.using(*tables).find(
             EmailAddress,
-            And(MailingListSubscription.mailing_listID == self.id,
-                TeamParticipation.teamID == self.team.id,
+            And(MailingListSubscription.mailing_list == self,
+                TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 MailingListSubscription.email_addressID == None,
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
@@ -444,8 +444,8 @@ class MailingList(SQLBase):
             )
         explicit = store.using(*tables).find(
             EmailAddress,
-            And(MailingListSubscription.mailing_listID == self.id,
-                TeamParticipation.teamID == self.team.id,
+            And(MailingListSubscription.mailing_list == self,
+                TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 Account.status == AccountStatus.ACTIVE))
         # Union the two queries together to give us the complete list of email
@@ -484,7 +484,7 @@ class MailingList(SQLBase):
             )
         team_members = store.using(*tables).find(
             (EmailAddress, Person),
-            And(TeamParticipation.teamID == self.team.id,
+            And(TeamParticipation.team == self.team,
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
                 EmailAddress.status.is_in(email_address_statuses),
@@ -504,7 +504,7 @@ class MailingList(SQLBase):
             )
         approved_posters = store.using(*tables).find(
             (EmailAddress, Person),
-            And(MessageApproval.mailing_listID == self.id,
+            And(MessageApproval.mailing_list == self,
                 MessageApproval.status.is_in(message_approval_statuses),
                 EmailAddress.status.is_in(email_address_statuses),
                 Account.status == AccountStatus.ACTIVE,
