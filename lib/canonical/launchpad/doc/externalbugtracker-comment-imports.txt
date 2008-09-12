@@ -428,7 +428,11 @@ Once again, CVE links are created but no karma is assigned.
     ...     '1': 'First imported comment (initial import)',
     ...     '2': 'Second imported comment (initial import)',
     ...     }
-    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> now = datetime(2008, 9, 12, 15, 30, 45, tzinfo=pytz.timezone('UTC'))
+    >>> bugwatch_updater.importBugComments(
+    ...     external_bugtracker, bug_watch, when=now)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
 
@@ -458,6 +462,11 @@ XXX: check e-mail
     comment-syncer@example.com
     >>> print notification['From']
     Bug Watch Updater <bugwatch@...>
+    >>> print notification['Subject']
+    [Bug ...] Re: ...
+    >>> print notification['Date']
+    Fri, 12 Sep 2008 15:30:45 -0000
+
 
 Send notifications for sub-sequent imports, even though multiple.
 
