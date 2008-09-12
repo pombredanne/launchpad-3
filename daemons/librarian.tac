@@ -33,32 +33,33 @@ librarianService = service.IServiceCollection(application)
 # Service that announces when the daemon is ready
 tachandler.ReadyService().setServiceParent(librarianService)
 
-# Public librarian.
-public_storage = storage.LibrarianStorage(path, db.Library(restricted=False))
-uploadPort = config.librarian.upload_port
-upload_factory = FileUploadFactory(public_storage)
-strports.service(str(uploadPort), upload_factory).setServiceParent(
-    librarianService)
-root = fatweb.LibraryFileResource(public_storage, upstreamHost, upstreamPort)
-root.putChild('search', fatweb.DigestSearchResource(public_storage))
-root.putChild('robots.txt', fatweb.robotsTxt)
-site = server.Site(root)
-site.displayTracebacks = False
-webPort = config.librarian.download_port
-strports.service(str(webPort), site).setServiceParent(librarianService)
+def setUpListener(uploadPort, webPort, restricted):
+    """Set up a librarian listener on the given ports.
 
-# Restricted librarian.
-uploadPort = config.librarian.restricted_upload_port
-restricted_storage = storage.LibrarianStorage(
-    path, db.Library(restricted=True))
-restricted_upload_factory = FileUploadFactory(restricted_storage)
-strports.service(str(uploadPort), restricted_upload_factory).setServiceParent(
-    librarianService)
-root = fatweb.LibraryFileResource(
-    restricted_storage, upstreamHost, upstreamPort)
-root.putChild('search', fatweb.DigestSearchResource(restricted_storage))
-root.putChild('robots.txt', fatweb.robotsTxt)
-site = server.Site(root)
-site.displayTracebacks = False
+    :param restricted: Should this be a restricted listener?  A restricted
+        listener will serve only files with the 'restricted' file set and all
+        files uploaded through the restricted listener will have that flag
+        set.
+    """
+    librarian_storage = storage.LibrarianStorage(
+        path, db.Library(restricted=restricted))
+    upload_factory = FileUploadFactory(librarian_storage)
+    strports.service(str(uploadPort), upload_factory).setServiceParent(
+        librarianService)
+    root = fatweb.LibraryFileResource(
+        librarian_storage, upstreamHost, upstreamPort)
+    root.putChild('search', fatweb.DigestSearchResource(librarian_storage))
+    root.putChild('robots.txt', fatweb.robotsTxt)
+    site = server.Site(root)
+    site.displayTracebacks = False
+    strports.service(str(webPort), site).setServiceParent(librarianService)
+
+# Set up the public librarian.
+uploadPort = config.librarian.upload_port
+webPort = config.librarian.download_port
+setUpLibrarian(uploadPort, webPort, restricted=False)
+
+# Set up the restricted librarian.
 webPort = config.librarian.restricted_download_port
-strports.service(str(webPort), site).setServiceParent(librarianService)
+uploadPort = config.librarian.restricted_upload_port
+setUpLibrarian(uploadPort, webPort, restricted=True)

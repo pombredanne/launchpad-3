@@ -14,7 +14,7 @@ __all__ = [
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Datetime, Int, Object, Text
+from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -96,15 +96,12 @@ class ITeamMembership(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    # Can't use Object(schema=IPerson) here because that would cause circular
-    # imports, so we use schema=Interface here and override it in
-    # interfaces/person.py.
     team = exported(
         Reference(title=_("Team"), required=True, readonly=True,
-                  schema=Interface))
+                  schema=Interface)) # Specified in interfaces/person.py.
     person = exported(
         Reference(title=_("Member"), required=True, readonly=True,
-                  schema=Interface),
+                  schema=Interface), # Specified in interfaces/person.py.
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
@@ -113,7 +110,9 @@ class ITeamMembership(Interface):
         _('The person (usually the member or someone acting on his behalf) '
           'that acknowledged (accepted/declined) a membership invitation.'))
     last_changed_by = exported(
-        Object(title=_('Last person who change this'), schema=Interface))
+        Reference(title=_('Last person who change this'),
+                  required=False, readonly=True,
+                  schema=Interface)) # Specified in interfaces/person.py.
 
     datejoined = exported(
         Datetime(title=_("Date joined"), required=False, readonly=True,
@@ -265,9 +264,11 @@ class ITeamParticipation(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Reference(
-        title=_("The team"), required=True, readonly=True, schema=Interface)
+        title=_("The team"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
     person = Reference(
-        title=_("The member"), required=True, readonly=True, schema=Interface)
+        title=_("The member"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
 
 
 class CyclicalTeamMembershipError(Exception):
