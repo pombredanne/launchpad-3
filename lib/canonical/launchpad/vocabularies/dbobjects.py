@@ -73,7 +73,6 @@ from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from storm.expr import LeftJoin, SQL, And, Or, Not
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -101,13 +100,13 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
     MailingListStatus, PersonVisibility)
 from canonical.launchpad.interfaces.account import AccountStatus
-
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-
-from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI)
 
 
 class BasePersonVocabulary:
@@ -171,16 +170,21 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
     _orderBy = ['name', 'id']
     displayname = 'Select a Branch'
 
-    def toTerm(self, obj):
+    def toTerm(self, branch):
         """The display should include the URL if there is one."""
-        return SimpleTerm(obj, obj.unique_name, obj.displayname)
+        return SimpleTerm(branch, branch.unique_name, branch.displayname)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         branch = self._getExactMatch(token)
-        # fall back to interpreting the token as a branch URL
         if branch is None:
-            raise LookupError(token)
+            # Attempt a search, and if there is one and only one result
+            # just use that instead.
+            search_result = self.search(token)
+            if search_result.limit(2).count() == 1:
+                [branch] = list(search_result)
+            else:
+                raise LookupError(token)
         return self.toTerm(branch)
 
     def _getExactMatch(self, query):
@@ -188,6 +192,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         branch = BranchSet().getByUniqueName(query)
         if branch is not None:
             return branch
+        # Fall back to interpreting the token as a branch URL.
         return BranchSet().getByUrl(query.rstrip('/'))
 
     def searchForTerms(self, query=None):
@@ -763,7 +768,7 @@ class ValidPersonOrTeamVocabulary(
             return Person.select(
                 query, clauseTables=[self.cache_table_name])
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         tables = [
             Person,

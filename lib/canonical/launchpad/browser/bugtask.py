@@ -2843,6 +2843,9 @@ class BugTaskPrivacyAdapter:
         return self.context.bug.private
 
 
+# XXX mars 2008-08-25 bug=261188
+# This whole class hierarchy should be replaced with something more
+# specific, ie. a class that generates BugTask page titles.
 class BugTaskSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBugTask`."""
 

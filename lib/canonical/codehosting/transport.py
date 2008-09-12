@@ -947,7 +947,7 @@ class AsyncVirtualTransport(Transport):
         # Here, we assume that the underlying transport has no symlinks
         # (Bazaar transports cannot create symlinks). This means that we can
         # just return the absolute path.
-        return self._abspath(relpath)
+        return defer.succeed(self._abspath(relpath))
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):
@@ -1010,7 +1010,7 @@ class SynchronousAdapter(Transport):
 
     def external_url(self):
         """See `bzrlib.transport.Transport`."""
-        raise InProcessTransport()
+        raise InProcessTransport(self)
 
     def abspath(self, relpath):
         """See `bzrlib.transport.Transport`."""

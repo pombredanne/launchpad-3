@@ -23,7 +23,8 @@
                     bzr_identity canBeDeleted deletionRequirements
                     associatedProductSeries subscribe getSubscription
                     hasSubscription unsubscribe getSubscriptionsByLevel
-                    getBranchRevision
+                    getBranchRevision getStackedBranches
+                    getStackedBranchesWithIncompleteMirrors
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
@@ -49,12 +50,6 @@
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
       factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBranchContainer"
-      />
-
-  <adapter
-      for="canonical.launchpad.interfaces.IBranch"
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      factory="canonical.launchpad.browser.BranchSOP"
       />
 
   <adapter

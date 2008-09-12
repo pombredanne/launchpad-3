@@ -48,12 +48,8 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
-    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
-    'PersonSetFacets',
     'PersonSetNavigation',
-    'PersonSetSOP',
-    'PersonSOP',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
     'PersonSpecWorkloadView',
@@ -157,7 +153,6 @@ from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchmergeproposallisting import (
     BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.openiddiscovery import (
@@ -546,34 +541,6 @@ class PersonSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(me), status=303)
 
 
-class PersonSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'People and Teams'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
-
-
-class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Return a breadcrumb for an `IPersonSet`."""
-    text = "People"
-
-
-class PersonSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IPersonSet."""
-
-    usedfor = IPersonSet
-
-    enable_only = ['overview']
-
-
 class PersonSetContextMenu(ContextMenu):
 
     usedfor = IPersonSet
@@ -610,27 +577,6 @@ class PersonSetContextMenu(ContextMenu):
     def adminteammerge(self):
         text = 'Admin merge teams'
         return Link('+adminteammerge', text, icon='edit')
-
-
-class PersonSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.title
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class PersonBreadcrumbBuilder(BreadcrumbBuilder):
@@ -4109,10 +4055,10 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     def validate_action_update_autosubscribe_policy(self, action, data):
         """Ensure that the requested auto-subscribe setting is valid."""
-        # XXX mars 2008-04-27:
+        # XXX mars 2008-04-27 bug=223303:
         # This validator appears pointless and untestable, but it is
         # required for LaunchpadFormView to tell apart the three <form>
-        # elements on the page.  See bug #223303.
+        # elements on the page.
 
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         self.validate_widgets(data, widget.name)

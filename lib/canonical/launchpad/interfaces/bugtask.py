@@ -921,7 +921,8 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False):
+                 bug_commenter=None, omit_targeted=False,
+                 date_closed=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -949,6 +950,7 @@ class BugTaskSearchParams:
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
+        self.date_closed = date_closed
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
