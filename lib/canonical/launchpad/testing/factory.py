@@ -740,7 +740,10 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if name is None:
             name = self.getUniqueString()
-        series = product.newSeries(
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        series = naked_product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
         if import_branch is not None:
             series.import_branch = import_branch

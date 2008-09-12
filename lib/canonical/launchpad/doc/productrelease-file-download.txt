@@ -52,15 +52,15 @@ Add a file alias to the productrelease.
     >>> from datetime import datetime
     >>> from pytz import UTC
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> def add_release_file(release, file_content, name, description,
     ...                      date_uploaded=None):
     ...     user = getUtility(ILaunchBag).user
     ...     result = release.addReleaseFile(
     ...         filename=name,
-    ...         file_content=file_content,
+    ...         file_content=StringIO(file_content),
+    ...         file_size=len(file_content),
     ...         content_type='test/plain',
-    ...         signature_filename=None,
-    ...         signature_content=None,
     ...         uploader=user,
     ...         description=description)
     ...     if date_uploaded is not None:

@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 import mimetypes
+from StringIO import StringIO
 
 # zope3
 from zope.event import notify
@@ -157,17 +158,21 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             if signature_upload is None:
                 signature_filename = None
                 signature_content = None
+                signature_size = None
             else:
                 signature_filename = signature_upload.filename
-                signature_content = data['signature']
+                signature_content = StringIO(data['signature'])
+                signature_size = len(data['signature'])
 
             release_file = self.context.addReleaseFile(
                 filename=file_upload.filename,
-                file_content=data['filecontent'],
+                file_content=StringIO(data['filecontent']),
+                file_size=len(data['filecontent']),
                 content_type=content_type,
+                uploader=self.user,
                 signature_filename=signature_filename,
                 signature_content=signature_content,
-                uploader=self.user,
+                signature_size=signature_size,
                 file_type=filetype,
                 description=data['description'])
 

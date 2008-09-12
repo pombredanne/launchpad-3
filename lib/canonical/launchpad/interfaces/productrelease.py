@@ -163,8 +163,9 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
-    def addReleaseFile(filename, file_content, content_type,
-                       signature_filename, signature_content, uploader,
+    def addReleaseFile(filename, file_content, file_size, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None, signature_size=None,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """Add file to the library, and link to this `IProductRelease`.
@@ -172,10 +173,13 @@ class IProductReleaseEditRestricted(Interface):
         The signature file will also be added if available.
 
         :param filename: Name of the file being uploaded.
-        :param file_content: String of bytes.
+        :param file_content: StringIO or file object.
+        :param file_size: Size of file_content.
         :param content_type: A MIME content type string.
-        :param signature_filename: Name of the uploaded gpg signature file.
         :param uploader: The person who uploaded the file.
+        :param signature_filename: Name of the uploaded gpg signature file.
+        :param signature_content: StringIO or file object.
+        :param signature_size: Size of signature_content.
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.

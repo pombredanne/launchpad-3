@@ -16,7 +16,7 @@ from cscvs.dircompare import path
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IProductSet, IProductReleaseSet, UpstreamFileType)
+    IProductSet, IProductReleaseSet, UpstreamFileType)
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
@@ -112,9 +112,8 @@ class ProductReleaseFinder:
             series = product.getSeries(series_name)
             release = series.getRelease(release_name)
             if release is None:
-                release = getUtility(IProductReleaseSet).new(
+                release = series.addRelease(
                     owner=product.owner,
-                    productseries=series,
                     version=release_name)
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
@@ -127,9 +126,9 @@ class ProductReleaseFinder:
                     self.ztm.abort()
                     return
 
-            alias = getUtility(ILibraryFileAliasSet).create(
-                filename, size, file, content_type)
-            release.addFileAlias(alias, signature=None, uploader=product.owner)
+            release.addReleaseFile(
+                filename, file, size, content_type,
+                uploader=product.owner)
             self.ztm.commit()
         except:
             self.ztm.abort()

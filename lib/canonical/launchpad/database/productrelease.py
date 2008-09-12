@@ -68,8 +68,9 @@ class ProductRelease(SQLBase):
         # Replace slashes in the filename with less problematic dashes.
         return filename.replace('/', '-')
 
-    def addReleaseFile(self, filename, file_content, content_type,
-                       signature_filename, signature_content, uploader,
+    def addReleaseFile(self, filename, file_content, file_size, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None, signature_size=None,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
@@ -77,16 +78,16 @@ class ProductRelease(SQLBase):
         filename = self.normalizeFilename(filename)
         alias = getUtility(ILibraryFileAliasSet).create(
             name=filename,
-            size=len(file_content),
-            file=StringIO(file_content),
+            size=file_size,
+            file=file_content,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
             signature_filename = self.normalizeFilename(
                 signature_filename)
             signature_alias = getUtility(ILibraryFileAliasSet).create(
                 name=signature_filename,
-                size=len(signature_content),
-                file=StringIO(signature_content),
+                size=signature_size,
+                file=signature_content,
                 contentType='application/pgp-signature')
         else:
             signature_alias = None
