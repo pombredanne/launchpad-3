@@ -15,8 +15,7 @@ from cscvs.dircompare import path
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IProductSet, IProductReleaseSet, UpstreamFileType)
+from canonical.launchpad.interfaces import IProductSet, UpstreamFileType
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
@@ -95,7 +94,8 @@ class ProductReleaseFinder:
                     release = series.getRelease(release_name)
                     if release is not None:
                         for fileinfo in release.files:
-                            if fileinfo.filetype == UpstreamFileType.CODETARBALL:
+                            if (fileinfo.filetype
+                                == UpstreamFileType.CODETARBALL):
                                 has_tarball = True
                                 break
         finally:
