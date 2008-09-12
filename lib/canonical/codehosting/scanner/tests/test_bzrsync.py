@@ -18,6 +18,7 @@ from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
 import pytz
+from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
 from canonical.config import config
@@ -30,9 +31,26 @@ from canonical.launchpad.interfaces import (
     ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, get_diff, get_revision_message)
+    BzrSync, get_diff, get_revision_message, InvalidStackedBranchURL)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
+
+
+def run_as_db_user(username):
+    """Create a decorator that will run a function as the given database user.
+    """
+    def _run_with_different_user(f):
+        def decorated(*args, **kwargs):
+            current_user = LaunchpadZopelessLayer.txn._dbuser
+            if current_user == username:
+                return f(*args, **kwargs)
+            LaunchpadZopelessLayer.switchDbUser(username)
+            try:
+                return f(*args, **kwargs)
+            finally:
+                LaunchpadZopelessLayer.switchDbUser(current_user)
+        return mergeFunctionMetadata(f, decorated)
+    return _run_with_different_user
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
@@ -44,13 +62,13 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        # The lp-mirrored transport is set up by the branch_scanner module.
-        # Here we set up a fake so that we can test without worrying about
-        # authservers and the like.
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
         self.lp_db_user = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        # The lp-mirrored transport is set up by the branch_scanner module.
+        # Here we set up a fake so that we can test without worrying about
+        # authservers and the like.
         self._setUpFakeTransport()
 
     def _setUpFakeTransport(self):
@@ -489,6 +507,38 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
         self.assertEqual(expected_mapping, db_branch_revision_map)
+
+
+class TestScanStackedBranches(BzrSyncTestCase):
+    """Tests for scanning stacked branches."""
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def testStackedBranchBadURL(self):
+        # The scanner will raise an InvalidStackedBranchURL when it tries to
+        # open a branch stacked on a non- lp-mirrored:// schema.
+        db_branch = self.makeDatabaseBranch()
+        stacked_on_branch = self.make_branch('stacked-on', format='1.6')
+        self.assertFalse(stacked_on_branch.base.startswith('lp-mirrored://'))
+        bzr_tree = self.makeBzrBranchAndTree(db_branch, format='1.6')
+        bzr_tree.branch.set_stacked_on_url(stacked_on_branch.base)
+        scanner = self.makeBzrSync(db_branch)
+        self.assertRaises(InvalidStackedBranchURL, scanner.syncBranchAndClose)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def testStackedBranch(self):
+        # We can scan a stacked branch that's stacked on a branch that has an
+        # lp-mirrored:// URL.
+        db_stacked_on_branch = self.factory.makeBranch()
+        stacked_on_tree = self.makeBzrBranchAndTree(
+            db_stacked_on_branch, format='1.6')
+        db_stacked_branch = self.factory.makeBranch()
+        stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format='1.6')
+        stacked_tree.branch.set_stacked_on_url(
+            'lp-mirrored:///%s' % db_stacked_on_branch.unique_name)
+        scanner = self.makeBzrSync(db_stacked_branch)
+        # This does not raise an exception.
+        scanner.syncBranchAndClose()
 
 
 class TestBzrSyncOneRevision(BzrSyncTestCase):
