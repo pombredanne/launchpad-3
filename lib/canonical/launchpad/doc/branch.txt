@@ -72,7 +72,7 @@ The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
+    >>> from canonical.launchpad.interfaces import IBranchSet
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> branchset = getUtility(IBranchSet)
 
@@ -258,8 +258,7 @@ data to mess up our tests, so we clear the last_scanned data in all
 existing branches.
 
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, AUTH_STORE,
-    ...     MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> store.find(Branch).set(last_scanned=None)
 

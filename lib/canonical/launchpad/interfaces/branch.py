@@ -58,8 +58,7 @@ from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
     RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
-    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack5RichRoot)
+    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
