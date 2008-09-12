@@ -456,6 +456,8 @@ XXX: check e-mail
     >>> notification = notifications[0]
     >>> print notification['To']
     comment-syncer@example.com
+    >>> print notification['From']
+    Bug Watch Updater <bugwatch@...>
 
 Send notifications for sub-sequent imports, even though multiple.
 

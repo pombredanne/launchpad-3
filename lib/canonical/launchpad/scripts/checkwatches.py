@@ -37,7 +37,8 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import sendmail
-from canonical.launchpad.mailnotification import construct_bug_notification
+from canonical.launchpad.mailnotification import (
+    construct_bug_notification, get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
@@ -666,9 +667,12 @@ class BugWatchUpdater(object):
                 people_to_notify = [
                     person for person in recipients.getRecipients()
                     if person.inTeam(comment_syncing_team)]
+                from_address = get_bugmail_from_address(
+                    bug_watch_updater, bug_watch.bug)
                 for person in people_to_notify:
                     notification = construct_bug_notification(
-                        bug_watch.bug, 'from', person.preferredemail.email,
+                        bug_watch.bug,
+                        from_address, person.preferredemail.email,
                         'body', 'subject',
                         datetime.now(pytz.timezone('UTC')))
                     sendmail(notification)
