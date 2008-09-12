@@ -156,7 +156,8 @@ It also raises NotFoundError on distributions with no series:
     ...
     NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
 
-A distroseries can only be created by the distro owner or the admin team.
+A distroseries can only be created by the distro owner or the admin
+team.
 
     >>> gentoo.newSeries('gentoo-two', 'Gentoo Two',
     ...                  'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
@@ -170,7 +171,9 @@ A distroseries can only be created by the distro owner or the admin team.
     >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
     ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
     ...                               '2.0', None, gentoo.owner)
-    >>> login('no-priv@canonical.com')
+
+    # Reverting the logged in user.
+    >>> login(ANONYMOUS)
 
 Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
@@ -179,7 +182,6 @@ in it, and therefore guessPackageNames will still fail:
     Traceback (most recent call last):
     ...
     NotFoundError: u'Package pmount not published in Gentoo'
-
 
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
