@@ -277,9 +277,6 @@ class IBug(ICanBeMentored):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    def linkMessage(message):
-        """Link the given message to this object."""
-
     # subscription-related methods
 
     @operation_parameters(
