@@ -255,7 +255,8 @@ class LaunchpadObjectFactory:
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
         naked_product = removeSecurityProxy(product)
-        return naked_product.newSeries(owner=owner, name=name, summary=summary)
+        return naked_product.newSeries(owner=owner, name=name,
+                                       summary=summary)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
