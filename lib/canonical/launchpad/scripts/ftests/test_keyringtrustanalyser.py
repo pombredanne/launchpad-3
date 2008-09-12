@@ -180,7 +180,7 @@ class TestMergeClusters(unittest.TestCase):
 
         validated_person = personset.getByEmail('test@canonical.com')
         unvalidated_person = personset.getByEmail(
-            'christian.reis@ubuntulinux.com')
+            'matsubara@async.com.br')
 
         allemails = self._getEmails(validated_person)
         allemails.update(self._getEmails(unvalidated_person))
@@ -194,7 +194,7 @@ class TestMergeClusters(unittest.TestCase):
         self.assertEqual(unvalidated_person.merged, None)
 
         mergeClusters([set(['test@canonical.com',
-                            'christian.reis@ubuntulinux.com'])])
+                            'matsubara@async.com.br'])])
 
         # unvalidated person has been merged into the validated person
         self.assertEqual(validated_person.merged, None)
@@ -240,7 +240,7 @@ class TestMergeClusters(unittest.TestCase):
         """
         personset = getUtility(IPersonSet)
 
-        person1 = personset.getByEmail('christian.reis@ubuntulinux.com')
+        person1 = personset.getByEmail('matsubara@async.com.br')
         person2 = personset.getByEmail('martin.pitt@canonical.com')
 
         allemails = self._getEmails(person1)
@@ -252,7 +252,7 @@ class TestMergeClusters(unittest.TestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        mergeClusters([set(['christian.reis@ubuntulinux.com',
+        mergeClusters([set(['matsubara@async.com.br',
                             'martin.pitt@canonical.com'])])
 
         # since we don't know which account will be merged, swap

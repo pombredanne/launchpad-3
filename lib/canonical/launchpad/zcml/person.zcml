@@ -41,13 +41,6 @@
     permission="zope.Public"
     />
 
-  <adapter
-    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
-    for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.PersonSetBreadcrumbBuilder"
-    permission="zope.Public"
-    />
-
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
@@ -92,7 +85,7 @@
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
         PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />

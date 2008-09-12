@@ -9,16 +9,13 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.ftests.test_uploadprocessor import (
+from canonical.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus)
+    IDistributionSet, PackagePublishingPocket, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

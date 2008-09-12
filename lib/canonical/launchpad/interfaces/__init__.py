@@ -185,3 +185,6 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+
+import canonical.launchpad.interfaces._schema_circular_imports
+
