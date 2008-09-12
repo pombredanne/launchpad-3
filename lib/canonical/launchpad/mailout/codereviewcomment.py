@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
+from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -21,7 +22,7 @@ def send(comment, event):
 class CodeReviewCommentMailer(BMPMailer):
     """Send email about creation of a CodeReviewComment."""
 
-    def __init__(self, code_review_comment, recipients):
+    def __init__(self, code_review_comment, recipients, message_id=None):
         """Constructor."""
         self.code_review_comment = code_review_comment
         self.message = code_review_comment.message
@@ -31,7 +32,7 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         BMPMailer.__init__(
             self, self.message.subject, None, recipients, merge_proposal,
-            from_address)
+            from_address, message_id=message_id)
 
     @classmethod
     def forCreation(klass, code_review_comment):
@@ -39,7 +40,8 @@ class CodeReviewCommentMailer(BMPMailer):
         merge_proposal = code_review_comment.branch_merge_proposal
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        return klass(code_review_comment, recipients)
+        return klass(code_review_comment, recipients,
+            code_review_comment.message.rfc822msgid)
 
     def _getSubject(self, email):
         """Don't do any string template insertions on subjects."""
@@ -63,10 +65,6 @@ class CodeReviewCommentMailer(BMPMailer):
             prefix = 'Vote: %s%s\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         main = self.message.text_contents
-        if '\n-- \n' in main:
-            footer_separator = '\n'
-        else:
-            footer_separator = '\n-- \n'
 
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
@@ -75,12 +73,10 @@ class CodeReviewCommentMailer(BMPMailer):
             'proposal_url': canonical_url(self.merge_proposal),
             'reason': reason.getReason()}
         return ''.join((
-            prefix, main, footer_separator, footer))
+            prefix, append_footer(main, footer)))
 
-    def _getHeaders(self, email):
-        """Return the mail headers to use."""
-        headers = BMPMailer._getHeaders(self, email)
-        headers['Message-Id'] = self.message.rfc822msgid
+    def _getInReplyTo(self):
         if self.message.parent is not None:
-            headers['In-Reply-To'] = self.message.parent.rfc822msgid
-        return headers
+            return self.message.parent.rfc822msgid
+        else:
+            return BMPMailer._getInReplyTo(self)

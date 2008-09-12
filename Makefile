@@ -39,12 +39,9 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-# XXX flacoste 2008/07/31 This is not automatically run and the
-# generated file is stored in the revision control, until IS installs
-# xsltproc on all required machine.
-apidoc:
+apidoc: compile
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
-		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
 		> ./lib/canonical/launchpad/apidoc/index.html
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
@@ -105,6 +102,9 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
+xxxreport:
+	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+
 check-configs:
 	${PYTHON} utilities/check-configs.py
 
@@ -113,7 +113,9 @@ pagetests: build
 
 inplace: build
 
-build: bzr_version_info
+build: bzr_version_info compile apidoc
+
+compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
@@ -227,7 +229,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
-	rm -rf lib/mailman
+	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
 realclean: clean

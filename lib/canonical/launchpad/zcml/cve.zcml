@@ -4,6 +4,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
   <!-- CVE -->
   <content class="canonical.launchpad.database.Cve">
     <allow interface="canonical.launchpad.interfaces.ICve" />
@@ -117,4 +119,7 @@
       class="canonical.launchpad.browser.BugLinksListingView"
       permission="zope.Public"
       template="../templates/cve-portlet-bugs2.pt" />
+
+  </facet>
+
 </configure>

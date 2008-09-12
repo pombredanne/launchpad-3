@@ -17,10 +17,11 @@
                        votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
-                       getUnlandedSourceBranchRevisions"/>
+                       getUnlandedSourceBranchRevisions root_message_id"/>
     <require
         permission="launchpad.Edit"
-        set_attributes="whiteboard merged_revno commit_message"
+        set_attributes="whiteboard merged_revno commit_message
+                        root_message_id"
         attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
@@ -31,9 +32,6 @@
         attributes="createComment createCommentFromMessage"
     />
   </content>
-  <content class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
-      <allow attributes="getReason branch mail_header" />
-  </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
@@ -42,12 +40,6 @@
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
-  <adapter
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-      factory="canonical.launchpad.browser.BranchMergeProposalSOP"
-      />
-
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />

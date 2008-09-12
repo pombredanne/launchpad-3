@@ -29,6 +29,8 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.mailout.mailwrapper import MailWrapper
@@ -317,9 +319,9 @@ def get_bugmail_from_address(person, bug):
     email_addresses = shortlist(
         getUtility(IEmailAddressSet).getByPerson(person))
     if not email_addresses:
-        # XXX: Bjorn Tillenius 2006-05-21:
+        # XXX: Bjorn Tillenius 2006-05-21 bug=33427:
         # A user should always have at least one email address,
-        # but due to bug 33427, this isn't always the case.
+        # but due to bug #33427, this isn't always the case.
         return format_address(person.displayname,
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 
@@ -768,7 +770,7 @@ def notify_bug_modified(modified_bug, event):
         add_bug_change_notifications(bug_delta)
 
 
-def get_bugtask_indirect_subscribers(bugtask, recipients=None):
+def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
     """Return the indirect subscribers for a bug task.
 
     Return the list of people who should get notifications about
@@ -792,11 +794,13 @@ def get_bugtask_indirect_subscribers(bugtask, recipients=None):
 
     if IStructuralSubscriptionTarget.providedBy(bugtask.target):
         also_notified_subscribers.update(
-            bugtask.target.getBugNotificationsRecipients(recipients))
+            bugtask.target.getBugNotificationsRecipients(
+                recipients, level=level))
 
     if bugtask.milestone is not None:
         also_notified_subscribers.update(
-            bugtask.milestone.getBugNotificationsRecipients(recipients))
+            bugtask.milestone.getBugNotificationsRecipients(
+                recipients, level=level))
 
     # If the target's bug supervisor isn't set,
     # we add the owner as a subscriber.
@@ -815,11 +819,13 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
     recipients = bug_delta.bug.getBugNotificationRecipients(
-        old_bug=bug_delta.bug_before_modification)
+        old_bug=bug_delta.bug_before_modification,
+        level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
         get_bugtask_indirect_subscribers(
-            old_bugtask, recipients=old_bugtask_recipients)
+            old_bugtask, recipients=old_bugtask_recipients,
+            level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for text_change in changes:
         bug_delta.bug.addChangeNotification(
@@ -994,7 +1000,7 @@ def notify_bug_attachment_removed(bugattachment, event):
 
 
 @block_implicit_flushes
-def notify_bug_subscripiton_added(bug_subscription, event):
+def notify_bug_subscription_added(bug_subscription, event):
     """Notify that a new bug subscription was added."""
     # When a user is subscribed to a bug by someone other
     # than themselves, we send them a notification email.

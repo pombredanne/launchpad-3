@@ -65,7 +65,7 @@ class FatLocalTransport(LocalTransport):
     def local_realPath(self, path):
         """Return the absolute path to `path`."""
         abspath = self._abspath(path)
-        return os.path.realpath(abspath)
+        return urlutils.escape(os.path.realpath(abspath))
 
 
 def with_sftp_error(func):
@@ -156,16 +156,19 @@ class TransportSFTPFile:
             self._escaped_path, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        deferred.addCallback(get_first_chunk)
-        return deferred.addErrback(self._check_for_eof)
+        def handle_short_read(failure):
+            """Handle short reads by reading what was available.
 
-    def _check_for_eof(self, failure):
-        failure.trap(bzr_errors.ShortReadvError)
-        # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
-        # even if we weren't, current versions of Bazaar wouldn't actually use
-        # it. If Bazaar changes to include the returned data in a
-        # ShortReadvError, we should consider changing this method.
-        return ''
+            Doing things this way around, by trying to read all the data
+            requested and then handling the short read error, might be a bit
+            inefficient, but the bzrlib sftp transport doesn't read past the
+            end of files, so we don't need to worry too much about performance
+            here.
+            """
+            failure.trap(bzr_errors.ShortReadvError)
+            return self.readChunk(failure.value.offset, failure.value.actual)
+        deferred.addCallback(get_first_chunk)
+        return deferred.addErrback(handle_short_read)
 
     def setAttrs(self, attrs):
         """See `ISFTPFile`.
@@ -203,13 +206,12 @@ def _get_transport_for_dir(directory):
 
 def avatar_to_sftp_server(avatar):
     user_id = avatar.user_id
-    authserver = avatar.authserver
     hosted_transport = _get_transport_for_dir(
         config.codehosting.branches_root)
     mirror_transport = _get_transport_for_dir(
         config.supermirror.branchesdest)
     server = LaunchpadServer(
-        authserver, user_id, hosted_transport, mirror_transport)
+        avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.setUp()
     transport = AsyncLaunchpadTransport(server, server.get_url())
     return TransportSFTPServer(transport)
@@ -285,7 +287,11 @@ class TransportSFTPServer:
 
     def realPath(self, relpath):
         """See `ISFTPServer`."""
-        return self.transport.local_realPath(urlutils.escape(relpath))
+        deferred = self.transport.local_realPath(urlutils.escape(relpath))
+        def unescape_path(path):
+            unescaped_path = urlutils.unescape(path)
+            return unescaped_path.encode('utf-8')
+        return deferred.addCallback(unescape_path)
 
     def setAttrs(self, path, attrs):
         """See `ISFTPServer`.

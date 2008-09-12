@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchBadges',
@@ -18,7 +17,6 @@ __all__ = [
     'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchNavigationMenu',
-    'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
     'BranchSubscriptionsView',
@@ -47,8 +45,7 @@ from canonical.lazr.interface import use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
-from canonical.launchpad.browser.launchpad import (
-    Hierarchy, StructuralObjectPresentation)
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -79,7 +76,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import Breadcrumb
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
@@ -104,25 +100,20 @@ class BranchPrimaryContext:
 class BranchHierarchy(Hierarchy):
     """The hierarchy for a branch should be the product if there is one."""
 
-    def getElements(self):
+    def items(self):
         """See `Hierarchy`."""
         if self.context.product is not None:
-            breadcrumb = self.context.product
+            obj = self.context.product
         else:
-            breadcrumb = self.context.owner
+            obj = self.context.owner
 
-        url = canonical_url(breadcrumb)
-        text = breadcrumb.displayname
+        url = canonical_url(obj)
+        breadcrumb = self.breadcrumb_for(obj, url)
 
-        return [Breadcrumb(url, text)]
-
-
-class BranchSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranch`."""
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.context.owner.browsername
+        if breadcrumb is None:
+            return []
+        else:
+            return [breadcrumb]
 
 
 class BranchBadges(HasBadgeBase):
@@ -335,7 +326,7 @@ class BranchContextMenu(ContextMenu):
 
     def edit_import(self):
         text = 'Edit import source or review import'
-        return Link('+edit-import', text, enabled=True)
+        return Link('+edit-import', text, icon='edit', enabled=True)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -528,15 +519,6 @@ class DecoratedMergeProposal:
         return self.context.registrant != self.source_branch.owner
 
 
-class BranchInPersonView(BranchView):
-
-    show_person_link = False
-
-    @property
-    def show_product_link(self):
-        return self.context.product is not None
-
-
 class BranchInProductView(BranchView):
 
     show_person_link = True
@@ -719,10 +701,13 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  Since most of the time it
-            # will be the owner of the branch deleting it, we should send
-            # them to the code listing for the owner.
-            self.next_url = canonical_url(branch.owner)
+            # somewhere valid to send them next.  If the branch is junk, we
+            # send the user back to the code listing for the branch owner,
+            # otherwise we send them to the branch listing of the product.
+            if branch.product is None:
+                self.next_url = canonical_url(branch.owner)
+            else:
+                self.next_url = canonical_url(branch.product)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
@@ -859,6 +844,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
+    for_input = True
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
                    'summary', 'lifecycle_status', 'whiteboard']
 

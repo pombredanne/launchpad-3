@@ -192,6 +192,14 @@ class HandleReleaseTestCase(unittest.TestCase):
         # verify that the fileinfo object is sane
         self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
         for field in getFields(IProductReleaseFile).values():
+            # XXX: BradCrittenden 2008-09-04 bug=264829:
+            # Several interfaces have uploaded files as `Bytes` attributes but
+            # then the values get converted to LibraryFileAlias objects.  The
+            # Bytes._validate() method then fails.  As a work-around the
+            # validate test is being disabled here for those fields.
+            from zope.schema import Bytes
+            if isinstance(field, Bytes):
+                continue
             bound = field.bind(fileinfo)
             bound.validate(bound.get(fileinfo))
 

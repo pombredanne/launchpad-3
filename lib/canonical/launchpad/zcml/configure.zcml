@@ -12,7 +12,6 @@
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="binaryandsourcepackagename.zcml" />
-    <include file="blueprint.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
@@ -47,6 +46,7 @@
     <include file="codeimportjob.zcml" />
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
+    <include file="codemailjob.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="codereviewcomment.zcml" />
     <include file="country.zcml" />

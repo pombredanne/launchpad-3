@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
+from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -151,6 +151,8 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    root_message_id = StringCol(default=None)
+
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
@@ -189,7 +191,7 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, self, rationale)
+                    subscription, recipient, rationale, self)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -420,10 +422,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
-        if parent is None:
-            if self.root_comment is not None:
-                parent_message = self.root_comment.message
-        else:
+        if parent is not None:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message

@@ -91,6 +91,7 @@ class RosettaLangPackExporter(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RosettaLangPackExporter('language-pack-exporter')
+    script = RosettaLangPackExporter(
+        'language-pack-exporter', dbuser='langpack')
     script.lock_and_run()
 

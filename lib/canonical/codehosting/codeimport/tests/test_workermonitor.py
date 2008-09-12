@@ -460,7 +460,6 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
-        getUtility(ICodeImportJobWorkflow).newJob(code_import)
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job

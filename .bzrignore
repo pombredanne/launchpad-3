@@ -26,3 +26,6 @@ opensource/launchpadlib/build
 opensource/launchpadlib/dist
 opensource/launchpadlib/*.egg*
 database/sampledata/newsampledata.sql
+database/sampledata/lintdata.sql
+lib/canonical/launchpad/apidoc/index.html
+xxx-report.*

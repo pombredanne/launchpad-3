@@ -15,33 +15,10 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_editform/editform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Form Label comes from ZCML label="xxx"</h1>
-
-    <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
-      <div>Extra top</div>
-      <div class="field"><input type="text" style="width:100%" /></div>
-      Put any additional widgets you want at the top of the form here,
-      or delete this section altogether, or just leave it and it will
-      be deleted by the tal:replace=nothing.
-    </div>
-
-    <div class="row" metal:fill-slot="extra_bottom" tal:replace="nothing">
-      <div>Extra bottom</div>
-      <div class="field"><input type="text" style="width:100%" /></div>
-      Put any additional widgets you want at the bottom of the form here,
-      or delete this section altogether, or just leave it and it will
-      be deleted by the tal:replace=nothing.
-    </div>
-
-    <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">
-      Put any additional buttons you want on the form here and they
-      will be displayed at the bottom of the form. Watch the
-      tal:replace=nothing.
-    </div>
+    <h1 tal:content="view/label" metal:fill-slot="heading"
+      >Edit distroseries</h1>
 
   </div>
 

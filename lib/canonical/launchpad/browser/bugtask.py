@@ -862,8 +862,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             editable_field_names = set(self.default_field_names)
             editable_field_names.discard('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
+            # doesn't belong here!
             if ('milestone' in editable_field_names and
                 not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
@@ -1452,21 +1452,23 @@ class BugListingPortletView(LaunchpadView):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None):
+        assignee=None, importance=None, status=None, status_upstream=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
-    if assignee:
+    if assignee is not None:
         search_params.append(('field.assignee', assignee))
-    if importance:
+    if importance is not None:
         search_params.append(('field.importance', importance))
-    if status:
+    if status is not None:
         search_params.append(('field.status', status))
+    if status_upstream is not None:
+        search_params.append(('field.status_upstream', status_upstream))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
     search_filter_url = "+bugs?search=Search"
-    if query_string:
+    if query_string != '':
         search_filter_url += "&" + query_string
 
     return search_filter_url
@@ -2400,12 +2402,12 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             'Content-type', 'text/plain')
 
         # This uses the BugTaskSet internal API instead of using the
-        # standard searchTasks() because this can retrieve a lot of 
-        # bugs and we don't want to load all of that data in memory. 
+        # standard searchTasks() because this can retrieve a lot of
+        # bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
 
-        # XXX flacoste 2008/04/24 This should be moved to a 
+        # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
         if IDistroSeries.providedBy(self.context):
             search_params.setDistroSeries(self.context)
@@ -2591,7 +2593,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
         # iteration.
-        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+        bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(
@@ -2625,7 +2627,8 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         return bugtask_and_nomination_views
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
@@ -2785,6 +2788,9 @@ class BugTaskPrivacyAdapter:
         return self.context.bug.private
 
 
+# XXX mars 2008-08-25 bug=261188
+# This whole class hierarchy should be replaced with something more
+# specific, ie. a class that generates BugTask page titles.
 class BugTaskSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBugTask`."""
 

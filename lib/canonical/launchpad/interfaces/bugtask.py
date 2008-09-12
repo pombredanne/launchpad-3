@@ -502,20 +502,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         db queries needed.
         """
 
-    def getBugTasksByPackageName(bugtasks):
-        """Return a mapping from `ISourcePackageName` to its bug tasks.
-
-        This mapping is suitable to pass ass the bugtasks_by_package
-        cache to getConjoinedMaster().
-
-        The mapping is from a `ISourcePackageName` to all the bug tasks
-        that are targeted to such a package name, no matter which
-        distribution or distro series it is.
-
-        All the tasks that don't have a package will be available under
-        None.
-        """
-
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
@@ -934,7 +920,8 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False):
+                 bug_commenter=None, omit_targeted=False,
+                 date_closed=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -962,6 +949,7 @@ class BugTaskSearchParams:
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
+        self.date_closed = date_closed
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""

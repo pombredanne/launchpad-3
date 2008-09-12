@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces.codeimportjob import *
 from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
+from canonical.launchpad.interfaces.codemailjob import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.codereviewcomment import *
 from canonical.launchpad.interfaces.codereviewvote import *
@@ -186,3 +187,6 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+
+import canonical.launchpad.interfaces._schema_circular_imports
+

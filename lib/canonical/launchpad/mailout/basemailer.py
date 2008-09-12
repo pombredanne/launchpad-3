@@ -29,7 +29,7 @@ class BaseMailer:
     """
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None):
+                 delta=None, message_id=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -39,6 +39,8 @@ class BaseMailer:
         :param from_address: The from_address to use on emails.
         :param delta: A Delta object with members "delta_values", "interface"
             and "new_values", such as BranchMergeProposalDelta.
+        :param message_id: The Message-Id to use for generated emails.  If
+            not supplied, random message-ids will be used.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -47,6 +49,7 @@ class BaseMailer:
             self._recipients.add(recipient, reason, reason.mail_header)
         self.from_address = from_address
         self.delta = delta
+        self.message_id = message_id
 
     def generateEmail(self, email):
         """Generate the email for this recipient.
@@ -65,6 +68,9 @@ class BaseMailer:
         """Return the address to use for the reply-to header."""
         return None
 
+    def _getInReplyTo(self):
+        return None
+
     def _getHeaders(self, email):
         """Return the mail headers to use."""
         reason, rationale = self._recipients.getReason(email)
@@ -72,6 +78,8 @@ class BaseMailer:
         reply_to = self._getReplyToAddress()
         if reply_to is not None:
             headers['Reply-To'] = reply_to
+        if self.message_id is not None:
+            headers['Message-Id'] = self.message_id
         return headers
 
     def _getTemplateParams(self, email):
@@ -92,10 +100,18 @@ class BaseMailer:
         template = get_email_template(self._template_name)
         return template % self._getTemplateParams(email)
 
+    def iterRecipients(self, recipient_people=None):
+        if recipient_people is None:
+            iterator = self._recipients.getRecipientPersons()
+        else:
+            iterator = ((r.preferredemail.email, r) for r in recipient_people)
+        for email, recipient in iterator:
+            to_address = format_address(recipient.displayname, email)
+            yield email, to_address
+
     def sendAll(self):
         """Send notifications to all recipients."""
-        for email, recipient in self._recipients.getRecipientPersons():
-            to_address = format_address(recipient.displayname, email)
+        for email, to_address in self.iterRecipients():
             headers, subject, body = self.generateEmail(email)
             simple_sendmail(
                 self.from_address, to_address, subject, body, headers)

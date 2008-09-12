@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionAddView']
 
-from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -37,4 +36,9 @@ class BugSubscriptionAddView(LaunchpadFormView):
             message = '%s has been subscribed to this bug.'
         self.request.response.addInfoNotification(message %
                                                   person.displayname)
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url

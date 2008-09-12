@@ -60,6 +60,8 @@ COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit mess
 COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
 COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.review_diff IS 'The diff to use for review purposes.';
+COMMENT ON COLUMN BranchMergeProposal.review_diff_job IS 'A job to generate a diff to use for review purposes.';
 COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
@@ -71,6 +73,7 @@ COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision
 COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+COMMENt ON COLUMN BranchMergeProposal.root_message_id IS 'The root message of this BranchMergeProposal''s mail thread.';
 COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
@@ -117,6 +120,7 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
+COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -231,6 +235,7 @@ COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Usin
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 COMMENT ON COLUMN BugTracker.version IS 'The version of the bug tracker software being used.';
 COMMENT ON COLUMN BugTracker.block_comment_pushing IS 'Whether to block pushing comments to the bug tracker. Having a value of false means that we will push the comments if the bug tracker supports it.';
+COMMENT ON COLUMN BugTracker.has_lp_plugin IS 'Whether we have confirmed that the Launchpad plugin was installed on the bug tracker, the last time checkwatches was run.';
 
 -- BugTrackerAlias
 
@@ -255,6 +260,14 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
+COMMENT ON COLUMN BugWatch.remote_lp_bug_id IS 'The bug in Launchpad that the remote bug is pointing at. This can be different than the BugWatch.bug column, since the same remote bug can be linked from multiple bugs in Launchpad, but the remote bug can only link to a single bug in Launchpad. The main use case for this column is to avoid having to query the remote bug tracker for this information, in order to decide whether we need to give this information to the remote bug tracker.';
+
+
+-- BugAffectsPerson
+
+COMMENT ON TABLE BugAffectsPerson IS 'This table maintains a mapping between bugs and users indicating that they are affected by that bug. The value is calculated and cached in the Bug.users_affected_count column.';
+COMMENT ON COLUMN BugAffectsPerson.bug IS 'The bug affecting this person.';
+COMMENT ON COLUMN BugAffectsPerson.person IS 'The person affected by this bug.';
 
 
 -- CodeImport
@@ -322,6 +335,25 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
+-- CodeMailJob
+COMMENT ON TABLE CodeMailJob IS 'A job to generate a mail related to code.';
+COMMENT ON COLUMN CodeMailJob.body IS 'The body for the mail.';
+COMMENT ON COLUMN CodeMailJob.branch_project_name IS 'The name of the project this mail is about.';
+COMMENT ON COLUMN CodeMailJob.branch_url IS 'The URL for the branch this message is about.';
+COMMENT ON COLUMN CodeMailJob.date_created IS 'The date this CodeMailJob was created.';
+COMMENT ON COLUMN CodeMailJob.footer IS 'The footer for the mail.';
+COMMENT ON COLUMN CodeMailJob.from_address IS 'The address for the mail from header.';
+COMMENT ON COLUMN CodeMailJob.in_reply_to IS 'The Message-Id of the message this message is a reply to.';
+COMMENT ON COLUMN CodeMailJob.job IS 'The Job for this CodeMailJob.';
+COMMENT ON COLUMN CodeMailJob.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not included in the mail.';
+COMMENT ON COLUMN CodeMailJob.rationale IS 'The rationale for the X-Launchpad-Message-Rationale header.';
+COMMENT ON COLUMN CodeMailJob.reply_to_address IS 'The address for the mail reply-to header.';
+COMMENT ON COLUMN CodeMailJob.rfc822msgid IS 'The Message-Id to use in the mail.';
+COMMENT ON COLUMN CodeMailJob.static_diff IS 'A diff to include in the mail.';
+COMMENT ON COLUMN CodeMailJob.subject IS 'The subject line for the mail.';
+COMMENT ON COLUMN CodeMailJob.to_address IS 'The address the mail should be sent to.';
+
+
 -- CodeReviewMessage
 
 COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review discussion.';
@@ -376,6 +408,14 @@ COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This 
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
+
+-- Diff
+COMMENT ON TABLE Diff IS 'Information common to static or preview diffs';
+COMMENT ON COLUMN Diff.added_lines_count IS 'The number of lines added in the diff.';
+COMMENT ON COLUMN Diff.diff_text IS 'The library copy of the fulltext of the diff';
+COMMENT ON COLUMN Diff.diff_lines_count IS 'The number of lines in the diff';
+COMMENT ON COLUMN Diff.diffstat IS 'Statistics about the diff';
+COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in the diff';
 
 
 -- DistributionSourcePackageCache
@@ -460,7 +500,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
-COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.message IS 'Foreign key to message table pointing to the posted message.';
 COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
 COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
@@ -470,9 +510,21 @@ COMMENT ON COLUMN MessageApproval.reason IS 'The reason for the current status i
 COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
+
+-- PreviewDiffReference
+COMMENT ON TABLE PreviewDiffReference IS 'Contains information about preview diffs, without duplicating information with BranchMergeProposal.';
+COMMENT ON COLUMN PreviewDiffReference.branch_merge_proposal IS 'The BranchMergeProposal this diff is for.';
+COMMENT ON COLUMN PreviewDiffReference.conflicts IS 'The text description of any conflicts present.';
+COMMENT ON COLUMN PreviewDiffReference.diff IS 'The last Diff generated for this PreviewDiffReference.';
+COMMENT ON COLUMN PreviewDiffReference.last_dependent_revision_id IS 'The last_revision in the dependant branch.';
+COMMENT ON COLUMN PreviewDiffReference.last_source_revision_id IS 'The last_revision in the source branch.';
+COMMENT ON COLUMN PreviewDiffReference.last_target_revision_id IS 'The last_revision in the target branch.';
+
+
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
-COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who created this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.registrant IS 'The Product registrant is the Person who created the product in Launchpad.  It is set at creation and is never changed thereafter.';
 COMMENT ON COLUMN Product.summary IS 'A brief summary of the product. This will be displayed in bold at the top of the product page, above the description.';
 COMMENT ON COLUMN Product.description IS 'A detailed description of the product, highlighting primary features of the product that may be of interest to end-users. The description may also include links and other references to useful information on the web about this product. The description will be displayed on the product page, below the product summary.';
 COMMENT ON COLUMN Product.project IS 'Every Product belongs to one and only one Project, which is referenced in this column.';
@@ -607,6 +659,7 @@ COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
+COMMENT ON COLUMN Project.registrant IS 'The registrant is the Person who created the project in Launchpad.  It is set at creation and is never changed thereafter.';
 COMMENT ON COLUMN Project.driver IS 'This person or team has the ability to approve specs as goals for any series in any product in the project. Similarly, this person or team can approve bugs as targets for fixing in any series, or backporting of fixes to any series.';
 COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
 will be displayed in bold text just above the description and below the
@@ -717,6 +770,20 @@ COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments s
 COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
+
+-- StaticDiff
+COMMENT ON TABLE StaticDiff IS 'Information about static diffs.';
+COMMENT ON COLUMN StaticDiff.from_revision_id IS 'The revision-id that the diff is from.';
+COMMENT ON COLUMN StaticDiff.diff IS 'The Diff.';
+COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is to.';
+
+-- StaticDiffJob
+COMMENT ON TABLE StaticDiffJob IS 'Jobs to generate static diffs.';
+COMMENT ON COLUMN StaticDiffJob.branch IS 'The Branch to use for resolving revision specs.';
+COMMENT ON COLUMN StaticDiffJob.from_revision_spec IS 'The revision spec that the diff will be from.';
+COMMENT ON COLUMN StaticDiffJob.job IS 'The Job for this StaticDiffJob.';
+COMMENT ON COLUMN StaticDiffJob.to_revision_spec IS 'The revision spec that the diff will be to.';
+
 
 -- TeamMembership
 COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
@@ -1916,6 +1983,8 @@ COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of Librar
 COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
 COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the submitter.';
 
+COMMENT ON TABLE HWSubmissionBug IS 'Link bugs to HWDB submissions';
+
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 
@@ -1937,6 +2006,11 @@ COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a 
 COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
 COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
 
+COMMENT ON TABLE HWDeviceClass IS 'Capabilities of a device.';
+COMMENT ON COLUMN HWDeviceClass.device IS 'A reference to a device.';
+COMMENT ON COLUMN HWDeviceClass.main_class IS 'The main class of a device. Legal values are defined by the HWMainClass enumeration.';
+COMMENT ON COLUMN HWDeviceClass.sub_class IS 'The sub-class of a device. Legal values are defined by the HWSubClass enumeration.';
+
 COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
 COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
 COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
@@ -1951,6 +2025,7 @@ COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
 COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
 COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
 COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+COMMENT ON COLUMN HWSubmissionDevice.hal_device_id IS 'The ID of the HAL node of this device in the submitted data.';
 
 COMMENT ON TABLE HWTest IS 'General information about a device test.';
 COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
@@ -1983,6 +2058,16 @@ COMMENT ON COLUMN HWTestAnswerDevice.device_driver IS 'The device/driver combina
 COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test results and device/driver combinations.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
+
+
+-- Job
+COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+
+-- JobDependency
+COMMENT ON TABLE JobDependency IS 'Dependency table for jobs.';
+COMMENT ON COLUMN JobDependency.prerequisite IS 'A Job that must be performed before another job.';
+COMMENT ON COLUMN JobDependency.dependant IS 'A Job that must be performed after another job.';
 
 
 -- StructuralSubscription
@@ -2049,4 +2134,3 @@ COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this toke
 COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
 COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
 COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
-

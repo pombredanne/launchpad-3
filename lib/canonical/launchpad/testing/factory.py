@@ -22,48 +22,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
-    AccountStatus,
-    BranchMergeProposalStatus,
-    BranchSubscriptionNotificationLevel,
-    BranchType,
-    CodeImportMachineState,
-    CodeImportResultStatus,
-    CodeImportReviewStatus,
-    CodeReviewNotificationLevel,
-    CreateBugParams,
-    DistroSeriesStatus,
-    EmailAddressStatus,
-    IBranchSet,
-    IBugSet,
-    IBugWatchSet,
-    ICodeImportJobWorkflow,
-    ICodeImportMachineSet,
-    ICodeImportEventSet,
-    ICodeImportResultSet,
-    ICodeImportSet,
-    ICountrySet,
-    IDistributionSet,
-    IDistroSeriesSet,
-    IEmailAddressSet,
-    ILibraryFileAliasSet,
-    IPersonSet,
-    IProductSet,
-    IProjectSet,
-    IRevisionSet,
-    IShippingRequestSet,
-    ISpecificationSet,
-    IStandardShipItRequestSet,
-    ITranslationGroupSet,
-    License,
-    PersonCreationRationale,
-    RevisionControlSystems,
-    ShipItFlavour,
-    ShippingRequestStatus,
-    SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy,
+    AccountStatus, BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
+    CodeImportResultStatus, CodeImportReviewStatus,
+    CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
+    EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
+    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
+    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
+    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
+    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
+    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
+    ITranslationGroupSet, License, PersonCreationRationale,
+    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
+    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -72,8 +46,10 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.database import (
+    Message, MessageChunk, CodeMailJob)
 from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.database.constants import DEFAULT
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -98,12 +74,12 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# NOTE:
-#
-# The LaunchpadObjectFactory is driven purely by use.  The version here
-# is by no means complete for Launchpad objects.  If you need to create
-# anonymous objects for your tests then add methods to the factory.
-#
+# We use this for default paramters where None has a specific meaning.  For
+# example, makeBranch(product=None) means "make a junk branch".
+# None, because None means "junk branch".
+_DEFAULT = object()
+
+
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -138,13 +114,45 @@ class LaunchpadObjectFactory:
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
-    def getUniqueURL(self):
+    def getUniqueURL(self, scheme=None, host=None):
         """Return a URL unique to this run of the test case."""
-        return 'http://%s.example.com/%s' % (
-            self.getUniqueString('domain'), self.getUniqueString('path'))
+        if scheme is None:
+            scheme = 'http'
+        if host is None:
+            host = "%s.domain.com" % self.getUniqueString('domain')
+        return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+    def makeCodeMailJob(self, to_address=None, from_address=None,
+        subject=None, body=None, footer=None, msgid=None, rationale=None,
+        branch_url=None, branch_project_name=None, in_reply_to=None,
+        reply_to_address=None, date_created=DEFAULT):
+        if to_address is None:
+            to_address = self.getUniqueEmailAddress()
+        if from_address is None:
+            from_address = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        if body is None:
+            body = self.getUniqueString('body')
+        if footer is None:
+            footer = self.getUniqueString('footer')
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        if rationale is None:
+            rationale = self.getUniqueString('rationale')
+        if branch_url is None:
+            branch_url = self.getUniqueURL()
+        return CodeMailJob(
+            to_address=to_address, from_address=from_address,
+            reply_to_address=reply_to_address, subject=subject, body=body,
+            footer=footer, rationale=rationale, branch_url=branch_url,
+            branch_project_name=branch_project_name, rfc822msgid=msgid,
+            in_reply_to=in_reply_to, date_created=date_created)
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None, displayname=None):
+                   email_address_status=None, hide_email_addresses=False,
+                   displayname=None, time_zone=None, latitude=None,
+                   longitude=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -156,6 +164,11 @@ class LaunchpadObjectFactory:
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
         :param displayname: The display name to use for the person.
+        :param hide_email_addresses: Whether or not to hide the person's email
+            address(es) from other users.
+        :param time_zone: This person's time zone, as a string.
+        :param latitude: This person's latitude, as a float.
+        :param longitude: This person's longitude, as a float.
         """
         if email is None:
             email = self.getUniqueEmailAddress()
@@ -171,7 +184,15 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password, displayname=displayname)
+            password=password, displayname=displayname,
+            hide_email_addresses=hide_email_addresses)
+
+        if (time_zone is not None or latitude is not None or
+            longitude is not None):
+            # Remove the security proxy because setLocation() is protected
+            # with launchpad.EditLocation.
+            removeSecurityProxy(person).setLocation(
+                latitude, longitude, time_zone, person)
 
         # To make the person someone valid in Launchpad, validate the
         # email.
@@ -186,23 +207,22 @@ class LaunchpadObjectFactory:
         syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None, name=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
+                 subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
-
-        The subscription policy of this new team will be OPEN.
 
         :param owner: The IPerson to use as the team's owner.
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
+        :param subscription_policy: The subscription policy of the team.
         """
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname,
-            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+            owner, name, displayname, subscriptionpolicy=subscription_policy)
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
@@ -221,7 +241,8 @@ class LaunchpadObjectFactory:
             name, title, summary, owner)
 
     def makeProduct(self, name=None, project=None, displayname=None,
-                    licenses=None, owner=None):
+                    licenses=None, owner=None, registrant=None,
+                    title=None, summary=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -234,53 +255,66 @@ class LaunchpadObjectFactory:
                 displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
+        if title is None:
+            title = self.getUniqueString('title')
+        if summary is None:
+            summary = self.getUniqueString('summary')
         return getUtility(IProductSet).createProduct(
             owner,
             name,
             displayname,
-            self.getUniqueString('title'),
-            self.getUniqueString('summary'),
+            title,
+            summary,
             self.getUniqueString('description'),
             licenses=licenses,
-            project=project)
+            project=project,
+            registrant=registrant)
 
-    def makeProductSeries(self, product=None, name=None):
+    def makeProductSeries(self, product=None, name=None, owner=None,
+                          summary=None):
         """Create and return a new ProductSeries."""
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString()
-        summary = self.getUniqueString()
+        if summary is None:
+            summary = self.getUniqueString()
         return product.newSeries(owner=owner, name=name, summary=summary)
 
-    def makeProject(self, name=None, displayname=None):
+    def makeProject(self, name=None, displayname=None, title=None,
+                    homepageurl=None, summary=None, owner=None,
+                    description=None):
         """Create and return a new, arbitrary Project."""
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('project-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if summary is None:
+            summary = self.getUniqueString('summary')
+        if description is None:
+            description = self.getUniqueString('description')
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(IProjectSet).new(
-            name,
-            displayname,
-            self.getUniqueString('title'),
-            None,
-            self.getUniqueString('summary'),
-            self.getUniqueString('description'),
-            owner)
+            name=name,
+            displayname=displayname,
+            title=title,
+            homepageurl=homepageurl,
+            summary=summary,
+            description=description,
+            owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, registrant=None,
-                   explicit_junk=False,
-                   **optional_branch_args):
+                   product=_DEFAULT, url=_DEFAULT, registrant=None,
+                   private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
-
-        :param explicit_junk: If set to True, a product is not created
-            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -290,25 +324,30 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None and not explicit_junk:
+        if product is _DEFAULT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
         elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
-            if url is None:
+            if url is _DEFAULT:
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
-        return getUtility(IBranchSet).new(
+        branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+        if private:
+            removeSecurityProxy(branch).private = True
+        if stacked_on is not None:
+            removeSecurityProxy(branch).stacked_on = stacked_on
+        return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = None
+        product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -417,7 +456,7 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False):
+                private=False, date_closed=None, title=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -433,7 +472,8 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
@@ -441,6 +481,10 @@ class LaunchpadObjectFactory:
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        if date_closed is not None:
+            [bugtask] = bug.bugtasks
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
     def makeBugTask(self, bug=None, target=None):
@@ -606,8 +650,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
@@ -679,17 +722,20 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
@@ -794,3 +840,45 @@ class LaunchpadObjectFactory:
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+
+    def makePOTemplate(self, productseries=None, distroseries=None,
+                       sourcepackagename=None, owner=None):
+        """Make a new translation template."""
+        if productseries is None and distroseries is None:
+            # No context for this template; set up a productseries.
+            productseries = self.makeProductSeries()
+            # Make it use Translations, otherwise there's little point
+            # to us creating a template for it.
+            productseries.product.official_rosetta = True
+        templateset = getUtility(IPOTemplateSet)
+        subset = templateset.getSubset(
+            distroseries, sourcepackagename, productseries)
+
+        name = self.getUniqueString()
+        translation_domain = self.getUniqueString()
+
+        if owner is None:
+            if productseries is None:
+                owner = distroseries.owner
+            else:
+                owner = productseries.owner
+
+        return subset.new(name, translation_domain, 'messages.pot', owner)
+
+    def makePOFile(self, language_code, potemplate=None, owner=None):
+        """Make a new translation file."""
+        if potemplate is None:
+            potemplate = self.makePOTemplate(owner=owner)
+        if owner is None:
+            owner = potemplate.owner
+        return potemplate.newPOFile(language_code, requester=owner)
+
+    def makePOTMsgSet(self, potemplate, singular=None, plural=None,
+                      sequence=None):
+        """Make a new `POTMsgSet` in the given template."""
+        if sequence is None:
+            sequence = self.getUniqueInteger()
+        if singular is None and plural is None:
+            singular = self.getUniqueString()
+        return potemplate.createMessageSetFromText(singular, plural)
+

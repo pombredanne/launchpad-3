@@ -10,19 +10,19 @@ __all__ = [
     ]
 
 import logging
-from datetime import datetime, timedelta
 from StringIO import StringIO
 import urlparse
 
 import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch, BzrBranchFormat4
+from bzrlib.branch import BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
+from canonical.codehosting.puller.worker import BranchOpener
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
@@ -30,6 +30,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
+from canonical.launchpad.webapp.uri import URI
+
 
 UTC = pytz.timezone('UTC')
 # Use at most the first 100 characters of the commit message.
@@ -43,6 +45,10 @@ class BadLineInBugsProperty(Exception):
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+class InvalidStackedBranchURL(Exception):
+    """Raised when we try to scan a branch stacked on an invalid URL."""
 
 
 def set_bug_branch_status(bug, branch, status):
@@ -324,6 +330,21 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
+class WarehouseBranchOpener(BranchOpener):
+
+    def checkOneURL(self, url):
+        """See `BranchOpener.checkOneURL`.
+
+        If the URLs we are mirroring from are anything but a
+        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
+        Opening branches on remote systems takes too long, and we want all of
+        our local access to be channelled through this transport.
+        """
+        uri = URI(url)
+        if uri.scheme != 'lp-mirrored':
+            raise InvalidStackedBranchURL(url)
+
+
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
     """
@@ -344,7 +365,8 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = Branch.open(self.db_branch.warehouse_url)
+            bzr_branch = WarehouseBranchOpener().open(
+                self.db_branch.warehouse_url)
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)
@@ -385,7 +407,7 @@ class BzrSync:
 
         (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
-            bzr_ancestry, bzr_history, db_ancestry, db_history, 
+            bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
         self.logger.info("Inserting or checking %d revisions.",
             len(added_ancestry))
@@ -474,7 +496,7 @@ class BzrSync:
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
 
-    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry, 
+    def planDatabaseChanges(self, bzr_ancestry, bzr_history, db_ancestry,
                             db_history, db_branch_revision_map):
         """Plan database changes to synchronize with bzrlib data.
 
@@ -526,13 +548,13 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        return (added_ancestry, branchrevisions_to_delete, 
+        return (added_ancestry, branchrevisions_to_delete,
                 branchrevisions_to_insert)
 
     def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
 
-        :param added_ancestry: the set of Bazaar revision IDs that the 
+        :param added_ancestry: the set of Bazaar revision IDs that the
             scanner has found in the Bazaar branch but not in the database
             branch.
         """
@@ -544,59 +566,21 @@ class BzrSync:
         """Import the revision with the given revision_id.
 
         :param bzr_revision: the revision to import
-        :param branchrevisions_to_insert: a dict of revision ids to revno
         :type bzr_revision: bzrlib.revision.Revision
+        :param branchrevisions_to_insert: a dict of revision ids to integer
+            revno.  (Non-mainline revisions will not be present).
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
         db_revision = revision_set.getByRevisionId(revision_id)
         if db_revision is not None:
-            # Verify that the revision in the database matches the
-            # revision from the branch.  Currently we just check that
-            # the parent revision list matches.
-            self.logger.debug("Checking revision: %s", revision_id)
-            db_parents = db_revision.parents
-            bzr_parents = bzr_revision.parent_ids
-
-            seen_parents = set()
-            for sequence, parent_id in enumerate(bzr_parents):
-                if parent_id in seen_parents:
-                    continue
-                seen_parents.add(parent_id)
-                matching_parents = [db_parent for db_parent in db_parents
-                                    if db_parent.parent_id == parent_id]
-                if len(matching_parents) == 0:
-                    raise RevisionModifiedError(
-                        'parent %s was added since last scan' % parent_id)
-                elif len(matching_parents) > 1:
-                    raise RevisionModifiedError(
-                        'parent %s is listed multiple times in db'
-                        % parent_id)
-                if matching_parents[0].sequence != sequence:
-                    raise RevisionModifiedError(
-                        'parent %s reordered (old index %d, new index %d)'
-                        % (parent_id, matching_parents[0].sequence, sequence))
-            if len(seen_parents) != len(db_parents):
-                removed_parents = [db_parent.parent_id
-                                   for db_parent in db_parents
-                                   if db_parent.parent_id not in seen_parents]
-                raise RevisionModifiedError(
-                    'some parents removed since last scan: %s'
-                    % (removed_parents,))
-        else:
-            # Revision not yet in the database. Load it.
-            self.logger.debug("Inserting revision: %s", revision_id)
-            revision_date = self._timestampToDatetime(bzr_revision.timestamp)
-            db_revision = revision_set.new(
-                revision_id=revision_id,
-                log_body=bzr_revision.message,
-                revision_date=revision_date,
-                revision_author=bzr_revision.get_apparent_author(),
-                parent_ids=bzr_revision.parent_ids,
-                properties=bzr_revision.properties)
-            # If a mainline revision, add the bug branch link.
-            if branchrevisions_to_insert[revision_id] is not None:
-                self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
+            return
+        # Revision not yet in the database. Load it.
+        self.logger.debug("Inserting revision: %s", revision_id)
+        revision_set.newFromBazaarRevision(bzr_revision)
+        # If a mainline revision, add the bug branch link.
+        if branchrevisions_to_insert[revision_id] is not None:
+            self._bug_linker.createBugBranchLinksForRevision(bzr_revision)
 
     def getRevisions(self, bzr_history, revision_subset):
         """Generate revision IDs that make up the branch's ancestry.
@@ -610,24 +594,6 @@ class BzrSync:
                 yield revision_id, index + 1
         for revision_id in revision_subset.difference(set(bzr_history)):
             yield revision_id, None
-
-    def _timestampToDatetime(self, timestamp):
-        """Convert the given timestamp to a datetime object.
-
-        This works around a bug in Python that causes datetime.fromtimestamp
-        to raise an exception if it is given a negative, fractional timestamp.
-
-        :param timestamp: A timestamp from a bzrlib.revision.Revision
-        :type timestamp: float
-
-        :return: A datetime corresponding to the given timestamp.
-        """
-        # Work around Python bug #1646728.
-        # See https://launchpad.net/bugs/81544.
-        int_timestamp = int(timestamp)
-        revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
-        revision_date += timedelta(seconds=timestamp - int_timestamp)
-        return revision_date
 
     def deleteBranchRevisions(self, branchrevisions_to_delete):
         """Delete a batch of BranchRevision rows."""

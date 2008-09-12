@@ -64,7 +64,7 @@ from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.location import (
-    IHasLocation, IObjectWithLocation, ISetLocation)
+    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
@@ -522,13 +522,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: salgado, 2008-06-19: This should probably be removed from here as
-    # it's already defined in IHasLocation (from which IPerson extends).
-    time_zone = exported(
-        Choice(title=_('Time zone'), required=True, readonly=False,
-               description=_('The time zone of where you live.'),
-               vocabulary='TimezoneName'))
-
     openid_identifier = TextLine(
         title=_("Key used to generate opaque OpenID identities."),
         readonly=True, required=False)
@@ -562,9 +555,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
-    otherwikis = Attribute(
-        "All WikiNames of this Person that are not the Ubuntu one.")
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
@@ -619,7 +609,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # into account whether or not a team's memberships are private.
     # teams_indirectly_participated_in = exported(
     #     CollectionField(
-    #         title=_('All teams in which this person is an indirect member.'),
+    #         title=_(
+    #             'All teams in which this person is an indirect member.'),
     #         readonly=True, required=False,
     #         value_type=Reference(schema=Interface)),
     #     exported_as='indirect_participations')
@@ -721,7 +712,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     title = Attribute('Person Page Title')
 
     is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'))
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
@@ -874,7 +869,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         True if this Person is actually a Team, otherwise False.
         """
 
-    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
     # unfunge for this one attribute.
@@ -1312,6 +1307,12 @@ class IPersonEditRestricted(Interface):
         a team administrator.
         """
 
+    @operation_parameters(
+        visible=copy_field(ILocationRecord['visible'], required=True))
+    @export_write_operation()
+    def setLocationVisibility(visible):
+        """Specify the visibility of a person's location and time zone."""
+
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
         """Set the attributes of the person's membership on this team.
@@ -1579,8 +1580,9 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def topPeople():
-        """Return the top 5 people by Karma score in the Launchpad."""
+    @collection_default_content()
+    def getTopContributors(limit=50):
+        """Return the top contributors in Launchpad, up to the given limit."""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
@@ -1693,17 +1695,6 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllTeams(orderBy=None):
-        """Return all Teams, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
@@ -1713,21 +1704,6 @@ class IPersonSet(Interface):
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
         """
-
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    def getAllPersons(orderBy=None):
-        """Return all Persons, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
-    @collection_default_content()
-    def getAllValidPersonsAndTeams():
-        """Return all valid persons and teams."""
 
     def updateStatistics(ztm):
         """Update statistics caches and commit."""
@@ -1805,15 +1781,6 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
-        """
-
-    def getUbunteros(orderBy=None):
-        """Return a set of person with valid Ubuntero flag.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
         """
 
     def latest_teams(limit=5):
@@ -2050,6 +2017,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
+
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
 
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson

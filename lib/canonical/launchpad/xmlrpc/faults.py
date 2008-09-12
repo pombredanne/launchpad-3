@@ -20,6 +20,7 @@ __all__ = [
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
     'NoBranchForSeries',
+    'NoBranchWithID',
     'NoDefaultBranchForPillar',
     'NoSuchBranch',
     'NoSuchBug',
@@ -31,6 +32,7 @@ __all__ = [
     'NoSuchSeries',
     'NoSuchTeamMailingList',
     'NotInTeam',
+    'NoUrlForBranch',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
     ]
@@ -343,3 +345,24 @@ class InvalidBranchName(LaunchpadFault):
     def __init__(self, error):
         error_message = error.args[0].encode('utf-8', 'replace')
         LaunchpadFault.__init__(self, error=error_message)
+
+
+class NoBranchWithID(LaunchpadFault):
+    """There's no branch with the given ID."""
+
+    error_code = 270
+    msg_template = 'No branch with ID %(branch_id)s'
+
+    def __init__(self, branch_id):
+        LaunchpadFault.__init__(self, branch_id=branch_id)
+
+
+class NoUrlForBranch(LaunchpadFault):
+    """resolve_lp_path resolved to a remote branch with no URL."""
+
+    error_code = 280
+    msg_template = (
+        'The remote branch at %(unique_name)s has no URL specified.')
+
+    def __init__(self, unique_name):
+        LaunchpadFault.__init__(self, unique_name=unique_name)

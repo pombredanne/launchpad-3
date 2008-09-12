@@ -41,7 +41,7 @@
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed
                  BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
                  LaunchpadAnnouncementsFeed TargetAnnouncementsFeed
-                 PersonRevisionFeed"
+                 PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
         />
 
     <!-- Unauthorized -->

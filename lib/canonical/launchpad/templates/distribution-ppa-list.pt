@@ -18,8 +18,7 @@
     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
        packages to be built and published as an apt repository by
        Launchpad. You can find out more about PPAs and how to use them in our
-       <a href="https://help.launchpad.net/PPAQuickStart"
-       >quick-start guide</a>.</p>
+       <a href="https://help.launchpad.net/Packaging/PPA">help page</a>.</p>
 
     <p>Search user-contributed software packages published in any
       <tal:distribution replace="context/title">Ubuntu</tal:distribution>
@@ -167,13 +166,6 @@
     </tal:batch>
 
   </div>
-
-  <p metal:fill-slot="help">
-     You can browse for any interesting PPA by accessing its page
-     or even create your own
-     <a tal:attributes="href string:${view/user/fmt:url}/+activate-ppa"
-     >here</a>. Currently we only support PPAs for Ubuntu Linux.
-  </p>
 
 </body>
 </html>

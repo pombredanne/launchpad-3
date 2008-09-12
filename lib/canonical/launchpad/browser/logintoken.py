@@ -15,6 +15,7 @@ __all__ = [
     'ValidateGPGKeyView',
     ]
 
+from itertools import chain
 import urllib
 import pytz
 import cgi
@@ -44,8 +45,7 @@ from canonical.launchpad.interfaces import (
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
     IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
     IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
-    PersonCreationRationale, ShipItConstants, UBUNTU_WIKI_URL,
-    UnexpectedFormData)
+    PersonCreationRationale, ShipItConstants, UnexpectedFormData)
 from canonical.launchpad.interfaces.account import AccountStatus
 
 
@@ -317,7 +317,11 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         # Make sure this person has a preferred email address.
         if naked_person.preferredemail != emailaddress:
-            naked_person.validateAndEnsurePreferredEmail(emailaddress)
+            # Must remove the security proxy of the email address because the
+            # user is not logged in at this point and we may need to change
+            # its status.
+            naked_person.validateAndEnsurePreferredEmail(
+                removeSecurityProxy(emailaddress))
 
         self.context.consume()
 
@@ -430,60 +434,66 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         self.request.response.addInfoNotification(_(
             "The key ${lpkey} was successfully validated. ",
             mapping=dict(lpkey=lpkey.displayname)))
-        guessed, hijacked = self._guessGPGEmails(key.emails)
+        created, owned_by_others = self._createEmailAddresses(key.emails)
 
-        if len(guessed):
-            # build email list
-            emails = ' '.join([email.email for email in guessed])
+        if len(created):
             msgid = _(
-                '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>${emails}</code>. If '
-                'you want to use these addresses with Launchpad, you need to '
-                '<a href="${url}/+editemails\">confirm them</a>.</p>',
-                mapping=dict(emails=emails, url=person_url))
+                "<p>Some of your key's UIDs (<code>${emails}</code>) are "
+                "not registered in Launchpad. If you want to use them in "
+                'Launchpad, you will need to <a href="${url}/+editemails">'
+                'confirm them</a> first.</p>',
+                mapping=dict(emails=', '.join(created), url=person_url))
             self.request.response.addInfoNotification(structured(msgid))
 
-        if len(hijacked):
-            # build email list
-            emails = ' '.join([email.email for email in hijacked])
+        if len(owned_by_others):
             msgid = _(
-                "<p>Also some of them were registered into another "
-                "account(s):<code>${emails}</code>. Those accounts, probably "
-                "already belong to you, in this case you should be able to "
-                "<a href=\"/people/+requestmerge\">merge them</a> into your "
-                "current account.</p>",
-                mapping=dict(emails=emails))
+                "<p>Also, some of them (<code>${emails}</code>) are "
+                "associated with other profile(s) in Launchpad, so you may "
+                'want to <a href="/people/+requestmerge">merge them</a> into '
+                "your current one.</p>",
+                mapping=dict(emails=', '.join(owned_by_others)))
             self.request.response.addInfoNotification(structured(msgid))
 
-    def _guessGPGEmails(self, uids):
-        """Figure out which emails from the GPG UIDs are unknown in LP
-        context, add them as NEW EmailAddresses (guessed) and return a
-        list containing the just added address for UI feedback.
+    def _createEmailAddresses(self, uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
         """
         emailset = getUtility(IEmailAddressSet)
         requester = self.context.requester
-        # build a list of already validated and preferred emailaddress
-        # in lowercase for comparision reasons
-        emails = set(email.email.lower()
-                     for email in requester.validatedemails)
-        emails.add(requester.preferredemail.email.lower())
+        emails = chain(requester.validatedemails, [requester.preferredemail])
+        # Must remove the security proxy because the user may not be logged in
+        # and thus won't be allowed to view the requester's email addresses.
+        from zope.security.proxy import removeSecurityProxy
+        emails = [
+            removeSecurityProxy(email).email.lower() for email in emails]
 
-        guessed = []
-        hijacked = []
-        # iter through UIDs
+        created = []
+        existing_and_owned_by_others = []
         for uid in uids:
-            # if UID isn't validated/preferred, append it to list
+            # Here we use .lower() because the case of email addresses's chars
+            # don't matter to us (e.g. 'foo@baz.com' is the same as
+            # 'Foo@Baz.com').  However, note that we use the original form
+            # when creating a new email.
             if uid.lower() not in emails:
-                # verify if the email isn't owned by other person.
-                lpemail = emailset.getByEmail(uid)
-                if lpemail:
-                    hijacked.append(lpemail)
-                    continue
-                # store guessed email address with status NEW
-                email = emailset.new(uid, requester)
-                guessed.append(email)
+                # EmailAddressSet.getByEmail() is not case-sensitive, so
+                # there's no need to do uid.lower() here.
+                if emailset.getByEmail(uid) is not None:
+                    # This email address is registered but does not belong to
+                    # our user.
+                    existing_and_owned_by_others.append(uid)
+                else:
+                    # The email is not yet registered, so we register it for
+                    # our user.
+                    email = emailset.new(uid, requester)
+                    created.append(uid)
 
-        return guessed, hijacked
+        return created, existing_and_owned_by_others
 
     @property
     def validationphrase(self):
@@ -655,7 +665,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
         ShipItConstants.edubuntu_url:
             PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
+        }
 
     created_person = None
 
