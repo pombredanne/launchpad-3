@@ -12,7 +12,6 @@ __all__ = [
     'ensure_membership',
     'ensure_nonmembership',
     'get_size',
-    'hack_batch_size',
     'pending_hold_ids',
     'print_mailman_hold',
     'review_list',
@@ -70,26 +69,6 @@ def get_size(path):
             return -1
         # Some other error occurred.
         raise
-
-
-def hack_batch_size(new_size):
-    """Hack Mailman's configuration file to contain a new batch size.
-
-    We have to do it this way because Mailman does not have access to
-    Launchpad's configuration system.
-    """
-    old_path = mm_cfg.__file__
-    new_path = old_path + '.new'
-    in_file = open(old_path)
-    out_file = open(new_path, 'w')
-    for line in in_file:
-        if line.startswith('XMLRPC_SUBSCRIPTION_BATCH_SIZE'):
-            print >> out_file, 'XMLRPC_SUBSCRIPTION_BATCH_SIZE =', new_size
-        else:
-            out_file.write(line)
-    in_file.close()
-    out_file.close()
-    os.rename(new_path, old_path)
 
 
 def review_list(list_name, status='approve'):

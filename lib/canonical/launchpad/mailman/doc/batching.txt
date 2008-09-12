@@ -22,7 +22,14 @@ Now we'll restart Mailman with a batch size of 1.
     ...     quiet=True, config=AppServerLayer.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
 
-    >>> helpers.hack_batch_size(1)
+    >>> from canonical.testing.layers import AppServerLayer
+    >>> AppServerLayer.appserver_config.push('batching test',
+    ...     """
+    ...     [mailman]
+    ...     subscription_batch_size: 1
+    ...     """)
+    >>> AppServerLayer.appserver_config.validate()
+    True
 
     >>> runmailman.start_mailman(
     ...     quiet=True, config=AppServerLayer.appserver_config)
@@ -56,8 +63,7 @@ And indeed, she is now a member of all three mailing lists.
     ...     quiet=True, config=AppServerLayer.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
 
-    >>> from canonical.config import config
-    >>> helpers.hack_batch_size(config.mailman.subscription_batch_size)
+    >>> ignore = AppServerLayer.appserver_config.pop('batching test')
 
     >>> runmailman.start_mailman(
     ...     quiet=True, config=AppServerLayer.appserver_config)
