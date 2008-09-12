@@ -331,6 +331,28 @@ class BranchOpener(object):
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(destination_url)
 
+    def openDestinationBranch(self, source_branch, destination_url):
+        """Open or create the destination branch at 'destination_url'.
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: (branch, up_to_date), where 'branch' is the destination
+            branch, and 'up_to_date' is a boolean saying whether the returned
+            branch is up-to-date with the source branch.
+        """
+        try:
+            branch = Branch.open(destination_url)
+        except errors.NotBranchError:
+            # Make a new branch in the same format as the source branch.
+            return self.createDestinationBranch(
+                source_branch, destination_url), True
+        # Check that destination branch is in the same format as the source.
+        if identical_formats(source_branch, branch):
+            return branch, False
+        branch = self.createDestinationBranch(source_branch, destination_url)
+        return branch, True
+
 
 class HostedBranchOpener(BranchOpener):
     """Specialization of `BranchOpener` for HOSTED branches.
@@ -480,56 +502,40 @@ class PullerWorker:
 
         Useful to override in tests.
         """
-        try:
-            branch = BzrDir.open(self.dest).open_branch()
-        except errors.NotBranchError:
-            # Make a new branch in the same format as the source branch.
-            branch = self._createDestBranch(source_branch)
-        else:
-            # Check that destination branch is in the same format as the
-            # source.
-            if identical_formats(source_branch, branch):
-                # The destination exists, and is in the same format.  So all
-                # we need to do is update it.
-
-                # If the branch is locked, try to break it.  Our special UI
-                # factory will allow the breaking of locks that look like they
-                # were left over from previous puller worker runs.  We will
-                # block on other locks and fail if they are not broken before
-                # the timeout expires (currently 5 minutes).
-                if branch.get_physical_lock_status():
-                    branch.break_lock()
-
-                # Make sure the mirrored branch is stacked the same way as the
-                # source branch.  Note that we expect this to be fairly
-                # common, as, as of r6889, it is possible for a branch to be
-                # pulled before the stacking information is set at all.
-                try:
-                    stacked_on_url = source_branch.get_stacked_on_url()
-                except (errors.UnstackableRepositoryFormat,
-                        errors.UnstackableBranchFormat,
-                        errors.NotStacked):
-                    stacked_on_url = None
-                try:
-                    branch.set_stacked_on_url(stacked_on_url)
-                except (errors.UnstackableRepositoryFormat,
-                        errors.UnstackableBranchFormat):
-                    if stacked_on_url is not None:
-                        raise AssertionError(
-                            "Couldn't set stacked_on_url %r" % stacked_on_url)
-                except errors.NotBranchError:
-                    raise StackedOnBranchNotFound()
-                branch.pull(source_branch, overwrite=True)
-            else:
-                # The destination is in a different format to the source, so
-                # we'll delete it and mirror from scratch.
-                branch = self._createDestBranch(source_branch)
-        return branch
-
-    def _createDestBranch(self, source_branch):
-        """Create the branch to pull to, and copy the source's contents."""
-        return self.branch_opener.createDestinationBranch(
+        branch, up_to_date = self.branch_opener.openDestinationBranch(
             source_branch, self.dest)
+        if up_to_date:
+            return branch
+
+        # If the branch is locked, try to break it.  Our special UI
+        # factory will allow the breaking of locks that look like they
+        # were left over from previous puller worker runs.  We will
+        # block on other locks and fail if they are not broken before
+        # the timeout expires (currently 5 minutes).
+        if branch.get_physical_lock_status():
+            branch.break_lock()
+
+        # Make sure the mirrored branch is stacked the same way as the
+        # source branch.  Note that we expect this to be fairly
+        # common, as, as of r6889, it is possible for a branch to be
+        # pulled before the stacking information is set at all.
+        try:
+            stacked_on_url = source_branch.get_stacked_on_url()
+        except (errors.UnstackableRepositoryFormat,
+                errors.UnstackableBranchFormat,
+                errors.NotStacked):
+            stacked_on_url = None
+        try:
+            branch.set_stacked_on_url(stacked_on_url)
+        except (errors.UnstackableRepositoryFormat,
+                errors.UnstackableBranchFormat):
+            if stacked_on_url is not None:
+                raise AssertionError(
+                    "Couldn't set stacked_on_url %r" % stacked_on_url)
+        except errors.NotBranchError:
+            raise StackedOnBranchNotFound()
+        branch.pull(source_branch, overwrite=True)
+        return branch
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.
