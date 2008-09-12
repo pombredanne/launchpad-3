@@ -502,13 +502,15 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _mirrorToDestBranch(self, source_branch):
-        """Open the branch to pull to, creating a new one if necessary.
+    def _mirrorToDestBranch(self, source_branch, destination_url):
+        """Mirror 'source_branch' to 'destination_url'.
 
-        Useful to override in tests.
+        :param source_branch: The Bazaar source branch to be mirrored.
+        :param destination_url: The place to mirror it to. Must be writable.
+        :return: The Bazaar destination branch.
         """
         branch, up_to_date = self.branch_opener.openDestinationBranch(
-            source_branch, self.dest)
+            source_branch, destination_url)
         if up_to_date:
             return branch
 
@@ -572,7 +574,7 @@ class PullerWorker:
             stacked_on_url = get_stacked_on_url(source_branch)
             if stacked_on_url is not None:
                 self.protocol.setStackedOn(stacked_on_url)
-            return self._mirrorToDestBranch(source_branch)
+            return self._mirrorToDestBranch(source_branch, self.dest)
         finally:
             server.tearDown()
 
