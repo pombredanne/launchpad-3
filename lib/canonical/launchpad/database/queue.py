@@ -637,7 +637,7 @@ class PackageUpload(SQLBase):
             if changes.get('origin') is not None:
                 message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
-            if self.sourcepackagerelease is not None:
+            if self.sources or self.builds:
                 message.SPR_URL = (
                     'Source package release: %s' %
                     canonical_url(self.sourcepackagerelease))
