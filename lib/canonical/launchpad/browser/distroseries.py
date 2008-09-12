@@ -514,14 +514,13 @@ class DistroSeriesAddView(AddView):
 
         assert owner is not None
 
-        distroseries = getUtility(IDistroSeriesSet).new(
+        distroseries = self.context.newSeries(
             name = data['name'],
             displayname = data['displayname'],
             title = data['title'],
             summary = data['summary'],
             description = data['description'],
             version = data['version'],
-            distribution = self.context,
             parent_series = data['parent_series'],
             owner = owner
             )
