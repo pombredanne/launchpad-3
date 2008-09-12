@@ -19,8 +19,6 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.product import IProductSet
-from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
     SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,

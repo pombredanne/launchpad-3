@@ -9,13 +9,11 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
-from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -31,7 +29,6 @@ class OpenIDPersistentIdentity:
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
-        from zope.security.proxy import removeSecurityProxy
         return '+id/' + removeSecurityProxy(self.account).openid_identifier
 
     @property
