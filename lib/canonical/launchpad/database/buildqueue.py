@@ -158,7 +158,7 @@ class BuildQueue(SQLBase):
         # otherwise.
         if self.build.sourcepackagerelease.section.name == 'translations':
             msg += "LPack => score zero"
-        elif self.build.archive.purpose == ArchivePurpose.REBUILD:
+        elif self.build.archive.purpose == ArchivePurpose.COPY:
             score = rebuild_archive_score
             msg += "Rebuild archive => low score"
         else:

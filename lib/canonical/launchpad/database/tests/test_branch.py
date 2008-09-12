@@ -37,7 +37,8 @@ from canonical.launchpad.database.specificationbranch import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -573,6 +574,108 @@ class TestBranchDeletionConsequences(TestCase):
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+
+class StackedBranches(TestCaseWithFactory):
+    """Tests for showing branches stacked on another."""
+
+    layer = DatabaseFunctionalLayer
+
+    def testNoBranchesStacked(self):
+        # getStackedBranches returns an empty collection if there are no
+        # branches stacked on it.
+        branch = self.factory.makeBranch()
+        self.assertEqual(set(), set(branch.getStackedBranches()))
+
+    def testSingleBranchStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_branch]), set(branch.getStackedBranches()))
+
+    def testMultipleBranchesStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_b = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
+
+    def testStackedBranchesIncompleteMirrorsNoBranches(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # stacked branches that haven't been mirrored at all.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors returns branches
+        # stacked on some_branch that had their mirrors started but not
+        # finished.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrorsNotStacked(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches with incomplete mirrors that are not stacked on
+        # some_branch.
+        branch = self.factory.makeBranch()
+        not_stacked = self.factory.makeBranch()
+        not_stacked.startMirroring()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesCompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have been successfully mirrored.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorComplete(self.factory.getUniqueString())
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that failed to mirror. This is not directly desired, but is
+        # a consequence of wanting to include branches that have started,
+        # failed, then started again.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedThenStartedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that had a failed mirror but have since been started.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesMirrorRequested(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have only had a mirror requested.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.requestMirror()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
 
 class BranchAddLandingTarget(TestCase):
