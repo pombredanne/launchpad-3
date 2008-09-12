@@ -45,9 +45,9 @@ CREATE TABLE StaticDiff (
 CREATE TABLE PreviewDiffReference (
   id SERIAL PRIMARY KEY,
   branch_merge_proposal INTEGER UNIQUE NOT NULL REFERENCES BranchMergeProposal,
-  last_source_revision INTEGER NOT NULL REFERENCES Revision,
-  last_target_revision INTEGER NOT NULL REFERENCES Revision,
-  last_dependent_revision INTEGER REFERENCES Revision,
+  last_source_revision_id TEXT,
+  last_target_revision_id TEXT,
+  last_dependent_revision_id TEXT,
   diff INTEGER REFERENCES Diff,
   conflicts TEXT
 );
