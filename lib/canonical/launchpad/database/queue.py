@@ -17,6 +17,7 @@ from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import os
 import shutil
+import StringIO
 import tempfile
 
 from zope.component import getUtility
@@ -271,21 +272,10 @@ class PackageUpload(SQLBase):
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
-    def _getChangesfileCopy(self):
-        """Copies the changesfile to temporary file.
-
-        :return: A file like object, ready for reading.
-        """
-        the_copy = tempfile.TemporaryFile(mode='a+')
-        the_copy.write(self.changesfile.read())
-        the_copy.seek(0)
-
-        return the_copy
-
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setAccepted()
-        changes_file_object = self._getChangesfileCopy()
+        changes_file_object = StringIO.StringIO(self.changesfile.read())
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
@@ -308,7 +298,7 @@ class PackageUpload(SQLBase):
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
-        changes_file_object = self._getChangesfileCopy()
+        changes_file_object = StringIO.StringIO(self.changesfile.read())
         self.notify(
             logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
@@ -1019,7 +1009,8 @@ class PackageUpload(SQLBase):
                 message.add_header(key, value)
 
             # Add the email body.
-            message.attach(MIMEText(mail_text, 'plain', 'iso-8859-1'))
+            message.attach(MIMEText(
+               sanitize_string(mail_text).encode('utf-8'), 'plain', 'utf-8'))
 
             # Add the original changesfile as an attachment.
             if changes_file_object is not None:
@@ -1027,7 +1018,8 @@ class PackageUpload(SQLBase):
             else:
                 changesfile_text = ("Sorry, changesfile not available.")
 
-            attachment = MIMEText(changesfile_text, 'plain', 'iso-8859-1')
+            attachment = MIMEText(
+                changesfile_text.encode('utf-8'), 'plain', 'utf-8')
             attachment.add_header(
                 'Content-Disposition', 'attachment; filename="changesfile"')
             message.attach(attachment)

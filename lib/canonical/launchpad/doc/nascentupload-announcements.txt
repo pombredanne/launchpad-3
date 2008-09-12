@@ -807,7 +807,7 @@ changes file is mentioned toward the end of the email.
 
   >>> body = announcement_email.get_payload()[0]
   >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
-  Content-Type: text/plain; charset="iso-8859-1"
+  Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
   <BLANKLINE>
@@ -815,15 +815,15 @@ changes file is mentioned toward the end of the email.
   <BLANKLINE>
     * Changes file that contains UTF-8
   <BLANKLINE>
-    * Non-ascii text: =10Ciha=159
+    * Non-ascii text: =C4=8Ciha=C5=99
   <BLANKLINE>
   <BLANKLINE>
-   -- Non-ascii changed-by =10Ciha=159 <daniel.silverstone@canonical.com>  Th=
-  u, 30 Mar 2006 01:36:14 +0100 =
+   -- Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canonical.com>=
+    Thu, 30 Mar 2006 01:36:14 +0100 =
   <BLANKLINE>
   <BLANKLINE>
-  Maintainer: Non-ascii maintainer =10Ciha=159 <launchpad@lists.canonical.com=
-  > =
+  Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
+  .com> =
   <BLANKLINE>
   Signed-By: Foo Bar <foo.bar@canonical.com> =
   <BLANKLINE>
@@ -853,8 +853,12 @@ Here's the attachment metadata.
 
 And what follows is the content of the attachment.
 
-  >>> attachment_lines = attachment.get_payload(decode=True)
-  >>> print attachment_lines
+  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  Content-Disposition: attachment; filename="changesfile"
+  <BLANKLINE>
   -----BEGIN PGP SIGNED MESSAGE-----
   Hash: SHA1
   <BLANKLINE>
@@ -866,18 +870,23 @@ And what follows is the content of the attachment.
   Version: 1.0-10
   Distribution: breezy
   Urgency: low
-  Maintainer: Non-ascii maintainer Ciha9 <launchpad@lists.canonical.com>
-  Changed-By: Non-ascii changed-by Ciha9 <daniel.silverstone@canonical.com>
-  Description:
+  Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
+  .com>
+  Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
+  cal.com>
+  Description: =
+  <BLANKLINE>
    bar        - Stuff for testing
-  Changes:
-   bar (1.0-10) breezy; urgency=low
+  Changes: =
+  <BLANKLINE>
+   bar (1.0-10) breezy; urgency=3Dlow
    .
      * Changes file that contains UTF-8
    .
-     * Non-ascii text: Ciha9
+     * Non-ascii text: =C4=8Ciha=C5=99
    .
-  Files:
+  Files: =
+  <BLANKLINE>
    a4932aa84fdb62819b49f3dda163fc0d 514 devel optional bar_1.0-10.dsc
    ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-10.diff.gz
   <BLANKLINE>
@@ -885,7 +894,7 @@ And what follows is the content of the attachment.
   Version: GnuPG v1.4.6 (GNU/Linux)
   <BLANKLINE>
   iD8DBQFGjOzNjn63CGxkqMURAlDZAJ9CusNQWwbTJr7JHYV4Ka1JbWwmJACeLbs5
-  Hzkb2pxxwYzKs7uyCiFONlo=
-  =9dL/
+  Hzkb2pxxwYzKs7uyCiFONlo=3D
+  =3D9dL/
   -----END PGP SIGNATURE-----
   <BLANKLINE>

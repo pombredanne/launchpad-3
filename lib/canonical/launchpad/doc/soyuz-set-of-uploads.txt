@@ -354,7 +354,7 @@ Check the email recipient for displayname containing special chars,
   To: "Foo B. Bar" <foo.bar@canonical.com>,
   	Celso Providelo <celso.providelo@canonical.com>
   Subject: [ubuntutest/breezy] bar 1.0-4 (Accepted)
-  Content-Type: text/plain; charset="iso-8859-1"
+  Content-Type: text/plain; charset="utf-8"
   MIME-Version: 1.0
   Content-Transfer-Encoding: quoted-printable
   <BLANKLINE>
