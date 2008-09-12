@@ -271,11 +271,24 @@ class PackageUpload(SQLBase):
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
+    def _getChangesfileCopy(self):
+        """Copies the changesfile to temporary file.
+
+        :return: A file like object, ready for reading.
+        """
+        the_copy = tempfile.TemporaryFile(mode='a+')
+        the_copy.write(self.changesfile.read())
+        the_copy.seek(0)
+
+        return the_copy
+
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setAccepted()
-        self.notify(announce_list=announce_list, logger=logger,
-                    dry_run=dry_run)
+        changes_file_object = self._getChangesfileCopy()
+        self.notify(
+            announce_list=announce_list, logger=logger, dry_run=dry_run,
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -295,7 +308,10 @@ class PackageUpload(SQLBase):
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
-        self.notify(logger=logger, dry_run=dry_run)
+        changes_file_object = self._getChangesfileCopy()
+        self.notify(
+            logger=logger, dry_run=dry_run,
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
     def _isSingleSourceUpload(self):
@@ -486,6 +502,11 @@ class PackageUpload(SQLBase):
         else:
             changes_lines = changes_file_object.readlines()
 
+        # Rewind the file so that the next read starts at offset zero. Please
+        # note that a LibraryFileAlias does not support seek operations.
+        if hasattr(changes_file_object, "seek"):
+            changes_file_object.seek(0)
+
         unsigned = not self.signing_key
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
@@ -549,8 +570,9 @@ class PackageUpload(SQLBase):
                         component, section))
         return summary
 
-    def _sendRejectionNotification(self, recipients, changes_lines,
-                                   summary_text, dry_run):
+    def _sendRejectionNotification(
+        self, recipients, changes_lines, summary_text, dry_run,
+        changes_file_object):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (
@@ -573,10 +595,11 @@ class PackageUpload(SQLBase):
             recipients,
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations,
-            dry_run)
+            dry_run, changes_file_object=changes_file_object)
 
-    def _sendSuccessNotification(self, recipients, announce_list,
-            changes_lines, changes, summarystring, dry_run):
+    def _sendSuccessNotification(
+        self, recipients, announce_list, changes_lines, changes,
+        summarystring, dry_run, changes_file_object):
         """Send a success email."""
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
@@ -639,8 +662,9 @@ class PackageUpload(SQLBase):
             if self.isPPA():
                 subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
 
-            self._sendMail(recipients, subject, body, dry_run,
-                           from_addr=from_addr, bcc=bcc)
+            self._sendMail(
+                recipients, subject, body, dry_run, from_addr=from_addr,
+                bcc=bcc, changes_file_object=changes_file_object)
 
         class NewMessage:
             """New message."""
@@ -831,12 +855,13 @@ class PackageUpload(SQLBase):
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
             self._sendRejectionNotification(
-                recipients, changes_lines, summary_text, dry_run)
+                recipients, changes_lines, summary_text, dry_run,
+                changes_file_object)
             return
 
         self._sendSuccessNotification(
             recipients, announce_list, changes_lines, changes, summarystring,
-            dry_run)
+            dry_run, changes_file_object)
 
     def _getRecipients(self, changes):
         """Return a list of recipients for notification emails."""
@@ -901,10 +926,12 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, to_addrs, subject, mail_text, dry_run,
-                  from_addr=None, bcc=None):
+    def _sendMail(
+        self, to_addrs, subject, mail_text, dry_run, from_addr=None, bcc=None,
+        changes_file_object=None):
         """Send an email to to_addrs with the given text and subject.
 
+        :changes_file_object: A file object with the actual changesfile.
         :from_addr: The email address to be used as the sender.  Must be a
                     valid ASCII str instance or a unicode one.
                     Defaults to the email for config.uploader.
@@ -992,19 +1019,15 @@ class PackageUpload(SQLBase):
                 message.add_header(key, value)
 
             # Add the email body.
-            message.attach(
-                MIMEText(mail_text.encode('utf-8'), 'plain', 'utf-8'))
+            message.attach(MIMEText(mail_text, 'plain', 'iso-8859-1'))
 
             # Add the original changesfile as an attachment.
-            try:
-                changesfile_text = self.changesfile.read()
-            except LookupError:
+            if changes_file_object is not None:
+                changesfile_text = sanitize_string(changes_file_object.read())
+            else:
                 changesfile_text = ("Sorry, changesfile not available.")
 
-            attachment = MIMEBase(
-                'application', 'octet-stream')
-            attachment.set_payload(changesfile_text)
-            Encoders.encode_base64(attachment)
+            attachment = MIMEText(changesfile_text, 'plain', 'iso-8859-1')
             attachment.add_header(
                 'Content-Disposition', 'attachment; filename="changesfile"')
             message.attach(attachment)
