@@ -622,7 +622,9 @@ class BugWatchUpdater(object):
 
         external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
 
-        imported_comments = 0
+        previous_imported_comments = bug_watch.getImportedBugMessages()
+        is_initial_import = previous_imported_comments.count() == 0
+        imported_comments = []
         for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
@@ -646,16 +648,18 @@ class BugWatchUpdater(object):
                 bug_watch, comment_id, poster)
 
             bug_message = bug_watch.addComment(comment_id, comment_message)
-            notify(SQLObjectCreatedEvent(
-                bug_message,
-                user=getUtility(ILaunchpadCelebrities).bug_watch_updater))
-            imported_comments += 1
+            imported_comments.append(bug_message)
 
-        if imported_comments > 0:
+        if len(imported_comments) > 0:
+            if not is_initial_import:
+                for bug_message in imported_comments:
+                    notify(SQLObjectCreatedEvent(
+                        bug_message,
+                        user=getUtility(ILaunchpadCelebrities).bug_watch_updater))
             self.log.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
-                {'count': imported_comments,
+                {'count': len(imported_comments),
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})

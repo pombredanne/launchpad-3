@@ -401,8 +401,7 @@ Once again, CVE links are created but no karma is assigned.
 
 == E-mail notifications ==
 
-When a comment is imported, a BugNotification record is created, so that
-an e-mail notification is sent about the comment.
+=== Initial import of comments ===
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch('42')
@@ -410,15 +409,48 @@ an e-mail notification is sent about the comment.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
     >>> external_bugtracker.remote_comments = {
-    ...     '1': 'First imported comment',
+    ...     '1': 'First imported comment (initial import)',
+    ...     '2': 'Second imported comment (initial import)',
     ...     }
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
-    INFO:...:Imported 1 comments for remote bug 42 ...
+    INFO:...:Imported 2 comments for remote bug 42 ...
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> latest_notification.bug.id == bug_watch.bug.id
-    True
-    >>> print latest_notification.message.text_contents
-    First imported comment
 
+Don't send notification for initial imports.
+
+    >>> from canonical.launchpad.database.bugnotification import (
+    ...     BugNotification)
+    >>> BugNotification.selectBy(bug=bug_watch.bug).count()
+    0
+
+    >>> external_bugtracker.remote_comments = {
+    ...     '1': 'First imported comment (initial import)',
+    ...     '2': 'Second imported comment (initial import)',
+    ...     '3': 'Third imported comment (initial import)',
+    ...     '4': 'Fourth imported comment (initial import)',
+    ...     }
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 2 comments for remote bug 42 ...
+
+XXX: check e-mail
+
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+
+Send notifications for sub-sequent imports, even though multiple.
+
+
+    >>> notifications = BugNotification.selectBy(
+    ...     bug=bug_watch.bug, orderBy='id')
+    >>> notifications.count()
+    2
+    >>> for notification in notifications:
+    ...     print notification.message.text_contents
+    Third imported comment (initial import)
+    Fourth imported comment (initial import)
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    0
