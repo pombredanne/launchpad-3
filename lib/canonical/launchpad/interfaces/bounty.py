@@ -21,7 +21,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, PublicPersonChoice
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
+from canonical.launchpad.interfaces import IHasOwner
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -117,7 +117,7 @@ class BountyStatus(DBEnumeratedType):
         """)
 
 
-class IBounty(IHasOwner, IMessageTarget):
+class IBounty(IHasOwner):
     """The core bounty description."""
 
     id = Int(
