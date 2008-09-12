@@ -452,43 +452,6 @@ class TranslationImporter:
                     message.msgid_singular, message.msgid_plural,
                     context=message.context)
 
-            # XXX DaniloSegan 20080806: I believe this can now be removed:
-            # we treat messages with same msgid but different msgid_plural
-            # as different now. A note here so reviewer reminds me to
-            # check this.
-            # If msgid_plural for this plural form is different from existing
-            # plural form (and msgid matches)
-            if (message.msgid_plural is not None and
-                self.pofile is not None and
-                potmsgset.msgid_plural is not None and
-                (message.msgid_plural != potmsgset.msgid_plural.msgid)):
-                # The PO file wants to change the plural msgid from the PO
-                # template, that's broken and not usual, so we raise an
-                # exception to log the issue. It needs to be fixed
-                # manually in the imported translation file.
-                # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
-                # Gettext doesn't allow two plural messages with the
-                # same msgid but different msgid_plural so I think is
-                # safe enough to just go ahead and import this translation
-                # here but setting the fuzzy flag.
-
-                # Add the pomsgset to the list of pomsgsets with errors.
-                error = {
-                    'potmsgset': potmsgset,
-                    'pofile': self.pofile,
-                    'pomessage':
-                        format_exporter.exportTranslationMessageData(
-                            message),
-                    'error-message': (
-                        "The msgid_plural field has changed since the"
-                        " last time this file was generated, please"
-                        " report this error to %s" % (
-                            config.rosettaadmin.email))
-                    }
-
-                errors.append(error)
-                continue
-
             # Update the position
             count += 1
 
