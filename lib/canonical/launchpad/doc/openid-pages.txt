@@ -26,6 +26,18 @@ casting the account to the IOpenIDPersistentIdentity interface.
     >>> verifyObject(IOpenIDPersistentIdentity, sample_identity)
     True
 
+Persons can be adapted to a OpenIDPersistentIdentity too.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
+    >>> personset = getUtility(IPersonSet)
+    >>> sample_person = personset.getByEmail('test@canonical.com')
+    >>> sample_identity_2 = IOpenIDPersistentIdentity(sample_person)
+    >>> verifyObject(IOpenIDPersistentIdentity, sample_identity_2)
+    True
+    >>> sample_identity.account == sample_identity_2.account
+    True
+
 OpenIDPersistentIdentity provides access to the account and the
 openid_identifier.
 

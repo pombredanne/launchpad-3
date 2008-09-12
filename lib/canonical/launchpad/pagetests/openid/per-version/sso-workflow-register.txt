@@ -123,10 +123,11 @@ directed back to the original site:
 
 The creation rationale has been set correctly:
 
-    >>> login(ANONYMOUS)
+    >>> login('new-user@example.com')
     >>> person = getUtility(IPersonSet).getByEmail('new-user@example.com')
     >>> expected_claimed_id = (
-    ...     'http://openid.launchpad.dev/+id/' + person.openid_identifier)
+    ...     'http://openid.launchpad.dev/+id/' +
+    ...     person.account.openid_identifier)
     >>> print person.creation_rationale.name
     OWNER_CREATED_UBUNTU_SHOP
     >>> logout()

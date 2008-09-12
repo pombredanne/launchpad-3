@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
@@ -49,4 +50,10 @@ class OpenIDPersistentIdentity:
 def account_to_openidpersistentidentity(account):
     """Adapts an `IAccount` into an `IOpenIDPersistentIdentity`."""
     return OpenIDPersistentIdentity(account)
+
+
+def person_to_openidpersistentidentity(person):
+    """Adapts an `IPerson` into an `IOpenIDPersistentIdentity`."""
+    return OpenIDPersistentIdentity(
+        removeSecurityProxy(person).account)
 

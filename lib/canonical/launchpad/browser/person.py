@@ -2667,7 +2667,8 @@ class EmailAddressVisibleState:
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
-    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()

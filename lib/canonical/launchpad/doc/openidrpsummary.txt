@@ -158,7 +158,8 @@ used before, a new OpenIDRPSummary is created.
 
     # Simulate a privileged event that has changed openid_identifier.
     >>> bare_no_priv = removeSecurityProxy(no_priv)
-    >>> bare_no_priv.openid_identifier = 'knightsOfNi'
+    >>> bare_no_priv_account = removeSecurityProxy(bare_no_priv)
+    >>> bare_no_priv_account.openid_identifier = 'knightsOfNi'
 
     >>> ubuntu_live_summary_2 = rp_summary_set.record(
     ...     no_priv, 'http://ubuntu-live.org')
