@@ -572,7 +572,7 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
     @defer_to_thread
-    def test_cant_write_to_readonly_branch(self):
+    def disabled_test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
             'sabdfl', '+junk', 'ro-branch')
