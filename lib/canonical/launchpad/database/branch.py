@@ -208,10 +208,6 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
-        # Update the last_modified_date of the source and target branches to
-        # be the date_created for the merge proposal.
-        self.date_last_modified = date_created
-        target_branch.date_last_modified = date_created
 
         if needs_review:
             queue_status = BranchMergeProposalStatus.NEEDS_REVIEW

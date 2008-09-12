@@ -15,6 +15,7 @@ __all__ = [
     'BranchMergeProposalJumpQueueView',
     'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
+    'BranchMergeProposalPrimaryContext',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
@@ -30,7 +31,7 @@ import operator
 from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Int, TextLine
 
 from canonical.cachedproperty import cachedproperty
@@ -59,8 +60,19 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from canonical.lazr import decorates
+
+
+class BranchMergeProposalPrimaryContext:
+    """The primary context is the proposal is that of the source branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, branch_merge_proposal):
+        self.context = IPrimaryContext(
+            branch_merge_proposal.source_branch).context
 
 
 def notify(func):
