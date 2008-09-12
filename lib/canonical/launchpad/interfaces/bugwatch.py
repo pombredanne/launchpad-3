@@ -195,6 +195,9 @@ class IBugWatch(IHasBug):
         :param message: The imported comment as a Launchpad Message object.
         """
 
+    def getImportedBugMessages():
+        """Return all the `IBugMessage`s that have been imported."""
+
 
 # Defined here because of circular imports.
 IBugTracker['watches'].value_type.schema = IBugWatch
