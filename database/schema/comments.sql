@@ -1823,7 +1823,7 @@ COMMENT ON COLUMN ArchiveSubscriber.date_created IS 'The date and time this subs
 COMMENT ON COLUMN ArchiveSubscriber.subscriber IS 'The person or team that this subscription refers to.';
 COMMENT ON COLUMN ArchiveSubscriber.date_expires IS 'The date and time this subscription will expire. If NULL, it does not expire.';
 COMMENT ON COLUMN ArchiveSubscriber.status IS 'The status of the subscription, e.g. PENDING, ACTIVE, CANCELLING, CANCELLED.';
-COMMENT ON COLUMN ArchiveSubscriber.description IS 'An optional note for the archive owner to describe the token.';
+COMMENT ON COLUMN ArchiveSubscriber.description IS 'An optional note for the archive owner to describe the subscription.';
 COMMENT ON COLUMN ArchiveSubscriber.date_cancelled IS 'The date and time this subscription was revoked.';
 COMMENT ON COLUMN ArchiveSubscriber.cancelled_by IS 'The person who revoked this subscription.';
 
