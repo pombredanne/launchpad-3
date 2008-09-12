@@ -14,8 +14,27 @@ from zope.schema import (
 from zope.interface import (
     Interface, Attribute)
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+
+
 class IDiff(Interface):
-    pass
+
+    diff_text = Object(
+        title=_('Content of this diff'), required=True,
+        schema=ILibraryFileAlias)
+
+    diff_lines_count = Int(
+        title=_('The number of lines in this diff.'))
+
+    diffstat = Text(title=_('Statistics about this diff'))
+
+    added_lines_count = Int(
+        title=_('The number of lines added in this diff.'))
+
+    removed_lines_count = Int(
+        title=_('The number of lines removed in this diff.'))
+
 
 class IStaticDiffReference(Interface):
     pass
