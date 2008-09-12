@@ -90,13 +90,16 @@ class AccountSet:
             password=None, password_is_encrypted=False):
         """See `IAccountSet`."""
 
-        account = Account(
-                displayname=displayname, creation_rationale=rationale)
-
         # Create the openid_identifier for the OpenID identity URL.
         if openid_mnemonic is not None:
-            account.new_openid_identifier = self.createOpenIDIdentifier(
+            new_openid_identifier = self.createOpenIDIdentifier(
                 openid_mnemonic)
+        else:
+            new_openid_identifier = None
+
+        account = Account(
+                displayname=displayname, creation_rationale=rationale,
+                new_openid_identifier=new_openid_identifier)
 
         # Create the password record.
         if password is not None:
