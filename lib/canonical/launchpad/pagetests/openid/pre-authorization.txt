@@ -19,7 +19,7 @@ As an example we'll pre-authorize our own OpenID consumer:
     >>> from urllib import urlencode
     >>> args = urlencode({
     ...     'trust_root': 'http://launchpad.dev/',
-    ...     'callback': 'http://openid.launchpad.dev/+id/sabdfl_oid'})
+    ...     'callback': 'http://launchpad.dev/people/+me'})
     >>> browser.handleErrors = True
     >>> browser.open(
     ...     'http://openid.launchpad.dev/+pre-authorize-rp?%s' % args)
@@ -34,7 +34,7 @@ As an example we'll pre-authorize our own OpenID consumer:
     # Now he's redirected to the callback page and the RP has been
     # pre-authorized.
     >>> browser.url
-    'http://openid.launchpad.dev/+id/sabdfl_oid'
+    'http://launchpad.dev/~sabdfl'
 
 From now on, and until that authorization expires, the user won't need
 to authorize that consumer when he wants to log into it.
