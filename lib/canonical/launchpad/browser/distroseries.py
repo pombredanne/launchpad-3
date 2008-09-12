@@ -35,7 +35,7 @@ from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+    DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
