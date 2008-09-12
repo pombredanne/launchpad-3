@@ -75,7 +75,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
-        removeSecurityProxy(branch).mirrorComplete(last_revision_id)
+        branch = removeSecurityProxy(branch)
+        branch.mirrorComplete(last_revision_id)
+        branches = branch.getStackedBranchesWithIncompleteMirrors()
+        for stacked_branch in branches:
+            stacked_branch.requestMirror()
         return True
 
     def mirrorFailed(self, branch_id, reason):
