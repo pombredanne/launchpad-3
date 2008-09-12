@@ -156,14 +156,28 @@ It also raises NotFoundError on distributions with no series:
     ...
     NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
 
+A distroseries can only be created by the distro owner or the admin
+team.
+
+    >>> gentoo.newSeries('gentoo-two', 'Gentoo Two',
+    ...                  'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
+    ...                  '2.0', None, gentoo.owner)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Edit')
+    >>> login('mark@hbd.com')
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
+    >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
+    ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
+    ...                               '2.0', None, gentoo.owner)
+
+    # Reverting the logged in user.
+    >>> login(ANONYMOUS)
+
 Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> distroseriesset = getUtility(IDistroSeriesSet)
-    >>> gentoo_two = distroseriesset.new(gentoo, 'gentoo-two', 'Gentoo Two',
-    ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
-    ...                                   '2.0', None, gentoo.owner)
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
     Traceback (most recent call last):
     ...

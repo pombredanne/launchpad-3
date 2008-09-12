@@ -10,12 +10,12 @@ allow the logged in user to claim that profile, but if we have any
 indication the profile may actually represent a team, we instead provide a
 link to turn it into a team.
 
-For instance, we have an auto-created profile for Alexander Limi, which
+For instance, we have an auto-created profile for Matsubara, which
 definitely doesn't seem to be a team.
 
-    >>> browser.open('http://launchpad.dev/~limi')
+    >>> browser.open('http://launchpad.dev/~matsubara')
     >>> browser.getLink(url='+claim')
-    <Link text='Are you Alexander Limi?'...
+    <Link text='Are you Diogo Matsubara?'...
 
 If a profile does look like a team and there is a logged in user, the link
 is different...

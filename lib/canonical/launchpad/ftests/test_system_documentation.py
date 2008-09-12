@@ -472,6 +472,12 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
             ),
+    'bugzilla-import.txt': LayeredDocFileSuite(
+            '../doc/bugzilla-import.txt',
+            setUp=setUp, tearDown=tearDown,
+            stdout_logging_level=logging.WARNING,
+            layer=LaunchpadZopelessLayer
+            ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
             setUp=setUp, tearDown=tearDown,
@@ -686,6 +692,14 @@ special = {
                 '../doc/externalbugtracker-emailaddress.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-linking-back.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-linking-back.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.ERROR,
                 layer=LaunchpadZopelessLayer
                 ),
     'externalbugtracker-mantis-csv.txt':

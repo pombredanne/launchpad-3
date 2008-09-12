@@ -14,43 +14,48 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:condition="not: view/mapped_participants">
+  <h1>Members' location</h1>
+<div style="height:420px;">
+  <div tal:condition="not: view/mapped_participants">
     None of the current participants in
     <tal:teamname replace="context/browsername" /> have a recorded
     location.
-  </p>
+  </div>
 
   <tal:some_mapped condition="view/mapped_participants">
-    <p id="team_map_div"
+    <div id="team_map_div"
        style="width: 75%; height: 250px; border: 1px; float: left;
-              margin: 0 14px 0 0;"
-       ></p>
+       margin: 0 14px 0 0;">
+    </div>
     <tal:map replace="structure view/map_html" />
+
   </tal:some_mapped>
 
-  <tal:unmapped condition="view/unmapped_participants">
-    <p style="margin: 4px;">
-      <strong>Complete the map!</strong><br />
-      Do you know the current location for these team members?  Update
-      locations for:
-    </p>
-
-    <ul>
-      <li tal:repeat="tomap view/unmapped_participants">
-        <a tal:attributes="
-          href string:${tomap/fmt:url}/+editlocation?for_team=${context/name}"
-           tal:content="tomap/browsername"
-           style="white-space: nowrap;">Joe Bloggs</a>
-      </li>
-    </ul>
-  </tal:unmapped>
-
-  <p tal:condition="view/mapped_participants">
-    <strong>Times:</strong><br />
+  <div tal:condition="view/mapped_participants">
+    <div style="margin-bottom: 4px;"><strong>Members' current local time:</strong></div>
     <tal:time_set repeat="time view/times">
-      <tal:time replace="time" /><br />
+      <tal:times replace="time" /><br />
     </tal:time_set>
-  </p>
+  </div>
+</div>
+  <tal:unmapped condition="view/unmapped_participants">
+    <div style="margin: 4px;">
+      <h2>Complete the map!</h2>
+      Do you know the current location for these team members? Set their
+      Locations!
+    </div>
+
+    <table class="listing" style="width: 75%;">
+      <tr tal:repeat="person view/unmapped_participants">
+        <td>
+          <a tal:attributes="
+              href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+            ><img src="/@@/edit" title="Set this person's location" />
+            <tal:person replace="person/displayname" /></a>
+        </td>
+      </tr>
+    </table>
+  </tal:unmapped>
 
 </div>
 

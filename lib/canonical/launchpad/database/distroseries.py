@@ -1649,19 +1649,3 @@ class DistroSeriesSet:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
             return DistroSeries.select(where_clause)
-
-    def new(self, distribution, name, displayname, title, summary,
-            description, version, parent_series, owner):
-        """See `IDistroSeriesSet`."""
-        return DistroSeries(
-            distribution=distribution,
-            name=name,
-            displayname=displayname,
-            title=title,
-            summary=summary,
-            description=description,
-            version=version,
-            status=DistroSeriesStatus.EXPERIMENTAL,
-            parent_series=parent_series,
-            owner=owner)
-

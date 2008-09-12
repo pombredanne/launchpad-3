@@ -44,15 +44,15 @@ We also try to use the name of an unvalidated account, which can't be used as
 the owner of something.
 
     >>> from canonical.launchpad.database import Person
-    >>> Person.byName('spiv').is_valid_person_or_team
+    >>> Person.byName('matsubara').is_valid_person_or_team
     False
-    >>> browser.getControl(name='field.owner').value = 'spiv'
+    >>> browser.getControl(name='field.owner').value = 'matsubara'
     >>> browser.getControl(name='CHANGE_OWNER').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/archive-mirror/+reassign'
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     tag.renderContents()
-    "The person/team named 'spiv' is not a valid owner for ..."
+    "The person/team named 'matsubara' is not a valid owner for ..."
 
 Now we try to create a team using a name that is already taken.
 

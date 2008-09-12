@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.component import getUtility
 
 from canonical.launchpad import _
@@ -27,6 +27,7 @@ from canonical.launchpad.validators.productrelease import (
     productrelease_file_size_constraint,
     productrelease_signature_size_constraint)
 from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
@@ -163,8 +164,9 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
-    def addReleaseFile(filename, file_content, content_type,
-                       signature_filename, signature_content, uploader,
+    def addReleaseFile(filename, file_content, file_size, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None, signature_size=None,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """Add file to the library, and link to this `IProductRelease`.
@@ -172,10 +174,13 @@ class IProductReleaseEditRestricted(Interface):
         The signature file will also be added if available.
 
         :param filename: Name of the file being uploaded.
-        :param file_content: String of bytes.
+        :param file_content: StringIO or file object.
+        :param file_size: Size of file_content.
         :param content_type: A MIME content type string.
-        :param signature_filename: Name of the uploaded gpg signature file.
         :param uploader: The person who uploaded the file.
+        :param signature_filename: Name of the uploaded gpg signature file.
+        :param signature_content: StringIO or file object.
+        :param signature_size: Size of signature_content.
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.
@@ -186,60 +191,94 @@ class IProductReleasePublic(Interface):
     """Public `IProductRelease` properties."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    datereleased = Datetime(
-        title=_('Date Released'), required=True,
-        readonly=False,
-        description=_('The date this release was published. Before '
-                      'release, this should have an estimated '
-                      'release date.'))
+
+    datereleased = exported(
+        Datetime(
+            title=_('Date Released'), required=True,
+            readonly=False,
+            description=_('The date this release was published. Before '
+                          'release, this should have an estimated '
+                          'release date.')),
+        exported_as="date_released"
+        )
+
     version = exported(
         ProductReleaseVersionField(
             title=_('Version'),
-            description=_(
-                'The specific version number assigned to this release. '
-                'Letters and numbers are acceptable, for releases like '
-                '"1.2rc3".'),
-            readonly=True, constraint=sane_version))
-    owner = Int(title=_('Owner'), required=True)
+            description= u'The specific version number assigned to this '
+            'release. Letters and numbers are acceptable, for releases like '
+            '"1.2rc3".',
+            readonly=True, constraint=sane_version)
+        )
+
+    owner = exported(
+            Reference(title=u"The owner of this release.",
+                      schema=IPerson, required=True)
+            )
+
     productseries = exported(
         Choice(
-            title=_('Release Series'), readonly=True,
+            title=_('Release series'), readonly=True,
             vocabulary='FilteredProductSeries'),
         exported_as='project_series')
-    codename = TextLine(title=_('Code name'), required=False,
-        description=_('The release code-name. Famously, one Gnome release '
-        'was code-named "that, and a pair of testicles", but you don\'t '
-        'have to be as brave with your own release codenames.'))
-    summary = Text(title=_("Summary"), required=False,
-        description=_('A brief summary of the release highlights, to '
-        'be shown at the top of the release page, and in listings.'))
-    description = Text(title=_("Description"), required=False,
-        description=_('A detailed description of the new features '
-        '(though the changelog below might repeat some of this '
-        'information). The description here will be shown on the project '
-        'release home page.'))
-    changelog = Text(title=_('Changelog'), required=False)
-    datecreated = Datetime(title=_('Date Created'),
-        description=_("The date this productrelease was created in "
-        "Launchpad."), required=True, readonly=True)
-    displayname = Attribute('Constructed displayname for a product release.')
-    title = Attribute('Constructed title for a product release.')
-    product = Attribute(_('The upstream project of this release.'))
+
+    codename = exported(
+        TextLine(title=u'Code name', required=False,
+                 description=u'The release code-name. Famously, one Gnome '
+                 'release was code-named "that, and a pair of testicles", '
+                 "but you don't have to be as brave with your own release "
+                 'codenames.'),
+        exported_as='code_name')
+
+    summary = exported(
+        Text(
+            title=_("Summary"), required=False,
+            description=_('A brief summary of the release highlights, to '
+                          'be shown at the top of the release page, and in '
+                          'listings.'))
+        )
+
+    description = exported(
+        Text(
+            title=_("Description"), required=False,
+            description=_('A detailed description of the new features '
+                          '(though the changelog below might repeat some of '
+                          'this information). The description here will be '
+                          'shown on the project release home page.'))
+        )
+
+    changelog = exported(
+        Text(
+            title=_('Changelog'), required=False)
+        )
+
+    datecreated = exported(
+        Datetime(title=_('Date Created'),
+                 description=_("The date this project release was created in "
+                               "Launchpad."),
+                 required=True, readonly=True),
+        exported_as="date_created")
+
+    displayname = exported(
+        Text(title=u'Constructed display name for a project release.',
+             readonly=True),
+        exported_as="display_name")
+
+    title = exported(
+        Text(title=u'Constructed title for a project release.')
+        )
+
+    product = exported(
+        Reference(title=u'The upstream project of this release.',
+                  schema=Interface, readonly=True),
+         exported_as="project")
+
     files = exported(
         CollectionField(
             title=_('Project release files'),
-            description=_('Iterable of product release files.'),
+            description=_('A list of files for this release.'),
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
-
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
-
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
 
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.

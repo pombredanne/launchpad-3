@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 import mimetypes
+from StringIO import StringIO
 
 # zope3
 from zope.event import notify
@@ -144,6 +145,10 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
         # widget.
         if file_upload is not None and len(data['description']) > 0:
+            # XXX Edwin Grubbs 2008-09-10 bug=268680
+            # Once python-magic is available on the production servers,
+            # the content-type should be verified instead of trusting
+            # the extension that mimetypes.guess_type() examines.
             content_type, encoding = mimetypes.guess_type(
                 file_upload.filename)
 
@@ -153,17 +158,21 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             if signature_upload is None:
                 signature_filename = None
                 signature_content = None
+                signature_size = None
             else:
                 signature_filename = signature_upload.filename
-                signature_content = data['signature']
+                signature_content = StringIO(data['signature'])
+                signature_size = len(data['signature'])
 
             release_file = self.context.addReleaseFile(
                 filename=file_upload.filename,
-                file_content=data['filecontent'],
+                file_content=StringIO(data['filecontent']),
+                file_size=len(data['filecontent']),
                 content_type=content_type,
+                uploader=self.user,
                 signature_filename=signature_filename,
                 signature_content=signature_content,
-                uploader=self.user,
+                signature_size=signature_size,
                 file_type=filetype,
                 description=data['description'])
 

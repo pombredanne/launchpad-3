@@ -344,8 +344,6 @@ Public branches use the lp spec bzr lookup name.
     ...     branch_format=BranchFormat.BZR_BRANCH_5,
     ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
     >>> url = canonical_url(branch)
-    >>> unscanned_branch = factory.makeBranch()
-    >>> unscanned_url = canonical_url(unscanned_branch)
     >>> logout()
     >>> browser.open(url)
 
@@ -357,6 +355,31 @@ The data that we specified is shown on the web page.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'repository-format'))
     Repository format: Packs containing knits without subtree support
+
+
+=== Stacking ===
+
+Say we have one branch stacked on another:
+
+    >>> login('no-priv@canonical.com')
+    >>> stacked_on_branch = factory.makeBranch()
+    >>> stacked_branch = factory.makeBranch(stacked_on=stacked_on_branch)
+    >>> url = canonical_url(stacked_branch)
+    >>> stacked_on_name = stacked_on_branch.unique_name
+    >>> stacked_on_url = canonical_url(stacked_on_branch)
+    >>> logout()
+
+And we browse to the stacked branch:
+
+    >>> browser.open(url)
+
+The stacked-on information appears in the branch summary:
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'stacked-on'))
+    Stacked on: ...
+
+    >>> browser.getLink(stacked_on_name).url == stacked_on_url
+    True
 
 
 === Navigation Context ===
