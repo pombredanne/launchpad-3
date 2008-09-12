@@ -229,6 +229,7 @@ class BugWatch(SQLBase):
         bug_message = self.bug.linkMessage(
             message, bugwatch=self, user=bug_watch_updater,
             remote_comment_id=comment_id)
+        return bug_message
 
 
 class BugWatchSet(BugSetBase):

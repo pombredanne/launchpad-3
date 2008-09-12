@@ -19,6 +19,8 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
@@ -44,10 +46,11 @@ from canonical.launchpad.interfaces.build import (
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
-from storm.zope.interfaces import IZStorm
 
 
 class Archive(SQLBase):
@@ -60,13 +63,13 @@ class Archive(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
-        """Only allow renaming of REBUILD archives.
+        """Only allow renaming of COPY archives.
 
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.purpose == ArchivePurpose.REBUILD, (
-                "Only REBUILD archives can be renamed.")
+            assert self.purpose == ArchivePurpose.COPY, (
+                "Only COPY archives can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -115,6 +118,8 @@ class Archive(SQLBase):
         dbName='building_count', notNull=True, default=0)
 
     failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
+
+    date_created = UtcDateTimeCol(dbName='date_created')
 
     @property
     def is_ppa(self):
@@ -378,7 +383,7 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             SourcePackagePublishingHistory.archive == self.id,
@@ -539,7 +544,7 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             BinaryPackagePublishingHistory.archive == self.id,

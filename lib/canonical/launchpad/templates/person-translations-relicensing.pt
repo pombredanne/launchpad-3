@@ -17,7 +17,7 @@
       </p>
       <p>
         To help us with this, we&#8217;d like your permission to
-        <strong>license all your translations</strong>,
+        <strong>license all translations you make in Launchpad</strong>,
         <a tal:attributes="href string:${context/fmt:url}">past</a> and future,
         <strong>under the <a href="https://help.launchpad.net/Legal/BSDLicense"
         >BSD&nbsp;license</a></strong>.
@@ -26,14 +26,12 @@
       </p>
       <p>
         If you change your mind later, you can return to this page
-        (&#8220;Translations licensing&#8221;)
-        any time until July 31st.
-        If you choose not to accept the BSD license, we&#8217;ll remove your
-        translations from Launchpad shortly after then.
+        (&#8220;Translations licensing&#8221;) at any time.
+        If you choose not to accept the BSD license, we will remove your
+        translations from Launchpad shortly after.
       </p>
       <p>
-        For more about why we&#8217;re clarifying translations licensing,
-        see our
+        For more about why we ask this from you, see our
         <a href="http://help.launchpad.net/Translations/LicensingFAQ"
         >translations&nbsp;licensing&nbsp;FAQ</a>.
       </p>

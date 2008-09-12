@@ -510,6 +510,7 @@ class ShipItRequestView(GeneralFormView):
             if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
+                self._abortAndSetStatus()
                 return ("The option you chose was not found. Please select "
                         "one from the list below.")
             quantities = request_type.quantities
