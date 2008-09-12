@@ -38,9 +38,17 @@ def main():
                 COALESCE(SUM(filesize), 0),
                 pg_size_pretty(COALESCE(SUM(filesize), 0)),
                 COUNT(*)
-            FROM LibraryFileContent, LibraryFileAlias, %s
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND %s.%s = LibraryFileContent.id
+            FROM (
+                SELECT DISTINCT ON (LFC.id) LFC.id, LFC.filesize
+                FROM LibraryFileContent AS LFC, LibraryFileAlias AS LFA, %s
+                WHERE LFC.id = LFA.content
+                    AND LFA.id = %s.%s
+                    AND LFC.deleted IS FALSE
+                    AND (
+                        LFA.expires IS NULL
+                        OR LFA.expires > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                ORDER BY LFC.id
+                ) AS Whatever
             """ % (
                 quoted_referring_table, quoted_referring_table,
                 quoted_referring_column))

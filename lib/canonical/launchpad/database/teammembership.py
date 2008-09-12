@@ -571,10 +571,10 @@ def _cleanTeamParticipation(person, team):
         -- that aren't a direct member of the team.
         SELECT person
         FROM TeamMembership
-        WHERE team = %(team_id)s AND status IN (%(active_states)s)
+        WHERE team = %(team_id)s AND status IN %(active_states)s
         """ % dict(
             person_id=person.id, team_id=team.id,
-            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
+            active_states=sqlvalues(ACTIVE_STATES)[0])
 
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
@@ -604,9 +604,9 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
                 TeamMembership.team = %(team_id)s AND
                 TeamMembership.person = TeamParticipation.team AND
                 TeamParticipation.person = %(person_id)s AND
-                TeamMembership.status IN (%(active_states)s))
+                TeamMembership.status IN %(active_states)s)
         """ % dict(team_id=team.id, person_id=person.id,
-                   active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
+                   active_states=sqlvalues(ACTIVE_STATES)[0])
     store = Store.of(person)
     (result, ) = store.execute(query).get_one()
     if result:
@@ -651,11 +651,11 @@ def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
             EXCEPT
             SELECT person
             FROM TeamMembership
-            WHERE team = %(target_team_id)s AND status IN (%(active_states)s)
+            WHERE team = %(target_team_id)s AND status IN %(active_states)s
         )
         """ % dict(
             team_id=team.id, target_team_id=target_team.id,
-            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
+            active_states=sqlvalues(ACTIVE_STATES)[0])
     store = Store.of(team)
     store.execute(query)
 
@@ -675,10 +675,10 @@ def _getSuperTeamsExcludingDirectMembership(person, team):
         -- The one where person has an active membership.
         SELECT team
         FROM TeamMembership
-        WHERE person = %(person_id)s AND status IN (%(active_states)s)
+        WHERE person = %(person_id)s AND status IN %(active_states)s
         """ % dict(
             person_id=person.id, team_id=team.id,
-            active_states="%s, %s" % sqlvalues(ACTIVE_STATES))
+            active_states=sqlvalues(ACTIVE_STATES)[0])
 
     # Avoid circular import.
     from canonical.launchpad.database.person import Person
