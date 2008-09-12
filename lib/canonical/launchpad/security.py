@@ -736,23 +736,22 @@ class AdminDistroSeries(AdminByAdminsTeam):
     usedfor = IDistroSeries
 
 
-class EditDistroSeriesByOwnersOrDistroOwnersOrAdminsOrBugImporter(
-    AuthorizationBase):
+class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of the distro series should be able to modify some of the
     fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
-    please consult with SABDFL before modifying these permissions.
+    please consult with Kiko and MDZ on the mailing list before modifying
+    these permissions.
     """
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
-        celebs = getUtility(ILaunchpadCelebrities)
+        admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or
-                user.inTeam(celebs.admin) or
-                user == celebs.bug_importer)
+                user.inTeam(admins))
 
 
 class SeriesDrivers(AuthorizationBase):
@@ -1660,7 +1659,7 @@ class ViewEntitlement(AuthorizationBase):
 
 class AdminDistroSeriesLanguagePacks(
     OnlyRosettaExpertsAndAdmins,
-    EditDistroSeriesByOwnersOrDistroOwnersOrAdminsOrBugImporter):
+    EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
     permission = 'launchpad.LanguagePacksAdmin'
     usedfor = IDistroSeries
 
@@ -1673,7 +1672,7 @@ class AdminDistroSeriesLanguagePacks(
         """
         return (
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistroSeriesByOwnersOrDistroOwnersOrAdminsOrBugImporter.checkAuthenticated(
+            EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
                 self, user) or
             user.inTeam(self.obj.distribution.language_pack_admin))
 
