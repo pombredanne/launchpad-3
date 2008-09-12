@@ -292,6 +292,10 @@ virtual host.
 
 = Creating a milestone on the product series =
 
+The newMilstone method is called by sending "ws.op=newMilestone"
+as a request variable along with the parameters. The
+webservice.named_post() method simplifies this for us.
+
     >>> response = webservice.named_post(
     ...     firefox_1_0['self_link'], 'newMilestone', {},
     ...     name='alpha1', date_targeted=u'2005-06-06',
