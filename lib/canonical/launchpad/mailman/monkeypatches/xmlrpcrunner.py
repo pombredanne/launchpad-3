@@ -112,6 +112,7 @@ class XMLRPCRunner(Runner):
             self._check_list_actions()
             self._get_subscriptions()
             self._check_held_messages()
+        # pylint: disable-msg=W0702
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
@@ -262,14 +263,17 @@ class XMLRPCRunner(Runner):
                 # See if the case is changing.
                 current_address = mlist.getMemberCPAddress(address)
                 future_address = key_to_case_preserved[address]
+                # pylint: disable-msg=W0331
                 if current_address <> future_address:
                     mlist.changeMemberAddress(address, future_address)
                     found_updates = True
                 # flags are ignored for now.
                 realname, flags, status = member_map[future_address]
+                # pylint: disable-msg=W0331
                 if realname <> mlist.getMemberName(address):
                     mlist.setMemberName(address, realname)
                     found_updates = True
+                # pylint: disable-msg=W0331
                 if status <> mlist.getDeliveryStatus(address):
                     mlist.setDeliveryStatus(address, status)
                     found_updates = True
