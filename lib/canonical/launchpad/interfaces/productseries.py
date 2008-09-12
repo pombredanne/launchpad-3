@@ -207,7 +207,7 @@ class IProductSeriesEditRestricted(Interface):
     @export_factory_operation(IFakeMilestone,
                               ['name', 'dateexpected', 'description'])
     def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
+        """Create a new milestone for this ProjectSeries."""
 
     def addRelease(version, owner, codename=None, shortdesc=None,
                    description=None, changelog=None):
