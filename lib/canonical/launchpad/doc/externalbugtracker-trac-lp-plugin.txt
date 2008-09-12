@@ -474,7 +474,7 @@ been pushed to bug 3.
     user: launchpad
 
 
-== Linking Launchpad bugs to remote bugs ==
+== Linking remote bugs to Launchpad bugs ==
 
 The TracLPPlugin class implements the ISupportsBackLinking interface,
 which allows it to tell the remote bug tracker which Launchpad bug

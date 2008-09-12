@@ -41,6 +41,8 @@ LP_PLUGIN_METADATA_ONLY = 1
 LP_PLUGIN_METADATA_AND_COMMENTS = 2
 LP_PLUGIN_FULL = 3
 
+# Fault code constants for the LP Plugin
+FAULT_TICKET_NOT_FOUND = 1001
 
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
@@ -433,7 +435,7 @@ class TracLPPlugin(Trac):
     def getLaunchpadBugId(self, remote_bug):
         """Return the Launchpad bug for a given remote bug.
 
-        If `remote_bug` doesn't exist, raise BugNotFound.
+        :raises BugNotFound: When `remote_bug` doesn't exist.
         """
         try:
             timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
@@ -441,7 +443,7 @@ class TracLPPlugin(Trac):
         except xmlrpclib.Fault, fault:
             # Deal with "Ticket does not exist" faults. We re-raise
             # anything else, since they're a sign of a bigger problem.
-            if fault.faultCode == 1001:
+            if fault.faultCode == FAULT_TICKET_NOT_FOUND:
                 raise BugNotFound(remote_bug)
             else:
                 raise
@@ -457,7 +459,7 @@ class TracLPPlugin(Trac):
     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
         """Set the Launchpad bug ID for a given remote bug.
 
-        If `remote_bug` doesn't exist, raise BugNotFound.
+        :raises BugNotFound: When `remote_bug` doesn't exist.
         """
         # If the launchpad_bug_id is None, pass 0 to set_launchpad_bug
         # to delete the bug link, since we can't send None over XML-RPC.
@@ -470,7 +472,7 @@ class TracLPPlugin(Trac):
         except xmlrpclib.Fault, fault:
             # Deal with "Ticket does not exist" faults. We re-raise
             # anything else, since they're a sign of a bigger problem.
-            if fault.faultCode == 1001:
+            if fault.faultCode == FAULT_TICKET_NOT_FOUND:
                 raise BugNotFound(remote_bug)
             else:
                 raise

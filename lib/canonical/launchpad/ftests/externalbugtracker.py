@@ -26,7 +26,7 @@ from canonical.launchpad.components.externalbugtracker import (
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac)
 from canonical.launchpad.components.externalbugtracker.trac import (
-    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -1068,7 +1068,8 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         return 0. Otherwise return the mapped Launchpad bug ID.
         """
         if bugid not in self.remote_bugs:
-            raise xmlrpclib.Fault(1001, 'Ticket does not exist')
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
 
         return [self.utc_time, self.launchpad_bugs.get(bugid, 0)]
 
@@ -1081,7 +1082,8 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         Return the current UTC timestamp.
         """
         if bugid not in self.remote_bugs:
-            raise xmlrpclib.Fault(1001, 'Ticket does not exist')
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
 
         self.launchpad_bugs[bugid] = launchpad_bug
 
