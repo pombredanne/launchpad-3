@@ -499,6 +499,7 @@ different user, Launchpad code is only concened with using this data.
 
 Let's get a branch with some revisions in it.
 
+    >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName('name12')
     >>> junk = sample_person.getBranch('+junk', 'junk.dev')
     >>> print junk.unique_name
@@ -716,7 +717,7 @@ bzr_identity.
     >>> series.user_branch = junkcode
     >>> syncUpdate(series)
     >>> print junkcode.bzr_identity
-    lp://dev/~ddaa/+junk/junkcode
+    lp://dev/~junkowner/+junk/junkcode
 
 
 == Branch Scan List ==
@@ -781,6 +782,8 @@ scanned ID is.
 
 == Getting the branch count and last commit for products ==
 
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
     >>> products = [
     ...     productset.getByName('evolution'),
     ...     productset.getByName('firefox'),
@@ -795,7 +798,7 @@ scanned ID is.
     ...         summary[product]['last_commit'])
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
-    gnome-terminal 8 None
+    gnome-terminal 7 None
 
 
 == Getting all branches for a person ==
@@ -804,48 +807,68 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForContext method on IBranchSet where the
 context is a Person (or team) will return all branches associated with
-that person:
+that person.  "Associated" means one of:
 
-  - subscribed branches by person
-  - person is author or owner of the branch
+  - person is subscribed to the branch
+  - person is owner of the branch
+  - person registered the branch
 
-The default sort order is by product name, lifecycle, author name and
+The default sort order is by product name, lifecycle, owner name and
 finally branch name (with NULL names sorting at the end, as is usual
 for SQL), but any value from the BranchListingSort enumeration can be
 used (when a sort order is specified, it only affects the initial
 ordering -- so when BranchListingSort.LIFECYCLE is specified as the
-sort order, the sort is by lifecycle, product, author, name).
+sort order, the sort is by lifecycle, product name, owner name, and
+finally name).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    >>> from canonical.launchpad.interfaces.branch import (
+    ...     BranchLifecycleStatus, BranchListingSort,
+    ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
+    >>> person = factory.makePerson(name="person")
+    >>> product_a = factory.makeProduct(name='a')
+    >>> product_b = factory.makeProduct(name='b')
+    >>> branch_for_a_called_b = factory.makeBranch(
+    ...     owner=person, product=product_a, name='b')
+    >>> mature_branch_for_b_called_a = factory.makeBranch(
+    ...     owner=person, product=product_b, name='a',
+    ...     lifecycle_status=BranchLifecycleStatus.MATURE)
+    >>> branch_for_b_called_b = factory.makeBranch(
+    ...     owner=person, product=product_b, name='b')
+    >>> branch_for_b_called_c = factory.makeBranch(
+    ...     owner=person, product=product_b, name='c')
+    >>> junk_branch = factory.makeBranch(
+    ...     owner=person, product=None, name='junk')
+    >>> oerson = factory.makePerson(name='oerson')
+    >>> oerson_branch_for_b_called_a = factory.makeBranch(
+    ...     owner=oerson, product=product_b, name='a',
+    ...     lifecycle_status=BranchLifecycleStatus.MATURE)
+    >>> subscription = oerson_branch_for_b_called_a.subscribe(
+    ...     person,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES,
+    ...     CodeReviewNotificationLevel.FULL)
     >>> branches = branchset.getBranchesForContext(
-    ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
+    ...     person, DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~ddaa/gnome-terminal/dev
-    New ~ddaa/+junk/junkcode
-    New ~vcs-imports/+junk/junkcode
+    New ~person/a/b
+    Mature ~oerson/b/a
+    Mature ~person/b/a
+    New ~person/b/b
+    New ~person/b/c
+    New ~person/+junk/junk
 
-    >>> sample_person = personset.getByName('name12')
     >>> branches = branchset.getBranchesForContext(
-    ...     sample_person, visible_by_user=sample_person,
+    ...     person, DEFAULT_BRANCH_STATUS_IN_LISTING,
     ...     sort_by=BranchListingSort.LIFECYCLE)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    Abandoned ~name12/gnome-terminal/2.4
-    Merged ~name12/gnome-terminal/slowness
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    Experimental ~name12/gnome-terminal/klingon
-    Experimental ~name12/+junk/junk.dev
-    New ~name12/firefox/main
-    New ~launchpad/gnome-terminal/launchpad
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
-    New ~name12/landscape/feature-x
-    New ~landscape-developers/landscape/trunk
-    New ~name12/+junk/junk.contrib
+    Mature ~oerson/b/a
+    Mature ~person/b/a
+    New ~person/a/b
+    New ~person/b/b
+    New ~person/b/c
+    New ~person/+junk/junk
 
 In order to further restrict the branches that are returned for a person
 there is the BranchPersonSearchContext, which has a restriction from
@@ -901,7 +924,6 @@ extra display information.
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.owner.displayname,
     ...     print branch.unique_name
-    New David Allouche ~ddaa/gnome-terminal/dev
     New Launchpad Developers ~launchpad/gnome-terminal/launchpad
     Mature Sample Person ~name12/gnome-terminal/2.6
     Development Sample Person ~name12/gnome-terminal/main
@@ -1011,12 +1033,10 @@ More details can be found in the file
 canonical/launchpad/database/tests/test_branch.py.
 
     >>> branch = branchset.new(
-    ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
-    ...     'http://example.com/branches/to-delete', 'A branch to delete',
-    ...     date_created=now.next())
-
+    ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
+    ...     'http://example.com/branches/to-delete', 'A branch to delete')
     >>> print branch.unique_name
-    ~ddaa/gnome-terminal/to-delete
+    ~person/a/to-delete
 
 Since the branch has ddaa as an implicit subscriber, the branch is not
 deletable.
@@ -1025,24 +1045,23 @@ deletable.
     False
     >>> branch.destroySelf()
     Traceback (most recent call last):
-    ...
-    CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
+      ...
+    CannotDeleteBranch: Cannot delete branch: ~person/a/to-delete
 
 The process can be rectified though by removing the offending links.
 
-    >>> branch.unsubscribe(ddaa)
+    >>> branch.unsubscribe(person)
     >>> branch.canBeDeleted()
     True
     >>> branch.destroySelf()
-    >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
+    >>> print branchset.getByUniqueName('~person/a/to-delete')
     None
 
 The requirements for deleting the branch can be discovered:
 
     >>> branch = branchset.new(
-    ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
-    ...     'http://example.com/branches/to-delete', 'A branch to delete',
-    ...     date_created=now.next())
+    ...     BranchType.MIRRORED, 'to-delete', person, person, product_a,
+    ...     'http://example.com/branches/to-delete', 'A branch to delete')
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
@@ -1064,7 +1083,7 @@ the user does not have appropriate permissions.)
 
     >>> branch.destroySelf(break_references=True)
     >>> print branchset.getByUniqueName(
-    ...     '~ddaa/gnome-terminal/to-delete')
+    ...     '~person/a/to-delete')
     None
 
 Branches with revisions are deletable.
