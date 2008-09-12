@@ -14,6 +14,7 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
@@ -30,9 +31,13 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
+from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.structuralsubscription import (
+    BugNotificationLevel)
+from canonical.launchpad.mail import sendmail
+from canonical.launchpad.mailnotification import construct_bug_notification
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
@@ -649,13 +654,29 @@ class BugWatchUpdater(object):
 
             bug_message = bug_watch.addComment(comment_id, comment_message)
             imported_comments.append(bug_message)
+        bug_watch_updater = (
+            getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
+        comment_syncing_team = getUtility(IPersonSet).getByName(
+            config.malone.comment_syncing_team)
         if len(imported_comments) > 0:
-            if not is_initial_import:
+            if is_initial_import:
+                recipients = bug_watch.bug.getBugNotificationRecipients(
+                    level=BugNotificationLevel.COMMENTS)
+                people_to_notify = [
+                    person for person in recipients.getRecipients()
+                    if person.inTeam(comment_syncing_team)]
+                for person in people_to_notify:
+                    notification = construct_bug_notification(
+                        bug_watch.bug, 'from', person.preferredemail.email,
+                        'body', 'subject',
+                        datetime.now(pytz.timezone('UTC')))
+                    sendmail(notification)
+            else:
                 for bug_message in imported_comments:
                     notify(SQLObjectCreatedEvent(
                         bug_message,
-                        user=getUtility(ILaunchpadCelebrities).bug_watch_updater))
+                        user=bug_watch_updater))
             self.log.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
