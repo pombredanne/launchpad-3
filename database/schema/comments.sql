@@ -516,9 +516,9 @@ COMMENT ON TABLE PreviewDiffReference IS 'Contains information about preview dif
 COMMENT ON COLUMN PreviewDiffReference.branch_merge_proposal IS 'The BranchMergeProposal this diff is for.';
 COMMENT ON COLUMN PreviewDiffReference.conflicts IS 'The text description of any conflicts present.';
 COMMENT ON COLUMN PreviewDiffReference.diff IS 'The last Diff generated for this PreviewDiffReference.';
-COMMENT ON COLUMN PreviewDiffReference.last_dependent_revision IS 'The last_revision in the dependant branch.';
-COMMENT ON COLUMN PreviewDiffReference.last_source_revision IS 'The last_revision in the source branch.';
-COMMENT ON COLUMN PreviewDiffReference.last_target_revision IS 'The last_revision in the target branch.';
+COMMENT ON COLUMN PreviewDiffReference.last_dependent_revision_id IS 'The last_revision in the dependant branch.';
+COMMENT ON COLUMN PreviewDiffReference.last_source_revision_id IS 'The last_revision in the source branch.';
+COMMENT ON COLUMN PreviewDiffReference.last_target_revision_id IS 'The last_revision in the target branch.';
 
 
 -- Product
