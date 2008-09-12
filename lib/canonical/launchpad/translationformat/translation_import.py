@@ -375,10 +375,10 @@ class TranslationImporter:
         else:
             english_pofile = None
         
-        # Expire old messages
+        # Expire old messages.
         self.potemplate.expireAllMessages()
         if translation_file.header is not None:
-            # Update the header
+            # Update the header.
             self.potemplate.header = (
                 translation_file.header.getRawContent())
         UTC = pytz.timezone('UTC')
@@ -391,10 +391,10 @@ class TranslationImporter:
             translation_import_queue_entry.importer )
         self.importinfo['lock_timestamp'] = None
 
-        # No pofile in DB
+        # No pofile in the DB is used when importing a template.
         self.importinfo['pofile_in_db'] = None
         
-        # Our pofile is english_pofile
+        # Our pofile is english_pofile.
         return english_pofile
     
     def potImport_setupmsgset( self, message, potmsgset, flags_comment ):
@@ -669,7 +669,7 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        # Get the importer needed to import a file of this format
+        # Get the importer needed to import a file of this format.
         self.importinfo['importer'] = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
         # Get the exporter to display a message in error messages.
@@ -677,15 +677,15 @@ class TranslationImporter:
             getUtility(
                 ITranslationExporter).getExporterProducingTargetFileFormat(
                     translation_import_queue_entry.format) )
-        # Check that we really got an importer
+        # Check that we really got an importer.
         assert self.importinfo['importer'] is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
-        # Parse the file using the importer
+        # Parse the file using the importer.
         translation_file = self.importinfo['importer'].parse(
             translation_import_queue_entry)
 
-        # Get the PO file and POT file instances for this import
+        # Get the PO file and POT file instances for this import.
         self.pofile = translation_import_queue_entry.pofile
         if self.pofile is None:
             self.potemplate = translation_import_queue_entry.potemplate
@@ -694,16 +694,16 @@ class TranslationImporter:
             
         # Select the import functions to use depending on whether a template
         # is being imported (pofile is None) or a translation file (pofile is
-        # not None)
+        # not None).
         importFuncs = self.getImportFuncs( self.pofile is None )
 
-        # Initialise the import process
+        # Initialise the import process.
         use_pofile = importFuncs['init'](
             translation_import_queue_entry, translation_file )  
 
-        # Messages are counted to maintain the original sequence
+        # Messages are counted to maintain the original sequence.
         self.count = 0
-        # Collect errors here
+        # Collect errors here.
         self.errors = []
         
         for message in translation_file.messages:
@@ -730,11 +730,11 @@ class TranslationImporter:
             if not importFuncs['checkplurals'](message, potmsgset):
                 continue
 
-            # Update the sequence
+            # Update the sequence.
             self.count += 1
 
             # Build flags comment and remove fuzzy from flags,
-            # saving the fuzzy state
+            # saving the fuzzy state.
             flags_comment = u", " + u", ".join(message.flags)
             fuzzy = 'fuzzy' in message.flags
             if fuzzy:
@@ -742,7 +742,7 @@ class TranslationImporter:
 
             importFuncs['setupmsgset'](message, potmsgset, flags_comment)
 
-            # Store translations
+            # Store translations.
             if use_pofile is None:
                 # It's neither an IPOFile nor an IPOTemplate that needs to
                 # store English strings in an IPOFile.
@@ -753,7 +753,7 @@ class TranslationImporter:
                 continue
 
             try:
-                # Do the actual import
+                # Do the actual import.
                 translation_message = potmsgset.updateTranslation(
                     use_pofile, self.importinfo['last_translator'],
                     message.translations,
@@ -782,7 +782,7 @@ class TranslationImporter:
                 self.addUpdateError(
                     message, potmsgset, use_pofile, unicode(e) )
 
-            # Update translation_message's comments and flags
+            # Update translation_message's comments and flags.
             if translation_message is not None:
                 translation_message.flags_comment = flags_comment
                 translation_message.comment = message.comment
