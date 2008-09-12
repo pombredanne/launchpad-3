@@ -157,7 +157,8 @@ email address.
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> login('foo.bar@canonical.com')
     >>> emma = new_person('Emma')
-    >>> email = email_set.new('EmmaXPerson@example.org', emma)
+    >>> email = email_set.new(
+    ...     'EmmaXPerson@example.org', emma, account=emma.account)
     >>> email.status = EmailAddressStatus.VALIDATED
     >>> from canonical.launchpad.interfaces.mailinglist import IMailingListSet
     >>> emma.join(team_one)

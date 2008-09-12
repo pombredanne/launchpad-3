@@ -297,10 +297,20 @@ Project releases are available at their canonical URL on the API virtual host.
 
     >>> firefox_1_0_0 = webservice.get('/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
+    changelog: u''
+    code_name: u'First Stable Release'
+    date_created: u'2005-06-06T08:59:51.930201+00:00'
+    date_released: u'2004-06-28T00:00:00+00:00'
+    description: u''
+    display_name: u'Mozilla Firefox 1.0.0'
     files_collection_link: u'http://.../firefox/1.0/1.0.0/files'
+    owner_link: u'http://.../~name12'
+    project_link: u'http://.../firefox'
     project_series_link: u'http://.../firefox/1.0'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/1.0/1.0.0'
+    summary: u'After four years of work...'
+    title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
     version: u'1.0.0'
 
 
@@ -395,16 +405,16 @@ Trying to put new content will result in a ForbiddenAttribute error.
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/file'
     >>> response = webservice.put(url, 'application/x-tar-gz', 'fakefiledata')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
     ...
-    ForbiddenAttribute: ('libraryfile', <ProductReleaseFile...
 
     >>> url = '/firefox/trunk/0.9.2/+file/firefox-0.9.2.orig.tar.gz/signature'
     >>> response = webservice.put(url, 'pgpapplication/data', 'signaturedata')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 405 Method Not Allowed
+    Allow: GET
     ...
-    ForbiddenAttribute: ('signature', <ProductReleaseFile...
 
 Soon a new method will be introduced that will allow the file and
 signature attributes to be modified in place.

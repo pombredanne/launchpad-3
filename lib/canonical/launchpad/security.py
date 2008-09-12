@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
@@ -1755,31 +1754,6 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
-
-
-class EditArchiveRebuild(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchiveRebuild
-
-    def checkAuthenticated(self, user):
-        """Verify that the user can edit the archive rebuild.
-
-        Only people in one of the conditions below can edit an
-        ArchiveRebuild record:
-
-         * 'registrant' team member;
-         * The distribution admins;
-         * a Launchpad administrator.
-        """
-        if user.inTeam(self.obj.registrant):
-            return True
-
-        distribution = self.obj.distroseries.distribution
-        if user.inTeam(distribution.owner):
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
