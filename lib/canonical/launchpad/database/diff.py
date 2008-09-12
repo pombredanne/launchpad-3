@@ -27,6 +27,6 @@ class Diff(SQLBase):
     removed_lines_count = IntCol()
 
 
-class StaticDiffReference(SQLBase):
+class StaticDiffJob(SQLBase):
 
-    implements(IStaticDiffReference)
+    implements(IStaticDiffJob)

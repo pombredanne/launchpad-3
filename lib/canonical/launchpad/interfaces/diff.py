@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 
 class IDiff(Interface):
+    """A diff that is stored in the Library."""
 
     diff_text = Object(
         title=_('Content of this diff'), required=True,
@@ -36,5 +37,5 @@ class IDiff(Interface):
         title=_('The number of lines removed in this diff.'))
 
 
-class IStaticDiffReference(Interface):
-    pass
+class IStaticDiffJob(Interface):
+    """A job to create a static diff."""
