@@ -110,7 +110,7 @@ code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 :link                         {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
-:visited                      {color: #5b73b0; text-decoration: none;}
+:visited                      {color: #03a; text-decoration: none;}
 /* Links that don't open separate pages are green to denote their behavior: */
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
@@ -793,7 +793,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* All segments have a border, and padding around their text: */
 #context-navigation-tabs .navigation.menu * * {
   border-right: 1px solid #ccc;
-  border-bottom: 1px solid #0d0d0d;
+  border-bottom: 1px solid #808080;
   padding: 0.25em 0.5em;
 }
 /* For text browsers, there's a " / " separator, hidden from CSS browsers: */
