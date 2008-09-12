@@ -198,7 +198,7 @@ class BranchOpener(object):
         return bzrdir.get_branch_reference()
 
     def openBranch(self, url):
-        """Open the Bazaar at `url`.
+        """Open the Bazaar branch at `url`.
 
         This exists as a separate method only to be overriden in unit tests.
         """
@@ -297,6 +297,39 @@ class BranchOpener(object):
             when it finds a URL it deems to be unsafe.
         """
         raise NotImplementedError(self.checkOneURL)
+
+    def createDestinationBranch(self, source_branch, destination_url):
+        """Create a destination branch for 'source_branch'.
+
+        Creates a branch at 'destination_url' that is a mirror of
+        'source_branch'. Any content already at 'destination_url' will be
+        deleted.
+
+        If 'source_branch' is stacked, then the destination branch will be
+        stacked on the same URL, relative to 'destination_url'.
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: The destination branch.
+        """
+        dest_transport = get_transport(destination_url)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
+        bzrdir = source_branch.bzrdir
+        try:
+            stacked_on_branch_url = source_branch.get_stacked_on_url()
+        except (errors.UnstackableBranchFormat,
+                errors.UnstackableBranchFormat,
+                errors.NotStacked):
+            pass
+        else:
+            stacked_on_branch_url = urlutils.join(
+                destination_url, stacked_on_branch_url)
+            if not get_transport(stacked_on_branch_url).has('.'):
+                raise StackedOnBranchNotFound()
+        bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
+        return Branch.open(destination_url)
 
 
 class HostedBranchOpener(BranchOpener):
@@ -495,23 +528,8 @@ class PullerWorker:
 
     def _createDestBranch(self, source_branch):
         """Create the branch to pull to, and copy the source's contents."""
-        dest_transport = get_transport(self.dest)
-        if dest_transport.has('.'):
-            dest_transport.delete_tree('.')
-        bzrdir = source_branch.bzrdir
-        try:
-            stacked_on_branch_url = source_branch.get_stacked_on_url()
-        except (errors.UnstackableBranchFormat,
-                errors.UnstackableBranchFormat,
-                errors.NotStacked):
-            pass
-        else:
-            stacked_on_branch_url = urlutils.join(
-                self.dest, stacked_on_branch_url)
-            if not get_transport(stacked_on_branch_url).has('.'):
-                raise StackedOnBranchNotFound()
-        bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
-        return Branch.open(self.dest)
+        return self.branch_opener.createDestinationBranch(
+            source_branch, self.dest)
 
     def _record_oops(self, message=None):
         """Record an oops for the current exception.
