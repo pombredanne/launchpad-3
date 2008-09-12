@@ -685,7 +685,8 @@ class TestPublisher(TestNativePublishingBase):
 
         # On the other hand, there is a mismatch for strings containing '\0'
         text, file = _getSHA256("foo\0bar")
-        self.assertNotEqual(text, file)
+        self.assertNotEqual(
+            text, file, "Python-apt no longer creates bad SHA256 sums.")
 
     def testReleaseFile(self):
         """Test release file writing.
