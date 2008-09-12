@@ -4,18 +4,97 @@
 
 __metaclass__ = type
 __all__ = [
-    'check_constraints_safety',
-    'check_removal_options',
-    'normalize_removal_options',
+    'RemoveTranslations',
     'remove_translations',
     ]
+
+import logging
+
+from optparse import Option, OptionValueError
 
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
+from canonical.launchpad.scripts.base import (
+    LaunchpadScript, LaunchpadScriptFailure)
+
+
+def check_bool_option(option, opt, value):
+    """`optparse.Option` type checker for Boolean argument."""
+    value = value.lower()
+    bool_representations = {
+        'true': True,
+        '1': True,
+        'false': False,
+        '0': False,
+        }
+
+    if value not in bool_representations:
+        raise OptionValueError("Invalid boolean value: %s" % value)
+
+    return bool_representations[value]
+
+
+def get_id(identifier, lookup_function=None):
+    """Look up id of object identified by a string.
+
+    Raises `OptionValueError` if the option's value appears invalid.
+
+    :param identifier: String identifying an object.  If entirely
+        numeric, taken as id.  Otherwise, passed to lookup_function.
+    :param lookup_function: Callback that will take `identifier` as
+        its argument and return a numeric object id.  If no object
+        has the given identifier, may raise a `LookUpError` or return
+        None.
+    :return: Numeric object id, or None if no identifier is given.
+    """
+    if identifier is None or identifier == '':
+        return None
+    elif isinstance(identifier, basestring) and identifier == '':
+        return None
+    elif isinstance(identifier, int):
+        return identifier
+    elif identifier.isdigit():
+        return int(identifier)
+    elif lookup_function is None:
+        raise OptionValueError("Expected numeric id, got '%s'." % identifier)
+    else:
+        try:
+            result = lookup_function(identifier)
+        except LookupError:
+            raise OptionValueError("'%s' not found." % identifier)
+
+    if result is None:
+        raise OptionValueError("'%s' not found." % identifier)
+    return result
+
+
+def get_person_id(name):
+    """`get_id` helper.  Look up person by name."""
+    person = getUtility(IPersonSet).getByName(name)
+    if person is None:
+        return None
+    return person.id
+
+
+def get_origin(name):
+    """`get_id` helper.  Look up `RosettaTranslationOrigin` by name."""
+    try:
+        return getattr(RosettaTranslationOrigin, name).value
+    except AttributeError:
+        return None
+
+
+def check_origin_option(option, opt, value):
+    """`optparse.Option` type checker for `RosettaTranslationsOrigin`."""
+    return get_id(value, get_origin)
+
+
+def check_person_option(option, opt, value):
+    """`optparse.Option` type checker for `Person`."""
+    return get_id(value, get_person_id)
 
 
 def is_nonempty_list(list_option):
@@ -28,108 +107,6 @@ def is_nonempty_string(string_option):
     return string_option is not None and string_option != ''
 
 
-def check_constraints_safety(options):
-    """Are these options to the deletion script sufficiently safe?
-    
-    :param options: an object encapsulating options to the deletion
-        script.
-    :return: Boolean approval and output message.  All disapprovals come
-        with an explanation; some approvals come with an informational
-        message.
-    """
-    if is_nonempty_list(options.ids):
-        return (True, None)
-    if is_nonempty_string(options.submitter):
-        return (True, None)
-    if is_nonempty_string(options.reviewer):
-        return (True, None)
-
-    forced = options.force
-    if is_nonempty_string(options.potemplate) and forced:
-        return (
-            True,
-            "Safety override in effect.  Deleting translations for template "
-            "%s." % options.potemplate)
-
-    return (
-        False,
-        "Refusing unsafe deletion.  Use matching options to constrain "
-        "deletion to a safe subset.")
-
-
-def get_person_id(name):
-    """Look up person by name."""
-    person = getUtility(IPersonSet).getByName(name)
-    if person is None:
-        return None
-    return person.id
-
-
-def get_origin(name):
-    """Look up `RosettaTranslationOrigin` by name."""
-    return getattr(RosettaTranslationOrigin, name).value
-
-
-def get_id(identifier, lookup_function=None):
-    """Look up id of object identified by a string.
-
-    :param identifier: String identifying an object.  If entirely
-        numeric, taken as id.  Otherwise, passed to lookup_function.
-    :param lookup_function: Callback that will take `identifier` as
-        its argument and return a numeric object id.  If no object
-        has the given identifier, may raise an exception or return
-        None.
-    :return: Numeric object id, or None if no identifier is given.
-    """
-    if identifier is None or identifier == '':
-        return None
-    if isinstance(identifier, int):
-        return identifier
-    if identifier.isdigit():
-        return int(identifier)
-    if lookup_function is None:
-        raise ValueError("Expected numeric id, got '%s'." % identifier)
-    else:
-        result = lookup_function(identifier)
-    if result is None:
-        raise LookupError("'%s' not found." % identifier)
-    return result
-
-
-def get_bool(string_value):
-    """Convert option value string_value to bool representation."""
-    if string_value is None:
-        return None
-    string_value = string_value.lower()
-    bool_representations = {
-        'true': True,
-        '1': True,
-        'false': False,
-        '0': False,
-        }
-
-    if string_value not in bool_representations:
-        raise ValueError("Invalid boolean value: %s" % string_value)
-
-    return bool_representations[string_value]
-
-
-def normalize_removal_options(options):
-    """Normalize bundle of options for remove-translations-by.
-
-    Makes sure numeric or boolean options are converted from the string
-    representation that `LaunchpadScript` will pass us.
-    """
-    options.submitter = get_id(options.submitter, get_person_id)
-    options.reviewer = get_id(options.reviewer, get_person_id)
-    if options.ids is not None:
-        options.ids = [get_id(message) for message in options.ids]
-    options.potemplate = get_id(options.potemplate)
-    options.origin = get_id(options.origin, get_origin)
-    options.is_current = get_bool(options.is_current)
-    options.is_imported = get_bool(options.is_imported)
-
-
 def check_option_type(options, option_name, option_type):
     """Check that option value is of given type, or None."""
     option = getattr(options, option_name)
@@ -137,25 +114,6 @@ def check_option_type(options, option_name, option_type):
         raise ValueError(
             "Wrong argument type for %s: expected %s, got %s." % (
                 option_name, option_type.__name__, option.__class__.__name__))
-
-
-def check_removal_options(options):
-    """Check options to remove-translations-by, after normalization."""
-    option_types = {
-        'submitter': int,
-        'reviewer': int,
-        'ids': list,
-        'potemplate': int,
-        'language': basestring,
-        'not_language': bool,
-        'is_current': bool,
-        'is_imported': bool,
-        'msgid': basestring,
-        'origin': int,
-        'force': bool,
-        }
-    for option, expected_type in option_types.items():
-        check_option_type(options, option, expected_type)
 
 
 def compose_language_match(language_code):
@@ -194,6 +152,117 @@ def add_bool_match(conditions, expression, match_value):
     else:
         match = 'NOT (%s)' % expression
     conditions.add(match)
+
+
+class ExtendedOption(Option):
+    TYPES = Option.TYPES + ('bool', 'origin', 'person')
+    TYPE_CHECKER = dict(entry for entry in Option.TYPE_CHECKER.items())
+    TYPE_CHECKER['bool'] = check_bool_option
+    TYPE_CHECKER['origin'] = check_origin_option
+    TYPE_CHECKER['person'] = check_person_option
+
+
+class RemoveTranslations(LaunchpadScript):
+    """Remove specific `TranslationMessage`s from the database.
+
+    The script accepts a wide range of options to specify exactly which
+    messages need deleting.  It will refuse to run if the options are so
+    non-specific that the command is more likely to be a mistake than a
+    valid use case.  In borderline cases, it may be persuaded to run
+    using a "force" option.
+    """
+
+    description = "Delete matching translation messages from the database."
+    loglevel = logging.INFO
+
+    my_options = [
+        ExtendedOption(
+            '-s', '--submitter', dest='submitter', type='person',
+            help="Submitter match: delete only messages with this "
+                "submitter."),
+        ExtendedOption(
+            '-r', '--reviewer', dest='reviewer', type='person',
+            help="Reviewer match: delete only messages with this reviewer."),
+        ExtendedOption(
+            '-i', '--id', action='append', dest='ids', type='int',
+            help="ID of message to delete.  May be specified multiple "
+                "times."),
+        ExtendedOption(
+            '-p', '--potemplate', dest='potemplate', type='int',
+            help="Template id match.  Delete only messages in this "
+                "template."),
+        ExtendedOption(
+            '-l', '--language', dest='language',
+            help="Language match.  Deletes (default) or spares (with -L) "
+                 "messages in this language."),
+        ExtendedOption(
+            '-L', '--not-language', action='store_const', const=True,
+            dest='not_language', default=False,
+            help="Invert language match: spare messages in given language."),
+        ExtendedOption(
+            '-C', '--is-current', dest='is_current', type='bool',
+            help="Match on is_current value (True or False)."),
+        ExtendedOption(
+            '-I', '--is-imported', dest='is_imported', type='bool',
+            help="Match on is_imported value (True or False)."),
+        ExtendedOption(
+            '-m', '--msgid', dest='msgid',
+            help="Match on (singular) msgid text."),
+        ExtendedOption(
+            '-o', '--origin', dest='origin', type='origin',
+            help="Origin match: delete only messages with this origin code."),
+        ExtendedOption(
+            '-f', '--force', action='store_const', const=True, dest='force',
+            help="Override safety check on moderately unsafe action."),
+        ]
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_options(self.my_options)
+
+    def _check_constraints_safety(self):
+        """Are these options to the deletion script sufficiently safe?
+    
+        :return: Boolean approval and output message.  All disapprovals come
+            with an explanation; some approvals come with an informational
+            message.
+        """
+        if is_nonempty_list(self.options.ids):
+            return (True, None)
+        if is_nonempty_string(self.options.submitter):
+            return (True, None)
+        if is_nonempty_string(self.options.reviewer):
+            return (True, None)
+
+        forced = self.options.force
+        if is_nonempty_string(self.options.potemplate) and forced:
+            return (
+                True,
+                "Safety override in effect.  Deleting translations for "
+                "template %s." % self.options.potemplate)
+
+        return (
+            False,
+            "Refusing unsafe deletion.  Use matching options to constrain "
+            "deletion to a safe subset.")
+
+    def main(self):
+        """See `LaunchpadScript`."""
+        (result, message) = self._check_constraints_safety()
+        if not result:
+            raise LaunchpadScriptFailure(message)
+        if message is not None:
+            self.logger.warn(message)
+
+        remove_translations(logger=self.logger,
+            submitter=self.options.submitter, reviewer=self.options.reviewer,
+            ids=self.options.ids, potemplate=self.options.potemplate,
+            language_code=self.options.language,
+            not_language=self.options.not_language,
+            is_current=self.options.is_current,
+            is_imported=self.options.is_imported,
+            msgid_singular=self.options.msgid, origin=self.options.origin)
+        self.txn.commit()
 
 
 def remove_translations(logger=None, submitter=None, reviewer=None, ids=None,

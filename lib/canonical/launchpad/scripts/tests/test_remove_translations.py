@@ -1,11 +1,12 @@
 #! /usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Test `remove_translations` and the `remove-translations-by.py` script."""
+"""Test `remove_translations` and the `RemoveTranslations` script."""
 
 __metaclass__ = type
 
 from datetime import datetime
+from optparse import OptionParser, OptionValueError
 from pytz import timezone
 from unittest import TestLoader
 
@@ -16,262 +17,160 @@ from storm.store import Store
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
+from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.remove_translations import (
-    check_constraints_safety, check_removal_options,
-    normalize_removal_options, remove_translations)
+    RemoveTranslations, remove_translations)
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class MockOptions:
-    """Mock set of options to pass to `check_constraints_safety`."""
-    def __init__(self, submitter=None, reviewer=None, ids=None,
-                 potemplate=None, language_code=None,
-                 not_language=None, is_current=None, is_imported=None,
-                 msgid=None, origin=None, force=None):
-        self.submitter = submitter
-        self.reviewer = reviewer
-        self.ids = ids
-        self.potemplate = potemplate
-        self.language = language_code
-        self.not_language = not_language
-        self.is_current = is_current
-        self.is_imported = is_imported
-        self.msgid = msgid
-        self.origin = origin
-        self.force = force
+def make_script(args=None):
+    """Create a `RemoveTranslations` script with given options."""
+    if isinstance(args, basestring):
+        args = [args]
+    return RemoveTranslations('remove-translations-test', test_args=args)
 
 
 class TestRemoveTranslationsConstraints(TestCase):
     """Test safety net for translations removal options."""
     layer = LaunchpadZopelessLayer
 
-    def test_RecklessRemoval(self):
+    def disabled_test_RecklessRemoval(self):
         # The script will refuse to run if no specific person or id is
         # targeted.  Operator error is more likely than a use case for
         # casually deleting lots of loosely-specified translations.
-        opts = MockOptions(language_code='pa', not_language=True,
-            is_current=False, is_imported=True, msgid='foo', origin=1,
-            force=True)
-        approval, message = check_constraints_safety(opts)
-        self.assertFalse(approval)
+        opts = [
+            '--language=pa',
+            '--not-language',
+            '--is-current=False',
+            '--is-imported=true',
+            '--msgid=foo',
+            '--origin=1',
+            '--force',
+            ]
+        script = make_script(opts)
+        self.assertRaises(LaunchpadScriptFailure, script.run)
+
+        # The same removal will work if we add, say, a submitter id.
+        opts.append('--submitter=8134719')
+        make_script(opts).run()
 
     def test_RemoveBySubmitter(self):
         # Removing all translations by one submitter is allowed.
-        opts = MockOptions(submitter=1)
-        approval, message = check_constraints_safety(opts)
+        script = make_script('--submitter=1')
+        approval, message = script._check_constraints_safety()
         self.assertTrue(approval)
 
     def test_RemoveByReviewer(self):
         # Removing all translations by one reviewer is allowed.
-        opts = MockOptions(reviewer=1)
-        approval, message = check_constraints_safety(opts)
+        script = make_script('--reviewer=1')
+        approval, message = script._check_constraints_safety()
         self.assertTrue(approval)
 
     def test_RemoveById(self):
         # Removing by ids is allowed.
-        opts = MockOptions(ids=[1, 2, 3])
-        approval, message = check_constraints_safety(opts)
+        script = make_script(['--id=1', '--id=2', '--id=3'])
+        approval, message = script._check_constraints_safety()
         self.assertTrue(approval)
-
-    def test_EmptyIdList(self):
-        # An empty id list is not enough to permit deletion.
-        opts = MockOptions(ids=[], language_code='pa', not_language=True,
-            is_current=False, is_imported=True, msgid='foo', origin=1,
-            force=True)
-        approval, message = check_constraints_safety(opts)
-        self.assertIn("Refusing unsafe deletion", message)
-        self.assertFalse(approval)
 
     def test_RemoveByPOFile(self):
         # Removing all translations for a template is not allowed by default.
-        opts = MockOptions(potemplate=1)
-        approval, message = check_constraints_safety(opts)
+        opts = ['--potemplate=1']
+        script = make_script(opts)
+        approval, message = script._check_constraints_safety()
         self.assertFalse(approval)
 
-    def test_ForceRemoveByPOFile(self):
-        # The --force option overrides the safety check against deleting
-        # all translations in a template.
-        opts = MockOptions(potemplate=1, force=True)
-        approval, message = check_constraints_safety(opts)
+        # The --force option overrides the safety check.
+        opts.append('--force')
+        script = make_script(opts)
+        approval, message = script._check_constraints_safety()
         self.assertIn("Safety override in effect", message)
         self.assertTrue(approval)
 
 
-class TestRemoveTranslationsOptionsNormalization(TestCase):
-    """Test `normalize_removal_options`."""
+class OptionChecker(OptionParser):
+    """`OptionParser` that doesn't abort the whole program on error."""
+    def error(self, msg):
+        """See `OptionParser`.  Raises exception instead of exiting."""
+        raise OptionValueError(msg)
+
+
+def parse_opts(opts):
+    """Simulate options being parsed by `LaunchpadScript`."""
+    if isinstance(opts, basestring):
+        opts = [opts]
+
+    parser = OptionChecker()
+    parser.add_options(RemoveTranslations.my_options)
+    options, arguments = parser.parse_args(args=opts)
+    return options
+
+
+class TestRemoveTranslationsOptionsHandling(TestCase):
+    """Test `RemoveTranslations`' options parsing and type checking."""
     layer = LaunchpadZopelessLayer
 
-    def test_TrivialOptionsNormalization(self):
-        opts = MockOptions()
-        normalize_removal_options(opts)
-        self.assertEqual(opts.submitter, None)
-        self.assertEqual(opts.reviewer, None)
-        self.assertEqual(opts.ids, None)
-        self.assertEqual(opts.potemplate, None)
-        self.assertEqual(opts.language, None)
-        self.assertEqual(opts.not_language, None)
-        self.assertEqual(opts.is_current, None)
-        self.assertEqual(opts.is_imported, None)
-        self.assertEqual(opts.msgid, None)
-        self.assertEqual(opts.origin, None)
-        self.assertEqual(opts.force, None)
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
 
-    def test_NormalizeSubmitter(self):
-        opts = MockOptions(submitter='1')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.submitter, 1)
+    def test_WithNativeArgs(self):
+        # Options can be passed as the string representations of the
+        # types the script wants them in.
+        options = parse_opts([
+            '--submitter=1',
+            '--reviewer=2',
+            '--id=3',
+            '--id=4',
+            '--potemplate=5',
+            '--language=te',
+            '--not-language',
+            '--is-current=True',
+            '--is-imported=False',
+            '--msgid=Hello',
+            '--origin=1',
+            '--force',
+            ])
+        self.assertEqual(options.submitter, 1)
+        self.assertEqual(options.reviewer, 2)
+        self.assertEqual(options.ids, [3, 4])
+        self.assertEqual(options.potemplate, 5)
+        self.assertEqual(options.language, 'te')
+        self.assertEqual(options.not_language, True)
+        self.assertEqual(options.is_current, True)
+        self.assertEqual(options.is_imported, False)
+        self.assertEqual(options.is_imported, False)
+        self.assertEqual(options.origin, 1)
+        self.assertEqual(options.force, True)
 
-    def test_SubmitterLookup(self):
-        user = getUtility(IPersonSet).getByName('sabdfl')
-        opts = MockOptions(submitter=user.name)
-        normalize_removal_options(opts)
-        self.assertEqual(opts.submitter, user.id)
+    def test_WithLookups(self):
+        # The script can also look up some items from different
+        # representations: person names, numbers or different case
+        # settings for booleans, and translation origin identifiers.
+        submitter = self.factory.makePerson()
+        reviewer = self.factory.makePerson()
 
-    def test_UnknownSubmitterName(self):
-        opts = MockOptions(submitter='a-nonexistent-user')
-        self.assertRaises(LookupError, normalize_removal_options, opts)
+        options = parse_opts([
+            '--submitter=%s' % submitter.name,
+            '--reviewer=%s' % reviewer.name,
+            '--is-current=0',
+            '--is-imported=true',
+            '--origin=SCM'
+            ])
+        self.assertEqual(options.submitter, submitter.id)
+        self.assertEqual(options.reviewer, reviewer.id)
+        self.assertEqual(options.is_current, False)
+        self.assertEqual(options.is_imported, True)
+        self.assertEqual(options.origin, RosettaTranslationOrigin.SCM.value)
 
-    def test_NormalizeReviewer(self):
-        opts = MockOptions(reviewer='2')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.reviewer, 2)
+    def test_BadBool(self):
+        self.assertRaises(Exception, parse_opts, '--is-current=None')
 
-    def test_ReviewerLookup(self):
-        user = getUtility(IPersonSet).getByName('name12')
-        opts = MockOptions(reviewer=user.name)
-        normalize_removal_options(opts)
-        self.assertEqual(opts.reviewer, user.id)
-
-    def test_UnknownReviewerName(self):
-        opts = MockOptions(reviewer='a-nonexistent-user')
-        self.assertRaises(LookupError, normalize_removal_options, opts)
-
-    def test_NormalizeIds(self):
-        opts = MockOptions(ids=['5', '6'])
-        normalize_removal_options(opts)
-        self.assertEqual(sorted(opts.ids), [5, 6])
-
-    def test_NonNumericId(self):
-        opts = MockOptions(ids=[1, 'foo', 3])
-        self.assertRaises(ValueError, normalize_removal_options, opts)
-
-    def test_NormalizePOTemplate(self):
-        opts = MockOptions(potemplate='9')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.potemplate, 9)
-
-    def test_NormalizeOrigin(self):
-        opts = MockOptions(origin='1')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.origin, 1)
-
-    def test_OriginLookup(self):
-        opts = MockOptions(origin='ROSETTAWEB')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.origin, 2)
-
-    def test_NormalizeIsCurrent(self):
-        opts = MockOptions(is_current='1')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, True)
-
-    def test_NormalizeIsImported(self):
-        opts = MockOptions(is_imported='true')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_imported, True)
-
-    def test_NormalizeBool0(self):
-        opts = MockOptions(is_current='0')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, False)
-
-    def test_NormalizeBool1(self):
-        opts = MockOptions(is_current='1')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, True)
-
-    def test_NormalizeBoolFalse(self):
-        opts = MockOptions(is_current='false')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, False)
-
-    def test_NormalizeBoolTrue(self):
-        opts = MockOptions(is_current='true')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, True)
-
-    def test_NormalizeBoolFALSE(self):
-        opts = MockOptions(is_current='FALSE')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, False)
-
-    def test_NormalizeBoolTRUE(self):
-        opts = MockOptions(is_current='TRUE')
-        normalize_removal_options(opts)
-        self.assertEqual(opts.is_current, True)
-
-
-class TestRemoveTranslationsOptionsCheck(TestCase):
-    """Test `check_removal_options`.
-
-    The check can have only two outcomes: an exception or a normal
-    return.  So checks for normal use just call `check_removal_options`
-    and leave it at that.
-    """
-    def test_TrivialRemovalOptionsCheck(self):
-        check_removal_options(MockOptions())
-
-    def test_AllRemovalOptionsCheck(self):
-        opts = MockOptions(
-            submitter=1, reviewer=2, ids=[3, 4, 5], potemplate=6,
-            language_code='pa', not_language=True, is_current=False,
-            is_imported=True, msgid='translatable string', force=True)
-        check_removal_options(opts)
-
-    def test_BadSubmitter(self):
+    def test_UnknownPerson(self):
         self.assertRaises(
-            ValueError, check_removal_options, MockOptions(submitter="9"))
+            Exception, parse_opts, '--reviewer=unknownnonexistentpersonbird')
 
-    def test_BadReviewer(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(reviewer="8"))
-
-    def test_BadId(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(ids=99))
-
-    def test_BadTemplate(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(potemplate="100"))
-
-    def test_BadLanguage(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(language_code=46))
-
-    def test_BadNotLanguage(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(not_language="0"))
-
-    def test_BadIsCurrent(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(is_current=1))
-
-    def test_BadIsImported(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(is_imported=0))
-
-    def test_BadMsgId(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(msgid=122))
-
-    def test_BadOrigin(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(origin='SCM'))
-
-    def test_BadForce(self):
-        self.assertRaises(
-            ValueError, check_removal_options, MockOptions(force='True'))
+    def test_UnknownOrigin(self):
+        self.assertRaises(Exception, parse_opts, '--origin=GAGA')
 
 
 class TestRemoveTranslations(TestCase):
