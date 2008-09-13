@@ -21,7 +21,7 @@ In this example, we have a template with Dutch and German translations.
     >>> def set_translation(message, pofile, text):
     ...     """Set text to be a translation for message in pofile."""
     ...     return message.updateTranslation(
-    ...         pofile, pofile.potemplate.owner, {0: text}, is_fuzzy=False,
+    ...         pofile, pofile.potemplate.owner, {0: text},
     ...         is_imported=False,
     ...         lock_timestamp=datetime.now(timezone('UTC')))
 
