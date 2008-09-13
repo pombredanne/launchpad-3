@@ -1788,6 +1788,7 @@ COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need buildin
 COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
+COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 
 
 -- ArchiveDependency

@@ -586,6 +586,7 @@ class LaunchpadRootNavigation(Navigation):
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
+        'pillars': IPillarNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'sourcepackagenames': ISourcePackageNameSet,
