@@ -107,7 +107,6 @@ class Branch(SQLBase):
     last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
-    pull_disabled = BoolCol(default=False, notNull=True)
     next_mirror_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
