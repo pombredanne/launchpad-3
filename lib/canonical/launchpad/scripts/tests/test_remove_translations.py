@@ -136,7 +136,7 @@ class TestRemoveTranslations(TestCase):
         if submitter is None:
             submitter = self.potemplate.owner
         return potmsgset.updateTranslation(
-            pofile, submitter, {0: text}, is_fuzzy=False,
+            pofile, submitter, {0: text},
             is_imported=is_imported,
             lock_timestamp=datetime.now(timezone('UTC')))
 
@@ -257,7 +257,7 @@ class TestRemoveTranslations(TestCase):
             unrelated_nl_pofile.potemplate, 'Foo')
         unrelated_nl_message = potmsgset.updateTranslation(
             unrelated_nl_pofile, unrelated_nl_pofile.potemplate.owner,
-            {0: "Foe"}, is_fuzzy=False, is_imported=False,
+            {0: "Foe"}, is_imported=False,
             lock_timestamp=datetime.now(timezone('UTC')))
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
