@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'IMeLink',
     'MeLink',
     ]
 
@@ -16,9 +17,13 @@ from canonical.launchpad.interfaces import IPerson, IPersonSet
 from canonical.lazr.interfaces.rest import ITopLevelEntryLink
 
 
+class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
+    """A marker interface."""
+
+
 class MeLink:
     """The top-level link to the authenticated user's account."""
-    implements(ITopLevelEntryLink, ICanonicalUrlData)
+    implements(IMeLink)
 
     link_name = 'me'
     entry_type = IPerson
