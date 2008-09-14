@@ -617,11 +617,6 @@ class IBranch(IHasOwner):
         required=False)
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
-    pull_disabled = Bool(
-        title=_("Do not try to pull this branch anymore."),
-        description=_("Disable periodic pulling of this branch by Launchpad. "
-                      "That will prevent connection attempts to the branch "
-                      "URL. Use this if the branch is no longer available."))
     next_mirror_time = Datetime(
         title=_("If this value is more recent than the last mirror attempt, "
                 "then the branch will be mirrored on the next mirror run."),
