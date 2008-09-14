@@ -57,9 +57,9 @@ def setUpListener(uploadPort, webPort, restricted):
 # Set up the public librarian.
 uploadPort = config.librarian.upload_port
 webPort = config.librarian.download_port
-setUpLibrarian(uploadPort, webPort, restricted=False)
+setUpListener(uploadPort, webPort, restricted=False)
 
 # Set up the restricted librarian.
 webPort = config.librarian.restricted_download_port
 uploadPort = config.librarian.restricted_upload_port
-setUpLibrarian(uploadPort, webPort, restricted=True)
+setUpListener(uploadPort, webPort, restricted=True)
