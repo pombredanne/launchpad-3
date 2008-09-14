@@ -141,6 +141,8 @@ class Bugzilla(ExternalBugTracker):
             version = version.split("-")[0]
             # Ignore plusses in the version.
             version = version.replace("+", "")
+            # Ignore the 'rc' string in release candidate versions.
+            version = version.replace("rc", "")
             # We need to convert the version to a tuple of integers if
             # we are to compare it correctly.
             version = tuple(int(x) for x in version.split("."))
