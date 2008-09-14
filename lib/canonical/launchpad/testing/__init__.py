@@ -8,7 +8,9 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+# Import the login and logout functions here as it is a much better
+# place to import them from in tests.
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
 
 
