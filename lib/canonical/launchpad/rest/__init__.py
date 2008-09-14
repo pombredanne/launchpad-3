@@ -6,3 +6,4 @@
 from canonical.launchpad.rest.bug import *
 from canonical.launchpad.rest.bytestorage import *
 from canonical.launchpad.rest.me import *
+from canonical.launchpad.rest.pillarset import *

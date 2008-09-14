@@ -14,6 +14,21 @@
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
       handler="canonical.launchpad.mailout.codereviewcomment.send" />
 
+  <adapter
+      for="canonical.launchpad.interfaces.ICodeReviewComment"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.codereviewcomment.CodeReviewCommentPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ICodeReviewComment"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.ICodeReviewComment"
         path_expression="string:comments/${id}"

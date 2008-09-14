@@ -311,7 +311,7 @@ for every link in the JSON representation.
     ...     return tag.attrib['name']
 
     >>> params = sorted([param for param in service_root_repr], key=name_attrib)
-    >>> (bug_set_param, me_param, person_set_param,
+    >>> (bug_set_param, me_param, person_set_param, pillar_param,
     ...     project_group_set_param, project_set_param) = params
 
     >>> person_set_param.tag
