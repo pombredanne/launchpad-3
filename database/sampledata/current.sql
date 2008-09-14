@@ -684,14 +684,14 @@ ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (2, '2005-06-06 08:59:51.598107', 8, 20, '2005-06-06 08:59:51.598107', 'Robert Collins', 'lifeless_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (3, '2005-06-06 08:59:51.610048', 1, 10, '2005-06-06 08:59:51.610048', 'Dave Miller', 'justdave_oid', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (3, '2005-06-06 08:59:51.610048', 1, 20, '2008-09-05 20:55:47.76904', 'Dave Miller', 'justdave_oid', '', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (4, '2005-06-06 08:59:51.611185', 8, 20, '2005-06-06 08:59:51.611185', 'Colin Watson', 'kamion_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (5, '2005-06-06 08:59:51.608802', 1, 10, '2005-06-06 08:59:51.608802', 'Scott James Remnant', 'keybuk_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (6, '2005-06-06 08:59:51.600523', 8, 20, '2005-06-06 08:59:51.600523', 'Jeff Waugh', 'jdub_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (7, '2005-06-06 08:59:51.551196', 2, 10, '2005-06-06 08:59:51.551196', 'Andrew Bennetts', 'spiv_oid', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (7, '2005-06-06 08:59:51.551196', 2, 20, '2008-09-05 20:55:47.76904', 'Andrew Bennetts', 'spiv_oid', '', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (8, '2005-06-06 08:59:51.601584', 8, 20, '2005-06-06 08:59:51.601584', 'James Blackwell', 'jblack_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (9, '2005-06-06 08:59:51.594941', 1, 10, '2005-06-06 08:59:51.594941', 'Christian Reis', 'kiko_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (10, '2005-06-06 08:59:51.619713', 2, 10, '2005-06-06 08:59:51.619713', 'Alexander Limi', 'limi_oid', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (10, '2005-06-06 08:59:51.619713', 2, 20, '2008-09-05 20:55:47.76904', 'Alexander Limi', 'limi_oid', '', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (11, '2005-06-06 08:59:51.599234', 8, 20, '2005-06-06 08:59:51.599234', 'Steve Alexander', 'stevea_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (12, '2005-06-06 08:59:51.612277', 8, 20, '2005-06-06 08:59:51.612277', 'Sample Person', 'name12_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (13, '2005-06-06 08:59:51.615543', 8, 20, '2005-06-06 08:59:51.615543', 'Carlos Perelló Marín', 'carlos_oid', NULL, NULL);
@@ -699,11 +699,11 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (16, '2005-06-06 08:59:51.593849', 8, 20, '2005-06-06 08:59:51.593849', 'Foo Bar', 'name16_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (22, '2005-06-06 08:59:51.59276', 8, 20, '2005-06-06 08:59:51.59276', 'Stuart Bishop', 'stub_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (23, '2005-06-06 08:59:51.620823', 8, 20, '2005-06-06 08:59:51.620823', 'David Allouche', 'ddaa_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (26, '2005-06-06 08:59:51.618722', 2, 10, '2005-06-06 08:59:51.618722', 'Daniel Silverstone', 'kinnison_oid', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (26, '2005-06-06 08:59:51.618722', 2, 20, '2008-09-05 20:55:47.76904', 'Daniel Silverstone', 'kinnison_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (27, '2005-06-06 08:59:51.557224', 8, 20, '2005-06-06 08:59:51.557224', 'Daniel Henrique Debonzi', 'debonzi_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (28, '2005-06-06 08:59:51.59705', 8, 20, '2005-06-06 08:59:51.59705', 'Celso Providelo', 'cprov_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (29, '2005-06-06 08:59:51.596025', 8, 20, '2005-06-06 08:59:51.596025', 'Guilherme Salgado', 'salgado_oid', NULL, NULL);
-INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (33, '2005-06-06 08:59:51.621892', 8, 20, '2005-06-06 08:59:51.621892', 'Edgar Bursic', 'edgar_oid', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (33, '2005-06-06 08:59:51.621892', 8, 20, '2005-06-06 08:59:51.621892', 'Edgar Bursic', 'edgar_oid', '', NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (34, '2005-06-06 08:59:51.622908', 4, 10, '2005-06-06 08:59:51.622908', 'Jordi Vilalta', 'jvprat_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (35, '2005-06-06 08:59:51.623962', 4, 10, '2005-06-06 08:59:51.623962', 'Sigurd Gartmann', 'sigurd-ubuntu_oid', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (36, '2005-06-06 08:59:51.5244', 4, 10, '2005-06-06 08:59:51.5244', 'Vlastimil Skacel', 'skacel_oid', NULL, NULL);
@@ -768,7 +768,7 @@ INSERT INTO accountpassword (id, account, password) VALUES (23, 23, 'K7Qmeansl6R
 INSERT INTO accountpassword (id, account, password) VALUES (27, 27, 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==');
 INSERT INTO accountpassword (id, account, password) VALUES (28, 28, 'OkikNBxGC7hgRBJ109OZru86vpzhHw+cO+zW/0SlTN2phfv7lSwSHg==');
 INSERT INTO accountpassword (id, account, password) VALUES (29, 29, 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==');
-INSERT INTO accountpassword (id, account, password) VALUES (33, 33, 'y8OAKvlJbK6Ai5ycnK2D/754rb4/jKwJvPJ13OUqPr8mRY2kb4jQXw==');
+INSERT INTO accountpassword (id, account, password) VALUES (33, 33, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (34, 34, 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==');
 INSERT INTO accountpassword (id, account, password) VALUES (35, 35, 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==');
 INSERT INTO accountpassword (id, account, password) VALUES (36, 36, 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==');
@@ -800,6 +800,10 @@ INSERT INTO accountpassword (id, account, password) VALUES (243611, 243611, 'zpA
 INSERT INTO accountpassword (id, account, password) VALUES (243617, 243617, '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==');
 INSERT INTO accountpassword (id, account, password) VALUES (243622, 243622, 'x3AXXkF9hiPAvbgZSrM/6wczynYy0x+o7SNoT+Gy2Z1GZCMcDNb08A==');
 INSERT INTO accountpassword (id, account, password) VALUES (243623, 243623, '0HM7dR9mHB8uh4Pi88me/V7VrPBbsZZCIVWtkjyHV9WtA0QMcaVM5w==');
+INSERT INTO accountpassword (id, account, password) VALUES (243624, 26, 'test');
+INSERT INTO accountpassword (id, account, password) VALUES (243625, 7, 'test');
+INSERT INTO accountpassword (id, account, password) VALUES (243626, 3, 'test');
+INSERT INTO accountpassword (id, account, password) VALUES (243627, 10, 'test');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -924,11 +928,11 @@ INSERT INTO archivepermission (id, date_created, person, permission, archive, co
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
 
 
-ALTER TABLE archiverebuild DISABLE TRIGGER ALL;
+ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE archiverebuild ENABLE TRIGGER ALL;
+ALTER TABLE packagecopyrequest ENABLE TRIGGER ALL;
 
 
 ALTER TABLE binarypackagefile DISABLE TRIGGER ALL;
@@ -2174,9 +2178,9 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1, '2006-10-16 18:31:43.544693', 5);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 4, '2006-10-16 18:31:43.54507', 7);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4, '2006-10-16 18:31:43.54542', 8);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1, '2006-10-16 18:31:43.54577', 9);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 4, '2006-10-16 18:31:43.54577', 9);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4, '2006-10-16 18:31:43.54612', 6);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1, '2006-10-16 18:31:43.546658', 3);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 4, '2006-10-16 18:31:43.546658', 3);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (15, 'justdave@bugzilla.org', 3, 1, '2006-10-16 18:31:43.547068', 3);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (16, 'test@canonical.com', 12, 4, '2006-10-16 18:31:43.547451', 12);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (17, 'testtest@canonical.com', 12, 1, '2006-10-16 18:31:43.547829', 12);
@@ -2188,7 +2192,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (23, 'daniel.debonzi@canonical.com', 27, 4, '2006-10-16 18:31:43.550113', 27);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (24, 'celso.providelo@canonical.com', 28, 4, '2006-10-16 18:31:43.608939', 28);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (25, 'guilherme.salgado@canonical.com', 29, 4, '2006-10-16 18:31:43.609431', 29);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (26, 'edgar@monteparadiso.hr', 33, 1, '2006-10-16 18:31:43.609819', 33);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (26, 'edgar@monteparadiso.hr', 33, 4, '2006-10-16 18:31:43.609819', 33);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (27, 'jvprat@wanadoo.es', 34, 1, '2006-10-16 18:31:43.610202', 34);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (28, 'sigurd-ubuntu@brogar.org', 35, 1, '2006-10-16 18:31:43.6147', 35);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (29, 'skacel@svtech.cz', 36, 1, '2006-10-16 18:31:43.615107', 36);
@@ -2221,7 +2225,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (56, 'cprov@ubuntu.com', 28, 2, '2006-10-16 18:31:43.627318', 28);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1, '2006-10-16 18:31:43.62774', 62);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (58, 'karl@canonical.com', 63, 4, '2006-10-16 18:31:43.628123', 63);
-INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504', 10);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (59, 'limi@plone.org', 10, 4, '2006-10-16 18:31:43.628504', 10);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (60, 'janitor@launchpad.net', 65, 4, '2006-10-17 23:23:23.232323', 65);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (61, 'matsubara@async.com.br', 66, 1, '2006-12-13 21:19:06.369142', 66);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (62, 'no-team-memberships@test.com', 243602, 4, '2007-02-19 11:17:57.755666', 243602);

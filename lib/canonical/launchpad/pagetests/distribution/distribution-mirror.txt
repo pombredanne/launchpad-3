@@ -27,6 +27,17 @@ Ubuntu distribution...
     Country: Antarctica
     Content: CD Image
 
+The CD mirror page has the same application tabs as the CD Mirrors index.
+
+    >>> print_location(browser.contents)
+    Hierarchy: Launchpad > Ubuntu
+    Tabs:
+    * Overview (selected) - http://launchpad.dev/ubuntu
+    * Code - not linked
+    * Bugs - http://bugs.launchpad.dev/ubuntu
+    ...
+    Main heading: Ubuntu mirror "My.cdmirror.com-release"
+
 Given that it's a CD mirror, it doesn't have sources list entries.
 
     >>> print find_tag_by_id(browser.contents, 'sources-list-entries')

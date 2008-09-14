@@ -7,15 +7,15 @@ team and the name of the team owner as arguments.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> spiv = getUtility(IPersonSet).getByName('spiv')
-    >>> spiv.isTeam()
+    >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
+    >>> matsubara.isTeam()
     False
-    >>> spiv.account_status
+    >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'scripts/convert-person-to-team.py -q spiv sabdfl',
+    ...     'scripts/convert-person-to-team.py -q matsubara sabdfl',
     ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err
@@ -33,8 +33,8 @@ team and the name of the team owner as arguments.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
-    >>> spiv = getUtility(IPersonSet).getByName('spiv')
-    >>> spiv.isTeam()
+    >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
+    >>> matsubara.isTeam()
     True
 
 We need to force a DB reset because the changes are done from an external

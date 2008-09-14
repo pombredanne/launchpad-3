@@ -16,7 +16,6 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -31,6 +30,7 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
@@ -180,18 +180,25 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers, api_version=api_version)
 
+    def _convertArgs(self, operation_name, args):
+        """Encode and convert keyword arguments."""
+        args['ws.op'] = operation_name
+        # To be properly marshalled all values must be strings or converted to
+        # JSON.
+        for key, value in args.items():
+            if not isinstance(value, basestring):
+                args[key] = simplejson.dumps(value)
+        return urllib.urlencode(args)
+
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
-                         for key, value in kwargs.items()])
+        data = self._convertArgs(operation_name, kwargs)
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
     def named_post(self, path, operation_name, headers=None,
                    api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = urlencode(kwargs)
+        data = self._convertArgs(operation_name, kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers, api_version=api_version)
 
@@ -553,7 +560,7 @@ def print_ppa_packages(contents):
 
 def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
-    
+
     The hierarchy shows your position in the Launchpad structure:
     for example, Launchpad > Ubuntu > 8.04.
     The application tabs represent the major facets of an object:
@@ -621,6 +628,26 @@ def setupBrowser(auth=None):
 def safe_canonical_url(*args, **kwargs):
     """Generate a bytestring URL for an object"""
     return str(canonical_url(*args, **kwargs))
+
+
+def webservice_for_person(person, consumer_key='launchpad-library',
+                          permission=OAuthPermission.READ_PUBLIC,
+                          context=None):
+    """Return a valid WebServiceCaller for the person.
+
+    Ues this method to create a way to test the webservice that doesn't depend
+    on sample data.
+    """
+    login(ANONYMOUS)
+    oacs = getUtility(IOAuthConsumerSet)
+    consumer = oacs.getByKey(consumer_key)
+    if consumer is None:
+        consumer = oacs.new(consumer_key)
+    request_token = consumer.newRequestToken()
+    request_token.review(person, permission, context)
+    access_token = request_token.createAccessToken()
+    logout()
+    return WebServiceCaller(consumer_key, access_token.key, port=9000)
 
 
 def setUpGlobs(test):

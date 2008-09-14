@@ -17,7 +17,7 @@ classes.
 
 Setup the test builder:
 
-    >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
     >>> BuilddSlaveTestSetup().setUp()
 
 Setup a suitable chroot for Hoary i386:
