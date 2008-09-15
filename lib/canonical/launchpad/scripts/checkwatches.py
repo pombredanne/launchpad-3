@@ -672,10 +672,12 @@ class BugWatchUpdater(object):
                 from_address = get_bugmail_from_address(
                     bug_watch_updater, bug_watch.bug)
                 for person in people_to_notify:
+                    reason, rationale_header = recipients.getReason(person)
                     notification = construct_bug_notification(
                         bug_watch.bug,
                         from_address, person.preferredemail.email,
-                        'body', bug_watch.bug.followup_subject(), when)
+                        'body', bug_watch.bug.followup_subject(), when,
+                        rationale_header=rationale_header)
                     sendmail(notification)
             else:
                 for bug_message in imported_comments:

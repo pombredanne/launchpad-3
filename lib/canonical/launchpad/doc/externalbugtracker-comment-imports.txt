@@ -466,6 +466,8 @@ XXX: check e-mail
     [Bug ...] Re: ...
     >>> print notification['Date']
     Fri, 12 Sep 2008 15:30:45 -0000
+    >>> print notification['X-Launchpad-Message-Rationale']
+    Subscriber
 
 
 Send notifications for sub-sequent imports, even though multiple.
