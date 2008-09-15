@@ -139,53 +139,6 @@ specified subversion branch url.
     True
 
 
-== Creating a CodeImport from existing data ==
-
-The first production code that creates CodeImports will be a sync
-script that creates CodeImports from the existing information in the
-ProductSeries table.  The only ProductSeries with such information in
-the sample data is evolution/trunk.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSeriesSet, ImportStatus)
-    >>> [series] = getUtility(IProductSeriesSet).searchImports(
-    ...     importstatus=ImportStatus.PROCESSING)
-    >>> series.product.name
-    u'evolution'
-    >>> series.name
-    u'trunk'
-    >>> series.cvsroot
-    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
-    >>> series.cvsmodule
-    u'evolution'
-
-Once we've found the series, creating a new CodeImport with the same
-source details is a fairly simple matter.
-
-    >>> from canonical.launchpad.database.codeimport import CodeImport
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
-    >>> if series.importstatus in (ImportStatus.SYNCING,
-    ...                            ImportStatus.PROCESSING):
-    ...     review_status = CodeImportReviewStatus.REVIEWED
-    ... else:
-    ...     review_status = CodeImportReviewStatus.NEW
-    >>> from_existing_import = CodeImport(
-    ...     registrant=vcs_imports,
-    ...     owner=vcs_imports,
-    ...     branch=series.import_branch,
-    ...     rcs_type=series.rcstype,
-    ...     cvs_root=series.cvsroot,
-    ...     cvs_module=series.cvsmodule,
-    ...     svn_branch_url=series.svnrepository,
-    ...     review_status=review_status)
-
-This CodeImport is associated to the evolution/main ProductSeries
-(because the series' import_branch is the branch of the CodeImport):
-
-    >>> from_existing_import.series.name
-    u'trunk'
-
-
 == Updating code import details ==
 
 Members of the VCS Imports team (import operators), or Launchpad
