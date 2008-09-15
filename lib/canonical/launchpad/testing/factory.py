@@ -687,12 +687,7 @@ class LaunchpadObjectFactory:
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None,
-                                    source_product_series_id=0):
-        # XXX: MichaelHudson 2008-05-19 bug=231819: The
-        # source_product_series_id attribute is to do with the new system
-        # looking in legacy locations for foreign trees and can be deleted
-        # when the new system has been running for a while.
+                                    cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -710,8 +705,7 @@ class LaunchpadObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            source_product_series_id)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
