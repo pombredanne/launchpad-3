@@ -17,15 +17,20 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.components.externalbugtracker import (
+from canonical.launchpad.components.externalbugtracker.base import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData)
+    UnknownRemoteStatusError, UnparseableBugData
+    )
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTaskImportance, IMessageSet,
-    ISupportsCommentImport, ISupportsCommentPushing,
-    UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, BugTaskImportance
+    )
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsBackLinking, ISupportsCommentImport,
+    ISupportsCommentPushing, UNKNOWN_REMOTE_IMPORTANCE
+    )
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
 
@@ -36,6 +41,8 @@ LP_PLUGIN_METADATA_ONLY = 1
 LP_PLUGIN_METADATA_AND_COMMENTS = 2
 LP_PLUGIN_FULL = 3
 
+# Fault code constants for the LP Plugin
+FAULT_TICKET_NOT_FOUND = 1001
 
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
@@ -275,7 +282,8 @@ def needs_authentication(func):
 class TracLPPlugin(Trac):
     """A Trac instance having the LP plugin installed."""
 
-    implements(ISupportsCommentImport, ISupportsCommentPushing)
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -283,18 +291,20 @@ class TracLPPlugin(Trac):
 
         if xmlrpc_transport is None:
             xmlrpc_transport = UrlLib2Transport(baseurl)
-        self.xmlrpc_transport = xmlrpc_transport
-        self.internal_xmlrpc_transport = internal_xmlrpc_transport
+
+        self._xmlrpc_transport = xmlrpc_transport
+        self._internal_xmlrpc_transport = internal_xmlrpc_transport
+
+        xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc')
+        self._server = xmlrpclib.ServerProxy(
+            xmlrpc_endpoint, transport=self._xmlrpc_transport)
 
     @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
 
-        time_snapshot, remote_bugs = server.launchpad.bug_info(
+        time_snapshot, remote_bugs = self._server.launchpad.bug_info(
             LP_PLUGIN_METADATA_AND_COMMENTS, dict(bugs=bug_ids))
         for remote_bug in remote_bugs:
             # We only import bugs whose status isn't 'missing', since
@@ -306,7 +316,7 @@ class TracLPPlugin(Trac):
         """Create an authentication token and return it."""
         internal_xmlrpc = xmlrpclib.ServerProxy(
             config.checkwatches.xmlrpc_url,
-            transport=self.internal_xmlrpc_transport)
+            transport=self._internal_xmlrpc_transport)
         return internal_xmlrpc.newBugTrackerToken()
 
     def _extractAuthCookie(self, cookie_header):
@@ -324,15 +334,13 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
         auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
-        self.xmlrpc_transport.setCookie(auth_cookie)
+        self._xmlrpc_transport.setCookie(auth_cookie)
 
     @needs_authentication
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-        time_zone, local_time, utc_time = server.launchpad.time_snapshot()
+        time_zone, local_time, utc_time = (
+            self._server.launchpad.time_snapshot())
 
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
@@ -342,10 +350,6 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
         """See `IExternalBugTracker`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
         # Convert last_checked into an integer timestamp (which is what
         # the Trac LP plugin expects).
         last_checked_timestamp = int(
@@ -355,7 +359,7 @@ class TracLPPlugin(Trac):
         criteria = {
             'modified_since': last_checked_timestamp,
             'bugs': remote_bug_ids,}
-        time_snapshot, modified_bugs = server.launchpad.bug_info(
+        time_snapshot, modified_bugs = self._server.launchpad.bug_info(
             LP_PLUGIN_BUG_IDS_ONLY, criteria)
 
         return [bug['id'] for bug in modified_bugs]
@@ -376,11 +380,7 @@ class TracLPPlugin(Trac):
 
         # Use the get_comments() method on the remote server to get the
         # comments specified.
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
-        timestamp, remote_comments = server.launchpad.get_comments(
+        timestamp, remote_comments = self._server.launchpad.get_comments(
             comment_ids)
         for remote_comment in remote_comments:
             bug_comments[remote_comment['id']] = remote_comment
@@ -426,11 +426,54 @@ class TracLPPlugin(Trac):
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """See `ISupportsCommentPushing`."""
-        endpoint = urlappend(self.baseurl, 'xmlrpc')
-        server = xmlrpclib.ServerProxy(
-            endpoint, transport=self.xmlrpc_transport)
-
-        timestamp, comment_id = server.launchpad.add_comment(
+        timestamp, comment_id = self._server.launchpad.add_comment(
             remote_bug, comment_body)
 
         return comment_id
+
+    @needs_authentication
+    def getLaunchpadBugId(self, remote_bug):
+        """Return the Launchpad bug for a given remote bug.
+
+        :raises BugNotFound: When `remote_bug` doesn't exist.
+        """
+        try:
+            timestamp, lp_bug_id = self._server.launchpad.get_launchpad_bug(
+                remote_bug)
+        except xmlrpclib.Fault, fault:
+            # Deal with "Ticket does not exist" faults. We re-raise
+            # anything else, since they're a sign of a bigger problem.
+            if fault.faultCode == FAULT_TICKET_NOT_FOUND:
+                raise BugNotFound(remote_bug)
+            else:
+                raise
+
+        # If the returned bug ID is 0, return None, since a 0 means that
+        # no LP bug is linked to the remote bug.
+        if lp_bug_id == 0:
+            return None
+        else:
+            return lp_bug_id
+
+    @needs_authentication
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug ID for a given remote bug.
+
+        :raises BugNotFound: When `remote_bug` doesn't exist.
+        """
+        # If the launchpad_bug_id is None, pass 0 to set_launchpad_bug
+        # to delete the bug link, since we can't send None over XML-RPC.
+        if launchpad_bug_id == None:
+            launchpad_bug_id = 0
+
+        try:
+            timestamp = self._server.launchpad.set_launchpad_bug(
+                remote_bug, launchpad_bug_id)
+        except xmlrpclib.Fault, fault:
+            # Deal with "Ticket does not exist" faults. We re-raise
+            # anything else, since they're a sign of a bigger problem.
+            if fault.faultCode == FAULT_TICKET_NOT_FOUND:
+                raise BugNotFound(remote_bug)
+            else:
+                raise
+
