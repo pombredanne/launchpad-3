@@ -14,13 +14,6 @@
     />
 
   <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPerson"
-    factory="canonical.launchpad.browser.PersonSOP"
-    permission="zope.Public"
-    />
-
-  <adapter
     provides="canonical.lazr.interfaces.IObjectPrivacy"
     for="canonical.launchpad.interfaces.ITeam"
     factory="canonical.launchpad.browser.TeamPrivacyAdapter"
@@ -45,13 +38,6 @@
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
     for="canonical.launchpad.interfaces.ITeam"
     factory="canonical.launchpad.browser.TeamBreadcrumbBuilder"
-    permission="zope.Public"
-    />
-
-  <adapter
-    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
-    for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.PersonSetBreadcrumbBuilder"
     permission="zope.Public"
     />
 
@@ -99,7 +85,7 @@
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        PersonSetContextMenu PersonTranslationsMenu
         PersonOverviewNavigationMenu PersonEditNavigationMenu
         PersonRelatedSoftwareNavigationMenu TeamOverviewNavigationMenu"
     />
@@ -927,18 +913,11 @@
 
   <securedutility
     class="canonical.launchpad.rest.MeLink"
-    provides="canonical.lazr.interfaces.ITopLevelEntryLink">
+    provides="canonical.launchpad.rest.IMeLink">
     <allow interface="canonical.lazr.interfaces.ITopLevelEntryLink" />
     <allow
       interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IPersonSet"
-    factory="canonical.launchpad.browser.PersonSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPersonSet"

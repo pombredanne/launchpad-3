@@ -5,8 +5,9 @@ doesn't use its context for anything, so we don't have to supply one
 when creating it.
 
     >>> from canonical.launchpad.browser import MaloneView
+    >>> from canonical.launchpad.systemhomes import MaloneApplication
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> bugs_view = MaloneView(None, LaunchpadTestRequest())
+    >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
 
 
@@ -81,7 +82,7 @@ he's not subscribed to it.
     >>> syncUpdate(bug_two)
 
     >>> login('no-priv@canonical.com')
-    >>> bugs_view = MaloneView(None, LaunchpadTestRequest())
+    >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)
@@ -99,7 +100,7 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
     ...     person_set.getByEmail('foo.bar@canonical.com'))
     <BugSubscription...>
     >>> login('test@canonical.com')
-    >>> bugs_view = MaloneView(None, LaunchpadTestRequest())
+    >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
     >>> for bug in bugs_view.getMostRecentlyFixedBugs():
     ...     print "%s: %s" % (bug.id, bug.title)

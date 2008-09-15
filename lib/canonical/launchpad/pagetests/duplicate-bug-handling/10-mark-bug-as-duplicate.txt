@@ -30,6 +30,7 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   Content-Length: 0
   ...
   Location: http://.../debian/+source/mozilla-firefox/+bug/2
+  ...
 
 When the bug is marked as a duplicate, a notification was generated, to
 tell bug 2's subscribers that their bug is a dupe of bug 1:

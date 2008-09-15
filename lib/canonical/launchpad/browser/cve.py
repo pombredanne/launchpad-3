@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CveBreadcrumbBuilder',
     'CveContextMenu',
     'CveLinkView',
     'CveSetContextMenu',
@@ -23,18 +22,12 @@ from canonical.launchpad.validators.cve import valid_cve
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
 class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
-
-
-class CveBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `ICve`."""
-    text = "CVE reports"
 
 
 class CveContextMenu(ContextMenu):

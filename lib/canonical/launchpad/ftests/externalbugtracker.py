@@ -26,7 +26,7 @@ from canonical.launchpad.components.externalbugtracker import (
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac)
 from canonical.launchpad.components.externalbugtracker.trac import (
-    LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
+    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -151,6 +151,14 @@ class TestExternalBugTracker(ExternalBugTracker):
 
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
+
+    def getRemoteBug(self, remote_bug):
+        """Return the tuple (None, None) as a representation of a remote bug.
+
+        We add this method here to prevent tests which need to call it,
+        but which make no use of the output, from failing.
+        """
+        return None, None
 
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
@@ -837,6 +845,7 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
+    launchpad_bugs = {}
     seconds_since_epoch = None
     local_timezone = 'UTC'
     utc_offset = 0
@@ -1045,6 +1054,42 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         comments.append(comment_dict)
 
         return [self.utc_time, comment_id]
+
+    def get_launchpad_bug(self, bugid):
+        """Get the Launchpad bug ID for a given remote bug.
+
+        The remote bug to Launchpad bug mappings are stored in the
+        launchpad_bugs dict.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        If a remote bug doesn't have a Launchpad bug mapped to it,
+        return 0. Otherwise return the mapped Launchpad bug ID.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
+
+        return [self.utc_time, self.launchpad_bugs.get(bugid, 0)]
+
+    def set_launchpad_bug(self, bugid, launchpad_bug):
+        """Set the Launchpad bug ID for a remote bug.
+
+        If `bugid` references a remote bug that doesn't exist, raise a
+        Fault.
+
+        Return the current UTC timestamp.
+        """
+        if bugid not in self.remote_bugs:
+            raise xmlrpclib.Fault(
+                FAULT_TICKET_NOT_FOUND, 'Ticket does not exist')
+
+        self.launchpad_bugs[bugid] = launchpad_bug
+
+        # Return a list, since xmlrpclib insists on trying to expand
+        # results.
+        return [self.utc_time]
 
 
 class TestRoundup(Roundup):

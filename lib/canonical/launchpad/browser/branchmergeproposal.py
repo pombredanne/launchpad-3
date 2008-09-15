@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
-    'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
@@ -16,6 +15,7 @@ __all__ = [
     'BranchMergeProposalJumpQueueView',
     'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
+    'BranchMergeProposalPrimaryContext',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
@@ -31,14 +31,13 @@ import operator
 from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Int, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -48,7 +47,6 @@ from canonical.launchpad.interfaces import (
     BranchType,
     IBranchMergeProposal,
     IMessageSet,
-    IStructuralObjectPresentation,
     WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
     CodeReviewNotificationLevel)
@@ -62,8 +60,19 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from canonical.lazr import decorates
+
+
+class BranchMergeProposalPrimaryContext:
+    """The primary context is the proposal is that of the source branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, branch_merge_proposal):
+        self.context = IPrimaryContext(
+            branch_merge_proposal.source_branch).context
 
 
 def notify(func):
@@ -85,25 +94,6 @@ def update_and_notify(func):
             view.context, view.form_fields, data, view.adapters)
         return result
     return decorator
-
-
-class BranchMergeProposalSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranchMergeProposal`.
-
-    Delegates the method calls to the SOP of the source branch.
-    """
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        self.delegate = IStructuralObjectPresentation(
-            self.context.source_branch)
-
-    def getIntroHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getIntroHeading()
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getMainHeading()
 
 
 class BranchMergeCandidateView(LaunchpadView):
@@ -138,7 +128,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
              'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
-             'resubmit']
+             'resubmit', 'update_merge_revno']
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
@@ -199,6 +189,11 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.MERGED)
         return Link('+merged', text, enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def update_merge_revno(self):
+        text = 'Update revision number'
+        return Link('+merged', text)
 
     @enabled_with_permission('launchpad.Edit')
     def enqueue(self):
@@ -334,6 +329,13 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def has_bug_or_spec(self):
+        """Return whether or not the merge proposal has a linked bug or spec.
+        """
+        branch = self.context.source_branch
+        return branch.bug_branches or branch.spec_links
 
 
 class DecoratedCodeReviewVoteReference:
@@ -683,11 +685,12 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
+        revno = data['merged_revno']
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.request.response.addWarningNotification(
-                'The proposal has already been marked as merged.')
+            self.context.merged_revno = revno
+            self.request.response.addNotification(
+                'The proposal\'s merged revision has been updated.')
         else:
-            revno = data['merged_revno']
             self.context.markAsMerged(revno, merge_reporter=self.user)
             self.request.response.addNotification(
                 'The proposal has now been marked as merged.')

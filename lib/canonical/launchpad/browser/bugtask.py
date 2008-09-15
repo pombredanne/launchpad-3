@@ -862,8 +862,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             editable_field_names = set(self.default_field_names)
             editable_field_names.discard('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000: Permission checking
+            # doesn't belong here!
             if ('milestone' in editable_field_names and
                 not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
@@ -2402,12 +2402,12 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             'Content-type', 'text/plain')
 
         # This uses the BugTaskSet internal API instead of using the
-        # standard searchTasks() because this can retrieve a lot of 
-        # bugs and we don't want to load all of that data in memory. 
+        # standard searchTasks() because this can retrieve a lot of
+        # bugs and we don't want to load all of that data in memory.
         # Retrieving only the bug numbers is much more efficient.
         search_params = self.buildSearchParams()
 
-        # XXX flacoste 2008/04/24 This should be moved to a 
+        # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
         if IDistroSeries.providedBy(self.context):
             search_params.setDistroSeries(self.context)
@@ -2788,6 +2788,9 @@ class BugTaskPrivacyAdapter:
         return self.context.bug.private
 
 
+# XXX mars 2008-08-25 bug=261188
+# This whole class hierarchy should be replaced with something more
+# specific, ie. a class that generates BugTask page titles.
 class BugTaskSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBugTask`."""
 

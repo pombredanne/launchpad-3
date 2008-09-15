@@ -9,9 +9,11 @@ __all__ = [
     "BugBranchEditView",
     "BugBranchBranchInlineEditView",
     "BugBranchBugInlineEditView",
+    'BugBranchPrimaryContext',
     ]
 
 from zope.event import notify
+from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectDeletedEvent
@@ -19,8 +21,18 @@ from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from canonical.widgets.link import LinkWidget
+
+
+class BugBranchPrimaryContext:
+    """The primary context is the bug branch link is that of the branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, bug_branch):
+        self.context = IPrimaryContext(bug_branch.branch).context
 
 
 class BugBranchAddView(LaunchpadFormView):
@@ -45,13 +57,11 @@ class BugBranchAddView(LaunchpadFormView):
             "Successfully registered branch %s for this bug." %
             branch.name)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the bug page."""
-
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class BugBranchEditView(LaunchpadEditFormView):

@@ -28,31 +28,40 @@ from canonical.codehosting.puller.worker import (
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
 
 
-class FakeBranchStatusClient:
+class FakePullerEndpointProxy:
 
     def __init__(self, branch_queues=None):
         self.branch_queues = branch_queues
         self.calls = []
 
-    def getBranchPullQueue(self, branch_type):
+    def callRemote(self, method_name, *args):
+        method = getattr(self, '_remote_%s' % method_name, self._default)
+        deferred = method(*args)
+        def append_to_log(pass_through):
+            self.calls.append((method_name,) + tuple(args))
+            return pass_through
+        deferred.addCallback(append_to_log)
+        return deferred
+
+    def _default(self, *args):
+        return defer.succeed(None)
+
+    def _remote_getBranchPullQueue(self, branch_type):
         return defer.succeed(self.branch_queues[branch_type])
 
-    def startMirroring(self, branch_id):
-        self.calls.append(('startMirroring', branch_id))
-        return defer.succeed(None)
-
-    def mirrorComplete(self, branch_id, revision_id):
-        self.calls.append(('mirrorComplete', branch_id, revision_id))
-        return defer.succeed(None)
-
-    def mirrorFailed(self, branch_id, revision_id):
-        self.calls.append(('mirrorFailed', branch_id, revision_id))
+    def _remote_setStackedOn(self, branch_id, stacked_on_location):
+        if stacked_on_location == 'raise-branch-not-found':
+            try:
+                raise faults.NoSuchBranch(stacked_on_location)
+            except faults.NoSuchBranch:
+                return defer.fail()
         return defer.succeed(None)
 
 
@@ -68,7 +77,7 @@ class TestJobScheduler(unittest.TestCase):
         reset_logging()
 
     def makeFakeClient(self, hosted, mirrored, imported):
-        return FakeBranchStatusClient(
+        return FakePullerEndpointProxy(
             {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
     def makeJobScheduler(self, branch_type, branch_tuples):
@@ -228,6 +237,9 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
+        def setStackedOn(self, stacked_on_location):
+            self.calls.append(('setStackedOn', stacked_on_location))
+
         def startMirroring(self):
             self.calls.append('startMirroring')
 
@@ -256,6 +268,13 @@ class TestPullerMonitorProtocol(
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
+    def test_setStackedOn(self):
+        # Receiving a setStackedOn message notifies the listener.
+        self.protocol.do_setStackedOn('/~foo/bar/baz')
+        self.assertEqual(
+            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
+        self.assertProtocolSuccess()
+
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
         self.protocol.do_startMirroring()
@@ -263,6 +282,16 @@ class TestPullerMonitorProtocol(
         self.protocol.do_mirrorSucceeded('1234')
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
         self.assertProtocolSuccess()
+
+    def test_mirrorDeferred(self):
+        # Receiving a mirrorDeferred message finishes mirroring and doesn't
+        # notify the listener.
+        self.protocol.do_startMirroring()
+        self.listener.calls = []
+        self.protocol.do_mirrorDeferred()
+        self.assertProtocolSuccess()
+        self.assertEqual(True, self.protocol.reported_mirror_finished)
+        self.assertEqual([], self.listener.calls)
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
@@ -406,7 +435,7 @@ class TestPullerMaster(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.status_client = FakeBranchStatusClient()
+        self.status_client = FakePullerEndpointProxy()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
@@ -437,6 +466,27 @@ class TestPullerMaster(TrialTestCase):
                 self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
+
+    def test_setStackedOn(self):
+        stacked_on_location = '/~foo/bar/baz'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual(
+                [('setStackedOn', self.arbitrary_branch_id,
+                  stacked_on_location)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
+
+    def test_setStackedOnBranchNotFound(self):
+        stacked_on_location = 'raise-branch-not-found'
+        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+
+        def checkSetStackedOn(ignored):
+            self.assertEqual([], self.status_client.calls)
+
+        return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'
@@ -479,7 +529,7 @@ class TestPullerMasterSpawning(TrialTestCase):
 
     def setUp(self):
         from twisted.internet import reactor
-        self.status_client = FakeBranchStatusClient()
+        self.status_client = FakePullerEndpointProxy()
         self.arbitrary_branch_id = 1
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = scheduler.PullerMaster(
@@ -575,7 +625,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree = self.make_branch_and_tree('src-branch')
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
-        self.client = FakeBranchStatusClient()
+        self.client = FakePullerEndpointProxy()
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.

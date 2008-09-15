@@ -600,6 +600,39 @@ Searching for bugs with any of the tags returns only test bug a.
     test bug a [u'test-tag-1', u'test-tag-2']
 
 
+== Searching by date_closed ==
+
+It's possible to limit the search by date_closed, to get only bugs
+closed after a certain date. greater_than is used to search for bugs
+closed after a certain date.
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.launchpad.searchbuilder import greater_than
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> product = factory.makeProduct()
+    >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
+    >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
+    >>> bug_closed_a_day_ago = factory.makeBug(
+    ...     product=product, date_closed=utc_now-timedelta(days=1),
+    ...     title="Closed a day ago")
+    >>> bug_closed_a_week_ago = factory.makeBug(
+    ...     product=product, date_closed=utc_now-timedelta(days=7),
+    ...     title="Closed a week ago")
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, orderby="-date_closed",
+    ...     date_closed=greater_than(utc_now))
+    >>> list(product.searchTasks(search_params))
+    []
+
+    >>> search_params.date_closed = greater_than(utc_now - timedelta(days=2))
+    >>> for bug_task in product.searchTasks(search_params):
+    ...     print bug_task.bug.title
+    Closed a day ago
+
+
 == Ordering search results ==
 
 The result returned by bugtask searches can come sorted by a specified order

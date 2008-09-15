@@ -15,21 +15,23 @@ import urlparse
 
 import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch, BzrBranchFormat4
+from bzrlib.branch import BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
-from bzrlib.errors import NotStacked, UnstackableBranchFormat
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
+from canonical.codehosting.puller.worker import BranchOpener
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBranchSet, IBugBranchSet, IBugSet,
-    IRevisionSet, NotFoundError, RepositoryFormat)
+    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
+from canonical.launchpad.webapp.uri import URI
+
 
 UTC = pytz.timezone('UTC')
 # Use at most the first 100 characters of the commit message.
@@ -43,6 +45,10 @@ class BadLineInBugsProperty(Exception):
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+class InvalidStackedBranchURL(Exception):
+    """Raised when we try to scan a branch stacked on an invalid URL."""
 
 
 def set_bug_branch_status(bug, branch, status):
@@ -324,6 +330,21 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
+class WarehouseBranchOpener(BranchOpener):
+
+    def checkOneURL(self, url):
+        """See `BranchOpener.checkOneURL`.
+
+        If the URLs we are mirroring from are anything but a
+        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
+        Opening branches on remote systems takes too long, and we want all of
+        our local access to be channelled through this transport.
+        """
+        uri = URI(url)
+        if uri.scheme != 'lp-mirrored':
+            raise InvalidStackedBranchURL(url)
+
+
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
     """
@@ -344,7 +365,8 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = Branch.open(self.db_branch.warehouse_url)
+            bzr_branch = WarehouseBranchOpener().open(
+                self.db_branch.warehouse_url)
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)
@@ -409,7 +431,6 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
-        self.db_branch.stacked_on = self._getStackedOnBranch(bzr_branch)
         self.updateBranchStatus(bzr_history)
         self.trans_manager.commit()
 
@@ -606,17 +627,6 @@ class BzrSync:
                 assert sequence is not None
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
-
-    def _getStackedOnBranch(self, bzr_branch):
-        """Return the branch that the branch being scanned is stacked on."""
-        try:
-            branch_url = bzr_branch.get_stacked_on_url()
-        except (UnstackableBranchFormat, NotStacked):
-            return None
-        branch_set = getUtility(IBranchSet)
-        if branch_url.startswith('/'):
-            return branch_set.getByUniqueName(branch_url.strip('/'))
-        return branch_set.getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""

@@ -215,6 +215,17 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch.mirrorComplete('rev1')
         self.assertEqual(next_mirror_time, branch.next_mirror_time)
 
+    def test_startMirroringRemovesFromPullQueue(self):
+        # Starting a mirror removes the branch from the pull queue.
+        branch = self.makeBranch()
+        branch.requestMirror()
+        self.assertEqual(
+            set([branch]),
+            set(self.branch_set.getPullQueue(branch.branch_type)))
+        branch.startMirroring()
+        self.assertEqual(
+            set(), set(self.branch_set.getPullQueue(branch.branch_type)))
+
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
         branch = self.makeBranch()
@@ -229,6 +240,35 @@ class TestMirroringForHostedBranches(TestCaseWithFactory):
         branch = self.makeBranch()
         branch.requestMirror()
         transaction.commit()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(None, branch.next_mirror_time)
+
+    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
+        # Mirroring branches resets their mirror request times. Before
+        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
+        # and mirrorComplete reset the next_mirror_time based on the old
+        # value. This test confirms that branches which were in the middle of
+        # mirroring during the upgrade will have their next_mirror_time set
+        # properly eventually. This test can be removed after the 2.1.9
+        # release.
+        branch = self.makeBranch()
+        # Set next_mirror_time to NOW, putting the branch in the pull queue.
+        branch.requestMirror()
+        next_mirror_time = branch.next_mirror_time
+        # In the new code, startMirroring sets next_mirror_time to None...
+        branch.startMirroring()
+        # ... so we make it behave like the old code by restoring the previous
+        # value. This simulates a branch that was in the middle of mirroring
+        # during the 2.1.9 upgrade.
+        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
+        branch.mirrorComplete('rev1')
+        # Even though the mirror is complete, the branch is still in the pull
+        # queue. This is not normal behaviour.
+        self.assertIn(
+            branch, self.branch_set.getPullQueue(branch.branch_type))
+        # But on the next mirror, everything is OK, since startMirroring does
+        # the right thing.
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.next_mirror_time)
@@ -293,6 +333,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """If a branch fails to mirror then mirror again later."""
         branch = self.makeBranch()
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
         self.assertInFuture(branch.next_mirror_time, MIRROR_TIME_INCREMENT)
@@ -304,6 +345,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         num_failures = 3
         for i in range(num_failures):
             branch.requestMirror()
+            branch.startMirroring()
             branch.mirrorFailed('No particular reason')
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertInFuture(
@@ -317,6 +359,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch = self.makeBranch()
         for i in range(MAXIMUM_MIRROR_FAILURES):
             branch.requestMirror()
+            branch.startMirroring()
             branch.mirrorFailed('No particular reason')
         self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
         self.assertEqual(None, branch.next_mirror_time)
@@ -333,6 +376,35 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         self.assertInFuture(
             branch.next_mirror_time, MIRROR_TIME_INCREMENT)
         self.assertEqual(0, branch.mirror_failures)
+
+    def test_mirroringResetsMirrorRequestBackwardsCompatibility(self):
+        # Mirroring branches resets their mirror request times. Before
+        # 2008-09-10, startMirroring would leave next_mirror_time untouched,
+        # and mirrorComplete reset the next_mirror_time based on the old
+        # value. This test confirms that branches which were in the middle of
+        # mirroring during the upgrade will have their next_mirror_time set
+        # properly eventually.
+        branch = self.makeBranch()
+        # Set next_mirror_time to NOW, putting the branch in the pull queue.
+        branch.requestMirror()
+        next_mirror_time = branch.next_mirror_time
+        # In the new code, startMirroring sets next_mirror_time to None...
+        branch.startMirroring()
+        # ... so we make it behave like the old code by restoring the previous
+        # value. This simulates a branch that was in the middle of mirroring
+        # during the 2.1.9 upgrade.
+        removeSecurityProxy(branch).next_mirror_time = next_mirror_time
+        branch.mirrorComplete('rev1')
+        # Even though the mirror is complete, the branch is still in the pull
+        # queue. This is not normal behaviour.
+        self.assertIn(
+            branch, self.branch_set.getPullQueue(branch.branch_type))
+        # But on the next mirror, everything is OK, since startMirroring does
+        # the right thing.
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertInFuture(
+            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
 
 
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
@@ -994,7 +1066,7 @@ class TestBranchSetGetBranches(TestCase):
 
     def test_get_junk_branch(self):
         factory = LaunchpadObjectFactory()
-        branch = factory.makeBranch(explicit_junk=True)
+        branch = factory.makeBranch(product=None)
         self.assertTrue(branch.product is None)
         self.assertEqual(
             branch,
@@ -1031,7 +1103,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         name = "sample-branch"
         bob = factory.makePerson(name="bob")
         mary = factory.makePerson(name="mary")
-        b1 = factory.makeBranch(owner=bob, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=bob, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 
@@ -1043,7 +1115,7 @@ class TestBranchSetIsBranchNameAvailable(TestCase):
         factory = LaunchpadObjectFactory()
         owner = factory.makePerson()
         name = "sample-branch"
-        b1 = factory.makeBranch(owner=owner, explicit_junk=True, name=name)
+        b1 = factory.makeBranch(owner=owner, product=None, name=name)
         self.assertTrue(b1.product is None)
         self.assertEqual(name, b1.name)
 

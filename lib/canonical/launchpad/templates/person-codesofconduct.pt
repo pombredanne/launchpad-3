@@ -11,17 +11,8 @@
 >
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Code of conduct signatures</h1>
-</metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+  <h1>Code of conduct signatures</h1>
 
   <tal:changes condition="view/performCoCChanges" />
 
@@ -58,10 +49,10 @@
                       tal:content="sig/displayname"
                     >blah</label>
                   </div>
-                  <div
+                  <pre
                     class="discreet"
                     tal:content="sig/signedcode"
-                  >SIGNATURE</div>
+                  >SIGNATURE</pre>
                 </td>
               </tr>
             </tbody>

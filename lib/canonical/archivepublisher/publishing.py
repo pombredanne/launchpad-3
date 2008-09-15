@@ -366,10 +366,10 @@ class Publisher(object):
 
         fd_gz, temp_index_gz = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index-gz_')
-        source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
+        source_index_gz = gzip.GzipFile(fileobj=os.fdopen(fd_gz, "wb"))
         fd, temp_index = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index_')
-        source_index = open(temp_index, 'wb')
+        source_index = os.fdopen(fd, "wb")
 
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
@@ -413,8 +413,8 @@ class Publisher(object):
             fd, temp_index = tempfile.mkstemp(
                 dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(
-                fileobj=open(temp_index_gz, "wb"))
-            package_index = open(temp_index, "wb")
+                fileobj=os.fdopen(fd_gz,"wb"))
+            package_index = os.fdopen(fd, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
@@ -609,9 +609,21 @@ class Publisher(object):
             # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
             return
-        in_file = open(full_name,"r")
-        contents = in_file.read()
-        in_file.close()
-        length = len(contents)
-        checksum = sum_form(contents).hexdigest()
+
+        in_file = open(full_name, 'r')
+        try:
+            # XXX cprov 20080704 bug=243630,269014: Workaround for hardy's
+            # python-apt. If it receives a file object as an argument instead
+            # of the file contents as a string, it will generate the correct
+            # SHA256.
+            if sum_form == sha256:
+                contents = in_file
+                length = os.stat(full_name).st_size
+            else:
+                contents = in_file.read()
+                length = len(contents)
+            checksum = sum_form(contents).hexdigest()
+        finally:
+            in_file.close()
+
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))

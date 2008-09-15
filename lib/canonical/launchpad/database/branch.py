@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Join, LeftJoin
+from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
 from sqlobject import (
@@ -57,6 +57,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class Branch(SQLBase):
@@ -105,7 +107,6 @@ class Branch(SQLBase):
     last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
-    pull_disabled = BoolCol(default=False, notNull=True)
     next_mirror_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
@@ -206,10 +207,6 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
-        # Update the last_modified_date of the source and target branches to
-        # be the date_created for the merge proposal.
-        self.date_last_modified = date_created
-        target_branch.date_last_modified = date_created
 
         if needs_review:
             queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
@@ -224,6 +221,23 @@ class Branch(SQLBase):
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
+    def getStackedBranches(self):
+        """See `IBranch`."""
+        store = Store.of(self)
+        return store.find(Branch, Branch.stacked_on == self)
+
+    def getStackedBranchesWithIncompleteMirrors(self):
+        """See `IBranch`."""
+        store = Store.of(self)
+        return store.find(
+            Branch, Branch.stacked_on == self,
+            # Have been started.
+            Branch.last_mirror_attempt != None,
+            # Either never successfully mirrored or started since the last
+            # successful mirror.
+            Or(Branch.last_mirrored == None,
+               Branch.last_mirror_attempt > Branch.last_mirrored))
+
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""
@@ -235,7 +249,8 @@ class Branch(SQLBase):
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
-        return self.revision_count > 0 and not self.private
+        return ((self.revision_count > 0  or self.last_mirrored != None)
+            and not self.private)
 
     def _getNameDict(self, person):
         """Return a simple dict with the person name or placeholder."""
@@ -625,7 +640,7 @@ class Branch(SQLBase):
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
-        self.syncUpdate()
+        self.next_mirror_time = None
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
@@ -636,17 +651,12 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if (self.next_mirror_time != None
-            and self.last_mirror_attempt >= self.next_mirror_time):
+        if (self.next_mirror_time is None
+            and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
-            if self.branch_type == BranchType.MIRRORED:
-                self.next_mirror_time = (
-                    datetime.now(pytz.timezone('UTC')) +
-                    MIRROR_TIME_INCREMENT)
-            else:
-                self.next_mirror_time = None
+            self.next_mirror_time = (
+                datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
         self.last_mirrored_id = last_revision_id
-        self.syncUpdate()
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -659,9 +669,6 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
-        else:
-            self.next_mirror_time = None
-        self.syncUpdate()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
@@ -1023,6 +1030,20 @@ class BranchSet:
         else:
             return branch
 
+    def getRewriteMap(self):
+        """See `IBranchSet`."""
+        # Avoid circular imports.
+        from canonical.launchpad.database import Person, Product
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # Left-join Product so that we still publish +junk branches.
+        prejoin = store.using(
+            LeftJoin(Branch, Product, Branch.product == Product.id), Person)
+        return (branch for (owner, product, branch) in prejoin.find(
+            (Person, Product, Branch),
+            Branch.branch_type != BranchType.REMOTE,
+            Branch.owner == Person.id,
+            Branch.private == False))
+
     def getBranchesToScan(self):
         """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
@@ -1307,7 +1328,7 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
-                Branch.q.next_mirror_time < UTC_NOW),
+                Branch.q.next_mirror_time <= UTC_NOW),
             prejoins=['owner', 'product'], orderBy='next_mirror_time')
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):

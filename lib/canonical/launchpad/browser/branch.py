@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchBadges',
@@ -46,8 +45,7 @@ from canonical.lazr.interface import use_template
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
-from canonical.launchpad.browser.launchpad import (
-    Hierarchy, StructuralObjectPresentation)
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -104,26 +102,8 @@ class BranchHierarchy(Hierarchy):
 
     def items(self):
         """See `Hierarchy`."""
-        if self.context.product is not None:
-            obj = self.context.product
-        else:
-            obj = self.context.owner
-
-        url = canonical_url(obj)
-        breadcrumb = self.breadcrumb_for(obj, url)
-
-        if breadcrumb is None:
-            return []
-        else:
-            return [breadcrumb]
-
-
-class BranchSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranch`."""
-
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.context.owner.browsername
+        obj = IPrimaryContext(self.context).context
+        return self._breadcrumbs([(obj, canonical_url(obj))])
 
 
 class BranchBadges(HasBadgeBase):
@@ -336,7 +316,7 @@ class BranchContextMenu(ContextMenu):
 
     def edit_import(self):
         text = 'Edit import source or review import'
-        return Link('+edit-import', text, enabled=True)
+        return Link('+edit-import', text, icon='edit', enabled=True)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -711,10 +691,13 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
-            # somewhere valid to send them next.  Since most of the time it
-            # will be the owner of the branch deleting it, we should send
-            # them to the code listing for the owner.
-            self.next_url = canonical_url(branch.owner)
+            # somewhere valid to send them next.  If the branch is junk, we
+            # send the user back to the code listing for the branch owner,
+            # otherwise we send them to the branch listing of the product.
+            if branch.product is None:
+                self.next_url = canonical_url(branch.owner)
+            else:
+                self.next_url = canonical_url(branch.product)
             message = "Branch %s deleted." % branch.unique_name
             self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
@@ -851,6 +834,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
+    for_input = True
     field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
                    'summary', 'lifecycle_status', 'whiteboard']
 

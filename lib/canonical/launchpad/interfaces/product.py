@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
     ILaunchpadUsage)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.productrelease import IProductRelease
@@ -51,9 +52,11 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    REQUEST_USER, call_with, collection_default_content,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_read_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    rename_parameters_as)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -113,12 +116,13 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasDrivers, IHasExternalBugTracker, IHasIcon, IHasLogo,
+class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+               IHasBranchVisibilityPolicy, IHasDrivers,
+               IHasExternalBugTracker, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner,
-               IHasSecurityContact,IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget, IPillar):
+               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ILaunchpadUsage, ISpecificationTarget, IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -288,30 +292,34 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    icon = IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/product',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project. The icon will be "
-            "displayed next to the project name everywhere in Launchpad that "
-            "we refer to the project and link to it."))
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/product',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this project. The icon "
+                "will be displayed next to the project name everywhere in "
+                "Launchpad that we refer to the project and link to it.")))
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/product-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/product-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this project. It should "
+                "be no bigger than 50kb in size.")))
 
-    mugshot = MugshotImageUpload(
-        title=_("Brand"), required=False,
-        default_image_resource='/@@/product-mugshot',
-        description=_(
-            "A large image of exactly 192x192 pixels, that will be displayed "
-            "on this project's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. "))
+    mugshot = exported(
+        MugshotImageUpload(
+            title=_("Brand"), required=False,
+            default_image_resource='/@@/product-mugshot',
+            description=_(
+                "A large image of exactly 192x192 pixels, that will be "
+                "displayed on this project's home page in Launchpad. It "
+                "should be no bigger than 100kb in size.")),
+        exported_as='brand')
 
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
@@ -488,6 +496,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     def userCanEdit(user):
         """Can the user edit this product?"""
 
+# Fix cyclic references.
+IProject['products'].value_type = Reference(IProduct)
+IProductRelease['product'].schema = IProduct
+
 
 class IProductSet(Interface):
     """The collection of products."""
@@ -537,13 +549,27 @@ class IProductSet(Interface):
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        displayname='display_name', project='project_group',
+        homepageurl='home_page_url', screenshotsurl='screenshots_url',
+        freshmeatproject='freshmeat_project', wikiurl='wiki_url',
+        sourceforgeproject='sourceforge_project',
+        programminglang='programming_lang')
+    @export_factory_operation(
+        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
+                   'project', 'homepageurl', 'screenshotsurl',
+                   'downloadurl', 'freshmeatproject', 'wikiurl',
+                   'sourceforgeproject', 'programminglang',
+                   'licenses', 'license_info', 'registrant'])
+    @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      license_reviewed=False, mugshot=None, logo=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
 
@@ -554,7 +580,8 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
-    @operation_parameters(text=TextLine())
+    @operation_parameters(text=TextLine(title=_("Search text")))
+    @operation_returns_collection_of(IProduct)
     @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -565,8 +592,19 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+
+    @operation_returns_collection_of(IProduct)
+    @call_with(quantity=None)
+    @export_read_operation()
     def latest(quantity=5):
-        """Return the latest products registered in the Launchpad."""
+        """Return the latest projects registered in the Launchpad.
+
+        If the quantity is not specified or is a value that is not 'None'
+        then the set of projects returned is limited to that value (the
+        default quantity is 5).  If quantity is 'None' then all projects are
+        returned.  For the web service it is not possible to specify the
+        quantity, so all projects are returned, latest first.
+        """
 
     def getTranslatables():
         """Return an iterator over products that have translatable resources.

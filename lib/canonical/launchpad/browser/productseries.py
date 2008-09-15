@@ -15,7 +15,6 @@ __all__ = [
     'ProductSeriesOverviewMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSOP',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSpecificationsMenu',
@@ -35,7 +34,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -76,28 +74,6 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
 
     def traverse(self, name):
         return self.context.getRelease(name)
-
-
-class ProductSeriesSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.product.displayname + ' series:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Releases, most recent first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
 
 
 class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):

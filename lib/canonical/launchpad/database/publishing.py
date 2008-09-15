@@ -29,7 +29,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 
 from storm.expr import Desc, In
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -48,11 +47,14 @@ from canonical.launchpad.interfaces import (
     ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+    PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus,
+    PoolFileOverwriteError)
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
-from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
@@ -939,7 +941,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
             Build.distroarchseriesID == DistroArchSeries.id,
@@ -969,7 +971,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         source_result = store.find(
             (SourcePackagePublishingHistory, LibraryFileAlias,
              LibraryFileContent),
@@ -1016,7 +1018,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
@@ -1052,7 +1054,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             (SourcePackagePublishingHistory, PackageDiff,
              LibraryFileAlias, LibraryFileContent),
@@ -1066,6 +1068,39 @@ class PublishingSet:
             SourcePackagePublishingHistory.id,
             Desc(PackageDiff.date_requested))
 
+        return result_set
+
+    def getChangesFilesForSources(
+        self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import PackageUpload and PackageUploadSource locally
+        # to avoid circular imports, since PackageUpload uses
+        # {Secure}SourcePackagePublishingHistory.
+        from canonical.launchpad.database.sourcepackagerelease import (
+            SourcePackageRelease)
+        from canonical.launchpad.database.queue import (
+            PackageUpload, PackageUploadSource)
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            (SourcePackagePublishingHistory, PackageUpload,
+             SourcePackageRelease, LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == PackageUpload.changesfileID,
+            PackageUpload.id == PackageUploadSource.packageuploadID,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.distroseriesID ==
+                SourcePackageRelease.upload_distroseriesID,
+            PackageUploadSource.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
@@ -1099,7 +1134,7 @@ class PublishingSet:
             ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
                             removed_by, removal_comment)
 
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # First update the source package publishing history table.
         source_ids = [source.id for source in sources]

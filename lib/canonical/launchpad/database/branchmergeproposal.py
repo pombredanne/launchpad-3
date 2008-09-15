@@ -151,6 +151,8 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    root_message_id = StringCol(default=None)
+
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
@@ -413,17 +415,14 @@ class BranchMergeProposal(SQLBase):
               SELECT revision FROM BranchRevision
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence')
+            prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
-        if parent is None:
-            if self.root_comment is not None:
-                parent_message = self.root_comment.message
-        else:
+        if parent is not None:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message

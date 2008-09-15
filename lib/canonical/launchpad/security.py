@@ -6,14 +6,13 @@ __metaclass__ = type
 __all__ = []
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
@@ -1447,19 +1446,42 @@ class AccessBranch(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranch
 
-    def checkAuthenticated(self, user):
-        if not self.obj.private:
+    def _checkBranchAuthenticated(self, branch, user):
+        if not branch.private:
             return True
-        if user.inTeam(self.obj.owner):
+        if user.inTeam(branch.owner):
             return True
-        for subscriber in self.obj.subscribers:
+        for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
         celebs = getUtility(ILaunchpadCelebrities)
         return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
-    def checkUnauthenticated(self):
-        return not self.obj.private
+    def checkAuthenticated(self, user, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = self._checkBranchAuthenticated(self.obj, user)
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkAuthenticated(user, checked_branches)
+        return can_access
+
+    def checkUnauthenticated(self, checked_branches=None):
+        if checked_branches is None:
+            checked_branches = []
+        if self.obj in checked_branches:
+            return True
+        can_access = not self.obj.private
+        if can_access and self.obj.stacked_on is not None:
+            checked_branches.append(self.obj)
+            access = getAdapter(
+                self.obj.stacked_on, IAuthorization, name='launchpad.View')
+            can_access = access.checkUnauthenticated(checked_branches)
+        return can_access
 
 
 class EditBranch(AuthorizationBase):
@@ -1734,31 +1756,6 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private
 
 
-class EditArchiveRebuild(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchiveRebuild
-
-    def checkAuthenticated(self, user):
-        """Verify that the user can edit the archive rebuild.
-
-        Only people in one of the conditions below can edit an
-        ArchiveRebuild record:
-
-         * 'registrant' team member;
-         * The distribution admins;
-         * a Launchpad administrator.
-        """
-        if user.inTeam(self.obj.registrant):
-            return True
-
-        distribution = self.obj.distroseries.distribution
-        if user.inTeam(distribution.owner):
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
-
-
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -1772,9 +1769,13 @@ class ViewSourcePackageRelease(AuthorizationBase):
     permission = 'launchpad.View'
     userfor = ISourcePackageRelease
 
+    # XXX Julian 2008-09-10
+    # Calls to _cached_published_archives can be changed to just
+    # "published_archives" when security adpater caching is implemented.
+    # See bug 268612.
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if check_permission('launchpad.View', archive):
                 return True
         return False
@@ -1785,7 +1786,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
         Unauthenticated users can see the package as long as it's published
         in a non-private archive.
         """
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if not archive.private:
                 return True
         return False

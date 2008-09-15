@@ -7,50 +7,50 @@ Account object.
 == Activating user accounts ==
 
 A user may activate their account that was created by an automated
-process. Alexander Limi's account was created during a code import.
+process. Matsubara's account was created during a code import.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     AccountStatus, IPersonSet, IPerson, IEmailAddressSet)
 
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> emailaddress = emailset.getByEmail('limi@plone.org')
-    >>> limi = emailaddress.person
-    >>> limi.is_valid_person
+    >>> emailaddress = emailset.getByEmail('matsubara@async.com.br')
+    >>> matsubara = emailaddress.person
+    >>> matsubara.is_valid_person
     False
-    >>> limi.account_status
+    >>> matsubara.account_status
     <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print limi.password
+    >>> print matsubara.password
     None
-    >>> print limi.preferredemail
+    >>> print matsubara.preferredemail
     None
 
 The account can only be activated by the user who is claiming
 the profile. Mark cannot claim it.
 
     >>> login('mark@hbd.com')
-    >>> limi.activateAccount(
+    >>> matsubara.activateAccount(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):
     ...
     Unauthorized: ...'launchpad.Special')
 
-Alexander Limi can. A password and a preferred email address must be
-passed as arguments.
+Matsubara can. A password and a preferred email address must be passed
+as arguments.
 
     >>> from zope.security.proxy import removeSecurityProxy
 
-    >>> login('limi@plone.org')
-    >>> limi.activateAccount(
+    >>> login('matsubara@async.com.br')
+    >>> matsubara.activateAccount(
     ...     comment="test", password='ok', preferred_email=emailaddress)
-    >>> limi.is_valid_person
+    >>> matsubara.is_valid_person
     True
-    >>> limi.account_status
+    >>> matsubara.account_status
     <DBItem AccountStatus.ACTIVE, ...>
-    >>> limi.account_status_comment
+    >>> matsubara.account_status_comment
     u'test'
-    >>> removeSecurityProxy(limi.preferredemail).email
-    u'limi@plone.org'
+    >>> removeSecurityProxy(matsubara.preferredemail).email
+    u'matsubara@async.com.br'
 
 An error is raised if activateAccount() is called on a team.
 
