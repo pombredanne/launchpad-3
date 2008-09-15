@@ -448,6 +448,20 @@ from canonical.launchpad.interfaces.milestone import IMilestone
 IProductSeries['milestones'].value_type.schema = IMilestone
 IProductSeries['all_milestones'].value_type.schema = IMilestone
 
+class IProductSeriesSourceAdmin(Interface):
+    """Administrative interface to approve syncing on a Product Series
+    upstream codebase, publishing it as Bazaar branch."""
+
+    def deleteImport():
+        """Do our best to forget that this series ever had an import
+        associated with it.
+
+        Use with care!
+        """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
+
 
 class IProductSeriesSet(Interface):
     """Interface representing the set of ProductSeries."""

@@ -42,43 +42,6 @@ class TestDeleteImport(unittest.TestCase):
             'series.datepublishesync is %r' % (series.datepublishedsync))
 
 
-class SyncIntervalTestCase(unittest.TestCase):
-    """When a VCS import is approved, we set the syncinterval column
-    to indicate how often the import should be updated.  Imports from
-    different revision control systems get different rates by default.
-    """
-    layer = LaunchpadZopelessLayer
-
-    def getSampleSeries(self):
-        """Get a sample product series without any source details."""
-        product = getUtility(IProductSet).getByName('gnome-terminal')
-        series = product.getSeries('trunk')
-        self.assert_(series.rcstype is None)
-        return series
-
-    def testSyncIntervalForSvn(self):
-        """Our policy is imports from subversion should be updated
-        every 6 hours by default.
-        """
-        series = self.getSampleSeries()
-        series.rcstype = RevisionControlSystems.SVN
-        series.svnrepository = 'http://svn.example.com/hello/trunk'
-        series.certifyForSync()
-        self.assertEquals(series.syncinterval, datetime.timedelta(hours=6))
-
-    def testSyncIntervalForCvs(self):
-        """Our policy is imports from CVS should be updated
-        every 12 hours by default.
-        """
-        series = self.getSampleSeries()
-        series.rcstype = RevisionControlSystems.CVS
-        series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
-        series.cvsmodule = 'hello'
-        series.cvsbranch = 'MAIN'
-        series.certifyForSync()
-        self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
-
-
 class TestProductSeriesSearchImports(unittest.TestCase):
     """Tests for ProductSeriesSet.searchImports()."""
     layer = LaunchpadZopelessLayer
