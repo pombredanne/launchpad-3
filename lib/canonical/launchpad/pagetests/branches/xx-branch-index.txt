@@ -6,10 +6,20 @@ Imports used later in the document:
     >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
 
+
+Modifying test data for this test case.
+
+    >>> login('foo.bar@canonical.com')
+    >>> factory = LaunchpadObjectFactory()
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/+junk/junk.dev')
+    >>> factory.makeRevisionsForBranch(branch, count=5)
+    >>> logout()
 
 == Recent Revisions ==
 
@@ -44,12 +54,16 @@ text of the revision author.
     ...         print extract_text(revision).encode('ascii')
 
     >>> print_revisions(user_browser)
+    11. By author1 on 2007-01-05
+    10. By author1 on 2007-01-04
+    9. By author1 on 2007-01-03
+    8. By author1 on 2007-01-02
+    7. By author1 on 2007-01-01
     6. By foo &lt;foo@localhost&gt; on 2005-10-31
     5. By foo &lt;foo@localhost&gt; on 2005-10-31
     4. By bar@localhost on 2005-10-31
     3. By Sample Person on 2005-10-31
     2. By Sample Person on 2005-10-31
-    1. By Sample Person on 2005-10-31
 
 Each of the revision numbers are now anchors to codebrowse (for public
 branches).
@@ -57,7 +71,7 @@ branches).
     >>> revision = find_tags_by_class(
     ...         user_browser.contents, 'revision-details', only_first=True)
     >>> print revision.a
-    <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
+    <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/11">11</a>
 
 
 === Email addresses ===
@@ -71,12 +85,16 @@ addresses.
 
     >>> anon_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
     >>> print_revisions(anon_browser)
+    11. By author1 on 2007-01-05
+    10. By author1 on 2007-01-04
+    9. By author1 on 2007-01-03
+    8. By author1 on 2007-01-02
+    7. By author1 on 2007-01-01
     6. By foo &lt;email address hidden&gt; on 2005-10-31
     5. By foo &lt;email address hidden&gt; on 2005-10-31
     4. By &lt;email address hidden&gt; on 2005-10-31
     3. By Sample Person on 2005-10-31
     2. By Sample Person on 2005-10-31
-    1. By Sample Person on 2005-10-31
 
 
 === Commit messages ===
@@ -88,13 +106,13 @@ author.
     >>> commit_messages = find_tags_by_class(
     ...         browser.contents, 'revision-comment')
     >>> print commit_messages[0].p.renderContents()
-    fix bug in bar
+    log-body11
 
 
 When a commit message refers to a bug using the form "bug <bugnumber>", a link
 to that bug is created.
 
-    >>> print commit_messages[3].p.renderContents()
+    >>> print commit_messages[8].p.renderContents()
     fix <a ...>bug 1</a>
 
 
@@ -271,6 +289,7 @@ link is shown.
     ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "recent-revisions").dl)
+    11. By author1 on ...
     6. By foo... fix bug in bar...
     >>> print browser.getLink('Source Code').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files

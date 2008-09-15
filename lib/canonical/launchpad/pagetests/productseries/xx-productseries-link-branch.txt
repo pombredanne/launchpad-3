@@ -30,7 +30,7 @@ Updating the branch takes the user back to the product series page.
     Overview of Mozilla Firefox Series: trunk
     >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
     >>> print extract_text(branch)
-    Mozilla Firefox Mainline - Sample Person
+    lp://dev/firefox - Sample Person
     text
 
 A helpful informational message is also shown to the user.
