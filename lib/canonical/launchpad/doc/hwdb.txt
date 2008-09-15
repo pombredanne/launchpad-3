@@ -353,6 +353,84 @@ submission). In this case the owner is always None.
     >>> print submission_no_owner.owner
     None
 
+== Retrieving Submissions by Status ==
+
+The set of submissions with a given status can be retrieved by
+IHWSubmissionSet.getByStatus(). If no user is specified,
+only publicly visible submissions are returned.
+
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.private
+    test_submission_id_1 False
+    unique-id-1 False
+    unique-id-2 False
+    unique-id-4 False
+    unique-id-5 False
+
+If a user is passed, private submissions of this user are returned too.
+
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED, user=sample_person)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.private
+    test_submission_id_1 False
+    unique-id-1 False
+    unique-id-2 False
+    unique-id-3 True
+    unique-id-4 False
+    unique-id-5 False
+
+For admins, IHWSubmissionSet.getByStatus() returns private and public
+submissions...
+
+    >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED, user=foobar)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.private
+    test_submission_id_1 False
+    unique-id-1 False
+    unique-id-2 False
+    unique-id-3 True
+    unique-id-4 False
+    unique-id-5 False
+
+...as well as for the janitor.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
+    >>> new_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED, user=janitor)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.private
+    test_submission_id_1 False
+    unique-id-1 False
+    unique-id-2 False
+    unique-id-3 True
+    unique-id-4 False
+    unique-id-5 False
+
+Searching for other statuses is possible too.
+
+    >>> submission_no_owner.status = HWSubmissionProcessingStatus.PROCESSED
+    >>> processed_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED, user=foobar)
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.private
+    unique-id-5 False
+
+
 == Links to Bugs ==
 
 HWDB submissions can be linked to bugs. These links are created by

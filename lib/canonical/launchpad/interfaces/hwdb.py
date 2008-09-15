@@ -215,6 +215,13 @@ class IHWSubmissionSet(Interface):
         to a Person record, when the given email address is verified.
         """
 
+    def getByStatus(status):
+        """Return the submissions with the given status.
+
+        :return: The submissions having the given status.
+        :param status: A status as enumerated in HWSubmissionProcessingStatus.
+        """
+
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
 
