@@ -415,7 +415,7 @@ class BranchMergeProposal(SQLBase):
               SELECT revision FROM BranchRevision
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence')
+            prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
