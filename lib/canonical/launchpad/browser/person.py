@@ -48,9 +48,7 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
-    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
-    'PersonSetFacets',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
@@ -541,19 +539,6 @@ class PersonSetNavigation(Navigation):
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
         return self.redirectSubTree(canonical_url(me), status=303)
-
-
-class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Return a breadcrumb for an `IPersonSet`."""
-    text = "People"
-
-
-class PersonSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IPersonSet."""
-
-    usedfor = IPersonSet
-
-    enable_only = ['overview']
 
 
 class PersonSetContextMenu(ContextMenu):
