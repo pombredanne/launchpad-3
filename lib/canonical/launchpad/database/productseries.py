@@ -94,23 +94,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datepublishedsync = UtcDateTimeCol(
         dbName='date_published_sync', default=None)
 
-    @property
-    def new_style_import(self):
-        """See `IProductSeries`."""
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This property is
-        # only necessary for the transition from the old to the new
-        # code import system, and should be deleted after that process
-        # is done.
-        # Local import to avoid circularity issues.
-        from canonical.launchpad.database.codeimport import (
-            _ProductSeriesCodeImport)
-        pair = _ProductSeriesCodeImport.selectOneBy(
-            productseries=self)
-        if pair is not None:
-            return pair.codeimport
-        else:
-            return None
-
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
@@ -427,49 +410,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             if pkging.distroseries.distribution == distribution:
                 history.append(pkging)
         return history
-
-    def certifyForSync(self):
-        """Enable the sync for processing."""
-        self.dateprocessapproved = UTC_NOW
-        if self.rcstype == RevisionControlSystems.CVS:
-            self.syncinterval = datetime.timedelta(hours=12)
-        elif self.rcstype == RevisionControlSystems.SVN:
-            self.syncinterval = datetime.timedelta(hours=6)
-        else:
-            raise AssertionError(
-                'Unknown default sync interval for rcs type: %s'
-                % self.rcstype.title)
-        self.importstatus = ImportStatus.PROCESSING
-
-    def markStopped(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.STOPPED
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datestarted = None
-        self.datefinished = None
-        self.syncinterval = None
-
-    def deleteImport(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = None
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datepublishedsync = None
-        self.syncinterval = None
-        self.datestarted = None
-        self.datefinished = None
-        self.rcstype = None
-        self.cvsroot = None
-        self.cvsmodule = None
-        self.cvsbranch = None
-        self.cvstarfileurl = None
-        self.svnrepository = None
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""

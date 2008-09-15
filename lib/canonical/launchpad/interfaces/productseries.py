@@ -440,13 +440,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datepublishedsync = Attribute(_("The date of the published code was last "
         "synced, at the time of the last sync."))
 
-    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is
-    # only necessary for the transition from the old to the new
-    # code import system, and should be deleted after that process
-    # is done.
-    new_style_import = Attribute(_("The new-style import that was created "
-        "from this import, if any."))
-
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
@@ -454,36 +447,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 from canonical.launchpad.interfaces.milestone import IMilestone
 IProductSeries['milestones'].value_type.schema = IMilestone
 IProductSeries['all_milestones'].value_type.schema = IMilestone
-
-class IProductSeriesSourceAdmin(Interface):
-    """Administrative interface to approve syncing on a Product Series
-    upstream codebase, publishing it as Bazaar branch."""
-
-    def certifyForSync():
-        """enable this to sync"""
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
-
-    def markStopped():
-        """Mark this import as STOPPED.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
-
-    def deleteImport():
-        """Do our best to forget that this series ever had an import
-        associated with it.
-
-        Use with care!
-        """
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
 
 
 class IProductSeriesSet(Interface):
