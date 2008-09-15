@@ -94,7 +94,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
     :param exit_on_fail: If True, on failure of the slonik script
                          sys.exit is invoked using the slonik return code.
 
-    :returns: True if the script completed successfully. False it
+    :returns: True if the script completed successfully. False if
               exit_on_fail is False and the script failed for any reason.
     """
 
@@ -182,7 +182,7 @@ def calculate_replication_set(cur, seeds):
                 AND seed_namespace.nspname = %s
                 AND seed_class.relname = %s
 
-                -- Foreign key constraints are all we care about
+                -- Foreign key constraints are all we care about.
                 AND pg_constraint.contype = 'f'
 
                 -- We want tables referenced by, or referred to, the
