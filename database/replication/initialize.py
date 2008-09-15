@@ -27,73 +27,24 @@ __metaclass__ = type
 __all__ = []
 
 
-def main():
-    parser = OptionParser()
-    db_options(parser)
-    logger_options(parser)
+log = None # Global logger, initialized in main()
 
-    parser.set_defaults(dbuser='slony')
+options = None # Parsed command line options, initialized in main()
 
-    options, args = parser.parse_args()
+cur = None # Shared database cursor to the master, initialized in main()
 
-    log = logger(options)
 
-    # Confirm each database exists and is connectable.
-
-    # Confirm the slave databases are empty.
-
-    # Create the 'slony' superuser in each database if it does not already
-    # exist.
-
-    # Duplicate the master schema into the slaves, except for security.
+def duplicate_schema():
+    """Duplicate the master schema into the slaves."""
+    log.info('Duplicating database schema')
     # We can't use pg_dump to replicate security as not all of the roles
     # may exist in the slave databases' clusters yet.
-    log.info('Duplicating database schema')
     rv = subprocess.call(
         "pg_dump -x -s -U slony launchpad_dev "
         "| psql -q -U slony launchpad_dev_slave1", shell=True)
     if rv != 0:
         log.fatal("Schema duplication failed, pg_dump returned %d" % rv)
         sys.exit(rv)
-
-    # Generate lists of sequences and tables for our replication sets.
-    log.debug("Connecting as %s" % options.dbuser)
-    con = connect(options.dbuser)
-    cur = con.cursor()
-    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
-        cur, helpers.AUTHDB_SEED)
-    lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
-        cur, helpers.LPMAIN_SEED)
-
-    # Sanity check these lists - we want all objects in the public
-    # schema to be in one and only one replication set.
-    fails = 0
-    for table in all_tables_in_schema(cur, 'public'):
-        times_seen = 0
-        for table_set in [
-            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
-            if table in table_set:
-                times_seen += 1
-        if times_seen == 0:
-            log.error("%s not in any replication set." % table)
-            fails += 1
-        if times_seen > 1:
-            log.error("%s is in multiple replication sets." % table)
-            fails += 1
-    for sequence in all_sequences_in_schema(cur, 'public'):
-        times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
-            if sequence in sequence_set:
-                times_seen += 1
-        if times_seen == 0:
-            log.error("%s not in any replication set." % sequence)
-            fails += 1
-        if times_seen > 1:
-            log.error("%s is in multiple replication sets." % sequence)
-            fails += 1
-    if fails > 0:
-        log.fatal("%d errors in replication set definitions." % fails)
-        sys.exit(1)
 
     # Now setup security on the slaves and create any needed roles,
     log.info('Setting up security on slave')
@@ -103,7 +54,9 @@ def main():
         print >> sys.stderr, "ERR: security setup failed, returning %d" % rv
         sys.exit(rv)
 
-    # Initialize the cluster.
+
+def initialize_cluster():
+    """Initialize the cluster."""
     log.info('Initializing Slony-I cluster')
     helpers.execute_slonik("""
         try {
@@ -132,10 +85,15 @@ def main():
         on error { echo 'Slave#1 initialization failed.'; exit 1; }
         """)
 
-    log.info('Ensuring slon daemons are live and propagating events.')
-    helpers.sync(120)
 
-    # Create the replication sets
+def ensure_live():
+    log.info('Ensuring slon daemons are live and propagating events.')
+    helpers.sync(120) # Will exit on failure.
+
+
+def create_replication_sets(
+    authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
+    """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
     script = ["""
         try {
@@ -208,10 +166,14 @@ def main():
 
     helpers.validate_replication(cur) # Explode now if we have messed up.
 
-    # Generate and run a slonik script subscribing the slave databases
-    # to replication set #1. Note that direct subscribers to the master
-    # always need forward=yes as per Slony-I docs.
+
+def subscribe_slaves():
+    """Generate and run a slonik script subscribing the slave databases
+    to replication set #1.
+    """
     log.info('Subscribing slaves to replication sets.')
+    # Note that direct subscribers to the master
+    # always need forward=yes as per Slony-I docs.
     helpers.execute_slonik("""
         subscribe set (
             id=@authdb_set_id,
@@ -230,6 +192,79 @@ def main():
     log.info('Synchronized. Slave now usable.')
 
     helpers.validate_replication(cur) # Explode now if we have messed up.
+
+
+def main():
+    parser = OptionParser()
+    db_options(parser)
+    logger_options(parser)
+
+    parser.set_defaults(dbuser='slony')
+
+    global options
+    options, args = parser.parse_args()
+
+    global log
+    log = logger(options)
+
+    # Confirm each database exists and is connectable.
+
+    # Confirm the slave databases are empty.
+
+    # Create the 'slony' superuser in each database if it does not already
+    # exist.
+
+    # Prepare the empty tables in the destination database.
+    duplicate_schema()
+
+    # Generate lists of sequences and tables for our replication sets.
+    log.debug("Connecting as %s" % options.dbuser)
+    con = connect(options.dbuser)
+    global cur
+    cur = con.cursor()
+    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
+        cur, helpers.AUTHDB_SEED)
+    lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
+        cur, helpers.LPMAIN_SEED)
+
+    # Sanity check these lists - we want all objects in the public
+    # schema to be in one and only one replication set.
+    fails = 0
+    for table in all_tables_in_schema(cur, 'public'):
+        times_seen = 0
+        for table_set in [
+            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
+            if table in table_set:
+                times_seen += 1
+        if times_seen == 0:
+            log.error("%s not in any replication set." % table)
+            fails += 1
+        if times_seen > 1:
+            log.error("%s is in multiple replication sets." % table)
+            fails += 1
+    for sequence in all_sequences_in_schema(cur, 'public'):
+        times_seen = 0
+        for sequence_set in [authdb_sequences, lpmain_sequences]:
+            if sequence in sequence_set:
+                times_seen += 1
+        if times_seen == 0:
+            log.error("%s not in any replication set." % sequence)
+            fails += 1
+        if times_seen > 1:
+            log.error("%s is in multiple replication sets." % sequence)
+            fails += 1
+    if fails > 0:
+        log.fatal("%d errors in replication set definitions." % fails)
+        sys.exit(1)
+
+    initialize_cluster()
+
+    ensure_live()
+
+    create_replication_sets(
+        authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences)
+
+    subscribe_slaves()
 
 
 if __name__ == '__main__':
