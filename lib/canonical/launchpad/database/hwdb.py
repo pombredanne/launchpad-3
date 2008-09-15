@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 # The vendor name assigned to new, unknown vendor IDs. See

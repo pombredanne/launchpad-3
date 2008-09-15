@@ -1720,18 +1720,9 @@ class ViewHWSubmission(AuthorizationBase):
         return not self.obj.private
 
 
-class EditHWSubmission(AuthorizationBase):
+class EditHWSubmission(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IHWSubmission
-
-    def checkAuthenticated(self, user):
-        """Can the user edit the submission?
-
-        HWDB submissions should not be edited; only admins are allowed
-        to change the status.
-        """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
 
 
 class ViewArchive(AuthorizationBase):
