@@ -55,6 +55,37 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         self.assertEqual(new_request._orig_env['key'], 'second value')
 
 
+class TestWebServiceRequestPublicationFactory(unittest.TestCase):
+
+    def test_factory_only_handles_urls_with_api_path(self):
+        """Requests with URLs containing the webservice API root should
+        be handled by the factory.  URLs without the path should not
+        be handled.
+        """
+        from canonical.launchpad.webapp.servers import (
+            WebServiceRequestPublicationFactory,
+            WebServiceClientRequest,
+            WebServicePublication,
+            API_PATH_OVERRIDE)
+
+        factory = WebServiceRequestPublicationFactory(
+            'api', WebServiceClientRequest, WebServicePublication)
+
+        def path_info(path):
+            # Simulate a WSGI environment.
+            return {'PATH_INFO': path}
+
+        # This is a sanity check, so I can write '/api/foo' instead
+        # of API_ROOT_PATH + '/foo' -- the former's intention is clearer.
+        self.assert(API_PATH_OVERRIDE == 'api')
+
+        self.assert(factory.canHandle(path_info('/api'))
+        self.assert(factory.canHandle(path_info('/api/foo'))
+        self.failIf(factory.canHandle(path_info('/foo'))
+        self.failIf(factory.canHandle(path_info('/apifoo'))
+        self.failIf(factory.canHandle(path_info('/foo/api'))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(

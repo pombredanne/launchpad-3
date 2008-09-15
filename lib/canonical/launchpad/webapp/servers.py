@@ -71,6 +71,12 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 
 
+# Any requests that have the following at the beginning of their PATH_INFO
+# will be handled by the web service, as if they had gone to
+# api.launchpad.net.
+API_PATH_OVERRIDE = 'api'
+
+
 class StepsToGo:
     """
 
@@ -356,6 +362,31 @@ class WebServiceRequestPublicationFactory(
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
+
+    def canHandle(self, environment):
+        """See `IRequestPublicationFactory`.
+
+        This factory handles requests to both the 'api' virtual host,
+        and requests to the '/api' URL path on any other virtual host.
+
+        :param environment: The WSGI environment.
+
+        :return: True if the incoming request should be treated as a
+            WebService request.
+        """
+        return (self.isWebServicePathRequest(environment)
+                or
+                self.isWebServiceDomainRequest(environment))
+
+    def isWebservicePathRequest(self, environment):
+        """Should the request URL's path be handled by the WebService?
+        """
+        return False
+
+    def isWebServiceDomainRequest(self, environment):
+        """Is the request's domain handled by the WebService?"""
+        return super(WebServiceRequestPublicationFactory,
+            self).canHandle(environment)
 
 
 class NotFoundRequestPublicationFactory:
@@ -1313,6 +1344,8 @@ def register_launchpad_request_publication_factories():
     VHRP = VirtualHostRequestPublicationFactory
 
     factories = [
+        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
+                                            WebServicePublication),
         VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
              handle_default_host=True),
         VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
@@ -1329,8 +1362,6 @@ def register_launchpad_request_publication_factories():
         VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
              ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
-        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
-                                            WebServicePublication),
         XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
                                         PublicXMLRPCPublication)
         ]
