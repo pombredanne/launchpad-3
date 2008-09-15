@@ -23,7 +23,9 @@ member called "member":
 
 The user-specific portion of member's OpenID URL is cCGE3LA:
 
-    >>> print member.openid_identifier
+    # Only admins and the person may access an openid_identifier.
+    >>> login('foo.bar@canonical.com')
+    >>> print member.account.openid_identifier
     cCGE3LA
 
     >>> logout()

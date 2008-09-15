@@ -12,6 +12,7 @@ __all__ = [
 import re
 
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.layers import OpenIDLayer
 from canonical.launchpad.interfaces.openidserver import (
@@ -94,7 +95,6 @@ class OpenIDPersistentIdentity:
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
-        from zope.security.proxy import removeSecurityProxy
         token = removeSecurityProxy(self.account).openid_identifier
         if token is None:
             return None
@@ -131,4 +131,10 @@ class OpenIDPersistentIdentity:
 def account_to_openidpersistentidentity(account):
     """Adapts an `IAccount` into an `IOpenIDPersistentIdentity`."""
     return OpenIDPersistentIdentity(account)
+
+
+def person_to_openidpersistentidentity(person):
+    """Adapts an `IPerson` into an `IOpenIDPersistentIdentity`."""
+    return OpenIDPersistentIdentity(
+        removeSecurityProxy(person).account)
 

@@ -86,29 +86,7 @@ Launchpad supports the old, deprecated identity URLs.
     Server URL: http://openid.launchpad.dev/+openid
     Supports:
       http://specs.openid.net/auth/2.0/signon
-    ----
-    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
-    Server URL: http://openid.launchpad.dev/+openid
-    Supports:
-      http://openid.net/signon/1.1
-    ----
-    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
-    Server URL: http://openid.launchpad.dev/+openid
-    Supports:
-      http://openid.net/signon/1.0
-    ----
-
-The endpoint does not support the new URL path.
-
-    >>> print_endpoints('http://openid.launchpad.dev/123/sabdfl')
-    Traceback (most recent call last):
-      ...
-    DiscoveryFailure: ...
-
-    >>> anon_browser.open('http://openid.launchpad.dev/123/sabdfl')
-    Traceback (most recent call last):
-      ...
-    NotFound: ...
+    ...
 
 
 == OP Identifier Discovery ==

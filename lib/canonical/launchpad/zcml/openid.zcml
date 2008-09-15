@@ -97,6 +97,12 @@
       factory="canonical.launchpad.components.openidserver.account_to_openidpersistentidentity"
       />
 
+    <adapter
+      for="canonical.launchpad.interfaces.person.IPerson"
+      provides="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
+      factory="canonical.launchpad.components.openidserver.person_to_openidpersistentidentity"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity"
         path_expression="string:${selected_openid_identifier}"
