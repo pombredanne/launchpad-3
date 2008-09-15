@@ -97,6 +97,7 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -2357,7 +2358,8 @@ class Person(
 
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
-        assert IBugTarget.providedBy(target), (
+        assert (IBugTarget.providedBy(target) or
+                IProject.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
