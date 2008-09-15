@@ -480,6 +480,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")
 
+The pillar set is published through the web service, but not through
+the website.
+
+>>> check_not_found("/pillars")
 
 Check legacy URL redirects
 

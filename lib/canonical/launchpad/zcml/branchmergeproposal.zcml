@@ -35,14 +35,47 @@
   <content class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
       <allow attributes="getReason branch mail_header" />
   </content>
+
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
+
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_proposed" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalApprovedEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_approved" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalRejectedEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_rejected" />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />

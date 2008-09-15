@@ -249,6 +249,21 @@ class SourcePackageRelease(SQLBase):
 
         return sorted(archives, key=operator.attrgetter('id'))
 
+    @cachedproperty
+    def _cached_published_archives(self):
+        """Return a cached list of published archives.
+
+        This is intended for the security adapter as it calls
+        published_archives a lot which makes private PPA index pages
+        unrenderable in the timeout allowed if they have more than a
+        handful of packages.
+
+        XXX Julian 2008-09-10
+        This code should be removed when security adapter caching is done.
+        See bug 268612.
+        """
+        return self.published_archives
+
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
