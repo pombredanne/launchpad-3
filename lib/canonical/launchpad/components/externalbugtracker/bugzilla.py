@@ -137,6 +137,9 @@ class Bugzilla(ExternalBugTracker):
             return None
 
         try:
+            # XXX 2008-09-15 gmb bug 270695:
+            #     We can clean this up by just stripping out anything
+            #     not in [0-9\.].
             # Get rid of trailing -rh, -debian, etc.
             version = version.split("-")[0]
             # Ignore plusses in the version.
