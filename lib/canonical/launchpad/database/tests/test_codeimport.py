@@ -7,23 +7,18 @@ import unittest
 
 import pytz
 from sqlobject import SQLObjectNotFound
-from sqlobject.sqlbuilder import SQLConstant
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.codehosting.codeimport.publish import ensure_series_branch
 from canonical.codehosting.codeimport.tests.test_workermonitor import (
     nuke_codeimport_sample_data)
-from canonical.database.constants import DEFAULT
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
 from canonical.launchpad.database.codeimportjob import (
     CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
-from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportReviewStatus, IBranchSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, ImportStatus,
+    CodeImportReviewStatus, ICodeImportSet, IPersonSet,
     RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import (
