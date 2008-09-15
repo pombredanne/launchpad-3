@@ -61,7 +61,6 @@ COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the mer
 COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
 COMMENT ON COLUMN BranchMergeProposal.review_diff IS 'The diff to use for review purposes.';
-COMMENT ON COLUMN BranchMergeProposal.review_diff_job IS 'A job to generate a diff to use for review purposes.';
 COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
@@ -780,6 +779,7 @@ COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is
 -- StaticDiffJob
 COMMENT ON TABLE StaticDiffJob IS 'Jobs to generate static diffs.';
 COMMENT ON COLUMN StaticDiffJob.branch IS 'The Branch to use for resolving revision specs.';
+COMMENT ON COLUMN StaticDiffJob.branch_merge_proposal IS 'A BranchMergeProposal that should refer to the resulting diff.';
 COMMENT ON COLUMN StaticDiffJob.from_revision_spec IS 'The revision spec that the diff will be from.';
 COMMENT ON COLUMN StaticDiffJob.job IS 'The Job for this StaticDiffJob.';
 COMMENT ON COLUMN StaticDiffJob.to_revision_spec IS 'The revision spec that the diff will be to.';
