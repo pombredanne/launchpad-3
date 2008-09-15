@@ -1007,7 +1007,7 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       has_patch=None, has_cve=None,
+                       has_patch=None, has_cve=None, distribution=None,
                        tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
@@ -1025,6 +1025,7 @@ class BugTaskSearchParams:
         search_params.bug_commenter = bug_commenter
         search_params.subscriber = bug_subscriber
         search_params.owner = owner
+        search_params.distribution = distribution
         if has_patch:
             search_params.attachmenttype = BugAttachmentType.PATCH
             search_params.has_patch = has_patch
