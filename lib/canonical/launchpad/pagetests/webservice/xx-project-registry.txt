@@ -441,6 +441,48 @@ virtual host.
     summary: u'The 1.0 branch of the Mozilla web browser...'
     title: u'Mozilla Firefox Series: 1.0'
 
+= Creating a milestone on the product series =
+
+The newMilstone method is called by sending "ws.op=newMilestone"
+as a request variable along with the parameters. The
+webservice.named_post() method simplifies this for us.
+
+    >>> response = webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='alpha1', date_targeted=u'2005-06-06',
+    ...     description='Feature complete but buggy.')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../firefox/+milestone/alpha1
+    >>> milestone = webservice.get(response.getHeader('Location')).jsonBody()
+    >>> print milestone['name']
+    alpha1
+    >>> print milestone['date_targeted']
+    2005-06-06T00:00:00
+    >>> print milestone['description']
+    Feature complete but buggy.
+
+The milestone name must be unique on the product series.
+
+    >>> print webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='alpha1', dateexpected='157.0',
+    ...     description='Feature complete but buggy.')
+    HTTP/1.1 400 Bad Request
+    ...
+    name: The name alpha1 is already used by a milestone in Mozilla Firefox.
+
+The milestone name can only contain letters, numbers, "-", "+", and ".".
+
+    >>> print webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='!@#$%^&*()', dateexpected='157.0',
+    ...     description='Feature complete but buggy.')
+    HTTP/1.1 400 Bad Request
+    ...
+    Invalid name...
+
 
 == Project release entry ==
 

@@ -166,6 +166,7 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
+<<<<<<< TREE
     @call_with(uploader=REQUEST_USER)
     @rename_parameters_as(filetype='file_type')
     @operation_parameters(
@@ -181,16 +182,40 @@ class IProductReleaseEditRestricted(Interface):
     def addReleaseFile(filename, file_content, content_type,
                        signature_filename, signature_content, uploader,
                        filetype=UpstreamFileType.CODETARBALL,
+=======
+    def addReleaseFile(filename, file_content, file_size, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None, signature_size=None,
+                       file_type=UpstreamFileType.CODETARBALL,
+>>>>>>> MERGE-SOURCE
                        description=None):
+<<<<<<< TREE
         """Add file to the library and link to this `IProductRelease`.
+=======
+        """Add file to the library, and link to this `IProductRelease`.
+>>>>>>> MERGE-SOURCE
 
         The signature file will also be added if available.
 
         :param filename: Name of the file being uploaded.
+<<<<<<< TREE
         :param file_content: String of bytes.
+=======
+        :param file_content: StringIO or file object.
+        :param file_size: Size of file_content.
+>>>>>>> MERGE-SOURCE
         :param content_type: A MIME content type string.
-        :param signature_filename: Name of the uploaded gpg signature file.
+<<<<<<< TREE
+=======
         :param uploader: The person who uploaded the file.
+>>>>>>> MERGE-SOURCE
+        :param signature_filename: Name of the uploaded gpg signature file.
+<<<<<<< TREE
+        :param uploader: The person who uploaded the file.
+=======
+        :param signature_content: StringIO or file object.
+        :param signature_size: Size of signature_content.
+>>>>>>> MERGE-SOURCE
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.

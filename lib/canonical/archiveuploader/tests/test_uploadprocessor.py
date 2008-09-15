@@ -38,7 +38,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, ILibraryFileAliasSet, NonBuildableSourceUploadError,
+    ILibraryFileAliasSet, NonBuildableSourceUploadError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
     QueueInconsistentStateError)
 from canonical.launchpad.interfaces.archivepermission import (
@@ -159,9 +159,8 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
-        dr_set = getUtility(IDistroSeriesSet)
-        self.breezy = dr_set.new(
-            self.ubuntu, 'breezy', 'Breezy Badger',
+        self.breezy = self.ubuntu.newSeries(
+            'breezy', 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
         breezy_i386 = self.breezy.newArch(

@@ -472,6 +472,12 @@ special = {
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
             ),
+    'bugzilla-import.txt': LayeredDocFileSuite(
+            '../doc/bugzilla-import.txt',
+            setUp=setUp, tearDown=tearDown,
+            stdout_logging_level=logging.WARNING,
+            layer=LaunchpadZopelessLayer
+            ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
             setUp=setUp, tearDown=tearDown,

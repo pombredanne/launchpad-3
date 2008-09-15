@@ -659,7 +659,3 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
-
-    def new(distribution, name, displayname, title, summary, description,
-            version, parent_series, owner):
-        """Creates a new distroseries"""

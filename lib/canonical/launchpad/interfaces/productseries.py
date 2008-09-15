@@ -30,7 +30,8 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    IHasMilestones, IMilestone)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -44,7 +45,8 @@ from canonical.launchpad import _
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_factory_operation, exported,
+    rename_parameters_as)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -191,8 +193,11 @@ def validate_release_glob(value):
 class IProductSeriesEditRestricted(Interface):
     """IProductSeries properties which require launchpad.Edit."""
 
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(IMilestone,
+                              ['name', 'dateexpected', 'description'])
     def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
+        """Create a new milestone for this ProjectSeries."""
 
     def addRelease(version, owner, codename=None, shortdesc=None,
                    description=None, changelog=None):
@@ -304,7 +309,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=Interface)), # Specified later.
+            value_type=Reference(schema=IMilestone)),
         exported_as='active_milestones')
 
     all_milestones = exported(
@@ -312,7 +317,7 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Specified later.
+            value_type=Reference(schema=IMilestone)))
 
     drivers = exported(
         CollectionField(
@@ -472,11 +477,6 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
-
-# We are forced to define this now to avoid circular import problems.
-from canonical.launchpad.interfaces.milestone import IMilestone
-IProductSeries['milestones'].value_type.schema = IMilestone
-IProductSeries['all_milestones'].value_type.schema = IMilestone
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
