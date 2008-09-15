@@ -778,6 +778,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* A "navigation menu" categorizes the information about an object. */
 /* For example, a distribution has "Details / Announcements / Mentoring..." */
 /* Navigation menus appear as a segmented pill overlaid on a groove: */
+/* First row of options */
 #context-navigation-tabs .navigation.menu {
   margin: 0.5em 0 1em;
   text-align: center;
@@ -836,7 +837,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 #context-navigation-tabs .navigation.menu > strong:last-child::after {
   background-image: url(navigation-se-selected.png);
 }
-/**/
+/* Second row of options */
 #view-navigation-tabs .navigation.menu {
   margin: 0.5em 0 1em;
   text-align: center;
