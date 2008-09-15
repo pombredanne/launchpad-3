@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import pytz
 import threading
+import urllib
 import xmlrpclib
 from datetime import datetime
 
@@ -378,10 +379,14 @@ class WebServiceRequestPublicationFactory(
                 or
                 self.isWebServiceDomainRequest(environment))
 
-    def isWebservicePathRequest(self, environment):
+    def isWebServicePathRequest(self, environment):
         """Should the request URL's path be handled by the WebService?
         """
-        return False
+        path_info = environment.get('PATH_INFO', '').split('/')
+        if len(path_info) > 1:
+            return API_PATH_OVERRIDE == path_info[1]
+        else:
+            return False
 
     def isWebServiceDomainRequest(self, environment):
         """Is the request's domain handled by the WebService?"""

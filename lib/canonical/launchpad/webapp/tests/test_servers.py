@@ -76,14 +76,31 @@ class TestWebServiceRequestPublicationFactory(unittest.TestCase):
             return {'PATH_INFO': path}
 
         # This is a sanity check, so I can write '/api/foo' instead
-        # of API_ROOT_PATH + '/foo' -- the former's intention is clearer.
-        self.assert(API_PATH_OVERRIDE == 'api')
+        # of API_ROOT_PATH + '/foo' in my tests.  The former's intention
+        # is clearer.
+        self.assert_(API_PATH_OVERRIDE == 'api')
 
-        self.assert(factory.canHandle(path_info('/api'))
-        self.assert(factory.canHandle(path_info('/api/foo'))
-        self.failIf(factory.canHandle(path_info('/foo'))
-        self.failIf(factory.canHandle(path_info('/apifoo'))
-        self.failIf(factory.canHandle(path_info('/foo/api'))
+        self.assert_(factory.canHandle(path_info('/api')),
+            "The factory should handle URLs that start with /api.")
+
+        self.assert_(factory.canHandle(path_info('/api/foo')),
+            "The factory should handle URLs that start with /api.")
+
+        self.failIf(factory.canHandle(path_info('/foo')),
+            "The factory should not handle URLs that do not start with"
+            "/api, and that are not addressed to the webservice domain.")
+
+        self.failIf(factory.canHandle(path_info('/')),
+            "The factory should not handle URLs that do not start with"
+            "/api, and that are not addressed to the webservice domain.")
+
+        self.failIf(factory.canHandle(path_info('/apifoo')),
+            "The factory should not handle URLs that do not start with"
+            "/api, and that are not addressed to the webservice domain.")
+
+        self.failIf(factory.canHandle(path_info('/foo/api')),
+            "The factory should not handle URLs that do not start with"
+            "/api, and that are not addressed to the webservice domain.")
 
 
 def test_suite():
