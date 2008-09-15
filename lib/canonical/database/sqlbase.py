@@ -635,11 +635,7 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    con_str = ' '.join([con_str] + con_str_overrides)
-
-    con = psycopg2.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
+    return ' '.join([con_str] + con_str_overrides)
 
 
 class cursor:
