@@ -45,8 +45,8 @@ from canonical.launchpad import _
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, export_factory_operation, exported,
-    rename_parameters_as)
+    call_with, export_as_webservice_entry, export_factory_operation, exported,
+    rename_parameters_as, REQUEST_USER)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -199,7 +199,12 @@ class IProductSeriesEditRestricted(Interface):
     def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this ProjectSeries."""
 
-    def addRelease(version, owner, codename=None, shortdesc=None,
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(codename='code_name')
+    @export_factory_operation(
+        IProductRelease,
+        ['version', 'codename', 'summary', 'description', 'changelog'])
+    def addRelease(version, owner, codename=None, summary=None,
                    description=None, changelog=None):
         """Create a new ProductRelease.
 
