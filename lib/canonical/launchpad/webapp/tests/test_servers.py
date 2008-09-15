@@ -114,16 +114,16 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
             WebServiceClientRequest,
             API_PATH_OVERRIDE)
 
+        # First, we need to forge a request to the API.
         data = ''
-        api_url = '/'.join('/' + API_PATH_OVERRIDE, 'foo')
+        api_url = '/' + API_PATH_OVERRIDE + '/' + 'foo'
         env = {'PATH_INFO': api_url}
         request = WebServiceClientRequest(data, env)
 
-        # We need a mock publication object to use during traversal.
+        # And we need a mock publication object to use during traversal.
         class WebServicePublicationStub:
             def getResource(self, obj):
                 pass
-
         request.setPublication(WebServicePublicationStub())
 
         stack = request.getTraversalStack()

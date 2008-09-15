@@ -1149,28 +1149,22 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
-        stack = self.getTraversalStack()
         # Only accept versioned URLs.
-        if len(stack) > 0:
-            last_component = stack.pop()
-        else:
-            last_component = ''
-        if last_component == 'beta':
-            self.setTraversalStack(stack)
+        if self.popTraversal('beta'):
             self.setVirtualHostRoot(names=('beta', ))
         else:
             raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 
-    def dropTraversal(self, name):
+    def popTraversal(self, name):
         """Remove a name from the traversal stack, if it is present."""
         stack = self.getTraversalStack()
-        if len(stack) == 0:
-            return
-        elif stack[-1] == name:
-            stack.pop()
+        if len(stack) > 0 and stack[-1] == name:
+            item = stack.pop()
             self.setTraversalStack(stack)
+            return item
+        return None
 
 
 class WebServiceClientRequest(WebServiceRequestTraversal,
