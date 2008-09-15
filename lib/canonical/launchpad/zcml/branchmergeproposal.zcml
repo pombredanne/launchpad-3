@@ -43,6 +43,22 @@
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+      factory="canonical.launchpad.browser.branchmergeproposal.BranchMergeProposalPrimaryContext"
+      />
+
+  <!-- hierarchy -->
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      name="+hierarchy"
+      class="canonical.launchpad.browser.branch.BranchHierarchy"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />
