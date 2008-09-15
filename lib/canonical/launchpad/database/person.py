@@ -1009,9 +1009,20 @@ class Person(
         else:
             return None
 
-    def searchTasks(self, search_params, *args):
+    def _customizeSearchParams(self, search_params):
+        """No-op, to satisfy a requirement of HasBugsBase."""
+        pass
+
+    def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
-        return getUtility(IBugTaskSet).search(search_params, *args)
+        if len(kwargs) > 0:
+            # if keyword arguments are supplied, use the deault
+            # implementation in HasBugsBase.
+            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+        else:
+            # Otherwise pass all positional arguments to the
+            # implementation in BugTaskSet.
+            return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
