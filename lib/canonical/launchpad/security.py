@@ -7,6 +7,7 @@ __all__ = []
 
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
@@ -43,7 +44,8 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.hwdb import (
+    IHWSubmission, IHWSubmissionSet)
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -1711,11 +1713,8 @@ class ViewHWSubmission(AuthorizationBase):
         private submissions may only be accessed by their owner and by
         admins.
         """
-        if not self.obj.private:
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+        return getUtility(IHWSubmissionSet).getBySubmissionKey(
+            removeSecurityProxy(self.obj).submission_key, user) is not None
 
     def checkUnauthenticated(self):
         return not self.obj.private

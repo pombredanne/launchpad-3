@@ -317,6 +317,7 @@ will have the the `owner` field set to None.
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Acer 6789')
+    >>> Store.of(submission).flush()
     >>> print submission.owner
     None
 
@@ -348,6 +349,7 @@ submission). In this case the owner is always None.
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Dell Inspiron 1234')
+    >>> Store.of(submission_no_owner).flush()
     >>> print submission_no_owner.raw_emailaddress
     None
     >>> print submission_no_owner.owner

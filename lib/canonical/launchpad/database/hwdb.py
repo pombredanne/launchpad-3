@@ -188,10 +188,11 @@ class HWSubmissionSet:
 
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
-        query = "submission_key=%s" % sqlvalues(submission_key)
-        query = query + self._userHasAccessClause(user)
-
-        return HWSubmission.selectOne(query)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            HWSubmission,
+            And(HWSubmission.submission_key == submission_key,
+                self._userHasAccessStormClause(user))).one()
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""

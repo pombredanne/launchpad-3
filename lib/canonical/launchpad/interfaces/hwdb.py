@@ -222,6 +222,7 @@ class IHWSubmissionSet(Interface):
         :param status: A status as enumerated in HWSubmissionProcessingStatus.
         """
 
+
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
 
