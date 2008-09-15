@@ -95,7 +95,7 @@ class LaunchpadObjectFactory:
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = count()
+        self._integer = count(1)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
