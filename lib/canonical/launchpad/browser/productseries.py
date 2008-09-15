@@ -39,7 +39,7 @@ from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
     IProductSeries, ISourcePackageNameSet, ITranslationImportQueue,
-    ITranslationImporter, ImportStatus, NotFoundError)
+    ITranslationImporter, NotFoundError)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,

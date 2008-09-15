@@ -8,7 +8,6 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
-import datetime
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from warnings import warn
