@@ -411,25 +411,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 history.append(pkging)
         return history
 
-    def deleteImport(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = None
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datepublishedsync = None
-        self.syncinterval = None
-        self.datestarted = None
-        self.datefinished = None
-        self.rcstype = None
-        self.cvsroot = None
-        self.cvsmodule = None
-        self.cvsbranch = None
-        self.cvstarfileurl = None
-        self.svnrepository = None
-
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
@@ -486,13 +467,6 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def searchImports(self, text=None, importstatus=None):
-        """See `IProductSeriesSet`."""
-        query = self.composeQueryString(text, importstatus)
-        return ProductSeries.select(
-            query, orderBy=['product.name', 'productseries.name'],
-            clauseTables=['Product'])
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
