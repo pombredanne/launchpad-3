@@ -375,9 +375,4 @@
     parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
     />
 
-  <browser:defaultView
-    for="canonical.launchpad.interfaces.IProductSeriesSet"
-    layer="canonical.launchpad.layers.CodeLayer"
-    name="+bazaar-index" />
-
 </configure>
