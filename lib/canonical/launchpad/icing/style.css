@@ -803,7 +803,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 #context-navigation-tabs .navigation.menu a:hover {text-decoration: none;}
 /* The first segment has a rounded cap, matching its color: */
 #context-navigation-tabs .navigation.menu > :first-child {
-  background: url(navigation-nw-w-normal.png) top left no-repeat;
+  background: url(navigation-parent-nw-w-normal.png) top left no-repeat;
 }
 #context-navigation-tabs .navigation.menu > strong:first-child {
   background-image: url(navigation-nw-w-selected.png);
@@ -811,7 +811,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* The bottom right corner is placed over top of the bottom border: */
 #context-navigation-tabs .navigation.menu > :first-child::before {
   content: '';
-  background: url(navigation-sw-normal.png) no-repeat bottom left;
+  background: url(navigation-parent-sw-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
@@ -820,7 +820,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 }
 /* The last segment has a rounded cap, matching its color: */
 #context-navigation-tabs .navigation.menu > :last-child {
-  background: url(navigation-ne-e-normal.png) top right no-repeat;
+  background: url(navigation-parent-ne-e-normal.png) top right no-repeat;
 }
 #context-navigation-tabs .navigation.menu > strong:last-child {
   background-image: url(navigation-ne-e-selected.png);
@@ -829,7 +829,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* The bottom right corner is placed over top of the bottom border: */
 #context-navigation-tabs .navigation.menu > :last-child::after {
   content: '';
-  background: url(navigation-se-normal.png) no-repeat bottom left;
+  background: url(navigation-parent-se-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
