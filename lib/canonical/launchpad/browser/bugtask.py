@@ -1978,9 +1978,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         if not context:
             context = self.context
 
-        search_params = self.buildBugTaskSearchParams(
+        search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
-        tasks = context.searchTasks(None, self.user, **search_params)
+        search_params.user = self.user
+        tasks = context.searchTasks(search_params)
         return tasks
 
     def getWidgetValues(
