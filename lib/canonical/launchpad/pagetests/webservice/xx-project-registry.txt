@@ -484,7 +484,7 @@ The milestone name can only contain letters, numbers, "-", "+", and ".".
     Invalid name...
 
 
-== Project release entry ==
+= Project release =
 
 Project releases are available at their canonical URL on the API virtual host.
 
@@ -506,6 +506,31 @@ Project releases are available at their canonical URL on the API virtual host.
     title: u'Mozilla Firefox 1.0.0 "First Stable Release"'
     version: u'1.0.0'
 
+The addRelease method is called by sending "ws.op=addRelease"
+as a request variable along with the parameters. The
+webservice.named_post() method simplifies this for us.
+
+    >>> response = webservice.named_post(
+    ...     firefox_1_0['self_link'], 'addRelease', {},
+    ...     version='rc1', code_name='Samurai Monkey',
+    ...     summary='Best version ever.', description='Ready to launch.',
+    ...     changelog='Added 5,000 features.')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/1.0/rc1
+    >>> release = webservice.get(response.getHeader('Location')).jsonBody()
+    >>> print release['version']
+    rc1
+    >>> print release['code_name']
+    Samurai Monkey
+    >>> print release['summary']
+    Best version ever.
+    >>> print release['description']
+    Ready to launch.
+    >>> print release['changelog']
+    Added 5,000 features.
+
 
 == Project release entries ==
 
@@ -513,6 +538,7 @@ Project releases are available at their canonical URL on the API virtual host.
     ...     '/firefox/1.0/releases').jsonBody()
     >>> print_self_link_of_entries(releases)
     http://.../firefox/1.0/1.0.0
+    http://.../firefox/1.0/rc1
 
 
 == Project release file collection ==
@@ -548,6 +574,7 @@ host.
     ...     '/firefox/1.0/releases').jsonBody()
     >>> print_self_link_of_entries(releases)
     http://api.launchpad.dev/beta/firefox/1.0/1.0.0
+    http://.../firefox/1.0/rc1
 
 
 == Project release file entry ==

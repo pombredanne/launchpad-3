@@ -155,24 +155,22 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             if content_type is None:
                 content_type = "text/plain"
 
-            if signature_upload is None:
+            # signature_upload is u'' if no file is specified in
+            # the browser.
+            if signature_upload:
+                signature_filename = signature_upload.filename
+                signature_content = data['signature']
+            else:
                 signature_filename = None
                 signature_content = None
-                signature_size = None
-            else:
-                signature_filename = signature_upload.filename
-                signature_content = StringIO(data['signature'])
-                signature_size = len(data['signature'])
 
             release_file = self.context.addReleaseFile(
                 filename=file_upload.filename,
-                file_content=StringIO(data['filecontent']),
-                file_size=len(data['filecontent']),
+                file_content=data['filecontent'],
                 content_type=content_type,
                 uploader=self.user,
                 signature_filename=signature_filename,
                 signature_content=signature_content,
-                signature_size=signature_size,
                 file_type=filetype,
                 description=data['description'])
 
