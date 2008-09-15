@@ -115,7 +115,7 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
             API_PATH_OVERRIDE)
 
         data = ''
-        api_url = urlparse.urljoin(API_PATH_OVERRIDE, 'foo')
+        api_url = '/'.join('/' + API_PATH_OVERRIDE, 'foo')
         env = {'PATH_INFO': api_url}
         request = WebServiceClientRequest(data, env)
 

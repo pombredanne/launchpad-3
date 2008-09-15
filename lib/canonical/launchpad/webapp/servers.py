@@ -1163,13 +1163,12 @@ class WebServiceRequestTraversal:
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 
-    def popTraversal(self, name):
+    def dropTraversal(self, name):
         """Remove a name from the traversal stack, if it is present."""
         stack = self.getTraversalStack()
         if len(stack) == 0:
             return
-
-        if stack[-1] == name:
+        elif stack[-1] == name:
             stack.pop()
             self.setTraversalStack(stack)
 
