@@ -1,5 +1,6 @@
 = Web Service Project Groups =
 
+
 == Project group collection ==
 
 It is possible to get a batched list of all the project groups.
@@ -415,6 +416,3 @@ Trying to put new content will result in a ForbiddenAttribute error.
     HTTP/1.1 405 Method Not Allowed
     Allow: GET
     ...
-
-Soon a new method will be introduced that will allow the file and
-signature attributes to be modified in place.

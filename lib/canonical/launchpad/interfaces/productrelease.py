@@ -32,7 +32,9 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, exported,
+    operation_parameters, rename_parameters_as)
 
 
 class UpstreamFileType(DBEnumeratedType):
@@ -164,11 +166,23 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
+    @call_with(uploader=REQUEST_USER)
+    @rename_parameters_as(filetype='file_type')
+    @operation_parameters(
+        filename=TextLine(),
+        signature_filename=TextLine(),
+        content_type=TextLine(),
+        file_content=Bytes(constraint=productrelease_file_size_constraint),
+        signature_content=Bytes(constraint=productrelease_signature_size_constraint)
+        )
+    @export_factory_operation(
+        IProductReleaseFile, ['filetype', 'description'])
+    @export_operation_as('add_file')
     def addReleaseFile(filename, file_content, content_type,
                        signature_filename, signature_content, uploader,
-                       file_type=UpstreamFileType.CODETARBALL,
+                       filetype=UpstreamFileType.CODETARBALL,
                        description=None):
-        """Add file to the library, and link to this `IProductRelease`.
+        """Add file to the library and link to this `IProductRelease`.
 
         The signature file will also be added if available.
 
@@ -275,15 +289,6 @@ class IProductReleasePublic(Interface):
             description=_('A list of files for this release.'),
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
-
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
-
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
 
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.
