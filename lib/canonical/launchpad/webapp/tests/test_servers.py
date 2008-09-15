@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import StringIO
 import unittest
+import urlparse
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
@@ -87,20 +88,55 @@ class TestWebServiceRequestPublicationFactory(unittest.TestCase):
             "The factory should handle URLs that start with /api.")
 
         self.failIf(factory.canHandle(path_info('/foo')),
-            "The factory should not handle URLs that do not start with"
+            "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
         self.failIf(factory.canHandle(path_info('/')),
-            "The factory should not handle URLs that do not start with"
+            "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
         self.failIf(factory.canHandle(path_info('/apifoo')),
-            "The factory should not handle URLs that do not start with"
+            "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
         self.failIf(factory.canHandle(path_info('/foo/api')),
-            "The factory should not handle URLs that do not start with"
+            "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
+
+
+class TestWebServiceRequestTraversal(unittest.TestCase):
+
+    def test_traversal_of_api_path_urls(self):
+        """Requests that have /api at the root of their path should trim
+        the 'api' name from the traversal stack.
+        """
+        from canonical.launchpad.webapp.servers import (
+            WebServiceClientRequest,
+            API_PATH_OVERRIDE)
+
+        data = ''
+        api_url = urlparse.urljoin(API_PATH_OVERRIDE, 'foo')
+        env = {'PATH_INFO': api_url}
+        request = WebServiceClientRequest(data, env)
+
+        # We need a mock publication object to use during traversal.
+        class WebServicePublicationStub:
+            def getResource(self, obj):
+                pass
+
+        request.setPublication(WebServicePublicationStub())
+
+        stack = request.getTraversalStack()
+        self.assert_(API_PATH_OVERRIDE in stack,
+            "Sanity check: the API path should show up in the request's "
+            "traversal stack: %r" % stack)
+
+        request.traverse(object())
+
+        stack = request.getTraversalStack()
+        self.failIf(API_PATH_OVERRIDE not in stack,
+            "Web service paths should be dropped from the webservice "
+            "request traversal stack: %r" % stack)
 
 
 def test_suite():
