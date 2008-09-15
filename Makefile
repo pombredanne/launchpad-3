@@ -4,7 +4,7 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
-PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
