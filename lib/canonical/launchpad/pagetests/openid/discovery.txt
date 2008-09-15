@@ -75,6 +75,46 @@ does not support the old URL path (+id).
     NotFound: ...
 
 
+== Non-persistent User Identity URLs ==
+
+Launchpad supports discovery on a user's profile page. When a Replying
+Party requests the user's profile page, the response provides the
+OpenID Authentication Server URL where the user's Local Identifier
+can be discovered.
+
+Currently this is only done for users who are members of the team
+identified by the openid_users configuration value.  For the tests,
+this means the admins team, which Mark Shuttleworth is a member of:
+
+    >>> print_endpoints('http://launchpad.dev/~sabdfl')
+    Claimed ID: http://launchpad.dev/~sabdfl
+    ----
+    Local ID: None
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/server
+    ----
+
+Discovery fails for users who are not members of the team:
+
+    >>> print_endpoints('http://launchpad.dev/~name12')
+    Claimed ID: http://launchpad.dev/~name12
+    ----
+    No services discovered
+
+Such users still have a usable persistent identity URL though.  This
+allows the user to log in using the directed identity mode.
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/name12_oid')
+    Claimed ID: http://openid.launchpad.dev/+id/name12_oid
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ...
+
+
 == Old persistent User Identity URLs ==
 
 Launchpad supports the old, deprecated identity URLs.
