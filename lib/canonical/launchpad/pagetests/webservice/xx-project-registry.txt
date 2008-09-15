@@ -602,3 +602,86 @@ Trying to put new content will result in a ForbiddenAttribute error.
     HTTP/1.1 405 Method Not Allowed
     Allow: GET
     ...
+
+
+== Project release files ==
+
+Project release files can be added to a project release using the
+API 'add_file' method.
+
+    >>> # Firefox 1.0/1.0.0 has no files associated with it.
+    >>> files_url = '/firefox/1.0/1.0.0/files'
+    >>> ff_100_files = webservice.get(files_url).jsonBody()
+    >>> print_self_link_of_entries(ff_100_files)
+
+    >>> pr_url = '/firefox/1.0/1.0.0'
+    >>> ff_100 = webservice.get(pr_url).jsonBody()
+    >>> file_content="first attachment file content"
+    >>> sig_file_content="hash hash hash"
+    >>> response = webservice.named_post(ff_100['self_link'], 'add_file',
+    ...     filename='filename.txt',
+    ...     file_content=file_content,
+    ...     content_type='plain/txt',
+    ...     signature_filename='filename.txt.md5',
+    ...     signature_content=sig_file_content,
+    ...     file_type='README File',
+    ...     description="test file")
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
+    <BLANKLINE>
+
+Firefox 1.0/1.0.0 now has one file.
+
+    >>> files_url = '/firefox/1.0/1.0.0/files'
+    >>> ff_100_files = webservice.get(files_url).jsonBody()
+    >>> print_self_link_of_entries(ff_100_files)
+    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
+
+The file type and description are optional.  If no signature is
+available then it must be explicitly set to None.
+
+    >>> file_content="second attachment file content"
+    >>> response = webservice.named_post(ff_100['self_link'], 'add_file',
+    ...     filename='filename2.txt',
+    ...     file_content=file_content,
+    ...     content_type='plain/txt')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt
+    <BLANKLINE>
+
+Firefox 1.0/1.0.0 now has two files.
+
+    >>> files_url = '/firefox/1.0/1.0.0/files'
+    >>> ff_100_files = webservice.get(files_url).jsonBody()
+    >>> print_self_link_of_entries(ff_100_files)
+    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt
+    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt
+
+The file redirects to the librarian when accessed.
+
+    >>> url = 'http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt/file'
+    >>> result = webservice.get(url)
+    >>> print result
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/.../filename.txt
+    ...
+
+Project release files can be deleted using the 'delete' method.  The
+project maintainer, project series owners, admins, or registry experts
+can delete files.
+
+    >>> url = 'http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename.txt'
+    >>> results = webservice.named_post(url, 'delete')
+    >>> print results
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> files_url = '/firefox/1.0/1.0.0/files'
+    >>> ff_100_files = webservice.get(files_url).jsonBody()
+    >>> print_self_link_of_entries(ff_100_files)
+    http://api.launchpad.dev/beta/firefox/1.0/1.0.0/+file/filename2.txt

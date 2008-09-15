@@ -127,8 +127,7 @@ class ProductReleaseFinder:
                     return
 
             release.addReleaseFile(
-                filename, file, size, content_type,
-                uploader=product.owner)
+                filename, file, content_type, uploader=product.owner)
             self.ztm.commit()
         except:
             self.ztm.abort()
