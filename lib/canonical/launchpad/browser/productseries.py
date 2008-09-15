@@ -16,7 +16,6 @@ __all__ = [
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
-    'ProductSeriesSourceSetView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesTranslationMenu',
     'ProductSeriesTranslationsExportView',
@@ -561,44 +560,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceSetView:
-    """This is a view class that supports a page listing all the
-    productseries upstream code imports. This used to be the SourceSource
-    table but the functionality was largely merged into ProductSeries, hence
-    the need for this View class.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.text = request.form.get('text', None)
-        try:
-            self.importstatus = int(request.form.get('state', None))
-        except (ValueError, TypeError):
-            self.importstatus = None
-        # setup the initial values if there was no form submitted
-        if request.form.get('search', None) is None:
-            self.importstatus = ImportStatus.TESTING.value
-
-        results = self.context.searchImports(
-            text=self.text, importstatus=self.importstatus)
-        self.batchnav = BatchNavigator(results, request)
-
-    def sourcestateselector(self):
-        html = '<select name="state">\n'
-        html += '  <option value="ANY"'
-        if self.importstatus == None:
-            html += ' selected'
-        html += '>Any</option>\n'
-        for enum in ImportStatus.items:
-            html += '<option value="'+str(enum.value)+'"'
-            if self.importstatus == enum.value:
-                html += ' selected'
-            html += '>' + str(enum.title) + '</option>\n'
-        html += '</select>\n'
-        return html
 
 
 class ProductSeriesSourceListView(LaunchpadView):

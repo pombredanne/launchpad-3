@@ -380,16 +380,4 @@
     layer="canonical.launchpad.layers.CodeLayer"
     name="+bazaar-index" />
 
-  <!-- XXX: jamesh 2006-09-27: Need better permissions. -->
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProductSeriesSet"
-    permission="launchpad.AnyPerson"
-    facet="branches"
-    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
-    <browser:page
-      name="+bazaar-index"
-      template="../templates/sources-index.pt"
-      />
-  </browser:pages>
-
 </configure>
