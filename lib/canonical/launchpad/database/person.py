@@ -187,7 +187,7 @@ class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasBugs, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
