@@ -126,10 +126,10 @@ A new OpenIDRPSummary is created when the account, identifier, and trust
 root have never been used before. The date_created and date_last_used
 will be the same, and the total_logins is 1.
 
-    >>> no_priv = nopriv_oid_summaries[0].account
+    >>> no_priv_account = nopriv_oid_summaries[0].account
 
     >>> summary = rp_summary_set.record(
-    ...     no_priv, 'http://open-blog.org', date_used=yesterday)
+    ...     no_priv_account, 'http://open-blog.org', date_used=yesterday)
     >>> print_openid_rp_summaries([summary])
     No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
@@ -147,7 +147,8 @@ trust root updates and returns an instance of the summary just created.
 The date_used parameter is optional; the date_last_used is set to now.
 
     >>> now = datetime.now(UTC)
-    >>> summary_2 = rp_summary_set.record(no_priv, 'http://open-blog.org')
+    >>> summary_2 = rp_summary_set.record(
+    ...     no_priv_account, 'http://open-blog.org')
     >>> summary_2 == summary
     True
     >>> summary.total_logins
@@ -159,7 +160,7 @@ A new summary is created if the account uses a trust root that it has
 never used before.
 
     >>> ubuntu_live_summary = rp_summary_set.record(
-    ...     no_priv, 'http://ubuntu-live.org')
+    ...     no_priv_account, 'http://ubuntu-live.org')
     >>> ubuntu_live_summary is summary
     False
     >>> ubuntu_live_summary.total_logins
@@ -171,12 +172,11 @@ used before, a new OpenIDRPSummary is created.
     >>> from zope.security.proxy import removeSecurityProxy
 
     # Simulate a privileged event that has changed openid_identifier.
-    >>> bare_no_priv = removeSecurityProxy(no_priv)
-    >>> bare_no_priv_account = removeSecurityProxy(bare_no_priv)
+    >>> bare_no_priv_account = removeSecurityProxy(no_priv_account)
     >>> bare_no_priv_account.openid_identifier = 'knightsOfNi'
 
     >>> ubuntu_live_summary_2 = rp_summary_set.record(
-    ...     no_priv, 'http://ubuntu-live.org')
+    ...     no_priv_account, 'http://ubuntu-live.org')
     >>> ubuntu_live_summary_2 == ubuntu_live_summary
     False
     >>> ubuntu_live_summary_2.total_logins
@@ -255,7 +255,7 @@ database does not have a constraint to guard against this.
     ...            'an-irrelevant-trust-root')
     ...     """)
 
-    >>> rp_summary_set.record(no_priv, 'an-irrelevant-trust-root')
+    >>> rp_summary_set.record(no_priv_account, 'an-irrelevant-trust-root')
     Traceback (most recent call last):
      ...
     AssertionError: More than 1 account has the OpenID identifier of
