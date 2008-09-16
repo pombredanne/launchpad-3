@@ -413,6 +413,7 @@ class IDistributionPublic(
 
 class IDistribution(IDistributionEditRestricted, IDistributionPublic):
     """An operating system distribution."""
+    export_as_webservice_entry()
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution
