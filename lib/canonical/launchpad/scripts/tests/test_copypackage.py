@@ -885,9 +885,8 @@ class TestCopyPackage(unittest.TestCase):
                     distroseries=published.distroseries)
                 self.assertFalse(queue.changesfile.restricted)
                 # Check the source's package diff.
-                diffs = published.sourcepackagerelease.package_diffs
-                for diff in diffs:
-                    self.assertFalse(diffs[0].diff_content.restricted)
+                [diff] = published.sourcepackagerelease.package_diffs
+                self.assertFalse(diff.diff_content.restricted)
             # Check the binary changesfile and the buildlog.
             if IBinaryPackagePublishingHistory.providedBy(published):
                 package = published.binarypackagerelease
