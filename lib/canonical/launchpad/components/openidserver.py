@@ -70,12 +70,10 @@ class OpenIDPersistentIdentity:
     implements(IOpenIDPersistentIdentity)
 
     def __init__(self, account):
-        from canonical.launchpad.interfaces.account import IAccount
-        assert IAccount.providedBy(account), "FUCKING CALLSITE"
         self.account = account
 
     # XXX sinzui 2008-09-04 bug=264783:
-    # Remove old_openid_identity_url.
+    # Remove old_openid_identifier and old_openid_identity_url.
     # Rename new_openid_identifier => openid_identifier.
     # Rename new_openid_identity_url => openid_identity_url.
     @property
@@ -87,8 +85,8 @@ class OpenIDPersistentIdentity:
     @property
     def new_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_url_root = allvhosts.configs['id'].rooturl
-        return identity_url_root + self.new_openid_identifier.encode('ascii')
+        identity_root_url = OpenIDVHost.getRootURL('id')
+        return identity_root_url + self.new_openid_identifier.encode('ascii')
 
     @property
     def old_openid_identifier(self):
@@ -102,26 +100,24 @@ class OpenIDPersistentIdentity:
     @property
     def old_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_url_root = allvhosts.configs['openid'].rooturl
-        return identity_url_root + self.old_openid_identifier.encode('ascii')
+        identity_root_url = OpenIDVHost.getRootURL('openid')
+        return identity_root_url + self.old_openid_identifier.encode('ascii')
 
     @property
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        request = get_current_browser_request()
         only_old_identifier = (
             self.new_openid_identifier is None
             and self.old_openid_identifier is not None)
-        if only_old_identifier or OpenIDLayer.providedBy(request):
-            # Support the old OpenID URL.
+        if only_old_identifier or OpenIDVHost.getVHost() == 'openid':
             return self.old_openid_identity_url
-        return self.new_openid_identity_url
+        else:
+            return self.new_openid_identity_url
 
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        request = get_current_browser_request()
-        if OpenIDLayer.providedBy(request):
+        if OpenIDVHost.getVHost() == 'openid':
             return self.old_openid_identifier
         else:
             return self.new_openid_identifier
