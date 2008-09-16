@@ -1714,7 +1714,7 @@ class ViewHWSubmission(AuthorizationBase):
         admins.
         """
         return getUtility(IHWSubmissionSet).getBySubmissionKey(
-            removeSecurityProxy(self.obj).submission_key, user) is not None
+            self.obj.submission_key, user) is not None
 
     def checkUnauthenticated(self):
         return not self.obj.private

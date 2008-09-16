@@ -171,11 +171,14 @@ class HWSubmissionSet:
     def _userHasAccessStormClause(self, user):
         """Limit results of HWSubmission queries to rows the user can access.
         """
+        submission_is_public = Not(HWSubmission.private)
         admins = getUtility(ILaunchpadCelebrities).admin
         janitor = getUtility(ILaunchpadCelebrities).janitor
         if user is None:
-            return Not(HWSubmission.private)
-        elif not user.inTeam(admins) and user != janitor:
+            return submission_is_public
+        elif user.inTeam(admins) or user == janitor:
+            return True
+        else:
             public = Not(HWSubmission.private)
             subselect = Select(
                 TeamParticipation.teamID,
@@ -183,8 +186,6 @@ class HWSubmissionSet:
                     TeamParticipation.personID == user.id))
             has_access = HWSubmission.ownerID.is_in(subselect)
             return Or(public, has_access)
-        else:
-            return True
 
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""

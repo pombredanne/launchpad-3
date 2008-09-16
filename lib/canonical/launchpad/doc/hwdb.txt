@@ -358,20 +358,27 @@ submission). In this case the owner is always None.
 == Retrieving Submissions by Status ==
 
 The set of submissions with a given status can be retrieved by
-IHWSubmissionSet.getByStatus(). If no user is specified,
-only publicly visible submissions are returned.
+IHWSubmissionSet.getByStatus(). Only the publicly visible
+submissions are returned if no user is specified.
 
     >>> from canonical.launchpad.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
+    >>> def print_submissions(submissions):
+    ...     for submission in submissions:
+    ...         print submission.submission_key, submission.private,
+    ...         if submission.owner is not None:
+    ...             print submission.owner.displayname,
+    ...         else:
+    ...             print '(no owner)',
+    ...         print submission.status.name
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
-    >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.private
-    test_submission_id_1 False
-    unique-id-1 False
-    unique-id-2 False
-    unique-id-4 False
-    unique-id-5 False
+    >>> print_submissions(new_submissions)
+    test_submission_id_1 False Sample Person SUBMITTED
+    unique-id-1 False Sample Person SUBMITTED
+    unique-id-2 False Beeblebrox SUBMITTED
+    unique-id-4 False Beeblebrox SUBMITTED
+    unique-id-5 False (no owner) SUBMITTED
 
 If a user is passed, private submissions of this user are returned too.
 
@@ -380,14 +387,26 @@ If a user is passed, private submissions of this user are returned too.
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=sample_person)
-    >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.private
-    test_submission_id_1 False
-    unique-id-1 False
-    unique-id-2 False
-    unique-id-3 True
-    unique-id-4 False
-    unique-id-5 False
+    >>> print_submissions(new_submissions)
+    test_submission_id_1 False Sample Person SUBMITTED
+    unique-id-1 False Sample Person SUBMITTED
+    unique-id-2 False Beeblebrox SUBMITTED
+    unique-id-3 True Sample Person SUBMITTED
+    unique-id-4 False Beeblebrox SUBMITTED
+    unique-id-5 False (no owner) SUBMITTED
+
+Submissions of other users are not returned.
+
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = hw_submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED, user=no_priv)
+    >>> print_submissions(new_submissions)
+    test_submission_id_1 False Sample Person SUBMITTED
+    unique-id-1 False Sample Person SUBMITTED
+    unique-id-2 False Beeblebrox SUBMITTED
+    unique-id-4 False Beeblebrox SUBMITTED
+    unique-id-5 False (no owner) SUBMITTED
 
 For admins, IHWSubmissionSet.getByStatus() returns private and public
 submissions...
@@ -398,14 +417,13 @@ submissions...
     ...     HWSubmissionProcessingStatus)
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=foobar)
-    >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.private
-    test_submission_id_1 False
-    unique-id-1 False
-    unique-id-2 False
-    unique-id-3 True
-    unique-id-4 False
-    unique-id-5 False
+    >>> print_submissions(new_submissions)
+    test_submission_id_1 False Sample Person SUBMITTED
+    unique-id-1 False Sample Person SUBMITTED
+    unique-id-2 False Beeblebrox SUBMITTED
+    unique-id-3 True Sample Person SUBMITTED
+    unique-id-4 False Beeblebrox SUBMITTED
+    unique-id-5 False (no owner) SUBMITTED
 
 ...as well as for the janitor.
 
@@ -414,24 +432,21 @@ submissions...
     >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=janitor)
-    >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.private
-    test_submission_id_1 False
-    unique-id-1 False
-    unique-id-2 False
-    unique-id-3 True
-    unique-id-4 False
-    unique-id-5 False
+    >>> print_submissions(new_submissions)
+    test_submission_id_1 False Sample Person SUBMITTED
+    unique-id-1 False Sample Person SUBMITTED
+    unique-id-2 False Beeblebrox SUBMITTED
+    unique-id-3 True Sample Person SUBMITTED
+    unique-id-4 False Beeblebrox SUBMITTED
+    unique-id-5 False (no owner) SUBMITTED
 
 Searching for other statuses is possible too.
 
     >>> submission_no_owner.status = HWSubmissionProcessingStatus.PROCESSED
     >>> processed_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED, user=foobar)
-    >>> for submission in processed_submissions:
-    ...     print submission.submission_key, submission.private
-    unique-id-5 False
-
+    >>> print_submissions(processed_submissions)
+    unique-id-5 False (no owner) PROCESSED
 
 == Links to Bugs ==
 
