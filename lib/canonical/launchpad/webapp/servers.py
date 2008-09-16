@@ -72,10 +72,10 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 
 
-# Any requests that have the following at the beginning of their PATH_INFO
-# will be handled by the web service, as if they had gone to
+# Any requests that have the following element at the beginning of their
+# PATH_INFO will be handled by the web service, as if they had gone to
 # api.launchpad.net.
-API_PATH_OVERRIDE = 'api'
+WEBSERVICE_PATH_OVERRIDE = 'api'
 
 
 class StepsToGo:
@@ -384,7 +384,7 @@ class WebServiceRequestPublicationFactory(
         """
         path_info = environment.get('PATH_INFO', '').split('/')
         if len(path_info) > 1:
-            return API_PATH_OVERRIDE == path_info[1]
+            return WEBSERVICE_PATH_OVERRIDE == path_info[1]
         else:
             return False
 
@@ -1146,19 +1146,36 @@ class WebServiceRequestTraversal:
     def traverse(self, ob):
         """See `zope.publisher.interfaces.IPublisherRequest`.
 
-        WebService requests call the WebServicePublication.getResource()
-        on the result of the default traversal.
+        This is called once at the beginning of the traversal process.
+
+        WebService requests call the `WebServicePublication.getResource()`
+        on the result of the base class's traversal.
         """
-        # Only accept versioned URLs.
-        if self.popTraversal('beta'):
-            self.setVirtualHostRoot(names=('beta', ))
-        else:
-            raise NotFound(self, '', self)
+        self._removeVirtualHostTraversals()
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 
-    def popTraversal(self, name):
-        """Remove a name from the traversal stack, if it is present."""
+    def _removeVirtualHostTraversals(self):
+        """Remove the /api and /beta traversal names."""
+        names = list()
+        api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
+        if api is not None:
+            names.append(api)
+
+        # Only accept versioned URLs.
+        beta = self._popTraversal('beta')
+        if beta is not None:
+            names.append(beta)
+            self.setVirtualHostRoot(names=names)
+        else:
+            raise NotFound(self, '', self)
+
+    def _popTraversal(self, name):
+        """Remove a name from the traversal stack, if it is present.
+
+        :return: The name of the element removed, or None if the stack
+            wasn't changed.
+        """
         stack = self.getTraversalStack()
         if len(stack) > 0 and stack[-1] == name:
             item = stack.pop()
