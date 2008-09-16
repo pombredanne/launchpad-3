@@ -7,7 +7,6 @@ __all__ = []
 
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.announcement import IAnnouncement
