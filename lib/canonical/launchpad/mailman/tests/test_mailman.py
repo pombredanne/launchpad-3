@@ -10,7 +10,8 @@ import unittest
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
-from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
+from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
+from Mailman.Utils import list_names
 
 from canonical.launchpad.mailman.testing import helpers
 from canonical.launchpad.mailman.testing.layers import MailmanLayer
@@ -51,7 +52,9 @@ def tearDown(testobj):
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
-    for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
+    for team_name in list_names():
+        if team_name == MAILMAN_SITE_LIST:
+            continue
         # pylint: disable-msg=W0702
         try:
             # Ensure that the lock gets cleaned up properly by first acquiring
