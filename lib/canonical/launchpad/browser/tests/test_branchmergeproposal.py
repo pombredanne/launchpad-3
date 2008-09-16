@@ -12,20 +12,40 @@ from canonical.launchpad.browser.branchmergeproposal import (
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.testing import TestCaseWithFactory, time_counter
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
+
+
+class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
+    """Tests the adaptation of a merge proposal into a primary context."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin so we don't have to worry about launchpad.Edit
+        # permissions on the merge proposals.
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
+
+    def testPrimaryContext(self):
+        # The primary context of a merge proposal is the same as the primary
+        # context of the source_branch.
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertEqual(
+            IPrimaryContext(bmp).context,
+            IPrimaryContext(bmp.source_branch).context)
 
 
 class TestBranchMergeProposalMergedView(TestCaseWithFactory):
     """Tests for `BranchMergeProposalMergedView`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments, or
         # nominating reviewers.
-        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
         self.bmp = self.factory.makeBranchMergeProposal()
 
     def test_initial_values(self):
@@ -41,13 +61,13 @@ class TestBranchMergeProposalMergedView(TestCaseWithFactory):
 class TestBranchMergeProposalVoteView(TestCaseWithFactory):
     """Make sure that the votes are returned in the right order."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments, or
         # nominating reviewers.
-        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
         self.bmp = self.factory.makeBranchMergeProposal()
         self.date_generator = time_counter(delta=timedelta(days=1))
 
