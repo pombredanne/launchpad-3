@@ -236,6 +236,36 @@ Uploading file signatures is optional, so we'll just try it this once.
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo.txt' has been uploaded."]
 
+A file can be uploaded without a GPG signature.
+
+    >>> firefox_owner.open(
+    ...     'http://launchpad.dev/firefox/1.0/1.0.0/+adddownloadfile')
+    >>> bar_file = StringIO('Bar installer package...')
+    >>> firefox_owner.getControl(name='field.filecontent').add_file(bar_file,
+    ...    'text/plain', 'bar.txt')
+    >>> firefox_owner.getControl('Description').value="Bar installer"
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
+    >>> firefox_owner.getControl("Upload").click()
+    >>> get_feedback_messages(firefox_owner.contents)
+    [u"Your file 'bar.txt' has been uploaded."]
+
+In addition to the product owner and product series owner,
+an admin can also delete a release file.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/firefox/1.0/1.0.0')
+    >>> checkbox = admin_browser.getControl(name='checkbox_0')
+    >>> checkbox.value = checkbox.options
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> checkbox_tag = main_content.find(attrs={'name': 'checkbox_0'})
+    >>> print 'Deleting:', extract_text(
+    ...     checkbox_tag.parent.findNextSibling('td'))
+    Deleting: bar.txt...
+    >>> admin_browser.getControl("Delete Files").click()
+    >>> get_feedback_messages(admin_browser.contents)
+    [u'1 file has been deleted.']
+
 Let's go back to the page where the files are listed and ensure it
 shows up now.  Just to be sure, do it as the non-owner. We also see
 the md5 digest of the file, and the signature that we uploaded.
