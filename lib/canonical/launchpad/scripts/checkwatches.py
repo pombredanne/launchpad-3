@@ -658,17 +658,15 @@ class BugWatchUpdater(object):
 
             bug_message = bug_watch.addComment(comment_id, comment_message)
             imported_comments.append(bug_message)
-        bug_watch_updater = (
-            getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
         if len(imported_comments) > 0:
+            bug_watch_updater = (
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
             if is_initial_import:
                 notification_message = getUtility(IMessageSet).fromText(
                     subject='subject',
                     content=u'** http://example.com/bugs/42',
-                    owner=None)
+                    owner=bug_watch_updater)
                 bug_watch.bug.addCommentNotification(notification_message)
             else:
                 for bug_message in imported_comments:

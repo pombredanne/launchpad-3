@@ -423,8 +423,14 @@ For initial imports, don't send notification for each comment
 
     >>> from canonical.launchpad.database.bugnotification import (
     ...     BugNotification)
-    >>> BugNotification.selectBy(bug=bug_watch.bug).count()
+    >>> notifications = list(BugNotification.selectBy(bug=bug_watch.bug))
+    >>> len(notifications)
     1
+    >>> notifications[0].is_comment
+    True
+    >>> notifications[0].message.owner.name
+    u'bug-watch-updater'
+
 
     >>> external_bugtracker.remote_comments = {
     ...     '1': 'First imported comment (initial import)',
