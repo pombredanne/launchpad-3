@@ -7,6 +7,9 @@ __all__ = [
     'LocationWidget',
     ]
 
+import cgi
+
+from simplejson import encoder
 
 from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
@@ -107,10 +110,12 @@ class LocationWidget(BrowserWidget, InputWidget):
     def map_javascript(self):
         """The Javascript code necessary to render the map."""
         person = self.context.context
+        displayname = encoder.encode_basestring(
+                cgi.escape(person.displayname, True))
         replacements = dict(
             center_lat=self.center_lat,
             center_lng=self.center_lng,
-            displayname=person.displayname,
+            displayname=displayname,
             name=person.name,
             logo_html=ObjectImageDisplayAPI(person).logo(),
             lat_name=self.latitude_widget.name,
@@ -121,7 +126,7 @@ class LocationWidget(BrowserWidget, InputWidget):
         return """
             <script type="text/javascript">
                 renderLargeMap(
-                    %(center_lat)s, %(center_lng)s, '%(displayname)s',
+                    %(center_lat)s, %(center_lng)s, %(displayname)s,
                     '%(name)s', '%(logo_html)s', '%(lat_name)s',
                     '%(lng_name)s', '%(tz_name)s', %(zoom)s, %(show_marker)s);
             </script>
