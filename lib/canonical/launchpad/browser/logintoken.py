@@ -38,7 +38,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
-from canonical.launchpad.browser.openidserver import OpenIdMixin
+from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
@@ -92,7 +92,7 @@ class LoginTokenView(LaunchpadView):
             return LaunchpadView.render(self)
 
 
-class BaseLoginTokenView(OpenIdMixin):
+class BaseLoginTokenView(OpenIDMixin):
     """A view class to be used by other LoginToken views."""
 
     expected_token_types = ()
@@ -143,7 +143,7 @@ class BaseLoginTokenView(OpenIdMixin):
             # There is no OpenIDRequest in the session
             return None
         self.next_url = None
-        return self.renderOpenIdResponse(self.createPositiveResponse())
+        return self.renderOpenIDResponse(self.createPositiveResponse())
 
     def _cancel(self):
         """Consume the LoginToken and set self.next_url.

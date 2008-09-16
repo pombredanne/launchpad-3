@@ -111,26 +111,6 @@ class TacFile(Service):
         stop_at_exit(process)
 
 
-class RestrictedLibrarianService(TacFile):
-    """Custom TacFile launcher for the restricted librarian."""
-    def __init__(self):
-        super(RestrictedLibrarianService, self).__init__(
-            "restricted-librarian", "daemons/librarian.tac",
-            config.librarian_server, prepare_for_librarian)
-
-    def launch(self):
-        """We need to set an environment variable to launch this service."""
-        os.environ['RESTRICTED_LIBRARIAN'] = '1'
-        try:
-            super(RestrictedLibrarianService, self).launch()
-        finally:
-            del os.environ['RESTRICTED_LIBRARIAN']
-
-    @property
-    def logfile(self):
-        return self.config.restricted_logfile
-
-
 class MailmanService(Service):
     @property
     def should_launch(self):
@@ -190,7 +170,6 @@ def prepare_for_librarian():
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
                          config.librarian_server, prepare_for_librarian),
-    'restricted-librarian': RestrictedLibrarianService(),
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
