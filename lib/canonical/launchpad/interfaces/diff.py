@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDiff',
-    'IStaticDiffReference'
+    'IStaticDiffJob'
     ]
 
 from zope.schema import (

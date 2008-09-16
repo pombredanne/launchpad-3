@@ -3,14 +3,14 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'StaticDiffReference']
+__all__ = ['Diff', 'StaticDiffJob']
 
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import IDiff, IStaticDiffReference
+from canonical.launchpad.interfaces import IDiff, IStaticDiffJob
 
 class Diff(SQLBase):
 

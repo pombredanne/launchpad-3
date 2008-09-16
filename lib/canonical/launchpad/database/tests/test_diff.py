@@ -10,7 +10,7 @@ from unittest import TestLoader
 from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.database.diff import *
-from canonical.launchpad.interfaces import IDiff
+from canonical.launchpad.interfaces import IDiff, IStaticDiffJob
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -21,6 +21,14 @@ class TestDiff(TestCaseWithFactory):
 
     def test_providesInterface(self):
         verifyObject(IDiff, Diff())
+
+
+class TestStaticDiffJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        verifyObject(IStaticDiffJob, StaticDiffJob())
 
 
 def test_suite():
