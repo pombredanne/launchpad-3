@@ -496,6 +496,13 @@ COMMENT ON COLUMN MailingListBan.reason IS 'The reason for the ban.';
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
 
+-- MergeDirectiveJob
+COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
+COMMENT ON COLUMN MergeDirectiveJob.message IS 'The message containing the merge directive.';
+COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
+
+
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
