@@ -45,16 +45,15 @@
       Locations!
     </div>
 
-    <table class="listing" style="width: 75%;">
-      <tr tal:repeat="person view/unmapped_participants">
-        <td>
-          <a tal:attributes="
-              href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
-            ><img src="/@@/edit" title="Set this person's location" />
-            <tal:person replace="person/displayname" /></a>
-        </td>
-      </tr>
-    </table>
+    <p>
+      <span style="float: left; width: 15em"
+            tal:repeat="person view/unmapped_participants">
+        <a tal:attributes="
+            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
+          ><img src="/@@/edit" title="Set this person's location" />
+          <tal:person replace="person/displayname" /></a>
+      </span>
+    </p>
   </tal:unmapped>
 
 </div>
