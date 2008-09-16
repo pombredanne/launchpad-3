@@ -799,10 +799,10 @@ class TestCopyPackage(unittest.TestCase):
             status=PackagePublishingStatus.PUBLISHED)
 
         # Give the new source a private package diff.
-        sourcepackagerelease = ppa_source.sourcepackagerelease
+        sourcepackagerelease = other_source.sourcepackagerelease
         diff_file = test_publisher.addMockFile("diff_file", restricted=True)
         package_diff = sourcepackagerelease.requestDiffTo(
-            cprov, other_source.sourcepackagerelease)
+            cprov, ppa_source.sourcepackagerelease)
         package_diff.diff_content = diff_file
 
         # Also create a PackageUpload item with a fake changesfile,
