@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.database.bugtask import get_bug_privacy_filter
+from canonical.launchpad.database.bugtask import BugTaskSet, get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
@@ -55,7 +55,7 @@ class HasBugsBase:
             del kwargs['search_params']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return getUtility(IBugTaskSet).search(search_params)
+        return BugTaskSet().search(search_params) # getUtility(IBugTaskSet).search(search_params)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
