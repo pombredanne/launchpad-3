@@ -16,10 +16,9 @@
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
                       translation_focus translationgroup translationpermission
-                      driver members owner
-                      security_contact
-                      mirror_admin homepage_content icon logo
-                      mugshot bug_reporting_guidelines"
+                      driver members owner security_contact mirror_admin
+                      homepage_content icon logo mugshot
+                      bug_reporting_guidelines"
       />
     <require
       permission="launchpad.Admin"
