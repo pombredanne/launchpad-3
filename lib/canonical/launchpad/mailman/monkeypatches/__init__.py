@@ -61,9 +61,10 @@ from canonical.launchpad.mailman.monkeypatches.defaults import *
 SMTPHOST = '%(smtp_host)s'
 SMTPPORT = %(smtp_port)d
 
-# The endpoint for Launchpad XMLRPC calls.
+# Configuration options for the XMLRPCRunner.
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
+XMLRPC_SUBSCRIPTION_BATCH_SIZE = %(xmlrpc_subscription_batch_size)s
 
 # RFC 2369 header information
 LIST_HELP_HEADER = '%(list_help_header)s'
@@ -92,6 +93,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     smtp_port=port,
     xmlrpc_url=config.mailman.xmlrpc_url,
     xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+    xmlrpc_subscription_batch_size=config.mailman.subscription_batch_size,
     site_list_owner=owner_address,
     list_help_header=config.mailman.list_help_header,
     list_subscription_headers=config.mailman.list_subscription_headers,

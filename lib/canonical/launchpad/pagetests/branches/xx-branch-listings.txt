@@ -7,7 +7,7 @@ The branch listing page template and associated view provide batching
 of the branches, filtering of the lifecycle statuses, ordering of
 various kinds and badge decoration.
 
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
