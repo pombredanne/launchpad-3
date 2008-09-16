@@ -57,7 +57,6 @@ logger object that will extract tracebacks for the purposes of this doctest.
 
 Helper functions to examine emails that were sent:
 
-  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> def by_to_addrs(a, b):
@@ -78,11 +77,13 @@ address.
   'Root <root@localhost>'
 
   >>> notification['Subject']
-  'New: netapplet 0.99.6-1 (source)'
+  '[ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)'
 
 The mail body contains a list of files that were accepted:
 
-  >>> print notification.get_payload() # doctest: -NORMALIZE_WHITESPACE
+  >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
@@ -152,11 +153,13 @@ The mail 'From:' addresses are the uploader and the changer.
   ['Root <root@localhost>', 'Daniel Silverstone <daniel.silverstone@canonical.com>']
 
   >>> notification['Subject']
-  'New: netapplet 0.99.6-1 (source)'
+  '[ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)'
 
 The mail body contains the same list of files again:
 
-  >>> print notification.get_payload() # doctest: -NORMALIZE_WHITESPACE
+  >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
@@ -176,8 +179,7 @@ notify() will also work without passing the changes_file_object parameter
 provided that everything is already committed to the database (which is not
 the case when nascent upload runs).  This example demonstrates this usage:
 
-  >>> from canonical.librarian.ftests.harness import (
-  ...     fillLibrarianFile, cleanupLibrarianFiles)
+  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
   >>> changes_file = open(changes_file_path,"r")
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
@@ -206,11 +208,13 @@ The mail headers are the same as before:
   'Root <root@localhost>'
 
   >>> notification['Subject']
-  'New: netapplet 0.99.6-1 (source)'
+  '[ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)'
 
 The mail body contains the same list of files again:
 
-  >>> print notification.get_payload() # doctest: -NORMALIZE_WHITESPACE
+  >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+  From nobody ...
+  ...
   NEW: netapplet_1.0-1.dsc
   NEW: netapplet_1.0.orig.tar.gz
   NEW: netapplet_1.0-1.diff.gz
@@ -253,3 +257,7 @@ Only one email is generated:
   >>> len(stub.test_emails)
   1
 
+Clean up, otherwise stuff is left lying around in /var/tmp.
+
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()
