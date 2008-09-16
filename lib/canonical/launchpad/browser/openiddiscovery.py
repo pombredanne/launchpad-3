@@ -171,7 +171,7 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     @cachedproperty
     def openid_identity_url(self):
         """The person's persistent OpenID identity URL."""
-        return canonical_url(self.context)
+        return self.context.openid_identity_url
 
 
 class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
