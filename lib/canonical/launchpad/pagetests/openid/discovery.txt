@@ -90,7 +90,7 @@ this means the admins team, which Mark Shuttleworth is a member of:
     Claimed ID: http://launchpad.dev/~sabdfl
     ----
     Local ID: None
-    Server URL: http://openid.launchpad.dev/+openid
+    Server URL: http://id.launchpad.dev/+openid
     Supports:
       http://specs.openid.net/auth/2.0/server
     ----

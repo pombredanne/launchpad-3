@@ -92,7 +92,7 @@ class OpenIDPersistentIdentity:
         return identity_url_root + self.new_openid_identifier.encode('ascii')
 
     @property
-    def openid_identifier(self):
+    def old_openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
         token = removeSecurityProxy(self.account).openid_identifier
@@ -104,7 +104,7 @@ class OpenIDPersistentIdentity:
     def old_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
         identity_url_root = allvhosts.configs['openid'].rooturl
-        return identity_url_root + self.openid_identifier.encode('ascii')
+        return identity_url_root + self.old_openid_identifier.encode('ascii')
 
     @property
     def openid_identity_url(self):
@@ -112,18 +112,18 @@ class OpenIDPersistentIdentity:
         request = get_current_browser_request()
         only_old_identifier = (
             self.new_openid_identifier is None
-            and self.openid_identifier is not None)
+            and self.old_openid_identifier is not None)
         if only_old_identifier or OpenIDLayer.providedBy(request):
             # Support the old OpenID URL.
             return self.old_openid_identity_url
         return self.new_openid_identity_url
 
     @property
-    def selected_openid_identifier(self):
+    def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         request = get_current_browser_request()
         if OpenIDLayer.providedBy(request):
-            return self.openid_identifier
+            return self.old_openid_identifier
         else:
             return self.new_openid_identifier
 

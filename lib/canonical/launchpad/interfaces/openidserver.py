@@ -208,7 +208,7 @@ class IOpenIDPersistentIdentity(Interface):
     account = Attribute('The `IAccount` for the user.')
     # XXX sinzui 2008-09-04 bug=264783:
     # Remove old_openid_identity_url and new_*.
-    openid_identifier = Attribute(
+    old_openid_identifier = Attribute(
         'The old openid_identifier for the `IAccount`.')
     old_openid_identity_url = Attribute(
         'The old OpenID identity URL for the user.')
@@ -218,7 +218,7 @@ class IOpenIDPersistentIdentity(Interface):
         'The new OpenID identity URL for the user.')
     openid_identity_url = Attribute(
         'The OpenID identity URL for the user.')
-    selected_openid_identifier = Attribute(
+    openid_identifier = Attribute(
         'The OpenID identifier used with the request.')
 
 

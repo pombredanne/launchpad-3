@@ -48,7 +48,7 @@ It also exposes both the new and old openid identifiers.
 
     >>> sample_identity.new_openid_identifier
     u'123/name12'
-    >>> sample_identity.openid_identifier
+    >>> sample_identity.old_openid_identifier
     u'+id/name12_oid'
 
 Most importantly, OpenIDPersistentIdentity provides access to the user's
