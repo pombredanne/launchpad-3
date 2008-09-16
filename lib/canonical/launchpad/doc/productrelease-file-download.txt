@@ -59,7 +59,6 @@ Add a file alias to the productrelease.
     ...     result = release.addReleaseFile(
     ...         filename=name,
     ...         file_content=StringIO(file_content),
-    ...         file_size=len(file_content),
     ...         content_type='test/plain',
     ...         uploader=user,
     ...         description=description)
@@ -113,11 +112,12 @@ Deleting the release file results in the file count being reduced.
 Only the product owner, product series owner, admins, or experts can
 delete a product file.
 
+    >>> login(ANONYMOUS)
     >>> rel.files[0].destroySelf()
     Traceback (most recent call last):
     ...
     Unauthorized: (<ProductReleaseFile...>, 'destroySelf', 'launchpad.Edit')
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> for release_file in rel.files:
     ...     if release_file.libraryfile.id == file_alias.id:
     ...         release_file.destroySelf()
