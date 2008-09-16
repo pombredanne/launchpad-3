@@ -79,8 +79,8 @@ does not support the old URL path (+id).
 
 Launchpad supports discovery on a user's profile page. When a Replying
 Party requests the user's profile page, the response provides the
-OpenID Authentication Server URL where the user's Local Identifier
-can be discovered.
+OpenID Authentication Server URL. The user's Local Identifier
+will be used in for Identity Selection.
 
 Currently this is only done for users who are members of the team
 identified by the openid_users configuration value.  For the tests,
