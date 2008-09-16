@@ -2351,7 +2351,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def openid_identity_url(self):
         """The identity URL for the person."""
-        return canonical_url(IOpenIDPersistentIdentity(self.context))
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     @property
     def subscription_policy_description(self):
