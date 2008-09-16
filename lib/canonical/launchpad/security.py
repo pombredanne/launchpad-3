@@ -1712,8 +1712,11 @@ class ViewHWSubmission(AuthorizationBase):
         private submissions may only be accessed by their owner and by
         admins.
         """
-        return getUtility(IHWSubmissionSet).getBySubmissionKey(
-            self.obj.submission_key, user) is not None
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
     def checkUnauthenticated(self):
         return not self.obj.private
