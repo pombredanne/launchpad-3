@@ -188,6 +188,19 @@ class IBounty(IHasOwner):
     def unsubscribe(person):
         """Remove this person's subscription to this bounty."""
 
+    messages = Attribute(
+        "The messages related to this object, in reverse "
+        "order of creation (so newest first).")
+
+    followup_subject = Attribute("The likely subject of the next message.")
+
+    def newMessage(owner, subject, content):
+        """Create a new message, and link it to this object."""
+
+    def linkMessage(message):
+        """Link the given message to this object."""
+
+
 
 # Interfaces for containers
 class IBountySet(IAddFormCustomization):
