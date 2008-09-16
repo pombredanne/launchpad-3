@@ -197,19 +197,11 @@ class TranslationImporterTestCase(unittest.TestCase):
         """Test `is_identical_translation`."""
         msg1 = TranslationMessageData()
         msg2 = TranslationMessageData()
-        msg1.fuzzy = False
         msg1.msgid_singular = "foo"
         msg2.msgid_singular = "foo"
 
         self.assertTrue(is_identical_translation(msg1, msg2),
             "Two blank translation messages do not evaluate as identical.")
-        msg2.flags = "fuzzy"
-        self.assertFalse(is_identical_translation(msg1, msg2),
-            "Fuzzy message is not distinguished from non-fuzzy one.")
-        msg2.flags = ""
-        self.assertTrue(is_identical_translation(msg1, msg2),
-            "Clearing flags string does not make message identical to "
-            "non-fuzzy equivalent.")
 
         msg1.msgid_plural = "foos"
         self.assertFalse(is_identical_translation(msg1, msg2),
