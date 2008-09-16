@@ -1790,6 +1790,14 @@ COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
 
+-- ArchiveAuthToken
+
+COMMENT ON TABLE ArchiveAuthToken IS 'Authorisation tokens to use in .htaccess for published archives.';
+COMMENT ON COLUMN ArchiveAuthToken.archive IS 'The archive to which this token refers.';
+COMMENT ON COLUMN ArchiveAuthToken.person IS 'The person to which this token applies.';
+COMMENT ON COLUMN ArchiveAuthToken.date_created IS 'The date and time this token was created.';
+COMMENT ON COLUMN ArchiveAuthToken.date_deactivated IS 'The date and time this token was deactivated.';
+COMMENT ON COLUMN ArchiveAuthToken.token IS 'The token text for this authorisation.';
 
 -- ArchiveDependency
 COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
@@ -1807,6 +1815,18 @@ COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the pe
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
+-- ArchiveSubscriber
+
+COMMENT ON TABLE ArchiveSubscriber IS 'An authorised person or team subscription to an archive.';
+COMMENT ON COLUMN ArchiveSubscriber.archive IS 'The archive that the subscriber is authorised to see.';
+COMMENT ON COLUMN ArchiveSubscriber.registrant IS 'The person who authorised this subscriber.';
+COMMENT ON COLUMN ArchiveSubscriber.date_created IS 'The date and time this subscription was created.';
+COMMENT ON COLUMN ArchiveSubscriber.subscriber IS 'The person or team that this subscription refers to.';
+COMMENT ON COLUMN ArchiveSubscriber.date_expires IS 'The date and time this subscription will expire. If NULL, it does not expire.';
+COMMENT ON COLUMN ArchiveSubscriber.status IS 'The status of the subscription, e.g. PENDING, ACTIVE, CANCELLING, CANCELLED.';
+COMMENT ON COLUMN ArchiveSubscriber.description IS 'An optional note for the archive owner to describe the subscription.';
+COMMENT ON COLUMN ArchiveSubscriber.date_cancelled IS 'The date and time this subscription was revoked.';
+COMMENT ON COLUMN ArchiveSubscriber.cancelled_by IS 'The person who revoked this subscription.';
 
 -- PackageCopyRequest
 

@@ -2448,7 +2448,7 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname,
+                account_rationale, displayname, openid_mnemonic=name,
                 password=password, password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(
@@ -2862,7 +2862,7 @@ class PersonSet:
         # Update OpenID. Just trash the authorizations for from_id - don't
         # risk opening up auth wider than the user actually wants.
         cur.execute("""
-                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
                 """ % vars()
                 )
         skip.append(('openidauthorization', 'person'))
