@@ -145,9 +145,6 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
@@ -2456,7 +2453,7 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname,
+                account_rationale, displayname, openid_mnemonic=name,
                 password=password, password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(
@@ -2870,7 +2867,7 @@ class PersonSet:
         # Update OpenID. Just trash the authorizations for from_id - don't
         # risk opening up auth wider than the user actually wants.
         cur.execute("""
-                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
                 """ % vars()
                 )
         skip.append(('openidauthorization', 'person'))
