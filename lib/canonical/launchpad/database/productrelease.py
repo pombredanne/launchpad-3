@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
+from StringIO import StringIO
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -19,6 +21,9 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UpstreamFileType)
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.validators.person import validate_public_person
+
+
+SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
 
 
 class ProductRelease(SQLBase):
@@ -66,26 +71,49 @@ class ProductRelease(SQLBase):
         # Replace slashes in the filename with less problematic dashes.
         return filename.replace('/', '-')
 
-    def addReleaseFile(self, filename, file_content, file_size, content_type,
+    def _getFileObjectAndSize(self, file_or_data):
+        """Return an object and length for file_or_data.
+
+        :param file_or_data: A string or a file object or StringIO object.
+        :return: file object or StringIO object and size.
+        """
+        if isinstance(file_or_data, basestring):
+            file_size = len(file_or_data)
+            file_obj = StringIO(file_or_data)
+        else:
+            assert isinstance(file_or_data, (file, StringIO)), (
+                "file_or_data is not an expected type")
+            file_obj = file_or_data
+            start = file_obj.tell()
+            file_obj.seek(0, SEEK_END)
+            file_size = file_obj.tell()
+            file_obj.seek(start)
+        return file_obj, file_size
+
+    def addReleaseFile(self, filename, file_content, content_type,
                        uploader, signature_filename=None,
-                       signature_content=None, signature_size=None,
+                       signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
+        file_obj, file_size = self._getFileObjectAndSize(file_content)
+
         alias = getUtility(ILibraryFileAliasSet).create(
             name=filename,
             size=file_size,
-            file=file_content,
+            file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
+            signature_obj, signature_size = self._getFileObjectAndSize(
+                signature_content)
             signature_filename = self.normalizeFilename(
                 signature_filename)
             signature_alias = getUtility(ILibraryFileAliasSet).create(
                 name=signature_filename,
                 size=signature_size,
-                file=signature_content,
+                file=signature_obj,
                 contentType='application/pgp-signature')
         else:
             signature_alias = None

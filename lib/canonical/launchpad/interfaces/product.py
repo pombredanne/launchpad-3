@@ -563,6 +563,7 @@ class IProductSet(Interface):
         displayname='display_name', project='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
+        downloadurl='download_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
     @export_factory_operation(

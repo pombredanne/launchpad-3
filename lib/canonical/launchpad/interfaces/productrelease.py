@@ -31,8 +31,11 @@ from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_write_operation,
+    exported, operation_parameters)
 
 
 class UpstreamFileType(DBEnumeratedType):
@@ -115,6 +118,8 @@ class ProductReleaseVersionField(ContentNameField):
 class IProductReleaseFileEditRestricted(Interface):
     """`IProductReleaseFile` properties which require `launchpad.Edit`."""
 
+    @export_write_operation()
+    @export_operation_as('delete')
     def destroySelf():
         """Delete the product release file."""
 
@@ -164,23 +169,34 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
-    def addReleaseFile(filename, file_content, file_size, content_type,
+    @call_with(uploader=REQUEST_USER)
+    @operation_parameters(
+        filename=TextLine(),
+        signature_filename=TextLine(),
+        content_type=TextLine(),
+        file_content=Bytes(constraint=productrelease_file_size_constraint),
+        signature_content=Bytes(
+            constraint=productrelease_signature_size_constraint),
+        file_type=copy_field(IProductReleaseFile['filetype'], required=False)
+        )
+    @export_factory_operation(
+        IProductReleaseFile, ['description'])
+    @export_operation_as('add_file')
+    def addReleaseFile(filename, file_content, content_type,
                        uploader, signature_filename=None,
-                       signature_content=None, signature_size=None,
+                       signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
-        """Add file to the library, and link to this `IProductRelease`.
+        """Add file to the library and link to this `IProductRelease`.
 
         The signature file will also be added if available.
 
         :param filename: Name of the file being uploaded.
         :param file_content: StringIO or file object.
-        :param file_size: Size of file_content.
         :param content_type: A MIME content type string.
         :param uploader: The person who uploaded the file.
         :param signature_filename: Name of the uploaded gpg signature file.
         :param signature_content: StringIO or file object.
-        :param signature_size: Size of signature_content.
         :param file_type: An `UpstreamFileType` enum value.
         :param description: Info about the file.
         :returns: `IProductReleaseFile` object.
