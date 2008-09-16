@@ -31,6 +31,7 @@ from zope.interface import implements
 from canonical.codehosting.transport import (
     AsyncLaunchpadTransport, LaunchpadServer)
 from canonical.config import config
+from canonical.twistedsupport import gatherResults
 
 
 class FileIsADirectory(bzr_errors.PathError):
@@ -246,19 +247,14 @@ class TransportSFTPServer:
             this class.
             """
 
-            def __init__(self, files):
-                self.position = (
-                    self._getListingEntry(filename) for filename in files)
-
-            def _getListingEntry(self, filename):
-                unescaped = urlutils.unescape(filename).encode('utf-8')
-                return (unescaped, unescaped, {})
+            def __init__(self, entries):
+                self.iter = iter(entries)
 
             def __iter__(self):
                 return self
 
             def next(self):
-                return self.position.next()
+                return self.iter.next()
 
             def close(self):
                 # I can't believe we had to implement a whole class just to
@@ -266,7 +262,18 @@ class TransportSFTPServer:
                 pass
 
         deferred = self.transport.list_dir(urlutils.escape(path))
-        return deferred.addCallback(DirectoryListing)
+        def format_attrs(attrs, unescaped):
+            return (unescaped, unescaped, attrs)
+        def stat_files(file_list):
+            deferreds = []
+            for f in file_list:
+                unescaped = urlutils.unescape(f).encode('utf-8')
+                unescaped_path = os.path.join(path, unescaped)
+                attr_deferred = self.getAttrs(unescaped_path, False)
+                attr_deferred.addCallback(format_attrs, unescaped)
+                deferreds.append(attr_deferred)
+            return gatherResults(deferreds)
+        return deferred.addCallback(stat_files).addCallback(DirectoryListing)
 
     @with_sftp_error
     def openFile(self, path, flags, attrs):
