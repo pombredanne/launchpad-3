@@ -271,7 +271,7 @@ available changesfile.
     >>> print_ppa_package_rows(anon_browser.contents)
     Source              Published   Status     Series      Section  Built
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
-    com...(changesfile)             Pending    Warty    Devel
+    com...(changesfile)             Pending    Warty       Devel
     ice...(changesfile) 2007-07-09  Published  Warty       Editors
     pmount - 0.1-1      2007-07-09  Published  Warty       Editors
 
@@ -607,9 +607,9 @@ of downloading the buildlog).
     >>> print anon_browser.title
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
-This feature is also useful from the PPA owner perspective. When
-Celso's visualise there that there was a failure while building
-'cdrkit' on i386 he can quickly 'retry' the failure.
+This feature is also useful from the PPA owner perspective. When Celso
+sees that there was a failure while building 'cdrkit' on i386 he can
+quickly 'retry' the failure.
 
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
