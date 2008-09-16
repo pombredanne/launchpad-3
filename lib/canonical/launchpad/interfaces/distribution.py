@@ -11,10 +11,12 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import (
-    Object, Choice, Int, Text, TextLine)
-from zope.interface import (
-    Interface, Attribute)
+from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.interface import Attribute, Interface
+
+from canonical.lazr.rest.declarations import (
+   collection_default_content, export_as_webservice_collection,
+   export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -52,79 +54,98 @@ class DistributionNameField(PillarNameField):
         """Return the interface of this pillar object."""
         return IDistribution
 
-class IDistribution(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-                    IHasDrivers, IHasMentoringOffers, IHasMilestones,
-                    IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-                    IHasSprints, IHasTranslationGroup, IKarmaContext,
-                    ILaunchpadUsage, ISpecificationTarget, IPillar):
+class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
+                    IHasAppointedDriver, IHasDrivers, IHasMentoringOffers,
+                    IHasMilestones, IMakesAnnouncements, IHasOwner,
+                    IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+                    IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+                    IPillar):
     """An operating system distribution."""
+    export_as_webservice_entry()
 
     id = Attribute("The distro's unique number.")
-    name = DistributionNameField(
-        title=_("Name"),
-        constraint=name_validator,
-        description=_("The distro's name."), required=True)
-    displayname = TextLine(
-        title=_("Display Name"),
-        description=_("The displayable name of the distribution."),
-        required=True)
-    title = Title(
-        title=_("Title"),
-        description=_("The distro's title."), required=True)
-    summary = Summary(
-        title=_("Summary"),
-        description=_(
-            "The distribution summary. A short paragraph "
-            "describing the goals and highlights of the distro."),
-        required=True)
-    homepage_content = Text(
-        title=_("Homepage Content"), required=False,
-        description=_(
-            "The content of this distribution's home page. Edit this and it "
-            "will be displayed for all the world to see. It is NOT a wiki "
-            "so you cannot undo changes."))
-    icon = IconImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/distribution',
-        description=_(
-            "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this distribution. The icon will "
-            "be displayed everywhere we list the distribution and link "
-            "to it."))
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/distribution-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this distribution. It "
-            "should be no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
-        title=_("Brand"), required=False,
-        default_image_resource='/@@/distribution-mugshot',
-        description=_(
-            "A large image of exactly 192x192 pixels, that will be displayed "
-            "on this distribution's home page in Launchpad. It should be no "
-            "bigger than 100kb in size. "))
-    description = Description(
-        title=_("Description"),
-        description=_("The distro's description."),
-        required=True)
-    domainname = TextLine(
-        title=_("Domain name"),
-        description=_("The distro's domain name."), required=True)
-    owner = Int(
-        title=_("Owner"),
-        description=_("The distro's owner."), required=True)
-    date_created = Attribute("The date this distribution was registered.")
-    driver = PublicPersonChoice(
-        title=_("Driver"),
-        description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted for any series in this "
-            "distribution. Note that you can also specify a driver "
-            "on each series who's permissions will be limited to that "
-            "specific series."),
-        required=False, vocabulary='ValidPersonOrTeam')
+    name = exported(
+        DistributionNameField(
+            title=_("Name"),
+            constraint=name_validator,
+            description=_("The distro's name."), required=True))
+    displayname = exported(
+        TextLine(
+            title=_("Display Name"),
+            description=_("The displayable name of the distribution."),
+            required=True),
+        exported_as='display_name')
+    title = exported(
+        Title(
+            title=_("Title"),
+            description=_("The distro's title."), required=True))
+    summary = exported(
+        Summary(
+            title=_("Summary"),
+            description=_(
+                "The distribution summary. A short paragraph "
+                "describing the goals and highlights of the distro."),
+            required=True))
+    homepage_content = exported(
+        Text(
+            title=_("Homepage Content"), required=False,
+            description=_(
+                "The content of this distribution's home page. Edit this and "
+                "it will be displayed for all the world to see. It is NOT a "
+                "wiki so you cannot undo changes.")))
+    icon = exported(
+        IconImageUpload(
+            title=_("Icon"), required=False,
+            default_image_resource='/@@/distribution',
+            description=_(
+                "A small image of exactly 14x14 pixels and at most 5kb in "
+                "size, that can be used to identify this distribution. The "
+                "icon will be displayed everywhere we list the distribution "
+                "and link to it.")))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/distribution-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to this distribution. It "
+                "should be no bigger than 50kb in size.")))
+    mugshot = exported(
+        MugshotImageUpload(
+            title=_("Brand"), required=False,
+            default_image_resource='/@@/distribution-mugshot',
+            description=_(
+                "A large image of exactly 192x192 pixels, that will be "
+                "displayed on this distribution's home page in Launchpad. "
+                "It should be no bigger than 100kb in size. ")))
+    description = exported(
+        Description(
+            title=_("Description"),
+            description=_("The distro's description."),
+            required=True))
+    domainname = exported(
+        TextLine(
+            title=_("Domain name"),
+            description=_("The distro's domain name."), required=True),
+        exported_as='domain_name')
+    owner = exported(
+        PublicPersonChoice(
+            title=_("Owner"), vocabulary='ValidOwner',
+            description=_("The distro's owner."), required=True))
+    date_created = exported(
+        Datetime(title=_('Date created'),
+                 description=_("The date this distribution was registered.")),
+        exported_as='date_created')
+    driver = exported(
+        PublicPersonChoice(
+            title=_("Driver"),
+            description=_(
+                "The person or team responsible for decisions about features "
+                "and bugs that will be targeted for any series in this "
+                "distribution. Note that you can also specify a driver "
+                "on each series who's permissions will be limited to that "
+                "specific series."),
+            required=False, vocabulary='ValidPersonOrTeam'))
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
@@ -387,14 +408,27 @@ IMessage['distribution'].schema = IDistribution
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
+    export_as_webservice_collection(IDistribution)
 
     title = Attribute('Title')
 
     def __iter__():
-        """Iterate over distributions."""
+        """Iterate over all distributions.
+
+        Ubuntu and its flavours will always be at the top of the list, with
+        the other ones sorted alphabetically after them.
+        """
 
     def __getitem__(name):
         """Retrieve a distribution by name"""
+
+    @collection_default_content()
+    def getDistros(self):
+        """Return all distributions.
+
+        Ubuntu and its flavours will always be at the top of the list, with
+        the other ones sorted alphabetically after them.
+        """
 
     def count():
         """Return the number of distributions in the system."""
