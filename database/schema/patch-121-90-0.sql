@@ -19,7 +19,7 @@ CREATE TABLE StaticDiffJob (
   branch INTEGER NOT NULL REFERENCES Branch,
   from_revision_spec TEXT,
   to_revision_spec TEXT,
-  UNIQUE (branch, from_revision_spec, to_revision_spec)
+  branch_merge_proposal INTEGER REFERENCES BranchMergeProposal
 );
 
 
@@ -74,11 +74,16 @@ CREATE TABLE CodeMailJob (
 );
 
 
-ALTER TABLE BranchMergeProposal
-  ADD COLUMN review_diff INTEGER REFERENCES StaticDiff;
+CREATE TABLE MergeDirectiveJob (
+  id SERIAL PRIMARY KEY,
+  job INTEGER REFERENCES Job,
+  message INTEGER NOT NULL REFERENCES Message,
+  action INTEGER
+);
+
 
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN review_diff_job INTEGER REFERENCES StaticDiffJob;
+  ADD COLUMN review_diff INTEGER REFERENCES StaticDiff;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
