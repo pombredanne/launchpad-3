@@ -23,6 +23,7 @@ from bzrlib import errors as bzr_errors
 from bzrlib import osutils, urlutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
+from twisted.conch.ls import lsLine
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
 from twisted.python import util
@@ -261,17 +262,20 @@ class TransportSFTPServer:
                 # have this do-nothing method (abentley).
                 pass
 
-        deferred = self.transport.list_dir(urlutils.escape(path))
-        def format_attrs(attrs, unescaped):
-            return (unescaped, unescaped, attrs)
+        escaped_path = urlutils.escape(path)
+        deferred = self.transport.list_dir(escaped_path)
+        def format_entry(stat_result, filename):
+            shortname = urlutils.unescape(filename).encode('utf-8')
+            longname = lsLine(shortname, stat_result)
+            attr_dict = self._translate_stat(stat_result)
+            return (shortname, longname, attr_dict)
         def stat_files(file_list):
             deferreds = []
-            for f in file_list:
-                unescaped = urlutils.unescape(f).encode('utf-8')
-                unescaped_path = os.path.join(path, unescaped)
-                attr_deferred = self.getAttrs(unescaped_path, False)
-                attr_deferred.addCallback(format_attrs, unescaped)
-                deferreds.append(attr_deferred)
+            for filename in file_list:
+                escaped_file_path = os.path.join(escaped_path, filename)
+                stat_deferred = self.transport.stat(escaped_file_path)
+                stat_deferred.addCallback(format_entry, filename)
+                deferreds.append(stat_deferred)
             return gatherResults(deferreds)
         return deferred.addCallback(stat_files).addCallback(DirectoryListing)
 
@@ -307,6 +311,16 @@ class TransportSFTPServer:
         """
         return defer.succeed(None)
 
+    def _translate_stat(self, stat_val):
+        return {
+            'size': getattr(stat_val, 'st_size', 0),
+            'uid': getattr(stat_val, 'st_uid', 0),
+            'gid': getattr(stat_val, 'st_gid', 0),
+            'permissions': getattr(stat_val, 'st_mode', 0),
+            'atime': getattr(stat_val, 'st_atime', 0),
+            'mtime': getattr(stat_val, 'st_mtime', 0),
+        }
+
     @with_sftp_error
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.
@@ -314,16 +328,7 @@ class TransportSFTPServer:
         This just delegates to TransportSFTPFile's implementation.
         """
         deferred = self.transport.stat(urlutils.escape(path))
-        def translate_stat(stat_val):
-            return {
-                'size': getattr(stat_val, 'st_size', 0),
-                'uid': getattr(stat_val, 'st_uid', 0),
-                'gid': getattr(stat_val, 'st_gid', 0),
-                'permissions': getattr(stat_val, 'st_mode', 0),
-                'atime': getattr(stat_val, 'st_atime', 0),
-                'mtime': getattr(stat_val, 'st_mtime', 0),
-            }
-        return deferred.addCallback(translate_stat)
+        return deferred.addCallback(self._translate_stat)
 
     def gotVersion(self, otherVersion, extensionData):
         """See `ISFTPServer`."""
