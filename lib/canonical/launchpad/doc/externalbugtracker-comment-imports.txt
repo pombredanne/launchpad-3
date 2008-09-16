@@ -403,27 +403,11 @@ Once again, CVE links are created but no karma is assigned.
 
 === Initial import of comments ===
 
-    >>> from textwrap import dedent
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug_watch = factory.makeBugWatch('42')
-    >>> comment_syncing_team = factory.makeTeam()
-    >>> comment_syncer = factory.makePerson(
-    ...     email='comment-syncer@example.com')
-    >>> comment_syncer.join(comment_syncing_team)
-    >>> bug_watch.bug.subscribe(comment_syncer, comment_syncer)
-    <BugSubscription at ...>
-
-
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> notifications = pop_notifications()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-    >>> config.push(
-    ...     'comment-syncing-team', dedent("""
-    ...         [malone]
-    ...         comment_syncing_team: %s
-    ...         """ % comment_syncing_team.name))
     >>> external_bugtracker.remote_comments = {
     ...     '1': 'First imported comment (initial import)',
     ...     '2': 'Second imported comment (initial import)',
@@ -435,13 +419,12 @@ Once again, CVE links are created but no karma is assigned.
     ...     external_bugtracker, bug_watch, when=now)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
-
-Don't send notification for initial imports.
+For initial imports, don't send notification for each comment
 
     >>> from canonical.launchpad.database.bugnotification import (
     ...     BugNotification)
     >>> BugNotification.selectBy(bug=bug_watch.bug).count()
-    0
+    1
 
     >>> external_bugtracker.remote_comments = {
     ...     '1': 'First imported comment (initial import)',
@@ -452,39 +435,14 @@ Don't send notification for initial imports.
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
-XXX: check e-mail
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    1
-    >>> notification = notifications[0]
-    >>> print notification['To']
-    comment-syncer@example.com
-    >>> print notification['From']
-    Bug Watch Updater <bugwatch@...>
-    >>> print notification['Subject']
-    [Bug ...] Re: ...
-    >>> print notification['Date']
-    Fri, 12 Sep 2008 15:30:45 -0000
-    >>> print notification['X-Launchpad-Message-Rationale']
-    Subscriber
-
-
 Send notifications for sub-sequent imports, even though multiple.
 
-
-    >>> notifications = BugNotification.selectBy(
-    ...     bug=bug_watch.bug, orderBy='id')
-    >>> notifications.count()
+    >>> notifications = list(BugNotification.selectBy(
+    ...     bug=bug_watch.bug, orderBy='id'))
+    >>> notifications = notifications[1:]
+    >>> len(notifications)
     2
     >>> for notification in notifications:
     ...     print notification.message.text_contents
     Third imported comment (initial import)
     Fourth imported comment (initial import)
-
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    0
-
-    >>> ignored = config.pop('comment-syncing-team')
-

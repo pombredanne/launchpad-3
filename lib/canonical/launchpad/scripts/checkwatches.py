@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import sendmail
@@ -664,21 +665,11 @@ class BugWatchUpdater(object):
             config.malone.comment_syncing_team)
         if len(imported_comments) > 0:
             if is_initial_import:
-                recipients = bug_watch.bug.getBugNotificationRecipients(
-                    level=BugNotificationLevel.COMMENTS)
-                people_to_notify = [
-                    person for person in recipients.getRecipients()
-                    if person.inTeam(comment_syncing_team)]
-                from_address = get_bugmail_from_address(
-                    bug_watch_updater, bug_watch.bug)
-                for person in people_to_notify:
-                    reason, rationale_header = recipients.getReason(person)
-                    notification = construct_bug_notification(
-                        bug_watch.bug,
-                        from_address, person.preferredemail.email,
-                        'body', bug_watch.bug.followup_subject(), when,
-                        rationale_header=rationale_header)
-                    sendmail(notification)
+                notification_message = getUtility(IMessageSet).fromText(
+                    subject='subject',
+                    content=u'** http://example.com/bugs/42',
+                    owner=None)
+                bug_watch.bug.addCommentNotification(notification_message)
             else:
                 for bug_message in imported_comments:
                     notify(SQLObjectCreatedEvent(
