@@ -61,7 +61,6 @@ COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the mer
 COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
 COMMENT ON COLUMN BranchMergeProposal.review_diff IS 'The diff to use for review purposes.';
-COMMENT ON COLUMN BranchMergeProposal.review_diff_job IS 'A job to generate a diff to use for review purposes.';
 COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
 COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
@@ -497,6 +496,13 @@ COMMENT ON COLUMN MailingListBan.reason IS 'The reason for the ban.';
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
 
+-- MergeDirectiveJob
+COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
+COMMENT ON COLUMN MergeDirectiveJob.message IS 'The message containing the merge directive.';
+COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
+
+
 -- MessageApproval
 
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
@@ -780,6 +786,7 @@ COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is
 -- StaticDiffJob
 COMMENT ON TABLE StaticDiffJob IS 'Jobs to generate static diffs.';
 COMMENT ON COLUMN StaticDiffJob.branch IS 'The Branch to use for resolving revision specs.';
+COMMENT ON COLUMN StaticDiffJob.branch_merge_proposal IS 'A BranchMergeProposal that should refer to the resulting diff.';
 COMMENT ON COLUMN StaticDiffJob.from_revision_spec IS 'The revision spec that the diff will be from.';
 COMMENT ON COLUMN StaticDiffJob.job IS 'The Job for this StaticDiffJob.';
 COMMENT ON COLUMN StaticDiffJob.to_revision_spec IS 'The revision spec that the diff will be to.';
