@@ -44,7 +44,7 @@ from canonical.lazr.rest.resource import (
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
+    IFeedsApplication, IPrivateApplication, IOpenIDApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
     IOAuthConsumerSet, NonceAlreadyUsed)
 import canonical.launchpad.versioninfo
@@ -1155,14 +1155,27 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
 # ---- openid
 
-class OpenIdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenId requests."""
+class IdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenID requests."""
 
-    root_object_interface = IOpenIdApplication
+    root_object_interface = IOpenIDApplication
 
 
-class OpenIdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIdLayer)
+class IdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.IdLayer)
+
+
+# XXX sinzui 2008-09-04 bug=264783:
+# Remove OpenIDPublication and OpenIDBrowserRequest.
+class OpenIDPublication(LaunchpadBrowserPublication):
+    """The publication used for old OpenID requests."""
+
+    root_object_interface = IOpenIDApplication
+
+
+class OpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIDLayer)
+
 
 # ---- xmlrpc
 
@@ -1321,7 +1334,7 @@ def register_launchpad_request_publication_factories():
              TranslationsPublication),
         VHRP('bugs', BugsBrowserRequest, BugsPublication),
         VHRP('answers', AnswersBrowserRequest, AnswersPublication),
-        VHRP('openid', OpenIdBrowserRequest, OpenIdPublication),
+        VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
         VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
              ShipItPublication),
         VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,

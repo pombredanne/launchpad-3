@@ -598,6 +598,48 @@ subscriptions that use that address are automatically deleted as well.
     []
 
 
+== Deactivating accounts ==
+
+When a subscribed user has her account disabled, she will no longer be able to
+post to the mailing list, nor will she receive mailing list posts.
+
+    >>> team_nine, list_nine = new_team('team-9', with_list=True)
+    >>> umma = new_person('Umma')
+    >>> umma.join(team_nine)
+    >>> list_nine.subscribe(umma)
+    >>> vera = new_person('Vera')
+    >>> vera.join(team_nine)
+    >>> list_nine.subscribe(vera)
+    >>> print sorted(
+    ...     email.email for email in list_nine.getSubscribedAddresses())
+    [u'umma.person@example.com', u'vera.person@example.com']
+    >>> print sorted(email.email for email in list_nine.getSenderAddresses())
+    [u'no-priv@canonical.com',
+     u'umma.person@example.com', u'uperson@example.org',
+     u'vera.person@example.com', u'vperson@example.org']
+
+Now Umma's account is suspended by a Launchpad administrator.
+
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountStatus, IAccountSet)
+    >>> umma_account = getUtility(IAccountSet).getByEmail(
+    ...     'umma.person@example.com')
+    >>> umma_account.status = AccountStatus.SUSPENDED
+    >>> transaction.commit()
+
+Umma is no longer subscribed to the mailing list...
+
+    >>> print sorted(
+    ...     email.email for email in list_nine.getSubscribedAddresses())
+    [u'vera.person@example.com']
+
+...and she can no longer post directly to the mailing list.
+
+    >>> print sorted(email.email for email in list_nine.getSenderAddresses())
+    [u'no-priv@canonical.com',
+     u'vera.person@example.com', u'vperson@example.org']
+
+
 == Subscription states ==
 
 A user can subscribe to a mailing list only when the list is active (as
