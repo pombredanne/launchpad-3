@@ -82,7 +82,6 @@ class OpenIDPersistentIdentity:
     def new_openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
         # The account is very restricted.
-        from zope.security.proxy import removeSecurityProxy
         return removeSecurityProxy(self.account).new_openid_identifier
 
     @property

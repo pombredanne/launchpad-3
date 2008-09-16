@@ -88,8 +88,7 @@ The OpenIDPersistentIdentity class provides the supportsURL()
 staticmethod to test if the format of the identity URL is supported.
 This verifies that the vhost and path are a valid combination.
 
-    >>> from canonical.launchpad.components.openidserver import (
-    ...     OpenIDPersistentIdentity, OpenIDVHost)
+    >>> from canonical.launchpad.components.openidserver import OpenIDVHost
 
     >>> OpenIDVHost.supportsURL(
     ...     'http://id.launchpad.dev/123/name12')
