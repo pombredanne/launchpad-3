@@ -23,6 +23,8 @@ class ConnectionWrapper(object):
         assert not isinstance(real_connection, ConnectionWrapper), \
                 "Wrapped the wrapper!"
         self.__dict__['real_connection'] = real_connection
+        # Set to True to stop test cleanup forcing the connection closed.
+        self.__dict__['auto_close'] = True
         PgTestSetup.connections.append(self)
 
     def close(self):
@@ -234,9 +236,9 @@ class PgTestSetup(object):
 
     def tearDown(self):
         '''Close all outstanding connections and drop the database'''
-        while self.connections:
-            con = self.connections[-1]
-            con.close() # Removes itself from self.connections
+        for con in self.connections[:]:
+            if con.__dict__['auto_close']:
+                con.close() # Removes itself from self.connections
         if (ConnectionWrapper.committed and ConnectionWrapper.dirty):
             PgTestSetup._reset_db = True
         ConnectionWrapper.committed = False

@@ -277,6 +277,8 @@ class LaunchpadSessionDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
+        if raw_connection.__dict__.has_key('auto_close'):
+            raw_connection.__dict__['auto_close'] = False
         raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         _reset_dirty_commit_flags(*flags)
         return raw_connection
