@@ -511,9 +511,8 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
             '%s/%s' % (parent_dir, child_file)])
         deferred = self.sftp_server.openDirectory(parent_dir)
         def check_open_directory(directory):
-            self.assertEqual(
-                [(child_dir, child_dir, {}), (child_file, child_file, {})],
-                list(sorted((directory))))
+            names = [entry[0] for entry in directory]
+            self.assertEqual(set(names), set([child_dir, child_file]))
             directory.close()
         return deferred.addCallback(check_open_directory)
 
