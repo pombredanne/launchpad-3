@@ -41,26 +41,27 @@ class TestStaticDiffJob(TestCaseWithFactory):
     def test_providesInterface(self):
         verifyObject(IStaticDiffJob, StaticDiffJob())
 
-    def create_bzr_branch(self, db_branch):
+    def create_branch_and_tree(self, db_branch):
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
-        return BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        return bzr_branch.create_checkout('.')
 
-    def test_run(self):
+    def useBzrBranches(self):
         self.useTempDir()
-        branch = self.factory.makeBranch()
-        job = StaticDiffJob(branch=branch, from_revision_spec='0',
-                            to_revision_spec='1')
         server = FakeTransportServer(get_transport('.'))
         server.setUp()
-        try:
-            bzr_branch = self.create_bzr_branch(branch)
-            tree = bzr_branch.create_checkout('.')
-            tree.commit('First commit', rev_id='rev1')
-            static_diff = job.run()
-        finally:
-            server.tearDown()
+        self.addCleanup(server.tearDown)
+
+    def test_run_revision_ids(self):
+        self.useBzrBranches()
+        branch = self.factory.makeBranch()
+        tree = self.create_branch_and_tree(branch)
+        tree.commit('First commit', rev_id='rev1')
+        job = StaticDiffJob(branch=branch, from_revision_spec='0',
+                            to_revision_spec='1')
+        static_diff = job.run()
         self.assertEqual('null:', static_diff.from_revision_id)
         self.assertEqual('rev1', static_diff.to_revision_id)
 
