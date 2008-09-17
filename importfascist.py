@@ -25,7 +25,6 @@ permitted_database_imports = text_lines_to_set("""
     zope.testing.doctest
     canonical.librarian.db
     canonical.doap.fileimporter
-    canonical.foaf.nickname
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
     canonical.archivepublisher.domination

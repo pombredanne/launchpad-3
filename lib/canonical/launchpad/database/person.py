@@ -1,12 +1,12 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
-# pylint: disable-msg=E0611,W0212,E1101,W0612
+# pylint: disable-msg=E0611,W0212,W0612
 
 """Implementation classes for a Person."""
 
 __metaclass__ = type
 __all__ = [
+    'generate_nick',
     'IrcID',
     'IrcIDSet',
     'JabberID',
@@ -21,6 +21,8 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
+import random
+import re
 
 from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -42,7 +44,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.database.account import Account
@@ -142,7 +143,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.launchpad.webapp.interfaces import (
@@ -2394,6 +2395,13 @@ class PersonSet:
     def __init__(self):
         self.title = 'People registered with Launchpad'
 
+    def isNameBlacklisted(self, name):
+        """See `IPersonSet`."""
+        cur = cursor()
+        cur.execute("SELECT is_blacklisted_name(%(name)s)" % sqlvalues(
+            name=name.encode('UTF-8')))
+        return bool(cur.fetchone()[0])
+
     def getTopContributors(self, limit=50):
         """See `IPersonSet`."""
         # The odd ordering here is to ensure we hit the PostgreSQL
@@ -2447,7 +2455,7 @@ class PersonSet:
                 "%s is not a valid email address." % email)
 
         if name is None:
-            name = nickname.generate_nick(email)
+            name = generate_nick(email)
 
         if not displayname:
             displayname = name.capitalize()
@@ -3663,3 +3671,100 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
+
+class NicknameGenerationError(Exception):
+    """I get raised when something went wrong generating a nickname."""
+
+
+def _is_nick_registered(nick):
+    """Answer the question: is this nick registered?"""
+    return PersonSet().getByName(nick) is not None
+
+
+def generate_nick(email_addr, is_registered=_is_nick_registered):
+    """Generate a LaunchPad nick from the email address provided.
+
+    See canonical.launchpad.validators.name for the definition of a
+    valid nick.
+
+    It is technically possible for this function to raise a
+    NicknameGenerationError, but this will only occur if an operator
+    has majorly screwed up the name blacklist.
+    """
+    email_addr = email_addr.strip().lower()
+
+    if not valid_email(email_addr):
+        raise NicknameGenerationError("%s is not a valid email address"
+                                      % email_addr)
+
+    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = user.replace(".", "-").replace("_", "-")
+    domain_parts = domain.split(".")
+
+    person_set = PersonSet()
+    def _valid_nick(nick):
+        if not valid_name(nick):
+            return False
+        elif is_registered(nick):
+            return False
+        elif person_set.isNameBlacklisted(nick):
+            return False
+        else:
+            return True
+
+    generated_nick = sanitize_name(user)
+    if _valid_nick(generated_nick):
+        return generated_nick
+
+    for domain_part in domain_parts:
+        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
+        if _valid_nick(generated_nick):
+            return generated_nick
+
+    # We seed the random number generator so we get consistent results,
+    # making the algorithm repeatable and thus testable.
+    random_state = random.getstate()
+    random.seed(sum(ord(letter) for letter in generated_nick))
+    try:
+        attempts = 0
+        prefix = ''
+        suffix = ''
+        mutated_nick = [letter for letter in generated_nick]
+        chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        while attempts < 1000:
+            attempts += 1
+
+            # Prefer a nickname with a suffix
+            suffix += random.choice(chars)
+            if _valid_nick(generated_nick + '-' + suffix):
+                return generated_nick + '-' + suffix
+
+            # Next a prefix
+            prefix += random.choice(chars)
+            if _valid_nick(prefix + '-' + generated_nick):
+                return prefix + '-' + generated_nick
+
+            # Or a mutated character
+            index = random.randint(0, len(mutated_nick)-1)
+            mutated_nick[index] = random.choice(chars)
+            if _valid_nick(''.join(mutated_nick)):
+                return ''.join(mutated_nick)
+
+            # Or a prefix + generated + suffix
+            if _valid_nick(prefix + '-' + generated_nick + '-' + suffix):
+                return prefix + '-' + generated_nick + '-' + suffix
+
+            # Or a prefix + mutated + suffix
+            if _valid_nick(
+                    prefix + '-' + ''.join(mutated_nick) + '-' + suffix):
+                return prefix + '-' + ''.join(mutated_nick) + '-' + suffix
+
+        raise NicknameGenerationError(
+            "No nickname could be generated. "
+            "This should be impossible to trigger unless some twonk has "
+            "registered a match everything regexp in the black list."
+            )
+
+    finally:
+        random.setstate(random_state)
