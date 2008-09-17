@@ -12,6 +12,7 @@ from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification,
@@ -91,13 +92,18 @@ def construct_email_notifications(bug_notifications):
     from_address = get_bugmail_from_address(person, bug)
     # comment_syncing_team can be either None or '' to indicate unset.
     if comment is not None and config.malone.comment_syncing_team:
+        # The first time we import comments from a bug watch, a comment
+        # notification is added, originating from the Bug Watch Updater.
+        bug_watch_updater = getUtility(ILaunchpadCelebrities).bug_watch_updater
+        is_initial_import_notification = (comment.owner == bug_watch_updater)
         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
             bug, comment)
         comment_syncing_team = getUtility(IPersonSet).getByName(
             config.malone.comment_syncing_team)
         # Only members of the comment syncing team should get comment
-        # notifications related to bug watches.
-        if bug_message is not None and bug_message.bugwatch is not None:
+        # notifications related to bug watches or initial comment imports.
+        if (is_initial_import_notification or
+            (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
                 (address, recipient)
                 for address, recipient in recipients.items()
