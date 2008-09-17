@@ -19,10 +19,9 @@ from twisted.web import server, resource
 from twisted.enterprise.adbapi import ConnectionPool
 
 from canonical.authserver.xmlrpc import (
-    UserDetailsResource, UserDetailsResourceV2, BranchDetailsResource)
+    UserDetailsResource, UserDetailsResourceV2)
 from canonical.authserver.database import (
-    DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
-    DatabaseBranchDetailsStorage)
+    DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2)
 from canonical.config import config
 
 
@@ -61,13 +60,12 @@ class AuthserverService(service.Service):
                 'psycopg2', connection_string, cp_reconnect=True)
         return dbpool
 
-    def buildTree(self, versionOneAPI, versionTwoAPI, branchAPI):
+    def buildTree(self, versionOneAPI, versionTwoAPI):
         """Take the XML-RPC resources and build a tree out of them."""
         root = resource.Resource()
         root.putChild('', versionOneAPI)
         root.putChild('RPC2', versionTwoAPI)
         root.putChild('v2', versionTwoAPI)
-        root.putChild('branch', branchAPI)
         return root
 
     def makeResource(self, dbpool, debug=False):
@@ -78,9 +76,7 @@ class AuthserverService(service.Service):
                                     debug=debug)
         v2API = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool),
                                       debug=debug)
-        branchAPI = BranchDetailsResource(
-            DatabaseBranchDetailsStorage(dbpool), debug=debug)
-        return self.buildTree(v1API, v2API, branchAPI)
+        return self.buildTree(v1API, v2API)
 
     def startService(self):
         service.Service.startService(self)

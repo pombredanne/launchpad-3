@@ -1,10 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0104
 
-# TODO:
-#  - exercise a bit more of the authUser interface
-
-import datetime
 import unittest
 import xmlrpclib
 
@@ -14,12 +10,10 @@ from twisted.application import internet, strports
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import resource, server, xmlrpc
 
-from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.authserver.xmlrpc import LoggingResource
 from canonical.config import config
 from canonical.functional import XMLRPCTestTransport
-from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.testing import (
     LaunchpadLayer, LaunchpadFunctionalLayer, TwistedLayer)
@@ -52,28 +46,6 @@ class XMLRPCAuthServerTestCase(unittest.TestCase):
         """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
         self.layer.force_dirty_database()
-
-
-class SSHKeysTestMixin:
-    """Test the getSSHKeys method.
-
-    This method is present in V1 and V2 interface.
-    """
-
-    def test_getSSHKeys(self):
-        # Unknown users have no SSH keys, of course.
-        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
-
-        # Check that the SSH key in the sample data can be retrieved
-        # successfully.
-        keys = self.server.getSSHKeys('test@canonical.com')
-
-        # There should only be one key for this user.
-        self.assertEqual(1, len(keys))
-
-        # Check the keytype is being returned correctly.
-        keytype, keytext = keys[0]
-        self.assertEqual('DSA', keytype)
 
 
 class TestLoggingResource(TrialTestCase):
@@ -154,7 +126,8 @@ class TestLoggingResource(TrialTestCase):
         deferred.addCallback(check_fault_string)
         return deferred.addBoth(restore_config)
 
-class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
+
+class XMLRPCv1TestCase(XMLRPCAuthServerTestCase):
 
     endpoint = '/'
 
@@ -214,7 +187,7 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
         self.failUnless('test@canonical.com' in r2['emailaddresses'])
 
 
-class XMLRPCv2TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
+class XMLRPCv2TestCase(XMLRPCAuthServerTestCase):
     """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
 
     endpoint = '/v2/'
@@ -241,104 +214,6 @@ class XMLRPCv2TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
         result = self.server.authUser('test@canonical.com', 'test')
         self.failUnlessEqual(result['displayname'], 'Sample Person')
         self.failUnless('test@canonical.com' in result['emailaddresses'])
-
-
-class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
-    """Tests for the XML-RPC implementation of IHostedBranchStorage."""
-
-    endpoint = '/v2/'
-
-    def test_getBranchesForUser(self):
-        # XXX: Andrew Bennetts 2005-12-13:
-        # Justs check that it doesn't error, should also check the result.
-        self.server.getBranchesForUser(12)
-
-    def test_fetchProductID(self):
-        self.assertEqual(4, self.server.fetchProductID('firefox'))
-        self.assertEqual('', self.server.fetchProductID('xxxxx'))
-
-    def test_createBranch(self):
-        # XXX Andrew Bennetts, 2007-01-24:
-        # This test just checks that createBranch doesn't error.  This test
-        # should also check the result.
-        self.server.createBranch(12, 'name12', 'firefox', 'new-branch')
-
-    def test_requestMirror(self):
-        # XXX Andrew Bennetts, 2007-01-24:
-        # Only checks that requestMirror doesn't error. Should instead
-        # check the result.
-
-        # This is a user who has launchpad.View permissions on the hosted
-        # branch.
-        user_id = 1
-        hosted_branch_id = 25
-        self.server.requestMirror(user_id, hosted_branch_id)
-
-    def test_getBranchInformation(self):
-        # Don't test the full range of values for getBranchInformation, as we
-        # rely on the database tests to do that. This test just confirms it's
-        # all hooked up correctly.
-        branch_id, permissions = self.server.getBranchInformation(
-            12, 'name12', 'gnome-terminal', 'pushed')
-        self.assertEqual(25, branch_id)
-        self.assertEqual(WRITABLE, permissions)
-
-    def test_getDefaultStackedOnBranch(self):
-        # We can get the default stacked-on branch of a project, given a
-        # project name.
-        #
-        # The 'evolution' project has a default stacked branch in the sample
-        # data.
-        branch = self.server.getDefaultStackedOnBranch(12, 'evolution')
-        self.assertEqual('/~vcs-imports/evolution/main', branch)
-
-    def test_getDefaultStackedOnBranchWhenEmpty(self):
-        # If there is no default stacked-on branch, we'll get an empty string.
-        branch = self.server.getDefaultStackedOnBranch(12, '+junk')
-        self.assertEqual('', branch)
-        # The 'gnome-terminal' project has no default stacked branch.
-        branch = self.server.getDefaultStackedOnBranch(12, 'gnome-terminal')
-        self.assertEqual('', branch)
-
-
-class BranchAPITestCase(XMLRPCAuthServerTestCase):
-    """Tests for the branch details API."""
-
-    endpoint = '/branch/'
-
-    def testGetBranchPullQueue(self):
-        results = self.server.getBranchPullQueue(BranchType.MIRRORED.name)
-        self.assertEqual([], results)
-
-    def testStartMirroring(self):
-        self.server.startMirroring(18)
-        # The branch puller script will pull private branches. We need to
-        # confirm that it can do so without triggering Zope security
-        # restrictions.
-        # Branch 29 is a private branch in the sample data.
-        self.server.startMirroring(29)
-
-    def testMirrorComplete(self):
-        self.server.startMirroring(18)
-        self.server.mirrorComplete(18, 'rev-1')
-        # See comment in testStartMirroring.
-        self.server.startMirroring(29)
-        self.server.mirrorComplete(29, 'rev-1')
-
-    def testMirrorFailedUnicode(self):
-        # Ensure that a unicode doesn't cause mirrorFailed to raise an
-        # exception.
-        self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
-        # See comment in testStartMirroring.
-        self.server.mirrorFailed(29, u'it broke\N{INTERROBANG}')
-
-    def testRecordSuccess(self):
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
-        started_tuple = tuple(started.utctimetuple())
-        completed_tuple = tuple(completed.utctimetuple())
-        self.server.recordSuccess(
-            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
 
 
 class PrivateXMLRPCAuthServerTestCase(XMLRPCv2TestCase):
