@@ -20,6 +20,7 @@ from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.database.person import Person
+from canonical.launchpad.interfaces.authserver import IAuthServer
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -28,8 +29,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IUserDetailsStorageV2)
+from canonical.authserver.interfaces import IUserDetailsStorage
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     read_only_transaction)
@@ -70,8 +70,8 @@ class UserDetailsStorageTest(DatabaseTest):
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
-        self.failUnless(verifyObject(IUserDetailsStorageV2,
-                                     DatabaseUserDetailsStorageV2(None)))
+        self.failUnless(
+            verifyObject(IAuthServer, DatabaseUserDetailsStorageV2(None)))
 
     def test_getUser(self):
         # Getting a user should return a valid dictionary of details
@@ -264,6 +264,33 @@ class UserDetailsStorageTest(DatabaseTest):
         userDict = storage._authUserInteraction('mark@hbd.com', ssha)
         self.assertEqual({}, userDict)
 
+    def test_getSSHKeys_empty(self):
+        # getSSHKeys returns an empty list for users without SSH keys.
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-priv')
+        self.assertEqual([], keys)
+
+    def test_getSSHKeys_no_such_user(self):
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-such-user')
+        self.assertEqual([], keys)
+
+    def test_getSSHKeys(self):
+        # getSSHKeys returns a list of keytype, keytext tuples for users with
+        # SSH keys.
+
+        self.cursor.execute("""
+            SELECT keytext FROM SSHKey
+            JOIN Person ON (SSHKey.person = Person.id)
+            WHERE Person.name = 'sabdfl'
+            """)
+        expected_keytext = self.cursor.fetchone()[0]
+
+        storage = DatabaseUserDetailsStorage(None)
+        keytype, keytext = storage._getSSHKeysInteraction('sabdfl')[0]
+        self.assertEqual('DSA', keytype)
+        self.assertEqual(expected_keytext, keytext)
+
 
 class TestTransactionDecorators(DatabaseTest):
     """Tests for the transaction decorators used by the authserver."""
@@ -285,7 +312,7 @@ class TestTransactionDecorators(DatabaseTest):
 
 
 class UserDetailsStorageV2Test(DatabaseTest):
-    """Test the implementation of `IUserDetailsStorageV2`."""
+    """Test the implementation of `IAuthServer`."""
 
     def test_teamDict(self):
         # The user dict from a V2 storage should include a 'teams' element

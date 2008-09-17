@@ -45,6 +45,19 @@ class UserDetailsResource(LoggingResource):
         return self.storage.authUser(loginID,
                                      sshaDigestedPassword.decode('base64'))
 
+    def xmlrpc_getSSHKeys(self, loginID):
+        """Retrieve SSH public keys for a given user
+
+        :param loginID: a login ID.
+        :returns: list of 2-tuples of (key type, key text).  This list will be
+            empty if the user has no keys or does not exist.
+
+        :returns: user dict if loginID exists, otherwise empty dict
+        """
+        if self.debug:
+            print 'getSSHKeys(%r)' % (loginID,)
+        return self.storage.getSSHKeys(loginID)
+
 
 class UserDetailsResourceV2(LoggingResource):
     """A new (and simpler) version of the user details XML-RPC API."""
@@ -71,3 +84,14 @@ class UserDetailsResourceV2(LoggingResource):
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
+
+    def xmlrpc_getSSHKeys(self, loginID):
+        """Retrieve SSH public keys for a given user
+
+        :param loginID: a login ID.
+        :returns: list of 2-tuples of (key type, key text).  This list will be
+            empty if the user has no keys or does not exist.
+        """
+        if self.debug:
+            print 'getSSHKeys(%r)' % (loginID,)
+        return self.storage.getSSHKeys(loginID)

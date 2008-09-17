@@ -16,13 +16,13 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces.authserver import IAuthServer
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.database.sqlbase import (
     clear_current_connection_cache, reset_store)
 
-from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IUserDetailsStorageV2)
+from canonical.authserver.interfaces import IUserDetailsStorage
 
 
 from twisted.internet.threads import deferToThread
@@ -56,6 +56,21 @@ class UserDetailsStorageMixin:
         emails = [person.preferredemail] + list(person.validatedemails)
         # Bypass zope's security because IEmailAddress.email is not public.
         return [removeSecurityProxy(email).email for email in emails]
+
+    def getSSHKeys(self, loginID):
+        """See `IUserDetailsStorage`."""
+        return deferToThread(self._getSSHKeysInteraction, loginID)
+
+    @read_only_transaction
+    def _getSSHKeysInteraction(self, loginID):
+        """The synchronous implementation of `getSSHKeys`.
+
+        See `IUserDetailsStorage`.
+        """
+        person = self._getPerson(loginID)
+        if person is None:
+            return []
+        return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
     def _getPerson(self, loginID):
         """Look up a person by loginID.
@@ -180,8 +195,8 @@ def saltFromDigest(digest):
 
 
 class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
-    """Launchpad-database backed implementation of IUserDetailsStorageV2"""
-    implements(IUserDetailsStorageV2)
+    """Launchpad-database backed implementation of IAuthServer"""
+    implements(IAuthServer)
 
     def __init__(self, connectionPool):
         """Constructor.
@@ -194,7 +209,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _getTeams(self, person):
         """Get list of teams a person is in.
 
-        Returns a list of team dicts (see IUserDetailsStorageV2).
+        Returns a list of team dicts (see IAuthServer).
         """
         teams = [
             dict(id=person.id, name=person.name,
@@ -214,14 +229,14 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return person_dict
 
     def authUser(self, loginID, password):
-        """See `IUserDetailsStorageV2`."""
+        """See `IAuthServer`."""
         return deferToThread(self._authUserInteraction, loginID, password)
 
     @read_only_transaction
     def _authUserInteraction(self, loginID, password):
         """Synchronous implementation of `authUser`.
 
-        See `IUserDetailsStorageV2`.
+        See `IAuthServer`.
         """
         person = self._getPerson(loginID)
         if person is None:

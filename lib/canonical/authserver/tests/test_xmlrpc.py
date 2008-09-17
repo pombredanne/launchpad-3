@@ -30,6 +30,28 @@ def _getPort():
     return int(args[0])
 
 
+class SSHKeysTestMixin:
+    """Test the getSSHKeys method.
+
+    This method is present in V1 and V2 interface.
+    """
+
+    def test_getSSHKeys(self):
+        # Unknown users have no SSH keys, of course.
+        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
+
+        # Check that the SSH key in the sample data can be retrieved
+        # successfully.
+        keys = self.server.getSSHKeys('test@canonical.com')
+
+        # There should only be one key for this user.
+        self.assertEqual(1, len(keys))
+
+        # Check the keytype is being returned correctly.
+        keytype, keytext = keys[0]
+        self.assertEqual('DSA', keytype)
+
+
 class XMLRPCAuthServerTestCase(unittest.TestCase):
     """Base fixture for XMLRPC test case to the AuthServer."""
     layer = LaunchpadLayer
@@ -127,7 +149,7 @@ class TestLoggingResource(TrialTestCase):
         return deferred.addBoth(restore_config)
 
 
-class XMLRPCv1TestCase(XMLRPCAuthServerTestCase):
+class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
     endpoint = '/'
 
@@ -187,7 +209,7 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase):
         self.failUnless('test@canonical.com' in r2['emailaddresses'])
 
 
-class XMLRPCv2TestCase(XMLRPCAuthServerTestCase):
+class XMLRPCv2TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
     """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
 
     endpoint = '/v2/'
