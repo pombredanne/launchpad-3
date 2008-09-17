@@ -789,6 +789,7 @@ COMMENT ON COLUMN StaticDiff.diff IS 'The Diff.';
 COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is to.';
 
 -- StaticDiffJob
+
 COMMENT ON TABLE StaticDiffJob IS 'Jobs to generate static diffs.';
 COMMENT ON COLUMN StaticDiffJob.branch IS 'The Branch to use for resolving revision specs.';
 COMMENT ON COLUMN StaticDiffJob.branch_merge_proposal IS 'A BranchMergeProposal that should refer to the resulting diff.';
@@ -2104,14 +2105,15 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 
 
 -- Job
+
 COMMENT ON TABLE Job IS 'Common info about a job.';
 COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
 
 -- JobDependency
+
 COMMENT ON TABLE JobDependency IS 'Dependency table for jobs.';
 COMMENT ON COLUMN JobDependency.prerequisite IS 'A Job that must be performed before another job.';
 COMMENT ON COLUMN JobDependency.dependant IS 'A Job that must be performed after another job.';
-
 
 -- StructuralSubscription
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';

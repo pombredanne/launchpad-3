@@ -5,13 +5,11 @@ CREATE TABLE Job (
   lease_expires TIMESTAMP WITHOUT TIME ZONE
 );
 
-
 CREATE TABLE JobDependency (
   prerequisite INTEGER NOT NULL REFERENCES Job,
   dependant INTEGER NOT NULL REFERENCES Job,
   PRIMARY KEY (prerequisite, dependant)
 );
-
 
 CREATE TABLE StaticDiffJob (
   id SERIAL PRIMARY KEY,
@@ -22,7 +20,6 @@ CREATE TABLE StaticDiffJob (
   branch_merge_proposal INTEGER REFERENCES BranchMergeProposal
 );
 
-
 CREATE TABLE Diff (
   id serial PRIMARY KEY,
   diff_text INTEGER NOT NULL REFERENCES LibraryFileAlias,
@@ -32,7 +29,6 @@ CREATE TABLE Diff (
   removed_lines_count INTEGER
 );
 
-
 CREATE TABLE StaticDiff (
   id serial PRIMARY KEY,
   from_revision_id TEXT,
@@ -40,7 +36,6 @@ CREATE TABLE StaticDiff (
   diff INTEGER REFERENCES Diff,
   UNIQUE (from_revision_id, to_revision_id)
 );
-
 
 CREATE TABLE PreviewDiffReference (
   id SERIAL PRIMARY KEY,
@@ -51,7 +46,6 @@ CREATE TABLE PreviewDiffReference (
   diff INTEGER REFERENCES Diff,
   conflicts TEXT
 );
-
 
 CREATE TABLE CodeMailJob (
   id SERIAL PRIMARY KEY,
@@ -73,7 +67,6 @@ CREATE TABLE CodeMailJob (
   in_reply_to TEXT
 );
 
-
 CREATE TABLE MergeDirectiveJob (
   id SERIAL PRIMARY KEY,
   job INTEGER REFERENCES Job,
@@ -81,9 +74,7 @@ CREATE TABLE MergeDirectiveJob (
   action INTEGER
 );
 
-
 ALTER TABLE BranchMergeProposal
   ADD COLUMN review_diff INTEGER REFERENCES StaticDiff;
-
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
