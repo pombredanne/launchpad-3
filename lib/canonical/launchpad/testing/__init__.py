@@ -179,15 +179,21 @@ class TestCase(unittest.TestCase):
         finally:
             result.stopTest(self)
 
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.factory = ObjectFactory()
+
 
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
+        TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
 
     def tearDown(self):
         logout()
+        TestCase.tearDown(self)
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
