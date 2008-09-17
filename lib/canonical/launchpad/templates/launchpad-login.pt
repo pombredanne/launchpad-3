@@ -93,9 +93,9 @@
               <li>
                 <p>
                   If neither of those work, Launchpad might be broken somehow.
-                  Let us know on the <a href=
-                  "https://lists.canonical.com/mailman/listinfo/launchpad-users"
-                  >launchpad-users mailing list</a> (requires subscription).
+                  Let us know by sending a message to
+                  <a href="mailto:feedback@launchpad.net"
+                     >feedback@launchpad.net</a>.
                 </p>
               </li>
             </ul>

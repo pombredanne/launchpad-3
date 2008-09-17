@@ -542,6 +542,7 @@ class PackageUpload(SQLBase):
         interpolations = {
             "SUMMARY": summary_text,
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
+            "USERS_ADDRESS": config.launchpad.users_address,
         }
         debug(self.logger, "Sending rejection email.")
         if self.isPPA():

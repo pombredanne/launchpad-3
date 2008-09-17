@@ -436,7 +436,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "PPA for Andrew Bennetts is disabled",
             "If you don't understand why your files were rejected please "
                  "send an email",
-            "to launchpad-users@lists.canonical.com for help."
+            "to %s for help (requires membership)."
+            % config.launchpad.users_address,
             ]
         self.assertEmail(contents, ppa_header=None)
 

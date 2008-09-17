@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
     IRosettaApplication, ILanguageSet, ILaunchpadRoot,
     IProductSet)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -91,6 +92,12 @@ class RosettaApplicationView(TranslationsMixin):
 
     def rosettaAdminEmail(self):
         return config.rosettaadmin.email
+
+    @property
+    def launchpad_users_team(self):
+        """The url of the launchpad-users team."""
+        team = getUtility(IPersonSet).getByName('launchpad-users')
+        return canonical_url(team)
 
 
 class RosettaStatsView:
