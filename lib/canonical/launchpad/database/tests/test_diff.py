@@ -48,6 +48,7 @@ class TestStaticDiffJob(TestCaseWithFactory):
         bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
 
     def test_run(self):
+        self.useTempDir()
         branch = self.factory.makeBranch()
         job = StaticDiffJob(branch=branch)
         server = FakeTransportServer(get_transport('.'))
