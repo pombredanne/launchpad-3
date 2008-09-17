@@ -5,5 +5,5 @@ __metaclass__ = type
 from zope.testing import doctest
 
 def test_suite():
-    return doctest.DocTestSuite('canonical.buildd.ftests.harness')
+    return doctest.DocTestSuite('canonical.buildd.tests.harness')
 

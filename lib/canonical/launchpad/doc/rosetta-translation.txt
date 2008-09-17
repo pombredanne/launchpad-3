@@ -47,7 +47,7 @@ Add a translation.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> message = potmsgset.updateTranslation(
-    ...     pofile, person, translations, is_fuzzy=False, is_imported=True,
+    ...     pofile, person, translations, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
@@ -94,7 +94,7 @@ this project from Pa.
 
     >>> translations = { 0: u'bar' }
     >>> imported_message = potmsgset.updateTranslation(
-    ...     pofile, Pa, translations, is_fuzzy=False, is_imported=True,
+    ...     pofile, Pa, translations, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
@@ -118,7 +118,7 @@ Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
     >>> message = potmsgset.updateTranslation(
-    ...     pofile, Pb, translations, is_fuzzy=False, is_imported=False,
+    ...     pofile, Pb, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
     >>> web_submission = potmsgset.getCurrentTranslationMessage(spanish)
@@ -157,7 +157,7 @@ along and says it's 'baz', we don't record anything new.
 
     >>> translations = { 0: u'baz' }
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile, Pc, translations, is_fuzzy=False, is_imported=False,
+    ...     pofile, Pc, translations, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> repeat_submission = potmsgset.getCurrentTranslationMessage(spanish)
 
@@ -197,7 +197,7 @@ to see a non-editor published submission.
 
     >>> translations = { 0: u'bong' }
     >>> dummy = potmsgset.updateTranslation(
-    ...     pofile, Pn, translations, is_fuzzy=False, is_imported=True,
+    ...     pofile, Pn, translations, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Traceback (most recent call last):
     ...
@@ -207,7 +207,7 @@ Now let's try again, but not as an imported translation.  This is
 accepted.
 
     >>> noneditor_submission = potmsgset.updateTranslation(
-    ...    pofile, Pn, {0: u'bong'}, is_fuzzy=False, is_imported=False,
+    ...    pofile, Pn, {0: u'bong'}, is_imported=False,
     ...    lock_timestamp=datetime.datetime.now(UTC))
 
 This submission should come from the new non-editor person:
@@ -232,7 +232,6 @@ seconds.
     >>> noneditor_submission.date_created += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> from zope.security.proxy import removeSecurityProxy
 
 Let's make sure:
 

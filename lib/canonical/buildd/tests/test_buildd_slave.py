@@ -19,7 +19,7 @@ import shutil
 import urllib2
 import unittest
 
-from canonical.buildd.ftests.harness import BuilddTestCase
+from canonical.buildd.tests.harness import BuilddTestCase
 
 
 def read_file(path):

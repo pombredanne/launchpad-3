@@ -10,7 +10,6 @@ __all__ = [
     'BugTrackerContextMenu',
     'BugTrackerEditView',
     'BugTrackerNavigation',
-    'BugTrackerSetBreadcrumbBuilder',
     'BugTrackerSetContextMenu',
     'BugTrackerSetNavigation',
     'BugTrackerSetView',
@@ -58,11 +57,6 @@ NO_DIRECT_CREATION_TRACKERS = (
 class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
-
-
-class BugTrackerSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IBugTrackerSet`."""
-    text = 'Remote Bug Trackers'
 
 
 class BugTrackerContextMenu(ContextMenu):
