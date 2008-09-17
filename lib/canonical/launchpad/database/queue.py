@@ -11,14 +11,13 @@ __all__ = [
     'PackageUploadSet',
     ]
 
-from email import Encoders
-from email.MIMEBase import MIMEBase
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
+
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 
 from zope.component import getUtility
 from zope.interface import implements
