@@ -4673,6 +4673,7 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
