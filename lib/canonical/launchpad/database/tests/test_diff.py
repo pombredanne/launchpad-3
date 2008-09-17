@@ -45,21 +45,24 @@ class TestStaticDiffJob(TestCaseWithFactory):
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
+        return BzrDir.create_branch_convenience(db_branch.warehouse_url)
 
     def test_run(self):
         self.useTempDir()
         branch = self.factory.makeBranch()
-        job = StaticDiffJob(branch=branch)
+        job = StaticDiffJob(branch=branch, from_revision_spec='0',
+                            to_revision_spec='1')
         server = FakeTransportServer(get_transport('.'))
         server.setUp()
         try:
             bzr_branch = self.create_bzr_branch(branch)
+            tree = bzr_branch.create_checkout('.')
+            tree.commit('First commit', rev_id='rev1')
             static_diff = job.run()
         finally:
             server.tearDown()
         self.assertEqual('null:', static_diff.from_revision_id)
-        self.assertEqual('rev1', static_diff.from_revision_id)
+        self.assertEqual('rev1', static_diff.to_revision_id)
 
 
 def test_suite():

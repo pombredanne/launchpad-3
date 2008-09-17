@@ -53,6 +53,9 @@ class IStaticDiffJob(Interface):
         title=_('Branch to use for this diff'), required=True,
         schema=ILibraryFileAlias)
 
+    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
+
+    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
 
     def run():
         """Acquire the static diff this job requires.
