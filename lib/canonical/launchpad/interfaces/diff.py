@@ -45,6 +45,8 @@ class IStaticDiff(Interface):
 
     to_revision_id = TextLine()
 
+    diff = Object(title=_('The Diff object.'), schema=IDiff)
+
 
 class IStaticDiffJob(Interface):
     """A job to create a static diff."""

@@ -41,12 +41,13 @@ class TestStaticDiffJob(TestCaseWithFactory):
     def test_providesInterface(self):
         verifyObject(IStaticDiffJob, StaticDiffJob())
 
-    def create_branch_and_tree(self, db_branch):
+    def create_branch_and_tree(self):
+        db_branch = self.factory.makeBranch()
         transport = get_transport(db_branch.warehouse_url)
         transport.clone('../..').ensure_base()
         transport.clone('..').ensure_base()
         bzr_branch = BzrDir.create_branch_convenience(db_branch.warehouse_url)
-        return bzr_branch.create_checkout('.')
+        return db_branch, bzr_branch.create_checkout('.')
 
     def useBzrBranches(self):
         self.useTempDir()
@@ -56,14 +57,30 @@ class TestStaticDiffJob(TestCaseWithFactory):
 
     def test_run_revision_ids(self):
         self.useBzrBranches()
-        branch = self.factory.makeBranch()
-        tree = self.create_branch_and_tree(branch)
+        branch, tree = self.create_branch_and_tree()
         tree.commit('First commit', rev_id='rev1')
         job = StaticDiffJob(branch=branch, from_revision_spec='0',
                             to_revision_spec='1')
         static_diff = job.run()
         self.assertEqual('null:', static_diff.from_revision_id)
         self.assertEqual('rev1', static_diff.to_revision_id)
+
+    def test_run_diff_content(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        open('file', 'wb').write('foo\n')
+        tree.add('file')
+        tree.commit('First commit')
+        open('file', 'wb').write('bar\n')
+        tree.commit('Next commit')
+        job = StaticDiffJob(branch=branch, from_revision_spec='1',
+                            to_revision_spec='2')
+        static_diff = job.run()
+        import transaction
+        transaction.commit()
+        static_diff.diff.diff_text.open()
+        content = static_diff.diff.diff_text.read()
+        self.assertEqual(['-foo', '+bar', ''], content.splitlines()[4:])
 
 
 def test_suite():
