@@ -12,6 +12,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from storm.store import Store
+from zope.app.event.objectevent import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -36,7 +37,8 @@ from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposalGetter, IBranchMergeProposal,
+    IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
+    IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
     UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -269,11 +271,13 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
+        notify(BranchMergeProposalApprovedEvent(self, reviewer))
 
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+        notify(BranchMergeProposalRejectedEvent(self, reviewer))
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
@@ -415,7 +419,7 @@ class BranchMergeProposal(SQLBase):
               SELECT revision FROM BranchRevision
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence')
+            prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
@@ -613,3 +617,21 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
+
+
+class BranchMergeProposalReviewedEvent(ObjectEvent):
+    """A reviewer has approved or rejected the proposed merge."""
+
+    def __init__(self, proposal, reviewer):
+        ObjectEvent.__init__(self, proposal)
+        self.reviewer = reviewer
+
+
+class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
+    """See `IBranchMergeProposalApprovedEvent`."""
+    implements(IBranchMergeProposalApprovedEvent)
+
+
+class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
+    """See `IBranchMergeProposalRejectedEvent`."""
+    implements(IBranchMergeProposalRejectedEvent)

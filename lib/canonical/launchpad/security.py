@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
@@ -1757,31 +1756,6 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private
 
 
-class EditArchiveRebuild(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchiveRebuild
-
-    def checkAuthenticated(self, user):
-        """Verify that the user can edit the archive rebuild.
-
-        Only people in one of the conditions below can edit an
-        ArchiveRebuild record:
-
-         * 'registrant' team member;
-         * The distribution admins;
-         * a Launchpad administrator.
-        """
-        if user.inTeam(self.obj.registrant):
-            return True
-
-        distribution = self.obj.distroseries.distribution
-        if user.inTeam(distribution.owner):
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
-
-
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -1795,9 +1769,13 @@ class ViewSourcePackageRelease(AuthorizationBase):
     permission = 'launchpad.View'
     userfor = ISourcePackageRelease
 
+    # XXX Julian 2008-09-10
+    # Calls to _cached_published_archives can be changed to just
+    # "published_archives" when security adpater caching is implemented.
+    # See bug 268612.
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if check_permission('launchpad.View', archive):
                 return True
         return False
@@ -1808,7 +1786,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
         Unauthenticated users can see the package as long as it's published
         in a non-private archive.
         """
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if not archive.private:
                 return True
         return False

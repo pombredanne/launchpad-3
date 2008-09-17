@@ -23,16 +23,21 @@ class ByteStorageResource(HTTPResource):
         """Handle a GET, PUT, or DELETE request."""
         if self.request.method == "GET":
             return self.do_GET()
-        elif self.request.method == "PUT":
-            type = self.request.headers['Content-Type']
-            representation = self.request.bodyStream.getCacheStream().read()
-            return self.do_PUT(type, representation)
-        elif self.request.method == "DELETE":
-            return self.do_DELETE()
         else:
-            allow_string = "GET PUT DELETE"
-            self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", allow_string)
+            if self.context.field.readonly:
+                # Read-only resources only support GET.
+                allow_string = "GET"
+            elif self.request.method == "PUT":
+                type = self.request.headers['Content-Type']
+                representation = self.request.bodyStream.getCacheStream().read()
+                return self.do_PUT(type, representation)
+            elif self.request.method == "DELETE":
+                return self.do_DELETE()
+            else:
+                allow_string = "GET PUT DELETE"
+        # The client tried to invoke an unsupported HTTP method.
+        self.request.response.setStatus(405)
+        self.request.response.setHeader("Allow", allow_string)
 
     def do_GET(self):
         """See `IByteStorageResource`."""

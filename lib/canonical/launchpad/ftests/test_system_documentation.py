@@ -353,10 +353,6 @@ special = {
             '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'librarian.txt': LayeredDocFileSuite(
-            '../doc/librarian.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -686,6 +682,14 @@ special = {
                 '../doc/externalbugtracker-emailaddress.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-linking-back.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-linking-back.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                stdout_logging_level=logging.ERROR,
                 layer=LaunchpadZopelessLayer
                 ),
     'externalbugtracker-mantis-csv.txt':

@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdAuthorization',
-    'OpenIdAuthorizationSet',
+    'OpenIDAuthorization',
+    'OpenIDAuthorizationSet',
     'OpenIDRPConfig',
     'OpenIDRPConfigSet',
     'OpenIDRPSummary',
@@ -28,17 +28,17 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
-    ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
-    IOpenIdAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
+    ILaunchpadOpenIDStoreFactory, IOpenIDAuthorization,
+    IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-class OpenIdAuthorization(SQLBase):
-    implements(IOpenIdAuthorization)
-    _table = 'OpenIdAuthorization'
+class OpenIDAuthorization(SQLBase):
+    implements(IOpenIDAuthorization)
+    _table = 'OpenIDAuthorization'
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     client_id = StringCol()
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -46,12 +46,12 @@ class OpenIdAuthorization(SQLBase):
     trust_root = StringCol(notNull=True)
 
 
-class OpenIdAuthorizationSet:
-    implements(IOpenIdAuthorizationSet)
+class OpenIDAuthorizationSet:
+    implements(IOpenIDAuthorizationSet)
 
     def isAuthorized(self, person, trust_root, client_id):
-        """See IOpenIdAuthorizationSet."""
-        return  OpenIdAuthorization.select("""
+        """See IOpenIDAuthorizationSet."""
+        return  OpenIDAuthorization.select("""
             person = %s
             AND trust_root = %s
             AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -59,13 +59,13 @@ class OpenIdAuthorizationSet:
             """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
 
     def authorize(self, person, trust_root, expires, client_id=None):
-        """See IOpenIdAuthorizationSet."""
+        """See IOpenIDAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 
         assert not person.isTeam(), 'Attempting to authorize a team.'
 
-        existing = OpenIdAuthorization.selectOneBy(
+        existing = OpenIDAuthorization.selectOneBy(
                 personID=person.id,
                 trust_root=trust_root,
                 client_id=client_id
@@ -74,7 +74,7 @@ class OpenIdAuthorizationSet:
             existing.date_created = UTC_NOW
             existing.date_expires = expires
         else:
-            OpenIdAuthorization(
+            OpenIDAuthorization(
                     person=person, trust_root=trust_root,
                     date_expires=expires, client_id=client_id
                     )
@@ -83,7 +83,7 @@ class OpenIdAuthorizationSet:
 class OpenIDRPConfig(SQLBase):
     implements(IOpenIDRPConfig)
 
-    _table = 'OpenIdRPConfig'
+    _table = 'OpenIDRPConfig'
     trust_root = StringCol(dbName='trust_root', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     description = StringCol(dbName='description', notNull=True)
@@ -116,7 +116,7 @@ class OpenIDRPConfigSet:
             allowed_sreg=None,
             creation_rationale=PersonCreationRationale
                                .OWNER_CREATED_UNKNOWN_TRUSTROOT):
-        """See `IOpenIdRPConfigSet`"""
+        """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
         else:
@@ -127,22 +127,22 @@ class OpenIDRPConfigSet:
             _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale)
 
     def get(self, id):
-        """See `IOpenIdRPConfigSet`"""
+        """See `IOpenIDRPConfigSet`"""
         try:
             return OpenIDRPConfig.get(id)
         except SQLObjectNotFound:
             return None
 
     def getAll(self):
-        """See `IOpenIdRPConfigSet`"""
+        """See `IOpenIDRPConfigSet`"""
         return OpenIDRPConfig.select()
 
     def getByTrustRoot(self, trust_root):
-        """See `IOpenIdRPConfigSet`"""
+        """See `IOpenIDRPConfigSet`"""
         return OpenIDRPConfig.selectOneBy(trust_root=trust_root)
 
 
-class LaunchpadOpenIdStore(PostgreSQLStore):
+class LaunchpadOpenIDStore(PostgreSQLStore):
     """The standard OpenID Library PostgreSQL store with overrides to
     ensure it plays nicely with Zope3 and Launchpad.
 
@@ -150,7 +150,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
     created from browser code without warnings, as getUtility is not
     suitable as this class is not thread safe.
     """
-    classProvides(ILaunchpadOpenIdStoreFactory)
+    classProvides(ILaunchpadOpenIDStoreFactory)
 
     exceptions = psycopg2
     settings_table = None

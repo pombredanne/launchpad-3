@@ -320,9 +320,11 @@ class TestWorkerMonitorUnit(TestCase):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
-        self.worker_monitor._log_file.seek(0)
-        log_text = self.worker_monitor._log_file.read()
-        self.assertIn('RuntimeError', log_text)
+        def check_log_file(ignored):
+            self.worker_monitor._log_file.seek(0)
+            log_text = self.worker_monitor._log_file.read()
+            self.assertIn('RuntimeError', log_text)
+        return ret.addCallback(check_log_file)
 
     def test_callFinishJobRespects_call_finish_job(self):
         # callFinishJob does not call finishJob if _call_finish_job is False.
