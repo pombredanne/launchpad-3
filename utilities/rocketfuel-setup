@@ -66,7 +66,7 @@ fi
 # Make sure you have all the needed virtual hosts
 
 dev_host() {
-  grep -q "^127.0.0.88.*${hostname}" /etc/hosts
+  grep -q "^127.0.0.88.* ${hostname}" /etc/hosts
   if [ $? -ne 0 ]; then
     sudo sed -i "s/^127.0.0.88.*$/&\ ${hostname}/" /etc/hosts
     echo "${hostname} added to /etc/hosts"
@@ -93,6 +93,7 @@ hostnames=$(cat <<EOF
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
+    id.launchpad.dev
     openid.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev

@@ -135,7 +135,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.distributionmirror"
-        classes="DistributionMirrorFacets DistributionMirrorOverviewMenu" />
+        classes="DistributionMirrorOverviewMenu" />
 
 </facet>
 </configure>

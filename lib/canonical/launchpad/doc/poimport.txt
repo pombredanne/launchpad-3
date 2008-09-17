@@ -6,8 +6,6 @@ Rosetta.
 
 == Test Setup ==
 
-    >>> from zope.app import datetimeutils
-
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -304,14 +302,11 @@ And the statistics reflect it.
     3
 
 Here's a current message: i.e. it has a corresponding current message
-set in the PO template. It was not marked as fuzzy the last time it was
-imported.
+set in the PO template.
 
     >>> message = pofile.translation_messages[0]
     >>> message.potmsgset.msgid_singular.msgid
     u'foo'
-    >>> message.was_fuzzy_in_last_import
-    False
 
 And should be accepted by our validator.
 
@@ -320,17 +315,11 @@ And should be accepted by our validator.
     >>> published.validation_status == TranslationValidationStatus.OK
     True
 
-This message set should be fuzzy, however.
+Fuzzy translations are ignored.
 
     >>> message = pofile[u'bar']
-    >>> message.was_fuzzy_in_last_import
-    True
-
-And as we don't have a translation for it over the web, it should
-be the same for the active translation.
-
-    >>> message.is_fuzzy
-    True
+    >>> message.translations
+    [None]
 
 We can also get the ones that have validation errors.
 
@@ -371,7 +360,7 @@ The import process produces an email warning us of partial failure.
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
-    On ..., you uploaded 5
+    On ..., you uploaded 4
     Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
     <BLANKLINE>
     There were problems with 1 of these translations.
@@ -384,7 +373,7 @@ The import process produces an email warning us of partial failure.
     <BLANKLINE>
     <BLANKLINE>
     <BLANKLINE>
-    The other 4 translations have been accepted.
+    The other 3 translations have been accepted.
     <BLANKLINE>
     ...
 

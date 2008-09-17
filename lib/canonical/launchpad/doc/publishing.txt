@@ -866,6 +866,44 @@ containing:
     >>> print content.md5
     01234567890123456789012345678900
 
+
+getChangesFilesForSources(), provided by IPublishingSet, allows
+call sites to retrieve all changesfiles related to a set of source
+publications.
+
+    >>> cprov_changes = publishing_set.getChangesFilesForSources(
+    ...     cprov_sources)
+
+    >>> cprov_changes.count()
+    1
+
+The returned ResultSet element is tuple containing:
+
+ * `SourcePackagePublishingHistory`;
+ * `PackageUpload`;
+ * `SourcePackageRelease`;
+ * `LibraryFileAlias`;
+ * `LibraryFileContent`.
+
+    >>> [the_change] = cprov_changes
+
+    >>> source_pub, upload, source, file, content = the_change
+
+    >>> print source_pub.displayname
+    iceweasel 1.0 in warty
+
+    >>> print upload.displayname
+    iceweasel
+
+    >>> print source.title
+    iceweasel - 1.0
+
+    >>> print file.filename
+    mozilla-firefox_0.9_i386.changes
+
+    >>> print content.md5
+    e4a7193a8f72fa2755e2162512069093
+
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
@@ -1019,6 +1057,7 @@ information to be cached in the decorated objects:
   * getFilesBySource;
   * getBinariesBySource;
   * getPackageDiffsBySource.
+  * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
 corresponding `IPublishingSet` methods and group the wanted results as
@@ -1072,6 +1111,29 @@ Package diffs by source.
     ...     diffs_by_source.get(pub_with_diff, []))
     Matches
 
+getChangesFileBySources() returns a dictionary mapping each individual
+source package publication to its corresponding changesfile (as a
+LibraryFileAlias).
+
+    >>> all_cprov_sources = cprov.archive.getPublishedSources()
+
+We select the only available publication in Celso's PPA with a valid
+changesfile in the sampledata.
+
+    >>> pub_with_changes = all_cprov_sources[-2]
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> the_change = the_source.upload_changesfile
+    >>> print the_change.filename
+    mozilla-firefox_0.9_i386.changes
+
+The same control-publication is reachable in the dictionary returned
+by getChangesFileBySources().
+
+    >>> decorated_changes = ArchiveSourcePublications(all_cprov_sources)
+    >>> changes_by_source = decorated_changes.getChangesFileBySource()
+    >>> decorated_change = changes_by_source.get(pub_with_changes)
+    >>> print decorated_change.filename
+    mozilla-firefox_0.9_i386.changes
 
 Enough internals! What really matters for callsites is that, when
 iterated, `ArchiveSourcePublications`returns `ArchiveSourcePublication`
@@ -1110,8 +1172,10 @@ methods:
 
 The 'sourcepackagerelease' attribute from a decorated
 `ArchiveSourcePublication` object is also another decorated object,
-this way we can cache information refered to
-`ISourcePackageRelease.package_diffs`.
+this way we can cache information refered to:
+
+ * package_diffs;
+ * upload_changesfile.
 
     >>> decorated_pub_with_diff = list(decorated_set)[-1]
     >>> print decorated_pub_with_diff.sourcepackagerelease
@@ -1128,3 +1192,41 @@ this way we can cache information refered to
     ...     pub_with_diff.sourcepackagerelease.package_diffs,
     ...     decorated_pub_with_diff.sourcepackagerelease.package_diffs)
     Matches
+
+We select an arbitrary source publication from the Celso's PPA
+sampledata which has no corresponding 'changesfile'. Both, the real
+SourcePackageRelease object and the decorated one, reflect this
+condition.
+
+    >>> pub_with_changes = cprov_published_sources[-1]
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> print the_source.upload_changesfile
+    None
+
+    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
+    >>> print decorated_source.upload_changesfile
+    None
+
+We can create a processed upload record for that publication, together
+with a corresponding changesfiles.
+
+    >>> upload_record = the_source.upload_distroseries.createQueueEntry(
+    ...     PackagePublishingPocket.RELEASE, 'foo.changes', 'boing',
+    ...     pub_with_changes.archive)
+    >>> uploaded_source = upload_record.addSource(the_source)
+    >>> upload_record.setDone()
+    >>> print upload_record.changesfile.filename
+    foo.changes
+
+That done, the real and the decorated SourcePackageRelease objects
+agree regarding the changesfile existence.
+
+    >>> the_source = pub_with_changes.sourcepackagerelease
+    >>> print the_source.upload_changesfile.filename
+    foo.changes
+
+    >>> decorated_pub_with_changes = list(decorated_set)[-1]
+    >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
+    >>> print decorated_source.upload_changesfile.filename
+    foo.changes

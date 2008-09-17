@@ -83,7 +83,7 @@ class ServersToStart(unittest.TestCase):
         """Implicitly start services based on the config.launch property.
         """
         services = sorted(get_services_to_run([]))
-        expected = [SERVICES['restricted-librarian'], SERVICES['librarian']]
+        expected = [SERVICES['librarian']]
 
         # Mailman may or may not be asked to run.
         if config.mailman.launch:

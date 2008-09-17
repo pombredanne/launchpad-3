@@ -158,3 +158,17 @@ the map.
     <input...name="field.location.latitude"...type="hidden"...
     <input...name="field.location.longitude"...type="hidden"...
     <select...name="field.location.time_zone"...
+
+
+== XSS ==
+
+The widget must escape and JS encode the person's displayname to prevent
+XSS attacks and to make sure the generated javascript can be parsed.
+
+    >>> kamion.displayname = (
+    ...     "<script>alert('John \"nasty\" O\'Brien');</script>")
+    >>> bound_field = field.bind(kamion)
+    >>> widget = LocationWidget(bound_field, request)
+    >>> print widget.map_javascript
+    <BLANKLINE>
+    ... "&lt;script&gt;alert('John &quot;nasty&quot; O'Brien');&lt;/script&gt;",...
