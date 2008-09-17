@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.archiveuploader.ftests.test_securityuploads import (
+from canonical.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.database.constants import UTC_NOW

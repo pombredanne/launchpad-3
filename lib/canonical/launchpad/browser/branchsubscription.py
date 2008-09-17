@@ -3,20 +3,32 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchSubscriptionAddView',
-    'BranchSubscriptionEditView',
-    'BranchSubscriptionEditOwnView',
     'BranchSubscriptionAddOtherView',
+    'BranchSubscriptionAddView',
+    'BranchSubscriptionEditOwnView',
+    'BranchSubscriptionEditView',
+    'BranchSubscriptionPrimaryContext',
     ]
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, IBranchSubscription,
     ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
+
+
+class BranchSubscriptionPrimaryContext:
+    """The primary context is the subscription is that of the branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, branch_subscription):
+        self.context = IPrimaryContext(branch_subscription.branch).context
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
