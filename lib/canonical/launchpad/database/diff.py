@@ -35,9 +35,17 @@ class Diff(SQLBase):
     removed_lines_count = IntCol()
 
     @classmethod
-    def fromFile(klass, diff_file, size):
+    def fromTrees(klass, from_tree, to_tree):
+        diff_content = StringIO()
+        show_diff_trees(from_tree, to_tree, diff_content, old_label='',
+                        new_label='')
+        size = diff_content.tell()
+        if size == 0:
+            diff_content.write(' ')
+            size = 1
+        diff_content.seek(0)
         x = getUtility(ILibraryFileAliasSet).create('meeple',
-            size, diff_file, 'text/x-diff')
+            size, diff_content, 'text/x-diff')
         return klass(diff_text=x)
 
 
@@ -76,15 +84,7 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.to_revision_spec)
         from_tree = bzr_branch.repository.revision_tree(from_revision_id)
         to_tree = bzr_branch.repository.revision_tree(to_revision_id)
-        diff_content = StringIO()
-        show_diff_trees(from_tree, to_tree, diff_content, old_label='',
-                        new_label='')
-        size = diff_content.tell()
-        if size == 0:
-            diff_content.write(' ')
-            size = 1
-        diff_content.seek(0)
-        diff = Diff.fromFile(diff_content, size)
+        diff = Diff.fromTrees(from_tree, to_tree)
         return StaticDiff(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
