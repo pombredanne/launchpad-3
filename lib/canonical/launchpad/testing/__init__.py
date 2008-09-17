@@ -7,6 +7,7 @@ import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -139,6 +140,16 @@ class TestCase(unittest.TestCase):
         """Assert that 'needle' is not in 'haystack'."""
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
+
+    def pushConfig(self, section, **kwargs):
+        """Push some key-value pairs into a section of the config.
+
+        The config values will be restored during test tearDown.
+        """
+        name = self.factory.getUniqueString()
+        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        config.push(name, "\n[%s]\n%s\n" % (section, body))
+        self.addCleanup(config.pop, name)
 
     def run(self, result=None):
         if result is None:
