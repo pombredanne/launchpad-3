@@ -360,6 +360,8 @@ class BadBranchSearchContext(Exception):
 def get_blacklisted_hostnames():
     """Return a list of hostnames blacklisted for Branch URLs."""
     hostnames = config.codehosting.blacklisted_hostnames
+    # If nothing specified, return an empty list. Special-casing since
+    # ''.split(',') == [''].
     if hostnames == '':
         return []
     return hostnames.split(',')

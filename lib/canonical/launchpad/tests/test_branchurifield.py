@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = []
 
 
+import unittest
+
 from canonical.config import config
 from canonical.launchpad.interfaces.branch import (
     BranchURIField, get_blacklisted_hostnames)
@@ -76,5 +78,4 @@ class TestBranchURIField(TestCase):
 
 
 def test_suite():
-    import unittest
     return unittest.TestLoader().loadTestsFromName(__name__)
