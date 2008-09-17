@@ -499,7 +499,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MergeDirectiveJob
 COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
 COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
-COMMENT ON COLUMN MergeDirectiveJob.message IS 'The message containing the merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.message IS 'Full MIME content of the message containing the merge directive.';
 COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
 
 

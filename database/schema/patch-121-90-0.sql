@@ -77,7 +77,7 @@ CREATE TABLE CodeMailJob (
 CREATE TABLE MergeDirectiveJob (
   id SERIAL PRIMARY KEY,
   job INTEGER REFERENCES Job,
-  message INTEGER NOT NULL REFERENCES Message,
+  message INTEGER NOT NULL REFERENCES LibraryFileAlias,
   action INTEGER
 );
 
