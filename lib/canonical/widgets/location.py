@@ -7,10 +7,6 @@ __all__ = [
     'LocationWidget',
     ]
 
-import cgi
-
-from simplejson import encoder
-
 from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
@@ -20,6 +16,8 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, Float
+
+from canonical.lazr.utils import safe_js_escape
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.geoip import IGeoIPRecord
@@ -110,12 +108,10 @@ class LocationWidget(BrowserWidget, InputWidget):
     def map_javascript(self):
         """The Javascript code necessary to render the map."""
         person = self.context.context
-        displayname = encoder.encode_basestring(
-                cgi.escape(person.displayname, True))
         replacements = dict(
             center_lat=self.center_lat,
             center_lng=self.center_lng,
-            displayname=displayname,
+            displayname=safe_js_escape(person.displayname),
             name=person.name,
             logo_html=ObjectImageDisplayAPI(person).logo(),
             lat_name=self.latitude_widget.name,
