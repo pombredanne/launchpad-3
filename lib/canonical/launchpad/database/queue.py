@@ -11,8 +11,13 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from email import Encoders
+from email.MIMEBase import MIMEBase
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 import os
 import shutil
+import StringIO
 import tempfile
 
 from zope.component import getUtility
@@ -32,9 +37,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory,
     SecureBinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
@@ -46,11 +51,12 @@ from canonical.launchpad.interfaces import (
     QueueStateWriteProtectedError,QueueSourceAcceptError,
     SourcePackageFileType)
 from canonical.launchpad.mail import (
-    format_address, signed_message_from_string, simple_sendmail)
+    format_address, signed_message_from_string, sendmail)
 from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.webapp import canonical_url
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -81,6 +87,21 @@ def validate_status(self, attr, value):
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
+
+
+def sanitize_string(s):
+    """Make sure string does not trigger 'ascii' codec errors.
+
+    Convert string to unicode if needed so that characters outside
+    the (7-bit) ASCII range do not cause errors like these:
+
+        'ascii' codec can't decode byte 0xc4 in position 21: ordinal
+        not in range(128)
+    """
+    if isinstance(s, unicode):
+        return s
+    else:
+        return guess_encoding(s)
 
 
 class PackageUploadQueue:
@@ -254,8 +275,10 @@ class PackageUpload(SQLBase):
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setAccepted()
-        self.notify(announce_list=announce_list, logger=logger,
-                    dry_run=dry_run)
+        changes_file_object = StringIO.StringIO(self.changesfile.read())
+        self.notify(
+            announce_list=announce_list, logger=logger, dry_run=dry_run,
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -275,7 +298,10 @@ class PackageUpload(SQLBase):
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
-        self.notify(logger=logger, dry_run=dry_run)
+        changes_file_object = StringIO.StringIO(self.changesfile.read())
+        self.notify(
+            logger=logger, dry_run=dry_run,
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
     def _isSingleSourceUpload(self):
@@ -466,6 +492,11 @@ class PackageUpload(SQLBase):
         else:
             changes_lines = changes_file_object.readlines()
 
+        # Rewind the file so that the next read starts at offset zero. Please
+        # note that a LibraryFileAlias does not support seek operations.
+        if hasattr(changes_file_object, "seek"):
+            changes_file_object.seek(0)
+
         unsigned = not self.signing_key
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
@@ -529,8 +560,9 @@ class PackageUpload(SQLBase):
                         component, section))
         return summary
 
-    def _sendRejectionNotification(self, recipients, changes_lines,
-                                   summary_text, dry_run):
+    def _sendRejectionNotification(
+        self, recipients, changes_lines, summary_text, dry_run,
+        changes_file_object):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (
@@ -554,23 +586,76 @@ class PackageUpload(SQLBase):
             recipients,
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations,
-            dry_run)
+            dry_run, changes_file_object=changes_file_object)
 
-    def _sendSuccessNotification(self, recipients, announce_list,
-            changes_lines, changes, summarystring, dry_run):
+    def _sendSuccessNotification(
+        self, recipients, announce_list, changes_lines, changes,
+        summarystring, dry_run, changes_file_object):
         """Send a success email."""
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
+            # Add the debian 'Changed-By:' field.
+            changed_by = changes.get('changed-by')
+            if changed_by is not None:
+                changed_by = sanitize_string(changed_by)
+                message.CHANGEDBY = (
+                    ' -- %s  %s' % (changed_by, changes['date']))
+
+            # If the maintainer is set, make it available to the template.
+            maintainer = changes.get('maintainer')
+            if maintainer is not None:
+                maintainer = sanitize_string(maintainer)
+                if maintainer != changed_by:
+                    message.MAINTAINER = '\n\nMaintainer: %s' % maintainer
+
+            # Add a 'Signed-By:' line if this is a signed upload and the
+            # signer/sponsor differs from the changed-by.
+            if self.signing_key is not None:
+                # This is a signed upload.
+                signer = self.signing_key.owner
+
+                signer_name = sanitize_string(signer.displayname)
+                signer_email = sanitize_string(signer.preferredemail.email)
+
+                signer_signature = '%s <%s>' % (signer_name, signer_email)
+
+                if changed_by != signer_signature:
+                    message.SIGNER = '\nSigned-By: %s' % signer_signature
+
+            # Add the debian 'Origin:' field if present.
+            if changes.get('origin') is not None:
+                message.ORIGIN = '\nOrigin: %s' % changes['origin']
+
+            if self.sources or self.builds:
+                message.SPR_URL = (
+                    'Source package release: %s' %
+                    canonical_url(self.sourcepackagerelease))
+
             body = message.template % message.__dict__
-            subject = "%s: %s %s (%s)" % (
-                message.STATUS, self.displayname, self.displayversion,
-                self.displayarchs)
+
+            # Weed out duplicate name entries.
+            names = ', '.join(set(self.displayname.split(', ')))
+
+            # Construct the suite name according to Launchpad/Soyuz
+            # convention.
+            pocket_suffix = pocketsuffix[self.pocket]
+            if pocket_suffix:
+                suite = '%s%s' % (self.distroseries.name, pocket_suffix)
+            else:
+                suite = self.distroseries.name
+
+            subject = '[%s/%s] %s %s (%s)' % (
+                self.distroseries.distribution.name, suite, names,
+                self.displayversion, message.STATUS)
+
             if self.isPPA():
-                subject = "[PPA %s] " % self.archive.owner.name + subject
-            self._sendMail(recipients, subject, body, dry_run,
-                           from_addr=from_addr, bcc=bcc)
+                subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
+
+            self._sendMail(
+                recipients, subject, body, dry_run, from_addr=from_addr,
+                bcc=bcc, changes_file_object=changes_file_object)
 
         class NewMessage:
             """New message."""
@@ -578,9 +663,12 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
 
         class UnapprovedMessage:
             """Unapproved message."""
@@ -589,9 +677,17 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
+            CHANGEDBY = ''
+            ORIGIN = ''
+            SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
         class AcceptedMessage:
             """Accepted message."""
@@ -599,9 +695,17 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = sanitize_string(changes['changes'])
             DISTRO = self.distroseries.distribution.title
-            ANNOUNCE = announce_list
+            if announce_list:
+                ANNOUNCE = 'Announcing to %s' % announce_list
+            else:
+                ANNOUNCE = 'No announcement sent'
+            CHANGEDBY = ''
+            ORIGIN = ''
+            SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
         class PPAAcceptedMessage:
             """PPA accepted message."""
@@ -616,7 +720,12 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGEDBY = ''
+            ORIGIN = ''
+            SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
 
         # The template is ready.  The remainder of this function deals with
@@ -644,6 +753,7 @@ class PackageUpload(SQLBase):
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
             debug(self.logger, "Skipping announcement, it is a BACKPORT.")
+
             do_sendmail(AcceptedMessage)
             return
 
@@ -736,12 +846,13 @@ class PackageUpload(SQLBase):
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
             self._sendRejectionNotification(
-                recipients, changes_lines, summary_text, dry_run)
+                recipients, changes_lines, summary_text, dry_run,
+                changes_file_object)
             return
 
         self._sendSuccessNotification(
             recipients, announce_list, changes_lines, changes, summarystring,
-            dry_run)
+            dry_run, changes_file_object)
 
     def _getRecipients(self, changes):
         """Return a list of recipients for notification emails."""
@@ -806,10 +917,12 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, to_addrs, subject, mail_text, dry_run,
-                  from_addr=None, bcc=None):
+    def _sendMail(
+        self, to_addrs, subject, mail_text, dry_run, from_addr=None, bcc=None,
+        changes_file_object=None):
         """Send an email to to_addrs with the given text and subject.
 
+        :changes_file_object: A file object with the actual changesfile.
         :from_addr: The email address to be used as the sender.  Must be a
                     valid ASCII str instance or a unicode one.
                     Defaults to the email for config.uploader.
@@ -834,12 +947,21 @@ class PackageUpload(SQLBase):
             self.archive.owner):
             extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
+        # Include a 'X-Launchpad-Component' header with the component and
+        # the section of the source package uploaded in order to facilitate
+        # filtering on the part of the email recipients.
+        if self.sources:
+            spr = self.sourcepackagerelease
+            xlp_component_header = 'component=%s, section=%s' % (
+                spr.component.name, spr.section.name)
+            extra_headers['X-Launchpad-Component'] = xlp_component_header
+
         if from_addr is None:
             from_addr = format_address(
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
 
-        # `simple_sendmail`, despite handling unicode message bodies, can't
+        # `sendmail`, despite handling unicode message bodies, can't
         # cope with non-ascii sender/recipient addresses, so ascii_smash
         # is used on all addresses.
 
@@ -875,13 +997,36 @@ class PackageUpload(SQLBase):
             for line in mail_text.splitlines():
                 debug(self.logger, line)
 
-            simple_sendmail(
-                from_addr,
-                recipients,
-                subject,
-                mail_text,
-                extra_headers
-            )
+            # Since we need to send the original changesfile as an
+            # attachment the sendmail() method will be used as opposed to
+            # simple_sendmail().
+            message = MIMEMultipart()
+            message['from'] = from_addr
+            message['subject'] = subject
+            message['to'] = recipients
+
+            # Set the extra headers if any are present.
+            for key, value in extra_headers.iteritems():
+                message.add_header(key, value)
+
+            # Add the email body.
+            message.attach(MIMEText(
+               sanitize_string(mail_text).encode('utf-8'), 'plain', 'utf-8'))
+
+            # Add the original changesfile as an attachment.
+            if changes_file_object is not None:
+                changesfile_text = sanitize_string(changes_file_object.read())
+            else:
+                changesfile_text = ("Sorry, changesfile not available.")
+
+            attachment = MIMEText(
+                changesfile_text.encode('utf-8'), 'plain', 'utf-8')
+            attachment.add_header(
+                'Content-Disposition', 'attachment; filename="changesfile"')
+            message.attach(attachment)
+
+            # And finally send the message.
+            sendmail(message)
 
     @property
     def components(self):

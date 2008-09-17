@@ -137,10 +137,15 @@ class Bugzilla(ExternalBugTracker):
             return None
 
         try:
+            # XXX 2008-09-15 gmb bug 270695:
+            #     We can clean this up by just stripping out anything
+            #     not in [0-9\.].
             # Get rid of trailing -rh, -debian, etc.
             version = version.split("-")[0]
             # Ignore plusses in the version.
             version = version.replace("+", "")
+            # Ignore the 'rc' string in release candidate versions.
+            version = version.replace("rc", "")
             # We need to convert the version to a tuple of integers if
             # we are to compare it correctly.
             version = tuple(int(x) for x in version.split("."))
