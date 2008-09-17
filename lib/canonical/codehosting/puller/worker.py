@@ -87,6 +87,16 @@ class StackedOnBranchNotFound(Exception):
     """Couldn't find the stacked-on branch."""
 
 
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', return None if it not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (errors.NotStacked,
+            errors.UnstackableBranchFormat,
+            errors.UnstackableRepositoryFormat):
+        return None
+
+
 def get_canonical_url_for_branch_name(unique_name):
     """Custom implementation of canonical_url(branch) for error reporting.
 
@@ -471,12 +481,7 @@ class PullerWorker:
                 # source branch.  Note that we expect this to be fairly
                 # common, as, as of r6889, it is possible for a branch to be
                 # pulled before the stacking information is set at all.
-                try:
-                    stacked_on_url = source_branch.get_stacked_on_url()
-                except (errors.UnstackableRepositoryFormat,
-                        errors.UnstackableBranchFormat,
-                        errors.NotStacked):
-                    stacked_on_url = None
+                stacked_on_url = get_stacked_on_url(source_branch)
                 try:
                     branch.set_stacked_on_url(stacked_on_url)
                 except (errors.UnstackableRepositoryFormat,
@@ -499,16 +504,11 @@ class PullerWorker:
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        try:
-            stacked_on_branch_url = source_branch.get_stacked_on_url()
-        except (errors.UnstackableBranchFormat,
-                errors.UnstackableBranchFormat,
-                errors.NotStacked):
-            pass
-        else:
-            stacked_on_branch_url = urlutils.join(
-                self.dest, stacked_on_branch_url)
-            if not get_transport(stacked_on_branch_url).has('.'):
+        stacked_on_url = get_stacked_on_url(source_branch)
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(
+                self.dest, stacked_on_url)
+            if not get_transport(stacked_on_url).has('.'):
                 raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
@@ -545,12 +545,9 @@ class PullerWorker:
         server.setUp()
         try:
             source_branch = self.branch_opener.open(self.source)
-            try:
-                stacked_on_location = source_branch.get_stacked_on_url()
-            except (errors.NotStacked, errors.UnstackableBranchFormat):
-                pass
-            else:
-                self.protocol.setStackedOn(stacked_on_location)
+            stacked_on_url = get_stacked_on_url(source_branch)
+            if stacked_on_url is not None:
+                self.protocol.setStackedOn(stacked_on_url)
             return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()

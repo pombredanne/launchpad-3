@@ -124,9 +124,9 @@ class IPOTMsgSet(Interface):
         otherwise.
         """
 
-    def updateTranslation(pofile, submitter, new_translations, is_fuzzy,
-                          is_imported, lock_timestamp, ignore_errors=False,
-                          force_edition_rights=False):
+    def updateTranslation(pofile, submitter, new_translations, is_imported,
+                          lock_timestamp, force_suggestion=False,
+                          ignore_errors=False, force_edition_rights=False):
         """Update or create a translation message using `new_translations`.
 
         :param pofile: a `POFile` to add `new_translations` to.
@@ -134,11 +134,12 @@ class IPOTMsgSet(Interface):
         :param new_translations: a dictionary of plural forms, with the
             integer plural form number as the key and the translation as the
             value.
-        :param is_fuzzy: Whether the translations are fuzzy.
         :param is_imported: indicates whether this update is imported from a
             packaged po file.
         :param lock_timestamp: The timestamp when we checked the values we
             want to update.
+        :param force_suggestion: Whether to force translation to be
+            a suggestion, even if submitted by an editor.
         :param ignore_errors: A flag that controls whether the translations
             should be stored even when an error is detected.
         :param force_edition_rights: A flag that 'forces' handling this
