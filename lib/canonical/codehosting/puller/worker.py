@@ -37,7 +37,6 @@ __all__ = [
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
-    'MirroredURLChecker',
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
@@ -357,6 +356,8 @@ class MirroredBranchOpener(BranchOpener):
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             raise BadUrlLaunchpad(url)
+        if uri.underDomain('localhost') or uri.underDomain('127.0.0.1'):
+            raise BadUrl(url)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(url)
         elif uri.scheme not in ['http', 'https']:

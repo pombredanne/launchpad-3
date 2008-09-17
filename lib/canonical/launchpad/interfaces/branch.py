@@ -1,5 +1,5 @@
 # Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
@@ -379,6 +379,10 @@ class BranchURIField(URIField):
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
                 mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
+
+        if uri.underDomain('localhost') or uri.underDomain('127.0.0.1'):
+            message = _('Launchpad cannot mirror branches from localhost.')
             raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
