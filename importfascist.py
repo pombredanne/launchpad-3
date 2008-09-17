@@ -30,7 +30,6 @@ permitted_database_imports = text_lines_to_set("""
     canonical.archivepublisher.publishing
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
-    canonical.authserver.database
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client

@@ -2,11 +2,8 @@
 
 __metaclass__ = type
 
-import unittest
 import os
 import shutil
-
-from twisted.python.util import sibpath
 
 import canonical
 from canonical.launchpad.daemons.tachandler import TacTestSetup

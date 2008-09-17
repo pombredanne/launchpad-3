@@ -94,3 +94,11 @@ class IUserDetailsStorageV2(Interface):
         :param password: A password, in clear text.
         :returns: user dict if authenticated, otherwise empty dict
         """
+
+    def getSSHKeys(archiveName):
+        """Retrieve SSH public keys for a given push mirror archive
+
+        :param archive: an archive name.
+        :returns: list of 2-tuples of (key type, key text).  This list will be
+            empty if the user has no keys or does not exist.
+        """
