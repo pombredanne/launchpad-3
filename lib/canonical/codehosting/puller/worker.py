@@ -21,7 +21,8 @@ from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.codehosting.transport import get_puller_server
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces import (
+    BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
@@ -356,8 +357,9 @@ class MirroredBranchOpener(BranchOpener):
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             raise BadUrlLaunchpad(url)
-        if uri.underDomain('localhost') or uri.underDomain('127.0.0.1'):
-            raise BadUrl(url)
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                raise BadUrl(url)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(url)
         elif uri.scheme not in ['http', 'https']:

@@ -512,6 +512,8 @@ class TestMirroredBranchOpener(TestCase):
             self.factory.getUniqueURL(host='code.launchpad.dev'))
 
     def testLocalhost(self):
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
         opener = MirroredBranchOpener()
         localhost_url = self.factory.getUniqueURL(host='localhost')
         self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
