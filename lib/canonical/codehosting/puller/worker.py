@@ -182,16 +182,6 @@ def identical_formats(branch_one, branch_two):
             get_vfs_format_classes(branch_two))
 
 
-def get_stacked_on_url(branch):
-    """Return the stacked_on_url for 'branch', or None if not stacked."""
-    try:
-        return branch.get_stacked_on_url()
-    except (errors.UnstackableBranchFormat,
-            errors.UnstackableBranchFormat,
-            errors.NotStacked):
-        return None
-
-
 class BranchOpener(object):
     """A `BranchOpener` opens branches with an eye to safety.
 
@@ -368,6 +358,23 @@ class BranchOpener(object):
         branch = self.createDestinationBranch(source_branch, destination_url)
         return branch, True
 
+    def updateBranch(self, source_branch, dest_branch):
+        # Make sure the mirrored branch is stacked the same way as the
+        # source branch.  Note that we expect this to be fairly
+        # common, as, as of r6889, it is possible for a branch to be
+        # pulled before the stacking information is set at all.
+        stacked_on_url = get_stacked_on_url(source_branch)
+        try:
+            dest_branch.set_stacked_on_url(stacked_on_url)
+        except (errors.UnstackableRepositoryFormat,
+                errors.UnstackableBranchFormat):
+            if stacked_on_url is not None:
+                raise AssertionError(
+                    "Couldn't set stacked_on_url %r" % stacked_on_url)
+        except errors.NotBranchError:
+            raise StackedOnBranchNotFound()
+        dest_branch.pull(source_branch, overwrite=True)
+
 
 class HostedBranchOpener(BranchOpener):
     """Specialization of `BranchOpener` for HOSTED branches.
@@ -532,21 +539,7 @@ class PullerWorker:
         if branch.get_physical_lock_status():
             branch.break_lock()
 
-        # Make sure the mirrored branch is stacked the same way as the
-        # source branch.  Note that we expect this to be fairly
-        # common, as, as of r6889, it is possible for a branch to be
-        # pulled before the stacking information is set at all.
-        stacked_on_url = get_stacked_on_url(source_branch)
-        try:
-            branch.set_stacked_on_url(stacked_on_url)
-        except (errors.UnstackableRepositoryFormat,
-                errors.UnstackableBranchFormat):
-            if stacked_on_url is not None:
-                raise AssertionError(
-                    "Couldn't set stacked_on_url %r" % stacked_on_url)
-        except errors.NotBranchError:
-            raise StackedOnBranchNotFound()
-        branch.pull(source_branch, overwrite=True)
+        self.branch_opener.updateBranch(source_branch, branch)
         return branch
 
     def _record_oops(self, message=None):
