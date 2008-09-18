@@ -15,6 +15,7 @@ __all__ = [
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib import config
 from bzrlib.errors import NoSuchFile, NotStacked, UnstackableBranchFormat
+from bzrlib.remote import RemoteBzrDir
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
@@ -38,6 +39,10 @@ def get_branch_stacked_on_url(a_bzrdir):
     # on BzrDir. Unfortunately, Bazaar lacks the configuration APIs to make
     # this possible (see below). Alternatively, Bazaar could provide us with a
     # way to open a Branch without opening the stacked-on branch.
+
+    if isinstance(a_bzrdir, RemoteBzrDir):
+        a_bzrdir._ensure_real()
+        a_bzrdir = a_bzrdir._real_bzrdir
 
     # XXX: JonathanLange 2008-09-04: In Bazaar 1.6, there's no way to get the
     # format of a branch from a generic BzrDir. Here, we just assume that if
