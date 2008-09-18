@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IMailingListApplication, IMaloneApplication, IOpenIDApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
     IWebServiceApplication)
@@ -163,8 +163,8 @@ class BazaarApplication:
         self.title = 'The Open Source Bazaar'
 
 
-class OpenIdApplication:
-    implements(IOpenIdApplication)
+class OpenIDApplication:
+    implements(IOpenIDApplication)
 
     title = 'Launchpad Login Service'
 

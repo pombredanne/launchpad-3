@@ -614,6 +614,16 @@ it must markup. We can format the three examples at the same time.
     </span></p>
 
 
+=== Escaping strings ===
+
+To escape a string you should use fmt:escape.
+
+    >>> test_tales('foo/fmt:escape', foo='some value')
+    'some value'
+    >>> test_tales('foo/fmt:escape', foo='some <br /> value')
+    'some &lt;br /&gt; value'
+
+
 == The fmt: namespace to get strings (obfuscation) ==
 
 Email addresses embedded in text can be obfuscated. In cases where

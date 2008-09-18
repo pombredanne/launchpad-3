@@ -218,9 +218,9 @@ name even if it differs:
 == Distribution Sorting ==
 
 If you ask for all the distributions in the DistributionSet you should get
-Ubuntu first and the rest alphabetically:
+Ubuntu (and all flavours of it) first and the rest alphabetically:
 
-    >>> for item in distroset:
+    >>> for item in distroset.getDistros():
     ...     print item.name
     ubuntu
     kubuntu
@@ -229,6 +229,11 @@ Ubuntu first and the rest alphabetically:
     gentoo
     guadalinex
     redhat
+
+DistributionSet also defines __iter__ as a shortcut to getDistros().
+
+    >>> list(distroset) == distroset.getDistros()
+    True
 
 
 === Searching for DistributionSourcePackages ===

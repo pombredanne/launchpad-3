@@ -53,7 +53,7 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIdApplication',
+    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -189,7 +189,7 @@ class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
 
-class IOpenIdApplication(ILaunchpadApplication):
+class IOpenIDApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
 
 
