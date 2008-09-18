@@ -98,12 +98,6 @@
                   >
                   untranslated items
                 </option>
-                <option value="need_review"
-                  tal:attributes="selected
-                  request/htmlform:show/selected/need_review"
-                  >
-                  items that need review
-                </option>
                 <option value="translated"
                   tal:attributes="selected
                   request/htmlform:show/selected/translated"
