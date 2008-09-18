@@ -12,10 +12,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, Object, Text, TextLine
+from zope.schema import Choice, Int, Object, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField
+from canonical.launchpad.fields import BugField, Summary
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
@@ -70,7 +70,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
     status = Choice(
         title=_("State"), vocabulary=BugBranchStatus,
         default=BugBranchStatus.INPROGRESS)
-    whiteboard = Text(
+    whiteboard = Summary(
         title=_('Status Whiteboard'), required=False,
         description=_(
             'Additional information about the status of the bugfix '

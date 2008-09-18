@@ -21,7 +21,7 @@ In this example, we have a template with Dutch and German translations.
     >>> def set_translation(message, pofile, text):
     ...     """Set text to be a translation for message in pofile."""
     ...     return message.updateTranslation(
-    ...         pofile, pofile.potemplate.owner, {0: text}, is_fuzzy=False,
+    ...         pofile, pofile.potemplate.owner, {0: text},
     ...         is_imported=False,
     ...         lock_timestamp=datetime.now(timezone('UTC')))
 
@@ -81,18 +81,18 @@ criteria).
 
     >>> options = [
     ...     '-vvv',
-    ...     '--submitter', nl_message.submitter.name,
-    ...     '--reviewer', nl_message.reviewer.name,
-    ...     '--id', str(1),
-    ...     '--id', str(nl_message.id),
-    ...     '--id', str(2),
-    ...     '--potemplate', str(potemplate.id),
+    ...     '--submitter=%s' % nl_message.submitter.id,
+    ...     '--reviewer=%s' % nl_message.reviewer.id,
+    ...     '--id=%s' % str(1),
+    ...     '--id=%s' % str(nl_message.id),
+    ...     '--id=%s' % str(2),
+    ...     '--potemplate=%s' % str(potemplate.id),
     ...     '--not-language',
-    ...     '--language', 'de',
-    ...     '--is-current', 'true',
-    ...     '--is-imported', 'false',
-    ...     '--msgid', "My goose is undercooked.",
-    ...     '--origin', str(RosettaTranslationOrigin.ROSETTAWEB.value),
+    ...     '--language=%s' % 'de',
+    ...     '--is-current=%s' % 'true',
+    ...     '--is-imported=%s' % 'false',
+    ...     '--msgid=%s' % "My goose is undercooked.",
+    ...     '--origin=%s' % 'ROSETTAWEB',
     ...     '--force',
     ...     ]
 
@@ -112,8 +112,6 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
-    DEBUG '...' has id ...
-    DEBUG '...' has id ...
     DEBUG Executing SQL: ...
     INFO Deleting 1 message(s).
 
@@ -131,21 +129,3 @@ the same messages as before, minus one Dutch one.
     >>> print_pofile_contents(de_pofile)
     Nachricht 931
     Und jetzt auf deutsch.
-
-
-== Safety net ==
-
-There is one drawback to the way the matching options work: it's easy
-to match too many translations.  In the extreme case, running the script
-without arguments would mean "delete all translation messages in the
-entire database."  Probably not what you want.
-
-For that reason the script has a built-in safety net.  It refuses to run
-if it doesn't think its arguments are specific enough.
-
-    >>> (returncode, out, err) = run_script(script)
-    >>> returncode == 0
-    False
-
-    >>> print "Output was: %s" % err
-    Output was: ... Refusing unsafe deletion...
