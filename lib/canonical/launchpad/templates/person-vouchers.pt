@@ -6,17 +6,16 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Redeem Vouchers for Commercial Subscriptions</h1>
-    </metal:heading>
     <div metal:fill-slot="main"
          tal:define="
            commercial_projects view/owned_commercial_projects;
            config modules/canonical.config/config">
+
+      <h1>Redeem Vouchers for Commercial Subscriptions</h1>
 
       <tal:deactivate-feature
         condition="not: config/commercial/is_subscription_feature_active">
