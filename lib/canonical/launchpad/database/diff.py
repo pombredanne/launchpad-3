@@ -60,6 +60,19 @@ class StaticDiff(SQLBase):
 
     diff = ForeignKey(foreignKey='Diff', notNull=True)
 
+    @classmethod
+    def acquire(klass, from_revision_id, to_revision_id, repository):
+        existing_diff = klass.selectOneBy(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
+        if existing_diff is not None:
+            return existing_diff
+        from_tree = repository.revision_tree(from_revision_id)
+        to_tree = repository.revision_tree(to_revision_id)
+        diff = Diff.fromTrees(from_tree, to_tree)
+        return klass(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
+            diff=diff)
+
 
 class StaticDiffJob(SQLBase):
 
@@ -82,9 +95,5 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.from_revision_spec)
         to_revision_id=self._get_revision_id(
             bzr_branch, self.to_revision_spec)
-        from_tree = bzr_branch.repository.revision_tree(from_revision_id)
-        to_tree = bzr_branch.repository.revision_tree(to_revision_id)
-        diff = Diff.fromTrees(from_tree, to_tree)
-        return StaticDiff(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
+        return StaticDiff.acquire(from_revision_id, to_revision_id,
+                                  bzr_branch.repository)
