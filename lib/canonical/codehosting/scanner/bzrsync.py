@@ -84,7 +84,7 @@ def get_diff(bzr_branch, bzr_revision):
     else:
         # can't get both trees at once, so one at a time
         tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(None)
+        tree_old = repo.revision_tree(NULL_REVISION)
 
     diff_content = StringIO()
     show_diff_trees(tree_old, tree_new, diff_content)

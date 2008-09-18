@@ -54,7 +54,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
-            ["foutmelding 936"], is_fuzzy=False, is_imported=False,
+            ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
 
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
@@ -71,7 +71,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         suggestion = barmsg.updateTranslation(self.bar_nl,
-            self.foo_template.owner, ["Noueh hallo dus."], is_fuzzy=False,
+            self.foo_template.owner, ["Noueh hallo dus."],
             is_imported=False, lock_timestamp=None)
         suggestion.is_current = False
 
@@ -93,10 +93,10 @@ class TestTranslationSuggestions(unittest.TestCase):
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         suggestion1 = barmsg.updateTranslation(self.bar_nl,
-            self.foo_template.owner, [suggested_dutch], is_fuzzy=False,
+            self.foo_template.owner, [suggested_dutch],
             is_imported=False, lock_timestamp=now)
         suggestion2 = barmsg.updateTranslation(self.bar_nl,
-            self.bar_template.owner, [suggested_dutch], is_fuzzy=False,
+            self.bar_template.owner, [suggested_dutch],
             is_imported=False, lock_timestamp=now)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
