@@ -508,7 +508,9 @@ class PullerWorker:
         else:
             stacked_on_branch_url = urlutils.join(
                 self.dest, stacked_on_branch_url)
-            if not get_transport(stacked_on_branch_url).has('.'):
+            try:
+                Branch.open(stacked_on_branch_url)
+            except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)

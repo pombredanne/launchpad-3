@@ -160,6 +160,10 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         stacked_branch.set_stacked_on_url('../stacked-on-branch')
         # Make a sub-directory so that the relative URL cannot be found.
         self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
         self.assertRaises(
@@ -173,6 +177,10 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         stacked_branch = self.make_branch('source-branch', format='1.6')
         # Make a sub-directory so that the relative URL cannot be found.
         self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('mirrored-area/destdir'))
         to_mirror.mirrorWithoutChecks()
