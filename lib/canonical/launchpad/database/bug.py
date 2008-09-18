@@ -99,6 +99,19 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
+_open_bug_tag_query_template = """
+    SELECT BugTag.tag, COUNT(*)
+    FROM BugTag
+    LEFT OUTER JOIN Bug ON Bug.id = BugTag.bug
+    LEFT OUTER JOIN BugTask ON (
+        BugTask.bug = Bug.id AND BugTask.status IN (%(open_bug_statuses)s))
+    WHERE
+        BugTask.status IN (%(open_bug_statuses)s)
+        AND %(privacy_condition)s
+        AND %(context_condition)s
+    GROUP BY BugTag.tag ORDER BY BugTag.tag"""
+
+
 def get_bug_tags_open_count(maincontext_clause, user,
                             count_subcontext_clause=None):
     """Return all the used bug tags with their open bug count.
@@ -110,29 +123,16 @@ def get_bug_tags_open_count(maincontext_clause, user,
 
     Both SQL clauses may only use the BugTask table to choose the context.
     """
-    from_tables = ['BugTag', 'BugTask', 'Bug']
-    count_conditions = ['BugTask.status IN (%s)' % ','.join(
-        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
-    if count_subcontext_clause:
-        count_conditions.append(count_subcontext_clause)
-    select_columns = [
-        'BugTag.tag',
-        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
-            ' AND '.join(count_conditions),
-        ]
-    conditions = [
-        'BugTag.bug = BugTask.bug',
-        'Bug.id = BugTag.bug',
-        '(%s)' % maincontext_clause]
     privacy_filter = get_bug_privacy_filter(user)
-    if privacy_filter:
-        conditions.append(privacy_filter)
+    if not privacy_filter:
+        privacy_filter = "1 = 1"
+    query = _open_bug_tag_query_template % dict(
+        open_bug_statuses=','.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)),
+        privacy_condition=privacy_filter,
+        context_condition=maincontext_clause)
 
     cur = cursor()
-    cur.execute(_bug_tag_query_template % dict(
-            columns=', '.join(select_columns),
-            tables=', '.join(from_tables),
-            condition=' AND '.join(conditions)))
+    cur.execute(query)
     return shortlist([(row[0], row[1]) for row in cur.fetchall()])
 
 

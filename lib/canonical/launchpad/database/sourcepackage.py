@@ -411,10 +411,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self.distroseries),
-            user,
-            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.sourcepackagename)))
+            "BugTask.distroseries = %s AND BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.distroseries, self.sourcepackagename)),
+            user)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

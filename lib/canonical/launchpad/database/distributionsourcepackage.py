@@ -301,10 +301,9 @@ class DistributionSourcePackage(BugTargetBase,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distribution = %s" % sqlvalues(self.distribution),
-            user,
-            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.sourcepackagename)))
+            "BugTask.distribution = %s AND BugTask.sourcepackagename = %s" % (
+                sqlvalues(self.distribution, self.sourcepackagename)),
+            user)
 
     def createBug(self, bug_params):
         """See `IBugTarget`."""
