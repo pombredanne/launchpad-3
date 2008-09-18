@@ -53,7 +53,7 @@ class BugMessageCanonicalUrlData:
 class IndexedBugMessageCanonicalUrlData:
     """An optimized bug message canonical_url implementation.
 
-    This imeplementation relies on the message being decorated with
+    This implementation relies on the message being decorated with
     its index and context.
     """
     implements(ICanonicalUrlData)

@@ -224,8 +224,7 @@ class Bug(SQLBase):
         inside = self.bugtasks[0]
         return [
             IndexedMessage(message, inside, index)
-            for index, message
-            in enumerate(self.messages)]
+            for index, message in enumerate(self.messages)]
 
     @property
     def displayname(self):

@@ -12,10 +12,10 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <content class="canonical.launchpad.interfaces.IndexedMessage">
+    <class class="canonical.launchpad.interfaces.IndexedMessage">
       <allow interface="canonical.launchpad.interfaces.IMessage" />
       <allow interface="canonical.launchpad.interfaces.IIndexedMessage" />
-    </content>
+    </class>
 
     <!-- MessageChunk -->
     <content class="canonical.launchpad.database.MessageChunk">

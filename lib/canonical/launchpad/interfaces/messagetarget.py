@@ -22,10 +22,10 @@ class IMessageTarget(Interface):
     """An object that an be linked to a message."""
 
     messages = CollectionField(
-            title=_("The messages related to this object, in reverse "
-                    "order of creation (so newest first)."),
-            readonly=True,
-            value_type=Reference(schema=IMessage))
+        title=_("The messages related to this object, in reverse "
+                "order of creation (so newest first)."),
+        readonly=True,
+        value_type=Reference(schema=IMessage))
 
     indexed_messages = exported(
         CollectionField(

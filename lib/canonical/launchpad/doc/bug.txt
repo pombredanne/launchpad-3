@@ -970,8 +970,8 @@ exported using the webservice API.
 
     >>> for indexed_message in bug_two.indexed_messages:
     ...     print '%s\t%s\t%s' % (
-    ...     indexed_message.index, indexed_message.subject,
-    ...     indexed_message.inside.title)
+    ...         indexed_message.index, indexed_message.subject,
+    ...         indexed_message.inside.title)
     0 PEBCAK                                      Bug #2 in Tomcat: "Blackhole Trash folder"
     1 Fantastic idea, I'd really like to see this Bug #2 in Tomcat: "Blackhole Trash folder"
     2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"

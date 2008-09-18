@@ -22,6 +22,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 #from canonical.launchpad.interfaces.bug import IBug
 #from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
@@ -176,9 +177,13 @@ class IMessageSet(Interface):
 
 class IIndexedMessage(Interface):
     """An `IMessage` decorated with its index and context."""
-    inside = Attribute("The bug task which is the context for this message.")
-    index = Attribute(
-        "The index of this message in the list of messages in its context.")
+    inside = Reference(title=_('Inside'), schema=IBugTask,
+                       description=_("The bug task which is "
+                                     "the context for this message."),
+                       required=True, readonly=True)
+    index = Int(title=_("Index"),
+                description=_("The index of this message in the list "
+                              "of messages in its context."))
 
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
