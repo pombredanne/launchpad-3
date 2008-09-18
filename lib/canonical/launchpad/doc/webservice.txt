@@ -996,7 +996,8 @@ to a different host.
     >>> representation["cookbooks_collection_link"]
     u'http://bugs.launchpad.dev/api/beta/cookbooks'
 
-The canonical URL for the app also points to the bugs host:
+The canonical URL for the service root resource also points to the bugs
+host:
 
     >>> canonical_url(app)
     u'http://bugs.launchpad.dev/api/beta/'
