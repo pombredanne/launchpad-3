@@ -92,8 +92,7 @@ def get_stacked_on_url(branch):
     try:
         return branch.get_stacked_on_url()
     except (errors.NotStacked,
-            errors.UnstackableBranchFormat,
-            errors.UnstackableRepositoryFormat):
+            errors.UnstackableBranchFormat):
         return None
 
 
