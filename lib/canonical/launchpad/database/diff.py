@@ -74,6 +74,11 @@ class StaticDiff(SQLBase):
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
 
+    def destroySelf(self):
+        diff = self.diff
+        SQLBase.destroySelf(self)
+        diff.destroySelf()
+
 
 class StaticDiffJob(SQLBase):
 

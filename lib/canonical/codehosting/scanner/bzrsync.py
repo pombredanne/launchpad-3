@@ -278,10 +278,12 @@ class BranchMailer:
             revision_spec = 'revid:%s' % bzr_revision.revision_id
             diff_job = getUtility(IStaticDiffJobSource).create(
                 self.db_branch, basis_spec, revision_spec)
-            lfa = diff_job.run().diff.diff_text
+            static_diff = diff_job.run()
             transaction.commit()
+            lfa = static_diff.diff.diff_text
             lfa.open()
             revision_diff = lfa.read().decode('utf8', 'replace')
+            static_diff.destroySelf()
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.

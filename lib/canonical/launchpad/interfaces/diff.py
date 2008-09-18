@@ -48,6 +48,9 @@ class IStaticDiff(Interface):
 
     diff = Object(title=_('The Diff object.'), schema=IDiff)
 
+    def destroySelf():
+        """Destroy this object."""
+
 
 class IStaticDiffJob(Interface):
     """A job to create a static diff."""
