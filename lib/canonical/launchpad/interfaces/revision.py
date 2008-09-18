@@ -135,6 +135,8 @@ class IRevisionSet(Interface):
         In order to get the time the revision was actually created, the time
         extracted from the revision properties is used.  While this may not
         be 100% accurate, it is much more accurate than using date created.
+
+        :return: ResultSet containing tuples of (Revision, RevisionAuthor)
         """
 
     def getRevisionsNeedingKarmaAllocated():
