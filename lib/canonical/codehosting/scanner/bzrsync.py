@@ -21,13 +21,14 @@ from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
+import transaction
 
 from canonical.codehosting.puller.worker import BranchOpener
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    NotFoundError, RepositoryFormat)
+    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp.uri import URI
@@ -269,7 +270,18 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            revision_diff = get_diff(bzr_branch, bzr_revision)
+            if len(bzr_revision.parent_ids) > 0:
+                basis = bzr_revision.parent_ids[0]
+            else:
+                basis = NULL_REVISION
+            basis_spec = 'revid:%s' % basis
+            revision_spec = 'revid:%s' % bzr_revision.revision_id
+            diff_job = getUtility(IStaticDiffJobSource).create(
+                self.db_branch, basis_spec, revision_spec)
+            lfa = diff_job.run().diff.diff_text
+            transaction.commit()
+            lfa.open()
+            revision_diff = lfa.read().decode('utf8', 'replace')
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.

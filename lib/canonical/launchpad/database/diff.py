@@ -3,7 +3,7 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'StaticDiff', 'StaticDiffJob']
+__all__ = ['Diff', 'StaticDiff', 'StaticDiffJob', 'StaticDiffJobSource']
 
 from cStringIO import StringIO
 
@@ -16,7 +16,8 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import IDiff, IStaticDiff, IStaticDiffJob
+from canonical.launchpad.interfaces import (
+    IDiff, IStaticDiff, IStaticDiffJob, IStaticDiffJobSource)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
 
@@ -97,3 +98,13 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.to_revision_spec)
         return StaticDiff.acquire(from_revision_id, to_revision_id,
                                   bzr_branch.repository)
+
+
+class StaticDiffJobSource:
+
+    implements(IStaticDiffJobSource)
+    @staticmethod
+    def create(branch, from_revision_spec, to_revision_spec):
+        return StaticDiffJob(
+            branch=branch, from_revision_spec=from_revision_spec,
+            to_revision_spec=to_revision_spec)

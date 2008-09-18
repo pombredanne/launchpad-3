@@ -7,7 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IDiff',
     'IStaticDiff',
-    'IStaticDiffJob'
+    'IStaticDiffJob',
+    'IStaticDiffJobSource',
     ]
 
 from zope.schema import (
@@ -64,3 +65,9 @@ class IStaticDiffJob(Interface):
 
         :return: the generated StaticDiff.
         """
+
+
+class IStaticDiffJobSource(Interface):
+
+    def create(branch, from_revision_spec, to_revision_spec):
+        """Substitute for being able to use a constructor."""
