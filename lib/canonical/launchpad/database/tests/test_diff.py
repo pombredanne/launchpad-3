@@ -79,8 +79,10 @@ class TestStaticDiffJob(TestCaseWithFactory):
         import transaction
         transaction.commit()
         static_diff.diff.diff_text.open()
-        content = static_diff.diff.diff_text.read()
-        self.assertEqual(['-foo', '+bar', ''], content.splitlines()[4:])
+        content_lines = static_diff.diff.diff_text.read().splitlines()
+        self.assertEqual(
+            ['@@ -1,1 +1,1 @@', '-foo', '+bar', ''], content_lines[3:])
+        self.assertEqual(7, len(content_lines))
 
 
 def test_suite():
