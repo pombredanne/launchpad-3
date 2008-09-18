@@ -11,6 +11,8 @@ __all__ = [
     'PackageUploadSet',
     ]
 
+from email import Encoders
+from email.MIMEBase import MIMEBase
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import os
