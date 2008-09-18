@@ -20,7 +20,6 @@ from operator import attrgetter
 from canonical.database.sqlbase import cursor, quote
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
@@ -48,7 +47,7 @@ importers = {
 def is_identical_translation(existing_msg, new_msg):
     """Is a new translation substantially the same as the existing one?
 
-    Compares fuzzy flags, msgid and msgid_plural, and all translations.
+    Compares msgid and msgid_plural, and all translations.
 
     :param existing_msg: a `TranslationMessageData` representing a translation
         message currently kept in the database.
@@ -61,8 +60,7 @@ def is_identical_translation(existing_msg, new_msg):
     assert new_msg.msgid_singular == existing_msg.msgid_singular, (
         "Comparing translations for different messages.")
 
-    if ((existing_msg.msgid_plural != new_msg.msgid_plural) or
-        (existing_msg.fuzzy != ('fuzzy' in new_msg.flags))):
+    if (existing_msg.msgid_plural != new_msg.msgid_plural):
         return False
     if len(new_msg.translations) < len(existing_msg.translations):
         return False
@@ -124,10 +122,8 @@ class ExistingPOFileInDatabase:
             POMsgID_Plural.msgid AS msgid_plural,
             context,
             date_reviewed,
-            is_fuzzy,
             is_current,
             is_imported,
-            was_fuzzy_in_last_import,
             %s
           FROM TranslationMessage
             JOIN POFile ON
@@ -150,10 +146,8 @@ class ExistingPOFileInDatabase:
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
-        for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, was_fuzzy_in_last_import,
-             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
-             msgstr5) in rows:
+        for (msgid, msgid_plural, context, date, is_current, is_imported,
+             msgstr0, msgstr1, msgstr2, msgstr3, msgstr4, msgstr5) in rows:
 
             if not is_current and not is_imported:
                 # We don't care about non-current and non-imported messages
@@ -165,7 +159,6 @@ class ExistingPOFileInDatabase:
                 update_caches.append(self.messages)
             if is_imported:
                 update_caches.append(self.imported)
-                is_fuzzy = was_fuzzy_in_last_import
 
             for look_at in update_caches:
                 if (msgid, msgid_plural, context) in look_at:
@@ -193,8 +186,6 @@ class ExistingPOFileInDatabase:
                     message.addTranslation(4, msgstr4)
                 if msgstr5 is not None:
                     message.addTranslation(5, msgstr5)
-
-                message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
@@ -341,7 +332,6 @@ class FileImporter(object):
     
     The hooks that must be implemented are:
     markAndCheck( message )
-    checkPlurals( message, potmsgset)
     setUpMsgset( message, potmsgset, flags_comment )
     """
     
@@ -411,13 +401,12 @@ class FileImporter(object):
                         message.msgid_singular, message.msgid_plural,
                         context=message.context) )
 
-            # Run a hook method.
-            if not self.checkPlurals(message, potmsgset):
-                continue
-
             self.count += 1
-            flags_comment, fuzzy = (
-                self.createFlagsCommentAndRemoveFuzzy( message ) )
+            if 'fuzzy' in message.flags:
+                message.flags.remove('fuzzy')
+                message._translations = None
+
+            flags_comment = u", "+u", ".join(message.flags)
             
             # Run a hook method.
             self.setUpMsgset( message, potmsgset, flags_comment )
@@ -435,11 +424,9 @@ class FileImporter(object):
             try:
                 # Do the actual import.
                 translation_message = potmsgset.updateTranslation(
-                    self.pofile, self.last_translator,
-                    message.translations,
-                    fuzzy, self.translation_import_queue_entry.is_published,
-                    self.lock_timestamp,
-                    force_edition_rights=self.is_editor)
+                    use_pofile, last_translator, message.translations,
+                    translation_import_queue_entry.is_published,
+                    lock_timestamp, force_edition_rights=is_editor)
 
             except TranslationConflict:
                 self.addConflictError( message, potmsgset )
@@ -452,11 +439,10 @@ class FileImporter(object):
                 # this time asking to store it as a translation with
                 # errors.
                 translation_message = potmsgset.updateTranslation(
-                    self.pofile, self.last_translator,
-                    message.translations,
-                    fuzzy, self.translation_import_queue_entry.is_published,
-                    self.lock_timestamp, ignore_errors=True,
-                    force_edition_rights=self.is_editor)
+                    use_pofile, last_translator, message.translations,
+                    translation_import_queue_entry.is_published,
+                    lock_timestamp, ignore_errors=True,
+                    force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 self.addUpdateError( message, potmsgset, unicode(e) )
@@ -468,27 +454,11 @@ class FileImporter(object):
                 if self.translation_import_queue_entry.is_published:
                     translation_message.was_obsolete_in_last_import = (
                         message.is_obsolete)
-                    translation_message.was_fuzzy_in_last_import = fuzzy
 
         # Run the clean up hoook.
         self.cleanUp()
 
         return self.errors
-
-    def createFlagsCommentAndRemoveFuzzy( self, message ):
-        """
-        Build flags comment and remove fuzzy from message flags,
-        saving the fuzzy state.
-        
-        :param message: The message that has the flags.
-        :return: A tuple of the flags comment and the fuzzy flag.
-        """
-        flags_comment = u", " + u", ".join(message.flags)
-        fuzzy = 'fuzzy' in message.flags
-        if fuzzy:
-            message.flags.remove('fuzzy')
-
-        return (flags_comment, fuzzy)
 
     def addConflictError( self, message, potmsgset ):
         """
@@ -580,35 +550,7 @@ class PotFileImporter( FileImporter ):
         self.last_translator = (
             translation_import_queue_entry.importer )
 
-    def addPluralError( self, message, potmsgset ):
-        """
-        Add an error if the msgid for plural has been changed.
-
-        This has been put in a method enhance clarity by removing the long
-        error text from the calling method.
-        
-        :param message: The current message from the translation file.
-        :param potmsgset: The current messageset for this message id.
-        """
-        # Add the pomsgset to the list of pomsgsets with errors.
-        self.errors.append( {
-            'potmsgset': potmsgset,
-            'pofile': self.pofile,
-            'pomessage':
-                self.format_exporter.exportTranslationMessageData(
-                    message),
-            'error-message': (
-                "The msgid_plural field has changed since the"
-                " last time this file was generated, please"
-                " report this error to %s" % (
-                    config.rosettaadmin.email))
-            } )
-
     def markAndCheck(self, message):
-        """ Nothing to be done for POT files. """
-        return True
-
-    def checkPlurals(self, message, potmsgset):
         """ Nothing to be done for POT files. """
         return True
 
@@ -751,36 +693,6 @@ class PoFileImporter( FileImporter ):
                     message))
 
         return not same_translation
-        
-    def checkPlurals(self, message, potmsgset):
-        """
-        Check this message for changes in the plural definition.
-        A change is detected if msgid_plural for this plural form is different
-        from the existing plural form (and msgid matches).
-        Appends an error to the list if a change is detected.
-        
-        :param message: the message to check
-        :param potmsgset: the msgset to check against
-        :return: True if no error was found.
-        """
-        if (message.msgid_plural is not None and
-            potmsgset.msgid_plural is not None and
-            (message.msgid_plural != potmsgset.msgid_plural.msgid)):
-            # The PO file wants to change the plural msgid from the PO
-            # template, that's broken and not usual, so we raise an
-            # exception to log the issue. It needs to be fixed
-            # manually in the imported translation file.
-            # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
-            # Gettext doesn't allow two plural messages with the
-            # same msgid but different msgid_plural so I think is
-            # safe enough to just go ahead and import this translation
-            # here but setting the fuzzy flag.
-
-            self.addPluralError( message, potmsgset )
-            return False
-
-        # Plural forms match, no error
-        return True
         
     def setUpMsgset( self, message, potmsgset, flags_comment ):
         """
