@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import (
-    Message, MessageChunk, CodeMailJob)
+    Job, Message, MessageChunk, CodeMailJob, StaticDiffJob,)
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.database.constants import DEFAULT
 
@@ -144,7 +144,7 @@ class LaunchpadObjectFactory:
         if branch_url is None:
             branch_url = self.getUniqueURL()
         return CodeMailJob(
-            to_address=to_address, from_address=from_address,
+            job=Job(), to_address=to_address, from_address=from_address,
             reply_to_address=reply_to_address, subject=subject, body=body,
             footer=footer, rationale=rationale, branch_url=branch_url,
             branch_project_name=branch_project_name, rfc822msgid=msgid,
@@ -901,3 +901,8 @@ class LaunchpadObjectFactory:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeStaticDiffJob(self):
+        branch = self.makeBranch()
+        return StaticDiffJob(
+            job=Job(), branch=branch, from_revision_spec='0',
+            to_revision_spec='1')

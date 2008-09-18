@@ -127,6 +127,13 @@ class TestStaticDiffJob(BzrTestCase):
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
+    def test_dependant_CodeMessages(self):
+        static_diff_job = self.factory.makeStaticDiffJob()
+        code_mail_job = self.factory.makeCodeMailJob()
+        static_diff_job.job.dependants.add(code_mail_job.job)
+        self.assertEqual(
+            [code_mail_job], list(static_diff_job.dependant_code_mail_jobs))
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

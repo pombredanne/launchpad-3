@@ -11,7 +11,7 @@ from email.Message import Message
 from email.Header import Header
 from email.Utils import formatdate
 
-from sqlobject import IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -31,6 +31,8 @@ class CodeMailJob(SQLBase):
     _table = 'CodeMailJob'
 
     id = IntCol(notNull=True)
+
+    job = ForeignKey(foreignKey='Job')
 
     rfc822msgid = StringCol(notNull=True)
 

@@ -17,8 +17,8 @@ from zope.interface import (
     Interface, Attribute)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
 
 class IDiff(Interface):
     """A diff that is stored in the Library."""
@@ -54,6 +54,8 @@ class IStaticDiff(Interface):
 
 class IStaticDiffJob(Interface):
     """A job to create a static diff."""
+
+    job = Object(schema=IJob)
 
     branch = Object(
         title=_('Branch to use for this diff'), required=True,

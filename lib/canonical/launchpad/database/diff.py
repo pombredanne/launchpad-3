@@ -11,6 +11,7 @@ from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.revisionspec import RevisionSpec
 from sqlobject import ForeignKey, IntCol, StringCol
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -84,6 +85,8 @@ class StaticDiffJob(SQLBase):
 
     implements(IStaticDiffJob)
 
+    job = ForeignKey(foreignKey='Job')
+
     branch = ForeignKey(foreignKey='Branch', notNull=True)
 
     from_revision_spec = StringCol(notNull=True)
@@ -103,6 +106,14 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.to_revision_spec)
         return StaticDiff.acquire(from_revision_id, to_revision_id,
                                   bzr_branch.repository)
+
+    @property
+    def dependant_code_mail_jobs(self):
+        from canonical.launchpad.database.codemailjob import CodeMailJob
+        from canonical.launchpad.database.job import JobDependency
+        return Store.of(self).find(CodeMailJob,
+            JobDependency.prerequisite == self.job.id,
+            CodeMailJob.job == JobDependency.dependant)
 
 
 class StaticDiffJobSource:
