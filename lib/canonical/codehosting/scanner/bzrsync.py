@@ -70,27 +70,30 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_diff(bzr_branch, bzr_revision):
+def get_diff(db_branch, bzr_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
+    :param db_branch: A `canonical.launchpad.databse.Branch` object.
     :param bzr_branch: A `bzrlib.branch.Branch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
         `bzr_revision` on `bzr_branch`.
     """
-    repo = bzr_branch.repository
-    if bzr_revision.parent_ids:
-        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-        tree_new, tree_old = repo.revision_trees(ids)
+    if len(bzr_revision.parent_ids) > 0:
+        basis = bzr_revision.parent_ids[0]
     else:
-        # can't get both trees at once, so one at a time
-        tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(None)
-
-    diff_content = StringIO()
-    show_diff_trees(tree_old, tree_new, diff_content)
-    raw_diff = diff_content.getvalue()
-    return raw_diff.decode('utf8', 'replace')
+        basis = NULL_REVISION
+    basis_spec = 'revid:%s' % basis
+    revision_spec = 'revid:%s' % bzr_revision.revision_id
+    diff_job = getUtility(IStaticDiffJobSource).create(
+        db_branch, basis_spec, revision_spec)
+    static_diff = diff_job.run()
+    transaction.commit()
+    lfa = static_diff.diff.diff_text
+    lfa.open()
+    revision_diff = lfa.read().decode('utf8', 'replace')
+    static_diff.destroySelf()
+    return revision_diff
 
 
 def get_revision_message(bzr_branch, bzr_revision):
@@ -270,20 +273,7 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            if len(bzr_revision.parent_ids) > 0:
-                basis = bzr_revision.parent_ids[0]
-            else:
-                basis = NULL_REVISION
-            basis_spec = 'revid:%s' % basis
-            revision_spec = 'revid:%s' % bzr_revision.revision_id
-            diff_job = getUtility(IStaticDiffJobSource).create(
-                self.db_branch, basis_spec, revision_spec)
-            static_diff = diff_job.run()
-            transaction.commit()
-            lfa = static_diff.diff.diff_text
-            lfa.open()
-            revision_diff = lfa.read().decode('utf8', 'replace')
-            static_diff.destroySelf()
+            revision_diff = get_diff(self.db_branch, bzr_branch, bzr_revision)
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
