@@ -16,7 +16,6 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -181,18 +180,25 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers, api_version=api_version)
 
+    def _convertArgs(self, operation_name, args):
+        """Encode and convert keyword arguments."""
+        args['ws.op'] = operation_name
+        # To be properly marshalled all values must be strings or converted to
+        # JSON.
+        for key, value in args.items():
+            if not isinstance(value, basestring):
+                args[key] = simplejson.dumps(value)
+        return urllib.urlencode(args)
+
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
-                         for key, value in kwargs.items()])
+        data = self._convertArgs(operation_name, kwargs)
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
     def named_post(self, path, operation_name, headers=None,
                    api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = urlencode(kwargs)
+        data = self._convertArgs(operation_name, kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers, api_version=api_version)
 
@@ -554,7 +560,7 @@ def print_ppa_packages(contents):
 
 def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
-    
+
     The hierarchy shows your position in the Launchpad structure:
     for example, Launchpad > Ubuntu > 8.04.
     The application tabs represent the major facets of an object:

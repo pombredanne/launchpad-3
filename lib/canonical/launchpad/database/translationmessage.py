@@ -112,13 +112,11 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.validation_status = TranslationValidationStatus.UNKNOWN
         self.is_current = True
         self.is_complete = False
-        self.is_fuzzy = False
         self.is_imported = False
         self.is_empty = True
         self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
-        self.was_fuzzy_in_last_import = False
         if self.potmsgset.msgid_plural is None:
             self.translations = [None]
         else:
@@ -205,8 +203,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
-        foreignKey='Person',
-        storm_validator=validate_public_person, dbName='submitter', notNull=True)
+        foreignKey='Person', storm_validator=validate_public_person,
+        dbName='submitter',notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
@@ -238,16 +236,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         schema=TranslationValidationStatus)
     is_current = BoolCol(dbName='is_current', notNull=True, default=False,
                          storm_validator=validate_is_current)
-    is_fuzzy = BoolCol(dbName='is_fuzzy', notNull=True, default=False)
     is_imported = BoolCol(dbName='is_imported', notNull=True, default=False,
                           storm_validator=validate_is_imported)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
-    was_fuzzy_in_last_import = BoolCol(
-        dbName='was_fuzzy_in_last_import', notNull=True, default=False)
 
     # XXX jamesh 2008-05-02:
-    # These two methods are not being called anymore.  The Storm
+    # This method is not being called anymore.  The Storm
     # validator code doesn't handle getters.
     def _get_was_obsolete_in_last_import(self):
         """Override getter for was_obsolete_in_last_import.
@@ -257,15 +252,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         assert self.is_imported, 'The message is not imported.'
 
         return self._SO_get_was_obsolete_in_last_import()
-
-    def _get_was_fuzzy_in_last_import(self):
-        """Override getter for was_fuzzy_in_last_import.
-
-        When the message is not imported makes no sense to use this flag.
-        """
-        assert self.is_imported, 'The message is not imported.'
-
-        return self._SO_get_was_fuzzy_in_last_import()
 
     @cachedproperty
     def all_msgstrs(self):

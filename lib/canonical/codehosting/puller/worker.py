@@ -87,6 +87,16 @@ class StackedOnBranchNotFound(Exception):
     """Couldn't find the stacked-on branch."""
 
 
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', return None if it not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (errors.NotStacked,
+            errors.UnstackableBranchFormat,
+            errors.UnstackableRepositoryFormat):
+        return None
+
+
 def get_canonical_url_for_branch_name(unique_name):
     """Custom implementation of canonical_url(branch) for error reporting.
 

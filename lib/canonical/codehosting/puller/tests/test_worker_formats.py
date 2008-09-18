@@ -8,8 +8,10 @@ import unittest
 
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
+from bzrlib import errors
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack5)
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -127,6 +129,23 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         orig = stacked_branch.get_stacked_on_url()
         mirrored = mirrored_branch.get_stacked_on_url()
         self.assertEqual(orig, mirrored)
+
+    def test_stackingFormatMismatch(self):
+        # If the branch format is stackable but the repository format is not,
+        # we mirror the branch as non-stackable. Added to trap bug 270323.
+        branch = self._createSourceBranch(
+            RepositoryFormatKnitPack1(),
+            BzrDirMetaFormat1(),
+            branch_format=BzrBranchFormat7())
+        self.assertRaises(
+            errors.UnstackableRepositoryFormat, branch.get_stacked_on_url)
+        worker = self.makePullerWorker(branch.base, self.get_url('dest'))
+        worker.mirrorWithoutChecks()
+        mirrored_branch = Branch.open(worker.dest)
+        self.assertMirrored(branch, mirrored_branch)
+        self.assertRaises(
+            errors.UnstackableRepositoryFormat,
+            mirrored_branch.get_stacked_on_url)
 
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time, the mirrored loom

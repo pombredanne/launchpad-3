@@ -668,8 +668,8 @@ translated in Hoary but not in Humpy.
     >>> def add_translation(pofile, potmsgset, translation):
     ...     """Set translation for given message set in given `POFile`."""
     ...     potmsgset.updateTranslation(
-    ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
-    ...         is_imported=False, lock_timestamp=now())
+    ...         pofile, carlos, { 0: translation }, is_imported=False,
+    ...         lock_timestamp=now())
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_humpy, 0, u"Obsolete message", None)
@@ -706,14 +706,14 @@ Carlos also updates a regular string in the parent release.
     ...     u'evolution addressbook')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 And another update in a string that was previously untranslated.
 
     >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(u'has ')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'empty string translated' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 Update a string in the child release.
 
@@ -721,7 +721,7 @@ Update a string in the child release.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_humpy.updateTranslation(
     ...     pofile_es_humpy, carlos, { 0: u'humpy updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 These are the respective expected numbers of translated messages, messages
 whose translations have changed in Launchpad, ones that are newly translated
@@ -763,9 +763,9 @@ the total number of current translations that matters.
     ...         query, clauseTables=['POTMsgSet']).count()
 
     >>> count_current_translations(pofile_es_hoary)
-    13
+    11
     >>> count_current_translations(pofile_es_humpy)
-    12
+    10
 
 There are also some obsolete messages.
 
@@ -803,8 +803,8 @@ messages-with-context.  The obsolete messages do not show up.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
-    @@ -43,7 +43,7 @@
+     msgid "have "
+    @@ -42,7 +42,7 @@
     <BLANKLINE>
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
@@ -858,7 +858,7 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     <BLANKLINE>
      msgctxt "context1"
@@ -896,7 +896,7 @@ of those string when we next migrate updates.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'second hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
     >>> print compare_translations(hoary, humpy)
@@ -913,7 +913,7 @@ of those string when we next migrate updates.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     ...
 

@@ -8,6 +8,10 @@
   <!-- PackageDiff -->
   <content class="canonical.launchpad.database.PackageDiff">
     <allow interface="canonical.launchpad.interfaces.IPackageDiff"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IPackageDiff"
+          />
   </content>
 
 
