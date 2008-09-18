@@ -577,19 +577,16 @@ class PackageUpload(SQLBase):
         if self.isPPA():
             rejection_template = get_email_template(
                 'ppa-upload-rejection.txt')
-            self._sendMail(
-                recipients,
-                "%s rejected" % self.changesfile.filename,
-                rejection_template % interpolations,
-                dry_run, changesfile_content=changesfile_content)
+            attach_changes = False
         else:
             rejection_template = get_email_template('upload-rejection.txt')
-            self._sendMail(
-                recipients,
-                "%s rejected" % self.changesfile.filename,
-                rejection_template % interpolations,
-                dry_run, changesfile_content=changesfile_content,
-                attach_changes=True)
+            attach_changes = True
+
+        self._sendMail(
+            recipients, "%s rejected" % self.changesfile.filename,
+            rejection_template % interpolations, dry_run,
+            changesfile_content=changesfile_content,
+            attach_changes=attach_changes)
 
     def _sendSuccessNotification(
         self, recipients, announce_list, changes_lines, changes,
@@ -655,14 +652,14 @@ class PackageUpload(SQLBase):
 
             if self.isPPA():
                 subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
-                self._sendMail(
-                    recipients, subject, body, dry_run, from_addr=from_addr,
-                    bcc=bcc, changesfile_content=changesfile_content)
+                attach_changes = False
             else:
-                self._sendMail(
-                    recipients, subject, body, dry_run, from_addr=from_addr,
-                    bcc=bcc, changesfile_content=changesfile_content,
-                    attach_changes=True)
+                attach_changes = True
+
+            self._sendMail(
+                recipients, subject, body, dry_run, from_addr=from_addr,
+                bcc=bcc, changesfile_content=changesfile_content,
+                attach_changes=attach_changes)
 
         class NewMessage:
             """New message."""
@@ -936,18 +933,20 @@ class PackageUpload(SQLBase):
         changesfile_content=None, attach_changes=False):
         """Send an email to to_addrs with the given text and subject.
 
-        :attach_changes: A flag governing whether the original changesfile
-            content shall be attached to the email.
-        :changesfile_content: The content of the actual changesfile.
-        :from_addr: The email address to be used as the sender. Must be a
-            valid ASCII str instance or a unicode one.  Defaults to the email
-            for config.uploader.
         :to_addrs: A list of email addresses to be used as recipients. Each
             email must be a valid ASCII str instance or a unicode one.
         :subject: The email's subject.
         :mail_text: The text body of the email. Unicode is preserved in the
             email.
+        :dry_run: Whether or not an email should actually be sent. But
+            please note that this flag is (largely) ignored.
+        :from_addr: The email address to be used as the sender. Must be a
+            valid ASCII str instance or a unicode one.  Defaults to the email
+            for config.uploader.
         :bcc: Optional email Blind Carbon Copy address(es).
+        :changesfile_content: The content of the actual changesfile.
+        :attach_changes: A flag governing whether the original changesfile
+            content shall be attached to the email.
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
 
