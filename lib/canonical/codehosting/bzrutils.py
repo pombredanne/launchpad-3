@@ -40,6 +40,9 @@ def get_branch_stacked_on_url(a_bzrdir):
     # this possible (see below). Alternatively, Bazaar could provide us with a
     # way to open a Branch without opening the stacked-on branch.
 
+    # XXX: MichaelHudson 2008-09-19, bug=271924:
+    # RemoteBzrDir.find_branch_format opens the branch, which defeats the
+    # purpose of this helper.
     if isinstance(a_bzrdir, RemoteBzrDir):
         a_bzrdir._ensure_real()
         a_bzrdir = a_bzrdir._real_bzrdir
