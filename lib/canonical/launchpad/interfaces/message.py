@@ -178,7 +178,7 @@ class IIndexedMessage(Interface):
     """An `IMessage` decorated with its index and context."""
     inside = Attribute("The bug task which is the context for this message.")
     index = Attribute(
-        "The index of this message within the list of messages in its context.")
+        "The index of this message in the list of messages in its context.")
 
 class IndexedMessage:
     """Adds the `inside` and `index` attributes to an IMessage."""
