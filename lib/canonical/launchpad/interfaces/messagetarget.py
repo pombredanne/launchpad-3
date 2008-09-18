@@ -21,12 +21,19 @@ from canonical.lazr.fields import CollectionField, Reference
 class IMessageTarget(Interface):
     """An object that an be linked to a message."""
 
-    messages = exported(
+    messages = CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage))
+
+    indexed_messages = exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Reference(schema=IMessage)))
+            value_type=Reference(schema=IMessage)),
+        exported_as='messages')
 
     followup_subject = Attribute("The likely subject of the next message.")
 
