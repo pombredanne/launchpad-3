@@ -144,6 +144,28 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
             "request traversal stack: %r" % stack)
 
 
+class TestWebServiceRequest(unittest.TestCase):
+
+    def test_application_url(self):
+        """Requests to the /api path should return the original request's
+        host, not api.launchpad.net.
+        """
+        # WebServiceTestRequest will suffice, as it too should conform to
+        # the Same Origin web browser policy.
+        from canonical.launchpad.webapp.servers import WebServiceTestRequest
+
+        # Simulate a request to bugs.launchpad.net/api
+        server_url = 'http://bugs.launchpad.dev'
+        env = {
+            'PATH_INFO': '/api/beta',
+            'SERVER_URL': server_url,
+            'HTTP_HOST': 'bugs.launchpad.dev',
+            }
+
+        request = WebServiceTestRequest(environ=env)
+        self.assertEqual(request.getApplicationURL(), server_url)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(
