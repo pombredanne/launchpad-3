@@ -6,6 +6,9 @@ from unittest import TestLoader
 
 from canonical.testing import LaunchpadFunctionalLayer
 
+from canonical.launchpad.ftests import login_person
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.testing import TestCaseWithFactory
 
@@ -46,7 +49,7 @@ class TestRecipientReason(TestCaseWithFactory):
     def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        login(merge_proposal.registrant.preferredemail.email)
+        login_person(merge_proposal.registrant)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         return vote_reference, subscriber
@@ -71,7 +74,7 @@ class TestRecipientReason(TestCaseWithFactory):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, merge_proposal, '')
+            subscription, subscription.person, '', merge_proposal)
         self.assertEqual('You are subscribed to branch foo.',
             reason.getReason())
 
@@ -82,7 +85,7 @@ class TestRecipientReason(TestCaseWithFactory):
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, bmp, '')
+            subscription, team_member, '', bmp)
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             reason.getReason())
 
