@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.job import IJob
 class ICodeMailJob(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    job = Object(schema=IJob)
+    job = Object(schema=IJob, required=True)
     rfc822msgid = TextLine(title=_('RFC822 Msg ID'), required=True)
     in_reply_to = TextLine(title=_('Reply-to message ID'))
     date_created = Datetime(title=_('Date Created'), required=True)

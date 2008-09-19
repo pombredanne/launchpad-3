@@ -259,6 +259,9 @@ class BranchMailer(BaseMailer):
         del headers['From']
         del headers['To']
         del headers['Subject']
+        del headers['MIME-Version']
+        del headers['Content-Transfer-Encoding']
+        del headers['Content-Type']
         return (headers, message['Subject'], message.get_payload(decode=True))
 
     @staticmethod

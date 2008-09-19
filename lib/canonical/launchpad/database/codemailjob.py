@@ -17,7 +17,9 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+
 from canonical.launchpad import _
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
     ICodeMailJob, ICodeMailJobSource)
 from canonical.launchpad.mailout import append_footer
@@ -32,7 +34,7 @@ class CodeMailJob(SQLBase):
 
     id = IntCol(notNull=True)
 
-    job = ForeignKey(foreignKey='Job')
+    job = ForeignKey(foreignKey='Job', notNull=True)
 
     rfc822msgid = StringCol(notNull=True)
 
@@ -57,6 +59,10 @@ class CodeMailJob(SQLBase):
     branch_url = StringCol()
 
     branch_project_name = StringCol()
+
+    def __init__(self, **kwargs):
+        kwargs['job'] = Job()
+        SQLBase.__init__(self, **kwargs)
 
     def toMessage(self):
         mail = Message()
