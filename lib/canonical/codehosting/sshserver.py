@@ -184,6 +184,7 @@ class SSHServerTransport(transport.SSHServerTransport):
     def connectionMade(self):
         self.transport.setTcpKeepAlive(True)
 
+
 class Factory(factory.SSHFactory):
 
     protocol = SSHServerTransport
@@ -202,6 +203,8 @@ class Factory(factory.SSHFactory):
         }
 
     def buildProtocol(self, addr):
+        # If Conch let us customize the protocol class, we wouldn't need this.
+        # See http://twistedmatrix.com/trac/ticket/3443.
         t = protocol.Factory.buildProtocol(self, addr)
         t.supportedPublicKeys = self.privateKeys.keys()
         if not self.primes:
