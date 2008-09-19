@@ -141,13 +141,15 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in allowed_methods:
             env = self.wsgi_env(self.working_api_path, method)
-            self.assert_(self.factory.checkRequest(env),
+            self.assert_(self.factory.isValidMethodForRequest(env),
                 "The '%s' HTTP method should be handled by the factory."
                 % method)
 
     def test_factory_rejects_normal_http_methods(self):
         """The factory should reject some HTTP methods for requests that
         are *not* bound for the web service.
+
+        This includes methods like 'PUT' and 'PATCH'.
         """
         from canonical.launchpad.webapp.servers import (
             VirtualHostRequestPublicationFactory,
@@ -160,7 +162,7 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.failing_api_path, method)
-            self.failIf(self.factory.checkRequest(env),
+            self.failIf(self.factory.isValidMethodForRequest(env),
                 "The '%s' HTTP method should be rejected by the factory."
                 % method)
 

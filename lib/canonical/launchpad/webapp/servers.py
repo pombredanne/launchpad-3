@@ -385,6 +385,18 @@ class VHostWebServiceRequestPublicationFactory(
             path = path + '/'
         return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
 
+    def isValidMethodForRequest(self, environment):
+        """Is the HTTP method valid for the type of request?"""
+        path_info = environment.get('PATH_INFO', '')
+        method = environment.get('REQUEST_METHOD', '')
+
+        if self.isWebServicePath(path_info):
+            allowed_methods = WebServiceRequestPublicationFactory.default_methods
+        else:
+            allowed_methods = VirtualHostRequestPublicationFactory.default_methods
+
+        return method in allowed_methods
+
 
 class NotFoundRequestPublicationFactory:
     """An IRequestPublicationFactory which always yields a 404."""
