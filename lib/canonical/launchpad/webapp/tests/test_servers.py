@@ -58,34 +58,55 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
 
 class TestVhostWebserviceFactory(unittest.TestCase):
 
+    def setUp(self):
+        from canonical.launchpad.webapp.servers import (
+            VHostWebServiceRequestPublicationFactory,
+            BugsBrowserRequest,
+            BugsPublication,
+            WEBSERVICE_PATH_OVERRIDE)
+
+        self.factory = VHostWebServiceRequestPublicationFactory(
+            'bugs', BugsBrowserRequest, BugsPublication)
+
+        self.WEBSERVICE_PATH_OVERRIDE = WEBSERVICE_PATH_OVERRIDE
+
+    def wsgi_env(self, path, method='GET'):
+        """Simulate a WSGI application environment."""
+        return {
+            'PATH_INFO': path,
+            'HTTP_HOST': 'bugs.launchpad.dev',
+            'REQUEST_METHOD': method
+            }
+
+    @property
+    def working_api_path(self):
+        """A path to the webservice API that should work every time."""
+        return '/' + self.WEBSERVICE_PATH_OVERRIDE
+
+    @property
+    def failing_api_path(self):
+        """A path that should not work with the webservice API."""
+        return '/foo'
+
     def test_factory_produces_webservice_objects(self):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
         from canonical.launchpad.webapp.servers import (
-            VHostWebServiceRequestPublicationFactory,
             BugsBrowserRequest,
             BugsPublication,
             WebServiceClientRequest,
-            WebServicePublication,
-            WEBSERVICE_PATH_OVERRIDE)
+            WebServicePublication)
 
-        def path_info(path):
-            # Simulate a WSGI environment.
-            return {'PATH_INFO': path}
-
-        factory = VHostWebServiceRequestPublicationFactory(
-            'bugs', BugsBrowserRequest, BugsPublication)
-
-        env = path_info(WEBSERVICE_PATH_OVERRIDE)
+        env = self.wsgi_env('/' + self.WEBSERVICE_PATH_OVERRIDE)
 
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
         # WSGI environment before it can produce a request object for us.
-        self.assert_(factory.canHandle(env),
+        self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
-        request = factory()
+        request = self.factory()
 
         self.assertEqual(request.__class__, WebServiceClientRequest,
             "Requests to the /api path should return a WebService "
@@ -95,11 +116,11 @@ class TestVhostWebserviceFactory(unittest.TestCase):
             "Requests to the /api path should return a WebService "
             "publication object.")
 
-        env = path_info('/foo')
-        self.assert_(factory.canHandle(env),
+        env = self.wsgi_env('/foo')
+        self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
-        request = factory()
+        request = self.factory()
 
         self.assertEqual(request.__class__, BugsBrowserRequest,
             "Requests to normal paths should return a Bugs "
@@ -109,52 +130,78 @@ class TestVhostWebserviceFactory(unittest.TestCase):
             "Requests to normal paths should return a Bugs "
             "publication object.")
 
+    def test_factory_processes_webservice_http_methods(self):
+        """The factory should accept the HTTP methods for requests that
+        should be processed by the web service.
+        """
+        from canonical.launchpad.webapp.servers import (
+            WebServiceRequestPublicationFactory)
+
+        allowed_methods = WebServiceRequestPublicationFactory.allowed_methods
+
+        for method in allowed_methods:
+            env = self.wsgi_env(self.working_api_path, method)
+            self.assert_(self.factory.checkRequest(env),
+                "The '%s' HTTP method should be handled by the factory."
+                % method)
+
+    def test_factory_rejects_normal_http_methods(self):
+        """The factory should reject some HTTP methods for requests that
+        are *not* bound for the web service.
+        """
+        from canonical.launchpad.webapp.servers import (
+            VirtualHostRequestPublicationFactory,
+            WebServiceRequestPublicationFactory)
+
+        vhost_methods = VirtualHostRequestPublicationFactory.allowed_methods
+        ws_methods = WebServiceRequestPublicationFactory.allowed_methods
+
+        denied_methods = set(ws_methods) - set(vhost_methods)
+
+        for method in denied_methods:
+            env = self.wsgi_env(self.working_api_path, method)
+            self.failIf(self.factory.checkRequest(env),
+                "The '%s' HTTP method should be rejected by the factory."
+                % method)
+
     def test_factory_understands_webservice_paths(self):
         """The factory should know if a path is directed at a web service
         resource path.
         """
-        from canonical.launchpad.webapp.servers import (
-            VHostWebServiceRequestPublicationFactory,
-            BugsBrowserRequest,
-            BugsPublication,
-            WEBSERVICE_PATH_OVERRIDE)
-
         # This is a sanity check, so I can write '/api/foo' instead
         # of WEBSERVICE_PATH_OVERRIDE + '/foo' in my tests.  The former's
         # intention is clearer.
-        self.assert_(WEBSERVICE_PATH_OVERRIDE == 'api')
-
-        factory = VHostWebServiceRequestPublicationFactory(
-            'bugs', BugsBrowserRequest, BugsPublication)
+        self.assertEqual(self.WEBSERVICE_PATH_OVERRIDE, 'api',
+            "Sanity check: The web service path override should be 'api'.")
 
         self.assert_(
-            factory.isWebServicePath('/api'),
+            self.factory.isWebServicePath('/api'),
             "The factory should handle URLs that start with /api.")
         self.assert_(
-            factory.isWebServicePath('/api/'),
+            self.factory.isWebServicePath('/api/'),
             "The factory should handle URLs that start with /api.")
 
         self.assert_(
-            factory.isWebServicePath('/api/foo'),
+            self.factory.isWebServicePath('/api/foo'),
             "The factory should handle URLs that start with /api.")
 
         self.failIf(
-            factory.isWebServicePath('/foo'),
+            self.factory.isWebServicePath('/foo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
         self.failIf(
-            factory.isWebServicePath('/'),
+            self.factory.isWebServicePath('/'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
         self.failIf(
-            factory.isWebServicePath('/apifoo'),
+            self.factory.isWebServicePath('/apifoo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
         self.failIf(
-            factory.isWebServicePath('/foo/api'),
+            self.factory.isWebServicePath('/foo/api'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 

@@ -176,6 +176,7 @@ class ApplicationServerSettingRequestFactory:
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request
 
+
 class VirtualHostRequestPublicationFactory:
     """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
 
@@ -365,7 +366,8 @@ class WebServiceRequestPublicationFactory(
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
 
 
-class VHostWebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
+class VHostWebServiceRequestPublicationFactory(
+    VirtualHostRequestPublicationFactory):
     """An `IRequestPublicationFactory` handling requests to vhosts.
 
     It also handles requests to the launchpad web service, if the
