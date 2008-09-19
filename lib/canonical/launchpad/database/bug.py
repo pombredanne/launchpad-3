@@ -123,17 +123,16 @@ def get_bug_tags_open_count(maincontext_clause, user):
             BugTask,
             And(BugTask.bugID == Bug.id, open_statuses_cond)),
         ]
-    privacy_filter = get_bug_privacy_filter(user)
-    if not privacy_filter:
-        privacy_filter = "1 = 1"
-    where = And(
+    where_conditions = [
         open_statuses_cond,
-        SQLRaw(privacy_filter),
         SQLRaw(maincontext_clause),
-        )
+        ]
+    privacy_filter = get_bug_privacy_filter(user)
+    if privacy_filter:
+        where_conditions.append(SQLRaw(privacy_filter))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     result = store.execute(Select(
-        columns=columns, where=where, tables=tables,
+        columns=columns, where=And(*where_conditions), tables=tables,
         group_by=BugTag.tag, order_by=BugTag.tag))
     return shortlist([(row[0], row[1]) for row in result.get_all()])
 
