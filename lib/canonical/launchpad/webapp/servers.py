@@ -364,35 +364,6 @@ class WebServiceRequestPublicationFactory(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
 
-    def canHandle(self, environment):
-        """See `IRequestPublicationFactory`.
-
-        This factory handles requests to both the 'api' virtual host,
-        and requests to the '/api' URL path on any other virtual host.
-
-        :param environment: The WSGI environment.
-
-        :return: True if the incoming request should be treated as a
-            WebService request.
-        """
-        return (self.isWebServicePathRequest(environment)
-                or
-                self.isWebServiceDomainRequest(environment))
-
-    def isWebServicePathRequest(self, environment):
-        """Should the request URL's path be handled by the WebService?
-        """
-        path_info = environment.get('PATH_INFO', '').split('/')
-        if len(path_info) > 1:
-            return WEBSERVICE_PATH_OVERRIDE == path_info[1]
-        else:
-            return False
-
-    def isWebServiceDomainRequest(self, environment):
-        """Is the request's domain handled by the WebService?"""
-        return super(WebServiceRequestPublicationFactory,
-            self).canHandle(environment)
-
 
 class VHostWebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
     """An `IRequestPublicationFactory` handling requests to vhosts.
