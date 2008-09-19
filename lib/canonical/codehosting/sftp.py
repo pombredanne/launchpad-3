@@ -85,6 +85,28 @@ def with_sftp_error(func):
     return util.mergeFunctionMetadata(func, decorator)
 
 
+class DirectoryListing:
+    """Class to satisfy openDirectory return interface.
+
+    openDirectory returns an iterator -- with a `close` method.  Hence
+    this class.
+    """
+
+    def __init__(self, entries):
+        self.iter = iter(entries)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.iter.next()
+
+    def close(self):
+        # I can't believe we had to implement a whole class just to
+        # have this do-nothing method (abentley).
+        pass
+
+
 class TransportSFTPFile:
     """An implementation of `ISFTPFile` that backs onto a Bazaar transport.
 
@@ -241,27 +263,6 @@ class TransportSFTPServer:
     @with_sftp_error
     def openDirectory(self, path):
         """See `ISFTPServer`."""
-        class DirectoryListing:
-            """Class to satisfy openDirectory return interface.
-
-            openDirectory returns an iterator -- with a `close` method.  Hence
-            this class.
-            """
-
-            def __init__(self, entries):
-                self.iter = iter(entries)
-
-            def __iter__(self):
-                return self
-
-            def next(self):
-                return self.iter.next()
-
-            def close(self):
-                # I can't believe we had to implement a whole class just to
-                # have this do-nothing method (abentley).
-                pass
-
         escaped_path = urlutils.escape(path)
         deferred = self.transport.list_dir(escaped_path)
         def format_entry(stat_result, filename):
