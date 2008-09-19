@@ -68,7 +68,8 @@ class ExecOnlySession:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
             return
-        protocol.session.conn.transport.transport.setTcpKeepAlive(True)
+        if getattr(protocol, 'session', None) is not None:
+            protocol.session.conn.transport.transport.setTcpKeepAlive(True)
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
