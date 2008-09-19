@@ -560,18 +560,18 @@ class IBug(IMessageTarget, ICanBeMentored):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def isUserAffected(user):
-        """Is `user` marked as affected by this bug?"""
+        """Is :user: marked as affected by this bug?"""
 
     @call_with(user=REQUEST_USER)
     @export_write_operation()
 
     def markUserAffected(user):
-        """Mark `user` as affected by this bug."""
+        """Mark :user: as affected by this bug."""
 
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def unmarkUserAffected(user):
-        """Unmark `user` as affected by this bug."""
+        """Unmark :user: as affected by this bug."""
 
 
 # We are forced to define these now to avoid circular import problems.
