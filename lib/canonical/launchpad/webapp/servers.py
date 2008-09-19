@@ -185,6 +185,8 @@ class VirtualHostRequestPublicationFactory:
     """
     implements(IRequestPublicationFactory)
 
+    default_methods = ['GET', 'HEAD', 'POST']
+
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None, methods=None, handle_default_host=False):
         """Creates a new factory.
@@ -208,7 +210,7 @@ class VirtualHostRequestPublicationFactory:
         self.publication_factory = publication_factory
         self.port = port
         if methods is None:
-            methods = ['GET', 'HEAD', 'POST']
+            methods = self.default_methods
         self.methods = methods
         self.handle_default_host = handle_default_host
 
@@ -357,13 +359,15 @@ class WebServiceRequestPublicationFactory(
     resources published through a web service.
     """
 
+    default_methods = [
+        'GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
+
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None):
         """This factory accepts requests that use all five major HTTP methods.
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
-            vhost_name, request_factory, publication_factory, port,
-            ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
+            vhost_name, request_factory, publication_factory, port)
 
 
 class VHostWebServiceRequestPublicationFactory(

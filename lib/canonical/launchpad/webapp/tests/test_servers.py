@@ -137,7 +137,7 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         from canonical.launchpad.webapp.servers import (
             WebServiceRequestPublicationFactory)
 
-        allowed_methods = WebServiceRequestPublicationFactory.allowed_methods
+        allowed_methods = WebServiceRequestPublicationFactory.default_methods
 
         for method in allowed_methods:
             env = self.wsgi_env(self.working_api_path, method)
@@ -153,13 +153,13 @@ class TestVhostWebserviceFactory(unittest.TestCase):
             VirtualHostRequestPublicationFactory,
             WebServiceRequestPublicationFactory)
 
-        vhost_methods = VirtualHostRequestPublicationFactory.allowed_methods
-        ws_methods = WebServiceRequestPublicationFactory.allowed_methods
+        vhost_methods = VirtualHostRequestPublicationFactory.default_methods
+        ws_methods = WebServiceRequestPublicationFactory.default_methods
 
         denied_methods = set(ws_methods) - set(vhost_methods)
 
         for method in denied_methods:
-            env = self.wsgi_env(self.working_api_path, method)
+            env = self.wsgi_env(self.failing_api_path, method)
             self.failIf(self.factory.checkRequest(env),
                 "The '%s' HTTP method should be rejected by the factory."
                 % method)
