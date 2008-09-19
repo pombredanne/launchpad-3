@@ -965,7 +965,7 @@ information, too:
 
 == Affected users ==
 
-Users can mark bugs as affecting the. For each bug we then keep a count
+Users can mark bugs as affecting them. For each bug we then keep a count
 of the number of users affected by it.
 
     >>> bug_two.users_affected_count
@@ -979,3 +979,11 @@ of the number of users affected by it.
     >>> commit()
     >>> bug_two.users_affected_count
     1
+
+A bug can only affect a user once. Calling markUserAffect() with the
+same user more than once does not increment users_affect_count.
+
+   >>> bug_two.markUserAffected(foobar)
+   >>> commit()
+   >>> bug_two.users_affected_count
+   1

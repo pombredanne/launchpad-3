@@ -1111,25 +1111,34 @@ class Bug(SQLBase):
             bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
         return bugtasks_by_package
 
+    def _getAffectedUser(self, user):
+       """Return the `IBugAffectsPerson` for a user, or None
+
+       :param user: An `IPerson` that may be affected by the bug.
+       :return: An `IBugAffectsPerson` or None.
+       """
+       return Store.of(self).find(
+           BugAffectsPerson,
+           And(BugAffectsPerson.bug == self,
+               BugAffectsPerson.person == user)).one()
+
     def isUserAffected(self, user):
         """See `IBug`."""
-        return bool(Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one())
+        return bool(self._getAffectedUser(user))
 
     def markUserAffected(self, user):
         """See `IBug`."""
         if not self.isUserAffected(user):
+            # Mark the user as affected by this bug.
+            # A trigger on insert will increment `users_affected_count`.
             BugAffectsPerson(bug=self, person=user)
 
     def unmarkUserAffected(self, user):
         """See `IBug`."""
-        bugAffectsPerson = Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one()
+        bugAffectsPerson = self._getAffectedUser(user)
         if bugAffectsPerson is not None:
+            # Unmark the user as affected by this bug.
+            # A trigger on insert will increment `users_affected_count`.
             bugAffectsPerson.destroySelf()
 
 

@@ -617,7 +617,7 @@ the same time.
 
 == Affected users ==
 
-It is possible to mark a bug as affecting a user using the web service.
+It is possible to mark a bug as affecting the user using the web service.
 
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
