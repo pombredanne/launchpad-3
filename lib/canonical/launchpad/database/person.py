@@ -85,7 +85,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.mailinglist import (
-    IMailingListSet, PostedMessageStatus)
+    IMailingListSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
@@ -197,23 +197,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def _validate_name(self, attr, value):
         """Check that rename is allowed."""
-        # Renaming a team is prohibited for any team that has a mailing list.
-        # This is because renaming a mailing list is not trivial in Mailman
-        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
-        # team edit details view, but just to be safe, we also assert that
-        # such an attempt is not being made here.  To do this, we must
-        # override the SQLObject method for setting the 'name' database
-        # column.  Watch out for when SQLObject is creating this row, because
-        # in that case self.name isn't yet available.
-        assert (self._SO_creating or
-                not self.is_team or
-                getUtility(IMailingListSet).get(self.name) is None), (
-            'Cannot rename teams with mailing lists')
+        # Renaming a team is prohibited for any team that has a non-purged
+        # mailing list.  This is because renaming a mailing list is not
+        # trivial in Mailman 2.1 (see Mailman FAQ item 4.70).  We prohibit
+        # such renames in the team edit details view, but just to be safe, we
+        # also assert that such an attempt is not being made here.  To do
+        # this, we must override the SQLObject method for setting the 'name'
+        # database column.  Watch out for when SQLObject is creating this row,
+        # because in that case self.name isn't yet available.
+        if self.name is None:
+            mailing_list = None
+        else:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+        can_rename = (self._SO_creating or
+                      not self.is_team or
+                      mailing_list is None or
+                      mailing_list.status == MailingListStatus.PURGED)
+        assert can_rename, 'Cannot rename teams with mailing lists'
         # Everything's okay, so let SQLObject do the normal thing.
         return value
 
     name = StringCol(dbName='name', alternateID=True, notNull=True,
                      storm_validator=_validate_name)
+
+    def __repr__(self):
+        return '<Person at 0x%x %s (%s)>' % (
+            id(self), self.name, self.displayname)
 
     def _sync_displayname(self, attr, value):
         """Update any related Account.displayname.
@@ -2782,7 +2791,11 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
-        assert getUtility(IMailingListSet).get(from_person.name) is None, (
+        # If the team has a mailing list, the mailing list better be in the
+        # purged state, otherwise the team can't be merged.
+        mailing_list = getUtility(IMailingListSet).get(from_person.name)
+        assert (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED), (
             "Can't merge teams which have mailing lists into other teams.")
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
