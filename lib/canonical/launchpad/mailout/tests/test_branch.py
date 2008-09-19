@@ -6,7 +6,7 @@ from unittest import TestLoader
 
 from canonical.testing import LaunchpadFunctionalLayer
 
-from canonical.launchpad.ftests import login, login_person
+from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branch import RecipientReason
@@ -49,7 +49,7 @@ class TestRecipientReason(TestCaseWithFactory):
     def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        login(merge_proposal.registrant.preferredemail.email)
+        login_person(merge_proposal.registrant)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         return vote_reference, subscriber
