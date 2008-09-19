@@ -21,11 +21,14 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
-
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 class ArchiveDependencyError(Exception):
     """Raised when an `IArchiveDependency` does not fit the context archive.
@@ -40,21 +43,25 @@ class ArchiveDependencyError(Exception):
 
 class IArchive(IHasOwner):
     """An Archive interface"""
+    export_as_webservice_entry()
 
     id = Attribute("The archive ID.")
 
-    owner = Choice(
-        title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("""The PPA owner."""))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, vocabulary='ValidOwner',
+            description=_("""The PPA owner.""")))
 
-    name = TextLine(
-        title=_("Name"), required=True,
-        constraint=name_validator,
-        description=_("The name of this archive."))
+    name = exported(
+        TextLine(
+            title=_("Name"), required=True,
+            constraint=name_validator,
+            description=_("The name of this archive.")))
 
-    description = Text(
-        title=_("PPA contents description"), required=False,
-        description=_("A short description of contents of this PPA."))
+    description = exported(
+        Text(
+            title=_("PPA contents description"), required=False,
+            description=_("A short description of contents of this PPA.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -100,8 +107,11 @@ class IArchive(IHasOwner):
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
 
-    distribution = Attribute(
-        "The distribution that uses or is used by this archive.")
+    distribution = exported(
+        Reference(
+            Interface, # Redefined to IDistribution later.
+            title=_("The distribution that uses or is used by this "
+                    "archive.")))
 
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
@@ -325,6 +335,11 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
+
+
+# Avoid circular import.
+from canonical.launchpad.interfaces.distribution import IDistribution
+IArchive['distribution'].schema = IDistribution
 
 
 class IArchiveSourceSelectionForm(Interface):

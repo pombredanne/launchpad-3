@@ -1,0 +1,18 @@
+= Archives =
+
+For archives we publish a subset of their attributes.
+
+    >>> archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> print cprov['self_link']
+    http://.../~cprov/+archive
+
+    >>> ppa = webservice.get(archive['self_link']).jsonBody()
+    >>> for key, value in sorted(ppa.items()):
+    ...     print "%s: %s" % (key, value)
+    description: packages to help my friends.
+    distribution_link: http://api.launchpad.dev/beta/ubuntu
+    name: default
+    owner_link: http://api.launchpad.dev/beta/~cprov
+    resource_type_link: http://api.launchpad.dev/beta/#archive
+    self_link: http://api.launchpad.dev/beta/~cprov/+archive
+
