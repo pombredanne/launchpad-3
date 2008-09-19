@@ -160,12 +160,43 @@ def get_pid(service_name, use_config=None):
     running, is healthy, or died horribly a while ago and its PID being
     used by something else. What we have is probably good enough.
 
+    We make the pidfile in a separate process so as to cleanly keep the atexit
+    and signal handler code out of the test environment.)
+
     >>> get_pid('nuts') is None
     True
-    >>> make_pidfile('nuts')
-    >>> get_pid('nuts') == os.getpid()
+
+    >>> import sys, subprocess, os, time, signal
+    >>> cmd = '''
+    ... import time
+    ... from canonical.pidfile import make_pidfile
+    ... make_pidfile('nuts')
+    ... try:
+    ...     time.sleep(30)
+    ... except KeyboardInterrupt:
+    ...     pass'''
+    ...
+    >>> cmd = '%s -c "%s"' % (sys.executable, cmd)
+    >>> p = subprocess.Popen(cmd, shell=True)
+    >>> for i in range(100):
+    ...     if os.path.exists(pidfile_path('nuts')):
+    ...         break
+    ...     time.sleep(0.1)
+    ... else:
+    ...     print 'Error: pid file was not created'
+    ...
+    >>> pid = int(open(pidfile_path('nuts')).read())
+
+    >>> get_pid('nuts') == pid
     True
-    >>> remove_pidfile('nuts')
+    >>> os.kill(pid, signal.SIGINT)
+    >>> for i in range(20):
+    ...     if not os.path.exists(pidfile_path('nuts')):
+    ...         break
+    ...     time.sleep(0.1)
+    ... else:
+    ...     print 'Error: pid file was not removed'
+    ...
     >>> get_pid('nuts') is None
     True
 
@@ -195,4 +226,3 @@ def get_pid(service_name, use_config=None):
         return None
     except ValueError:
         raise ValueError("Invalid PID %s" % repr(pid))
-
