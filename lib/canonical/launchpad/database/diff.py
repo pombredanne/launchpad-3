@@ -16,6 +16,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
 
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
     IDiff, IStaticDiff, IStaticDiffJob, IStaticDiffJobSource)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
@@ -84,11 +85,17 @@ class StaticDiffJob(SQLBase):
 
     implements(IStaticDiffJob)
 
+    job = ForeignKey(foreignKey='Job', notNull=True)
+
     branch = ForeignKey(foreignKey='Branch', notNull=True)
 
     from_revision_spec = StringCol(notNull=True)
 
     to_revision_spec = StringCol(notNull=True)
+
+    def __init__(self, **kwargs):
+        kwargs['job']=Job()
+        SQLBase.__init__(self, **kwargs)
 
     def _get_revision_id(self, bzr_branch, spec_string):
         spec = RevisionSpec.from_string(spec_string)
