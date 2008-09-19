@@ -102,15 +102,17 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(maincontext_clause, user):
+def get_bug_tags_open_count(context_condition, user):
     """Return all the used bug tags with their open bug count.
 
-    maincontext_clause is a SQL condition clause, limiting the used tags
-    to a specific context.
+    :param context_condition: A Storm SQL expression, limiting the
+        used tags to a specific context. Only the BugTask table may be
+        used to choose the context.
+    :param user: The user performing the search.
 
-    The SQL clause may only use the BugTask table to choose the context.
+    :return: A list of tuples, (tag name, open bug count).
     """
-    open_statuses_cond = In(
+    open_statuses_condition = In(
         BugTask.status, sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))
     columns = [
         BugTag.tag,
@@ -121,11 +123,11 @@ def get_bug_tags_open_count(maincontext_clause, user):
         LeftJoin(Bug, Bug.id == BugTag.bugID),
         LeftJoin(
             BugTask,
-            And(BugTask.bugID == Bug.id, open_statuses_cond)),
+            And(BugTask.bugID == Bug.id, open_statuses_condition)),
         ]
     where_conditions = [
-        open_statuses_cond,
-        maincontext_clause,
+        open_statuses_condition,
+        context_condition,
         ]
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
