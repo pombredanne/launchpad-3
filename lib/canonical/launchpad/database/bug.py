@@ -125,7 +125,7 @@ def get_bug_tags_open_count(maincontext_clause, user):
         ]
     where_conditions = [
         open_statuses_cond,
-        SQLRaw(maincontext_clause),
+        maincontext_clause,
         ]
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:

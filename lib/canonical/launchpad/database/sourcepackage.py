@@ -14,12 +14,14 @@ from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
+from storm.expr import And
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -411,8 +413,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distroseries = %s AND BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.distroseries, self.sourcepackagename)),
+            And(BugTask.distroseries == self.distroseries,
+                BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
     def createBug(self, bug_params):

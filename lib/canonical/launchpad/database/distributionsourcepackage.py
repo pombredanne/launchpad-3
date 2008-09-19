@@ -13,7 +13,7 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Desc, In
+from storm.expr import And, Desc, In
 from storm.store import Store
 from zope.interface import implements
 
@@ -301,8 +301,8 @@ class DistributionSourcePackage(BugTargetBase,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distribution = %s AND BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.distribution, self.sourcepackagename)),
+            And(BugTask.distribution == self.distribution,
+                BugTask.sourcepackagename == self.sourcepackagename),
             user)
 
     def createBug(self, bug_params):
