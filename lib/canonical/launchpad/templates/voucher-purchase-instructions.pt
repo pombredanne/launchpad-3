@@ -12,7 +12,10 @@
     </li>
     <li>You will receive an email that your order has been processed.</li>
     <li>Then you may apply the purchased subscription to this project
-        on your <a href="/people/+me/+vouchers">voucher management page</a>.
+        on your
+      <a href="/people/+me/+vouchers"
+         tal:attributes="href string:${request/lp:person/fmt:url}/+vouchers">
+        voucher management page</a>.
     </li>
   </ol>
 </div>
