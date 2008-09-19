@@ -13,7 +13,7 @@ CREATE TABLE JobDependency (
 
 CREATE TABLE StaticDiffJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER REFERENCES Job,
+  job INTEGER NOT NULL REFERENCES Job,
   branch INTEGER NOT NULL REFERENCES Branch,
   from_revision_spec TEXT,
   to_revision_spec TEXT,
@@ -49,7 +49,7 @@ CREATE TABLE PreviewDiffReference (
 
 CREATE TABLE CodeMailJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER REFERENCES Job,
+  job INTEGER NOT NULL REFERENCES Job,
   static_diff INTEGER REFERENCES StaticDiff,
   max_diff_lines INTEGER,
   from_address TEXT NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE CodeMailJob (
 
 CREATE TABLE MergeDirectiveJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER REFERENCES Job,
+  job INTEGER NOT NULL REFERENCES Job,
   message INTEGER NOT NULL REFERENCES LibraryFileAlias,
   action INTEGER
 );
