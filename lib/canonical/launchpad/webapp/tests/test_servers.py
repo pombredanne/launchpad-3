@@ -56,50 +56,111 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         self.assertEqual(new_request._orig_env['key'], 'second value')
 
 
-class TestWebServiceRequestPublicationFactory(unittest.TestCase):
+class TestVhostWebserviceFactory(unittest.TestCase):
 
-    def test_factory_only_handles_urls_with_api_path(self):
-        """Requests with URLs containing the webservice API root should
-        be handled by the factory.  URLs without the path should not
-        be handled.
+    def test_factory_produces_webservice_objects(self):
+        """The factory should produce WebService request and publication
+        objects for requests to the /api root URL.
         """
         from canonical.launchpad.webapp.servers import (
-            WebServiceRequestPublicationFactory,
+            VhostWebServiceRequestPublicationFactory,
+            BugsBrowserRequest,
+            BugsPublication,
             WebServiceClientRequest,
             WebServicePublication,
             WEBSERVICE_PATH_OVERRIDE)
 
-        factory = WebServiceRequestPublicationFactory(
-            'api', WebServiceClientRequest, WebServicePublication)
-
         def path_info(path):
             # Simulate a WSGI environment.
             return {'PATH_INFO': path}
+
+        factory = VHostWebServiceRequestPublicationFactory(
+            'bugs', BugsBrowserRequest, BugsPublication)
+
+        instream = outstream = StringIO()
+        env = path_info(WEBSERVICE_PATH_OVERRIDE)
+        request = factory(instream, outstream, env)
+
+        self.assertEqual(request.__class__, WebServiceClientRequest,
+            "Requests to the /api path should return a WebService "
+            "request object.")
+        self.assertEqual(
+            request.publication.__class__, WebServicePublication,
+            "Requests to the /api path should return a WebService "
+            "publication object.")
+
+        instream = outstream = StringIO()
+        env = path_info('/foo')
+        request = factory(instream, outstream, env)
+
+        self.assertEqual(request.__class__, BugsBrowserRequest,
+            "Requests to normal paths should return a Bugs "
+            "request object.")
+        self.assertEqual(
+            request.publication.__class__, BugsPublication,
+            "Requests to normal paths should return a Bugs "
+            "publication object.")
+
+    def test_factory_only_handles_urls_with_api_path(self):
+        """Requests with URLs containing the webservice API path should
+        be handled by the factory.  URLs without the path should not
+        be handled.
+        """
+        from canonical.launchpad.webapp.servers import (
+            VhostWebServiceRequestPublicationFactory,
+            BugsBrowserRequest,
+            BugsPublication,
+            WebServiceClientRequest,
+            WebServicePublication,
+            WEBSERVICE_PATH_OVERRIDE)
 
         # This is a sanity check, so I can write '/api/foo' instead
         # of WEBSERVICE_PATH_OVERRIDE + '/foo' in my tests.  The former's
         # intention is clearer.
         self.assert_(WEBSERVICE_PATH_OVERRIDE == 'api')
 
-        self.assert_(factory.canHandle(path_info('/api')),
+        def path_info(path):
+            # Simulate a WSGI environment.
+            return {'PATH_INFO': path}
+
+        def produce(factory, path):
+            env = path_info(path)
+            instream = outstream = StringIO()
+            request = factory(instream, outstream, env)
+            return (request, request.publisher)
+
+        # Shortcuts for writing possible test results.
+        bugresult = (BugsBrowserRequest, BugsPublication)
+        apiresult = (WebServiceClientRequest, WebServicePublication)
+
+        factory = VHostWebServiceRequestPublicationFactory(
+            'bugs', BugsBrowserRequest, BugsPublication)
+
+        result = produce(factory, '/api')
+        self.assertEqual(result, apiresult,
+            "The factory should handle URLs that start with /api."
+
+        result = produce(factory, '/api/foo')
+        self.assertEqual(result, apiresult,
             "The factory should handle URLs that start with /api.")
 
-        self.assert_(factory.canHandle(path_info('/api/foo')),
-            "The factory should handle URLs that start with /api.")
-
-        self.failIf(factory.canHandle(path_info('/foo')),
+        result = produce(factory, '/foo')
+        self.failIfEqual(result, apiresult,
             "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
-        self.failIf(factory.canHandle(path_info('/')),
+        result = produce(factory, '/')
+        self.failIfEqual(result, apiresult,
             "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
-        self.failIf(factory.canHandle(path_info('/apifoo')),
+        result = produce(factory, '/apifoo')
+        self.failIfEqual(result, apiresult,
             "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
-
-        self.failIf(factory.canHandle(path_info('/foo/api')),
+x
+        result = produce(factory, '/foo/api')
+        self.failIfEqual(result, apiresult,
             "The factory should not handle URLs that do not start with "
             "/api, and that are not addressed to the webservice domain.")
 
