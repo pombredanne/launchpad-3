@@ -260,16 +260,27 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         raise NotImplementedError()
 
-    def _stat_files_in_list(self, file_list, escaped_path):
-        """Stat all the files `file_list`  """
+    def _stat_files_in_list(self, file_list, escaped_dir_path):
+        """Stat the files `file_list`, assumed to be in `escaped_dir_path`.
+
+        :return: A Deferred which will be called back with the list of all the
+            stat results.
+        """
         deferreds = []
         for filename in file_list:
-            escaped_file_path = os.path.join(escaped_path, filename)
+            escaped_file_path = os.path.join(escaped_dir_path, filename)
             deferreds.append(
                 self.transport.stat(escaped_file_path))
         return gatherResults(deferreds)
 
-    def _format_entries(self, stat_results, filenames):
+    def _format_directory_entries(self, stat_results, filenames):
+        """Produce entries suitable for returning from `openDirectory`.
+
+        :param stat_results: A list of the results of calling `stat` on each
+            file in filenames.
+        :param filenames: The list of filenames to produce entries for.
+        :return: An iterator of ``(shortname, longname, attributes)``.
+        """
         for stat_result, filename in zip(stat_results, filenames):
             shortname = urlutils.unescape(filename).encode('utf-8')
             longname = lsLine(shortname, stat_result)
@@ -281,10 +292,11 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         escaped_path = urlutils.escape(path)
         deferred = self.transport.list_dir(escaped_path)
-        def cb(file_list):
+        def produce_entries_from_file_list(file_list):
             return self._stat_files_in_list(file_list, escaped_path).addCallback(
-                self._format_entries, file_list)
-        return deferred.addCallback(cb).addCallback(DirectoryListing)
+                self._format_directory_entries, file_list)
+        return deferred.addCallback(
+            produce_entries_from_file_list).addCallback(DirectoryListing)
 
     @with_sftp_error
     def openFile(self, path, flags, attrs):
@@ -319,6 +331,12 @@ class TransportSFTPServer:
         return defer.succeed(None)
 
     def _translate_stat(self, stat_val):
+        """Translate the stat result `stat_val` into an attributes dict.
+
+        This is very like conch.ssh.unix.SFTPServerForUnixConchUser._getAttrs,
+        but (a) that is private and (b) we use getattr() to access the
+        attributes as not all the Bazaar transports return full stat results.
+        """
         return {
             'size': getattr(stat_val, 'st_size', 0),
             'uid': getattr(stat_val, 'st_uid', 0),
