@@ -962,3 +962,20 @@ information, too:
     >>> len(CursorWrapper.last_executed_sql) - queries
     2
 
+
+== Affected users ==
+
+Users can mark bugs as affecting the. For each bug we then keep a count
+of the number of users affected by it.
+
+    >>> bug_two.users_affected_count
+    0
+    >>> bug_two.isUserAffected(foobar)
+    False
+    >>> bug_two.markUserAffected(foobar)
+    >>> bug_two.isUserAffected(foobar)
+    True
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> bug_two.users_affected_count
+    1

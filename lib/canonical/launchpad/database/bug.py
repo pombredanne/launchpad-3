@@ -25,6 +25,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
+from storm.expr import And
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
@@ -216,6 +217,7 @@ class Bug(SQLBase):
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
+    users_affected_count = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):
@@ -1109,6 +1111,27 @@ class Bug(SQLBase):
             bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
         return bugtasks_by_package
 
+    def isUserAffected(self, user):
+        """See `IBug`."""
+        return bool(Store.of(self).find(
+            BugAffectsPerson,
+            And(BugAffectsPerson.bug == self,
+                BugAffectsPerson.person == user)).one())
+
+    def markUserAffected(self, user):
+        """See `IBug`."""
+        if not self.isUserAffected(user):
+            BugAffectsPerson(bug=self, person=user)
+
+    def unmarkUserAffected(self, user):
+        """See `IBug`."""
+        bugAffectsPerson = Store.of(self).find(
+            BugAffectsPerson,
+            And(BugAffectsPerson.bug == self,
+                BugAffectsPerson.person == user)).one()
+        if bugAffectsPerson is not None:
+            bugAffectsPerson.destroySelf()
+
 
 class BugSet:
     """See BugSet."""
@@ -1302,3 +1325,9 @@ class BugSet:
                 owner=params.owner, status=params.status)
 
         return bug
+
+
+class BugAffectsPerson(SQLBase):
+    """ TODO """
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
