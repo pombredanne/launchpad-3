@@ -154,6 +154,18 @@ class TestStaticDiffJob(BzrTestCase):
         self.assertEqual(
             [code_mail_job], list(static_diff_job.dependant_code_mail_jobs))
 
+    def test_run_set_diff_on_dependants(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        static_diff_job = StaticDiffJob(
+            branch=branch, from_revision_spec='0', to_revision_spec='1')
+        code_mail_job = self.factory.makeCodeMailJob()
+        static_diff_job.job.dependants.add(code_mail_job.job)
+        self.assertEqual(None, code_mail_job.static_diff)
+        static_diff = static_diff_job.run()
+        self.assertEqual(static_diff, code_mail_job.static_diff)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

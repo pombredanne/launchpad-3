@@ -64,6 +64,8 @@ class CodeMailJob(SQLBase):
         kwargs['job'] = Job()
         SQLBase.__init__(self, **kwargs)
 
+    static_diff = ForeignKey(foreignKey='StaticDiff')
+
     def toMessage(self):
         mail = Message()
         mail['Message-Id'] = self.rfc822msgid
