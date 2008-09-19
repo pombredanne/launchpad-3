@@ -48,6 +48,7 @@ At the top level we provide a collection of bugs.
     u'http://.../bugs/11/subscriptions'),
    (u'tags', []),
    (u'title', u'Make Jokosher use autoaudiosink'),
+   (u'users_affected_count', 0),
    (u'who_made_private_link', None)]
 
 Bugs are indexed by number beneath the top-level collection.
@@ -612,3 +613,22 @@ the same time.
     u'http://.../#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]
+
+
+== Affected users ==
+
+It is possible to mark a bug as affecting a user using the web service.
+
+    >>> webservice.named_post(
+    ...     bug_one['self_link'], 'isUserAffected').jsonBody()
+    False
+    >>> webservice.named_post(
+    ...     bug_one['self_link'], 'markUserAffected').jsonBody()
+    >>> webservice.named_post(
+    ...     bug_one['self_link'], 'isUserAffected').jsonBody()
+    True
+    >>> webservice.named_post(
+    ...     bug_one['self_link'], 'unmarkUserAffected').jsonBody()
+    >>> webservice.named_post(
+    ...     bug_one['self_link'], 'isUserAffected').jsonBody()
+    False
