@@ -261,6 +261,7 @@ class TransportSFTPServer:
         raise NotImplementedError()
 
     def _stat_files_in_list(self, file_list, escaped_path):
+        """Stat all the files `file_list`  """
         deferreds = []
         for filename in file_list:
             escaped_file_path = os.path.join(escaped_path, filename)

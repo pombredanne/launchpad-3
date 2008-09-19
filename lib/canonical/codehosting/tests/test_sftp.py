@@ -8,10 +8,12 @@ import shutil
 
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib import errors as bzr_errors
+from bzrlib.transport import get_transport
 from bzrlib import urlutils
 
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPServer
+from twisted.conch.ls import lsLine
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
@@ -510,10 +512,22 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
             '%s/%s/' % (parent_dir, child_dir),
             '%s/%s' % (parent_dir, child_file)])
         deferred = self.sftp_server.openDirectory(parent_dir)
+        def check_entry(entries, filename):
+            t = get_transport('.')
+            stat = t.stat(urlutils.escape('%s/%s' % (parent_dir, filename)))
+            named_entries = [
+                entry for entry in entries if entry[0] == filename]
+            self.assertEqual(1, len(named_entries))
+            name, longname, attrs = named_entries[0]
+            self.assertEqual(lsLine(name, stat), longname)
+            self.assertEqual(self.sftp_server._translate_stat(stat), attrs)
         def check_open_directory(directory):
-            names = [entry[0] for entry in directory]
-            self.assertEqual(set(names), set([child_dir, child_file]))
+            entries = list(directory)
             directory.close()
+            names = [entry[0] for entry in entries]
+            self.assertEqual(set(names), set([child_dir, child_file]))
+            check_entry(entries, child_dir)
+            check_entry(entries, child_file)
         return deferred.addCallback(check_open_directory)
 
     def test_openDirectoryError(self):
