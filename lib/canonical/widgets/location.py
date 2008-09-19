@@ -7,7 +7,6 @@ __all__ = [
     'LocationWidget',
     ]
 
-
 from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
@@ -17,6 +16,8 @@ from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, Float
+
+from canonical.lazr.utils import safe_js_escape
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.geoip import IGeoIPRecord
@@ -110,7 +111,7 @@ class LocationWidget(BrowserWidget, InputWidget):
         replacements = dict(
             center_lat=self.center_lat,
             center_lng=self.center_lng,
-            displayname=person.displayname,
+            displayname=safe_js_escape(person.displayname),
             name=person.name,
             logo_html=ObjectImageDisplayAPI(person).logo(),
             lat_name=self.latitude_widget.name,
@@ -121,7 +122,7 @@ class LocationWidget(BrowserWidget, InputWidget):
         return """
             <script type="text/javascript">
                 renderLargeMap(
-                    %(center_lat)s, %(center_lng)s, '%(displayname)s',
+                    %(center_lat)s, %(center_lng)s, %(displayname)s,
                     '%(name)s', '%(logo_html)s', '%(lat_name)s',
                     '%(lng_name)s', '%(tz_name)s', %(zoom)s, %(show_marker)s);
             </script>
