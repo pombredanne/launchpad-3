@@ -6,6 +6,9 @@ from unittest import TestLoader
 
 from canonical.testing import LaunchpadFunctionalLayer
 
+from canonical.launchpad.ftests import login, login_person
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branch import RecipientReason
 from canonical.launchpad.testing import TestCaseWithFactory
 
