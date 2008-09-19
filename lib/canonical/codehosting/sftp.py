@@ -293,8 +293,10 @@ class TransportSFTPServer:
         escaped_path = urlutils.escape(path)
         deferred = self.transport.list_dir(escaped_path)
         def produce_entries_from_file_list(file_list):
-            return self._stat_files_in_list(file_list, escaped_path).addCallback(
+            stats_deferred = self._stat_files_in_list(file_list, escaped_path)
+            stats_deferred.addCallback(
                 self._format_directory_entries, file_list)
+            return stats_deferred
         return deferred.addCallback(
             produce_entries_from_file_list).addCallback(DirectoryListing)
 
