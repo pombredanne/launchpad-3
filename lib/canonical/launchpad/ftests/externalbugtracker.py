@@ -559,14 +559,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
-        # Reset the headers so that we don't end up with long strings of
-        # repeating cookies.
-        self.last_response_headers = HTTPMessage(StringIO())
-
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
+        self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
+        self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
 
         # We always return the same user ID.
         # This has to be listified because xmlrpclib tries to expand

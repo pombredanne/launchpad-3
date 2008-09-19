@@ -117,14 +117,14 @@ is rendered.
     >>> identity_view.render()
     ''
 
-== OpenIdApplicationIndexView ==
+== OpenIDApplicationIndexView ==
 
-The OpenIdApplicationIndexView is the default view for the OpenID
+The OpenIDApplicationIndexView is the default view for the OpenID
 application. It is a used by the OpenID Discovery process.
 
-    >>> from canonical.launchpad.interfaces import IOpenIdApplication
+    >>> from canonical.launchpad.interfaces import IOpenIDApplication
 
-    >>> openid_app = getUtility(IOpenIdApplication)
+    >>> openid_app = getUtility(IOpenIDApplication)
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://openid.launchpad.dev',
     ...     PATH_INFO='/',
