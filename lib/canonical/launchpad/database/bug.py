@@ -1328,6 +1328,6 @@ class BugSet:
 
 
 class BugAffectsPerson(SQLBase):
-    """ TODO """
+    """A bug is marked as affecting a user."""
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
