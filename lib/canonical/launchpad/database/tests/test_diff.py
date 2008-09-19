@@ -10,9 +10,11 @@ from unittest import TestLoader
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from canonical.testing import LaunchpadZopelessLayer
+from sqlobject import SQLObjectNotFound
 
 from canonical.codehosting.scanner.tests.test_bzrsync import FakeTransportServer
 from canonical.launchpad.database.diff import *
+from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import IDiff, IStaticDiff, IStaticDiffJob
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
@@ -126,6 +128,24 @@ class TestStaticDiffJob(BzrTestCase):
                             to_revision_spec='1')
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
+
+    def test_run_destroys_job(self):
+        self.useBzrBranches()
+        branch, tree = self.create_branch_and_tree()
+        tree.commit('First commit')
+        job = StaticDiffJob(branch=branch, from_revision_spec='0',
+                            to_revision_spec='1')
+        job_id = job.id
+        job.run()
+        self.assertRaises(SQLObjectNotFound, StaticDiffJob.get, job_id)
+
+    def test_destroySelf_destroys_job(self):
+        branch = self.factory.makeBranch()
+        static_diff_job = StaticDiffJob(branch=branch, from_revision_spec='0',
+                                        to_revision_spec='1')
+        job_id = static_diff_job.job.id
+        static_diff_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
 
     def test_dependant_CodeMessages(self):
         static_diff_job = self.factory.makeStaticDiffJob()
