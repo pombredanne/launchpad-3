@@ -13,6 +13,7 @@ from zope.schema import (
     Datetime, Int, Object, Text, TextLine,)
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.diff import IStaticDiff
 from canonical.launchpad.interfaces.job import IJob
 
 
@@ -32,6 +33,7 @@ class ICodeMailJob(Interface):
     rationale = TextLine(title=_('Machine-readable rationale for message'))
     branch_url = TextLine(title=_('URL of a related branch'))
     branch_project_name = TextLine(title=_("Branch's project's name"))
+    static_diff = Object(schema=IStaticDiff)
 
 
 class ICodeMailJobSource(Interface):
