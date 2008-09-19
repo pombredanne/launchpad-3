@@ -448,6 +448,7 @@ class BlacklistableContentNameField(ContentNameField):
             # The attribute wasn't changed.
             return
 
+        # Need a local import because of circular dependencies.
         from canonical.launchpad.interfaces.person import IPersonSet
         if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
