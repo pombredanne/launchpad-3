@@ -394,6 +394,21 @@ class WebServiceRequestPublicationFactory(
             self).canHandle(environment)
 
 
+class VHostWebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
+    """An `IRequestPublicationFactory` handling requests to vhosts.
+
+    It also handles requests to the launchpad web service, if the
+    request's path points to a web service resource.
+    """
+
+    def isWebServicePath(self, path):
+        """Does the path refer to a web service resource?"""
+        # Add a trailing slash, if it is missing.
+        if not path.endswith('/'):
+            path = path + '/'
+        return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
+
+
 class NotFoundRequestPublicationFactory:
     """An IRequestPublicationFactory which always yields a 404."""
 
