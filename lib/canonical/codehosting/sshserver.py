@@ -9,7 +9,7 @@ from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import (
-    channel, connection, factory, filetransfer, session, userauth)
+    channel, connection, factory, filetransfer, session, transport, userauth)
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
@@ -17,7 +17,9 @@ from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 
-from twisted.python import components, failure
+from twisted.internet import protocol
+
+from twisted.python import components, failure, log
 
 from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
@@ -177,7 +179,15 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         return reason
 
 
+class SSHServerTransport(transport.SSHServerTransport):
+
+    def connectionMade(self):
+        self.transport.setTcpKeepAlive(True)
+
 class Factory(factory.SSHFactory):
+
+    protocol = SSHServerTransport
+
     services = {
         'ssh-userauth': SSHUserAuthServer,
         'ssh-connection': connection.SSHConnection
@@ -190,6 +200,17 @@ class Factory(factory.SSHFactory):
         self.privateKeys = {
             'ssh-rsa': hostPrivateKey
         }
+
+    def buildProtocol(self, addr):
+        t = protocol.Factory.buildProtocol(self, addr)
+        t.supportedPublicKeys = self.privateKeys.keys()
+        if not self.primes:
+            log.msg('disabling diffie-hellman-group-exchange because we '
+                    'cannot find moduli file')
+            ske = t.supportedKeyExchanges[:]
+            ske.remove('diffie-hellman-group-exchange-sha1')
+            t.supportedKeyExchanges = ske
+        return t
 
     def startFactory(self):
         factory.SSHFactory.startFactory(self)
