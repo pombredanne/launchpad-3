@@ -260,25 +260,30 @@ class TransportSFTPServer:
         """See `ISFTPServer`."""
         raise NotImplementedError()
 
+    def _stat_files_in_list(self, file_list, escaped_path):
+        deferreds = []
+        for filename in file_list:
+            escaped_file_path = os.path.join(escaped_path, filename)
+            deferreds.append(
+                self.transport.stat(escaped_file_path))
+        return gatherResults(deferreds)
+
+    def _format_entries(self, stat_results, filenames):
+        for stat_result, filename in zip(stat_results, filenames):
+            shortname = urlutils.unescape(filename).encode('utf-8')
+            longname = lsLine(shortname, stat_result)
+            attr_dict = self._translate_stat(stat_result)
+            yield (shortname, longname, attr_dict)
+
     @with_sftp_error
     def openDirectory(self, path):
         """See `ISFTPServer`."""
         escaped_path = urlutils.escape(path)
         deferred = self.transport.list_dir(escaped_path)
-        def format_entry(stat_result, filename):
-            shortname = urlutils.unescape(filename).encode('utf-8')
-            longname = lsLine(shortname, stat_result)
-            attr_dict = self._translate_stat(stat_result)
-            return (shortname, longname, attr_dict)
-        def stat_files(file_list):
-            deferreds = []
-            for filename in file_list:
-                escaped_file_path = os.path.join(escaped_path, filename)
-                stat_deferred = self.transport.stat(escaped_file_path)
-                stat_deferred.addCallback(format_entry, filename)
-                deferreds.append(stat_deferred)
-            return gatherResults(deferreds)
-        return deferred.addCallback(stat_files).addCallback(DirectoryListing)
+        def cb(file_list):
+            return self._stat_files_in_list(file_list, escaped_path).addCallback(
+                self._format_entries, file_list)
+        return deferred.addCallback(cb).addCallback(DirectoryListing)
 
     @with_sftp_error
     def openFile(self, path, flags, attrs):
