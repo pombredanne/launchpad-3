@@ -399,6 +399,14 @@ class BranchPullQueueTest(TestCaseWithFactory):
         naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
         return branch
 
+    def test_getBranchPullInfo_no_default_stacked_branch(self):
+        # If there's no default stacked branch for the project that a branch
+        # is on, then _getBranchPullInfo returns (id, url, unique_name, '').
+        branch = self.factory.makeBranch()
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
+
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
         self.assertBranchQueues([branch], [], [])

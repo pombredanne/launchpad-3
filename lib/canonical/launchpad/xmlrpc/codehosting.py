@@ -57,7 +57,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        return (branch.id, branch.getPullURL(), branch.unique_name)
+        return (branch.id, branch.getPullURL(), branch.unique_name, '')
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchPuller`."""
