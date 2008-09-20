@@ -91,8 +91,7 @@ def get_stacked_on_url(branch):
     """Get the stacked-on URL for 'branch', return None if it not stacked."""
     try:
         return branch.get_stacked_on_url()
-    except (errors.NotStacked,
-            errors.UnstackableBranchFormat):
+    except (errors.NotStacked, errors.UnstackableBranchFormat):
         return None
 
 
