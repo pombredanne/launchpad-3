@@ -75,3 +75,17 @@ quotation marks.
     u'\u201cfoo\u201d.'
     >>> smartquote('a lot of "foo"?')
     u'a lot of \u201cfoo\u201d?'
+
+
+== safe_js_escape() ==
+
+This will escape the given text so that it can be used in Javascript
+code.
+
+    >>> from canonical.lazr.utils import safe_js_escape
+    >>> print safe_js_escape('John "nasty" O\'Brien')
+    "John &quot;nasty&quot; O'Brien"
+    >>> print safe_js_escape("John O\'Brien")
+    "John O'Brien"
+    >>> print safe_js_escape("John <strong>O\'Brien</strong>")
+    "John &lt;strong&gt;O'Brien&lt;/strong&gt;"
