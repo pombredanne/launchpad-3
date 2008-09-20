@@ -1,15 +1,13 @@
-Nickname
-========
+= Nickname =
 
 For each Person we create a unique nickname that must be generated using
-foaf.nickname.generate_nick.
+generate_nick.
 
 A valid nick can contain lower case letters, dashes, and numbers,
 must start with a letter or a number, and must be a minimum of
 four characters.
 
-    >>> from canonical.foaf.nickname import generate_nick
-
+    >>> from canonical.launchpad.database.person import generate_nick
     >>> generate_nick("foop@example@com")
     Traceback (most recent call last):
         ...
@@ -32,17 +30,14 @@ We already have a salgado, so generate_nick needs to try a little harder.
     >>> generate_nick("salgado@async.co.br")
     'salgado-async'
 
-
 And it needs to maintain a minimum length
 
     >>> generate_nick("i@tv")
     'i-tv'
 
-
     >>> _counter = 0
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def new_person(email):
-    ...     import time
     ...     from canonical.launchpad.interfaces import IPersonSet
     ...     from canonical.launchpad.interfaces import IEmailAddressSet
     ...     from canonical.launchpad.interfaces.person import (
@@ -62,7 +57,6 @@ And it needs to maintain a minimum length
     ...     assert email_address_set.getByEmail(email) is None, 'Oops'
     ...     return person
 
-
 The email address is used to generate nicknames. If domain is used to
 attempt to avoid clashes.
 
@@ -73,7 +67,6 @@ attempt to avoid clashes.
     >>> new_person('bongo@example.com').name
     u'bongo-example-com'
 
-
 It should be nearly impossible to make the method fail even in the
 extreme cases where using all components of the domain name fails.
 If nicknames still clash, random suffixes are tried:
@@ -81,18 +74,15 @@ If nicknames still clash, random suffixes are tried:
     >>> new_person('bongo@example.com').name
     u'bongo-example-com-c'
 
-
 Random prefixes are tried:
 
     >>> new_person('bongo@example.com').name
     u'q-bongo-example-com'
 
-
 And random mutations are tried:
 
     >>> new_person('bongo@example.com').name
     u'bongo-examale-com'
-
 
 The only way it can fail is if some idiot admin goes and registers a
 'match-everything' pattern in the blacklist:
@@ -104,4 +94,3 @@ The only way it can fail is if some idiot admin goes and registers a
     Traceback (most recent call last):
     ...
     NicknameGenerationError: No nickname could be generated...
-
