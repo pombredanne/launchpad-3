@@ -11,7 +11,7 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
@@ -277,14 +277,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 But normal people can't.
 

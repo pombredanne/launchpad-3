@@ -1715,8 +1715,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # person name if know, and the second part is the revision author
         # text.  Only one part of the tuple will be set.
         committers = set()
-        for revision in self._recent_revisions:
-            author = revision.revision_author
+        for (revision, author) in self._recent_revisions:
             if author.person is None:
                 committers.add((None, author.name))
             else:

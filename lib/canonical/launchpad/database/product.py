@@ -16,6 +16,7 @@ import operator
 import datetime
 import calendar
 import pytz
+import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -491,8 +492,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.product = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.product == self, user)
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
@@ -957,13 +957,16 @@ class ProductSet:
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self.all_active[:quantity]
+        if quantity is None:
+            return self.all_active
+        else:
+            return self.all_active[:quantity]
 
     @property
     def all_active(self):
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it in
+        # The main product listings include owner, so we prejoin it.
         return results.prejoin(["owner"])
 
     def get(self, productid):
@@ -1013,11 +1016,13 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
+        if licenses is None:
+            licenses = sets.Set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
