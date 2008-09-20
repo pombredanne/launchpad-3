@@ -597,9 +597,6 @@ class IBranch(IHasOwner):
                 "The branch title if provided, or the unique_name.")),
         exported_as='display_name')
 
-    sort_key = Attribute(
-        "Key for sorting branches for display.")
-
     # Stats and status attributes
     lifecycle_status = exported(
         Choice(
@@ -654,11 +651,6 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
-
-    related_bug_tasks = Attribute(
-        "For each related_bug, the bug task reported against this branch's "
-        "product or the first bug task (in case where there is no task "
-        "reported against the branch's product).")
 
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
@@ -974,13 +966,6 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
-    def getProductDevelopmentBranches(products):
-        """Return branches that are associated with the products dev series.
-
-        The branches will be either the import branches if imported, or
-        the user branches if native.
-        """
-
     def getActiveUserBranchSummaryForProducts(products):
         """Return the branch count and last commit time for the products.
 
@@ -1097,20 +1082,6 @@ class IBranchSet(Interface):
         merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-
-    def getBranchesWithRecentRevisionsForProduct(product, quantity,
-                                                 visible_by_user=None):
-        """Return the product's branches that have the most recent revisions.
-
-        :param quantity: At most `quantity` branches are returned.
-        :type quantity: int
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
