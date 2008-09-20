@@ -213,6 +213,14 @@ contains the target PPA owner account name.
   >>> notification['X-Launchpad-PPA']
   'name16'
 
+However, PPA upload notifications do not contain an attachment with the
+original changesfile.
+
+  >>> attachment = notification.get_payload()[1]
+  Traceback (most recent call last):
+  ...
+  IndexError: list index out of range
+
 See further tests upon PPA upload notifications on
 archiveuploader/ftests/test_ppauploadprocessor.
 
@@ -411,10 +419,10 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:
   DEBUG:   * Changer using non-preferred email
   DEBUG:
-  DEBUG:  -- Celso R. Providelo <cprov@ubuntu.com>  Tue, 25 Apr 2006 10:36:14 -0300
-  DEBUG:
+  DEBUG: Date: Tue, 25 Apr 2006 10:36:14 -0300
+  DEBUG: Changed-By: Celso R. Providelo <cprov@ubuntu.com>
   DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
+  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-4
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -471,10 +479,10 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
-  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG:
+  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
+  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -496,10 +504,10 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:   * Also closes Launchpad bug #6
   DEBUG:
   DEBUG:
-  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG:
+  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
+  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
 
   >>> import operator
   >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
@@ -516,6 +524,119 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
   >>> [message['X-Katie'] for message in msgs]
   ['Launchpad actually', 'Launchpad actually']
+
+The upload notification message has an attachment with the original changes
+file.
+
+  >>> announcement = msgs[0]
+  >>> attachment = announcement.get_payload()[1]
+  >>> attachment['Content-Disposition']
+  'attachment; filename="changesfile"'
+
+Here it is:
+
+  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  Content-Disposition: attachment; filename="changesfile"
+  <BLANKLINE>
+  -----BEGIN PGP SIGNED MESSAGE-----
+  Hash: SHA1
+  <BLANKLINE>
+  Format: 1.7
+  Date: Thu, 30 Mar 2006 01:36:14 +0100
+  Source: bar
+  Binary: bar
+  Architecture: source
+  Version: 1.0-2
+  Distribution: breezy
+  Urgency: low
+  Maintainer: Launchpad team <launchpad@lists.canonical.com>
+  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  Launchpad-bugs-fixed: 6
+  Description: =
+  <BLANKLINE>
+   bar        - Stuff for testing
+  Changes: =
+  <BLANKLINE>
+   bar (1.0-2) breezy; urgency=3Dlow
+   .
+     * A second upload to ensure that binary overrides of _all work
+   . =
+  <BLANKLINE>
+     * Also closes Launchpad bug #6
+   .
+  Files: =
+  <BLANKLINE>
+   bbaf6fbf41cdbbdd422b0382076f615a 512 devel optional bar_1.0-2.dsc
+   ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-2.diff.gz
+  <BLANKLINE>
+  -----BEGIN PGP SIGNATURE-----
+  Version: GnuPG v1.4.6 (GNU/Linux)
+  <BLANKLINE>
+  iD8DBQFGe+Yjjn63CGxkqMURAuPGAJ9ub5UHjrzKnEGmUK1oCoRuOrdligCePKxt
+  QRCBMda2V9lNtxldkGRtc88=3D
+  =3DgtPz
+  -----END PGP SIGNATURE-----
+  <BLANKLINE>
+
+The upload announcement email also has the attachment with the original
+changes file.
+
+  >>> announcement = msgs[1]
+  >>> attachment = announcement.get_payload()[1]
+  >>> attachment['Content-Disposition']
+  'attachment; filename="changesfile"'
+
+It has the same contents as the attachment of the upload notification
+email.
+
+  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  Content-Disposition: attachment; filename="changesfile"
+  <BLANKLINE>
+  -----BEGIN PGP SIGNED MESSAGE-----
+  Hash: SHA1
+  <BLANKLINE>
+  Format: 1.7
+  Date: Thu, 30 Mar 2006 01:36:14 +0100
+  Source: bar
+  Binary: bar
+  Architecture: source
+  Version: 1.0-2
+  Distribution: breezy
+  Urgency: low
+  Maintainer: Launchpad team <launchpad@lists.canonical.com>
+  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+  Launchpad-bugs-fixed: 6
+  Description: =
+  <BLANKLINE>
+   bar        - Stuff for testing
+  Changes: =
+  <BLANKLINE>
+   bar (1.0-2) breezy; urgency=3Dlow
+   .
+     * A second upload to ensure that binary overrides of _all work
+   . =
+  <BLANKLINE>
+     * Also closes Launchpad bug #6
+   .
+  Files: =
+  <BLANKLINE>
+   bbaf6fbf41cdbbdd422b0382076f615a 512 devel optional bar_1.0-2.dsc
+   ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-2.diff.gz
+  <BLANKLINE>
+  -----BEGIN PGP SIGNATURE-----
+  Version: GnuPG v1.4.6 (GNU/Linux)
+  <BLANKLINE>
+  iD8DBQFGe+Yjjn63CGxkqMURAuPGAJ9ub5UHjrzKnEGmUK1oCoRuOrdligCePKxt
+  QRCBMda2V9lNtxldkGRtc88=3D
+  =3DgtPz
+  -----END PGP SIGNATURE-----
+  <BLANKLINE>
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -608,10 +729,10 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG:   * A second upload to ensure that binary overrides of _all work
   DEBUG:
-  DEBUG:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
-  DEBUG:
+  DEBUG: Date: Thu, 30 Mar 2006 01:36:14 +0100
+  DEBUG: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  DEBUG: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
+  DEBUG: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   DEBUG:
   DEBUG: ==
   DEBUG:
@@ -749,10 +870,10 @@ the INFO level what it /would/ have sent.
   INFO:
   INFO:   * A second upload to ensure that binary overrides of _all work
   INFO:
-  INFO:  -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 30 Mar 2006 01:36:14 +0100
-  INFO:
+  INFO: Date: Thu, 30 Mar 2006 01:36:14 +0100
+  INFO: Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
   INFO: Maintainer: Launchpad team <launchpad@lists.canonical.com>
-  INFO: Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
+  INFO: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-2
   INFO:
   INFO: ==
   INFO:
@@ -818,16 +939,13 @@ changes file is mentioned toward the end of the email.
     * Non-ascii text: =C4=8Ciha=C5=99
   <BLANKLINE>
   <BLANKLINE>
-   -- Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canonical.com>=
-    Thu, 30 Mar 2006 01:36:14 +0100 =
-  <BLANKLINE>
-  <BLANKLINE>
+  Date: Thu, 30 Mar 2006 01:36:14 +0100
+  Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
+  cal.com>
   Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
-  .com> =
-  <BLANKLINE>
-  Signed-By: Foo Bar <foo.bar@canonical.com> =
-  <BLANKLINE>
-  Source package release: http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
+  .com>
+  Signed-By: Foo Bar <foo.bar@canonical.com>
+  http://launchpad.dev/ubuntu/hoary/+source/bar/1.0-10
   <BLANKLINE>
   =3D=3D
   <BLANKLINE>

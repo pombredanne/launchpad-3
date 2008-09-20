@@ -1584,6 +1584,9 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
+    def isNameBlacklisted(self, name):
+        """Is the given name blacklisted by Launchpad Administrators?"""
+
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,

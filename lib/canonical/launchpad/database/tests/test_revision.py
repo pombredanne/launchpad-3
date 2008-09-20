@@ -428,6 +428,51 @@ class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
         self.assertEqual([rev2, rev1], self._getRevisions())
 
 
+class TestGetRecentRevisionsForProduct(GetPublicRevisionsTestCase):
+    """Test the `getRecentRevisionsForProduct` method of `RevisionSet`."""
+
+    def setUp(self):
+        GetPublicRevisionsTestCase.setUp(self)
+        self.product = self.factory.makeProduct()
+
+    def _getRecentRevisions(self, day_limit=30):
+        # Return a list of the recent revisions and revision authors.
+        return list(RevisionSet.getRecentRevisionsForProduct(
+                self.product, day_limit))
+
+    def testRevisionAuthorMatchesRevision(self):
+        # The revision author returned with the revision is the same as the
+        # author for the revision.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        results = self._getRecentRevisions()
+        self.assertEqual(1, len(results))
+        revision, revision_author = results[0]
+        self.assertEqual(revision.revision_author, revision_author)
+
+    def testRevisionsMustBeInABranchOfProduct(self):
+        # The revisions returned revision must be in a branch for the product.
+        rev1 = self._makeRevisionInBranch(product=self.product)
+        rev2 = self._makeRevisionInBranch()
+        self.assertEqual([(rev1, rev1.revision_author)],
+                         self._getRecentRevisions())
+
+    def testRevisionDateRange(self):
+        # Revisions where the revision_date is older than the day_limit, or
+        # some time in the future are not returned.
+        now = datetime.now(pytz.UTC)
+        day_limit = 5
+        # Make the first revision earlier than our day limit.
+        rev1 = self._makeRevision(
+            revision_date=(now - timedelta(days=(day_limit + 2))))
+        # The second one is just two days ago.
+        rev2 = self._makeRevision(revision_date=(now - timedelta(days=2)))
+        # The third is in the future
+        rev3 = self._makeRevision(revision_date=(now + timedelta(days=2)))
+        self._addRevisionsToBranch(self._makeBranch(), rev1, rev2, rev3)
+        self.assertEqual([(rev2, rev2.revision_author)],
+                         self._getRecentRevisions(day_limit))
+
+
 class TestTipRevisionsForBranches(TestCase):
     """Test that the tip revisions get returned properly."""
 
