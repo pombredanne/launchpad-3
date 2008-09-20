@@ -22,11 +22,6 @@
             set_attributes="importstatus rcstype cvsroot cvsmodule
                 cvstarfileurl cvsbranch svnrepository"
             />
-        <require
-            permission="launchpad.Admin"
-            interface="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
-            set_attributes="import_branch"
-            />
         <!-- IStructuralSubscriptionTarget -->
         <allow attributes="bug_subscriptions getBugNotificationsRecipients
                            getSubscription getSubscriptions

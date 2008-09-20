@@ -9,7 +9,6 @@ __all__ = [
     'ImportStatus',
     'IProductSeries',
     'IProductSeriesSet',
-    'IProductSeriesSourceAdmin',
     'RevisionControlSystems',
     'validate_cvs_module',
     'validate_cvs_root',

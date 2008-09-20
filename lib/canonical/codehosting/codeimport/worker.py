@@ -156,8 +156,7 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.branch_id), self.rcstype,
-                  str(self.source_product_series_id)]
+        result = [str(self.branch_id), self.rcstype]
         if self.rcstype == 'svn':
             result.append(self.svn_branch_url)
         elif self.rcstype == 'cvs':
@@ -205,18 +204,6 @@ class ForeignTreeStore:
     def _getTarballName(self, branch_id):
         """Return the name of the tarball for the code import."""
         return '%08x.tar.gz' % branch_id
-
-    def _getOldTarballName(self, source_details):
-        """Return the name of the tarball for the code import."""
-        dirname = '%08x' % source_details.source_product_series_id
-        if source_details.rcstype == 'svn':
-            filename = 'svnworking.tgz'
-        elif source_details.rcstype == 'cvs':
-            filename = 'cvsworking.tgz'
-        else:
-            raise AssertionError(
-                "unknown RCS type: %r" % source_details.rcstype)
-        return '%s/%s' % (dirname, filename)
 
     def archive(self, source_details, foreign_tree):
         """Archive the foreign tree."""

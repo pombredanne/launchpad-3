@@ -35,9 +35,9 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
-    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
-    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    IHasTranslationTemplates, IProductSeries, IProductSeriesSet,
+    IStructuralSubscriptionTarget, ImportStatus, NotFoundError, PackagingType,
+    RevisionControlSystems, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
@@ -47,7 +47,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
-        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates,
+        IProductSeries, IHasTranslationTemplates,
         IStructuralSubscriptionTarget)
 
     _table = 'ProductSeries'
