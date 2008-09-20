@@ -15,7 +15,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary user_branch
-                            status releasefileglob"
+                            status releasefileglob import_branch"
             />
         <require
             permission="launchpad.AnyPerson"
