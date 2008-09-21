@@ -405,19 +405,47 @@ class BzrSync:
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
 
-        (added_ancestry, branchrevisions_to_delete,
+        (branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
-        self.logger.info("Inserting or checking %d revisions.",
-            len(added_ancestry))
+        #self.logger.info("Inserting or checking %d revisions.",
+        #    len(added_ancestry))
         # Add new revisions to the database.
-        added_ancestry_list = list(added_ancestry)
+        r = 0
+        remaining = set([bzr_branch.last_revision()])
+        to_be_added = set()
+        seen_in_db = set()
+        revision_set = getUtility(IRevisionSet)
+        import time
+        T = time.time()
+        while True:
+            #print len(remaining), time.time() - T
+            existing = revision_set.filterExisting(remaining)
+            seen_in_db.update(existing)
+            remaining.difference_update(existing)
+            #print len(remaining), time.time() - T
+            if not remaining:
+                break
+            #assert len(remaining) < 10
+            parents = bzr_branch.repository.get_parent_map(remaining)
+            to_be_added.update(parents.iterkeys())
+            remaining = set()
+            for v in parents.values():
+                remaining.update(v)
+            remaining -= to_be_added
+            remaining -= seen_in_db
+        if 'null:' in to_be_added:
+            to_be_added.remove('null:')
+        added_ancestry_list = list(to_be_added)
+        print len(added_ancestry_list)
         for i in range(0, len(added_ancestry_list), 1000):
-            revisions = self.getNewBazaarRevisions(
-                bzr_branch, added_ancestry_list[i:i+1000])
+            revids = added_ancestry_list[i:i+1000]
+            revisions = self.getNewBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
+        self.logger.info(
+            "Actually checked %d revisions.", len(added_ancestry_list))
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -518,9 +546,6 @@ class BzrSync:
                     break
             common_len -= 1
 
-        # Revisions added to the branch's ancestry.
-        added_ancestry = bzr_ancestry.difference(db_ancestry)
-
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
         removed_history = db_history[common_len:]
@@ -548,8 +573,7 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        return (added_ancestry, branchrevisions_to_delete,
-                branchrevisions_to_insert)
+        return (branchrevisions_to_delete, branchrevisions_to_insert)
 
     def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
@@ -572,9 +596,6 @@ class BzrSync:
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
-        db_revision = revision_set.getByRevisionId(revision_id)
-        if db_revision is not None:
-            return
         # Revision not yet in the database. Load it.
         self.logger.debug("Inserting revision: %s", revision_id)
         revision_set.newFromBazaarRevision(bzr_revision)

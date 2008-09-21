@@ -258,6 +258,13 @@ class RevisionSet:
             parent_ids=bzr_revision.parent_ids,
             properties=bzr_revision.properties)
 
+    @staticmethod
+    def filterExisting(revids):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(Revision,
+                             Revision.revision_id.is_in(revids))
+        return set([r.revision_id for r in results])
+
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
         from zope.security.proxy import removeSecurityProxy
