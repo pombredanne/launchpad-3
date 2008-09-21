@@ -504,9 +504,10 @@ class PullerWorker:
         bzrdir = source_branch.bzrdir
         stacked_on_url = get_stacked_on_url(source_branch)
         if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(
-                self.dest, stacked_on_url)
-            if not get_transport(stacked_on_url).has('.'):
+            stacked_on_url = urlutils.join(self.dest, stacked_on_url)
+            try:
+                Branch.open(stacked_on_url)
+            except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
