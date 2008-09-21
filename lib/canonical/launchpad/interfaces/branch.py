@@ -1,5 +1,5 @@
 # Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
@@ -25,6 +25,7 @@ __all__ = [
     'CannotDeleteBranch',
     'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
+    'get_blacklisted_hostnames',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
@@ -360,6 +361,16 @@ class BadBranchSearchContext(Exception):
     """The context is not valid for a branch search."""
 
 
+def get_blacklisted_hostnames():
+    """Return a list of hostnames blacklisted for Branch URLs."""
+    hostnames = config.codehosting.blacklisted_hostnames
+    # If nothing specified, return an empty list. Special-casing since
+    # ''.split(',') == [''].
+    if hostnames == '':
+        return []
+    return hostnames.split(',')
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -384,6 +395,12 @@ class BranchURIField(URIField):
                 "cannot be on <code>${domain}</code>.",
                 mapping={'domain': escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
+
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                message = _(
+                    'Launchpad cannot mirror branches from %s.' % hostname)
+                raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
         # against the actual text used in the database constraint.
