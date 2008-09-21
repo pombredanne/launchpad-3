@@ -1269,7 +1269,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'

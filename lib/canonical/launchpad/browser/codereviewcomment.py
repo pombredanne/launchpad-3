@@ -3,11 +3,12 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
+    'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Choice, Text, TextLine
 
 from canonical.cachedproperty import cachedproperty
@@ -19,6 +20,17 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
     Link)
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
+
+
+class CodeReviewCommentPrimaryContext:
+    """The primary context is the comment is that of the source branch."""
+
+    implements(IPrimaryContext)
+
+    def __init__(self, comment):
+        self.context = IPrimaryContext(
+            comment.branch_merge_proposal).context
 
 
 class CodeReviewCommentContextMenu(ContextMenu):

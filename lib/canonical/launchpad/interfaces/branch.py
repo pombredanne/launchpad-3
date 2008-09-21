@@ -56,10 +56,8 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
-    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack5RichRoot)
+    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
+    RepositoryFormatPackDevelopment1, RepositoryFormatPackDevelopment1Subtree)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -250,11 +248,17 @@ class RepositoryFormat(DBEnumeratedType):
         'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
         )
 
-    BZR_PACK_DEV_0 = _format_enum(
-        300, RepositoryFormatPackDevelopment0)
+    BZR_PACK_DEV_0 = DBItem(300,
+        'Bazaar development format 0 (needs bzr.dev from before 1.3)\n',
+        'Development repository format, currently the same as pack-0.92',
+        )
 
-    BZR_PACK_DEV_0_SUBTREE = _format_enum(
-        301, RepositoryFormatPackDevelopment0Subtree)
+    BZR_PACK_DEV_0_SUBTREE = DBItem(301,
+        'Bazaar development format 0 with subtree support (needs bzr.dev from'
+        ' before 1.3)\n',
+        'Development repository format, currently the same as'
+        ' pack-0.92-subtree\n',
+        )
 
     BZR_DEV_1 = _format_enum(
         302, RepositoryFormatPackDevelopment1)
@@ -617,11 +621,6 @@ class IBranch(IHasOwner):
         required=False)
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
-    pull_disabled = Bool(
-        title=_("Do not try to pull this branch anymore."),
-        description=_("Disable periodic pulling of this branch by Launchpad. "
-                      "That will prevent connection attempts to the branch "
-                      "URL. Use this if the branch is no longer available."))
     next_mirror_time = Datetime(
         title=_("If this value is more recent than the last mirror attempt, "
                 "then the branch will be mirrored on the next mirror run."),

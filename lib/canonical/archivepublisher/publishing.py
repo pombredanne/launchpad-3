@@ -609,9 +609,21 @@ class Publisher(object):
             # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
             return
-        in_file = open(full_name,"r")
-        contents = in_file.read()
-        in_file.close()
-        length = len(contents)
-        checksum = sum_form(contents).hexdigest()
+
+        in_file = open(full_name, 'r')
+        try:
+            # XXX cprov 20080704 bug=243630,269014: Workaround for hardy's
+            # python-apt. If it receives a file object as an argument instead
+            # of the file contents as a string, it will generate the correct
+            # SHA256.
+            if sum_form == sha256:
+                contents = in_file
+                length = os.stat(full_name).st_size
+            else:
+                contents = in_file.read()
+                length = len(contents)
+            checksum = sum_form(contents).hexdigest()
+        finally:
+            in_file.close()
+
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
