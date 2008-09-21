@@ -571,9 +571,9 @@
          <label class="fuzzy-checkbox">
            <input
              type="checkbox"
-             value="fuzzy"
+             value="force_suggestion"
              tal:attributes="
-               checked view/is_fuzzy;
+               checked view/force_suggestion;
                name string:${view/html_id}_${language_code}_needsreview"
              />
            <tal:block condition="not:view/is_plural">
@@ -594,28 +594,7 @@
            since we are mostly automating this to fix our issues with upstreams,
            and I'd rather not introduce more issues with them).
          </tal:comment>
-         <label class="fuzzy-checkbox">
-           <input
-             type="checkbox"
-             value="fuzzy"
-	     disabled="1"
-             tal:attributes="
-               checked view/is_fuzzy;
-               name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
-             />
-             Someone should review these translation credits
-         </label>
        </tal:locked>
-      </div>
-      <div tal:condition="not: view/user_is_official_translator">
-        <label tal:condition="view/is_fuzzy">
-          <tal:block condition="not:view/is_plural">
-            Someone should review this translation
-          </tal:block>
-          <tal:block condition="view/is_plural">
-            Someone should review these translations
-          </tal:block>
-        </label>
       </div>
     </td>
   </tr>
