@@ -9,10 +9,11 @@ from StringIO import StringIO
 import unittest
 
 import bzrlib.branch
-from bzrlib.branch import BranchReferenceFormat
-from bzrlib.bzrdir import BzrDir
+from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
+from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
 from bzrlib.errors import NotBranchError
 from bzrlib.remote import RemoteBranch
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
 from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
@@ -334,6 +335,14 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         opener.checkOneURL = checkOneURL
         return opener
 
+    def makeBranch(self, path, branch_format, repository_format):
+        """Make a Bazaar branch at 'path' with the given formats."""
+        bzrdir_format = BzrDirMetaFormat1()
+        bzrdir_format.set_branch_format(branch_format)
+        bzrdir = self.make_bzrdir(path, format=bzrdir_format)
+        repository_format.initialize(bzrdir)
+        return bzrdir.create_branch()
+
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
         # branches with allowed URLs.
@@ -344,6 +353,15 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
             [stacked_branch.base, stacked_on_branch.base])
         # This doesn't raise an exception.
         opener.checkSource(stacked_branch.base)
+
+    def testUnstackableRepository(self):
+        # checkSource treats branches with UnstackableRepositoryFormats as
+        # being not stacked.
+        branch = self.makeBranch(
+            'unstacked', BzrBranchFormat7(), RepositoryFormatKnitPack1())
+        opener = self.makeBranchOpener([branch.base])
+        # This doesn't raise an exception.
+        opener.checkSource(branch.base)
 
     def testAllowedRelativeURL(self):
         # checkSource passes on absolute urls to checkOneURL, even if the

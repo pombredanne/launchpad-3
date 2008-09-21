@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import gc
+
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib import errors
 from bzrlib.tests import (
@@ -22,6 +24,13 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
     def __str__(self):
         """Return the test id so that Zope test output shows the format."""
         return self.id()
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        gc.collect()
+        TestCaseWithBzrDir.tearDown(self)
 
     def run(self, result=None):
         """Run the test, with the result wrapped so that it knows about skips.

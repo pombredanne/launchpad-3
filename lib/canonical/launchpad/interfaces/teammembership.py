@@ -14,7 +14,7 @@ __all__ = [
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Datetime, Int, Object, Text
+from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -96,15 +96,12 @@ class ITeamMembership(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    # Can't use Object(schema=IPerson) here because that would cause circular
-    # imports, so we use schema=Interface here and override it in
-    # interfaces/person.py.
     team = exported(
         Reference(title=_("Team"), required=True, readonly=True,
-                  schema=Interface))
+                  schema=Interface)) # Specified in interfaces/person.py.
     person = exported(
         Reference(title=_("Member"), required=True, readonly=True,
-                  schema=Interface),
+                  schema=Interface), # Specified in interfaces/person.py.
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
@@ -113,7 +110,9 @@ class ITeamMembership(Interface):
         _('The person (usually the member or someone acting on his behalf) '
           'that acknowledged (accepted/declined) a membership invitation.'))
     last_changed_by = exported(
-        Object(title=_('Last person who change this'), schema=Interface))
+        Reference(title=_('Last person who change this'),
+                  required=False, readonly=True,
+                  schema=Interface)) # Specified in interfaces/person.py.
 
     datejoined = exported(
         Datetime(title=_("Date joined"), required=False, readonly=True,
@@ -236,13 +235,16 @@ class ITeamMembershipSet(Interface):
         equal to :when: and its status is either ADMIN or APPROVED.
         """
 
-    def new(person, team, status, dateexpires=None, reviewer=None,
-            reviewercomment=None):
-        """Create and return a new TeamMembership object.
+    def new(person, team, status, user, dateexpires=None, comment=None):
+        """Create and return a TeamMembership for the given person and team.
 
-        The status of this new object must be APPROVED, PROPOSED or ADMIN. If
-        the status is APPROVED or ADMIN, this method will also take care of
-        filling the TeamParticipation table.
+        :param status: The TeamMembership's status. Must be one of APPROVED,
+            PROPOSED or ADMIN. If the status is APPROVED or ADMIN, this method
+            will also take care of filling the TeamParticipation table.
+        :param user: The person whose action triggered this membership's
+            creation.
+        :param dateexpires: The date in which the membership should expire.
+        :param comment: The rationale for this membership's creation.
         """
 
     def getByPersonAndTeam(person, team):
@@ -265,9 +267,11 @@ class ITeamParticipation(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Reference(
-        title=_("The team"), required=True, readonly=True, schema=Interface)
+        title=_("The team"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
     person = Reference(
-        title=_("The member"), required=True, readonly=True, schema=Interface)
+        title=_("The member"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
 
 
 class CyclicalTeamMembershipError(Exception):

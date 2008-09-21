@@ -13,6 +13,7 @@ from zope.interface import implements
 
 from sqlobject import (
     AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+from storm.expr import In
 
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -290,7 +291,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return []
         product_ids = sqlvalues(*self.products)
         return get_bug_tags_open_count(
-            "BugTask.product IN (%s)" % ",".join(product_ids), user)
+            In(BugTask.productID, product_ids), user)
 
     def _getBugTaskContextClause(self):
         """See `BugTargetBase`."""
