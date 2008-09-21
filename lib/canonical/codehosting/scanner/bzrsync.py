@@ -417,17 +417,12 @@ class BzrSync:
         to_be_added = set()
         seen_in_db = set()
         revision_set = getUtility(IRevisionSet)
-        import time
-        T = time.time()
         while True:
-            #print len(remaining), time.time() - T
             existing = revision_set.filterExisting(remaining)
             seen_in_db.update(existing)
             remaining.difference_update(existing)
-            #print len(remaining), time.time() - T
             if not remaining:
                 break
-            #assert len(remaining) < 10
             parents = bzr_branch.repository.get_parent_map(remaining)
             to_be_added.update(parents.iterkeys())
             remaining = set()
