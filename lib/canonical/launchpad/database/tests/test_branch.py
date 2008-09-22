@@ -990,5 +990,6 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
 
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

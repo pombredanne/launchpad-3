@@ -260,6 +260,7 @@ class RevisionSet:
 
     @staticmethod
     def onlyPresent(revids):
+        """See `IRevisionSet`."""
         if not revids:
             return set()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
