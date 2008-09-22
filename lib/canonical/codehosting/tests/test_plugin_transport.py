@@ -29,7 +29,7 @@ from bzrlib.urlutils import escape, local_path_to_url
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.authserver.interfaces import (
+from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base

@@ -25,12 +25,10 @@ permitted_database_imports = text_lines_to_set("""
     zope.testing.doctest
     canonical.librarian.db
     canonical.doap.fileimporter
-    canonical.foaf.nickname
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
-    canonical.authserver.database
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client
@@ -150,6 +148,7 @@ class NotFoundPolicyViolation(JackbootError):
                 % self.import_into)
 
 
+# pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
     global naughty_imports
 
@@ -203,8 +202,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             raise error
         elif (list(fromlist) != ['*'] and hasattr(module, '__all__') and
               not is_test_module(import_into)):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
-            # foo actually has an __all__).  Unless foo is within a tests
+            # "from foo import bar" is naughty if bar isn't in foo.__all__
+            # (and foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
                 if attrname != '__doc__' and attrname not in module.__all__:

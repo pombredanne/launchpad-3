@@ -473,8 +473,8 @@ We replace it with an empty, imported translation:
     >>> import datetime, pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_message = potmsgset.updateTranslation(
-    ...     evolution_pofile, carlos, {0: u''}, False, True,
-    ...     datetime.datetime.now(UTC))
+    ...     evolution_pofile, carlos, {0: u''}, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> translation_message.is_imported
     True
     >>> translation_message.translations

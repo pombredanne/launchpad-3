@@ -17,7 +17,9 @@ __all__ = [
     'IMessageApproval',
     'IMessageApprovalSet',
     'MailingListStatus',
+    'PURGE_STATES',
     'PostedMessageStatus',
+    'UnsafeToPurge',
     ]
 
 
@@ -127,6 +129,22 @@ class MailingListStatus(DBEnumeratedType):
 
         Mailman was unsuccessful in modifying the mailing list.
         """)
+
+    PURGED = DBItem(12, """
+        Purged
+
+        All Mailman artifacts for this mailing list have been purged, so the
+        list can be treated as if it never existed, except for foreign key
+        references such as from a MessageApproval.
+        """)
+
+
+PURGE_STATES = (
+    MailingListStatus.REGISTERED,
+    MailingListStatus.DECLINED,
+    MailingListStatus.FAILED,
+    MailingListStatus.INACTIVE,
+    )
 
 
 class PostedMessageStatus(DBEnumeratedType):
@@ -420,6 +438,15 @@ class IMailingList(Interface):
             where the status is `PostedMessageStatus.NEW`.  The returned set
             is ordered first by the date the message was posted, then by
             Message-ID.
+        """
+
+    def purge():
+        """Place the mailing list into the PURGED state, if safe to do so.
+
+        :raise: UnsafeToPurge when the mailing list is not safe to place into
+            the purged state.  This exception is raised almost exclusively
+            when the mailing list is in a state indicating it is active and
+            usable on the Mailman side.
         """
 
 
@@ -821,12 +848,14 @@ class CannotSubscribe(Exception):
     a team, or when `person` does not own the given email address.
     """
 
+
 class CannotUnsubscribe(Exception):
     """The person cannot unsubscribe from the mailing list.
 
     This is raised when Person who is not a member of the mailing list tries
     to unsubscribe from the mailing list.
     """
+
 
 class CannotChangeSubscription(Exception):
     """The subscription change cannot be fulfilled.
@@ -836,3 +865,15 @@ class CannotChangeSubscription(Exception):
     a member of the team linked to this mailing list, when `person` is a team,
     or when `person` does not own the given email address.
     """
+
+
+class UnsafeToPurge(Exception):
+    """It is not safe to purge this mailing list."""
+
+    def __init__(self, mailing_list):
+        Exception.__init__(self)
+        self._mailing_list = mailing_list
+
+    def __str__(self):
+        return 'Cannot purge mailing list in %s state: %s' % (
+            self._mailing_list.status.name, self._mailing_list.team.name)
