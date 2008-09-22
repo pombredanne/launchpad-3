@@ -119,6 +119,10 @@ class AsyncVirtualTransport(Transport):
             return method(path, *args, **kwargs)
 
         def convert_not_enough_information(failure):
+            # XXX: JonathanLange 2008-09-22: This is an abstration leak. This
+            # transport should simply pass errors up from the server.
+            # Converting Launchpad-specific errors into bzrlib errors is the
+            # job of the launchpad transports.
             failure.trap(NotEnoughInformation)
             raise NoSuchFile(failure.value.virtual_url_fragment)
 
