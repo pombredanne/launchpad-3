@@ -528,14 +528,6 @@ class Branch(SQLBase):
             revision.allocateKarma(self)
         return branch_revision
 
-    def createBranchRevisionFromID(self, sequence, revision_id):
-        """See `IBranch`."""
-        store = Store.of(self)
-        store.execute("""
-        INSERT INTO BranchRevision (branch, revision, sequence)
-        SELECT %s, id, %s FROM Revision WHERE revision_id = %s
-        """ % sqlvalues(self, sequence, revision_id))
-
     def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
         """See `IBranch`."""
         store = Store.of(self)

@@ -259,7 +259,7 @@ class RevisionSet:
             properties=bzr_revision.properties)
 
     @staticmethod
-    def filterExisting(revids):
+    def onlyPresent(revids):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(Revision,
                              Revision.revision_id.is_in(revids))

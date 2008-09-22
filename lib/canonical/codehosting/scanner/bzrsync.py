@@ -419,7 +419,7 @@ class BzrSync:
         seen_in_db = set()
         revision_set = getUtility(IRevisionSet)
         while True:
-            existing = revision_set.filterExisting(remaining)
+            existing = revision_set.onlyPresent(remaining)
             seen_in_db.update(existing)
             remaining.difference_update(existing)
             if not remaining:

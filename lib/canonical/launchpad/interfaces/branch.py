@@ -842,6 +842,9 @@ class IBranch(IHasOwner):
     def createBranchRevision(sequence, revision):
         """Create a new `BranchRevision` for this branch."""
 
+    def createBranchRevisionFromIDs(revision_id_sequence_pairs):
+        """XXX Write me!"""
+
     def getTipRevision():
         """Return the `Revision` associated with the `last_scanned_id`.
 

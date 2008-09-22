@@ -105,8 +105,8 @@ class IRevisionSet(Interface):
         None if the revision is not known.
         """
 
-    def filterExisting(revids):
-        pass
+    def onlyPresent(revids):
+        """Return the revision ids from `revids` that are present.."""
 
     def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
