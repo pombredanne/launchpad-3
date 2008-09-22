@@ -625,6 +625,9 @@ class BzrSync:
         mainline_revids = []
         for c in chunk(branchrevisions_to_insert.items()):
             self.db_branch.createBranchRevisionFromIDs(c)
+            for r, s in c:
+                if s is not None:
+                    mainline_revids.append(r)
         # Generate emails for the revisions in the revision_history
         # for the branch.
         for c in chunk(mainline_revids):
