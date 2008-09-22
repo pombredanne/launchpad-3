@@ -261,8 +261,11 @@ class TransportSFTPServer:
         raise NotImplementedError()
 
     def _stat_files_in_list(self, file_list, escaped_dir_path):
-        """Stat the files `file_list`, assumed to be in `escaped_dir_path`.
+        """Stat the a list of files.
 
+        :param file_list: The list of escaped file names.
+        :param escaped_dir_path: The escaped path of the directory containing
+            the files.
         :return: A Deferred which will be called back with the list of all the
             stat results.
         """
