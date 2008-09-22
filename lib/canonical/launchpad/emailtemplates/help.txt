@@ -1,7 +1,7 @@
 Overview
 --------
 
-Launchpad's bug tracker sends you about the bugs you're
+Launchpad's bug tracker sends you mail about the bugs you're
 interested in. If you see something that requires your
 attention - for example, you want to comment on a bug - rather
 than leaving your email client to fire up a web browser, all you
