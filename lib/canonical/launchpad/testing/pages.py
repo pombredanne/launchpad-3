@@ -7,8 +7,11 @@
 __metaclass__ = type
 
 import os
+import pdb
 import re
 import simplejson
+import transaction
+import sys
 import unittest
 import urllib
 
@@ -16,7 +19,6 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -54,7 +56,6 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb
             pdb.set_trace()
         try:
             return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
@@ -181,18 +182,25 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers, api_version=api_version)
 
+    def _convertArgs(self, operation_name, args):
+        """Encode and convert keyword arguments."""
+        args['ws.op'] = operation_name
+        # To be properly marshalled all values must be strings or converted to
+        # JSON.
+        for key, value in args.items():
+            if not isinstance(value, basestring):
+                args[key] = simplejson.dumps(value)
+        return urllib.urlencode(args)
+
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
-                         for key, value in kwargs.items()])
+        data = self._convertArgs(operation_name, kwargs)
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
     def named_post(self, path, operation_name, headers=None,
                    api_version=DEFAULT_API_VERSION, **kwargs):
-        kwargs['ws.op'] = operation_name
-        data = urlencode(kwargs)
+        data = self._convertArgs(operation_name, kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers, api_version=api_version)
 
@@ -554,7 +562,7 @@ def print_ppa_packages(contents):
 
 def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
-    
+
     The hierarchy shows your position in the Launchpad structure:
     for example, Launchpad > Ubuntu > 8.04.
     The application tabs represent the major facets of an object:
@@ -644,8 +652,19 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return WebServiceCaller(consumer_key, access_token.key, port=9000)
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
+    test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'salgado-change-anything', port=9000)
@@ -691,6 +710,7 @@ def setUpGlobs(test):
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
+    test.globs['stop'] = stop
 
 
 class PageStoryTestCase(unittest.TestCase):

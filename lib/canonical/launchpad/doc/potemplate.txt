@@ -212,14 +212,6 @@ And there shouldn't be any translated entries
     >>> len(potmsgsets)
     0
 
-Or any fuzzy (need-review) entries:
-
-    >>> potmsgsets = list(pofile.getPOTMsgSetFuzzy())
-    >>> len(potmsgsets)
-    0
-    >>> pofile.fuzzy_count
-    0
-
 == relatives_by_name ==
 
 This property gives us an iterator of IPOTemplate objects that have the

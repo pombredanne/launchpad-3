@@ -21,6 +21,7 @@ page.
     >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -31,6 +32,7 @@ the page she is not given the option to redeem a voucher.
     >>> browser.open('http://launchpad.dev/~marilize/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     Marilize Coetzee does not own any commercial projects. Only project owners can redeem
     vouchers for a project.
@@ -51,6 +53,7 @@ the '+vouchers' page on any user.
     >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -60,6 +63,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> browser.open('http://launchpad.dev/~name12/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Sample Person does not have any unredeemed vouchers available.
     Here are the steps to obtain a commercial subscription:...
@@ -175,6 +179,7 @@ then a simple message will be displayed instead of showing the form.
     >>> browser.open('http://launchpad.dev/~bac/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     Voucher redemption is not yet enabled in Launchpad.
 

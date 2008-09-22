@@ -200,32 +200,6 @@ class TestWorkerMonitorUnit(TestCase):
         return self.worker_monitor.getSourceDetails().addCallback(
             check_source_details)
 
-    def associateCodeImportWithSeries(self, code_import_id):
-        """Pretend the given code import was created from some ProductSeries.
-        """
-        self.layer.switchDbUser('launchpad')
-        code_import = getUtility(ICodeImportSet).get(code_import_id)
-        series = self.factory.makeSeries()
-        from canonical.launchpad.database.codeimport import (
-            _ProductSeriesCodeImport)
-        _ProductSeriesCodeImport(
-            codeimport=code_import, productseries=series)
-        series_id = series.id
-        self.layer.txn.commit()
-        self.layer.switchDbUser('codeimportworker')
-        return series_id
-
-    def test_getSourceDetailsForImportWithSourceSeries(self):
-        # getSourceDetails extracts the details from the CodeImport database
-        # object.
-        series_id = self.associateCodeImportWithSeries(self.code_import_id)
-        @read_only_transaction
-        def check_source_productseries_id(details):
-            self.assertEquals(
-                details.source_product_series_id, series_id)
-        return self.worker_monitor.getSourceDetails().addCallback(
-            check_source_productseries_id)
-
     def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
         # updateHeartbeat job workflow method.
@@ -320,9 +294,11 @@ class TestWorkerMonitorUnit(TestCase):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
         ret = self.worker_monitor.callFinishJob(makeFailure(RuntimeError))
-        self.worker_monitor._log_file.seek(0)
-        log_text = self.worker_monitor._log_file.read()
-        self.assertIn('RuntimeError', log_text)
+        def check_log_file(ignored):
+            self.worker_monitor._log_file.seek(0)
+            log_text = self.worker_monitor._log_file.read()
+            self.assertIn('RuntimeError', log_text)
+        return ret.addCallback(check_log_file)
 
     def test_callFinishJobRespects_call_finish_job(self):
         # callFinishJob does not call finishJob if _call_finish_job is False.

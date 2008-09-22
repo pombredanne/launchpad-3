@@ -354,8 +354,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.distribution = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.distribution == self, user)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1281,20 +1280,14 @@ class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
     implements(IDistributionSet)
-
-    def __init__(self):
-        self.title = "Registered Distributions"
+    title = "Registered Distributions"
 
     def __iter__(self):
-        """Return all distributions sorted with Ubuntu preferentially
-        displayed.
-        """
-        distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset, 100),
-                        key=lambda distro: distro._sort_key))
+        """See `IDistributionSet`."""
+        return iter(self.getDistros())
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         distribution = self.getByName(name)
         if distribution is None:
             raise NotFoundError(name)
@@ -1309,11 +1302,13 @@ class DistributionSet:
         return Distribution.select().count()
 
     def getDistros(self):
-        """Returns all Distributions available on the database"""
-        return Distribution.select()
+        """See `IDistributionSet`."""
+        distros = Distribution.select()
+        return sorted(
+            shortlist(distros, 100), key=lambda distro: distro._sort_key)
 
     def getByName(self, distroname):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         try:
             return Distribution.byName(distroname)
         except SQLObjectNotFound:
@@ -1338,4 +1333,3 @@ class DistributionSet:
         archive = getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
-

@@ -15,7 +15,7 @@
                     last_mirrored_id last_mirror_attempt mirror_failures
                     pull_disabled next_mirror_time last_scanned
                     last_scanned_id revision_count warehouse_url bug_branches
-                    related_bugs related_bug_tasks spec_links revision_history
+                    related_bugs spec_links revision_history
                     subscriptions subscribers date_created date_last_modified
                     latest_revisions landing_targets landing_candidates
                     dependent_branches addLandingTarget getMergeQueue
@@ -23,7 +23,8 @@
                     bzr_identity canBeDeleted deletionRequirements
                     associatedProductSeries subscribe getSubscription
                     hasSubscription unsubscribe getSubscriptionsByLevel
-                    getBranchRevision
+                    getBranchRevision getStackedBranches
+                    getStackedBranchesWithIncompleteMirrors
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed

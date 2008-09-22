@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
@@ -1763,31 +1762,6 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private
 
 
-class EditArchiveRebuild(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchiveRebuild
-
-    def checkAuthenticated(self, user):
-        """Verify that the user can edit the archive rebuild.
-
-        Only people in one of the conditions below can edit an
-        ArchiveRebuild record:
-
-         * 'registrant' team member;
-         * The distribution admins;
-         * a Launchpad administrator.
-        """
-        if user.inTeam(self.obj.registrant):
-            return True
-
-        distribution = self.obj.distroseries.distribution
-        if user.inTeam(distribution.owner):
-            return True
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins)
-
-
 class ViewSourcePackageRelease(AuthorizationBase):
     """Restrict viewing of source packages.
 
@@ -1801,9 +1775,13 @@ class ViewSourcePackageRelease(AuthorizationBase):
     permission = 'launchpad.View'
     userfor = ISourcePackageRelease
 
+    # XXX Julian 2008-09-10
+    # Calls to _cached_published_archives can be changed to just
+    # "published_archives" when security adpater caching is implemented.
+    # See bug 268612.
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if check_permission('launchpad.View', archive):
                 return True
         return False
@@ -1814,7 +1792,7 @@ class ViewSourcePackageRelease(AuthorizationBase):
         Unauthenticated users can see the package as long as it's published
         in a non-private archive.
         """
-        for archive in self.obj.published_archives:
+        for archive in self.obj._cached_published_archives:
             if not archive.private:
                 return True
         return False
@@ -1827,6 +1805,31 @@ class MailingListApprovalByExperts(AuthorizationBase):
     def checkAuthenticated(self, user):
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
         return user.inTeam(experts)
+
+
+class ConfigureTeamMailingList(AuthorizationBase):
+    permission = 'launchpad.MailingListManager'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Check to see if the user can manage a mailing list.
+
+        A team's owner, the Launchpad administrators, and Launchpad mailing
+        list experts can all manage a team's mailing list through its
+        +mailinglist page.
+
+        :param user: The user whose permission is being checked.
+        :type user: `IPerson`
+        :return: True if the user can manage a mailing list, otherwise False.
+        :rtype: boolean
+        """
+        # The team owner, the Launchpad mailing list experts and the Launchpad
+        # administrators can all view a team's +mailinglist page.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        team = ITeam(self.obj)
+        return ((team is not None and user.inTeam(team.teamowner)) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.mailing_list_experts))
 
 
 class ViewEmailAddress(AuthorizationBase):

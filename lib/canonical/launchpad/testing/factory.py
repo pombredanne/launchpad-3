@@ -8,11 +8,13 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'ObjectFactory',
     'time_counter',
     ]
 
 from datetime import datetime, timedelta
 from email.Utils import make_msgid, formatdate
+from itertools import count
 from StringIO import StringIO
 
 import pytz
@@ -27,27 +29,33 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
-    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
-    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
+    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
+    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
+    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems,
+    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError,
     )
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
+
+SPACE = ' '
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -78,25 +86,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 _DEFAULT = object()
 
 
-class LaunchpadObjectFactory:
-    """Factory methods for creating Launchpad objects.
-
-    All the factory methods should be callable with no parameters.
-    When this is done, the returned object should have unique references
-    for any other required objects.
-    """
+class ObjectFactory:
+    """Factory methods for creating basic Python objects."""
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = 0
+        self._integer = count(1)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
-        self._integer += 1
-        return self._integer
+        return self._integer.next()
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -119,6 +121,15 @@ class LaunchpadObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+
+class LaunchpadObjectFactory(ObjectFactory):
+    """Factory methods for creating Launchpad objects.
+
+    All the factory methods should be callable with no parameters.
+    When this is done, the returned object should have unique references
+    for any other required objects.
+    """
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -510,6 +521,26 @@ class LaunchpadObjectFactory:
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
+    def makeBugTracker(self):
+        """Make a new bug tracker."""
+        base_url = 'http://%s.example.com/' % self.getUniqueString()
+        owner = self.makePerson()
+        return getUtility(IBugTrackerSet).ensureBugTracker(
+            base_url, owner, BugTrackerType.BUGZILLA)
+
+    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+        """Make a new bug watch."""
+        if remote_bug is None:
+            remote_bug = self.getUniqueInteger()
+
+        if bugtracker is None:
+            bugtracker = self.makeBugTracker()
+
+        bug = self.makeBug()
+        owner = self.makePerson()
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug, owner, bugtracker, str(remote_bug))
+
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):
         """Create and return a new bug attachment.
@@ -666,12 +697,7 @@ class LaunchpadObjectFactory:
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None,
-                                    source_product_series_id=0):
-        # XXX: MichaelHudson 2008-05-19 bug=231819: The
-        # source_product_series_id attribute is to do with the new system
-        # looking in legacy locations for foreign trees and can be deleted
-        # when the new system has been running for a while.
+                                    cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -689,8 +715,7 @@ class LaunchpadObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            source_product_series_id)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
@@ -817,7 +842,7 @@ class LaunchpadObjectFactory:
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries()
+            productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
             productseries.product.official_rosetta = True
@@ -840,9 +865,7 @@ class LaunchpadObjectFactory:
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        if owner is None:
-            owner = potemplate.owner
-        return potemplate.newPOFile(language_code, requester=owner)
+        return potemplate.newPOFile(language_code, requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
@@ -853,3 +876,26 @@ class LaunchpadObjectFactory:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeTeamAndMailingList(self, team_name, owner_name):
+        """Make a new active mailing list for the named team.
+
+        :param team_name: The new team's name.
+        :type team_name: string
+        :param owner_name: The name of the team's owner.
+        :type owner: string
+        :return: The new team and mailing list.
+        :rtype: (`ITeam`, `IMailingList`)
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        display_name = SPACE.join(
+            word.capitalize() for word in team_name.split('-'))
+        team = self.makeTeam(owner, displayname=display_name, name=team_name)
+        # Any member of the mailing-list-experts team can review a list
+        # registration.  It doesn't matter which one.
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        reviewer = list(experts.allmembers)[0]
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.review(reviewer, MailingListStatus.APPROVED)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team, team_list
