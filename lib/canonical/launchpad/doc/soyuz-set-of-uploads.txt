@@ -362,15 +362,11 @@ Check the email recipient for displayname containing special chars,
   <BLANKLINE>
     * Changer using non-preferred email
   <BLANKLINE>
-   -- Celso R. Providelo <cprov@ubuntu.com>  Tue, 25 Apr 2006 10:36:14 -0300 =
-  <BLANKLINE>
-  <BLANKLINE>
-  Maintainer: Launchpad team <launchpad@lists.canonical.com> =
-  <BLANKLINE>
-  Signed-By: Foo B. Bar <foo.bar@canonical.com> =
-  <BLANKLINE>
-  Source package release: http://launchpad.dev/ubuntutest/breezy/+source/bar/=
-  1.0-4
+  Date: Tue, 25 Apr 2006 10:36:14 -0300
+  Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+  Maintainer: Launchpad team <launchpad@lists.canonical.com>
+  Signed-By: Foo B. Bar <foo.bar@canonical.com>
+  http://launchpad.dev/ubuntutest/breezy/+source/bar/1.0-4
   <BLANKLINE>
   =3D=3D
   <BLANKLINE>

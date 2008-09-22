@@ -278,18 +278,23 @@ class RevisionSet:
             """ % quote(branch_ids),
             clauseTables=['Branch'], prejoins=['revision_author'])
 
-    def getRecentRevisionsForProduct(self, product, days):
+    @staticmethod
+    def getRecentRevisionsForProduct(product, days):
         """See `IRevisionSet`."""
-        cut_off_date = datetime.now(pytz.UTC) - timedelta(days=days)
-        return Revision.select("""
-            Revision.id in (
-                SELECT br.revision
-                FROM BranchRevision br, Branch b
-                WHERE br.branch = b.id
-                AND b.product = %s)
-            AND Revision.revision_date >= %s
-            """ % sqlvalues(product, cut_off_date),
-            prejoins=['revision_author'])
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        return Store.of(product).find(
+            (Revision, RevisionAuthor),
+            revision_time_limit(days),
+            Revision.revision_author == RevisionAuthor.id,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Branch.product == product),
+                       (Branch, BranchRevision))))
 
     @staticmethod
     def getRevisionsNeedingKarmaAllocated():
