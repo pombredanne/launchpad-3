@@ -1320,6 +1320,9 @@ class BugSet:
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)
 
+        # Mark the bug reporter as affected by the bug.
+        bug.markUserAffected(bug.owner)
+
         # Create the task on a product if one was passed.
         if params.product:
             BugTaskSet().createTask(
