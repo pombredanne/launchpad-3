@@ -100,9 +100,5 @@ FROM
             potranslation5.id = translationmessage.msgstr5;
 
 
-ALTER TABLE TranslationMessage
-    DROP COLUMN is_fuzzy,
-    DROP COLUMN was_fuzzy_in_last_import;
-
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 81, 0);

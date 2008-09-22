@@ -54,10 +54,10 @@ When the 'Delete packages' page is loaded a list of all published
 sources is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+    Source            Published   Status     Series          Section  Built
+    cdrkit - 1.0      2007-07-09  Published  Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
 An informational message also directs the user to the PPA help page
 via a link:
@@ -87,8 +87,8 @@ The user may delete packages from a PPA without providing a reason
     >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status    Series     Section  Built
-    iceweasel - 1.0 (chan...)  2007-07-09  Published  Breezy-autotest Editors
+    Source            Published   Status     Series          Section  Built
+    iceweasel...(...) 2007-07-09  Published  Breezy-autotest Editors
 
 Please note that the 'deletion_comment' field (which is optional) is empty.
 
@@ -151,9 +151,9 @@ entirely readable content.
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published     Status     Series          Section  Built
-    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
-    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
+    Source             Published   Status     Series   Section  Built
+    iceweasel...(...)  2007-07-09  Published  Warty    Editors
+    pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
@@ -187,9 +187,9 @@ will use another browser to inspect the results of our deletions.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published   Status     Series          Section  Built
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
@@ -202,10 +202,10 @@ will use another browser to inspect the results of our deletions.
     ...    name='field.status_filter').value = ['any']
     >>> cprov_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published   Status     Series          Section  Built
+    cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
 Before deleting the remaining sources we will save a in this state for
 the form re-submission tests.
@@ -268,10 +268,10 @@ Any user can see that all packages present in Celso's PPA are deleted.
     ...    name='field.status_filter').value = ['any']
     >>> cprov_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
-    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
+    Source            Published   Status     Series          Section  Built
+    cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
+    iceweasel...(...) 2007-07-09  Deleted    Warty           Editors
+    pmount - 0.1-1    2007-07-09  Deleted    Warty           Editors
 
 PPAs that don't contain any published source packages, do not present
 the 'Delete packages' link.
