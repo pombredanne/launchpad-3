@@ -12,7 +12,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
@@ -114,13 +113,6 @@ def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
-
-def branchStatusSetUp(test):
-    test._authserver = AuthserverTacTestSetup()
-    test._authserver.setUp()
-
-def branchStatusTearDown(test):
-    test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()

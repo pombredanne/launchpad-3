@@ -1,5 +1,5 @@
 # Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
@@ -25,6 +25,7 @@ __all__ = [
     'CannotDeleteBranch',
     'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
+    'get_blacklisted_hostnames',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
@@ -56,10 +57,8 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree, RepositoryFormatPackDevelopment1,
-    RepositoryFormatPackDevelopment1Subtree, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack5RichRoot)
+    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
+    RepositoryFormatPackDevelopment1, RepositoryFormatPackDevelopment1Subtree)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -250,11 +249,17 @@ class RepositoryFormat(DBEnumeratedType):
         'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
         )
 
-    BZR_PACK_DEV_0 = _format_enum(
-        300, RepositoryFormatPackDevelopment0)
+    BZR_PACK_DEV_0 = DBItem(300,
+        'Bazaar development format 0 (needs bzr.dev from before 1.3)\n',
+        'Development repository format, currently the same as pack-0.92',
+        )
 
-    BZR_PACK_DEV_0_SUBTREE = _format_enum(
-        301, RepositoryFormatPackDevelopment0Subtree)
+    BZR_PACK_DEV_0_SUBTREE = DBItem(301,
+        'Bazaar development format 0 with subtree support (needs bzr.dev from'
+        ' before 1.3)\n',
+        'Development repository format, currently the same as'
+        ' pack-0.92-subtree\n',
+        )
 
     BZR_DEV_1 = _format_enum(
         302, RepositoryFormatPackDevelopment1)
@@ -356,6 +361,16 @@ class BadBranchSearchContext(Exception):
     """The context is not valid for a branch search."""
 
 
+def get_blacklisted_hostnames():
+    """Return a list of hostnames blacklisted for Branch URLs."""
+    hostnames = config.codehosting.blacklisted_hostnames
+    # If nothing specified, return an empty list. Special-casing since
+    # ''.split(',') == [''].
+    if hostnames == '':
+        return []
+    return hostnames.split(',')
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -380,6 +395,12 @@ class BranchURIField(URIField):
                 "cannot be on <code>${domain}</code>.",
                 mapping={'domain': escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
+
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                message = _(
+                    'Launchpad cannot mirror branches from %s.' % hostname)
+                raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
         # against the actual text used in the database constraint.
@@ -593,9 +614,6 @@ class IBranch(IHasOwner):
                 "The branch title if provided, or the unique_name.")),
         exported_as='display_name')
 
-    sort_key = Attribute(
-        "Key for sorting branches for display.")
-
     # Stats and status attributes
     lifecycle_status = exported(
         Choice(
@@ -650,11 +668,6 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
-
-    related_bug_tasks = Attribute(
-        "For each related_bug, the bug task reported against this branch's "
-        "product or the first bug task (in case where there is no task "
-        "reported against the branch's product).")
 
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
@@ -970,13 +983,6 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
-    def getProductDevelopmentBranches(products):
-        """Return branches that are associated with the products dev series.
-
-        The branches will be either the import branches if imported, or
-        the user branches if native.
-        """
-
     def getActiveUserBranchSummaryForProducts(products):
         """Return the branch count and last commit time for the products.
 
@@ -1093,20 +1099,6 @@ class IBranchSet(Interface):
         merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-
-    def getBranchesWithRecentRevisionsForProduct(product, quantity,
-                                                 visible_by_user=None):
-        """Return the product's branches that have the most recent revisions.
-
-        :param quantity: At most `quantity` branches are returned.
-        :type quantity: int
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
