@@ -11,7 +11,6 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
-    'IProductSeriesSourceAdmin',
     'RevisionControlSystems',
     'validate_cvs_module',
     'validate_cvs_root',
@@ -467,13 +466,6 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     datepublishedsync = Attribute(_("The date of the published code was last "
         "synced, at the time of the last sync."))
 
-    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is
-    # only necessary for the transition from the old to the new
-    # code import system, and should be deleted after that process
-    # is done.
-    new_style_import = Attribute(_("The new-style import that was created "
-        "from this import, if any."))
-
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
@@ -482,36 +474,6 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
-
-class IProductSeriesSourceAdmin(Interface):
-    """Administrative interface to approve syncing on a Product Series
-    upstream codebase, publishing it as Bazaar branch."""
-
-    def certifyForSync():
-        """enable this to sync"""
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
-
-    def markStopped():
-        """Mark this import as STOPPED.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
-
-    def deleteImport():
-        """Do our best to forget that this series ever had an import
-        associated with it.
-
-        Use with care!
-        """
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
-        # necessary for the transition from the old to the new code import
-        # system, and should be deleted after that process is done.
 
 
 class IProductSeriesSet(Interface):
@@ -527,18 +489,6 @@ class IProductSeriesSet(Interface):
         """Return the ProductSeries with the given id.
 
         Return the default value if there is no such series.
-        """
-
-    def searchImports(text=None, importstatus=None):
-        """Search through all series that have import data.
-
-        This method will never return a series for a deactivated product.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
-        :param importstatus: If specified, limit the list to series which have
-            the given import status; if not specified or None, limit to series
-            with non-NULL import status.
         """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):

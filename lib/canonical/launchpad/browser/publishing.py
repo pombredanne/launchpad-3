@@ -232,22 +232,9 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             return content_template('Built successfully', '/@@/yes')
 
     @property
-    def is_changesfile_visible(self):
-        """Check whether a link to the changesfile should be exposed.
-
-        The link to the changesfile should only be exposed if the
-        user is an administrator or the source uploader.
-        """
-        if (self.context.sourcepackagerelease.creator == self.user or
-            check_permission('launchpad.Admin', self.context)):
-            return True
-        else:
-            return False
-
-    @property
     def linkify_source_archive(self):
         """Return True if the source's upload_archive should be linkified.
-        
+
         The source archive is the upload_archive for any source that was
         copied.  It should be linkified only if it's a PPA and the user
         has permission to view that PPA.

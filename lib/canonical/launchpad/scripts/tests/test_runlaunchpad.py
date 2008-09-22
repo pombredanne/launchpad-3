@@ -66,10 +66,9 @@ class ServersToStart(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.configs = [config.librarian_server,
                         config.buildsequencer,
-                        config.authserver,
                         config.codehosting]
         self.old_launch_values = [conf.launch for conf in self.configs]
-        new_launch_values = [True, False, False, False]
+        new_launch_values = [True, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):
             conf.launch = launch_value
 

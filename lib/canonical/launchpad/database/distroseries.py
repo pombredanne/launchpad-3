@@ -34,7 +34,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
@@ -410,8 +410,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
-        return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.distroseries == self, user)
 
     @property
     def has_any_specifications(self):
