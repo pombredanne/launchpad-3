@@ -344,9 +344,15 @@ class WarehouseBranchOpener(BranchOpener):
         if uri.scheme != 'lp-mirrored':
             raise InvalidStackedBranchURL(url)
 
-def iter_list_chunks(l, size):
-    for i in range(0, len(l), size):
-        yield l[i:i+size]
+
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
+    """
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]
+
 
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
@@ -418,6 +424,10 @@ class BzrSync:
         for revids in iter_list_chunks(list(added_ancestry), 1000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
+                # This would probably go much faster if we found some way to
+                # bulk-load multiple revisions at once, but as this is only
+                # executed for revisions new to Launchpad, it doesn't seem
+                # worth it at this stage.
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
@@ -604,8 +614,9 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
-        for c in iter_list_chunks(branchrevisions_to_insert.items(), 1000):
-            self.db_branch.createBranchRevisionFromIDs(c)
+        revid_seq_pairs = branchrevisions_to_insert.items()
+        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
+            self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
         # Generate emails for the revisions in the revision_history
         # for the branch.

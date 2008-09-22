@@ -539,8 +539,8 @@ class Branch(SQLBase):
             (revision_id text, sequence integer)
             """)
         data = []
-        for r, s in revision_id_sequence_pairs:
-            data.append('(%s, %s)' % sqlvalues(r, s))
+        for revid, sequence in revision_id_sequence_pairs:
+            data.append('(%s, %s)' % sqlvalues(revid, sequence))
         data = ', '.join(data)
         store.execute(
             "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"

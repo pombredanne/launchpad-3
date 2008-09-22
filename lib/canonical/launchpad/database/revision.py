@@ -269,8 +269,8 @@ class RevisionSet:
             (revision_id text)
             """)
         data = []
-        for r in revids:
-            data.append('(%s)' % sqlvalues(r))
+        for revid in revids:
+            data.append('(%s)' % sqlvalues(revid))
         data = ', '.join(data)
         store.execute(
             "INSERT INTO Revids (revision_id) VALUES %s" % data)

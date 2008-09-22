@@ -937,10 +937,13 @@ class BranchSorting(TestCase):
 
 
 class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
+    """Tests for `Branch.createBranchRevisionFromIDs`."""
 
     layer = DatabaseFunctionalLayer
 
     def test_simple(self):
+        # createBranchRevisionFromIDs when passed a single revid, sequence
+        # pair, creates the appropriate BranchRevision object.
         branch = self.factory.makeBranch()
         rev = self.factory.makeRevision()
         revision_number = self.factory.getUniqueInteger()
@@ -950,6 +953,8 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         self.assertEqual(revision_number, branch_revision.sequence)
 
     def test_multiple(self):
+        # createBranchRevisionFromIDs when passed multiple revid, sequence
+        # pairs, creates the appropriate BranchRevision objects.
         branch = self.factory.makeBranch()
         revision_to_number = {}
         revision_id_sequence_pairs = []
@@ -966,8 +971,24 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
                 revision_to_number[rev], branch_revision.sequence)
 
     def test_empty(self):
+        # createBranchRevisionFromIDs does not fail when passed no pairs.
         branch = self.factory.makeBranch()
         branch.createBranchRevisionFromIDs([])
+
+    def test_call_twice_in_one_transaction(self):
+        # createBranchRevisionFromIDs creates temporary tables, but cleans
+        # after itself so that it can safely be called twice in one
+        # transaction.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        # This is just "assertNotRaises"
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
