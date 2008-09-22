@@ -536,6 +536,30 @@ class Branch(SQLBase):
         SELECT %s, id, %s FROM Revision WHERE revision_id = %s
         """ % sqlvalues(self, sequence, revision_id))
 
+    def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
+        """See `IBranch`."""
+        store = Store.of(self)
+        store.execute("""
+        CREATE TEMPORARY TABLE revid_sequence (revision_id text, sequence integer)
+        """)
+        data = []
+        for r, s in revision_id_sequence_pairs:
+            if s is None:
+                s = 'NULL'
+            data.append('(%r, %s)' % (r, s))
+        store.execute("""
+        INSERT INTO revid_sequence (revision_id, sequence)
+        VALUES %s""" % (', '.join(data),))
+        store.execute(
+        """
+        INSERT INTO BranchRevision (branch, revision, sequence)
+        SELECT %s, id, sequence FROM revid_sequence, revision where revision.revision_id = revid_sequence.revision_id
+        """ % sqlvalues(self))
+        store.execute(
+        """
+        DROP TABLE revid_sequence
+        """)
+
     def getTipRevision(self):
         """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
