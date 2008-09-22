@@ -51,35 +51,40 @@ if __name__ == '__main__':
         log.warn("Some people/teams are not members of themselves: %s"
                  % non_self_participants)
 
-    # Check for discrepancies between TeamMemberships and TeamParticipations.
-    query = """
-        SELECT DISTINCT Person.id
-        FROM Person, TeamParticipation
-        WHERE Person.id = Teamparticipation.person
-            AND TeamParticipation.team != Person.id
-        """
-    cur.execute(query)
-    people_ids = cur.fetchall()
+    # Check if there are any missing/spurious TeamParticipation entries.
+    cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
+    team_ids = cur.fetchall()
     ztm.abort()
 
-    batch = people_ids[:50]
-    people_ids = people_ids[50:]
+    def get_participants(team):
+        """Recurse through the team's members to get all its participants."""
+        participants = set()
+        for member in team.activemembers:
+            participants.add(member)
+            if member.is_team:
+                participants.update(get_participants(member))
+        return participants
+
+    batch = team_ids[:50]
+    team_ids = team_ids[50:]
     while batch:
         for [id] in batch:
             ztm.begin()
-            person = Person.get(id)
-            for team in person.teams_indirectly_participated_in:
-                # XXX: salgado, 2008-04-04: findPathToTeam() should be changed
-                # to raise something other than an AssertionError as catching
-                # AssertionErrors is against our policy.
-                try:
-                    path = person.findPathToTeam(team)
-                except AssertionError, e:
-                    log.warn(
-                        "Invalid TeamParticipation entry for %s (%d) on %s "
-                        "(%d)" % (person.unique_displayname, person.id,
-                                  team.unique_displayname, team.id))
+            team = Person.get(id)
+            expected = get_participants(team)
+            found = set(team.allmembers)
+            difference = expected.difference(found)
+            if len(difference) > 0:
+                people = ", ".join("%s (%s)" % (person.name, person.id)
+                                   for person in difference)
+                log.warn("%s (%s): missing TeamParticipation entries for %s."
+                         % (team.name, team.id, people))
+            reverse_difference = found.difference(expected)
+            if len(reverse_difference) > 0:
+                people = ", ".join("%s (%s)" % (person.name, person.id)
+                                   for person in reverse_difference)
+                log.warn("%s (%s): spurious TeamParticipation entries for %s."
+                         % (team.name, team.id, people))
             ztm.abort()
-        batch = people_ids[:50]
-        people_ids = people_ids[50:]
-
+        batch = team_ids[:50]
+        team_ids = team_ids[50:]

@@ -12,7 +12,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
-    flush_database_caches, flush_database_updates, cursor)
+    cursor, flush_database_caches, flush_database_updates, sqlvalues)
 from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces.person import (
@@ -651,30 +651,51 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.assertEqual((out, err), ('', ''))
 
     def test_report_invalid_teamparticipation_entries(self):
-        """The script reports invalid TeamParticipation entries.
+        """The script reports missing/spurious TeamParticipation entries.
 
         As well as missing self-participation.
         """
         cur = cursor()
-        # Create a new entry in the Person table and update its
-        # TeamParticipation so that the person is a participant in a team
-        # (without being a member) and the person is not a member of itself.
+        # Create a new entry in the Person table and change its
+        # self-participation entry, making that person a participant in a team
+        # where it should not be as well as making that person not a member of
+        # itself (as everybody should be).
         cur.execute("""
             INSERT INTO
                 Person (id, name, displayname, creation_rationale)
                 VALUES (9999, 'zzzzz', 'zzzzzz', 1);
             UPDATE TeamParticipation
                 SET team = (
-                    SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
+                    SELECT id
+                    FROM Person
+                    WHERE teamowner IS NOT NULL
+                    ORDER BY name
+                    LIMIT 1)
                 WHERE person = 9999;
             """)
+        # Now add the new person as a member of another team but don't create
+        # the relevant TeamParticipation for that person on that team.
+        cur.execute("""
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9999,
+                    (SELECT id
+                        FROM Person
+                        WHERE teamowner IS NOT NULL
+                        ORDER BY name desc
+                        LIMIT 1),
+                    %s);
+            """ % sqlvalues(TeamMembershipStatus.APPROVED))
         import transaction
         transaction.commit()
 
         out, err = self._runScript()
         self.assertEqual(out, '', (out, err))
         self.failUnless(
-            re.search('Invalid TeamParticipation entry for zzzzz', err),
+            re.search('missing TeamParticipation entries for zzzzz', err),
+            (out, err))
+        self.failUnless(
+            re.search('spurious TeamParticipation entries for zzzzz', err),
             (out, err))
         self.failUnless(
             re.search('not members of themselves:.*zzzzz.*', err),
