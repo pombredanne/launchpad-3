@@ -558,5 +558,32 @@ class TestTipRevisionsForBranches(TestCase):
         self.assertEqual(date, revision_set._timestampToDatetime(timestamp))
 
 
+class TestOnlyPresent(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty(self):
+        getUtility(IRevisionSet).onlyPresent([])
+
+    def test_none_present(self):
+        not_present = self.factory.getUniqueString()
+        self.assertEqual(
+            set(),
+            set(getUtility(IRevisionSet).onlyPresent([not_present])))
+
+    def test_one_present(self):
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present])))
+
+    def test_some_present(self):
+        not_present = self.factory.getUniqueString()
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present, not_present])))
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
