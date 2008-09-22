@@ -695,7 +695,6 @@ The file redirects to the librarian when accessed.
     HTTP/1.1 303 See Other
     ...
     Location: http://localhost:58000/.../filename.txt
-    ...
 
 Project release files can be deleted using the 'delete' method.  The
 project maintainer, project series owners, admins, or registry experts
