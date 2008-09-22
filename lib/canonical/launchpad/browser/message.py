@@ -15,7 +15,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class MessageAddView(SQLObjectAddView):
-    """View class for adding an IMessage to an IMessageTarget."""
+    """View class for adding an IMessage to an IBug."""
 
     def __init__(self, context, request):
         self._nextURL = '.'
