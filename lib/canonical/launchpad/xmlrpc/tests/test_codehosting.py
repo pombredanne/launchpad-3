@@ -614,13 +614,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # allow_default_stacking will have values for default stacked-on. Here
         # we add the just-created product to allow_default_stacking so we can
         # test stacking with private branches.
-        section = (
-            "[codehosting]\n"
-            "allow_default_stacking: %s,%s"
-            % (config.codehosting.allow_default_stacking, product.name))
-        handle = self.factory.getUniqueString()
-        config.push(handle, section)
-        self.addCleanup(lambda: config.pop(handle))
+        self.pushConfig(
+            'codehosting', allow_default_stacking='%s,%s' % (
+                config.codehosting.allow_default_stacking, product.name))
 
     def _makeProductWithStacking(self):
         product = self.factory.makeProduct()

@@ -397,23 +397,6 @@ class BugzillaLPPlugin(Bugzilla):
 
         user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
 
-        auth_cookies = self._extractAuthCookie(
-            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
-        for cookie in auth_cookies.split(';'):
-            self.xmlrpc_transport.setCookie(cookie.strip())
-
-    def _extractAuthCookie(self, cookie_header):
-        """Extract the Bugzilla authentication cookies from the header."""
-        cookies = []
-        for cookie_header_part in cookie_header.split(','):
-            cookie = cookie_header_part.split(';')[0]
-            cookie = cookie.strip()
-
-            if cookie.startswith('Bugzilla_login'):
-                cookies.append(cookie)
-
-        return '; '.join(cookies)
-
     def _storeBugs(self, remote_bugs):
         """Store remote bugs in the local `bugs` dict."""
         for remote_bug in remote_bugs:
