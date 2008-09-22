@@ -420,6 +420,15 @@ class BzrSync:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
+        # Check any landing candidates that are in non-terminal states to
+        # states to see if the tip revision of the source branch is in the
+        # bzr_ancestry.  If it is, then set the state of the proposal to
+        # merged.  At this stage we are not going to worry about the revno
+        # which introduced the change, that will either be set through the web
+        # ui by a person, of by PQM once it is integrated.
+        for proposal in self.db_branch.landing_candidates:
+            if proposal.source_branch.last_scanned_id in bzr_ancestry:
+                proposal.markAsMerged()
         self.trans_manager.commit()
 
         self._branch_mailer.sendRevisionNotificationEmails(bzr_history)
