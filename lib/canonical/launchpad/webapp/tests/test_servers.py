@@ -93,8 +93,6 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         objects for requests to the /api root URL.
         """
         from canonical.launchpad.webapp.servers import (
-            BugsBrowserRequest,
-            BugsPublication,
             WebServiceClientRequest,
             WebServicePublication)
 
@@ -106,27 +104,42 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
-        request = self.factory()
+        wrapped_factory, publication_factory = self.factory()
 
-        self.assertEqual(request.__class__, WebServiceClientRequest,
+        # We need to unwrap the real request factory.
+        request_factory = wrapped_factory.requestfactory
+
+        self.assertEqual(request_factory, WebServiceClientRequest,
             "Requests to the /api path should return a WebService "
             "request object.")
         self.assertEqual(
-            request.publication.__class__, WebServicePublication,
+            publication_factory, WebServicePublication,
             "Requests to the /api path should return a WebService "
             "publication object.")
+
+    def test_factory_produces_normal_request_objects(self):
+        """The factory should return the request and publication factories
+        specified in it's constructor if the request is not bound for the
+        web service.
+        """
+        from canonical.launchpad.webapp.servers import (
+            BugsBrowserRequest,
+            BugsPublication)
 
         env = self.wsgi_env('/foo')
         self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
-        request = self.factory()
+        wrapped_factory, publication_factory = self.factory()
 
-        self.assertEqual(request.__class__, BugsBrowserRequest,
+        # We need to unwrap the real request factory.
+        request_factory = wrapped_factory.requestfactory
+
+        self.assertEqual(request_factory, BugsBrowserRequest,
             "Requests to normal paths should return a Bugs "
             "request object.")
         self.assertEqual(
-            request.publication.__class__, BugsPublication,
+            publication_factory, BugsPublication,
             "Requests to normal paths should return a Bugs "
             "publication object.")
 
