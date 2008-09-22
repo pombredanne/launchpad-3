@@ -234,10 +234,6 @@ in the License enum.
 
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
-    >>> len(soup.table('input'))
-    22
-    >>> len(License)
-    22
     >>> len(soup.table('input')) == len(License)
     True
     >>> soup.a['href']
