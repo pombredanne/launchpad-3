@@ -141,6 +141,8 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in allowed_methods:
             env = self.wsgi_env(self.working_api_path, method)
+            self.assert_(self.factory.canHandle(env),
+                "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
             self.assert_(rfactory is None,
@@ -164,6 +166,8 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.failing_api_path, method)
+            self.assert_(self.factory.canHandle(env),
+                "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
             self.assert_(rfactory is not None,
