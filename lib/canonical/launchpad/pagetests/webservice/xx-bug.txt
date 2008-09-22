@@ -163,6 +163,27 @@ relation to some bug.
   >>> webservice.get("/messages").getStatus()
   404
 
+We can add a new message to a bug by calling the newMessage method.
+
+  >>> print webservice.named_post(
+  ...     "/bugs/5", 'newMessage',
+  ...     subject='A new message',
+  ...     content='This is a new message added through the webservice API.')
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
+  <BLANKLINE>
+
+  >>> show(webservice.get("/firefox/+bug/5/comments/1").jsonBody())
+  [...,
+   (u'content', u'This is a new message added through the webservice API.'),
+   ...
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#message'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'),
+   (u'subject', u'A new message')]
+
 
 == Bug tasks ==
 

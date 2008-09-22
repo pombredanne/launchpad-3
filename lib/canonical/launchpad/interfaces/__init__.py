@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
-from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pillar import *
 
