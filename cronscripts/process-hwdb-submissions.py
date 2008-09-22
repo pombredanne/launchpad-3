@@ -4,6 +4,18 @@
 
 """
 Cron job that parses pending HWDB submissions.
+
+
+Options:
+    -m, --max-submissions: (optional) The maximum number of submissions
+        which will be processed.
+
+This script iterates over the HWDB submissions with the status
+SUBMITTED, beginning with the oldest submissions, populate the
+HWDB tables with the data from these submissions.
+
+Properly processed submissions are set to the status PROCESSED;
+submissions that cannot be processed are set to the status INVALID.
 """
 
 import _pythonpath

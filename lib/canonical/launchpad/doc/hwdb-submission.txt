@@ -208,6 +208,7 @@ Teams can be owners of submissions.
     >>> submission.owner.displayname
     u'Ubuntu Team'
 
+
 == Submission Processing ==
 
 Submissions are processed by the cronscript process-hwdb-submissions.py.
@@ -232,11 +233,11 @@ submissions with the staus PROCESSED or INVALID.
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
-    >>> print len(list(processed_submissions))
+    >>> print processed_submissions.count()
     0
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
-    >>> print len(list(invalid_submissions))
+    >>> print invalid_submissions.count()
     0
 
 The script process-hwdb-submissions.py takes the optional parameter
@@ -276,7 +277,7 @@ submissions are unchanged.
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
-    >>> print len(list(processed_submissions))
+    >>> print processed_submissions.count()
     0
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
@@ -306,7 +307,7 @@ Now we have one valid, two invalid and no unprocessed submissions.
     >>> transaction.commit()
     >>> new_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
-    >>> print len(list(new_submissions))
+    >>> print new_submissions.count()
     0
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
