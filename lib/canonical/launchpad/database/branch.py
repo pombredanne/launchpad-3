@@ -539,26 +539,26 @@ class Branch(SQLBase):
     def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
         """See `IBranch`."""
         store = Store.of(self)
-        store.execute("""
-        CREATE TEMPORARY TABLE revid_sequence (revision_id text, sequence integer)
-        """)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE RevidSequence
+            (revision_id text, sequence integer)
+            """)
         data = []
         for r, s in revision_id_sequence_pairs:
-            if s is None:
-                s = 'NULL'
-            data.append('(%r, %s)' % (r, s))
-        store.execute("""
-        INSERT INTO revid_sequence (revision_id, sequence)
-        VALUES %s""" % (', '.join(data),))
+            data.append('(%s, %s)' % sqlvalues(r, s))
+        data = ', '.join(data)
         store.execute(
-        """
-        INSERT INTO BranchRevision (branch, revision, sequence)
-        SELECT %s, id, sequence FROM revid_sequence, revision where revision.revision_id = revid_sequence.revision_id
-        """ % sqlvalues(self))
+            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
+            % data)
         store.execute(
-        """
-        DROP TABLE revid_sequence
-        """)
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, Revision.id, RevidSequence.sequence
+            FROM RevidSequence, Revision
+            WHERE Revision.revision_id = RevidSequence.revision_id
+            """ % sqlvalues(self))
+        store.execute("DROP TABLE RevidSequence")
 
     def getTipRevision(self):
         """See `IBranch`."""
