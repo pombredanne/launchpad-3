@@ -17,7 +17,7 @@ from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -614,6 +614,12 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
     """A series of an operating system distribution."""
+
+
+# We assign the schema for an `IHasBugs` method argument here
+# in order to avoid circular dependencies.
+IHasBugs['searchTasks'].queryTaggedValue('lazr.webservice.exported')[
+    'params']['nominated_for'].schema = IDistroSeries
 
 
 class IDistroSeriesSet(Interface):
