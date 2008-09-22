@@ -399,17 +399,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, type=LanguagePackType.DELTA,
             updates=self.language_pack_base, orderBy='-date_exported')
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         return get_bug_tags_open_count(BugTask.distroseries == self, user)
 
     @property

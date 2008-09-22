@@ -16,6 +16,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -55,7 +56,7 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(Interface):
+class IMilestone(IHasBugs):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
