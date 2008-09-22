@@ -8,7 +8,6 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
-import datetime
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from warnings import warn
@@ -22,7 +21,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person
@@ -36,9 +35,9 @@ from canonical.launchpad.database.structuralsubscription import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
-    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
-    PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
+    IHasTranslationTemplates, IProductSeries, IProductSeriesSet,
+    IStructuralSubscriptionTarget, ImportStatus, NotFoundError, PackagingType,
+    RevisionControlSystems, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
@@ -48,7 +47,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     StructuralSubscriptionTargetMixin):
     """A series of product releases."""
     implements(
-        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates,
+        IProductSeries, IHasTranslationTemplates,
         IStructuralSubscriptionTarget)
 
     _table = 'ProductSeries'
@@ -93,23 +92,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datelastsynced = UtcDateTimeCol(default=None)
     datepublishedsync = UtcDateTimeCol(
         dbName='date_published_sync', default=None)
-
-    @property
-    def new_style_import(self):
-        """See `IProductSeries`."""
-        # XXX: MichaelHudson 2008-05-20, bug=232076: This property is
-        # only necessary for the transition from the old to the new
-        # code import system, and should be deleted after that process
-        # is done.
-        # Local import to avoid circularity issues.
-        from canonical.launchpad.database.codeimport import (
-            _ProductSeriesCodeImport)
-        pair = _ProductSeriesCodeImport.selectOneBy(
-            productseries=self)
-        if pair is not None:
-            return pair.codeimport
-        else:
-            return None
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
@@ -355,10 +337,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTasks(self, search_params):
-        """See IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See IBugTarget."""
@@ -366,8 +347,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
-        return get_bug_tags_open_count(
-            "BugTask.productseries = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.productseries == self, user)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
@@ -428,49 +408,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 history.append(pkging)
         return history
 
-    def certifyForSync(self):
-        """Enable the sync for processing."""
-        self.dateprocessapproved = UTC_NOW
-        if self.rcstype == RevisionControlSystems.CVS:
-            self.syncinterval = datetime.timedelta(hours=12)
-        elif self.rcstype == RevisionControlSystems.SVN:
-            self.syncinterval = datetime.timedelta(hours=6)
-        else:
-            raise AssertionError(
-                'Unknown default sync interval for rcs type: %s'
-                % self.rcstype.title)
-        self.importstatus = ImportStatus.PROCESSING
-
-    def markStopped(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.STOPPED
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datestarted = None
-        self.datefinished = None
-        self.syncinterval = None
-
-    def deleteImport(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = None
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datepublishedsync = None
-        self.syncinterval = None
-        self.datestarted = None
-        self.datefinished = None
-        self.rcstype = None
-        self.cvsroot = None
-        self.cvsmodule = None
-        self.cvsbranch = None
-        self.cvstarfileurl = None
-        self.svnrepository = None
-
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
@@ -527,13 +464,6 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def searchImports(self, text=None, importstatus=None):
-        """See `IProductSeriesSet`."""
-        query = self.composeQueryString(text, importstatus)
-        return ProductSeries.select(
-            query, orderBy=['product.name', 'productseries.name'],
-            clauseTables=['Product'])
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
