@@ -344,9 +344,9 @@ class WarehouseBranchOpener(BranchOpener):
         if uri.scheme != 'lp-mirrored':
             raise InvalidStackedBranchURL(url)
 
-def chunk(l):
-    for i in range(0, len(l), 1000):
-        yield l[i:i+1000]
+def iter_list_chunks(l, size):
+    for i in range(0, len(l), size):
+        yield l[i:i+size]
 
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
@@ -415,7 +415,7 @@ class BzrSync:
         added_ancestry.difference_update(
             getUtility(IRevisionSet).onlyPresent(added_ancestry))
         self.logger.info("Adding %s new revisions.", len(added_ancestry))
-        for revids in chunk(list(added_ancestry)):
+        for revids in iter_list_chunks(list(added_ancestry), 1000):
             revisions = self.getNewBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
@@ -606,15 +606,14 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
-        mainline_revids = []
-        for c in chunk(branchrevisions_to_insert.items()):
+        for c in iter_list_chunks(branchrevisions_to_insert.items(), 1000):
             self.db_branch.createBranchRevisionFromIDs(c)
-            for r, s in c:
-                if s is not None:
-                    mainline_revids.append(r)
         # Generate emails for the revisions in the revision_history
         # for the branch.
-        for c in chunk(mainline_revids):
+        mainline_revids = [
+            revid for (revid, sequence)
+            in branchrevisions_to_insert.iteritems() if sequence is not None]
+        for c in iter_list_chunks(mainline_revids, 1000):
             present_mainline_revids = set(
                 bzr_branch.repository.get_parent_map(c))
             present_mainline_revisions = bzr_branch.repository.get_revisions(
