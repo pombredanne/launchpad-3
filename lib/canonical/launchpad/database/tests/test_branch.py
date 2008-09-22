@@ -965,5 +965,9 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
             self.assertEqual(
                 revision_to_number[rev], branch_revision.sequence)
 
+    def test_empty(self):
+        branch = self.factory.makeBranch()
+        branch.createBranchRevisionFromIDs([])
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

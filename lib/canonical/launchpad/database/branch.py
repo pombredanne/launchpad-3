@@ -530,6 +530,8 @@ class Branch(SQLBase):
 
     def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
         """See `IBranch`."""
+        if not revision_id_sequence_pairs:
+            return
         store = Store.of(self)
         store.execute(
             """
