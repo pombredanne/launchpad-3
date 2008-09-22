@@ -408,34 +408,14 @@ class BzrSync:
         db_ancestry, db_history, db_branch_revision_map = (
             self.retrieveDatabaseAncestry())
 
-        (branchrevisions_to_delete,
+        (added_ancestry, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
-        # Add new revisions to the database.
-        r = 0
-        remaining = set([bzr_branch.last_revision()])
-        to_be_added = set()
-        seen_in_db = set()
-        revision_set = getUtility(IRevisionSet)
-        while True:
-            existing = revision_set.onlyPresent(remaining)
-            seen_in_db.update(existing)
-            remaining.difference_update(existing)
-            if not remaining:
-                break
-            parents = bzr_branch.repository.get_parent_map(remaining)
-            to_be_added.update(parents.iterkeys())
-            remaining = set()
-            for v in parents.values():
-                remaining.update(v)
-            remaining -= to_be_added
-            remaining -= seen_in_db
-        if 'null:' in to_be_added:
-            to_be_added.remove('null:')
-        added_ancestry_list = list(to_be_added)
-        self.logger.info("Adding %s revisions.", len(added_ancestry_list))
-        for revids in chunk(added_ancestry_list):
+        added_ancestry.difference_update(
+            getUtility(IRevisionSet).onlyPresent(added_ancestry))
+        self.logger.info("Adding %s new revisions.", len(added_ancestry))
+        for revids in chunk(list(added_ancestry)):
             revisions = self.getNewBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
@@ -539,6 +519,9 @@ class BzrSync:
                     break
             common_len -= 1
 
+        # Revisions added to the branch's ancestry.
+        added_ancestry = bzr_ancestry.difference(db_ancestry)
+
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
         removed_history = db_history[common_len:]
@@ -566,7 +549,8 @@ class BzrSync:
             self.getRevisions(
                 bzr_history, added_merged.union(added_history)))
 
-        return (branchrevisions_to_delete, branchrevisions_to_insert)
+        return (added_ancestry, branchrevisions_to_delete,
+                branchrevisions_to_insert)
 
     def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
         """Return the new Bazaar revisions in `bzr_branch`.
