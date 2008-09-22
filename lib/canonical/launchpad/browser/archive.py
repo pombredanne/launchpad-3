@@ -40,10 +40,9 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    archive_purpose_string_to_enum, ArchivePurpose, IArchive,
-    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
-    IArchivePackageDeletionForm, IArchiveSet,
-    IArchiveSourceSelectionForm, IPPAActivateForm)
+    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -138,11 +137,11 @@ def traverse_archive(distribution, purpose_name):
                          e.g. PRIMARY
     """
     purpose_name = purpose_name.upper()
-    if purpose_name in archive_purpose_string_to_enum:
+    try:
         purpose = ArchivePurpose.items[purpose_name]
         return getUtility(
             IArchiveSet).getByDistroPurpose(distribution, purpose)
-    else:
+    except KeyError:
         return NotFoundError(purpose_name)
 
 

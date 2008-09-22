@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'archive_purpose_string_to_enum',
     'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
@@ -507,13 +506,4 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
-
-
-archive_purpose_string_to_enum = {
-    'primary' : ArchivePurpose.PRIMARY,
-    'PRIMARY' : ArchivePurpose.PRIMARY,
-    'partner' : ArchivePurpose.PARTNER,
-    'PARTNER' : ArchivePurpose.PARTNER,
-    }
-
 
