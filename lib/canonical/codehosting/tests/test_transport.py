@@ -1,5 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0231
 
 """Tests for the Launchpad code hosting Bazaar transport."""
 
