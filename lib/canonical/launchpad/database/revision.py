@@ -263,7 +263,7 @@ class RevisionSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(Revision,
                              Revision.revision_id.is_in(revids))
-        return set([r.revision_id for r in results])
+        return set(results.values(Revision.revision_id))
 
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
