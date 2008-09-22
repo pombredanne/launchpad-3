@@ -32,14 +32,16 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import (
+    AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
+    LaunchpadServer)
+from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
+from canonical.codehosting.sshserver import set_up_logging
 from canonical.codehosting.tests.helpers import (
     FakeLaunchpad, TestResultWrapper)
-from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, AsyncVirtualTransport, BlockingProxy,
-    InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
-    set_up_logging)
+from canonical.codehosting.transport import AsyncVirtualTransport
 from canonical.config import config
 from canonical.testing import reset_logging, TwistedLayer
 

@@ -67,13 +67,13 @@ class cmd_launchpad_server(Command):
         """
         # Importing here to avoid circular import when lpserve is loaded as a
         # bzr plugin.
-        from canonical.codehosting import transport
+        from canonical.codehosting import branchfs, branchfsclient, transport
         # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
         hosted_transport = transport.get_chrooted_transport(hosted_url)
         mirror_transport = transport.get_chrooted_transport(mirror_url)
-        lp_server = transport.LaunchpadServer(
-            transport.BlockingProxy(branchfs_client), user_id, hosted_transport,
-            mirror_transport)
+        lp_server = branchfs.LaunchpadServer(
+            branchfsclient.BlockingProxy(branchfs_client), user_id,
+            hosted_transport, mirror_transport)
         return lp_server
 
     def get_smart_server(self, transport, port, inet):

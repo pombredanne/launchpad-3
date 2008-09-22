@@ -30,7 +30,7 @@ from bzrlib.errors import SmartProtocolError
 
 from canonical.authserver.interfaces import (
     LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import TwistedLayer
