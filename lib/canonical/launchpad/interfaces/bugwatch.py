@@ -143,7 +143,9 @@ class IBugWatch(IHasBug):
                 'tasks, and if it is linked and we notice a status change '
                 'in the watched bug then we will try to update the '
                 'Launchpad bug task accordingly.'),
-            value_type=Reference(schema=Interface,)), # Redefined in bugtask.py
+            # value_type is redefined in bugtask.py, to use the right
+            # interface.
+            value_type=Reference(schema=Interface,)),
             exported_as='bug_tasks')
 
     # Properties.
@@ -194,6 +196,9 @@ class IBugWatch(IHasBug):
 
         :param message: The imported comment as a Launchpad Message object.
         """
+
+    def getImportedBugMessages():
+        """Return all the `IBugMessage`s that have been imported."""
 
 
 # Defined here because of circular imports.
