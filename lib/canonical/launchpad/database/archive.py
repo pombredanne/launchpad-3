@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -38,7 +38,8 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet)
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
+    IDistributionArchive, IPPA)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
@@ -120,6 +121,18 @@ class Archive(SQLBase):
     failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
 
     date_created = UtcDateTimeCol(dbName='date_created')
+
+    def _init(self, *args, **kw):
+        """Provide the right interface for URL traversal."""
+        SQLBase._init(self, *args, **kw)
+
+        # Provide the additional marker interface depending on what type
+        # of archive this is.  See also the browser:url declarations in
+        # zcml/archive.zcml.
+        if self.is_ppa:
+            alsoProvides(self, IPPA)
+        else:
+            alsoProvides(self, IDistributionArchive)
 
     @property
     def is_ppa(self):

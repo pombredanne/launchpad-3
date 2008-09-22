@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'archive_purpose_string_to_enum',
     'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
@@ -14,6 +15,8 @@ __all__ = [
     'IArchivePackageDeletionForm',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
+    'IDistributionArchive',
+    'IPPA',
     'IPPAActivateForm',
     ]
 
@@ -29,6 +32,7 @@ from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
+
 
 class ArchiveDependencyError(Exception):
     """Raised when an `IArchiveDependency` does not fit the context archive.
@@ -323,6 +327,15 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+
+class IPPA(IArchive):
+    """Marker interface so traversal works differently for PPAs."""
+
+
+class IDistributionArchive(IArchive):
+    """Marker interface so traversal works differently for distro archives."""
+
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
@@ -494,3 +507,13 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
+
+
+archive_purpose_string_to_enum = {
+    'primary' : ArchivePurpose.PRIMARY,
+    'PRIMARY' : ArchivePurpose.PRIMARY,
+    'partner' : ArchivePurpose.PARTNER,
+    'PARTNER' : ArchivePurpose.PARTNER,
+    }
+
+

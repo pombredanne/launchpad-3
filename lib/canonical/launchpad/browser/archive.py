@@ -16,6 +16,7 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
+    'traverse_archive',
     ]
 
 
@@ -26,6 +27,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -38,9 +40,10 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    archive_purpose_string_to_enum, ArchivePurpose, IArchive,
+    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
+    IArchivePackageDeletionForm, IArchiveSet,
+    IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
@@ -57,6 +60,7 @@ from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import (
@@ -122,6 +126,46 @@ class ArchiveBadges(HasBadgeBase):
     def getPrivateBadgeTitle(self):
         """Return private badge info useful for a tooltip."""
         return "This archive is private."
+
+
+def traverse_archive(distribution, purpose_name):
+    """For distribution archives, traverse to the right place.
+    
+    This traversal only applies to distribution archives, because they
+    can be one of several purposes.
+
+    :param purpose_name: The string name for the archive purpose,
+                         e.g. PRIMARY
+    """
+    purpose_name = purpose_name.upper()
+    if purpose_name in archive_purpose_string_to_enum:
+        purpose = ArchivePurpose.items[purpose_name]
+        return getUtility(
+            IArchiveSet).getByDistroPurpose(distribution, purpose)
+    else:
+        return NotFoundError(purpose_name)
+
+
+class ArchiveURL:
+    """Dynamic URL declaration for `IDistributionArchive`.
+
+    When dealing with distribution archives we want to present them under
+    IDistribution as:
+    /ubuntu/+archive/PRIMARY
+    """
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.distribution
+
+    @property
+    def path(self):
+        return u"+archive/%s" % self.context.purpose.name.lower()
 
 
 class ArchiveNavigation(Navigation):
