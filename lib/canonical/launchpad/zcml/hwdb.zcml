@@ -34,6 +34,9 @@
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IHWSubmission"
             attributes="id" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="status" />
     </class>
 
     <browser:url
