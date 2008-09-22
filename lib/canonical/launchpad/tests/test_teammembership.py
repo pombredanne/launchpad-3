@@ -672,12 +672,12 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         transaction.commit()
 
         out, err = self._runScript()
-        self.assertEqual(err, '', (out, err))
+        self.assertEqual(out, '', (out, err))
         self.failUnless(
-            re.search('Invalid TeamParticipation entry for zzzzz', out),
+            re.search('Invalid TeamParticipation entry for zzzzz', err),
             (out, err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', out),
+            re.search('not members of themselves:.*zzzzz.*', err),
             (out, err))
 
 
