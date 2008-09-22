@@ -381,24 +381,29 @@ class VHostWebServiceRequestPublicationFactory(
     request's path points to a web service resource.
     """
 
-    def checkRequest(self, environment):
-        """See `VirtualHostRequestPublicationFactory.checkRequest()`.
+    def canHandle(self, environment):
+        """See `IRequestPublicationFactory`.
 
-        :attention: This method has the side-effect of setting the list
-        of HTTP methods accepted by this factory.  If the request is
-        a web service request, then the list of methods is set to the
-        WebServiceRequestPublicationFactory's list of accepted HTTP
-        methods.  Otherwise, the list of methods originally passed into
-        the object constructor is used.
+        :attention: This method has the side-effect of setting the
+            object's environment.  If the request is bound for the
+            Launchpad web service (see `isWebServicePath`), then its
+            request factory type, publication factory type, and accepted
+            HTTP methods are also modified.
         """
         path_info = environment.get('PATH_INFO', '')
-
         if self.isWebServicePath(path_info):
-            self.methods = WebServiceRequestPublicationFactory.default_methods
+            self.setWebServiceFactoryDefaults()
 
         return super(
             VHostWebServiceRequestPublicationFactory,
-            self).checkRequest(environment)
+            self).canHandle(environment)
+
+    def setWebServiceFactoryDefaults(self):
+        """Set the factory defaults for processing a web service request.
+        """
+        self.request_factory = WebServiceClientRequest
+        self.publication_factory = WebServicePublication
+        self.methods = WebServiceRequestPublicationFactory.default_methods
 
     def isWebServicePath(self, path):
         """Does the path refer to a web service resource?"""
