@@ -936,5 +936,34 @@ class BranchSorting(TestCase):
             [created_in_2005, created_in_2006])
 
 
+class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_simple(self):
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        branch_revision = branch.getBranchRevision(revision=rev)
+        self.assertEqual(revision_number, branch_revision.sequence)
+
+    def test_multiple(self):
+        branch = self.factory.makeBranch()
+        revision_to_number = {}
+        revision_id_sequence_pairs = []
+        for i in range(10):
+            rev = self.factory.makeRevision()
+            revision_number = self.factory.getUniqueInteger()
+            revision_to_number[rev] = revision_number
+            revision_id_sequence_pairs.append(
+                (rev.revision_id, revision_number))
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        for rev in revision_to_number:
+            branch_revision = branch.getBranchRevision(revision=rev)
+            self.assertEqual(
+                revision_to_number[rev], branch_revision.sequence)
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
