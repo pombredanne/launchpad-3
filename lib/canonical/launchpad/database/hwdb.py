@@ -34,12 +34,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
+from storm.expr import And, Not, Or, Select
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.database.teammembership import TeamParticipation
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.hwdb import (
     HWBus, HWMainClass, HWSubClass, HWSubmissionFormat,
@@ -55,6 +57,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 # The vendor name assigned to new, unknown vendor IDs. See
@@ -164,12 +168,32 @@ class HWSubmissionSet:
         else:
             return ""
 
+    def _userHasAccessStormClause(self, user):
+        """Limit results of HWSubmission queries to rows the user can access.
+        """
+        submission_is_public = Not(HWSubmission.private)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        if user is None:
+            return submission_is_public
+        elif user.inTeam(admins) or user == janitor:
+            return True
+        else:
+            public = Not(HWSubmission.private)
+            subselect = Select(
+                TeamParticipation.teamID,
+                And(HWSubmission.ownerID == TeamParticipation.teamID,
+                    TeamParticipation.personID == user.id))
+            has_access = HWSubmission.ownerID.is_in(subselect)
+            return Or(public, has_access)
+
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
-        query = "submission_key=%s" % sqlvalues(submission_key)
-        query = query + self._userHasAccessClause(user)
-
-        return HWSubmission.selectOne(query)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            HWSubmission,
+            And(HWSubmission.submission_key == submission_key,
+                self._userHasAccessStormClause(user))).one()
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
@@ -220,6 +244,15 @@ class HWSubmissionSet:
             raw_emailaddress=email.email, owner=None)
         for submission in submissions:
             submission.owner = person
+
+    def getByStatus(self, status, user=None):
+        """See `IHWSubmissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(HWSubmission,
+                                HWSubmission.status == status,
+                                self._userHasAccessStormClause(user))
+        result_set.order_by(HWSubmission.date_submitted, HWSubmission.id)
+        return result_set
 
 
 class HWSystemFingerprint(SQLBase):
