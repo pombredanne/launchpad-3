@@ -409,8 +409,6 @@ class BzrSync:
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
-        #self.logger.info("Inserting or checking %d revisions.",
-        #    len(added_ancestry))
         # Add new revisions to the database.
         r = 0
         remaining = set([bzr_branch.last_revision()])
@@ -433,14 +431,12 @@ class BzrSync:
         if 'null:' in to_be_added:
             to_be_added.remove('null:')
         added_ancestry_list = list(to_be_added)
-        print len(added_ancestry_list)
+        self.logger.info("Adding %s revisions.", len(added_ancestry_list))
         for i in range(0, len(added_ancestry_list), 1000):
             revids = added_ancestry_list[i:i+1000]
             revisions = self.getNewBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 self.syncOneRevision(revision, branchrevisions_to_insert)
-        self.logger.info(
-            "Actually checked %d revisions.", len(added_ancestry_list))
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
@@ -626,8 +622,7 @@ class BzrSync:
         revision_set = getUtility(IRevisionSet)
         mainline_revids = []
         for revision_id, sequence in branchrevisions_to_insert.iteritems():
-            db_revision = revision_set.getByRevisionId(revision_id)
-            self.db_branch.createBranchRevision(sequence, db_revision)
+            self.db_branch.createBranchRevisionFromID(sequence, revision_id)
             if sequence is not None:
                 mainline_revids.append(revision_id)
         # Generate emails for the revisions in the revision_history

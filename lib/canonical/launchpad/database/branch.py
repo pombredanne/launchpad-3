@@ -528,6 +528,14 @@ class Branch(SQLBase):
             revision.allocateKarma(self)
         return branch_revision
 
+    def createBranchRevisionFromID(self, sequence, revision_id):
+        """See `IBranch`."""
+        store = Store.of(self)
+        store.execute("""
+        INSERT INTO BranchRevision (branch, revision, sequence)
+        SELECT %s, id, %s FROM Revision WHERE revision_id = %s
+        """ % sqlvalues(self, sequence, revision_id))
+
     def getTipRevision(self):
         """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
