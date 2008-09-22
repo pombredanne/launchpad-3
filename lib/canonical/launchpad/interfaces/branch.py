@@ -843,7 +843,12 @@ class IBranch(IHasOwner):
         """Create a new `BranchRevision` for this branch."""
 
     def createBranchRevisionFromIDs(revision_id_sequence_pairs):
-        """XXX Write me!"""
+        """Create a batch of BranchRevision objects.
+
+        :param revision_id_sequence_pairs: A sequence of (revision_id,
+            sequence) pairs.  The revision_ids are assumed to have been
+            inserted already; no checking of this is done.
+        """
 
     def getTipRevision():
         """Return the `Revision` associated with the `last_scanned_id`.
