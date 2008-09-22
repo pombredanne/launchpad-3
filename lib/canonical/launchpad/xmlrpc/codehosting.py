@@ -57,7 +57,17 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        return (branch.id, branch.getPullURL(), branch.unique_name, '')
+        if branch.product is None:
+            default_branch = None
+        else:
+            default_branch = branch.product.default_stacked_on_branch
+        if default_branch is None:
+            default_branch = ''
+        else:
+            default_branch = default_branch.unique_name
+        return (
+            branch.id, branch.getPullURL(), branch.unique_name,
+            default_branch)
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchPuller`."""

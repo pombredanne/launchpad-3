@@ -440,7 +440,8 @@ class JobScheduler:
         self.logger.info('Mirroring complete')
         return ignored
 
-    def getPullerMaster(self, branch_id, branch_src, unique_name):
+    def getPullerMaster(self, branch_id, branch_src, unique_name,
+                        default_stacked_on_branch):
         branch_src = branch_src.strip()
         return PullerMaster(
             branch_id, branch_src, unique_name, self.branch_type, self.logger,
