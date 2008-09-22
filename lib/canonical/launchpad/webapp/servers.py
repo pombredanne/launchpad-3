@@ -316,13 +316,16 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
+
         if method in self.methods:
-            return None, None
+            factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
                 405, headers={'Allow':" ".join(self.methods)})
-            return request_factory, publication_factory
+            factories = (request_factory, publication_factory)
+
+        return factories
 
 
 class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
@@ -378,24 +381,31 @@ class VHostWebServiceRequestPublicationFactory(
     request's path points to a web service resource.
     """
 
+    def checkRequest(self, environment):
+        """See `VirtualHostRequestPublicationFactory.checkRequest()`.
+
+        :attention: This method has the side-effect of setting the list
+        of HTTP methods accepted by this factory.  If the request is
+        a web service request, then the list of methods is set to the
+        WebServiceRequestPublicationFactory's list of accepted HTTP
+        methods.  Otherwise, the list of methods originally passed into
+        the object constructor is used.
+        """
+        path_info = environment.get('PATH_INFO', '')
+
+        if self.isWebServicePath(path_info):
+            self.methods = WebServiceRequestPublicationFactory.default_methods
+
+        return super(
+            VHostWebServiceRequestPublicationFactory,
+            self).checkRequest(environment)
+
     def isWebServicePath(self, path):
         """Does the path refer to a web service resource?"""
         # Add a trailing slash, if it is missing.
         if not path.endswith('/'):
             path = path + '/'
         return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
-
-    def isValidMethodForRequest(self, environment):
-        """Is the HTTP method valid for the type of request?"""
-        path_info = environment.get('PATH_INFO', '')
-        method = environment.get('REQUEST_METHOD', '')
-
-        if self.isWebServicePath(path_info):
-            allowed_methods = WebServiceRequestPublicationFactory.default_methods
-        else:
-            allowed_methods = VirtualHostRequestPublicationFactory.default_methods
-
-        return method in allowed_methods
 
 
 class NotFoundRequestPublicationFactory:

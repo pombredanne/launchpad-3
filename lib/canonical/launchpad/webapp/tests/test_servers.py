@@ -141,7 +141,9 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in allowed_methods:
             env = self.wsgi_env(self.working_api_path, method)
-            self.assert_(self.factory.isValidMethodForRequest(env),
+            # Returns a tuple of (request_factory, publication_factory).
+            rfactory, pfactory = self.factory.checkRequest(env)
+            self.assert_(rfactory is None,
                 "The '%s' HTTP method should be handled by the factory."
                 % method)
 
@@ -162,7 +164,9 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.failing_api_path, method)
-            self.failIf(self.factory.isValidMethodForRequest(env),
+            # Returns a tuple of (request_factory, publication_factory).
+            rfactory, pfactory = self.factory.checkRequest(env)
+            self.assert_(rfactory is not None,
                 "The '%s' HTTP method should be rejected by the factory."
                 % method)
 
