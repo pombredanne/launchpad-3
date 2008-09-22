@@ -252,14 +252,6 @@ class Branch(SQLBase):
         return ((self.revision_count > 0  or self.last_mirrored != None)
             and not self.private)
 
-    def _getNameDict(self, person):
-        """Return a simple dict with the person name or placeholder."""
-        if person is not None:
-            name = person.name
-        else:
-            name = "<name>"
-        return {'user': name}
-
     @property
     def bzr_identity(self):
         """See `IBranch`."""
@@ -307,18 +299,6 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
-    def related_bug_tasks(self):
-        """See `IBranch`."""
-        tasks = []
-        for bug in self.related_bugs:
-            task = bug.getBugTask(self.product)
-            if task is None:
-                # Just choose the first task for the bug.
-                task = bug.bugtasks[0]
-            tasks.append(task)
-        return tasks
-
-    @property
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
@@ -350,22 +330,6 @@ class Branch(SQLBase):
             return self.reviewer
         else:
             return self.owner
-
-    @property
-    def sort_key(self):
-        """See `IBranch`."""
-        if self.product is None:
-            product = None
-        else:
-            product = self.product.name
-        if self.author is None:
-            author = None
-        else:
-            author = self.author.browsername
-        status = self.lifecycle_status.sortkey
-        name = self.name
-        owner = self.owner.name
-        return (product, status, author, name, owner)
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
@@ -696,7 +660,7 @@ LISTING_SORT_TO_COLUMN = {
 
 
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product.name', '-lifecycle_status', 'author.name', 'branch.name']
+    'product.name', '-lifecycle_status', 'owner.name', 'branch.name']
 
 
 class DeletionOperation:
@@ -1059,17 +1023,6 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
 
-    def getProductDevelopmentBranches(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        query = Branch.select('''
-            (Branch.id = ProductSeries.import_branch OR
-            Branch.id = ProductSeries.user_branch) AND
-            ProductSeries.id = Product.development_focus AND
-            Branch.product IN %s''' % sqlvalues(product_ids),
-            clauseTables = ['Product', 'ProductSeries'])
-        return query.prejoin(['author'])
-
     def getActiveUserBranchSummaryForProducts(self, products):
         """See `IBranchSet`."""
         product_ids = [product.id for product in products]
@@ -1241,10 +1194,9 @@ class BranchSet:
         # Local import to avoid cycles
         from canonical.launchpad.database import Person, Product
         Owner = ClassAlias(Person, "owner")
-        Author = ClassAlias(Person, "author")
-        clauseTables = [LeftJoin(
-                LeftJoin(Join(Branch, Owner, Branch.owner == Owner.id),
-                         Author, Branch.author == Author.id),
+        clauseTables = [
+            LeftJoin(
+                Join(Branch, Owner, Branch.owner == Owner.id),
                 Product, Branch.product == Product.id)]
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
@@ -1271,49 +1223,6 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
-
-    def getBranchesWithRecentRevisionsForProduct(self, product, quantity,
-                                                 visible_by_user=None):
-        """See `IBranchSet`."""
-        assert product is not None, "Must have a valid product."
-        # XXX thumper 2008-01-07
-        # This is a slight bastardisation due to a SQLObject limitation.
-        # Here we have the same problem as the generalised sorting problem
-        # where we want to order the results based on a field that is not
-        # visible.  When we get stormified we can fix this, but I don't
-        # think it is worthwile blocking this feature on storm.
-
-        select_query = """
-            select branch.id
-            from branch, revision, branchrevision
-            where branch.id = branchrevision.branch
-            and branchrevision.revision = revision.id
-            and branchrevision.sequence = branch.revision_count
-            and branch.product = %s
-            """ % product.id
-        query = """
-            %s order by revision.revision_date desc
-            limit %s
-            """ % (self._generateBranchClause(select_query, visible_by_user),
-                   quantity)
-        cur = cursor()
-        cur.execute(query)
-
-        branch_ids = [id for (id,) in cur.fetchall()]
-        cur.close()
-        # Now get the branches for these id's and sort them so they
-        # are in the same order.
-
-        # If there are no branch_ids, then return an empty list.
-        if len(branch_ids) == 0:
-            return []
-
-        # Use a dictionary as a hash search for our insertion sort.
-        branches = {}
-        for branch in Branch.select('id in %s' % quote(branch_ids)):
-            branches[branch.id] = branch
-
-        return [branches[id] for id in branch_ids]
 
     def getByProductAndName(self, product, name):
         """See `IBranchSet`."""

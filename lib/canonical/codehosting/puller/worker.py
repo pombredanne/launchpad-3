@@ -21,7 +21,8 @@ from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.codehosting.transport import get_puller_server
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.branch import (
+    BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
@@ -37,7 +38,6 @@ __all__ = [
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
-    'MirroredURLChecker',
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
@@ -91,9 +91,7 @@ def get_stacked_on_url(branch):
     """Get the stacked-on URL for 'branch', return None if it not stacked."""
     try:
         return branch.get_stacked_on_url()
-    except (errors.NotStacked,
-            errors.UnstackableBranchFormat,
-            errors.UnstackableRepositoryFormat):
+    except (errors.NotStacked, errors.UnstackableBranchFormat):
         return None
 
 
@@ -367,6 +365,9 @@ class MirroredBranchOpener(BranchOpener):
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             raise BadUrlLaunchpad(url)
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                raise BadUrl(url)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(url)
         elif uri.scheme not in ['http', 'https']:
@@ -506,9 +507,10 @@ class PullerWorker:
         bzrdir = source_branch.bzrdir
         stacked_on_url = get_stacked_on_url(source_branch)
         if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(
-                self.dest, stacked_on_url)
-            if not get_transport(stacked_on_url).has('.'):
+            stacked_on_url = urlutils.join(self.dest, stacked_on_url)
+            try:
+                Branch.open(stacked_on_url)
+            except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)

@@ -16,6 +16,8 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
+from storm.store import Store
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -230,6 +232,14 @@ class BugWatch(SQLBase):
             message, bugwatch=self, user=bug_watch_updater,
             remote_comment_id=comment_id)
         return bug_message
+
+    def getImportedBugMessages(self):
+        """See `IBugWatch`."""
+        store = Store.of(self)
+        # If a comment is linked to a bug watch, it means it's imported.
+        return store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)
 
 
 class BugWatchSet(BugSetBase):

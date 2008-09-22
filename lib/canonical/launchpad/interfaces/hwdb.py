@@ -215,6 +215,22 @@ class IHWSubmissionSet(Interface):
         to a Person record, when the given email address is verified.
         """
 
+    def getByStatus(status, user=None):
+        """Return the submissions with the given status.
+
+        :param status: A status as enumerated in
+            `HWSubmissionProcessingStatus`.
+        :param user: The `IPerson` running the query.
+        :return: The submissions having the given status.
+
+        If no user is specified, only public submissions are returned.
+        If a regular user is specified, public submissions and private
+        submissions owned by the user are returned.
+        For admins and for the janitor, all submissions with the given
+        status are returned.
+        """
+
+
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
 
