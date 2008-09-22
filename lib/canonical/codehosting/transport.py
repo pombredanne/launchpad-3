@@ -4,7 +4,7 @@
 """Transport utilities for the codehosting system.
 
 The code hosting filesystem is implemented using Bazaar transports. This
-module contains utilities for implementing virtual filesystem using
+module contains utilities for implementing virtual filesystems using
 bzrlib.transport classes.
 """
 

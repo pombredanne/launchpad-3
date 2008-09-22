@@ -124,8 +124,6 @@ class InvalidControlDirectory(BzrError):
     """Raised when we try to parse an invalid control directory."""
 
 
-
-
 class LaunchpadBranch:
     """A branch on Launchpad.
 

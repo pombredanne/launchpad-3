@@ -288,31 +288,7 @@ def set_up_logging(configure_oops_reporting=False):
     reported as OOPSes.
     """
     log = logging.getLogger('codehosting')
-
-    if config.codehosting.debug_logfile is not None:
-        # Create the directory that contains the debug logfile.
-        parent_dir = os.path.dirname(config.codehosting.debug_logfile)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-        assert os.path.isdir(parent_dir), (
-            "%r should be a directory" % parent_dir)
-
-        # Messages logged to 'codehosting' are stored in the debug_logfile.
-        handler = logging.FileHandler(config.codehosting.debug_logfile)
-        handler.setFormatter(
-            logging.Formatter(
-                '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
-        handler.setLevel(logging.DEBUG)
-        log.addHandler(handler)
-        log.setLevel(logging.DEBUG)
-    else:
-        log.setLevel(logging.CRITICAL)
-
-    # Don't log 'codehosting' messages to stderr.
-    if getattr(trace, '_stderr_handler', None) is not None:
-        trace._stderr_handler.addFilter(_NotFilter('codehosting'))
-
+    log.setLevel(logging.CRITICAL)
     if configure_oops_reporting:
         set_up_oops_reporting('codehosting')
-
     return log
