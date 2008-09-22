@@ -22,7 +22,6 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.vocabularies.dbobjects import (
     WebBugTrackerVocabulary)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import IProduct
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
