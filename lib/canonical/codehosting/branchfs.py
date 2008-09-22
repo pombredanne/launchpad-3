@@ -1,3 +1,48 @@
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+"""The Launchpad code hosting file system.
+
+The way Launchpad presents branches is very different from the way it stores
+them. Externally, branches are reached using URLs that look like
+<schema>://launchpad.net/~owner/product/branch-name. Internally, they are
+stored by branch ID. Branch 1 is stored at 00/00/00/01 and branch 10 is stored
+at 00/00/00/0A. Further, these branches might not be stored on the same
+physical machine.
+
+This means that our services need to translate the external paths into
+internal paths.
+
+We also want to let users create new branches on Launchpad simply by pushing
+them up. We want Launchpad to detect when a branch has been changed and update
+our internal mirror.
+
+This means our services must detect events like "make directory" and "unlock
+branch", translate them into Launchpad operations like "create branch" and
+"request mirror" and then actually perform those operations.
+
+So, we have a `LaunchpadServer` which implements the core operations --
+translate a path, make a branch and request a mirror -- in terms of virtual
+paths.
+
+This server does most of its work by delegating to a `LaunchpadBranch` object.
+This object can be constructed from a virtual path and then operated on. It in
+turn delegates to the "authserver", an internal XML-RPC server that actually
+talks to the database. We cache requests to the authserver using
+`CachingAuthserverClient`, in order to speed things up a bit.
+
+We hook the `LaunchpadServer` into Bazaar by implementing a
+`AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
+operations so that they are translated by an object that implements
+`translateVirtualPath`.  See transport.py for more information.
+
+This virtual transport isn't quite enough, since it only does dumb path
+translation. We also need to be able to interpret filesystem events in terms
+of Launchpad branches. To do this, we provide a `LaunchpadTransport` that
+hooks into operations like `mkdir` and ask the `LaunchpadServer` to make a
+branch if appropriate.
+"""
+
+
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',

@@ -1,3 +1,10 @@
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+"""Client code for the branch filesystem endpoint.
+
+This code talks to the internal XML-RPC server for the branch filesystem.
+"""
+
 __metaclass__ = type
 __all__ = [
     'BlockingProxy',
