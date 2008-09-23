@@ -21,14 +21,16 @@ class TestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
-        # Python 2.4 shenanigans. These are both implemented by unittest with
-        # double underscores in Python 2.4. There are no direct
-        # implementations of these methods in this class. We use the double
-        # underscore syntax without expansion because this class has the same
-        # __name__ as its base class. In Python 2.5 these elements have single
-        # underscores.
-        self._testMethodName = self.__testMethodName
-        self._exc_info = self.__exc_info
+
+    def __str__(self):
+        """Return the fully qualified Python name of the test.
+
+        Zope uses this method to determine how to print the test in the
+        runner. We use the test's id in order to make the test easier to find,
+        and also so that modifications to the id will show up. This is
+        particularly important with bzrlib-style test multiplication.
+        """
+        return self.id()
 
     def _runCleanups(self, result):
         """Run the cleanups that have been added with addCleanup.
@@ -45,7 +47,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 ok = False
         return ok
 
@@ -102,11 +104,10 @@ class TestCase(unittest.TestCase):
         # better location not clear. Used primarily for testing ORM objects,
         # which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
-        sql_object.syncUpdate()
         sql_class = type(sql_object)
-        found_object = sql_class.selectOne(
-            ('id=%s AND ' + attribute_name + '=%s')
-            % sqlvalues(sql_object.id, date))
+        store = sql_class._get_store()
+        found_object = store.find(
+            sql_class, **({'id': sql_object.id, attribute_name: date}))
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
@@ -155,14 +156,14 @@ class TestCase(unittest.TestCase):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self._testMethodName)
+        testMethod = getattr(self, self.__testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 self._runCleanups(result)
                 return
 
@@ -171,11 +172,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self._exc_info())
+                result.addFailure(self, self.__exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -183,7 +184,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
