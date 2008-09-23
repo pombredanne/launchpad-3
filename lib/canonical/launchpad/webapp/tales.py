@@ -1015,14 +1015,13 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
 
     def traverse(self, name, furtherPath):
         """Special case traversal to support multiple link formats."""
-        if name == 'project-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.projectLink(extra_path)
-        if name == 'title-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.titleLink(extra_path)
+        for link_name, func in (('project-link', self.projectLink),
+                           ('title-link', self.titleLink),
+                           ('bzr-link', self.bzrLink)):
+            if name == link_name:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+                return func(extra_path)
         return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
 
     def _args(self, extra_path):
@@ -1035,12 +1034,8 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             title = branch.title
         else:
             title = "(no title)"
-        if branch.author is not None:
-            author = branch.author.name
-        else:
-            author = branch.owner.name
         return {
-            'author': author,
+            'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
             'title': cgi.escape(title),
@@ -1054,6 +1049,13 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
             '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
+
+    def bzrLink(self, extra_path):
+        """A hyperlinked branch icon with the unique name."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(bzr_identity)s</a>' % self._args(extra_path))
 
     def projectLink(self, extra_path):
         """A hyperlinked branch icon with the name and title."""
