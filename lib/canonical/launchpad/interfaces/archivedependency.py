@@ -34,7 +34,7 @@ class IArchiveDependency(Interface):
 
     dependency = Object(
         schema=IArchive,
-        title=_("The archive set as dependency."),
+        title=_("The archive set as a dependency."),
         required=False)
 
     pocket = Choice(
