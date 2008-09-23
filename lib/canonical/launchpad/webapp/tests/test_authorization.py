@@ -54,25 +54,22 @@ class TestCheckPermissionCaching(TestCaseWithFactory):
         env = {}
         return LaunchpadBrowserRequest(data, env)
 
-    def registerCheckerFactoryForClass(self, cls):
+    def getObjectAndCheckerFactoryForObject(self):
+        class C:
+            pass
         checker_factory = CheckerFactory()
         ztapi.provideAdapter(
-            cls, IAuthorization, checker_factory, name=self.permission)
-        return checker_factory
+            C, IAuthorization, checker_factory, name=self.permission)
+        return C(), checker_factory
 
     def test_checkPermission_cache_unauthenticated(self):
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
-        class C:
-            pass
-        checker_factory = self.registerCheckerFactoryForClass(C)
-        objecttoauthorize = C()
-        self.assertEqual(
-            False, policy.checkPermission(self.permission, objecttoauthorize))
+        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
-        self.assertEqual(
-            False, policy.checkPermission(self.permission, objecttoauthorize))
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
 
@@ -83,16 +80,13 @@ class TestCheckPermissionCaching(TestCaseWithFactory):
         request = self.makeRequest()
         request.setPrincipal(principal)
         policy = LaunchpadSecurityPolicy(request)
-        class C:
-            pass
-        checker_factory = self.registerCheckerFactoryForClass(C)
-        objecttoauthorize = C()
-        self.assertEqual(
-            True, policy.checkPermission(self.permission, objecttoauthorize))
+
+        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
+
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             [('checkAuthenticated', person)], checker_factory.calls)
-        self.assertEqual(
-            True, policy.checkPermission(self.permission, objecttoauthorize))
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             [('checkAuthenticated', person)], checker_factory.calls)
 
@@ -102,17 +96,14 @@ class TestCheckPermissionCaching(TestCaseWithFactory):
         principal = login_src.getPrincipal(person.id)
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
-        class C:
-            pass
-        checker_factory = self.registerCheckerFactoryForClass(C)
-        objecttoauthorize = C()
-        self.assertEqual(
-            False, policy.checkPermission(self.permission, objecttoauthorize))
+
+        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
+
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
         request.setPrincipal(principal)
-        self.assertEqual(
-            True, policy.checkPermission(self.permission, objecttoauthorize))
+        policy.checkPermission(self.permission, obj)
         self.assertEqual(
             ['checkUnauthenticated', ('checkAuthenticated', person)],
             checker_factory.calls)
