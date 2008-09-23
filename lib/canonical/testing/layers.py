@@ -1268,8 +1268,13 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class _BaseAppServerLayer:
-    """Environment for starting and stopping the app server."""
+class AppServerProcessController:
+    """Controller for starting and stopping subprocesses.
+
+    Layers which need to start and stop a child process appserver or smtp
+    server should call the methods in this class, but should NOT inherit from
+    this class.
+    """
 
     # Holds the Popen instance of the spawned app server.
     appserver = None
@@ -1283,20 +1288,63 @@ class _BaseAppServerLayer:
 
     @classmethod
     @profiled
-    def setUp(cls):
-        if cls.appserver is not None:
-            raise LayerInvariantError('setUp() called twice')
-        cls.cleanUpStaleAppServer()
-        cls.startAppServer()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.tearDown)
-        cls.waitUntilAppServerIsReady()
+    def startSMTPServer(cls):
+        """Start the SMTP server if it hasn't already been started."""
+        if cls.smtp_controller is not None:
+            raise LayerInvariantError('SMTP server already running')
         cls.smtp_controller = SMTPControl()
         cls.smtp_controller.start()
+        # Make sure that the smtp server is killed even if tearDown() is
+        # skipped, which can happen if FunctionalLayer is in the mix.
+        atexit.register(cls.stopSMTPServer)
 
     @classmethod
-    def cleanUpStaleAppServer(cls):
+    @profiled
+    def startAppServer(cls):
+        """Start the app server if it hasn't already been started."""
+        if cls.appserver is not None:
+            raise LayerInvariantError('App server already running')
+        cls._cleanUpStaleAppServer()
+        cls._runAppServer()
+        cls._waitUntilAppServerIsReady()
+        # Make sure that the app server is killed even if tearDown() is
+        # skipped.
+        atexit.register(cls.stopAppServer)
+
+    @classmethod
+    @profiled
+    def stopSMTPServer(cls):
+        """Kill the SMTP server and wait until it's exited."""
+        if cls.smtp_controller is not None:
+            cls.smtp_controller.reset()
+            cls.smtp_controller.stop()
+            cls.smtp_controller = None
+
+    @classmethod
+    @profiled
+    def stopAppServer(cls):
+        """Kill the appserver and wait until it's exited."""
+        if cls.appserver is not None:
+            if cls.appserver.poll() is None:
+                os.kill(cls.appserver.pid, signal.SIGTERM)
+                cls.appserver.wait()
+            cls.appserver = None
+
+    @classmethod
+    @profiled
+    def postTestInvariants(cls):
+        """Enforce some invariants after each test.
+
+        Must be called in your layer class's `testTearDown()`.
+        """
+        if cls.appserver.poll() is not None:
+            raise LayerIsolationError(
+                "App server died in this test (status=%s):\n%s" % (
+                    cls.appserver.returncode, cls.appserver.stdout.read()))
+        DatabaseLayer.force_dirty_database()
+
+    @classmethod
+    def _cleanUpStaleAppServer(cls):
         """Kill any stale app server or pid file."""
         pid = pidfile.get_pid('launchpad', cls.appserver_config)
         if pid is not None:
@@ -1309,7 +1357,7 @@ class _BaseAppServerLayer:
             pidfile.remove_pidfile('launchpad', cls.appserver_config)
 
     @classmethod
-    def startAppServer(cls):
+    def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
@@ -1325,7 +1373,7 @@ class _BaseAppServerLayer:
             env=environ, cwd=_config.root)
 
     @classmethod
-    def waitUntilAppServerIsReady(cls):
+    def _waitUntilAppServerIsReady(cls):
         """Wait until the app server accepts connection."""
         assert cls.appserver is not None, "App server isn't started."
         root_url = cls.appserver_config.vhost.mainsite.rooturl
@@ -1356,47 +1404,22 @@ class _BaseAppServerLayer:
             os.kill(cls.appserver.pid, signal.SIGTERM)
             cls.appserver = None
 
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        """Kills a started app server."""
-        if cls.appserver is None:
-            return
-        if cls.appserver.poll() is None:
-            os.kill(cls.appserver.pid, signal.SIGTERM)
-            cls.appserver.wait()
-        cls.appserver = None
-        cls.smtp_controller.reset()
-        cls.smtp_controller.stop()
 
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        if cls.appserver.poll() is not None:
-            raise LayerIsolationError(
-                "App server died in this test (status=%s):\n%s" % (
-                    cls.appserver.returncode, cls.appserver.stdout.read()))
-        DatabaseLayer.force_dirty_database()
-
-
-class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
+class AppServerLayer(LaunchpadFunctionalLayer):
     """Layer for tests that run in the webapp environment with an app server.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        AppServerProcessController.startSMTPServer()
+        AppServerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        AppServerProcessController.stopAppServer()
+        AppServerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1406,22 +1429,24 @@ class AppServerLayer(LaunchpadFunctionalLayer, _BaseAppServerLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        AppServerProcessController.postTestInvariants()
 
 
-class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
+class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     """Layer for tests that run in the zopeless environment with an app server.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        AppServerProcessController.startSMTPServer()
+        AppServerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        AppServerProcessController.stopAppServer()
+        AppServerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1431,23 +1456,24 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer, _BaseAppServerLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        AppServerProcessController.postTestInvariants()
 
 
-class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer,
-                            _BaseAppServerLayer):
+class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     """Layer for twisted-using zopeless tests that need a running app server.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        pass
+        AppServerProcessController.startSMTPServer()
+        AppServerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        AppServerProcessController.stopAppServer()
+        AppServerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1457,4 +1483,4 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer,
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        AppServerProcessController.postTestInvariants()
