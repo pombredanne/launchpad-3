@@ -18,10 +18,11 @@ import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.branchfs import get_puller_server
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.codehosting.puller import get_lock_id_for_branch_id
-from canonical.codehosting.transport import get_puller_server
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.branch import (
+    BranchType, get_blacklisted_hostnames)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
@@ -37,9 +38,9 @@ __all__ = [
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
-    'MirroredURLChecker',
     'PullerWorker',
     'PullerWorkerProtocol',
+    'StackedOnBranchNotFound',
     'StackingLoopError',
     'URLChecker',
     ]
@@ -82,6 +83,18 @@ class StackingLoopError(Exception):
     """Encountered a branch stacking cycle."""
 
 
+class StackedOnBranchNotFound(Exception):
+    """Couldn't find the stacked-on branch."""
+
+
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', return None if it not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (errors.NotStacked, errors.UnstackableBranchFormat):
+        return None
+
+
 def get_canonical_url_for_branch_name(unique_name):
     """Custom implementation of canonical_url(branch) for error reporting.
 
@@ -120,6 +133,11 @@ class PullerWorkerProtocol:
 
     def startMirroring(self):
         self.sendEvent('startMirroring')
+
+    def mirrorDeferred(self):
+        # Called when we want to try mirroring again later without indicating
+        # success or failure.
+        self.sendEvent('mirrorDeferred')
 
     def mirrorSucceeded(self, last_revision):
         self.sendEvent('mirrorSucceeded', last_revision)
@@ -347,6 +365,9 @@ class MirroredBranchOpener(BranchOpener):
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             raise BadUrlLaunchpad(url)
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                raise BadUrl(url)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(url)
         elif uri.scheme not in ['http', 'https']:
@@ -461,12 +482,7 @@ class PullerWorker:
                 # source branch.  Note that we expect this to be fairly
                 # common, as, as of r6889, it is possible for a branch to be
                 # pulled before the stacking information is set at all.
-                try:
-                    stacked_on_url = source_branch.get_stacked_on_url()
-                except (errors.UnstackableRepositoryFormat,
-                        errors.UnstackableBranchFormat,
-                        errors.NotStacked):
-                    stacked_on_url = None
+                stacked_on_url = get_stacked_on_url(source_branch)
                 try:
                     branch.set_stacked_on_url(stacked_on_url)
                 except (errors.UnstackableRepositoryFormat,
@@ -474,6 +490,8 @@ class PullerWorker:
                     if stacked_on_url is not None:
                         raise AssertionError(
                             "Couldn't set stacked_on_url %r" % stacked_on_url)
+                except errors.NotBranchError:
+                    raise StackedOnBranchNotFound()
                 branch.pull(source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
@@ -487,6 +505,13 @@ class PullerWorker:
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
+        stacked_on_url = get_stacked_on_url(source_branch)
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(self.dest, stacked_on_url)
+            try:
+                Branch.open(stacked_on_url)
+            except errors.NotBranchError:
+                raise StackedOnBranchNotFound()
         bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
         return Branch.open(self.dest)
 
@@ -522,12 +547,9 @@ class PullerWorker:
         server.setUp()
         try:
             source_branch = self.branch_opener.open(self.source)
-            try:
-                stacked_on_location = source_branch.get_stacked_on_url()
-            except (errors.NotStacked, errors.UnstackableBranchFormat):
-                pass
-            else:
-                self.protocol.setStackedOn(stacked_on_location)
+            stacked_on_url = get_stacked_on_url(source_branch)
+            if stacked_on_url is not None:
+                self.protocol.setStackedOn(stacked_on_url)
             return self._mirrorToDestBranch(source_branch)
         finally:
             server.tearDown()
@@ -600,6 +622,9 @@ class PullerWorker:
 
         except InvalidURIError, e:
             self._mirrorFailed(e)
+
+        except StackedOnBranchNotFound:
+            self.protocol.mirrorDeferred()
 
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.

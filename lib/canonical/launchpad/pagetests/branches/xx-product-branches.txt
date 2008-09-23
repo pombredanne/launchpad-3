@@ -1,6 +1,6 @@
 = Product Branches Overview =
 
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 

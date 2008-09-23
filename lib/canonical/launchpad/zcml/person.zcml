@@ -760,7 +760,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
-    permission="launchpad.Edit"
+    permission="launchpad.MailingListManager"
     class="canonical.launchpad.browser.TeamMailingListConfigurationView"
     name="+mailinglist"
     template="../templates/team-mailinglist.pt"
@@ -913,7 +913,7 @@
 
   <securedutility
     class="canonical.launchpad.rest.MeLink"
-    provides="canonical.lazr.interfaces.ITopLevelEntryLink">
+    provides="canonical.launchpad.rest.IMeLink">
     <allow interface="canonical.lazr.interfaces.ITopLevelEntryLink" />
     <allow
       interface="canonical.launchpad.webapp.interfaces.ICanonicalUrlData" />

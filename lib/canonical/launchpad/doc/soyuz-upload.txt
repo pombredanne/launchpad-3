@@ -77,7 +77,7 @@ session.
   >>>
   >>> test_files_dir = os.path.join(config.root,
   ...                               "lib/canonical/launchpad/scripts/"
-  ...                               "ftests/upload_test_files/")
+  ...                               "tests/upload_test_files/")
   ...
   >>> changes = sorted(glob.glob(test_files_dir + "*.changes"))
   >>> sent_filenames = []

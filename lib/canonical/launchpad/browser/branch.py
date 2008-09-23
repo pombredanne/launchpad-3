@@ -102,18 +102,8 @@ class BranchHierarchy(Hierarchy):
 
     def items(self):
         """See `Hierarchy`."""
-        if self.context.product is not None:
-            obj = self.context.product
-        else:
-            obj = self.context.owner
-
-        url = canonical_url(obj)
-        breadcrumb = self.breadcrumb_for(obj, url)
-
-        if breadcrumb is None:
-            return []
-        else:
-            return [breadcrumb]
+        obj = IPrimaryContext(self.context).context
+        return self._breadcrumbs([(obj, canonical_url(obj))])
 
 
 class BranchBadges(HasBadgeBase):

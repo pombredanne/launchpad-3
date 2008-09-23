@@ -243,7 +243,8 @@ def new_person(first_name, set_preferred_email=True,
         person.mailing_list_auto_subscribe_policy = \
             MailingListAutoSubscribePolicy.NEVER
     getUtility(IEmailAddressSet).new(alternative_address, person,
-                                     EmailAddressStatus.VALIDATED)
+                                     EmailAddressStatus.VALIDATED,
+                                     person.account)
     return person
 
 
@@ -295,6 +296,11 @@ class MailmanStub:
         for mailing_list in mailing_list_set.approved_lists:
             mailing_list.startConstructing()
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        for mailing_list in mailing_list_set.deactivated_lists:
+            mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        for mailing_list in mailing_list_set.modified_lists:
+            mailing_list.startUpdating()
+            mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
         message_ids = set()
@@ -306,7 +312,6 @@ class MailmanStub:
         for message_id in message_ids:
             message = message_set.getMessageByMessageID(message_id)
             message.acknowledge()
-        flush_database_updates()
 
 
 mailman = MailmanStub()

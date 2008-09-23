@@ -28,7 +28,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -343,10 +343,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See BugTargetBase."""
         return "BugTask.distribution = %d" % self.id
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution."""
         search_params.setDistribution(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
@@ -354,8 +353,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.distribution = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.distribution == self, user)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1276,25 +1274,34 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
 
+    def newSeries(self, name, displayname, title, summary,
+                  description, version, parent_series, owner):
+        """See `IDistribution`."""
+        return DistroSeries(
+            distribution=self,
+            name=name,
+            displayname=displayname,
+            title=title,
+            summary=summary,
+            description=description,
+            version=version,
+            status=DistroSeriesStatus.EXPERIMENTAL,
+            parent_series=parent_series,
+            owner=owner)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
     implements(IDistributionSet)
-
-    def __init__(self):
-        self.title = "Registered Distributions"
+    title = "Registered Distributions"
 
     def __iter__(self):
-        """Return all distributions sorted with Ubuntu preferentially
-        displayed.
-        """
-        distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset, 100),
-                        key=lambda distro: distro._sort_key))
+        """See `IDistributionSet`."""
+        return iter(self.getDistros())
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         distribution = self.getByName(name)
         if distribution is None:
             raise NotFoundError(name)
@@ -1309,11 +1316,13 @@ class DistributionSet:
         return Distribution.select().count()
 
     def getDistros(self):
-        """Returns all Distributions available on the database"""
-        return Distribution.select()
+        """See `IDistributionSet`."""
+        distros = Distribution.select()
+        return sorted(
+            shortlist(distros, 100), key=lambda distro: distro._sort_key)
 
     def getByName(self, distroname):
-        """See canonical.launchpad.interfaces.IDistributionSet."""
+        """See `IDistributionSet`."""
         try:
             return Distribution.byName(distroname)
         except SQLObjectNotFound:
@@ -1338,4 +1347,3 @@ class DistributionSet:
         archive = getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
-

@@ -4,7 +4,7 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
-PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
@@ -148,18 +148,18 @@ ftest_inplace: inplace
 run: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
+		 -r librarian,google-webservice -C $(CONFFILE)
 
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
 	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
-		-r librarian,restricted-librarian,google-webservice -C $(CONFFILE) \
+		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
+		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -261,13 +261,17 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
-	cp configs/development/local-launchpad-apache $@
+copy-certificates:
+	cp configs/development/launchpad.crt /etc/apache2/ssl/
+	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-/etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
+copy-apache-config:
+	cp configs/development/local-launchpad-apache /etc/apache2/sites-available/local-launchpad
+
+enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
-reload-apache: /etc/apache2/sites-enabled/local-launchpad
+reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 reload
 
 static:

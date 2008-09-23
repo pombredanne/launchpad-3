@@ -116,21 +116,6 @@ property.
     >>> sorted([bug.id for bug in branch.related_bugs])
     [1, 4, 5]
 
-There are situations where the actual bug task is more useful than the
-bug as a whole.  However a branch can be associated with a bug where the
-project of the branch is not a target of any of the tasks for the
-bug.  For each bug that the branch is linked to, the bug is asked for
-the task for the project of the branch.  If a target cannot be found,
-then the first task of the bug is returned.
-
-    >>> tasks = [(task.bug.id, task.target.displayname, task.importance.title)
-    ...          for task in branch.related_bug_tasks]
-    >>> for bug_id, target_name, importance in sorted(tasks):
-    ...     print bug_id, target_name, importance
-    1 Mozilla Firefox Low
-    4 Mozilla Firefox Medium
-    5 Mozilla Firefox Critical
-
 
 == Getting bug branches associated with multiple branches ==
 

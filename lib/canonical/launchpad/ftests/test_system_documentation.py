@@ -12,7 +12,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
@@ -114,13 +113,6 @@ def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
-
-def branchStatusSetUp(test):
-    test._authserver = AuthserverTacTestSetup()
-    test._authserver.setUp()
-
-def branchStatusTearDown(test):
-    test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
@@ -353,10 +345,6 @@ special = {
             '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'librarian.txt': LayeredDocFileSuite(
-            '../doc/librarian.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -471,6 +459,12 @@ special = {
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
+            ),
+    'bugzilla-import.txt': LayeredDocFileSuite(
+            '../doc/bugzilla-import.txt',
+            setUp=setUp, tearDown=tearDown,
+            stdout_logging_level=logging.WARNING,
+            layer=LaunchpadZopelessLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
