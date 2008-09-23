@@ -16,9 +16,6 @@ name of a service. It then gets the configured name for the current instance
 from `canonical.config.config`, and returns a pidfile path that combines the
 instance name with the service name.
 
-{{{
-#!python
-
     >>> from canonical.pidfile import (
     ...     pidfile_path, make_pidfile, remove_pidfile, get_pid)
     >>> from canonical.config import config
@@ -26,12 +23,7 @@ instance name with the service name.
     >>> pidfile_path('nuts') == '/var/tmp/%s-nuts.pid' % config.instance_name
     True
 
-}}}
-
 You can pass in your own config instance to use.
-
-{{{
-#!python
 
     >>> class MyConfig:
     ...     class canonical:
@@ -39,8 +31,6 @@ You can pass in your own config instance to use.
     ...     instance_name = 'blah'
     >>> pidfile_path('beans', MyConfig)
     '/var/tmp/blah-beans.pid'
-
-}}}
 
 This basic mechanism supports the other three functions.
 
@@ -56,9 +46,6 @@ to call remove_pidfile inside them.
 As a simple demonstration, this subprocess creates a pidfile and checks that the
 correct PID is stored in it.
 
-{{{
-#!python
-
     >>> import sys, subprocess, os, signal
 
     >>> cmd = '''
@@ -73,24 +60,14 @@ correct PID is stored in it.
     >>> subprocess.call(cmd, shell=True)
     1
 
-}}}
-
 Moreover, the pidfile has been removed.
-
-{{{
-#!python
 
     >>> os.path.exists(pidfile_path('nuts'))
     False
 
-}}}
-
 The pidfile must also be removed if the process is exited with SIGINT (Ctrl-C)
 or SIGTERM, too. We'll demonstrate this with a couple of functions, because
 we'll need them again later.
-
-{{{
-#!python
 
     >>> import time
     >>> subprocess_code = '''
@@ -122,38 +99,23 @@ we'll need them again later.
     ...         print 'Error: pid file was not removed'
     ...
 
-}}}
-
 Here's our example.  We start, and then stop with SIGINT.
-
-{{{
-#!python
 
     >>> import signal
     >>> pid = start_process()
     >>> stop(pid, signal.SIGINT)
     Stopped successfully
 
-}}}
-
 We can do the same for SIGTERM.
-
-{{{
-#!python
 
     >>> pid = start_process()
     >>> stop(pid, signal.SIGTERM)
     Stopped successfully
 
-}}}
-
 It's also worth noting that trying to claim a pid that already has a file does
 fail as it should. Here, we also show that the signal handlers are not
 modified. (We do not check the `atexit` handlers because the module does not
 provide a documented interface for doing so.)
-
-{{{
-#!python
 
     >>> current_SIGINT_handler = signal.getsignal(signal.SIGINT)
     >>> current_SIGTERM_handler = signal.getsignal(signal.SIGTERM)
@@ -170,8 +132,6 @@ provide a documented interface for doing so.)
     >>> stop(pid, signal.SIGTERM)
     Stopped successfully
 
-}}}
-
 === `get_pid` ===
 
 The `get_pid` function returns the PID for the given service as an integer, or
@@ -181,9 +141,6 @@ This method should only be needed by service or monitoring scripts. Currently no
 checking is done to ensure that the process is actually running, is healthy, or
 died horribly a while ago and its PID being used by something else. What we have
 is probably good enough.
-
-{{{
-#!python
 
     >>> get_pid('nuts') is None
     True
@@ -195,12 +152,7 @@ is probably good enough.
     >>> get_pid('nuts') is None
     True
 
-}}}
-
 You can also pass in your own config instance.
-
-{{{
-#!python
 
     >>> class MyConfig:
     ...     class canonical:
@@ -218,15 +170,10 @@ You can also pass in your own config instance.
     72
     >>> os.remove(path)
 
-}}}
-
 === `remove_pidfile` ===
 
 The `remove_pidfile` function removes the PID file. It should only be needed
 if you are overriding the default SIGTERM signal handler.
-
-{{{
-#!python
 
     >>> path = pidfile_path('legumes')
     >>> file = open(path, 'w')
@@ -238,22 +185,12 @@ if you are overriding the default SIGTERM signal handler.
     >>> os.path.exists(path)
     False
 
-}}}
-
 If the file does not exist, the function silently ignores the request.
-
-{{{
-#!python
 
     >>> remove_pidfile('legumes')
 
-}}}
-
 You can also pass in your own config instance, in which case the pid does not
 need to match the current process's pid.
-
-{{{
-#!python
 
     >>> class MyConfig:
     ...     class canonical:
@@ -269,5 +206,3 @@ need to match the current process's pid.
     >>> remove_pidfile('pits', MyConfig)
     >>> os.path.exists(path)
     False
-
-}}}
