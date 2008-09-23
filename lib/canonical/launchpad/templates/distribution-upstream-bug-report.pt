@@ -91,7 +91,7 @@
         the counts.
       </p>
 
-      <table class="listing" id="upstream-report"
+      <table class="listing sortable" id="upstream-report"
              tal:condition="view/data">
         <thead>
           <tr>
@@ -207,7 +207,7 @@
           </tr>
         </tbody>
         <tfoot id="upstream-report-totals">
-          <tr>
+          <tr class="sortbottom">
             <td colspan="5" class="amount"><b>Totals:</b></td>
             <td class="amount"
                 tal:content="view/total/open_bugs" />

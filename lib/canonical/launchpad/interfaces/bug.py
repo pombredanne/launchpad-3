@@ -32,7 +32,6 @@ from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
@@ -44,6 +43,7 @@ from canonical.lazr.rest.declarations import (
     export_factory_operation, export_write_operation, exported,
     operation_parameters, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 
 
 class CreateBugParams:
@@ -137,7 +137,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget, ICanBeMentored):
+class IBug(ICanBeMentored):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -260,8 +260,22 @@ class IBug(IMessageTarget, ICanBeMentored):
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
 
-    def followup_subject():
-        """Return a candidate subject for a followup message."""
+    messages = exported(
+        CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage)))
+
+    followup_subject = Attribute("The likely subject of the next message.")
+
+    @operation_parameters(
+        subject=copy_field(IMessage['subject']),
+        content=copy_field(IMessage['content']))
+    @call_with(owner=REQUEST_USER)
+    @export_factory_operation(IMessage, [])
+    def newMessage(owner, subject, content):
+        """Create a new message, and link it to this object."""
 
     # subscription-related methods
 
