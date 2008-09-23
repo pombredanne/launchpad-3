@@ -9,10 +9,11 @@ from StringIO import StringIO
 import unittest
 
 import bzrlib.branch
-from bzrlib.branch import BranchReferenceFormat
-from bzrlib.bzrdir import BzrDir
+from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
+from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
 from bzrlib.errors import NotBranchError
 from bzrlib.remote import RemoteBranch
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
 from bzrlib.smart import server
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
@@ -23,7 +24,8 @@ from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
     BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
     ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory)
+    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory,
+    StackedOnBranchNotFound)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
@@ -147,6 +149,47 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
+
+    def testRaisesStackedOnBranchNotFoundInitialMirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # initial mirror, then raise StackedOnBranchNotFound. This will ensure
+        # the puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
+
+    def testRaisesStackedOnBranchNotFoundRemirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # update, then raise StackedOnBranchNotFound. This will ensure the
+        # puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        to_mirror.mirrorWithoutChecks()
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
     def testDoesntSendStackedInfoUnstackableFormat(self):
         # Mirroring an unstackable branch doesn't send the stacked-on location
@@ -292,6 +335,14 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
         opener.checkOneURL = checkOneURL
         return opener
 
+    def makeBranch(self, path, branch_format, repository_format):
+        """Make a Bazaar branch at 'path' with the given formats."""
+        bzrdir_format = BzrDirMetaFormat1()
+        bzrdir_format.set_branch_format(branch_format)
+        bzrdir = self.make_bzrdir(path, format=bzrdir_format)
+        repository_format.initialize(bzrdir)
+        return bzrdir.create_branch()
+
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
         # branches with allowed URLs.
@@ -302,6 +353,15 @@ class TestBranchOpenerStacking(TestCaseWithTransport):
             [stacked_branch.base, stacked_on_branch.base])
         # This doesn't raise an exception.
         opener.checkSource(stacked_branch.base)
+
+    def testUnstackableRepository(self):
+        # checkSource treats branches with UnstackableRepositoryFormats as
+        # being not stacked.
+        branch = self.makeBranch(
+            'unstacked', BzrBranchFormat7(), RepositoryFormatKnitPack1())
+        opener = self.makeBranchOpener([branch.base])
+        # This doesn't raise an exception.
+        opener.checkSource(branch.base)
 
     def testAllowedRelativeURL(self):
         # checkSource passes on absolute urls to checkOneURL, even if the
@@ -477,6 +537,15 @@ class TestMirroredBranchOpener(TestCase):
             BadUrlLaunchpad, opener.checkOneURL,
             self.factory.getUniqueURL(host='code.launchpad.dev'))
 
+    def testLocalhost(self):
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
+        opener = MirroredBranchOpener()
+        localhost_url = self.factory.getUniqueURL(host='localhost')
+        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+        localhost_url = self.factory.getUniqueURL(host='127.0.0.1')
+        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     """Tests for the client-side implementation of the protocol used to
@@ -534,6 +603,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # if any.
         self.protocol.setStackedOn('/~foo/bar/baz')
         self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
+
+    def test_mirrorDeferred(self):
+        # Calling 'mirrorDeferred' sends 'mirrorDeferred' as a netstring.
+        self.protocol.mirrorDeferred()
+        self.assertSentNetstrings(['mirrorDeferred', '0'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

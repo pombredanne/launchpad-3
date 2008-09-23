@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'IProduct',
-    'IProductSet',
+    'IProductEditRestricted',
+    'IProductPublic',
     'IProductReviewSearch',
+    'IProductSet',
     'License',
     'LicenseStatus',
     ]
@@ -52,9 +54,11 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters)
+    REQUEST_USER, call_with, collection_default_content,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_read_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    rename_parameters_as)
 
 
 class LicenseStatus(DBEnumeratedType):
@@ -114,21 +118,20 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-               IHasBranchVisibilityPolicy, IHasDrivers,
-               IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget, IPillar):
-    """A Product.
+class IProductEditRestricted(Interface):
+    """IProduct properties which require launchpad.Edit permission."""
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
-    For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others.
-    """
-    export_as_webservice_entry('project')
+    def newSeries(owner, name, summary, branch=None):
+        """Creates a new ProductSeries for this product."""
+
+
+class IProductPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -466,9 +469,6 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
-
     def getSeries(name):
         """Returns the series for this product that has the name given, or
         None."""
@@ -494,8 +494,20 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     def userCanEdit(user):
         """Can the user edit this product?"""
 
+class IProduct(IProductEditRestricted, IProductPublic):
+    """A Product.
+
+    The Launchpad Registry describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
+    """
+
+    export_as_webservice_entry('project')
+
 # Fix cyclic references.
 IProject['products'].value_type = Reference(IProduct)
+IProductRelease['product'].schema = IProduct
 
 
 class IProductSet(Interface):
@@ -546,13 +558,28 @@ class IProductSet(Interface):
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(
+        displayname='display_name', project='project_group',
+        homepageurl='home_page_url', screenshotsurl='screenshots_url',
+        freshmeatproject='freshmeat_project', wikiurl='wiki_url',
+        downloadurl='download_url',
+        sourceforgeproject='sourceforge_project',
+        programminglang='programming_lang')
+    @export_factory_operation(
+        IProduct, ['name', 'displayname', 'title', 'summary', 'description',
+                   'project', 'homepageurl', 'screenshotsurl',
+                   'downloadurl', 'freshmeatproject', 'wikiurl',
+                   'sourceforgeproject', 'programminglang',
+                   'licenses', 'license_info', 'registrant'])
+    @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      license_reviewed=False, mugshot=None, logo=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
 
@@ -563,7 +590,8 @@ class IProductSet(Interface):
         """Return an iterator over products that need to be reviewed."""
 
     @collection_default_content()
-    @operation_parameters(text=TextLine())
+    @operation_parameters(text=TextLine(title=_("Search text")))
+    @operation_returns_collection_of(IProduct)
     @export_read_operation()
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -574,8 +602,19 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+
+    @operation_returns_collection_of(IProduct)
+    @call_with(quantity=None)
+    @export_read_operation()
     def latest(quantity=5):
-        """Return the latest products registered in the Launchpad."""
+        """Return the latest projects registered in the Launchpad.
+
+        If the quantity is not specified or is a value that is not 'None'
+        then the set of projects returned is limited to that value (the
+        default quantity is 5).  If quantity is 'None' then all projects are
+        returned.  For the web service it is not possible to specify the
+        quantity, so all projects are returned, latest first.
+        """
 
     def getTranslatables():
         """Return an iterator over products that have translatable resources.

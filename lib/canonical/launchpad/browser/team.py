@@ -33,6 +33,7 @@ from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
@@ -41,14 +42,20 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
-    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
-    PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UnexpectedFormData)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingList, IMailingListSet, MailingListStatus, PURGE_STATES,
+    PostedMessageStatus)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
+    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
 
@@ -150,11 +157,13 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         When a team has a mailing list, renames are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if mailing_list is not None:
+        writable = (mailing_list is None or
+                    mailing_list.status == MailingListStatus.PURGED)
+        if not writable:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
-        if mailing_list is not None:
+        if not writable:
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
@@ -441,11 +450,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
         """Creates a new mailing list."""
-        list_set = getUtility(IMailingListSet)
-        mailing_list = list_set.get(self.context.name)
-        assert mailing_list is None, (
-            'Tried to create a mailing list for a team that already has one.')
-        list_set.new(self.context)
+        getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
             "Mailing list requested and queued for approval.")
         self.next_url = canonical_url(self.context)
@@ -483,6 +488,22 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "The mailing list will be reactivated within a few minutes.")
         self.next_url = canonical_url(self.context)
 
+    def purge_list_validator(self, action, data):
+        """Adds an error if the list is not safe to purge.
+
+        This can only happen through bypassing the UI.
+        """
+        if not self.list_can_be_purged:
+            self.addError('This list cannot be purged.')
+
+    @action('Purge this Mailing List', name='purge_list',
+            validator=purge_list_validator)
+    def purge_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).purge()
+        self.request.response.addInfoNotification(
+            'The mailing list has been purged.')
+        self.next_url = canonical_url(self.context)
+
     @property
     def list_is_usable_but_not_contact_method(self):
         """The list could be the contact method for its team, but isn't.
@@ -505,7 +526,9 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         failures and inconsistencies.
         """
 
-        if not self.mailing_list:
+        if (self.mailing_list is None or
+            self.mailing_list.status == MailingListStatus.PURGED):
+            # Purged lists act as if they don't exist.
             return None
         elif self.mailing_list.status == MailingListStatus.REGISTERED:
             return None
@@ -572,10 +595,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Can a mailing list be requested for this team?
 
         It can only be requested if there's no mailing list associated with
-        this team.
+        this team, or the mailing list has been purged.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        return mailing_list is None
+        return (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED)
 
     @property
     def list_can_be_deactivated(self):
@@ -592,6 +616,22 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         The list must exist and be in the INACTIVE state.
         """
         return self.getListInState(MailingListStatus.INACTIVE) is not None
+
+    @property
+    def list_can_be_purged(self):
+        """Is this team's list in a state where it can be purged?
+
+        The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
+        or INACTIVE states.  Further, the user doing the purging, must be
+        a Launchpad administrator or mailing list expert.
+        """
+        requester = IPerson(self.request.principal, None)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (requester is None or
+            (not requester.inTeam(celebrities.admin) and
+             not requester.inTeam(celebrities.mailing_list_experts))):
+            return False
+        return self.getListInState(*PURGE_STATES) is not None
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
@@ -829,8 +869,8 @@ class TeamMapView(LaunchpadView):
         times = [datetime.now(pytz.timezone(zone))
                  for zone in zones]
         timeformat = '%H:%M'
-        return [time.strftime(timeformat)
-                for time in sorted(times, key=lambda time: str(time))]
+        return sorted(
+            set(time.strftime(timeformat) for time in times))
 
     @cachedproperty
     def bounds(self):

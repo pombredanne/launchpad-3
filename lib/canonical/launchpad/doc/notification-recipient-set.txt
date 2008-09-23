@@ -152,7 +152,8 @@ addresses are added to the recipients list, and this recursively.
     True
     >>> recipients.getEmails()
     ['andrew.bennetts@ubuntulinux.com', 'foo.bar@canonical.com',
-     'steve.alexander@ubuntulinux.com', 'test@canonical.com']
+     'limi@plone.org', 'steve.alexander@ubuntulinux.com',
+     'test@canonical.com']
 
 But looking at the recipients list, only the team is listed:
 

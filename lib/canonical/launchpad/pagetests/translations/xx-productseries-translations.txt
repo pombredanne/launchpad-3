@@ -111,3 +111,41 @@ An administrator also sees the notice.
     </...>
     You can change this in the
     <a...> project settings</a>.
+
+A Translations admin who is neither a Launchpad admin nor the project
+owner (and so won't be able to change the project's settings) sees the
+notice but not the link to the project's settings.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet, ITeamMembershipSet,
+    ...     TeamMembershipStatus)
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+
+    # Log in so as to be able to create objects
+    >>> admin_email = 'foo.bar@canonical.com'
+    >>> login(admin_email)
+    >>> admin_user = getUtility(IPersonSet).getByEmail(admin_email)
+    >>> factory = LaunchpadObjectFactory()
+
+    >>> jtv = factory.makePerson(
+    ...     email='jtv-sample@canonical.com', password='test')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> membership = getUtility(ITeamMembershipSet).new(
+    ...     jtv, celebs.rosetta_experts, TeamMembershipStatus.APPROVED,
+    ...     admin_user)
+    >>> from storm.store import Store
+    >>> Store.of(membership).flush()
+    >>> logout()
+
+    >>> jtv_browser = setupBrowser('Basic jtv-sample@canonical.com:test')
+    >>> jtv_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'bazaar/trunk/+translations-upload')
+
+    >>> print find_notice(jtv_browser.contents)
+    <...>
+    This project is not configured to use Launchpad for translations.
+    </strong>
+

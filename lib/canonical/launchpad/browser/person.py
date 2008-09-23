@@ -48,9 +48,7 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
-    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
-    'PersonSetFacets',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
@@ -541,19 +539,6 @@ class PersonSetNavigation(Navigation):
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
         return self.redirectSubTree(canonical_url(me), status=303)
-
-
-class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Return a breadcrumb for an `IPersonSet`."""
-    text = "People"
-
-
-class PersonSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IPersonSet."""
-
-    usedfor = IPersonSet
-
-    enable_only = ['overview']
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -1284,7 +1269,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
@@ -4701,8 +4686,12 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
+        def team_has_branches(team):
+            branches = getUtility(IBranchSet).getBranchesForContext(
+                team, visible_by_user=self.user)
+            return branches.count() > 0
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0 and team != self.context]
+                if team_has_branches(team) and team != self.context]
 
 
 class PersonOAuthTokensView(LaunchpadView):

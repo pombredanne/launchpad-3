@@ -37,7 +37,8 @@ from canonical.launchpad.database.specificationbranch import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -575,6 +576,108 @@ class TestBranchDeletionConsequences(TestCase):
             SQLObjectNotFound, CodeImport.get, code_import_id)
 
 
+class StackedBranches(TestCaseWithFactory):
+    """Tests for showing branches stacked on another."""
+
+    layer = DatabaseFunctionalLayer
+
+    def testNoBranchesStacked(self):
+        # getStackedBranches returns an empty collection if there are no
+        # branches stacked on it.
+        branch = self.factory.makeBranch()
+        self.assertEqual(set(), set(branch.getStackedBranches()))
+
+    def testSingleBranchStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_branch]), set(branch.getStackedBranches()))
+
+    def testMultipleBranchesStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_b = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
+
+    def testStackedBranchesIncompleteMirrorsNoBranches(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # stacked branches that haven't been mirrored at all.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors returns branches
+        # stacked on some_branch that had their mirrors started but not
+        # finished.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrorsNotStacked(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches with incomplete mirrors that are not stacked on
+        # some_branch.
+        branch = self.factory.makeBranch()
+        not_stacked = self.factory.makeBranch()
+        not_stacked.startMirroring()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesCompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have been successfully mirrored.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorComplete(self.factory.getUniqueString())
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that failed to mirror. This is not directly desired, but is
+        # a consequence of wanting to include branches that have started,
+        # failed, then started again.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedThenStartedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that had a failed mirror but have since been started.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesMirrorRequested(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have only had a mirror requested.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.requestMirror()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
     layer = LaunchpadFunctionalLayer
@@ -831,6 +934,61 @@ class BranchSorting(TestCase):
             getBranchesForContext(
                 new_person, sort_by=BranchListingSort.OLDEST_FIRST),
             [created_in_2005, created_in_2006])
+
+
+class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
+    """Tests for `Branch.createBranchRevisionFromIDs`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_simple(self):
+        # createBranchRevisionFromIDs when passed a single revid, sequence
+        # pair, creates the appropriate BranchRevision object.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        branch_revision = branch.getBranchRevision(revision=rev)
+        self.assertEqual(revision_number, branch_revision.sequence)
+
+    def test_multiple(self):
+        # createBranchRevisionFromIDs when passed multiple revid, sequence
+        # pairs, creates the appropriate BranchRevision objects.
+        branch = self.factory.makeBranch()
+        revision_to_number = {}
+        revision_id_sequence_pairs = []
+        for i in range(10):
+            rev = self.factory.makeRevision()
+            revision_number = self.factory.getUniqueInteger()
+            revision_to_number[rev] = revision_number
+            revision_id_sequence_pairs.append(
+                (rev.revision_id, revision_number))
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        for rev in revision_to_number:
+            branch_revision = branch.getBranchRevision(revision=rev)
+            self.assertEqual(
+                revision_to_number[rev], branch_revision.sequence)
+
+    def test_empty(self):
+        # createBranchRevisionFromIDs does not fail when passed no pairs.
+        branch = self.factory.makeBranch()
+        branch.createBranchRevisionFromIDs([])
+
+    def test_call_twice_in_one_transaction(self):
+        # createBranchRevisionFromIDs creates temporary tables, but cleans
+        # after itself so that it can safely be called twice in one
+        # transaction.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        # This is just "assertNotRaises"
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
 
 
 def test_suite():

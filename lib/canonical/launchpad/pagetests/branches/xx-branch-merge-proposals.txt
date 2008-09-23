@@ -85,6 +85,12 @@ An email notification is emitted when the merge proposal is created.
     Proposed merge of Klingon support in GNOME Terminal into
       GNOME Terminal Mainline
 
+Make sure that the message for being merged doesn't show.
+
+    >>> tag = find_tag_by_id(nopriv_browser.contents, 'proposal-merged')
+    >>> print tag
+    None
+
 
 == Landing Targets ==
 
@@ -467,11 +473,15 @@ find one, then the current time is used as the date merged.
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
-A notification is also added.
+A notification is also added, as well as tekt being added to merge proposal
+about the proposal having been marked as merged.
 
     >>> for message in get_feedback_messages(nopriv_browser.contents):
     ...     print extract_text(message)
     The proposal has now been marked as merged.
+    >>> tag = find_tag_by_id(nopriv_browser.contents, 'proposal-merged')
+    >>> print extract_text(tag)
+    The proposed merge was performed at revision 42
 
 An email notification is also created.
 

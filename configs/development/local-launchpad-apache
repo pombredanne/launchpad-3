@@ -69,7 +69,7 @@ NameVirtualHost 127.0.0.88:80
   </Location>
 </VirtualHost>
 
-<VirtualHost 127.0.0.88:80>
+<VirtualHost 127.0.0.88:443>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev
   ServerAlias shipit.edubuntu.dev
@@ -79,7 +79,21 @@ NameVirtualHost 127.0.0.88:80
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
   </Proxy>
+  SSLEngine On
+  SSLCertificateFile /etc/apache2/ssl/launchpad.crt
+  SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key 
+
   ProxyPreserveHost on
 
   ProxyPass / http://localhost:8086/ retry=1
+</VirtualHost>
+
+<VirtualHost 127.0.0.88:80>
+  ServerName launchpad.dev
+  ServerAlias *.launchpad.dev
+  ServerAlias shipit.edubuntu.dev
+  ServerAlias shipit.kubuntu.dev
+  ServerAlias shipit.ubuntu.dev
+  RewriteEngine On
+  RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </VirtualHost>

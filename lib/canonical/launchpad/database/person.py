@@ -1,12 +1,12 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# _valid_nick() in generate_nick causes E1101
 # vars() causes W0612
-# pylint: disable-msg=E0611,W0212,E1101,W0612
+# pylint: disable-msg=E0611,W0212,W0612
 
 """Implementation classes for a Person."""
 
 __metaclass__ = type
 __all__ = [
+    'generate_nick',
     'IrcID',
     'IrcIDSet',
     'JabberID',
@@ -21,6 +21,8 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
+import random
+import re
 
 from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -42,11 +44,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
-from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import OAuthAccessToken
@@ -68,7 +70,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -85,7 +87,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.mailinglist import (
-    IMailingListSet, PostedMessageStatus)
+    IMailingListSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
@@ -96,6 +98,7 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -142,11 +145,8 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 from canonical.launchpad.validators.person import validate_public_person
-
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
@@ -182,7 +182,8 @@ def validate_person_visibility(person, attr, value):
     return value
 
 
-class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+class Person(
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -200,23 +201,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def _validate_name(self, attr, value):
         """Check that rename is allowed."""
-        # Renaming a team is prohibited for any team that has a mailing list.
-        # This is because renaming a mailing list is not trivial in Mailman
-        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
-        # team edit details view, but just to be safe, we also assert that
-        # such an attempt is not being made here.  To do this, we must
-        # override the SQLObject method for setting the 'name' database
-        # column.  Watch out for when SQLObject is creating this row, because
-        # in that case self.name isn't yet available.
-        assert (self._SO_creating or
-                not self.is_team or
-                getUtility(IMailingListSet).get(self.name) is None), (
-            'Cannot rename teams with mailing lists')
+        # Renaming a team is prohibited for any team that has a non-purged
+        # mailing list.  This is because renaming a mailing list is not
+        # trivial in Mailman 2.1 (see Mailman FAQ item 4.70).  We prohibit
+        # such renames in the team edit details view, but just to be safe, we
+        # also assert that such an attempt is not being made here.  To do
+        # this, we must override the SQLObject method for setting the 'name'
+        # database column.  Watch out for when SQLObject is creating this row,
+        # because in that case self.name isn't yet available.
+        if self.name is None:
+            mailing_list = None
+        else:
+            mailing_list = getUtility(IMailingListSet).get(self.name)
+        can_rename = (self._SO_creating or
+                      not self.is_team or
+                      mailing_list is None or
+                      mailing_list.status == MailingListStatus.PURGED)
+        assert can_rename, 'Cannot rename teams with mailing lists'
         # Everything's okay, so let SQLObject do the normal thing.
         return value
 
     name = StringCol(dbName='name', alternateID=True, notNull=True,
                      storm_validator=_validate_name)
+
+    def __repr__(self):
+        return '<Person at 0x%x %s (%s)>' % (
+            id(self), self.name, self.displayname)
 
     def _sync_displayname(self, attr, value):
         """Update any related Account.displayname.
@@ -333,9 +343,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                             intermediateTable='PersonLanguage',
                             orderBy='englishname')
 
-    subscribed_branches = SQLRelatedJoin(
-        'Branch', joinColumn='person', otherColumn='branch',
-        intermediateTable='BranchSubscription', prejoins=['product'])
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -348,8 +355,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    authored_branches = SQLMultipleJoin(
-        'Branch', joinColumn='author', prejoins=['product'])
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -846,22 +851,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return list(targets)
 
-    @property
-    def branches(self):
-        """See `IPerson`."""
-        ret = self.authored_branches.union(self.registered_branches)
-        ret = ret.union(self.subscribed_branches)
-        return ret.orderBy('-id')
-
-    @property
-    def registered_branches(self):
-        """See `IPerson`."""
-        query = """Branch.owner = %d AND
-                   (Branch.author != %d OR Branch.author is NULL)"""
-        return Branch.select(query % (self.id, self.id),
-                             prejoins=["product"])
-
-
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
     # is no longer appropriate, since it now relies on subscriptions,
@@ -1007,9 +996,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             return None
 
-    def searchTasks(self, search_params, *args):
-        """See `IPerson`."""
-        return getUtility(IBugTaskSet).search(search_params, *args)
+    def _customizeSearchParams(self, search_params):
+        """No-op, to satisfy a requirement of HasBugsBase."""
+        pass
+
+    def searchTasks(self, search_params, *args, **kwargs):
+        """See `IHasBugs`."""
+        if len(kwargs) > 0:
+            # if keyword arguments are supplied, use the deault
+            # implementation in HasBugsBase.
+            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+        else:
+            # Otherwise pass all positional arguments to the
+            # implementation in BugTaskSet.
+            return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
@@ -2344,7 +2344,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
-        assert IBugTarget.providedBy(target), (
+        assert (IBugTarget.providedBy(target) or
+                IProject.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
@@ -2393,6 +2394,13 @@ class PersonSet:
 
     def __init__(self):
         self.title = 'People registered with Launchpad'
+
+    def isNameBlacklisted(self, name):
+        """See `IPersonSet`."""
+        cur = cursor()
+        cur.execute("SELECT is_blacklisted_name(%(name)s)" % sqlvalues(
+            name=name.encode('UTF-8')))
+        return bool(cur.fetchone()[0])
 
     def getTopContributors(self, limit=50):
         """See `IPersonSet`."""
@@ -2447,7 +2455,7 @@ class PersonSet:
                 "%s is not a valid email address." % email)
 
         if name is None:
-            name = nickname.generate_nick(email)
+            name = generate_nick(email)
 
         if not displayname:
             displayname = name.capitalize()
@@ -2456,7 +2464,7 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname,
+                account_rationale, displayname, openid_mnemonic=name,
                 password=password, password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(
@@ -2785,7 +2793,11 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
-        assert getUtility(IMailingListSet).get(from_person.name) is None, (
+        # If the team has a mailing list, the mailing list better be in the
+        # purged state, otherwise the team can't be merged.
+        mailing_list = getUtility(IMailingListSet).get(from_person.name)
+        assert (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED), (
             "Can't merge teams which have mailing lists into other teams.")
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
@@ -2870,7 +2882,7 @@ class PersonSet:
         # Update OpenID. Just trash the authorizations for from_id - don't
         # risk opening up auth wider than the user actually wants.
         cur.execute("""
-                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                DELETE FROM OpenIDAuthorization WHERE person=%(from_id)d
                 """ % vars()
                 )
         skip.append(('openidauthorization', 'person'))
@@ -2995,6 +3007,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
+        # Update only the BugAffectsPerson that will not conflict
+        cur.execute('''
+            UPDATE BugAffectsPerson
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND bug NOT IN
+                (
+                SELECT bug
+                FROM BugAffectsPerson
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugAffectsPerson WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('bugaffectsperson', 'person'))
+
         # Update only the AnswerContacts that will not conflict.
         cur.execute('''
             UPDATE AnswerContact
@@ -3045,22 +3074,28 @@ class PersonSet:
         cur.execute('''
             UPDATE MentoringOffer
             SET owner=%(to_id)d
-            WHERE owner=%(from_id)d AND id NOT IN
-                (
-                SELECT id
-                FROM MentoringOffer
-                WHERE owner = %(to_id)d
-                )
+            WHERE owner=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE owner = %(to_id)d)
             ''' % vars())
         cur.execute('''
             UPDATE MentoringOffer
             SET team=%(to_id)d
-            WHERE team=%(from_id)d AND id NOT IN
-                (
-                SELECT id
-                FROM MentoringOffer
-                WHERE team = %(to_id)d
-                )
+            WHERE team=%(from_id)d
+                AND bug NOT IN (
+                    SELECT bug
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
+                AND specification NOT IN (
+                    SELECT specification
+                    FROM MentoringOffer
+                    WHERE team = %(to_id)d)
             ''' % vars())
         # and delete those left over.
         cur.execute('''
@@ -3074,8 +3109,8 @@ class PersonSet:
         cur.execute('''
             UPDATE BugNotificationRecipient
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT id FROM BugNotificationRecipient
+            WHERE person=%(from_id)d AND bug_notification NOT IN (
+                SELECT bug_notification FROM BugNotificationRecipient
                 WHERE person=%(to_id)d
                 )
             ''' % vars())
@@ -3640,3 +3675,100 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
+
+class NicknameGenerationError(Exception):
+    """I get raised when something went wrong generating a nickname."""
+
+
+def _is_nick_registered(nick):
+    """Answer the question: is this nick registered?"""
+    return PersonSet().getByName(nick) is not None
+
+
+def generate_nick(email_addr, is_registered=_is_nick_registered):
+    """Generate a LaunchPad nick from the email address provided.
+
+    See canonical.launchpad.validators.name for the definition of a
+    valid nick.
+
+    It is technically possible for this function to raise a
+    NicknameGenerationError, but this will only occur if an operator
+    has majorly screwed up the name blacklist.
+    """
+    email_addr = email_addr.strip().lower()
+
+    if not valid_email(email_addr):
+        raise NicknameGenerationError("%s is not a valid email address"
+                                      % email_addr)
+
+    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = user.replace(".", "-").replace("_", "-")
+    domain_parts = domain.split(".")
+
+    person_set = PersonSet()
+    def _valid_nick(nick):
+        if not valid_name(nick):
+            return False
+        elif is_registered(nick):
+            return False
+        elif person_set.isNameBlacklisted(nick):
+            return False
+        else:
+            return True
+
+    generated_nick = sanitize_name(user)
+    if _valid_nick(generated_nick):
+        return generated_nick
+
+    for domain_part in domain_parts:
+        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
+        if _valid_nick(generated_nick):
+            return generated_nick
+
+    # We seed the random number generator so we get consistent results,
+    # making the algorithm repeatable and thus testable.
+    random_state = random.getstate()
+    random.seed(sum(ord(letter) for letter in generated_nick))
+    try:
+        attempts = 0
+        prefix = ''
+        suffix = ''
+        mutated_nick = [letter for letter in generated_nick]
+        chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        while attempts < 1000:
+            attempts += 1
+
+            # Prefer a nickname with a suffix
+            suffix += random.choice(chars)
+            if _valid_nick(generated_nick + '-' + suffix):
+                return generated_nick + '-' + suffix
+
+            # Next a prefix
+            prefix += random.choice(chars)
+            if _valid_nick(prefix + '-' + generated_nick):
+                return prefix + '-' + generated_nick
+
+            # Or a mutated character
+            index = random.randint(0, len(mutated_nick)-1)
+            mutated_nick[index] = random.choice(chars)
+            if _valid_nick(''.join(mutated_nick)):
+                return ''.join(mutated_nick)
+
+            # Or a prefix + generated + suffix
+            if _valid_nick(prefix + '-' + generated_nick + '-' + suffix):
+                return prefix + '-' + generated_nick + '-' + suffix
+
+            # Or a prefix + mutated + suffix
+            if _valid_nick(
+                    prefix + '-' + ''.join(mutated_nick) + '-' + suffix):
+                return prefix + '-' + ''.join(mutated_nick) + '-' + suffix
+
+        raise NicknameGenerationError(
+            "No nickname could be generated. "
+            "This should be impossible to trigger unless some twonk has "
+            "registered a match everything regexp in the black list."
+            )
+
+    finally:
+        random.setstate(random_state)
