@@ -3,11 +3,13 @@
 __metaclass__ = type
 
 import warnings
+import weakref
 
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.component.interfaces import IView
 
+from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
 from zope.security.proxy import removeSecurityProxy
@@ -122,15 +124,25 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # Remove security proxies from object to authorize.
         objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
-        principals = [participation.principal
+        participations = [participation
                       for participation in self.participations
                           if participation.principal is not system_user]
-        if len(principals) == 0:
+        if len(participations) == 0:
             principal = None
-        elif len(principals) > 1:
+            cache = None
+        elif len(participations) > 1:
             raise RuntimeError("More than one principal participating.")
         else:
-            principal = principals[0]
+            participation = participations[0]
+            principal = participation.principal
+            if IApplicationRequest.providedBy(participation):
+                wd = participation.annotations.setdefault(
+                    'launchpad.security_cache', weakref.WeakKeyDictionary())
+                cache = wd.setdefault(objecttoauthorize, {})
+                if permission in cache:
+                    return cache[permission]
+            else:
+                cache = None
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
@@ -181,6 +193,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
                         authorization)
+                if cache is not None:
+                    cache[permission] = result
                 return bool(result)
 
 
