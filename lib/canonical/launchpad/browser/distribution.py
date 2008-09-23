@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for distributions."""
 
@@ -515,6 +515,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
