@@ -272,7 +272,8 @@ class PullerMaster:
     protocol_class = PullerMonitorProtocol
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
-                 logger, client, available_oops_prefixes):
+                 default_stacked_on_url, logger, client,
+                 available_oops_prefixes):
         """Construct a PullerMaster object.
 
         :param branch_id: The database ID of the branch to be mirrored.
@@ -281,6 +282,9 @@ class PullerMaster:
         :param unique_name: The unique name of the branch to be mirrored.
         :param branch_type: The BranchType of the branch to be mirrored (e.g.
             BranchType.HOSTED).
+        :param default_stacked_on_url: The default stacked-on URL for the
+            product that the branch is in. Either '' or None imply that there
+            is no such default.
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
