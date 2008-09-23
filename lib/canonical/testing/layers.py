@@ -905,7 +905,9 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        GoogleServiceTestSetup().setUp()
+        teh_googles = GoogleServiceTestSetup()
+        teh_googles.setUp()
+        atexit.register(teh_googles.tearDown)
 
     @classmethod
     def tearDown(cls):
