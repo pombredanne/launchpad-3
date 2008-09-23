@@ -20,6 +20,14 @@ CREATE TABLE StaticDiffJob (
   branch_merge_proposal INTEGER REFERENCES BranchMergeProposal
 );
 
+
+CREATE TABLE PreviewDiffJob (
+  id SERIAL PRIMARY KEY,
+  job INTEGER NOT NULL REFERENCES Job,
+  branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal
+);
+
+
 CREATE TABLE Diff (
   id serial PRIMARY KEY,
   diff_text INTEGER NOT NULL REFERENCES LibraryFileAlias,
@@ -37,12 +45,11 @@ CREATE TABLE StaticDiff (
   UNIQUE (from_revision_id, to_revision_id)
 );
 
-CREATE TABLE PreviewDiffReference (
+CREATE TABLE PreviewDiff (
   id SERIAL PRIMARY KEY,
-  branch_merge_proposal INTEGER UNIQUE NOT NULL REFERENCES BranchMergeProposal,
-  last_source_revision_id TEXT,
-  last_target_revision_id TEXT,
-  last_dependent_revision_id TEXT,
+  source_revision_id TEXT,
+  target_revision_id TEXT,
+  dependent_revision_id TEXT,
   diff INTEGER REFERENCES Diff,
   conflicts TEXT
 );
@@ -76,5 +83,7 @@ CREATE TABLE MergeDirectiveJob (
 
 ALTER TABLE BranchMergeProposal
   ADD COLUMN review_diff INTEGER REFERENCES StaticDiff;
+ALTER TABLE BranchMergeProposal
+  ADD COLUMN merge_diff INTEGER REFERENCES PreviewDiff;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
