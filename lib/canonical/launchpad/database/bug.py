@@ -24,6 +24,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -63,6 +64,8 @@ from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -99,41 +102,41 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(maincontext_clause, user,
-                            count_subcontext_clause=None):
+def get_bug_tags_open_count(context_condition, user):
     """Return all the used bug tags with their open bug count.
 
-    maincontext_clause is a SQL condition clause, limiting the used tags
-    to a specific context.
-    count_subcontext_clause is a SQL condition clause, limiting the open bug
-    count to a more limited context, for example a source package.
+    :param context_condition: A Storm SQL expression, limiting the
+        used tags to a specific context. Only the BugTask table may be
+        used to choose the context.
+    :param user: The user performing the search.
 
-    Both SQL clauses may only use the BugTask table to choose the context.
+    :return: A list of tuples, (tag name, open bug count).
     """
-    from_tables = ['BugTag', 'BugTask', 'Bug']
-    count_conditions = ['BugTask.status IN (%s)' % ','.join(
-        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
-    if count_subcontext_clause:
-        count_conditions.append(count_subcontext_clause)
-    select_columns = [
-        'BugTag.tag',
-        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
-            ' AND '.join(count_conditions),
+    open_statuses_condition = In(
+        BugTask.status, sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))
+    columns = [
+        BugTag.tag,
+        Count(),
         ]
-    conditions = [
-        'BugTag.bug = BugTask.bug',
-        'Bug.id = BugTag.bug',
-        '(%s)' % maincontext_clause]
+    tables = [
+        BugTag,
+        LeftJoin(Bug, Bug.id == BugTag.bugID),
+        LeftJoin(
+            BugTask,
+            And(BugTask.bugID == Bug.id, open_statuses_condition)),
+        ]
+    where_conditions = [
+        open_statuses_condition,
+        context_condition,
+        ]
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        conditions.append(privacy_filter)
-
-    cur = cursor()
-    cur.execute(_bug_tag_query_template % dict(
-            columns=', '.join(select_columns),
-            tables=', '.join(from_tables),
-            condition=' AND '.join(conditions)))
-    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
+        where_conditions.append(SQLRaw(privacy_filter))
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    result = store.execute(Select(
+        columns=columns, where=And(*where_conditions), tables=tables,
+        group_by=BugTag.tag, order_by=BugTag.tag))
+    return shortlist([(row[0], row[1]) for row in result.get_all()])
 
 
 class BugTag(SQLBase):

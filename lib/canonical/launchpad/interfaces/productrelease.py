@@ -6,10 +6,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'IProductReleaseSet',
     'IProductRelease',
+    'IProductReleaseEditRestricted',
     'IProductReleaseFile',
     'IProductReleaseFileAddForm',
+    'IProductReleaseFileEditRestricted',
+    'IProductReleaseFilePublic',
+    'IProductReleasePublic',
+    'IProductReleaseSet',
     'UpstreamFileType',
     ]
 
@@ -27,8 +31,11 @@ from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference, ReferenceChoice
+from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_factory_operation, export_operation_as, export_write_operation,
+    exported, operation_parameters)
 
 
 class UpstreamFileType(DBEnumeratedType):
@@ -108,9 +115,17 @@ class ProductReleaseVersionField(ContentNameField):
         return releaseset.getBySeriesAndVersion(productseries, version)
 
 
-class IProductReleaseFile(Interface):
-    """A file associated with a ProductRelease."""
-    export_as_webservice_entry("project_release_file")
+class IProductReleaseFileEditRestricted(Interface):
+    """`IProductReleaseFile` properties which require `launchpad.Edit`."""
+
+    @export_write_operation()
+    @export_operation_as('delete')
+    def destroySelf():
+        """Delete the product release file."""
+
+
+class IProductReleaseFilePublic(Interface):
+    """Public properties for `IProductReleaseFile`."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     productrelease = exported(
@@ -145,10 +160,51 @@ class IProductReleaseFile(Interface):
                  required=True, readonly=True))
 
 
-class IProductRelease(Interface):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
-    export_as_webservice_entry('project_release')
+class IProductReleaseFile(IProductReleaseFileEditRestricted,
+                          IProductReleaseFilePublic):
+    """A file associated with a ProductRelease."""
+    export_as_webservice_entry("project_release_file")
+
+
+class IProductReleaseEditRestricted(Interface):
+    """`IProductRelease` properties which require `launchpad.Edit`."""
+
+    @call_with(uploader=REQUEST_USER)
+    @operation_parameters(
+        filename=TextLine(),
+        signature_filename=TextLine(),
+        content_type=TextLine(),
+        file_content=Bytes(constraint=productrelease_file_size_constraint),
+        signature_content=Bytes(
+            constraint=productrelease_signature_size_constraint),
+        file_type=copy_field(IProductReleaseFile['filetype'], required=False)
+        )
+    @export_factory_operation(
+        IProductReleaseFile, ['description'])
+    @export_operation_as('add_file')
+    def addReleaseFile(filename, file_content, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None,
+                       file_type=UpstreamFileType.CODETARBALL,
+                       description=None):
+        """Add file to the library and link to this `IProductRelease`.
+
+        The signature file will also be added if available.
+
+        :param filename: Name of the file being uploaded.
+        :param file_content: StringIO or file object.
+        :param content_type: A MIME content type string.
+        :param uploader: The person who uploaded the file.
+        :param signature_filename: Name of the uploaded gpg signature file.
+        :param signature_content: StringIO or file object.
+        :param file_type: An `UpstreamFileType` enum value.
+        :param description: Info about the file.
+        :returns: `IProductReleaseFile` object.
+        """
+
+
+class IProductReleasePublic(Interface):
+    """Public `IProductRelease` properties."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -240,15 +296,6 @@ class IProductRelease(Interface):
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
 
-    def addFileAlias(alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
-        """Add a link between this product and a library file alias."""
-
-    def deleteFileAlias(alias):
-        """Delete the link between this product and a library file alias."""
-
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.
 
@@ -260,6 +307,16 @@ class IProductRelease(Interface):
 
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
+
+
+class IProductRelease(IProductReleaseEditRestricted,
+                      IProductReleasePublic):
+    """A specific release (i.e. version) of a product.
+
+    For example: Mozilla 1.7.2 or Apache 2.0.48.
+    """
+
+    export_as_webservice_entry('project_release')
 
 # Set the schema for IProductReleaseFile now that IProductRelease is defined.
 IProductReleaseFile['productrelease'].schema = IProductRelease
@@ -282,12 +339,9 @@ class IProductReleaseFileAddForm(Interface):
                          vocabulary=UpstreamFileType,
                          default=UpstreamFileType.CODETARBALL)
 
+
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
-
-    def new(version, owner, productseries, codename=None, shortdesc=None,
-            description=None, changelog=None):
-        """Create a new ProductRelease"""
 
     def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.

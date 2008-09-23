@@ -33,8 +33,8 @@ from canonical.launchpad.interfaces import (
     IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
     IPersonSet, IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
-    IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
-    IProduct, IProject)
+    IBugTask, IHasAnnouncements, IHasBugs, ILaunchpadRoot, IPerson, IProduct,
+    IProject)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     Navigation, canonical_name, canonical_url, stepto)
@@ -171,7 +171,7 @@ class BugFeedLink(FeedLinkBase):
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
-    usedfor = IBugTarget
+    usedfor = IHasBugs
 
     @property
     def title(self):

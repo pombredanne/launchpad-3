@@ -574,6 +574,7 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def translators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -806,7 +807,7 @@ class ProductDownloadFileMixin:
         for release in releases:
             for release_file in release.files:
                 if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
+                    release_file.destroySelf()
                     self.delete_ids.remove(release_file.libraryfile.id)
                     del_count += 1
         return del_count
@@ -1629,28 +1630,10 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     def initialize(self):
         self.product = self.context
 
-    @cachedproperty
-    def recent_revision_branches(self):
-        """Branches that have the most recent revisions."""
-        branch_set = getUtility(IBranchSet)
-        return branch_set.getBranchesWithRecentRevisionsForProduct(
-            self.context, 5, self.user)
-
     @property
     def codebrowse_root(self):
         """Return the link to codebrowse for this branch."""
         return config.codehosting.codebrowse_root
-
-    @cachedproperty
-    def recent_revisions(self):
-        """The tip revision for each of the recent revision branches."""
-        return [branch.getBranchRevision(sequence=branch.revision_count)
-                for branch in self.recent_revision_branches]
-
-    @cachedproperty
-    def latest_branches(self):
-        """The lastest branches registered for the product."""
-        return self.context.getLatestBranches(visible_by_user=self.user)
 
 
 class ProductBranchListingView(BranchListingView):
@@ -1733,8 +1716,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # person name if know, and the second part is the revision author
         # text.  Only one part of the tuple will be set.
         committers = set()
-        for revision in self._recent_revisions:
-            author = revision.revision_author
+        for (revision, author) in self._recent_revisions:
             if author.person is None:
                 committers.add((None, author.name))
             else:

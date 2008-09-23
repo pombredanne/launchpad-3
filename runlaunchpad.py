@@ -14,7 +14,7 @@
 ##############################################################################
 """Start script for Launchpad: loads configuration and starts the server.
 
-Usage: runlaunchpad.py [-r librarian,sftp,authserver,buildsequencer]
+Usage: runlaunchpad.py [-r librarian,sftp,buildsequencer]
           [<zope args>]
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $

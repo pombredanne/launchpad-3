@@ -85,7 +85,8 @@ It was not rejected.
   DEBUG:     Body:
   DEBUG: * Duhh
   DEBUG:
-  DEBUG:  -- Foo Bar <foo.bar@canonical.com>  Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
   DEBUG: Origin: Ubuntu/warty
   DEBUG:
   DEBUG:
@@ -104,7 +105,8 @@ It was not rejected.
   DEBUG:     Body:
   DEBUG: * Duhh
   DEBUG:
-  DEBUG:  -- Foo Bar <foo.bar@canonical.com>  Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Date: Thu, 01 Aug 2006 14:20:25 +0300
+  DEBUG: Changed-By: Foo Bar <foo.bar@canonical.com>
   DEBUG: Origin: Ubuntu/warty
   DEBUG:
 
