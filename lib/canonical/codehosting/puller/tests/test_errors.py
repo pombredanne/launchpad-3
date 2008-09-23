@@ -54,6 +54,7 @@ class TestErrorCatching(unittest.TestCase):
         worker = PullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=branch_type,
+            default_stacked_on_branch=None,
             protocol=StubbedPullerWorkerProtocol(), branch_opener=opener,
             oops_prefix='TOKEN')
         return worker

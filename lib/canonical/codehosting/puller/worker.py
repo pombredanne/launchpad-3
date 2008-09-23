@@ -491,7 +491,7 @@ class PullerWorker:
                 "Unexpected branch type: %r" % branch_type)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 default_stacked_on_url, protocol, branch_opener=None,
+                 default_stacked_on_branch, protocol, branch_opener=None,
                  oops_prefix=None):
         """Construct a `PullerWorker`.
 
@@ -502,6 +502,9 @@ class PullerWorker:
             (without the tilde).
         :param branch_type: A member of the BranchType enum.  It is expected
             that tests that do not depend on its value will pass None.
+        :param default_stacked_on_branch: The unique name of the default
+            stacked-on branch for the product of the branch we are mirroring.
+            None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
         :param branch_opener: An instance of `BranchOpener`.  If not passed,
             one will be chosen based on the value of `branch_type`.

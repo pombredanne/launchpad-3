@@ -272,7 +272,7 @@ class PullerMaster:
     protocol_class = PullerMonitorProtocol
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
-                 default_stacked_on_url, logger, client,
+                 default_stacked_on_branch, logger, client,
                  available_oops_prefixes):
         """Construct a PullerMaster object.
 
@@ -282,7 +282,7 @@ class PullerMaster:
         :param unique_name: The unique name of the branch to be mirrored.
         :param branch_type: The BranchType of the branch to be mirrored (e.g.
             BranchType.HOSTED).
-        :param default_stacked_on_url: The default stacked-on URL for the
+        :param default_stacked_on_branch: The default stacked-on URL for the
             product that the branch is in. Either '' or None imply that there
             is no such default.
         :param logger: A Python logging object.
@@ -299,9 +299,9 @@ class PullerMaster:
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
-        if default_stacked_on_url is None:
-            default_stacked_on_url = ''
-        self.default_stacked_on_url = default_stacked_on_url
+        if default_stacked_on_branch is None:
+            default_stacked_on_branch = ''
+        self.default_stacked_on_branch = default_stacked_on_branch
         self.logger = logger
         self.branch_puller_endpoint = client
         self._available_oops_prefixes = available_oops_prefixes
@@ -332,7 +332,7 @@ class PullerMaster:
             sys.executable, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
             self.branch_type.name, self.oops_prefix,
-            self.default_stacked_on_url]
+            self.default_stacked_on_branch]
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
         reactor.spawnProcess(protocol, sys.executable, command, env=env)
