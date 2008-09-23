@@ -187,6 +187,7 @@ class BranchNavigationMenu(NavigationMenu):
             self.branch = context
         elif IBranchMergeProposal.providedBy(context):
             self.branch = context.source_branch
+            self.disabled = True
         elif IBranchSubscription.providedBy(context):
             self.branch = context.branch
         elif ICodeReviewComment.providedBy(context):
