@@ -13,7 +13,8 @@ from zope.component import getUtility
 from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interfaces import IAuthorization, IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import (
+    IAuthorization, IPlacelessLoginSource)
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
