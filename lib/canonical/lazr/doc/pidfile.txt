@@ -1,4 +1,4 @@
-== The `pidfile` Module ==
+= The `pidfile` Module =
 
 The pidfile module allows multiple instances on the same machine to create
 pidfiles for the same service names, by using configuration values to
@@ -9,7 +9,8 @@ differentiate between instances.  It consists of the following functions:
  * `get_pid`
  * `remove_pidfile`
 
-=== `pidfile_path` ===
+
+== `pidfile_path` ==
 
 `pidfile_path` is the key to all four of them. Usually, you simply pass it the
 name of a service. It then gets the configured name for the current instance
@@ -34,14 +35,15 @@ You can pass in your own config instance to use.
 
 This basic mechanism supports the other three functions.
 
-=== `make_pidfile` ===
+
+== `make_pidfile` ==
 
 The `make_pidfile` function writes the current process id to a PID file.  For
 cleanup, it also includes handlers for Python's `atexit`, signal.SIGINT or
 signal.SIGTERM that remove the pidfiles.
 
 Note that, if you install your own handlers for the two signals, you will want
-to call remove_pidfile inside them.
+to call `remove_pidfile` inside them.
 
 As a simple demonstration, this subprocess creates a pidfile and checks that the
 correct PID is stored in it.
@@ -101,7 +103,6 @@ we'll need them again later.
 
 Here's our example.  We start, and then stop with SIGINT.
 
-    >>> import signal
     >>> pid = start_process()
     >>> stop(pid, signal.SIGINT)
     Stopped successfully
@@ -120,7 +121,7 @@ provide a documented interface for doing so.)
     >>> current_SIGINT_handler = signal.getsignal(signal.SIGINT)
     >>> current_SIGTERM_handler = signal.getsignal(signal.SIGTERM)
     >>> pid = start_process()
-    >>> make_pidfile('nuts') # doctest: +ELLIPSIS
+    >>> make_pidfile('nuts')
     Traceback (most recent call last):
     ...
     RuntimeError: PID file /var/tmp/...nuts.pid already exists. Already running?
@@ -132,15 +133,16 @@ provide a documented interface for doing so.)
     >>> stop(pid, signal.SIGTERM)
     Stopped successfully
 
-=== `get_pid` ===
+
+== `get_pid` ==
 
 The `get_pid` function returns the PID for the given service as an integer, or
 None.  It may raise a ValueError if the PID file is corrupt.
 
 This method should only be needed by service or monitoring scripts. Currently no
 checking is done to ensure that the process is actually running, is healthy, or
-died horribly a while ago and its PID being used by something else. What we have
-is probably good enough.
+died horribly a while ago and its PID is being used by something else. What we
+have is probably good enough.
 
     >>> get_pid('nuts') is None
     True
@@ -170,7 +172,8 @@ You can also pass in your own config instance.
     72
     >>> os.remove(path)
 
-=== `remove_pidfile` ===
+
+== `remove_pidfile` ==
 
 The `remove_pidfile` function removes the PID file. It should only be needed
 if you are overriding the default SIGTERM signal handler.
