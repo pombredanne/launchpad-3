@@ -538,14 +538,18 @@ class TestPullerMasterSpawning(TrialTestCase):
             self.status_client, self.available_oops_prefixes)
         self._realSpawnProcess = reactor.spawnProcess
         reactor.spawnProcess = self.spawnProcess
-        self.oops_prefixes = []
+        self.commands_spawned = []
 
     def tearDown(self):
         from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
+    @property
+    def oops_prefixes(self):
+        return [arguments[-1] for arguments in self.commands_spawned]
+
     def spawnProcess(self, protocol, executable, arguments, env):
-        self.oops_prefixes.append(arguments[-1])
+        self.commands_spawned.append(arguments)
 
     def test_getsOopsPrefixFromSet(self):
         # Different workers should have different OOPS prefixes. They get
