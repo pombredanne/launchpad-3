@@ -88,6 +88,12 @@ class BugReportData:
 
     @property
     def row_class(self):
+        """Return the class to be used for the current table row.
+
+        :returns: 'good' if all *_percentage properties are > 90;
+            'bad' if any of the *_percentage properties are < 20;
+            '' otherwise.
+        """
         percentages = [
             self.triaged_bugs_percentage,
             self.upstream_bugs_percentage,
