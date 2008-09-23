@@ -66,10 +66,6 @@ from twisted.internet import defer
 from twisted.python import failure
 from twisted.web.xmlrpc import Fault
 
-from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY)
-
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
     BlockingProxy, CachingAuthserverClient)
@@ -79,6 +75,9 @@ from canonical.codehosting.transport import (
     get_readonly_transport, NotABranchPath, NotEnoughInformation,
     SynchronousAdapter)
 from canonical.config import config
+from canonical.launchpad.interfaces.codehosting import (
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY)
 
 
 # The directories allowed directly beneath a branch directory. These are the
