@@ -13,9 +13,9 @@
 <metal:heading fill-slot="head_epilogue">
     <style type="text/css">
     <!--
-      td.good { background: lightgreen; }
-      td.bad { background: #ffaaaa; }
       td.amount a { display: block; }
+      tr.good { background: #d7ffbf; }
+      tr.bad { background: #ffbfbf; }
     -->
     </style>
 </metal:heading>
@@ -112,7 +112,7 @@
           </tr>
         </thead>
         <tbody id="upstream-report-content">
-          <tr tal:repeat="item view/data">
+          <tr tal:repeat="item view/data" tal:attributes="class item/row_class">
             <td>
               <a tal:attributes="href item/dsp/fmt:url"
                  tal:content="item/dsp/name"></a>
