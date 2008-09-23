@@ -51,6 +51,8 @@ import canonical.launchpad.versioninfo
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
+from canonical.launchpad.webapp.authorization import (
+    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -443,8 +445,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         return BrowserFormNG(self.form)
 
     def setPrincipal(self, principal):
-        if 'launchpad.security_cache' in self.annotations:
-            del self.annotations['launchpad.security_cache']
+        if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
+            del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
         BrowserRequest.setPrincipal(self, principal)
 
 

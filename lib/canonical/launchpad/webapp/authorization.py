@@ -30,6 +30,10 @@ from canonical.launchpad.webapp.interfaces import (
 steveIsFixingThis = False
 
 
+LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
+    'canonical.launchpad.webapp.authorization.security_policy_cache')
+
+
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
 
@@ -136,7 +140,8 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             participation = participations[0]
             if IApplicationRequest.providedBy(participation):
                 wd = participation.annotations.setdefault(
-                    'launchpad.security_cache', weakref.WeakKeyDictionary())
+                    LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+                    weakref.WeakKeyDictionary())
                 cache = wd.setdefault(objecttoauthorize, {})
                 if permission in cache:
                     return cache[permission]
