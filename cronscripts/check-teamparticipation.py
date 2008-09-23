@@ -51,6 +51,19 @@ if __name__ == '__main__':
         log.warn("Some people/teams are not members of themselves: %s"
                  % non_self_participants)
 
+    # Check if there are any circular references between teams.
+    cur.execute("""
+        SELECT tp.team, tp2.team
+        FROM teamparticipation AS tp, teamparticipation AS tp2
+        WHERE tp.team = tp2.person
+            AND tp.person = tp2.team
+            AND tp.id != tp2.id;
+        """)
+    circular_references = cur.fetchall()
+    if len(circular_references) > 0:
+        log.warn("Circular references found: %s" % circular_references)
+        sys.exit(1)
+
     # Check if there are any missing/spurious TeamParticipation entries.
     cur.execute("SELECT id FROM Person WHERE teamowner IS NOT NULL")
     team_ids = cur.fetchall()

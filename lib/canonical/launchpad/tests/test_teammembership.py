@@ -636,13 +636,13 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
-    def _runScript(self):
+    def _runScript(self, expected_returncode=0):
         process = subprocess.Popen(
             'cronscripts/check-teamparticipation.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (out, err) = process.communicate()
-        self.assertEqual(process.returncode, 0, (out, err))
+        self.assertEqual(process.returncode, expected_returncode, (out, err))
         return out, err
 
     def test_no_output_if_no_invalid_entries(self):
@@ -700,6 +700,41 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.failUnless(
             re.search('not members of themselves:.*zzzzz.*', err),
             (out, err))
+
+    def test_report_circular_team_references(self):
+        """The script reports circular references between teams.
+
+        If that happens, though, the script will have to report the circular
+        references and exit, to avoid an infinite loop when checking for
+        missing/spurious TeamParticipation entries.
+        """
+        # Create two new teams and make them members of each other.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9998, 'test-team1', 'team1', 1);
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9997, 'test-team2', 'team2', 1);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9998, 9997, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9998, 9997);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9997, 9998, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9997, 9998);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        import transaction
+        transaction.commit()
+        out, err = self._runScript(expected_returncode=1)
+        self.assertEqual(out, '', (out, err))
+        self.failUnless(
+            re.search('Circular references found', err), (out, err))
 
 
 def test_suite():
