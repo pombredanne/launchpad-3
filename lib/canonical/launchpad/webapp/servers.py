@@ -442,6 +442,11 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
 
+    def setPrincipal(self, principal):
+        if 'launchpad.security_cache' in self.annotations:
+            del self.annotations['launchpad.security_cache']
+        BrowserRequest.setPrincipal(self, principal)
+
 
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
