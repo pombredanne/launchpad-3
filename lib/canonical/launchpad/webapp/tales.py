@@ -201,7 +201,7 @@ class MenuAPI:
                 context, INavigationMenu, name=selectedfacetname)
         except NoCanonicalUrl:
             menu = None
-        if menu is None:
+        if menu is None or menu.disabled:
             return {}
         else:
             menu.request = self._request
