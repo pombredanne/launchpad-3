@@ -76,7 +76,7 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         """)
 
     CODE_APPROVED = DBItem(3, """
-        Code approved
+        Approved
 
         The changes have been approved for merging.
         """)
