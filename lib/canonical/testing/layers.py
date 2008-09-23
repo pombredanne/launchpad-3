@@ -426,8 +426,10 @@ class LibrarianLayer(BaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        LibrarianTestSetup().setUp()
+        the_librarian = LibrarianTestSetup()
+        the_librarian.setUp()
         LibrarianLayer._check_and_reset()
+        atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
