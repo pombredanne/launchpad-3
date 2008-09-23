@@ -1274,6 +1274,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
 
+    def newSeries(self, name, displayname, title, summary,
+                  description, version, parent_series, owner):
+        """See `IDistribution`."""
+        return DistroSeries(
+            distribution=self,
+            name=name,
+            displayname=displayname,
+            title=title,
+            summary=summary,
+            description=description,
+            version=version,
+            status=DistroSeriesStatus.EXPERIMENTAL,
+            parent_series=parent_series,
+            owner=owner)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
