@@ -6,6 +6,7 @@ the Gnome project page and that it has no translation group assigned.
     ...     auth='Basic test@canonical.com:test')
     >>> gnome_owner_browser.open('http://launchpad.dev/gnome')
     >>> gnome_owner_browser.getLink('Translations').click()
+    >>> translations_page_url = gnome_owner_browser.url
     >>> print gnome_owner_browser.title
     Translatable projects for The GNOME Project
 
@@ -22,6 +23,20 @@ and permissions on a project.
     >>> gnome_owner_browser.getLink('Change translators').click()
     >>> print gnome_owner_browser.title
     Set translation group for The GNOME Project
+
+Other users don't see the "Change translators" link and aren't allowed
+to access the page it leads to.
+
+    >>> user_browser.open(translations_page_url)
+    >>> user_browser.getLink("Change translators").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open(gnome_owner_browser.url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
 
 Let's post to the form, setting the translation group to polyglot and
 closed permissions.

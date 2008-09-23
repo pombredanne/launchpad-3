@@ -38,6 +38,7 @@ from canonical.testing import TwistedAppServerLayer
 from canonical.testing.layers import disconnect_stores, reconnect_stores
 from canonical.twistedsupport import defer_to_thread
 
+
 def db_defer_to_thread(function):
     """Run in a thread, making sure the database connection is sane.
 

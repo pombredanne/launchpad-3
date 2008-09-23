@@ -528,6 +528,32 @@ class Branch(SQLBase):
             revision.allocateKarma(self)
         return branch_revision
 
+    def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
+        """See `IBranch`."""
+        if not revision_id_sequence_pairs:
+            return
+        store = Store.of(self)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE RevidSequence
+            (revision_id text, sequence integer)
+            """)
+        data = []
+        for revid, sequence in revision_id_sequence_pairs:
+            data.append('(%s, %s)' % sqlvalues(revid, sequence))
+        data = ', '.join(data)
+        store.execute(
+            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
+            % data)
+        store.execute(
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, Revision.id, RevidSequence.sequence
+            FROM RevidSequence, Revision
+            WHERE Revision.revision_id = RevidSequence.revision_id
+            """ % sqlvalues(self))
+        store.execute("DROP TABLE RevidSequence")
+
     def getTipRevision(self):
         """See `IBranch`."""
         tip_revision_id = self.last_scanned_id

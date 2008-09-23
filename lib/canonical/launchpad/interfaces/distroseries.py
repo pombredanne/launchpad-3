@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesStatus',
     'IDistroSeries',
+    'IDistroSeriesEditRestricted',
+    'IDistroSeriesPublic',
     'IDistroSeriesSet',
     ]
 
@@ -15,7 +17,7 @@ from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -96,9 +98,17 @@ class DistroSeriesStatus(DBEnumeratedType):
         """)
 
 
-class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal, IHasMilestones):
-    """A series of an operating system distribution."""
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    def newMilestone(name, dateexpected=None, description=None):
+        """Create a new milestone for this DistroSeries."""
+
+
+class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
+                          IBugTarget, ISpecificationGoal, IHasMilestones):
+    """Public IDistroSeries properties."""
+
     id = Attribute("The distroseries's unique number.")
     name = TextLine(
         title=_("Name"), required=True,
@@ -558,9 +568,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
-    def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
-
     def initialiseFromParent():
         """Copy in all of the parent distroseries's configuration. This
         includes all configuration for distroseries and distroarchseries
@@ -603,6 +610,17 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         This method starts and commits transactions, so don't rely on `self`
         or any other database object remaining valid across this call!
         """
+
+
+class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
+    """A series of an operating system distribution."""
+
+
+# We assign the schema for an `IHasBugs` method argument here
+# in order to avoid circular dependencies.
+IHasBugs['searchTasks'].queryTaggedValue('lazr.webservice.exported')[
+    'params']['nominated_for'].schema = IDistroSeries
+
 
 class IDistroSeriesSet(Interface):
     """The set of distro seriess."""
@@ -647,7 +665,3 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
-
-    def new(distribution, name, displayname, title, summary, description,
-            version, parent_series, owner):
-        """Creates a new distroseries"""
