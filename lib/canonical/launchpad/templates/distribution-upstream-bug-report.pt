@@ -127,7 +127,7 @@
               <td style="padding-left: 0" align="center">
                 <a tal:attributes="href item/product/fmt:url"
                   ><img src="/@@/yes"
-                      tal:attributes="title item/product/title"></a>
+                      tal:attributes="title item/product/title" /></a>
               </td>
               <tal:has-bugtracker condition="item/bugtracker">
                 <td align="center">
@@ -151,7 +151,7 @@
                   <a tal:attributes="href item/product/bug_supervisor/fmt:url"
                      ><img src="/@@/yes"
                         tal:attributes="title item/product/bug_supervisor/displayname"
-                        ></a>
+                        /></a>
                 </td>
               </tal:has-bug-supervisor>
               <tal:has-no-bug-supervisor condition="not: item/product/bug_supervisor">
