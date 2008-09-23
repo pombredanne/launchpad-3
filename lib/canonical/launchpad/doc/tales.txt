@@ -126,7 +126,27 @@ Add manual word breaks to long words in a string:
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
 
-== The fmt: namespace to get strings (links) ==
+== The fmt: namespace to get URLs ==
+
+The `fmt:url` is used when you want the canonical URL of a given object.
+
+    >>> print test_tales("bug/fmt:url", bug=bug)
+    http://bugs.launchpad.dev/bugs/1
+
+You can also specify an extra argument (a view's name), if you want the
+URL of a given page under that object. For that to work, though, we need
+to simulate a browser request -- that's why we login() here.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> login(ANONYMOUS, LaunchpadTestRequest())
+    >>> print test_tales("bug/fmt:url/+text", bug=bug)
+    http://bugs.launchpad.dev/bugs/1/+text
+
+    # Undo the custom setup we did above.
+    >>> login(ANONYMOUS)
+
+
+== The fmt: namespace to get links ==
 
 The `fmt:link` tales expression provides a way to define a standard link
 to a content object.  There are currently links defined for:
@@ -612,6 +632,16 @@ it must markup. We can format the three examples at the same time.
     sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
     Guilty of stealing everything I am.
     </span></p>
+
+
+=== Escaping strings ===
+
+To escape a string you should use fmt:escape.
+
+    >>> test_tales('foo/fmt:escape', foo='some value')
+    'some value'
+    >>> test_tales('foo/fmt:escape', foo='some <br /> value')
+    'some &lt;br /&gt; value'
 
 
 == The fmt: namespace to get strings (obfuscation) ==

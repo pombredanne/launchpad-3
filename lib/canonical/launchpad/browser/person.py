@@ -1269,7 +1269,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
@@ -4686,8 +4686,12 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
+        def team_has_branches(team):
+            branches = getUtility(IBranchSet).getBranchesForContext(
+                team, visible_by_user=self.user)
+            return branches.count() > 0
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0 and team != self.context]
+                if team_has_branches(team) and team != self.context]
 
 
 class PersonOAuthTokensView(LaunchpadView):

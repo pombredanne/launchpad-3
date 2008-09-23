@@ -14,12 +14,14 @@ from warnings import warn
 from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
+from storm.expr import And
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -399,10 +401,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
@@ -411,10 +412,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self.distroseries),
-            user,
-            count_subcontext_clause="BugTask.sourcepackagename = %s" % (
-                sqlvalues(self.sourcepackagename)))
+            And(BugTask.distroseries == self.distroseries,
+                BugTask.sourcepackagename == self.sourcepackagename),
+            user)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
