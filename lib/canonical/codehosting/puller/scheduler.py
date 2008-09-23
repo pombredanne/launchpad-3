@@ -452,7 +452,8 @@ class JobScheduler:
                         default_stacked_on_branch):
         branch_src = branch_src.strip()
         return PullerMaster(
-            branch_id, branch_src, unique_name, self.branch_type, self.logger,
+            branch_id, branch_src, unique_name, self.branch_type,
+            default_stacked_on_branch, self.logger,
             self.branch_puller_endpoint, self.available_oops_prefixes)
 
     def getPullerMasters(self, branches_to_pull):

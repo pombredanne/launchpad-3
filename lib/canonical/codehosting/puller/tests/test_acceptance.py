@@ -15,14 +15,16 @@ from urlparse import urlparse
 import transaction
 
 from bzrlib.branch import Branch, BzrBranchFormat7
-from bzrlib.bzrdir import format_registry
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
@@ -187,6 +189,49 @@ class TestBranchPuller(PullerBranchTestCase):
         # HttpServer leaving a dangling thread. Our test suite now fails
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
+
+    def _enableDefaultStacking(self, product):
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
+        self.pushConfig(
+            'codehosting', allow_default_stacking='%s,%s' % (
+                config.codehosting.allow_default_stacking, product.name))
+
+    def _makeDefaultStackedOnBranch(self):
+        """Make a default stacked-on branch."""
+        product = self.factory.makeProduct()
+        self._enableDefaultStacking(product)
+        default_branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        series.user_branch = default_branch
+        default_branch_path = self.getMirroredPath(default_branch)
+        ensure_base(get_transport(default_branch_path))
+        BzrDir.create_branch_convenience(
+            default_branch_path, format=format_registry.get('1.6')())
+        return default_branch
+
+    def test_stack_mirrored_branch(self):
+        # Pulling a mirrored branch stacks that branch on the default stacked
+        # branch of the product if such a thing exists.
+        default_branch = self._makeDefaultStackedOnBranch()
+        db_branch = self.factory.makeBranch(
+            BranchType.MIRRORED, product=default_branch.product)
+
+        tree = self.make_branch_and_tree('.', format='1.6')
+        tree.commit('rev1')
+
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('mirror')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(tree.basedir, db_branch)
+        mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
 
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
