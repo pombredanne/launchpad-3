@@ -1,5 +1,5 @@
 /*
-  Add Comments to Launchpad database. Please keep these alphabetical by
+e Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 */
 
@@ -53,6 +53,7 @@ COMMENT ON COLUMN BranchMergeProposal.target_branch IS 'The branch where the use
 COMMENT ON COLUMN BranchMergeProposal.dependent_branch IS 'If the source branch was not branched off the target branch, then this is considered the dependent_branch.';
 COMMENT ON COLUMN BranchMergeProposal.date_created IS 'When the registrant created the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other information about the branch, like test URLs.';
+COMMENT ON COLUMN BranchMergeProposal.merge_diff IS 'The diff showing the predicted result of a merge.';
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
@@ -522,14 +523,19 @@ COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
 
--- PreviewDiffReference
-COMMENT ON TABLE PreviewDiffReference IS 'Contains information about preview diffs, without duplicating information with BranchMergeProposal.';
-COMMENT ON COLUMN PreviewDiffReference.branch_merge_proposal IS 'The BranchMergeProposal this diff is for.';
-COMMENT ON COLUMN PreviewDiffReference.conflicts IS 'The text description of any conflicts present.';
-COMMENT ON COLUMN PreviewDiffReference.diff IS 'The last Diff generated for this PreviewDiffReference.';
-COMMENT ON COLUMN PreviewDiffReference.last_dependent_revision_id IS 'The last_revision in the dependant branch.';
-COMMENT ON COLUMN PreviewDiffReference.last_source_revision_id IS 'The last_revision in the source branch.';
-COMMENT ON COLUMN PreviewDiffReference.last_target_revision_id IS 'The last_revision in the target branch.';
+-- PreviewDiff
+COMMENT ON TABLE PreviewDiff IS 'Contains information about preview diffs, without duplicating information with BranchMergeProposal.';
+COMMENT ON COLUMN PreviewDiff.conflicts IS 'The text description of any conflicts present.';
+COMMENT ON COLUMN PreviewDiff.diff IS 'The last Diff generated for this PreviewDiff.';
+COMMENT ON COLUMN PreviewDiff.dependent_revision_id IS 'The dependant branch revision_id used to generate this diff.';
+COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_id used to generate this diff.';
+COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
+
+
+-- PreviewDiffJob
+COMMENT ON TABLE PreviewDiffJob IS 'Describes a job to create a preview diff.';
+COMMENT ON COLUMN PreviewDiffJob.job IS 'A Job containing more information about this PreviewDiffJob.';
+COMMENT ON COLUMN PreviewDiffJob.branch_merge_proposal IS 'The BranchMergeProposal to generate the PreviewDiff for.';
 
 
 -- Product
@@ -2107,7 +2113,13 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
+COMMENT ON COLUMN Job.date_created IS 'If the job has started, the time when the job started.';
+COMMENT ON COLUMN Job.date_created IS 'If the job has ended, the time when the job ended.';
 COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.log IS 'If provided, a log of the last attempt to run the job.';
+COMMENT ON COLUMN Job.status IS 'An enum indicating the job status, with 0 meaning "waiting".';
+
 
 -- JobDependency
 
