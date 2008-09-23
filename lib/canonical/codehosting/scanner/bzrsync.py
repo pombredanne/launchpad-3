@@ -84,7 +84,7 @@ def get_diff(bzr_branch, bzr_revision):
     else:
         # can't get both trees at once, so one at a time
         tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(None)
+        tree_old = repo.revision_tree(NULL_REVISION)
 
     diff_content = StringIO()
     show_diff_trees(tree_old, tree_new, diff_content)
@@ -345,6 +345,15 @@ class WarehouseBranchOpener(BranchOpener):
             raise InvalidStackedBranchURL(url)
 
 
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
+    """
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]
+
+
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
     """
@@ -409,14 +418,16 @@ class BzrSync:
             branchrevisions_to_insert) = self.planDatabaseChanges(
             bzr_ancestry, bzr_history, db_ancestry, db_history,
             db_branch_revision_map)
-        self.logger.info("Inserting or checking %d revisions.",
-            len(added_ancestry))
-        # Add new revisions to the database.
-        added_ancestry_list = list(added_ancestry)
-        for i in range(0, len(added_ancestry_list), 1000):
-            revisions = self.getNewBazaarRevisions(
-                bzr_branch, added_ancestry_list[i:i+1000])
+        added_ancestry.difference_update(
+            getUtility(IRevisionSet).onlyPresent(added_ancestry))
+        self.logger.info("Adding %s new revisions.", len(added_ancestry))
+        for revids in iter_list_chunks(list(added_ancestry), 1000):
+            revisions = self.getBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
+                # This would probably go much faster if we found some way to
+                # bulk-load multiple revisions at once, but as this is only
+                # executed for revisions new to Launchpad, it doesn't seem
+                # worth it at this stage.
                 self.syncOneRevision(revision, branchrevisions_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
@@ -551,16 +562,14 @@ class BzrSync:
         return (added_ancestry, branchrevisions_to_delete,
                 branchrevisions_to_insert)
 
-    def getNewBazaarRevisions(self, bzr_branch, added_ancestry):
-        """Return the new Bazaar revisions in `bzr_branch`.
+    def getBazaarRevisions(self, bzr_branch, revisions):
+        """Like ``get_revisions(revisions)`` but filter out ghosts first.
 
-        :param added_ancestry: the set of Bazaar revision IDs that the
-            scanner has found in the Bazaar branch but not in the database
-            branch.
+        :param revisions: the set of Bazaar revision IDs to return bzrlib
+            Revision objects for.
         """
-        # Add new revisions to the database.
-        added_ancestry = bzr_branch.repository.get_parent_map(added_ancestry)
-        return bzr_branch.repository.get_revisions(added_ancestry.keys())
+        revisions = bzr_branch.repository.get_parent_map(revisions)
+        return bzr_branch.repository.get_revisions(revisions.keys())
 
     def syncOneRevision(self, bzr_revision, branchrevisions_to_insert):
         """Import the revision with the given revision_id.
@@ -572,9 +581,6 @@ class BzrSync:
         """
         revision_id = bzr_revision.revision_id
         revision_set = getUtility(IRevisionSet)
-        db_revision = revision_set.getByRevisionId(revision_id)
-        if db_revision is not None:
-            return
         # Revision not yet in the database. Load it.
         self.logger.debug("Inserting revision: %s", revision_id)
         revision_set.newFromBazaarRevision(bzr_revision)
@@ -608,20 +614,19 @@ class BzrSync:
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
         revision_set = getUtility(IRevisionSet)
-        mainline_revids = []
-        for revision_id, sequence in branchrevisions_to_insert.iteritems():
-            db_revision = revision_set.getByRevisionId(revision_id)
-            self.db_branch.createBranchRevision(sequence, db_revision)
-            if sequence is not None:
-                mainline_revids.append(revision_id)
+        revid_seq_pairs = branchrevisions_to_insert.items()
+        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 1000):
+            self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
+
         # Generate emails for the revisions in the revision_history
         # for the branch.
-        for i in range(0, len(mainline_revids), 1000):
-            present_mainline_revids = set(
-                bzr_branch.repository.get_parent_map(
-                    mainline_revids[i:i+1000]))
-            present_mainline_revisions = bzr_branch.repository.get_revisions(
-                present_mainline_revids)
+        mainline_revids = [
+            revid for (revid, sequence)
+            in branchrevisions_to_insert.iteritems() if sequence is not None]
+
+        for revid_chunk in iter_list_chunks(mainline_revids, 1000):
+            present_mainline_revisions = self.getBazaarRevisions(
+                bzr_branch, revid_chunk)
             for revision in present_mainline_revisions:
                 sequence = branchrevisions_to_insert[revision.revision_id]
                 assert sequence is not None

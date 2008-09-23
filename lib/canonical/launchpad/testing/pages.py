@@ -7,8 +7,11 @@
 __metaclass__ = type
 
 import os
+import pdb
 import re
 import simplejson
+import transaction
+import sys
 import unittest
 import urllib
 
@@ -53,7 +56,6 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb
             pdb.set_trace()
         try:
             return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
@@ -192,7 +194,9 @@ class WebServiceCaller:
 
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        data = self._convertArgs(operation_name, kwargs)
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, self._quote_value(value))
+                         for key, value in kwargs.items()])
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
@@ -207,6 +211,15 @@ class WebServiceCaller:
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
             path, 'PATCH', media_type, data, headers, api_version=api_version)
+
+    def _quote_value(self, value):
+        """Quote a value for inclusion in a named GET.
+
+        This may mean turning the value into a JSON string.
+        """
+        if not isinstance(value, basestring):
+            value = simplejson.dumps(value)
+        return urllib.quote(value)
 
     def _make_request_with_entity_body(self, path, method, media_type, data,
                                        headers, api_version):
@@ -650,8 +663,19 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return WebServiceCaller(consumer_key, access_token.key, port=9000)
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
+    test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'salgado-change-anything', port=9000)
@@ -697,6 +721,7 @@ def setUpGlobs(test):
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
+    test.globs['stop'] = stop
 
 
 class PageStoryTestCase(unittest.TestCase):
