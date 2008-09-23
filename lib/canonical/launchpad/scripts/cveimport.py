@@ -26,7 +26,7 @@ from canonical.launchpad.scripts.base import (
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
-CVEDB_NS = '{http://cve.mitre.org/cve/downloads/xml_schema_info.html}'
+CVEDB_NS = '{http://cve.mitre.org/cve/downloads}'
 
 def getText(elem):
     """Get the text content of the given element"""
