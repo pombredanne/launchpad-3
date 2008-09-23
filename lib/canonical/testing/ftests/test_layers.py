@@ -17,7 +17,7 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.pidfile import pidfile_path
+from canonical.lazr.pidfile import pidfile_path
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
@@ -377,7 +377,7 @@ class BaseAppServerSetupTestCase(unittest.TestCase):
         self.assertRaises(LayerIsolationError, _BaseAppServerLayer.testTearDown)
 
     def test_testTearDownResetsDB(self):
-        # The database should be reset after each test since 
+        # The database should be reset after each test since
         _BaseAppServerLayer.setUp()
         _BaseAppServerLayer.testSetUp()
         _BaseAppServerLayer.testTearDown()

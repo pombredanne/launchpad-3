@@ -14,7 +14,7 @@ import sys
 def start_trebuchet():
     # Imported here as path is not set fully on module load
     from canonical.config import config
-    from canonical.pidfile import make_pidfile, pidfile_path
+    from canonical.lazr.pidfile import make_pidfile, pidfile_path
 
     # Don't run the Trebuchet if it wasn't asked for.
     if not config.trebuchet.server.launch:
@@ -62,8 +62,3 @@ def start_trebuchet():
                     trebuchet_process.returncode,
                     )
     atexit.register(stop_trebuchet)
-
-
-
-
-

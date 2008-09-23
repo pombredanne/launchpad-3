@@ -19,7 +19,7 @@ instance name with the service name.
 {{{
 #!python
 
-    >>> from canonical.pidfile import (
+    >>> from canonical.lazr.pidfile import (
     ...     pidfile_path, make_pidfile, remove_pidfile, get_pid)
     >>> from canonical.config import config
 
@@ -63,7 +63,7 @@ correct PID is stored in it.
 
     >>> cmd = '''
     ... import os.path, sys
-    ... from canonical.pidfile import make_pidfile, pidfile_path
+    ... from canonical.lazr.pidfile import make_pidfile, pidfile_path
     ... make_pidfile('nuts')
     ... sys.exit(
     ...     int(open(pidfile_path('nuts')).read().strip() == str(os.getpid()))
@@ -95,7 +95,7 @@ we'll need them again later.
     >>> import time
     >>> subprocess_code = '''
     ... import time
-    ... from canonical.pidfile import make_pidfile
+    ... from canonical.lazr.pidfile import make_pidfile
     ... make_pidfile('nuts')
     ... try:
     ...     time.sleep(30)
