@@ -2113,7 +2113,13 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
+COMMENT ON COLUMN Job.date_created IS 'If the job has started, the time when the job started.';
+COMMENT ON COLUMN Job.date_created IS 'If the job has ended, the time when the job ended.';
 COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.log IS 'If provided, a log of the last attempt to run the job.';
+COMMENT ON COLUMN Job.status IS 'An enum indicating the job status, with 0 meaning "waiting".';
+
 
 -- JobDependency
 
