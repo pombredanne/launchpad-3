@@ -44,9 +44,8 @@
 
     <p class="informational message">
       As of version 8.10 we are not shipping Edubuntu CDs.  You can either
-      <a tal:attributes="href view/download_or_buy_link">download a CD image
-      of Edubuntu</a> or <a href="https://shipit.ubuntu.com/">request an Ubuntu
-      CD</a> instead.
+      <a tal:attributes="href view/download_or_buy_link">download Edubuntu</a>
+      or <a href="https://shipit.ubuntu.com/">request an Ubuntu CD</a> instead.
     </p>
 
   </div>
