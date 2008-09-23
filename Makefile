@@ -262,6 +262,7 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 install: reload-apache
 
 copy-certificates:
+	mkdir -p /etc/apache2/ssl
 	cp configs/development/launchpad.crt /etc/apache2/ssl/
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
