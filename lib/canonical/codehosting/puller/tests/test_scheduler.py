@@ -543,10 +543,10 @@ class TestPullerMasterSpawning(TrialTestCase):
         from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
-    def makePullerMaster(self, branch_type, default_stacked_on_branch=None,
+    def makePullerMaster(self, branch_type, default_stacked_on_url=None,
                          oops_prefixes=None):
-        if default_stacked_on_branch is None:
-            default_stacked_on_branch = self.factory.getUniqueURL()
+        if default_stacked_on_url is None:
+            default_stacked_on_url = self.factory.getUniqueURL()
         if oops_prefixes is None:
             oops_prefixes = set([self.factory.getUniqueString()])
         return scheduler.PullerMaster(
@@ -554,17 +554,36 @@ class TestPullerMasterSpawning(TrialTestCase):
             source_url=self.factory.getUniqueURL(),
             unique_name=self.factory.getUniqueString(),
             branch_type=branch_type,
-            default_stacked_on_url=default_stacked_on_branch,
+            default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
             client=FakePullerEndpointProxy(),
             available_oops_prefixes=oops_prefixes)
 
     @property
     def oops_prefixes(self):
-        return [arguments[-1] for arguments in self.commands_spawned]
+        return [arguments[-2] for arguments in self.commands_spawned]
 
     def spawnProcess(self, protocol, executable, arguments, env):
         self.commands_spawned.append(arguments)
+
+    def test_passes_default_stacked_on_branch(self):
+        # If a default_stacked_on_url is passed into the master then that URL
+        # is sent to the command line.
+        url = self.factory.getUniqueURL()
+        master = self.makePullerMaster(
+            BranchType.MIRRORED, default_stacked_on_url=url)
+        master.run()
+        self.assertEqual(
+            [url], [arguments[-1] for arguments in self.commands_spawned])
+
+    def test_default_stacked_on_branch_not_set(self):
+        # If a default_stacked_on_url is passed into the master as '' then the
+        # empty string is passed as an argument to the script.
+        master = self.makePullerMaster(
+            BranchType.MIRRORED, default_stacked_on_url='')
+        master.run()
+        self.assertEqual(
+            [''], [arguments[-1] for arguments in self.commands_spawned])
 
     def test_getsOopsPrefixFromSet(self):
         # Different workers should have different OOPS prefixes. They get
@@ -621,7 +640,7 @@ import sys, time
 parser = OptionParser()
 (options, arguments) = parser.parse_args()
 (source_url, destination_url, branch_id, unique_name,
- branch_type_name, oops_prefix) = arguments
+ branch_type_name, oops_prefix, default_stacked_on_url) = arguments
 from bzrlib import branch
 branch = branch.Branch.open(destination_url)
 protocol = PullerWorkerProtocol(sys.stdout)

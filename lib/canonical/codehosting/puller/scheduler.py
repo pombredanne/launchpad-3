@@ -299,6 +299,9 @@ class PullerMaster:
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
+        if default_stacked_on_url is None:
+            default_stacked_on_url = ''
+        self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
         self.branch_puller_endpoint = client
         self._available_oops_prefixes = available_oops_prefixes
@@ -328,7 +331,8 @@ class PullerMaster:
         command = [
             sys.executable, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), str(self.unique_name),
-            self.branch_type.name, self.oops_prefix]
+            self.branch_type.name, self.oops_prefix,
+            self.default_stacked_on_url]
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
         reactor.spawnProcess(protocol, sys.executable, command, env=env)
