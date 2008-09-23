@@ -968,39 +968,25 @@ information, too:
 Users can mark bugs as affecting them. For each bug we then keep a count
 of the number of users affected by it.
 
-    >>> from storm.store import Store
-    >>> from canonical.launchpad.interfaces import PersonCreationRationale
-    >>> params = CreateBugParams(
-    ...     title="test firefox bug", comment="test bug", owner=foobar)
-    >>> params.setBugTarget(product=firefox)
-    >>> test_bug = getUtility(IBugSet).createBug(params)
-    >>> Store.of(test_bug).invalidate(test_bug)
-
-Initially, the bug reporter is marked as affected by the bug.
-
-    >>> test_bug.isUserAffected(bug.owner)
-    True
-
-    >>> affected_user, email = personset.createPersonAndEmail(
-    ...     'affected.user@examplerandomhost.com',
-    ...     PersonCreationRationale.UNKNOWN)
-    >>> test_bug.isUserAffected(affected_user)
-    False
+   >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+   >>> factory = LaunchpadObjectFactory()
+   >>> test_bug = factory.makeBug()
+   >>> affected_user = factory.makePerson()
 
 When we mark a bug as affecting a new user, the affected_users_count
 increments.
 
+    >>> test_bug.isUserAffected(affected_user)
+    False
     >>> test_bug.markUserAffected(affected_user)
     >>> test_bug.isUserAffected(affected_user)
     True
-    >>> Store.of(test_bug).invalidate(test_bug)
     >>> test_bug.users_affected_count
-    2
+    1
 
 A bug can only affect a user once. Calling markUserAffect() with the
 same user more than once does not increment users_affect_count.
 
     >>> test_bug.markUserAffected(affected_user)
-    >>> Store.of(test_bug).invalidate(test_bug)
     >>> test_bug.users_affected_count
-    2
+    1

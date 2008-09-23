@@ -1132,6 +1132,13 @@ class Bug(SQLBase):
             # Mark the user as affected by this bug.
             # A trigger on insert will increment `users_affected_count`.
             BugAffectsPerson(bug=self, person=user)
+            # Flush, so that the new BugAffectsPerson will be inserted
+            # into the DB and invalidate the Bug object so that the change
+            # to users_affected_count (which is maintained by a trigger)
+            # will be reflected.
+            store = Store.of(self)
+            store.flush()
+            store.invalidate(self)
 
     def unmarkUserAffected(self, user):
         """See `IBug`."""
@@ -1140,6 +1147,13 @@ class Bug(SQLBase):
             # Unmark the user as affected by this bug.
             # A trigger on insert will increment `users_affected_count`.
             bugAffectsPerson.destroySelf()
+            # Flush, so that the new BugAffectsPerson will be inserted
+            # into the DB and invalidate the Bug object so that the change
+            # to users_affected_count (which is maintained by a trigger)
+            # will be reflected.
+            store = Store.of(self)
+            store.flush()
+            store.invalidate(self)
 
 
 class BugSet:
@@ -1319,9 +1333,6 @@ class BugSet:
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)
-
-        # Mark the bug reporter as affected by the bug.
-        bug.markUserAffected(bug.owner)
 
         # Create the task on a product if one was passed.
         if params.product:
