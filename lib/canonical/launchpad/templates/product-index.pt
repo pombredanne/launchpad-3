@@ -197,17 +197,15 @@
       </div>
 
       <tal:warning-for-owner
-          condition="view/show_commercial_subscription_info"
+        condition="view/show_commercial_subscription_info"
       >
-        <div
-            class="section"
-            tal:content="structure context/@@+portlet-requires-subscription"
-            tal:condition="view/requires_commercial_subscription"
+        <div class="section"
+             tal:content="structure context/@@+portlet-requires-subscription"
+             tal:condition="view/requires_commercial_subscription"
         />
-        <div
-            class="section"
-            tal:content="structure context/@@+portlet-license-missing"
-            tal:condition="not: context/licenses"
+        <div class="section"
+             tal:content="structure context/@@+portlet-license-missing"
+             tal:condition="not: context/licenses"
         />
       </tal:warning-for-owner>
 
