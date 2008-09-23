@@ -611,18 +611,6 @@ class TestBzrSyncModified(BzrSyncTestCase):
             new_parents=len(parent_ids), new_authors=1)
         return fake_revision
 
-    def test_sync_twice(self):
-        # Synchronise the fake revision:
-        # Verify that synchronising the revision twice passes and does
-        # not create a second revision object:
-        fake_revision = self.makeSyncedRevision()
-        counts = self.getCounts()
-        self.bzrsync.syncOneRevision(
-            fake_revision, {fake_revision.revision_id: None})
-        self.assertCounts(
-            counts, new_revisions=0, new_numbers=0,
-            new_parents=0, new_authors=0)
-
 
 class TestBzrSyncEmail(BzrSyncTestCase):
     """Tests BzrSync support for generating branch email notifications."""

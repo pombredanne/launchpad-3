@@ -20,19 +20,26 @@ And for every distribution we publish most of its attributes.
     ...     print "%s: %s" % (key, value)
     active: True
     active_milestones_collection_link: http://.../ubuntu/active_milestones
+    all_bugtasks_collection_link: http://.../ubuntu/all_bugtasks
     all_milestones_collection_link: http://.../ubuntu/all_milestones
+    closed_bugtasks_collection_link: http://.../ubuntu/closed_bugtasks
+    critical_bugtasks_collection_link: http://.../ubuntu/critical_bugtasks
     date_created: 2006-10-16T18:31:43.415195+00:00
-    description: Ubuntu is a new approach to Linux Distribution...
+    description: Ubuntu is a new approach...
     display_name: Ubuntu
     domain_name: ubuntulinux.org
     driver_link: None
     homepage_content: None
     icon_link: http://.../ubuntu/icon
+    inprogress_bugtasks_collection_link: http://.../ubuntu/inprogress_bugtasks
     logo_link: http://.../ubuntu/logo
     mugshot_link: http://.../ubuntu/mugshot
     name: ubuntu
+    new_bugtasks_collection_link: http://.../ubuntu/new_bugtasks
+    open_bugtasks_collection_link: http://.../ubuntu/open_bugtasks
     owner_link: http://.../~ubuntu-team
     resource_type_link: http://.../#distribution
     self_link: http://.../ubuntu
     summary: Ubuntu is a new approach to Linux Distribution...
     title: Ubuntu Linux
+    unassigned_bugtasks_collection_link: http://.../ubuntu/unassigned_bugtasks

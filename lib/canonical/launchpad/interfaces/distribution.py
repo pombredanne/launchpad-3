@@ -7,7 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
+    'IDistributionPublic',
     'IDistributionSet',
     ]
 
@@ -54,14 +56,21 @@ class DistributionNameField(PillarNameField):
         """Return the interface of this pillar object."""
         return IDistribution
 
-class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
-                    IHasAppointedDriver, IHasDrivers, IHasMentoringOffers,
-                    IHasMilestones, IMakesAnnouncements, IHasOwner,
-                    IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-                    IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-                    IPillar):
-    """An operating system distribution."""
-    export_as_webservice_entry()
+
+class IDistributionEditRestricted(Interface):
+    """IDistribution properties requiring launchpad.Edit permission."""
+
+    def newSeries(name, displayname, title, summary, description,
+                  version, parent_series, owner):
+        """Creates a new distroseries."""
+
+
+class IDistributionPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
+    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
+    IMakesAnnouncements, IPillar, ISpecificationTarget):
+    """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
     name = exported(
@@ -401,6 +410,10 @@ class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 
+
+class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+    """An operating system distribution."""
+    export_as_webservice_entry()
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution

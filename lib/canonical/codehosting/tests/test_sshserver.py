@@ -320,7 +320,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     layer = TwistedLayer
 
     class FakeAuthenticationEndpoint:
-        """A fake client for enough of `IUserDetailsStorageV2` for this test.
+        """A fake client for enough of `IAuthServer` for this test.
         """
 
         valid_user = 'valid_user'
