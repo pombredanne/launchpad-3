@@ -230,6 +230,8 @@ class CVEUpdater(LaunchpadCronScript):
         """
         dom = cElementTree.fromstring(cve_xml)
         items = dom.findall(CVEDB_NS + 'item')
+        if len(items) == 0:
+            raise LaunchpadScriptFailure("No CVEs found in XML file.")
         self.logger.info("Updating database...")
 
         # We use Looptuner to control the ideal number of CVEs
