@@ -491,7 +491,8 @@ class PullerWorker:
                 "Unexpected branch type: %r" % branch_type)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 protocol, branch_opener=None, oops_prefix=None):
+                 default_stacked_on_url, protocol, branch_opener=None,
+                 oops_prefix=None):
         """Construct a `PullerWorker`.
 
         :param src: The URL to pull from.
