@@ -41,7 +41,7 @@ So let's check out the actual table:
     >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
     >>> print extract_text(table)
-    linux-source-2.6.15  Missing corresponding product.  (find) (link)
+    linux-source-2.6.15  Missing corresponding project.  (find) (link)
         2    2   100.00  0  2    100.00    0    1   50.00  1
     mozilla-firefox     Mozilla Firefox        Launchpad    Unspecified
         1    1   100.00  0  1    100.00    0
