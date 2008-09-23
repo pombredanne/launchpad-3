@@ -27,6 +27,7 @@ from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
@@ -529,13 +530,11 @@ class TestPullerMasterSpawning(TrialTestCase):
 
     def setUp(self):
         from twisted.internet import reactor
-        self.status_client = FakePullerEndpointProxy()
-        self.arbitrary_branch_id = 1
+        self.factory = ObjectFactory()
+        status_client = FakePullerEndpointProxy()
         self.available_oops_prefixes = set(['foo'])
-        self.eventHandler = scheduler.PullerMaster(
-            self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, 'arbitrary-stacked-on', logging.getLogger(),
-            self.status_client, self.available_oops_prefixes)
+        self.eventHandler = self.makePullerMaster(
+            BranchType.HOSTED, oops_prefixes=self.available_oops_prefixes)
         self._realSpawnProcess = reactor.spawnProcess
         reactor.spawnProcess = self.spawnProcess
         self.commands_spawned = []
@@ -543,6 +542,22 @@ class TestPullerMasterSpawning(TrialTestCase):
     def tearDown(self):
         from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
+
+    def makePullerMaster(self, branch_type, default_stacked_on_branch=None,
+                         oops_prefixes=None):
+        if default_stacked_on_branch is None:
+            default_stacked_on_branch = self.factory.getUniqueURL()
+        if oops_prefixes is None:
+            oops_prefixes = set([self.factory.getUniqueString()])
+        return scheduler.PullerMaster(
+            branch_id=self.factory.getUniqueInteger(),
+            source_url=self.factory.getUniqueURL(),
+            unique_name=self.factory.getUniqueString(),
+            branch_type=branch_type,
+            default_stacked_on_url=default_stacked_on_branch,
+            logger=logging.getLogger(),
+            client=FakePullerEndpointProxy(),
+            available_oops_prefixes=oops_prefixes)
 
     @property
     def oops_prefixes(self):
