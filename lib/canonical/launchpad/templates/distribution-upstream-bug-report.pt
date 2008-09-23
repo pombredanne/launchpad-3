@@ -99,7 +99,7 @@
             <th colspan="2">Project</th>
             <th>Bug Tracker</th>
             <th>Upstream Contact</th>
-            <th class="amount default-sort">Open</th>
+            <th class="amount default-revsort">Open</th>
             <th class="amount">Triaged</th>
             <th class="amount">%</th>
             <th class="amount">&Delta;</th>
