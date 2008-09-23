@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'ImportStatus',
     'IProductSeries',
+    'IProductSeriesEditRestricted',
+    'IProductSeriesPublic',
     'IProductSeriesSet',
     'RevisionControlSystems',
     'validate_cvs_module',
@@ -27,7 +29,8 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
-from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.milestone import (
+    IHasMilestones, IMilestone)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -41,7 +44,8 @@ from canonical.launchpad import _
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    call_with, export_as_webservice_entry, export_factory_operation, exported,
+    rename_parameters_as, REQUEST_USER)
 
 
 class ImportStatus(DBEnumeratedType):
@@ -185,11 +189,37 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal, IHasMilestones):
-    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
-    export_as_webservice_entry('project_series')
+class IProductSeriesEditRestricted(Interface):
+    """IProductSeries properties which require launchpad.Edit."""
 
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(IMilestone,
+                              ['name', 'dateexpected', 'description'])
+    def newMilestone(name, dateexpected=None, description=None):
+        """Create a new milestone for this ProjectSeries."""
+
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(codename='code_name')
+    @export_factory_operation(
+        IProductRelease,
+        ['version', 'codename', 'summary', 'description', 'changelog'])
+    def addRelease(version, owner, codename=None, summary=None,
+                   description=None, changelog=None):
+        """Create a new ProductRelease.
+
+        :param version: Name of the version.
+        :param owner: `IPerson` object who manages the release.
+        :param codename: Alternative name of the version.
+        :param shortdesc: Summary information.
+        :param description: Detailed information.
+        :param changelog: Highlighted changes in each version.
+        :returns: `IProductRelease` object.
+        """
+
+
+class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
+                           IBugTarget, ISpecificationGoal, IHasMilestones):
+    """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
@@ -283,7 +313,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=Interface)), # Specified later.
+            value_type=Reference(schema=IMilestone)),
         exported_as='active_milestones')
 
     all_milestones = exported(
@@ -291,7 +321,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=Interface))) # Specified later.
+            value_type=Reference(schema=IMilestone)))
 
     drivers = exported(
         CollectionField(
@@ -359,9 +389,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
-
-    def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
 
     # revision control items
     import_branch = Choice(
@@ -442,10 +469,11 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
-# We are forced to define this now to avoid circular import problems.
-from canonical.launchpad.interfaces.milestone import IMilestone
-IProductSeries['milestones'].value_type.schema = IMilestone
-IProductSeries['all_milestones'].value_type.schema = IMilestone
+
+class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic):
+    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
+    export_as_webservice_entry('project_series')
+
 
 
 class IProductSeriesSet(Interface):

@@ -806,7 +806,7 @@ class ProductDownloadFileMixin:
         for release in releases:
             for release_file in release.files:
                 if release_file.libraryfile.id in self.delete_ids:
-                    release.deleteFileAlias(release_file.libraryfile)
+                    release_file.destroySelf()
                     self.delete_ids.remove(release_file.libraryfile.id)
                     del_count += 1
         return del_count
