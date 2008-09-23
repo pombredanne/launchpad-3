@@ -151,6 +151,13 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.IDate
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.DateFieldMarshaller"
+        />
+
+    <adapter
         for="zope.schema.interfaces.IBytes
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"

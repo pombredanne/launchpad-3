@@ -19,8 +19,7 @@
     </td>
     <td>
       <tal:view_changesfile
-        define="source context/sourcepackagerelease"
-        condition="view/is_changesfile_visible">
+        define="source context/sourcepackagerelease">
         <a tal:condition="source/upload_changesfile"
           tal:attributes="href source/upload_changesfile/http_url"
           >(changesfile)</a>
