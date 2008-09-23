@@ -18,52 +18,16 @@
   }
 </style>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/source_branch/@@+heading"/>
-
 <div metal:fill-slot="main"
      tal:define="context_menu context/menu:context">
 
-  <tal:proposal-heading tal:replace="structure context/@@+heading-links"/>
-
-  <div id="actions" class="actions aside"
-       tal:condition="context/required:launchpad.Edit">
-    <tal:action define="link context_menu/set_work_in_progress"
-                condition="link/enabled"
-                content="structure link/render">
-      Set WIP
-    </tal:action>
-    <tal:action define="link context_menu/review"
-                condition="link/enabled"
-                content="structure link/render">
-      Review
-    </tal:action>
-    <tal:action define="link context_menu/merge"
-                condition="link/enabled"
-                content="structure link/render">
-      Mark as merged
-    </tal:action>
-    <tal:action define="link context_menu/enqueue"
-                condition="link/enabled"
-                content="structure link/render">
-      Enqueue
-    </tal:action>
-    <tal:action define="link context_menu/dequeue"
-                condition="link/enabled"
-                content="structure link/render">
-      Dequeue
-    </tal:action>
-    <tal:action define="link context_menu/resubmit"
-                condition="link/enabled"
-                content="structure link/render">
-      Resubmit
-    </tal:action>
-
-  </div>
+  <h1>Merge proposal for <tal:source content="context/source_branch/bzr_identity"/></h1>
 
   <div class="aside">
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
+
+  <tal:summary replace="structure context/@@+pagelet-summary" />
 
   <p id="proposal-merged" tal:condition="context/merged_revno">
     The proposed merge was performed at revision
@@ -92,20 +56,17 @@
         <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
     </p>
   </tal:superseded-by>
-  <div>
 
+  <tal:commit-message condition="context/commit_message">
     <h2>Proposed commit message
     </h2>
 
-  </div>
-  <div id="commit-message">
-    <p tal:content="structure context/commit_message/fmt:text-to-html">
-      Commit message
-    </p>
-    <p tal:condition="not: context/commit_message">
-      No commit message specified.
-    </p>
-  </div>
+    <div id="commit-message">
+      <p tal:content="structure context/commit_message/fmt:text-to-html">
+        Commit message
+      </p>
+    </div>
+  </tal:commit-message>
 
 
   <tal:whiteboard condition="context/whiteboard">
@@ -151,15 +112,16 @@
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">
-  <h2>Unmerged revisions</h2>
 
     <tal:history-available condition="context/source_branch/revision_count"
                            define="branch context/source_branch;
                                    revisions view/unlanded_revisions">
+      <h2>Unmerged revisions</h2>
       <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
     </tal:history-available>
 
     <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+      <h2>Unmerged revisions</h2>
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>

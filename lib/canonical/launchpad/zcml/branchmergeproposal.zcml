@@ -151,6 +151,14 @@
       template="../templates/branchmergeproposal-delete.pt" />
 
   <browser:page
+      name="+edit-status"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalChangeStatusView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branchmergeproposal-editstatus.pt" />
+
+  <browser:page
       name="+work-in-progress"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"

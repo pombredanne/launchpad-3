@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
+    'BranchMergeProposalChangeStatusView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
@@ -32,7 +33,8 @@ from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface, implements
-from zope.schema import Int, TextLine
+from zope.schema import Choice, Int, TextLine
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -128,7 +130,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
              'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
-             'resubmit', 'update_merge_revno']
+             'resubmit', 'update_merge_revno', 'edit_status']
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
@@ -140,6 +142,13 @@ class BranchMergeProposalContextMenu(ContextMenu):
         status = self.context.queue_status
         enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
         return Link('+edit', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_status(self):
+        text = 'Change status'
+        status = self.context.queue_status
+        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        return Link('+edit-status', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -907,4 +916,84 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
     def has_subscribers(self):
         """True if there are subscribers to the branch."""
         return len(self.full_subscribers) + len(self.status_subscribers)
+
+
+class BranchMergeProposalChangeStatusView(MergeProposalEditView):
+
+    label = "Change merge proposal status"
+    schema = IBranchMergeProposal
+    field_names = []
+
+    def setUpFields(self):
+        MergeProposalEditView.setUpFields(self)
+        # Add the custom restricted queue status widget.
+        status_field = self.schema['queue_status']
+
+        terms = [
+            SimpleTerm(status, status.name, status.title)
+            for status in (BranchMergeProposalStatus.WORK_IN_PROGRESS,
+                           BranchMergeProposalStatus.NEEDS_REVIEW,
+                           BranchMergeProposalStatus.CODE_APPROVED,
+                           BranchMergeProposalStatus.REJECTED,
+                           BranchMergeProposalStatus.QUEUED,
+                           BranchMergeProposalStatus.MERGED)
+            if ((self.context.isValidTransition(status, self.user)
+                 or status == self.context.queue_status)
+                # Edge case here for removing a queued proposal, we do this by
+                # setting the next state to code approved.
+                or (status == BranchMergeProposalStatus.CODE_APPROVED and
+                    self.context.queue_status == BranchMergeProposalStatus.QUEUED))
+            ]
+        # Resubmit edge case.
+        terms.append(SimpleTerm(
+                BranchMergeProposalStatus.SUPERSEDED, 'SUPERSEDED',
+                'Resubmit'))
+        vocab = SimpleVocabulary(terms)
+
+        status_choice = Choice(
+                __name__='queue_status', title=status_field.title,
+                required=True, vocabulary=vocab)
+        status_field = form.Fields(
+            status_choice, render_context=self.render_context)
+        self.form_fields = status_field + self.form_fields
+
+    @action('Change Status', name='update')
+    def update_action(self, action, data):
+        """Update the status."""
+
+        curr_status = self.context.queue_status
+        # If the status has been updated elsewhere to something that is in a
+        # final state, then don't do anything.
+        if curr_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+            return
+        # Assume for now that the queue_status in the data is a valid
+        # transition from where we are.
+        rev_id = self.request.form['revno']
+        new_status = data['queue_status']
+        # Don't do anything if the user hasn't changed the status.
+        if new_status == curr_status:
+            return
+
+        if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.context.setAsWorkInProgress()
+        elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
+            self.context.requestReview()
+        elif new_status == BranchMergeProposalStatus.CODE_APPROVED:
+            # Other half of the edge case.  If the status is currently queued,
+            # we need to dequeue, otherwise we just approve the branch.
+            if curr_status == BranchMergeProposalStatus.QUEUED:
+                self.context.dequeue()
+            else:
+                self.context.approveBranch(self.user, rev_id)
+        elif new_status == BranchMergeProposalStatus.REJECTED:
+            self.context.rejectBranch(self.user, rev_id)
+        elif new_status == BranchMergeProposalStatus.QUEUED:
+            self.context.enqueue(self.user, rev_id)
+        elif new_status == BranchMergeProposalStatus.MERGED:
+            self.context.markAsMerged(merge_reporter=self.user)
+        elif new_status == BranchMergeProposalStatus.SUPERSEDED:
+            # Redirect the user to the resubmit view.
+            self.next_url = canonical_url(self.context, view_name="+resubmit")
+        else:
+            raise AssertionError('Unexpected queue status: ' % new_status)
 
