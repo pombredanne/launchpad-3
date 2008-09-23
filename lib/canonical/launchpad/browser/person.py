@@ -4686,8 +4686,12 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
+        def team_has_branches(team):
+            branches = getUtility(IBranchSet).getBranchesForContext(
+                team, visible_by_user=self.user)
+            return branches.count() > 0
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0 and team != self.context]
+                if team_has_branches(team) and team != self.context]
 
 
 class PersonOAuthTokensView(LaunchpadView):

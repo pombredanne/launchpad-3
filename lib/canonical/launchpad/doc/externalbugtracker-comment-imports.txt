@@ -261,6 +261,28 @@ message and the bug to which the watch belongs.
     >>> bug_message.bugwatch == bug_watch
     True
 
+The list of imported messages can be retrieved using
+getImportedBugMessages().
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> factory = LaunchpadObjectFactory()
+    >>> bug_watch2 = factory.makeBugWatch('42')
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Imported comment', bugwatch=bug_watch2)
+    <Message at ...>
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Native comment')
+    <Message at ...>
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> for bug_message in bug_watch2.getImportedBugMessages():
+    ...     print bug_message.message.text_contents
+    Imported comment
+
     >>> commit()
 
 
@@ -341,12 +363,16 @@ We'll add a listener to check for Karma events.
 Importing a comment with a CVE reference will produce a CVE link in
 Launchpad but will result in no Karma records being created.
 
-    >>> external_bugtracker.remote_comments['5'] = (
-    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('123456')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> external_bugtracker.remote_comments = {
+    ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in bug.cves:
+    >>> for cve in bug_watch.bug.cves:
     ...     print cve.displayname
     CVE-1991-9911
 
@@ -363,11 +389,10 @@ includes a CVE reference appear to come from a valid Launchpad user.
 
 Once again, CVE links are created but no karma is assigned.
 
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
-    INFO:...:Imported 2 comments for remote bug 123456...
+    INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    >>> for cve in sorted([cve.displayname for cve in bug_watch.bug.cves]):
     ...     print cve
     CVE-1991-9911
     CVE-1999-0593
@@ -379,9 +404,7 @@ Once again, CVE links are created but no karma is assigned.
 When a comment is imported, a BugNotification record is created, so that
 an e-mail notification is sent about the comment.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> factory = LaunchpadObjectFactory()
     >>> bug_watch = factory.makeBugWatch('42')
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)

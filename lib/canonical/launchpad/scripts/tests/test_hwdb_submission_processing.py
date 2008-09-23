@@ -1,20 +1,30 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 """Tests of the HWDB submissions parser."""
 
+import bz2
+from cStringIO import StringIO
+from datetime import datetime
 import logging
+import os
+import pytz
 from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
+from canonical.config import config
 from canonical.launchpad.interfaces.hwdb import (
-    HWBus, IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
+    HWBus, HWSubmissionFormat, HWSubmissionProcessingStatus,
+    IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
     IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
     IHWVendorNameSet)
+from canonical.librarian.ftests.harness import fillLibrarianFile
 from canonical.launchpad.scripts.hwdbsubmissions import (
     HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
     PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
-    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser)
+    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser,
+    process_pending_submissions)
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
 
@@ -2054,6 +2064,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         self.handler.add(self.log.name)
         self.layer.switchDbUser('hwdb-submission-processor')
 
+    def getLogData(self):
+        messages = [record.getMessage() for record in self.handler.records]
+        return '\n'.join(messages)
+
     def setHALDevices(self, devices):
         self.parsed_data['hardware']['hal']['devices'] = devices
 
@@ -2451,6 +2465,301 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected value for '
             'submitted_usb_controller_usb.hal_device_id')
 
+    def createSubmissionData(self, data, compress, submission_key):
+        """Create a submission."""
+        if compress:
+            data = bz2.compress(data)
+        self.layer.switchDbUser('launchpad')
+        submission = getUtility(IHWSubmissionSet).createSubmission(
+            date_created=datetime(2007, 9, 9, tzinfo=pytz.timezone('UTC')),
+            format=HWSubmissionFormat.VERSION_1,
+            private=False,
+            contactable=False,
+            submission_key=submission_key,
+            emailaddress=u'test@canonical.com',
+            distroarchseries=None,
+            raw_submission=StringIO(data),
+            filename='hwinfo.xml',
+            filesize=len(data),
+            system_fingerprint='A Machine Name')
+        # We want to access library file later: ensure that it is
+        # properly stored.
+        self.layer.txn.commit()
+        self.layer.switchDbUser('hwdb-submission-processor')
+        return submission
+
+    def getSampleData(self, filename):
+        """Return the submission data of a short valid submission."""
+        sample_data_path = os.path.join(
+            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            'tests', 'simple_valid_hwdb_submission.xml')
+        return open(sample_data_path).read()
+
+    def assertSampleDeviceCreated(
+        self, bus, vendor_id, product_id, driver_name, submission):
+        """Assert that data for the device exists in HWDB tables."""
+        device_set = getUtility(IHWDeviceSet)
+        device = getUtility(IHWDeviceSet).getByDeviceID(
+            bus, vendor_id, product_id)
+        self.assertNotEqual(
+            device, None,
+            'No entry in HWDevice found for bus %s, vendor %s, product %s'
+            % (bus, vendor_id, product_id))
+        # We have one device_driver_link entry without a driver for
+        # each device...
+        device_driver_link_set = getUtility(IHWDeviceDriverLinkSet)
+        device_driver_link = device_driver_link_set.getByDeviceAndDriver(
+            device, None)
+        self.assertNotEqual(
+            device_driver_link, None,
+            'No driverless entry in HWDeviceDriverLink for bus %s, '
+            'vendor %s, product %s'
+            % (bus, vendor_id, product_id))
+        #...and an associated HWSubmissionDevice record.
+        submission_devices = getUtility(IHWSubmissionDeviceSet).getDevices(
+            submission)
+        device_driver_links_in_submission = [
+            submission_device.device_driver_link
+            for submission_device in submission_devices]
+        self.failUnless(
+            device_driver_link in device_driver_links_in_submission,
+            'No entry in HWSubmissionDevice for bus %s, '
+            'vendor %s, product %s, submission %s'
+            % (bus, vendor_id, product_id, submission.submission_key))
+        # If the submitted data mentioned a driver for this device,
+        # we have also a HWDeviceDriverLink record for the (device,
+        # driver) tuple.
+        if driver_name is not None:
+            driver = getUtility(IHWDriverSet).getByPackageAndName(
+                self.KERNEL_PACKAGE, driver_name)
+            self.assertNotEqual(
+                driver, None,
+                'No HWDriver record found for package %s, driver %s'
+                % (self.KERNEL_PACKAGE, driver_name))
+            device_driver_link = device_driver_link_set.getByDeviceAndDriver(
+                device, driver)
+            self.assertNotEqual(
+                device_driver_link, None,
+                'No entry in HWDeviceDriverLink for bus %s, '
+                'vendor %s, product %s, driver %s'
+                % (bus, vendor_id, product_id, driver_name))
+            self.failUnless(
+                device_driver_link in device_driver_links_in_submission,
+                'No entry in HWSubmissionDevice for bus %s, '
+                'vendor %s, product %s, driver %s, submission %s'
+                % (bus, vendor_id, product_id, driver_name,
+                   submission.submission_key))
+
+    def assertAllSampleDevicesCreated(self, submission):
+        """Assert that the devices from the sample submission are processed.
+
+        The test data contains two devices: A system and a PCI device.
+        The system has no associated drivers; the PCI device is
+        associated with the ahci driver.
+        """
+        for bus, vendor_id, product_id, driver in (
+            (HWBus.SYSTEM, 'FUJITSU SIEMENS', 'LIFEBOOK E8210', None),
+            (HWBus.PCI, '0x8086', '0x27c5', 'ahci'),
+            ):
+            self.assertSampleDeviceCreated(
+                bus, vendor_id, product_id, driver, submission)
+
+    def testProcessSubmissionValidData(self):
+        """Test of SubmissionParser.processSubmission().
+
+        Regular case: Process valid compressed submission data.
+        """
+        submission_key = 'submission-1'
+        submission_data = self.getSampleData(
+            'simple_valid_hwdb_submission.xml')
+        submission = self.createSubmissionData(
+            submission_data, False, submission_key)
+        parser = SubmissionParser(self.log)
+        result = parser.processSubmission(submission)
+        self.failUnless(result,
+                        'Simple valid uncompressed submission could not be '
+                        'processed. Logged errors:\n%s'
+                        % self.getLogData())
+        self.assertAllSampleDevicesCreated(submission)
+
+    def testProcessSubmissionValidBzip2CompressedData(self):
+        """Test of SubmissionParser.processSubmission().
+
+        Regular case: Process valid compressed submission data.
+        """
+        submission_key = 'submission-2'
+        submission_data = self.getSampleData(
+            'simple_valid_hwdb_submission.xml')
+        submission = self.createSubmissionData(
+            submission_data, True, submission_key)
+        parser = SubmissionParser(self.log)
+        result = parser.processSubmission(submission)
+        self.failUnless(result,
+                        'Simple valid compressed submission could not be '
+                        'processed. Logged errors:\n%s'
+                        % self.getLogData())
+        self.assertAllSampleDevicesCreated(submission)
+
+    def testProcessSubmissionInvalidData(self):
+        """Test of SubmissionParser.processSubmission().
+
+        If a submission contains formally invalid data, it is rejected.
+        """
+        submission_key = 'submission-3'
+        submission_data = """<?xml version="1.0" ?>
+        <foo>
+           This does not pass the RelaxNG validation.
+        </foo>
+        """
+        submission = self.createSubmissionData(
+            submission_data, True, submission_key)
+        parser = SubmissionParser(self.log)
+        result = parser.processSubmission(submission)
+        self.failIf(result, 'Formally invalid submission treated as valid.')
+
+    def testProcessSubmissionInconsistentData(self):
+        """Test of SubmissionParser.processSubmission().
+
+        If a submission contains inconsistent data, it is rejected.
+        """
+        submission_key = 'submission-4'
+        submission_data = self.getSampleData(
+            'simple_valid_hwdb_submission.xml')
+
+        # The property "info.parent" of a HAL device node must
+        # reference another existing device.
+        submission_data = submission_data.replace(
+            """<property name="info.parent" type="str">
+          /org/freedesktop/Hal/devices/computer
+        </property>""",
+            """<property name="info.parent" type="str">
+          /nonsense/udi
+        </property>""")
+
+        submission = self.createSubmissionData(
+            submission_data, True, submission_key)
+        parser = SubmissionParser(self.log)
+        result = parser.processSubmission(submission)
+        self.failIf(
+            result, 'Submission with inconsistent data treated as valid.')
+
+    def testProcessSubmissionRealData(self):
+        """Test of SubmissionParser.processSubmission().
+
+        Test with data from a real submission.
+        """
+        submission_data = self.getSampleData('real_hwdb_submission.xml.bz2')
+        submission_key = 'submission-5'
+        submission = self.createSubmissionData(
+            submission_data, False, submission_key)
+        parser = SubmissionParser(self.log)
+        result = parser.processSubmission(submission)
+        self.failUnless(
+            result,
+            'Real submission data not processed. Logged errors:\n%s'
+            % self.getLogData())
+
+    def testPendingSubmissionProcessing(self):
+        """Test of process_pending_submissions().
+
+        Run process_pending_submissions with three submissions; one
+        of the submisisons contains invalid data.
+        """
+        # We have already one submisson in the DB sample data;
+        # let's fill the associated Librarian file with some
+        # test data.
+        submission_set = getUtility(IHWSubmissionSet)
+        submission = submission_set.getBySubmissionKey(
+            'test_submission_id_1')
+        submission_data = self.getSampleData(
+            'simple_valid_hwdb_submission.xml')
+        fillLibrarianFile(submission.raw_submission.id, submission_data)
+
+        submission_data = self.getSampleData('real_hwdb_submission.xml.bz2')
+        submission_key = 'submission-6'
+        self.createSubmissionData(submission_data, False, submission_key)
+
+        submission_key = 'submission-7'
+        submission_data = """<?xml version="1.0" ?>
+        <foo>
+           This does not pass the RelaxNG validation.
+        </foo>
+        """
+        self.createSubmissionData(submission_data, False, submission_key)
+        process_pending_submissions(self.layer.txn, self.log)
+
+        valid_submissions = submission_set.getByStatus(
+            HWSubmissionProcessingStatus.PROCESSED)
+        valid_submission_keys = [
+            submission.submission_key for submission in valid_submissions]
+        self.assertEqual(
+            valid_submission_keys,
+            [u'test_submission_id_1', u'submission-6'],
+            'Unexpected set of valid submissions: %r' % valid_submission_keys)
+
+        invalid_submissions = submission_set.getByStatus(
+            HWSubmissionProcessingStatus.INVALID)
+        invalid_submission_keys = [
+            submission.submission_key for submission in invalid_submissions]
+        self.assertEqual(
+            invalid_submission_keys, [u'submission-7'],
+            'Unexpected set of invalid submissions: %r'
+            % invalid_submission_keys)
+
+        new_submissions = submission_set.getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED)
+        new_submission_keys = [
+            submission.submission_key for submission in new_submissions]
+        self.assertEqual(
+            new_submission_keys, [],
+            'Unexpected set of new submissions: %r' % new_submission_keys)
+
+        messages = [record.getMessage() for record in self.handler.records]
+        messages = '\n'.join(messages)
+        self.assertEqual(
+            messages,
+            "Parsing submission submission-7: root node is not '<system>'\n"
+            "Processed 2 valid and 1 invalid HWDB submissions",
+            'Unexpected log messages: %r' % messages)
+
+    def testOopsLogging(self):
+        """Test if OOPSes are properly logged."""
+        def processSubmission(self, submission):
+            x = 1
+            x = x / 0
+        process_submission_regular = SubmissionParser.processSubmission
+        SubmissionParser.processSubmission = processSubmission
+
+        process_pending_submissions(self.layer.txn, self.log)
+
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.failUnless(
+            error_text.find('Exception-Type: ZeroDivisionError') >= 0,
+            'Expected Exception type not found in OOPS report:\n%s'
+            % error_text)
+
+        expected_explanation = (
+            'error-explanation=Exception while processing HWDB '
+            'submission test_submission_id_1')
+        self.failUnless(
+            error_text.find(expected_explanation) >= 0,
+            'Expected Exception type not found in OOPS report:\n%s'
+            % error_text)
+
+        messages = [record.getMessage() for record in self.handler.records]
+        messages = '\n'.join(messages)
+        expected_message = (
+            'Exception while processing HWDB submission '
+            'test_submission_id_1 (OOPS-')
+        self.failUnless(
+                messages.startswith(expected_message),
+                'Unexpected log message: %r' % messages)
+
+        SubmissionParser.processSubmission = process_submission_regular
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
