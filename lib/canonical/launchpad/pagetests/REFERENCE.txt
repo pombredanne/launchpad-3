@@ -68,10 +68,10 @@ Parsing specific sections of pages:
 Printing text from images:
 
     >>> html_string = """
-    ... <p>Here's some text <img src="/@@/foo" title="With an image"/>.</p>
+    ... <p>Here's some text <img src="/@@/foo" title="with an image"/>.</p>
     ... """
     >>> print extract_text(html_string, extract_image_text=True)
-    Here's some text With an image.
+    Here's some text with an image.
 
     >>> html_string = "<img src="/@@/bar" alt="Alt text works too." />"
     >>> print extract_text(html_string, extract_image_text=True)
