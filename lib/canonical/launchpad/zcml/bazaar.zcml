@@ -21,11 +21,6 @@
         for="canonical.launchpad.interfaces.IBazaarApplication"
         name="+index" />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="BazaarApplicationNavigation"
-        />
-
     <browser:menus
         module="canonical.launchpad.browser.bazaar"
         classes="BazaarBranchesMenu"

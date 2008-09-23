@@ -42,7 +42,8 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.hwdb import (
+    IHWSubmission, IHWSubmissionSet)
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -227,12 +228,10 @@ class EditPackaging(EditByRegistryExpertsOrOwnersOrAdmins):
 class EditProductReleaseFile(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductReleaseFile
+
     def checkAuthenticated(self, user):
-        if (user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
-            user.inTeam(self.obj.productrelease.productseries.owner) or
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
-            return True
-        return False
+        return EditProductRelease(self.obj.productrelease).checkAuthenticated(
+            user)
 
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
@@ -741,7 +740,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
-    please consult with SABDFL before modifying these permissions.
+    please consult with Kiko and MDZ on the mailing list before modifying
+    these permissions.
     """
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries
@@ -1720,6 +1720,11 @@ class ViewHWSubmission(AuthorizationBase):
         return not self.obj.private
 
 
+class EditHWSubmission(AdminByAdminsTeam):
+    permission = 'launchpad.Edit'
+    usedfor = IHWSubmission
+
+
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -1799,6 +1804,31 @@ class MailingListApprovalByExperts(AuthorizationBase):
     def checkAuthenticated(self, user):
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
         return user.inTeam(experts)
+
+
+class ConfigureTeamMailingList(AuthorizationBase):
+    permission = 'launchpad.MailingListManager'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Check to see if the user can manage a mailing list.
+
+        A team's owner, the Launchpad administrators, and Launchpad mailing
+        list experts can all manage a team's mailing list through its
+        +mailinglist page.
+
+        :param user: The user whose permission is being checked.
+        :type user: `IPerson`
+        :return: True if the user can manage a mailing list, otherwise False.
+        :rtype: boolean
+        """
+        # The team owner, the Launchpad mailing list experts and the Launchpad
+        # administrators can all view a team's +mailinglist page.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        team = ITeam(self.obj)
+        return ((team is not None and user.inTeam(team.teamowner)) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.mailing_list_experts))
 
 
 class ViewEmailAddress(AuthorizationBase):
