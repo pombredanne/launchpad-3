@@ -2177,8 +2177,8 @@ class Person(
     @property
     def safe_email_or_blank(self):
         """See `IPerson`."""
-        if ((self.preferredemail is not None) and
-            not(self.hide_email_addresses)):
+        if (self.preferredemail is not None
+            and not self.hide_email_addresses):
             return self.preferredemail.email
         else:
             return ''

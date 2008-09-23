@@ -83,3 +83,33 @@ Sample Person is now listed as an attendee.
   >>> ubz.time_ends == sprint_attendance.time_ends
   True
 
+
+== Exporting the list of attendees ==
+
+The list of a sprint's attendees can be exported as a CSV file,
+containing some details about each of the attendees.
+
+If the person has specified their time zone in Launchpad, the CSV will
+include it.
+
+    >>> view = create_view(ubz, '+attendees-csv')
+    >>> print view.render()
+    Launchpad username,Display name,...Timezone,...
+    name12,Sample Person...Australia/Perth...
+
+However, some people may set their location/timezone as hidden, so if
+that's the case we won't include the person's timezone.
+
+    >>> person = LaunchpadObjectFactory().makePerson(
+    ...     name='ubz-last-attendee', time_zone='Europe/London')
+    >>> login_person(person)
+    >>> person.setLocationVisibility(False)
+    >>> dates = ['2005-10-17 09:00', '2005-11-17 19:05']
+    >>> create_sprint_attendence_view(ubz, dates).initialize()
+
+    >>> view = create_view(ubz, '+attendees-csv')
+    >>> last_attendee = view.render().split('\n')[-2]
+    >>> print last_attendee
+    ubz-last-attendee,...
+    >>> 'Europe' in last_attendee
+    False
