@@ -163,6 +163,27 @@ relation to some bug.
   >>> webservice.get("/messages").getStatus()
   404
 
+We can add a new message to a bug by calling the newMessage method.
+
+  >>> print webservice.named_post(
+  ...     "/bugs/5", 'newMessage',
+  ...     subject='A new message',
+  ...     content='This is a new message added through the webservice API.')
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
+  <BLANKLINE>
+
+  >>> show(webservice.get("/firefox/+bug/5/comments/1").jsonBody())
+  [...,
+   (u'content', u'This is a new message added through the webservice API.'),
+   ...
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#message'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'),
+   (u'subject', u'A new message')]
+
 
 == Bug tasks ==
 
@@ -564,8 +585,6 @@ we must follow to download the data.
   Content-Length: 0
   Content-Type: text/plain
   Location: http://localhost:58000/.../numbers.txt
-  ...
-  <BLANKLINE>
 
   >>> from urllib2 import urlopen
 
@@ -612,3 +631,224 @@ the same time.
     u'http://.../#bug_attachment-page-resource'),
    (u'start', 0),
    (u'total_size', 1)]
+
+
+== Collections of bugs ==
+
+Bug targets have convenience properties which allow us to iterate over
+common collections of bugtasks, grouped by status, importance or assignee,
+as well as a collection of all bug tasks raised on this target.
+
+  >>> ubuntu = webservice.get('/ubuntu').jsonBody()
+  >>> show(ubuntu)
+  [(u'active', True),
+   (u'active_milestones_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/active_milestones'),
+   (u'all_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/all_bugtasks'),
+   (u'all_milestones_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/all_milestones'),
+   (u'closed_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/closed_bugtasks'),
+   (u'critical_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/critical_bugtasks'),
+   (u'date_created', u'2006-10-16T18:31:43.415195+00:00'),
+   (u'description',
+    u'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.'),
+   (u'display_name', u'Ubuntu'),
+   (u'domain_name', u'ubuntulinux.org'),
+   (u'driver_link', None),
+   (u'homepage_content', None),
+   (u'icon_link', u'http://api.launchpad.dev/beta/ubuntu/icon'),
+   (u'inprogress_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/inprogress_bugtasks'),
+   (u'logo_link', u'http://api.launchpad.dev/beta/ubuntu/logo'),
+   (u'mugshot_link', u'http://api.launchpad.dev/beta/ubuntu/mugshot'),
+   (u'name', u'ubuntu'),
+   (u'new_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/new_bugtasks'),
+   (u'open_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/open_bugtasks'),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~ubuntu-team'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#distribution'),
+   (u'self_link', u'http://api.launchpad.dev/beta/ubuntu'),
+   (u'summary',
+    u'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.'),
+   (u'title', u'Ubuntu Linux'),
+   (u'unassigned_bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/unassigned_bugtasks')]
+
+  >>> show(webservice.get(ubuntu['all_bugtasks_collection_link']).jsonBody())
+  [(u'entries',
+    [{...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
+      ...
+   (u'next_collection_link',
+    u'http://api.launchpad.dev/beta/ubuntu/all_bugtasks?ws.start=5&ws.size=5'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_task-page-resource'),
+   (u'start', 0),
+   (u'total_size', 6)]
+
+  >>> show(webservice.get(ubuntu['open_bugtasks_collection_link']).jsonBody())
+  [(u'entries',
+    [{...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+      u'status': u'Confirmed',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
+      u'status': u'New',
+     ...]
+
+  >>> show(webservice.get(ubuntu['closed_bugtasks_collection_link']).jsonBody())
+  [(u'entries', []),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_task-page-resource'),
+   (u'start', None),
+   (u'total_size', 0)]
+
+  >>> show(webservice.get(ubuntu['inprogress_bugtasks_collection_link']).jsonBody())
+  [(u'entries', []),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_task-page-resource'),
+   (u'start', None),
+   (u'total_size', 0)]
+
+  >>> show(webservice.get(ubuntu['critical_bugtasks_collection_link']).jsonBody())
+  [(u'entries', []),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#bug_task-page-resource'),
+   (u'start', None),
+   (u'total_size', 0)]
+
+  >>> show(webservice.get(ubuntu['new_bugtasks_collection_link']).jsonBody())
+  [(u'entries',
+    [{...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
+      u'status': u'New',
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/evolution/+bug/18',
+      u'status': u'New',
+     ...]
+
+  >>> show(webservice.get(ubuntu['unassigned_bugtasks_collection_link']).jsonBody())
+  [(u'entries',
+    [{u'assignee_link': None,
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1',
+      ...},
+     {u'assignee_link': None,
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+      ...},
+     {u'assignee_link': None,
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+      ...},
+     {u'assignee_link': None,
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+      ...},
+     {u'assignee_link': None,
+      ...
+      u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/17',
+      ...}]),
+   ...]
+
+
+== Searching for bugs ==
+
+Bug targets expose the searchTasks method, which provides a search interface
+for bug tasks, similar to the advanced search form on the web interface.
+
+Calling searchTasks with no arguments just returns a collection of all the
+bug tasks for the target.
+
+    >>> show(webservice.named_get('/firefox', 'searchTasks').jsonBody())
+    [(u'entries',
+      [{...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/5',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/4',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/16',
+        ...
+     (u'total_size', 4)]
+
+Some parameters accept lists of values, just like when searching from
+the web interface. The importance and status parameters, for example,
+accept many values and return only tasks with these values.
+
+    >>> show(webservice.named_get(
+    ...     '/firefox', 'searchTasks',
+    ...     importance=['Critical', 'Low']).jsonBody())
+    [(u'entries',
+      [{...
+        u'importance': u'Critical',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/5',
+        ...
+        u'importance': u'Low',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/firefox/+bug/1',
+        ...
+     (u'total_size', 2)]
+
+The tags parameter also accepts a list of values. By default, it
+searches for bugs with any of the given tags.
+
+    >>> show(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     tags=['crash', 'dataloss']).jsonBody())
+    [(u'entries',
+      [{...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/9',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9',
+        ...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/10',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10',
+        ...
+        u'bug_link': u'http://api.launchpad.dev/beta/bugs/2',
+        ...
+        u'self_link': u'http://api.launchpad.dev/beta/ubuntu/+bug/2',
+        ...
+     (u'total_size', 3)]
+
+It can be used for searching for bugs with all of the given tags by
+setting the tags_combinator parameter to 'All'.
+
+    >>> show(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     tags=['crash', 'dataloss'],
+    ...     tags_combinator='All').jsonBody())
+    [(u'entries', []), (u'start', None), (u'total_size', 0)]
