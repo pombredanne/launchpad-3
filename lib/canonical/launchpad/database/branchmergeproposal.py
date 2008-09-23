@@ -232,6 +232,8 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
+        self.reviewer = None
+        self.date_reviewed = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
