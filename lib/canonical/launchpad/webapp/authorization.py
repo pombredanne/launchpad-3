@@ -125,7 +125,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
         participations = [participation
-                      for participation in self.participations
+                          for participation in self.participations
                           if participation.principal is not system_user]
         if len(participations) == 0:
             principal = None
@@ -134,7 +134,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             raise RuntimeError("More than one principal participating.")
         else:
             participation = participations[0]
-            principal = participation.principal
             if IApplicationRequest.providedBy(participation):
                 wd = participation.annotations.setdefault(
                     'launchpad.security_cache', weakref.WeakKeyDictionary())
@@ -143,6 +142,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     return cache[permission]
             else:
                 cache = None
+            principal = participation.principal
 
         if (principal is not None and
             not isinstance(principal, UnauthenticatedPrincipal)):
