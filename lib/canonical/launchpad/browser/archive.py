@@ -127,30 +127,26 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
-def traverse_archive(distribution, purpose_name):
+def traverse_archive(distribution, name):
     """For distribution archives, traverse to the right place.
     
-    This traversal only applies to distribution archives, because they
-    can be one of several purposes.
+    This traversal only applies to distribution archives, not PPAs.
 
-    :param purpose_name: The string name for the archive purpose,
-                         e.g. PRIMARY
+    :param name: The name of the archive, e.g. 'partner'
     """
-    purpose_name = purpose_name.upper()
     try:
-        purpose = ArchivePurpose.items[purpose_name]
         return getUtility(
-            IArchiveSet).getByDistroPurpose(distribution, purpose)
-    except KeyError:
-        return NotFoundError(purpose_name)
+            IArchiveSet).getByDistroAndName(distribution, name)
+    except SQLObjectNotFound:
+        return NotFoundError(name)
 
 
 class ArchiveURL:
     """Dynamic URL declaration for `IDistributionArchive`.
 
     When dealing with distribution archives we want to present them under
-    IDistribution as:
-    /ubuntu/+archive/PRIMARY
+    IDistribution as /<distro>/+archive/<name>, for example:
+    /ubuntu/+archive/partner
     """
     implements(ICanonicalUrlData)
     rootsite = None
@@ -164,7 +160,7 @@ class ArchiveURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.purpose.name.lower()
+        return u"+archive/%s" % self.context.name.lower()
 
 
 class ArchiveNavigation(Navigation):
