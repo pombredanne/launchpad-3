@@ -181,8 +181,13 @@ buffer resulted from the command.
 If the specified command fails, resumeSlaveHost also raises
 CannotResumeHost exception with the results stdout and stderr.
 
-    >>> default_resume_command = config.builddmaster.vm_resume_command
-    >>> config.builddmaster.vm_resume_command = "false"
+    # The command must have vm_host dict key and when exceuted,
+    # have a returncode that is not 0.
+    >>> vm_resume_command = """
+    ...     [builddmaster]
+    ...     vm_resume_command: test "%(vm_host)s = 'false'"
+    ...     """
+    >>> config.push('vm_resume_command', vm_resume_command)
     >>> frog.resumeSlaveHost()
     Traceback (most recent call last):
     ...
@@ -194,5 +199,5 @@ CannotResumeHost exception with the results stdout and stderr.
 
 Restore default value for resume command.
 
-    >>> config.builddmaster.vm_resume_command = default_resume_command
+    >>> config_data = config.pop('vm_resume_command')
 

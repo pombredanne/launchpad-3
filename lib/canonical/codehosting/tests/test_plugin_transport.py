@@ -902,9 +902,12 @@ class TestLoggingSetup(BzrTestCase):
         BzrTestCase.setUp(self)
 
         # Configure the debug logfile
-        self._real_debug_logfile = config.codehosting.debug_logfile
         file_handle, filename = tempfile.mkstemp()
-        config.codehosting.debug_logfile = filename
+        logfile_conf = """
+            [codehosting]
+            debug_logfile: %s
+            """ % filename
+        config.push('logfile', logfile_conf)
 
         # Trap stderr.
         self._real_stderr = sys.stderr
@@ -917,7 +920,7 @@ class TestLoggingSetup(BzrTestCase):
 
     def tearDown(self):
         sys.stderr = self._real_stderr
-        config.codehosting.debug_logfile = self._real_debug_logfile
+        config.pop('logfile')
         BzrTestCase.tearDown(self)
         # We don't use BaseLayer because we want to keep the amount of
         # pre-configured logging systems to an absolute minimum, in order to
@@ -932,7 +935,11 @@ class TestLoggingSetup(BzrTestCase):
             os.unlink(filename)
         self.addCleanup(remove_file)
 
-        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        debug_logfile_conf = """
+            [codehosting]
+            debug_logfile: %s
+            """ % os.path.join(filename, 'debug.log')
+        config.push('debug_logfile_conf', debug_logfile_conf)
         self.assertRaises(AssertionError, set_up_logging)
 
     def test_makesLogDirectory(self):
@@ -943,8 +950,11 @@ class TestLoggingSetup(BzrTestCase):
             shutil.rmtree(directory)
         self.addCleanup(remove_directory)
 
-        config.codehosting.debug_logfile = os.path.join(
-            directory, 'subdir', 'debug.log')
+        subdir_logfile_conf = """
+            [codehosting]
+            debug_logfile: %s
+            """ % os.path.join(directory, 'subdir', 'debug.log')
+        config.push('subdir_logfile_conf', subdir_logfile_conf)
         set_up_logging()
         self.failUnless(os.path.isdir(os.path.join(directory, 'subdir')))
 
@@ -980,7 +990,11 @@ class TestLoggingSetup(BzrTestCase):
         # codehosting logger should *not* be logged to stderr, even if there's
         # no debug_logfile set.
 
-        config.codehosting.debug_logfile = None
+        none_logfile_conf = """
+            [codehosting]
+            debug_logfile: None
+            """
+        config.push('none_logfile_conf', none_logfile_conf)
         set_up_logging()
 
         # Make sure that a logged message does not go to stderr.

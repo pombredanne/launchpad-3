@@ -141,7 +141,6 @@ class TestLoggingResource(TrialTestCase):
         # option is disabled.
         config.push(
             "test", '[authserver]\ninclude_traceback_in_fault: False\n')
-        config.authserver.include_traceback_in_fault = False
 
         def check_fault_string(fault_string):
             self.assertNotIn('Original traceback', fault_string)
