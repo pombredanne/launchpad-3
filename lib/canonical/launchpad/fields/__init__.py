@@ -85,7 +85,6 @@ from canonical.launchpad.validators.name import valid_name, name_validator
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.fields import IReferenceChoice
-from canonical.foaf import nickname
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -437,13 +436,10 @@ class ContentNameField(UniqueField):
 
 
 class BlacklistableContentNameField(ContentNameField):
-    """ContentNameField that also need to check against the NameBlacklist
-       table in case the name has been blacklisted.
-    """
+    """ContentNameField that also checks that a name is not blacklisted"""
+
     def _validate(self, input):
-        """As per UniqueField._validate, except a LaunchpadValidationError
-           is also raised if the name has been blacklisted.
-        """
+        """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
 
         _marker = object()
@@ -452,11 +448,12 @@ class BlacklistableContentNameField(ContentNameField):
             # The attribute wasn't changed.
             return
 
-        if nickname.is_blacklisted(name=input):
+        # Need a local import because of circular dependencies.
+        from canonical.launchpad.interfaces.person import IPersonSet
+        if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
-                    "The name '%s' has been blocked by the "
-                    "Launchpad administrators" % input
-                    )
+                "The name '%s' has been blocked by the Launchpad "
+                "administrators" % input)
 
 
 class ShipItRecipientDisplayname(TextLine):

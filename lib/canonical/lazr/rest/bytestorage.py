@@ -29,8 +29,12 @@ class ByteStorageResource(HTTPResource):
                 allow_string = "GET"
             elif self.request.method == "PUT":
                 type = self.request.headers['Content-Type']
-                representation = self.request.bodyStream.getCacheStream().read()
-                return self.do_PUT(type, representation)
+                disposition, params = self._parseContentDispositionHeader(
+                    self.request.headers['Content-Disposition'])
+                cache_stream = self.request.bodyStream.getCacheStream()
+                representation = cache_stream.read()
+                return self.do_PUT(type, representation,
+                                   params.get('filename'))
             elif self.request.method == "DELETE":
                 return self.do_DELETE()
             else:
@@ -52,14 +56,14 @@ class ByteStorageResource(HTTPResource):
         self.request.response.setStatus(303) # See Other
         self.request.response.setHeader('Location', self.context.alias_url)
 
-    def do_PUT(self, type, representation):
+    def do_PUT(self, type, representation, filename):
         """See `IByteStorageResource`."""
         try:
             self.context.field.validate(representation)
         except ValidationError, e:
             self.request.response.setStatus(400) # Bad Request
             return str(e)
-        self.context.createStored(type, representation)
+        self.context.createStored(type, representation, filename)
 
     def do_DELETE(self):
         """See `IByteStorageResource`."""

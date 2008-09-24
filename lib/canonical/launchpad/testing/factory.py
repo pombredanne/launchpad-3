@@ -8,6 +8,7 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'ObjectFactory',
     'time_counter',
     ]
 
@@ -28,15 +29,14 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
-    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
-    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
-    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems,
-    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError,
-    )
+    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
+    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
+    IStandardShipItRequestSet, ITranslationGroupSet, License,
+    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -85,13 +85,8 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 _DEFAULT = object()
 
 
-class LaunchpadObjectFactory:
-    """Factory methods for creating Launchpad objects.
-
-    All the factory methods should be callable with no parameters.
-    When this is done, the returned object should have unique references
-    for any other required objects.
-    """
+class ObjectFactory:
+    """Factory methods for creating basic Python objects."""
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -125,6 +120,15 @@ class LaunchpadObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+
+class LaunchpadObjectFactory(ObjectFactory):
+    """Factory methods for creating Launchpad objects.
+
+    All the factory methods should be callable with no parameters.
+    When this is done, the returned object should have unique references
+    for any other required objects.
+    """
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -258,7 +262,11 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         if summary is None:
             summary = self.getUniqueString()
-        return product.newSeries(owner=owner, name=name, summary=summary)
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        return naked_product.newSeries(owner=owner, name=name,
+                                       summary=summary)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -692,12 +700,7 @@ class LaunchpadObjectFactory:
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None,
-                                    source_product_series_id=0):
-        # XXX: MichaelHudson 2008-05-19 bug=231819: The
-        # source_product_series_id attribute is to do with the new system
-        # looking in legacy locations for foreign trees and can be deleted
-        # when the new system has been running for a while.
+                                    cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -715,8 +718,7 @@ class LaunchpadObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            source_product_series_id)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
@@ -766,7 +768,10 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if name is None:
             name = self.getUniqueString()
-        series = product.newSeries(
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        series = naked_product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
         if import_branch is not None:
             series.import_branch = import_branch
@@ -829,8 +834,10 @@ class LaunchpadObjectFactory:
         if name is None:
             name = self.getUniqueString()
 
-        return getUtility(IDistroSeriesSet).new(
-            distribution=distribution,
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_distribution = removeSecurityProxy(distribution)
+        return naked_distribution.newSeries(
             version="%s.0" % self.getUniqueInteger(),
             name=name,
             displayname=self.getUniqueString(),
