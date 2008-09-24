@@ -438,6 +438,8 @@ is used as the From address.
     >>> notifications[0].message.owner.name
     u'bug-watch-updater'
 
+    >>> print notifications[0].message.text_contents
+
 If we already have comments imported for a bug watch, one notification
 will be sent for each imported comment, even if there are more than one.
 

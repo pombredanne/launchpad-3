@@ -659,13 +659,32 @@ class BugWatchUpdater(object):
             bug_message = bug_watch.addComment(comment_id, comment_message)
             imported_comments.append(bug_message)
 
+        notification_text_base = """
+5 comments have been imported from %(bug_watch_url)s.
+If you reply to an imported comment from within Launchpad, your comment
+will be sent to the remote bug automatically.
+""" % dict(bug_watch_url=bug_watch.url)
+
+        comment_text_template = '-'*72 + """
+On %(comment_date)s %(commenter)s wrote:
+
+%(comment_text)s
+"""
+
         if len(imported_comments) > 0:
             bug_watch_updater = (
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
             if is_initial_import:
+                notification_text = notification_text_base
+                for bug_message in imported_comments:
+                    comment = bug_message.message
+                    notification_text += comment_text_template % dict(
+                        comment_date=comment.datecreated.isoformat(),
+                        commenter=comment.owner.displayname,
+                        comment_text=comment.text_contents)
                 notification_message = getUtility(IMessageSet).fromText(
-                    subject='subject',
-                    content=u'** http://example.com/bugs/42',
+                    subject=bug_watch.bug.followup_subject(),
+                    content=notification_text,
                     owner=bug_watch_updater)
                 bug_watch.bug.addCommentNotification(notification_message)
             else:
