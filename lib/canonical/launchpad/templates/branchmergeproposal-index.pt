@@ -33,6 +33,8 @@
     <aside tal:content="structure context/@@+pagelet-subscribers" />
   </div>
 
+  <div id="nonportlets">
+
   <tal:summary replace="structure context/@@+pagelet-summary" />
 
   <p id="proposal-merged" tal:condition="context/merged_revno">
@@ -125,6 +127,8 @@
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>
+
+  </div><!-- non-portlets-->
 
   <div class="back-link">
     &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>

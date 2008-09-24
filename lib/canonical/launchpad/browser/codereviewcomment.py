@@ -79,7 +79,10 @@ class CodeReviewCommentSummary(LaunchpadView):
 
     @property
     def message_summary(self):
-        return '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH])
+        short_message = (
+            '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH]))
+        short_message += "..."
+        return short_message
 
 
 class IEditCodeReviewComment(Interface):

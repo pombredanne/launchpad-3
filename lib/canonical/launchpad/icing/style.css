@@ -1241,6 +1241,13 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: grey;
 }
 
+.commentSuffix {
+  height: 2.5em;
+}
+.commentVote {
+  float: right;
+}
+
 .back-link { margin-top: 3em; }
 
 /* === Bugs === */
