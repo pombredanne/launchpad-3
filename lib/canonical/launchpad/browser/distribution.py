@@ -51,7 +51,7 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from canonical.launchpad.interfaces.distributionmirror import (

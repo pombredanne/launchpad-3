@@ -11,7 +11,7 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.schema import Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
