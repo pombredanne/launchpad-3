@@ -8,15 +8,19 @@ import StringIO
 import unittest
 
 from zope.app.testing import ztapi
-from zope.component import getUtility
+from zope.interface import implements, classProvides
+from zope.testing.cleanup import CleanUp
 
+from canonical.lazr.interfaces import IObjectPrivacy
+
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.security import AuthorizationBase
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, IPlacelessLoginSource)
+    IAuthorization, IStoreSelector)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class Checker(AuthorizationBase):
@@ -65,12 +69,62 @@ class CheckerFactory:
         return Checker(obj, self.calls)
 
 
-class TestCheckPermissionCaching(TestCaseWithFactory):
+class Object:
+    """An arbitrary object, adaptable to `IObjectPrivacy`.
+
+    For simplicity we implement `IObjectPrivacy` directly."""
+    implements(IObjectPrivacy)
+    is_private = False
+
+
+class PermissionAccessLevel:
+    """A minimal implementation of `ILaunchpadPermission`."""
+    implements(ILaunchpadPermission)
+    access_level = 'read'
+
+
+class FakePersonPrincipal:
+    """A minimal principal that can be adapted to `IPerson`.
+
+    For simplicity we declare this class implements `IPerson` so it will
+    just adapt to itself.
+    """
+    implements(IPerson)
+    scope = None
+    access_level = ''
+
+
+class FakeStore:
+    """Enough of a store to fool the `block_implicit_flushes` decorator."""
+    def block_implicit_flushes(self):
+        pass
+    def unblock_implicit_flushes(self):
+        pass
+
+
+class FakeStoreSelector:
+    """A store selector that always returns a `FakeStore`."""
+    classProvides(IStoreSelector)
+    @staticmethod
+    def get(name, flavor):
+        return FakeStore()
+
+
+class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     """Test the caching done by `LaunchpadSecurityPolicy.checkPermission`."""
 
-    layer = DatabaseFunctionalLayer
+    def setUp(self):
+        """Register a new permission and a fake store selector."""
+        super(TestCheckPermissionCaching, self).setUp()
+        self.factory = ObjectFactory()
+        ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
 
-    permission = 'launchpad.Edit'
+    def getPermission(self):
+        """Return a newly registered, arbitrary permission name."""
+        permission = self.factory.getUniqueString()
+        ztapi.provideUtility(
+            ILaunchpadPermission, PermissionAccessLevel(), permission)
+        return permission
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
@@ -78,83 +132,78 @@ class TestCheckPermissionCaching(TestCaseWithFactory):
         env = {}
         return LaunchpadBrowserRequest(data, env)
 
-    def getObjectAndCheckerFactoryForObject(self):
-        """Return an arbitary object and a `CheckerFactory` for it.
+    def getObjectPermissionAndCheckerFactory(self):
+        """Return an object, a permission and a `CheckerFactory` for them.
 
-        The checker factory is registered as an adapter to `IAuthorization`
-        for the object and has a 'calls' attribute that can be used to check
-        the calls the security policy makes.
+        :return: A tuple ``(obj, permission, checker_factory)``, such that
+            ``queryAdapter(obj, IAuthorization, permission)`` will return a
+            `Checker` created by ``checker_factory``.
         """
-        class C:
-            pass
+        permission = self.factory.getUniqueString()
+        ztapi.provideUtility(
+            ILaunchpadPermission, PermissionAccessLevel(), permission)
         checker_factory = CheckerFactory()
         ztapi.provideAdapter(
-            C, IAuthorization, checker_factory, name=self.permission)
-        return C(), checker_factory
+            Object, IAuthorization, checker_factory, name=permission)
+        return Object(), permission, checker_factory
 
     def test_checkPermission_cache_unauthenticated(self):
         # checkPermission caches the result of checkUnauthenticated for a
         # particular object and permission.
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
-        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
         # When we call checkPermission for the first time, the security policy
         # calls the checker.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
         # A subsequent identical call does not call the checker.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
 
     def test_checkPermission_cache_authenticated(self):
         # checkPermission caches the result of checkAuthenticated for a
         # particular object and permission.
-        person = self.factory.makePerson()
-        login_src = getUtility(IPlacelessLoginSource)
-        principal = login_src.getPrincipal(person.id)
+        principal = FakePersonPrincipal()
         request = self.makeRequest()
         request.setPrincipal(principal)
         policy = LaunchpadSecurityPolicy(request)
-
-        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
-
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
         # When we call checkPermission for the first time, the security policy
         # calls the checker.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', person)], checker_factory.calls)
+            [('checkAuthenticated', principal)], checker_factory.calls)
         # A subsequent identical call does not call the checker.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
-            [('checkAuthenticated', person)], checker_factory.calls)
+            [('checkAuthenticated', principal)], checker_factory.calls)
 
     def test_checkPermission_setPrincipal_resets_cache(self):
         # Setting the principal on the request clears the cache of results
         # (this is important during login).
-        person = self.factory.makePerson()
-        login_src = getUtility(IPlacelessLoginSource)
-        principal = login_src.getPrincipal(person.id)
+        principal = FakePersonPrincipal()
         request = self.makeRequest()
         policy = LaunchpadSecurityPolicy(request)
-
-        obj, checker_factory = self.getObjectAndCheckerFactoryForObject()
-
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
         # When we call checkPermission before setting the principal, the
         # security policy calls checkUnauthenticated on the checker.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated'], checker_factory.calls)
         request.setPrincipal(principal)
         # After setting the principal, the policy calls checkAuthenticated
         # rather than finding a value in the cache.
-        policy.checkPermission(self.permission, obj)
+        policy.checkPermission(permission, obj)
         self.assertEqual(
-            ['checkUnauthenticated', ('checkAuthenticated', person)],
+            ['checkUnauthenticated', ('checkAuthenticated', principal)],
             checker_factory.calls)
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

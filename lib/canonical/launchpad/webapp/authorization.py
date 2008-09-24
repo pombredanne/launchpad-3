@@ -26,12 +26,14 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+
 
 steveIsFixingThis = False
 
 
 LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
-    'canonical.launchpad.webapp.authorization.security_policy_cache')
+    'launchpad.security_policy_cache')
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -45,10 +47,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         the principal's access_level is not sufficient for that permission,
         returns False.
         """
-        # This doesn't work as a global import and it doesn't seem to be the
-        # consequence of circular dependencies:
-        # https://pastebin.canonical.com/3921/
-        from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
         lp_permission = getUtility(ILaunchpadPermission, permission)
         if lp_permission.access_level == "write":
             required_access_level = [
