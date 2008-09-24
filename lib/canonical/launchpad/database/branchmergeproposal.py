@@ -11,6 +11,7 @@ __all__ = [
 
 from email.Utils import make_msgid
 
+from storm.expr import And
 from storm.store import Store
 from zope.app.event.objectevent import ObjectEvent
 from zope.component import getUtility
@@ -388,14 +389,13 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        vote_reference = CodeReviewVoteReference.selectOneBy(
-            branch_merge_proposal=self, reviewer=reviewer)
+        vote_reference = self.getUsersVoteReference(reviewer, review_type)
         if vote_reference is None:
             vote_reference = CodeReviewVoteReference(
-            branch_merge_proposal=self,
-            registrant=registrant,
-            reviewer=reviewer,
-            date_created=_date_created)
+                branch_merge_proposal=self,
+                registrant=registrant,
+                reviewer=reviewer,
+                date_created=_date_created)
         vote_reference.review_type = review_type
         return vote_reference
 
@@ -423,8 +423,9 @@ class BranchMergeProposal(SQLBase):
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence', limit=10)
 
+    # TODO: claim a team vote reference.
     def createComment(self, owner, subject, content=None, vote=None,
-                      vote_tag=None, parent=None, _date_created=DEFAULT):
+                      review_type=None, parent=None, _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -447,28 +448,69 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
-        return self.createCommentFromMessage(message, vote, vote_tag)
+        return self.createCommentFromMessage(message, vote, review_type)
 
-    def createCommentFromMessage(self, message, vote, vote_tag):
+    def getUsersVoteReference(self, user, review_type=None):
+        """Get the existing vote reference for the given user."""
+        if user is None:
+            return None
+        if user.is_team:
+            query = And(CodeReviewVoteReference.reviewer == user,
+                        CodeReviewVoteReference.review_type == review_type)
+        else:
+            query = CodeReviewVoteReference.reviewer == user
+        return Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self,
+            query).one()
+
+    def _getVoteReference(self, user, review_type):
+        """Get the vote reference for the user.
+
+        The returned vote reference will either:
+          * the existing vote reference for the user
+          * a vote reference of the same type that has been requested of a
+            team that the user is a member of
+          * a new vote reference for the user
+        """
+        # Firstly look for a vote reference for the user.
+        ref = self.getUsersVoteReference(user)
+        if ref != None:
+            return ref
+        # Get all the unclaimed CodeReviewVoteReferences with the review_type
+        # specified.
+        refs = Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self,
+            CodeReviewVoteReference.review_type == review_type,
+            CodeReviewVoteReference.comment == None)
+        for ref in refs:
+            if user.inTeam(ref.reviewer):
+                return ref
+        # Create a new reference.
+        return CodeReviewVoteReference(
+            branch_merge_proposal=self,
+            registrant=user,
+            reviewer=user,
+            review_type=review_type)
+
+    def createCommentFromMessage(self, message, vote, review_type):
         """See `IBranchMergeProposal`."""
         code_review_message = CodeReviewComment(
-            branch_merge_proposal=self, message=message, vote=vote,
-            vote_tag=vote_tag)
+            branch_merge_proposal=self, message=message, vote=vote)
         notify(SQLObjectCreatedEvent(code_review_message))
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
         # reference.
         if vote is not None:
-            vote_reference = CodeReviewVoteReference.selectOneBy(
-                branch_merge_proposal=self, reviewer=message.owner)
-            if vote_reference is None:
-                CodeReviewVoteReference(
-                    branch_merge_proposal=self,
-                    registrant=message.owner,
-                    reviewer=message.owner,
-                    comment=code_review_message)
-            else:
-                vote_reference.comment = code_review_message
+            vote_reference = self._getVoteReference(
+                message.owner, review_type)
+            # Just set the reviewer and review type again on the off chance
+            # that the user has edited the review_type or claimed a team
+            # review.
+            vote_reference.reviewer = message.owner
+            vote_reference.review_type = review_type
+            vote_reference.comment = code_review_message
         return code_review_message
 
 

@@ -374,7 +374,14 @@ class IBranchMergeProposal(Interface):
         the details are updated.
         """
 
-    def createComment(owner, subject, content=None, vote=None, vote_tag=None,
+    def getUsersVoteReference(user):
+        """Get the existing vote reference for the given user.
+
+        :return: A `CodeReviewVoteReference` or None.
+        """
+
+    def createComment(owner, subject, content=None, vote=None,
+                      review_type=None,
                       parent=None, _date_created=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
@@ -389,12 +396,12 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
-    def createCommentFromMessage(message, vote, vote_tag):
+    def createCommentFromMessage(message, vote, review_type):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
-        :param vote_tag: A string (or None).
+        :param review_type: A string (or None).
         """
 
     def deleteProposal():

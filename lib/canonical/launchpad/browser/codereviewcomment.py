@@ -88,14 +88,7 @@ class CodeReviewCommentSummary(LaunchpadView):
 class IEditCodeReviewComment(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    subject = Title(title=_('Subject'), required=False)
-
-    comment = Text(title=_('Comment'), required=False)
-
-    vote = Choice(
-        title=_('Vote'), required=False, vocabulary=CodeReviewVote)
-
-    vote_tag = TextLine(title=_('Tag'), required=False)
+    comment = Text(title=_('Comment'), required=True)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
@@ -124,12 +117,12 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             return None
 
-    @action('Add')
+    @action('Save Comment', name='add')
     def add_action(self, action, data):
         """Create the comment..."""
         comment = self.branch_merge_proposal.createComment(
-            self.user, data['subject'], data['comment'], data['vote'],
-            data['vote_tag'], self.reply_to)
+            self.user, subject=None, content=data['comment'],
+            parent=self.reply_to)
 
     @property
     def next_url(self):

@@ -193,7 +193,7 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
-branchmergeproposal_edit = 'Edit proposal to merge branch'
+branchmergeproposal_edit = ViewLabel()
 
 branchmergeproposal_editstatus = ViewLabel()
 
@@ -206,6 +206,8 @@ branchmergeproposal_request_review = ViewLabel()
 branchmergeproposal_resubmit = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_vote = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
 

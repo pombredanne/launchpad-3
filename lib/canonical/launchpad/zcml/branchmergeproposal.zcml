@@ -17,7 +17,8 @@
                        votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
-                       getUnlandedSourceBranchRevisions root_message_id"/>
+                       getUnlandedSourceBranchRevisions root_message_id
+                       getUsersVoteReference"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message
@@ -245,6 +246,23 @@
       facet="branches"
       permission="launchpad.View"
       template="../templates/branchmergeproposal-pagelet-subscribers.pt" />
+
+  <browser:page
+      name="+comment"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.CodeReviewCommentAddView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/codereviewcomment-reply.pt" />
+
+  <browser:page
+      name="+vote"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalAddVoteView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branchmergeproposal-vote.pt" />
+
 
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

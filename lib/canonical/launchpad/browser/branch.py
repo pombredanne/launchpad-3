@@ -192,6 +192,7 @@ class BranchNavigationMenu(NavigationMenu):
             self.branch = context.branch
         elif ICodeReviewComment.providedBy(context):
             self.branch = context.branch_merge_proposal.source_branch
+            self.disabled = True
         else:
             raise AssertionError(
                 'Bad context type for branch navigation menu.')

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
+    'BranchMergeProposalAddVoteView',
     'BranchMergeProposalChangeStatusView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
@@ -33,8 +34,9 @@ from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface, implements
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -56,11 +58,13 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailout.branchmergeproposal import (
     BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
+    stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
@@ -358,24 +362,19 @@ class DecoratedCodeReviewVoteReference:
         CodeReviewVote.ABSTAIN: _('Abstained'),
         }
 
-    def __init__(self, context, user):
+    def __init__(self, context, user, users_vote):
         self.context = context
-        # TODO: show links when user in team of reviewer
-        self.show_vote_link = (
-            (context.reviewer == user) and
-            (self.context.branch_merge_proposal.isMergable()))
-
-    @property
-    def reviewer_relationship(self):
-        """The relationship of the reviewer to the code review."""
-        vote = self.context
-        if vote.reviewer != vote.registrant:
-            return _("Requested reviewer")
-        target_branch = vote.branch_merge_proposal.target_branch
-        if vote.reviewer.inTeam(target_branch.code_reviewer):
-            return _("Target branch reviewer")
+        self.show_edit = (user == context.reviewer)
+        # Don't show the vote link if the link is for a team and the user has
+        # already voted, or if the user is the source branch owner.
+        branch = context.branch_merge_proposal.source_branch
+        if user is None or user == branch.owner:
+            self.show_vote_link = False
         else:
-            return None
+            self.show_vote_link = (
+                (self.show_edit or
+                 (user.inTeam(context.reviewer) and (users_vote is None))) and
+                (self.context.branch_merge_proposal.isMergable()))
 
     @property
     def date_requested(self):
@@ -416,6 +415,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
         """
         # Can request a review if the user has edit permissions, and the
         # branch is not in a final state.
+        # import pdb; pdb.set_trace()
         can_request_review = (
             check_permission('launchpad.Edit', self.context) and
             self.context.isMergable())
@@ -428,7 +428,8 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        return [DecoratedCodeReviewVoteReference(vote, self.user)
+        users_vote = self.context.getUsersVoteReference(self.user)
+        return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
                 for vote in self.context.votes]
 
     def _getOrderedReviews(self, actual_vote):
@@ -505,10 +506,6 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
 class IReviewRequest(Interface):
     """Schema for requesting a review."""
 
-    whiteboard = Whiteboard(
-        title=_('Whiteboard'), required=False,
-        description=_('Notes about the merge.'))
-
     review_candidate = PublicPersonChoice(
         title=_('Reviewer'), required=False,
         description=_('A person who you want to review this.'),
@@ -551,8 +548,11 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
-        mailer = BMPMailer.forReviewRequest(reason, self.context, self.user)
-        mailer.sendAll()
+        # If the reviewer is a team, don't send email.
+        if not candidate.is_team:
+            mailer = BMPMailer.forReviewRequest(
+                reason, self.context, self.user)
+            mailer.sendAll()
 
     @action('Request review', name='review')
     @notify
@@ -563,7 +563,6 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         review_type = data.pop('review_type', None)
         if candidate is not None:
             self.requestReview(candidate, review_type)
-        form.applyChanges(self, self.form_fields, data, self.adapters)
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
@@ -1052,3 +1051,113 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         else:
             raise AssertionError('Unexpected queue status: ' % new_status)
 
+
+class IAddVote(Interface):
+    """Interface for use as a schema for CodeReviewComment forms."""
+
+    vote = Choice(
+        title=_('Vote'), required=True, vocabulary=CodeReviewVote)
+
+    review_type = ICodeReviewVoteReference['review_type']
+
+    comment = Text(title=_('Comment'), required=False)
+
+
+class BranchMergeProposalAddVoteView(LaunchpadFormView):
+    """View for adding a CodeReviewComment."""
+
+    schema = IAddVote
+    field_names = ['vote', 'review_type', 'comment']
+
+    @cachedproperty
+    def initial_values(self):
+        """Force the non-BMP values to None."""
+        # Look to see if there is a vote reference already for the user.
+        if self.users_vote_ref is None:
+            # Look at the request to see if there is something there.
+            review_type = self.request.form.get('review_type', '')
+        else:
+            review_type = self.users_vote_ref.review_type
+        return {'vote': CodeReviewVote.APPROVE,
+                'review_type': review_type}
+
+    def initialize(self):
+        """Get the users existing vote reference."""
+        self.users_vote_ref = self.context.getUsersVoteReference(self.user)
+        # If the user is not in the review team, nor in any team that has been
+        # reqeuested to review and doesn't already have a vote reference, then
+        # error out as the user must have URL hacked to get here.
+        if self.user is None:
+            valid_voter = False
+        elif self.user == self.context.source_branch.owner:
+            valid_voter = False
+        elif self.context.isPersonValidReviewer(self.user):
+            valid_voter = True
+        elif self.users_vote_ref is not None:
+            # Have already voted, so can edit vote.
+            valid_voter = True
+        else:
+            valid_voter = False
+            # Look through the requested reviewers.
+            for vote_reference in self.context.votes:
+                if (vote_reference.comment is None and
+                    self.user.inTeam(vote_reference.reviewer)):
+                    valid_voter = True
+
+        if not valid_voter:
+            raise AssertionError('Invalid voter')
+
+        LaunchpadFormView.initialize(self)
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        self.reviewer = self.user.name
+        claim_review = self.request.form.get('claim')
+        if claim_review and self.users_vote_ref is None:
+            team = getUtility(IPersonSet).getByName(claim_review)
+            if team is not None and self.user.inTeam(team):
+                # Disable the review_type field
+                self.reviewer = team.name
+                # import pdb; pdb.set_trace()
+                self.form_fields['review_type'].for_display = True
+
+    @property
+    def label(self):
+        """The pagetitle and heading."""
+        return "Vote on merge proposal for %s" % (
+            self.context.source_branch.bzr_identity)
+
+    @action('Vote', name='vote')
+    def vote_action(self, action, data):
+        """Create the comment..."""
+        # Get the review type from the data dict.  If the review type was read
+        # only due to claiming a review, get the review_type from the hidden
+        # field that we so cunningly added to the form.
+        review_type = data.get(
+            'review_type',
+            self.request.form.get('review_type'))
+        # Get the reviewer from the hidden input.
+        reviewer_name = self.request.form.get('reviewer')
+        reviewer = getUtility(IPersonSet).getByName(reviewer_name)
+        if (reviewer.is_team and self.user.inTeam(reviewer) and
+            self.users_vote_ref is None):
+            # import pdb; pdb.set_trace()
+            vote_ref = self.context.getUsersVoteReference(
+                reviewer, review_type)
+            if vote_ref is not None:
+                # Claim this vote reference.  Normally the reviewer is not
+                # editable at all, but here we are going to remove the
+                # security proxy as it is the simplest way to handle a complex
+                # case.
+                removeSecurityProxy(vote_ref).reviewer = self.user
+
+        comment = self.context.createComment(
+            self.user, subject=None, content=data['comment'],
+            vote=data['vote'], review_type=review_type)
+
+    @property
+    def next_url(self):
+        """Always take the user back to the merge proposal itself."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
