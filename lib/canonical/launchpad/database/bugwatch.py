@@ -234,8 +234,9 @@ class BugWatch(SQLBase):
         return bug_message
 
     def getImportedBugMessages(self):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         store = Store.of(self)
+        # If a comment is linked to a bug watch, it means it's imported.
         return store.find(
             BugMessage,
             BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)

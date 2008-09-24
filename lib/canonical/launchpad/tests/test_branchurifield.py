@@ -9,13 +9,15 @@ __all__ = []
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.interfaces.branch import BranchURIField
+from canonical.launchpad.interfaces.branch import (
+    BranchURIField, get_blacklisted_hostnames)
+from canonical.launchpad.testing import TestCase
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestBranchURIField(unittest.TestCase):
+class TestBranchURIField(TestCase):
     """Test the validation logic for Branch URI fields.
 
     Users can register their external Bazaar branches on Launchpad by providing
@@ -31,6 +33,7 @@ class TestBranchURIField(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         self.field = BranchURIField()
 
     def listLaunchpadDomains(self):
@@ -51,9 +54,27 @@ class TestBranchURIField(unittest.TestCase):
             u'%s/~user/+junk/branch' % config.codehosting.supermirror_root)
 
     def test_notFromLaunchpad(self):
-        # URIs from Launchpad itself are invalid, no matter what the subdomain.
+        # URIs from Launchpad itself are invalid, no matter what the
+        # subdomain.
         for domain in self.listLaunchpadDomains():
             self.assertInvalid(u'http://%s/user/+junk/branch' % domain)
+
+    def test_get_blacklisted_hostnames(self):
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
+        self.assertEqual(
+            ['localhost', '127.0.0.1'], get_blacklisted_hostnames())
+
+    def test_get_blacklisted_hostnames_empty(self):
+        self.assertEqual([], get_blacklisted_hostnames())
+
+    def test_notFromBlacklistedHostnames(self):
+        # URIs with hosts in config.codehosting.blacklisted_hostnames are not
+        # allowed to be registered.
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
+        self.assertInvalid(u'http://localhost/foo/bar')
+        self.assertInvalid(u'http://127.0.0.1/foo/bar')
 
 
 def test_suite():

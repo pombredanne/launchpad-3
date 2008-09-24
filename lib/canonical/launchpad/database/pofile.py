@@ -536,25 +536,12 @@ class POFile(SQLBase, POFileMixIn):
             'POTMsgSet.sequence > 0',
             'TranslationMessage.potmsgset = POTMsgSet.id',
             'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'TranslationMessage.is_current',
-            'NOT TranslationMessage.is_fuzzy']
+            'TranslationMessage.is_current']
         self._appendCompletePluralFormsConditions(query)
 
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
-
-    def getPOTMsgSetFuzzy(self):
-        """See `IPOFile`."""
-        return POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_current AND
-            TranslationMessage.is_fuzzy
-            ''' % sqlvalues(self.potemplate, self),
-            clauseTables=['TranslationMessage'], orderBy='POTmsgSet.sequence')
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -580,7 +567,7 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
-                 (NOT TranslationMessage.is_fuzzy AND (%s))))
+                 (%s)))
             """ % (quote(self), quote(self.potemplate),
                    ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
@@ -630,8 +617,7 @@ class POFile(SQLBase, POFileMixIn):
             JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE AND
-                NOT imported.was_fuzzy_in_last_import
+                imported.is_imported IS TRUE
             JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id <> current.id AND
@@ -688,17 +674,6 @@ class POFile(SQLBase, POFileMixIn):
         """See `IRosettaStats`."""
         return self.unreviewed_count
 
-    @property
-    def fuzzy_count(self):
-        """See `IPOFile`."""
-        return TranslationMessage.select("""
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_fuzzy AND
-            TranslationMessage.is_current AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            POTMsgSet.sequence > 0
-            """ % sqlvalues(self), clauseTables=['POTMsgSet']).count()
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (
@@ -731,7 +706,6 @@ class POFile(SQLBase, POFileMixIn):
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
                  'TranslationMessage.is_imported IS TRUE',
-                 'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
                  'POTMsgSet.sequence > 0']
         self._appendCompletePluralFormsConditions(query)
@@ -746,7 +720,6 @@ class POFile(SQLBase, POFileMixIn):
         # were not translated.
         query = [
             'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'NOT TranslationMessage.is_fuzzy',
             'TranslationMessage.is_current IS TRUE']
         # Check only complete translations.  For messages with only a single
         # msgid, that's anything with a singular translation; for ones with a
@@ -766,7 +739,6 @@ class POFile(SQLBase, POFileMixIn):
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
-                NOT imported.was_fuzzy_in_last_import AND
                 (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
@@ -1081,10 +1053,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetFuzzy(self):
-        """See `IPOFile`."""
-        return self.emptySelectResults()
-
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
         return self.potemplate.getPOTMsgSets()
@@ -1132,11 +1100,6 @@ class DummyPOFile(POFileMixIn):
     def untranslatedCount(self, language=None):
         """See `IRosettaStats`."""
         return self.messageCount()
-
-    @property
-    def fuzzy_count(self):
-        """See `IPOFile`."""
-        return 0
 
     def currentPercentage(self, language=None):
         """See `IRosettaStats`."""
@@ -1417,9 +1380,6 @@ class POFileToTranslationFileDataAdapter:
                     for flag in row.flags_comment.split(',')
                     if flag
                     ])
-
-            if row.is_fuzzy:
-                msgset.flags.add('fuzzy')
 
             messages.append(msgset)
 

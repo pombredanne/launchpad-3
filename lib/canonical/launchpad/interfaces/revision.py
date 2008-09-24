@@ -105,6 +105,9 @@ class IRevisionSet(Interface):
         None if the revision is not known.
         """
 
+    def onlyPresent(revids):
+        """Return the revision ids from `revids` that are present."""
+
     def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
@@ -135,6 +138,8 @@ class IRevisionSet(Interface):
         In order to get the time the revision was actually created, the time
         extracted from the revision properties is used.  While this may not
         be 100% accurate, it is much more accurate than using date created.
+
+        :return: ResultSet containing tuples of (Revision, RevisionAuthor)
         """
 
     def getRevisionsNeedingKarmaAllocated():

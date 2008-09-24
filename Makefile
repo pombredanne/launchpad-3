@@ -159,7 +159,7 @@ start-gdb: inplace stop bzr_version_info
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
+		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -261,13 +261,18 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
-	cp configs/development/local-launchpad-apache $@
+copy-certificates:
+	mkdir -p /etc/apache2/ssl
+	cp configs/development/launchpad.crt /etc/apache2/ssl/
+	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-/etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
+copy-apache-config:
+	cp configs/development/local-launchpad-apache /etc/apache2/sites-available/local-launchpad
+
+enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
-reload-apache: /etc/apache2/sites-enabled/local-launchpad
+reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 reload
 
 static:

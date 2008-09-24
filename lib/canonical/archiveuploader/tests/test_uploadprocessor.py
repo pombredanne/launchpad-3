@@ -38,7 +38,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IDistroSeriesSet, ILibraryFileAliasSet, NonBuildableSourceUploadError,
+    ILibraryFileAliasSet, NonBuildableSourceUploadError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
     QueueInconsistentStateError)
 from canonical.launchpad.interfaces.archivepermission import (
@@ -159,9 +159,8 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
-        dr_set = getUtility(IDistroSeriesSet)
-        self.breezy = dr_set.new(
-            self.ubuntu, 'breezy', 'Breezy Badger',
+        self.breezy = self.ubuntu.newSeries(
+            'breezy', 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
         breezy_i386 = self.breezy.newArch(
@@ -244,7 +243,9 @@ class TestUploadProcessorBase(unittest.TestCase):
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
-        body = msg.get_payload(decode=True)
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
 
         # Only check recipients if callsite didn't provide an empty list.
         if recipients != []:
@@ -401,12 +402,16 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg).get_payload(decode=True)
+        # This is now a MIMEMultipart message.
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
                         "raised by BrokenUploadPolicy for testing."
-                        in msg)
+                        in body)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -469,7 +474,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
-        self.assertTrue("This upload awaits approval" in raw_msg,
+        self.assertTrue("Waiting for approval" in raw_msg,
                         "Expected an 'upload awaits approval' email.\n"
                         "Got:\n%s" % raw_msg)
 
@@ -850,7 +855,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check it is accepted and the section is converted to misc.
         contents = [
-            "Subject: New: bar 1.0-1 (source)",
+            "Subject: [ubuntu/breezy] bar 1.0-1 (New)"
             ]
         self.assertEmail(contents=contents, recipients=[])
 

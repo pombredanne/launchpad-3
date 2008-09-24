@@ -30,22 +30,9 @@ import pytz
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BuildStatus,
-    IBug,
-    IBugSet,
-    IDistribution,
-    IFAQSet,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    IPerson,
-    IPersonSet,
-    IProduct,
-    IProject,
-    ISprint,
-    LicenseStatus,
-    NotFoundError,
-    )
+    BuildStatus, IBug, IBugSet, IDistribution, IFAQSet, IHasIcon, IHasLogo,
+    IHasMugshot, IPerson, IPersonSet, IProduct, IProject, ISprint,
+    LicenseStatus, NotFoundError)
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
@@ -443,10 +430,13 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
         ])
 
     def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
+        if name in ('link', 'url'):
+            if len(furtherPath) >= 1:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+            else:
+                extra_path = None
+            return getattr(self, name)(extra_path)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
@@ -989,8 +979,6 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         else:
             html += '&nbsp;'
         html += self._make_link_summary()
-        if extra_path == '':
-            extra_path = None
         if check_permission(self._link_permission, self._context):
             url = self.url(extra_path)
         else:
@@ -1916,6 +1904,9 @@ class FormattersAPI:
         """Quote HTML characters, then replace newlines with <br /> tags."""
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
 
+    def escape(self):
+        return escape(self._stringtoformat)
+
     def break_long_words(self):
         """Add manual word breaks to long words."""
         return break_long_words(cgi.escape(self._stringtoformat))
@@ -2394,6 +2385,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'escape':
+            return self.escape()
         elif name == 'lower':
             return self.lower()
         elif name == 'break-long-words':
