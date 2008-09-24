@@ -91,7 +91,7 @@
         the counts.
       </p>
 
-      <table class="listing" id="upstream-report"
+      <table class="listing sortable" id="upstream-report"
              tal:condition="view/data">
         <thead>
           <tr>
@@ -99,7 +99,7 @@
             <th colspan="2">Project</th>
             <th>Bug Tracker</th>
             <th>Upstream Contact</th>
-            <th class="amount">Open</th>
+            <th class="amount default-revsort">Open</th>
             <th class="amount">Triaged</th>
             <th class="amount">%</th>
             <th class="amount">&Delta;</th>
@@ -118,39 +118,45 @@
                  tal:content="item/dsp/name"></a>
             </td>
             <tal:has-product condition="item/product">
-              <td style="padding-right: 0">
+              <td style="padding-right: 0" align="center">
                 <a tal:attributes="href item/series_branch/fmt:url;
                    title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
                    tal:condition="item/series_branch">
                   <img alt="(branch)" src="/@@/branch" /></a>
               </td>
-              <td style="padding-left: 0">
+              <td style="padding-left: 0" align="center">
                 <a tal:attributes="href item/product/fmt:url"
-                   tal:content="item/product/title"></a>
+                  ><img src="/@@/yes"
+                      tal:attributes="title item/product/title" /></a>
               </td>
               <tal:has-bugtracker condition="item/bugtracker">
-                <td>
+                <td align="center">
                   <a tal:attributes="href item/bugtracker/fmt:url"
-                     tal:content="item/bugtracker/title"></a></td>
+                     ><img src="/@@/yes"
+                        tal:attributes="title item/bugtracker/title" /></a>
+                </td>
               </tal:has-bugtracker>
               <tal:has-no-bugtracker condition="not: item/bugtracker">
-                <td tal:condition="item/official_malone" class="good">
-                    Launchpad
+                <td tal:condition="item/official_malone" align="center">
+                    <img src="/@@/yes" title="Launchpad" />
                 </td>
-                <td tal:condition="not: item/official_malone"
-                    align="center" class="bad">
-                    Unknown
+                <td tal:condition="not: item/official_malone" align="center">
+                    <img src="/@@/no" title="Unknown" />
                     <a tal:condition="item/product/required:launchpad.Edit"
                        tal:attributes="href item/product_edit_url">
                        <small>(fix)</small></a></td>
               </tal:has-no-bugtracker>
               <tal:has-bug-supervisor condition="item/product/bug_supervisor">
-                <td>
+                <td align="center">
                   <a tal:attributes="href item/product/bug_supervisor/fmt:url"
-                     tal:content="item/product/bug_supervisor/displayname"></a></td>
+                     ><img src="/@@/yes"
+                        tal:attributes="title item/product/bug_supervisor/displayname"
+                        /></a>
+                </td>
               </tal:has-bug-supervisor>
               <tal:has-no-bug-supervisor condition="not: item/product/bug_supervisor">
-                <td align="center" class="bad">Unspecified
+                <td align="center">
+                    <img src="/@@/no" title="Unspecified" />
                     <a tal:condition="item/product/required:launchpad.Edit"
                        tal:attributes="href item/bug_supervisor_url">
                       <small>(change)</small></a></td>
@@ -158,7 +164,7 @@
             </tal:has-product>
             <tal:has-no-product condition="not: item/product">
                 <td align="center" class="bad" colspan="4">
-                    Missing corresponding product.
+                    Missing corresponding project.
                     <a href="/projects"><small>(find)</small></a>
                     <a tal:condition="item/dssp"
                        tal:attributes="href item/packaging_url">
@@ -207,7 +213,7 @@
           </tr>
         </tbody>
         <tfoot id="upstream-report-totals">
-          <tr>
+          <tr class="sortbottom">
             <td colspan="5" class="amount"><b>Totals:</b></td>
             <td class="amount"
                 tal:content="view/total/open_bugs" />

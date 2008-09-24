@@ -173,8 +173,6 @@ SERVICES = {
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
-    'authserver': TacFile('authserver', 'daemons/authserver.tac',
-                          config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),

@@ -377,26 +377,6 @@ sourcepackage. E.g.
     >>> private_bug.getIndirectSubscribers()
     []
 
-There are some IBugTargets that don't allow bugs to be directly filed on
-them, e.g. IDistroSeries and ISourcePackage.
-
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-
-    >>> ubuntu_warty = getUtility(IDistroSeriesSet).get(1)
-    >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty_firefox.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-
 
 == Prevent reporter from being subscribed to filed bugs ==
 
@@ -961,6 +941,20 @@ information, too:
 
     >>> len(CursorWrapper.last_executed_sql) - queries
     2
+
+Bugs have a special attribute, `indexed_messages` which returns the collection
+of messages, each decorated with the index of that message in its context
+(the bug) and the primary bug task. This is used for providing an efficient
+implementation of the canonical url resolution for messages when they are
+exported using the webservice API.
+
+    >>> for indexed_message in bug_two.indexed_messages:
+    ...     print '%s\t%s\t%s' % (
+    ...         indexed_message.index, indexed_message.subject,
+    ...         indexed_message.inside.title)
+    0 PEBCAK                                      Bug #2 in Tomcat: "Blackhole Trash folder"
+    1 Fantastic idea, I'd really like to see this Bug #2 in Tomcat: "Blackhole Trash folder"
+    2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"
 
 
 == Affected users ==

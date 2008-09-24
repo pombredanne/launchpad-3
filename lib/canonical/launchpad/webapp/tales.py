@@ -430,10 +430,13 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
         ])
 
     def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
+        if name in ('link', 'url'):
+            if len(furtherPath) >= 1:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+            else:
+                extra_path = None
+            return getattr(self, name)(extra_path)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
@@ -976,8 +979,6 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         else:
             html += '&nbsp;'
         html += self._make_link_summary()
-        if extra_path == '':
-            extra_path = None
         if check_permission(self._link_permission, self._context):
             url = self.url(extra_path)
         else:
