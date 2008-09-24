@@ -520,7 +520,8 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Leaving')]
         for attendance in self.context.attendances:
             time_zone = ''
-            if attendance.attendee.location.visible:
+            location = attendance.attendee.location
+            if location is not None and location.visible:
                 time_zone = attendance.attendee.time_zone
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
