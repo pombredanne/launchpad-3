@@ -352,8 +352,18 @@ class DecoratedCodeReviewVoteReference:
 
     decorates(ICodeReviewVoteReference)
 
-    def __init__(self, context):
+    status_text_map = {
+        CodeReviewVote.DISAPPROVE: _('Disapproved'),
+        CodeReviewVote.APPROVE: _('Approved'),
+        CodeReviewVote.ABSTAIN: _('Abstained'),
+        }
+
+    def __init__(self, context, user):
         self.context = context
+        # TODO: show links when user in team of reviewer
+        self.show_vote_link = (
+            (context.reviewer == user) and
+            (self.context.branch_merge_proposal.isMergable()))
 
     @property
     def reviewer_relationship(self):
@@ -368,9 +378,22 @@ class DecoratedCodeReviewVoteReference:
             return None
 
     @property
+    def date_requested(self):
+        """When the review was requested or None."""
+        if self.context.registrant == self.context.reviewer:
+            return None
+        else:
+            return self.context.date_created
+
+    @property
     def date_of_comment(self):
         """The date of the comment, not the date_created of the vote."""
         return self.context.comment.message.datecreated
+
+    @property
+    def status_text(self):
+        """The text shown in the table of the users vote."""
+        return self.status_text_map[self.context.comment.vote]
 
 
 class BranchMergeProposalVoteView(LaunchpadView):
@@ -381,10 +404,31 @@ class BranchMergeProposalVoteView(LaunchpadView):
     # Show hyperlinks to the comments?
     show_comment_links = False
 
+    @property
+    def show_table(self):
+        """Should the reviewer table be shown at all?
+
+        If there are no pending reviews, or current reviews, and the logged in
+        user is not able to review, then don't show the table at all.
+
+        If there are no reviews, pending or otherwise, and the user can add
+        reviewers, then show the table.
+        """
+        # Can request a review if the user has edit permissions, and the
+        # branch is not in a final state.
+        can_request_review = (
+            check_permission('launchpad.Edit', self.context) and
+            self.context.isMergable())
+
+        return self.show_comment_links and (
+            len(self.reviews) > 0 or
+            self.show_user_review_link or
+            can_request_review)
+
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        return [DecoratedCodeReviewVoteReference(vote)
+        return [DecoratedCodeReviewVoteReference(vote, self.user)
                 for vote in self.context.votes]
 
     def _getOrderedReviews(self, actual_vote):
@@ -395,7 +439,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return sorted(reviews, key=operator.attrgetter('date_of_comment'),
                       reverse=True)
 
-    @property
+    @cachedproperty
     def current_reviews(self):
         """The current votes ordered by vote then date."""
         # We want the reviews in a specific order.
@@ -404,7 +448,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
                 self._getOrderedReviews(CodeReviewVote.APPROVE) +
                 self._getOrderedReviews(CodeReviewVote.ABSTAIN))
 
-    @property
+    @cachedproperty
     def requested_reviews(self):
         """Reviews requested but not yet done."""
         reviews = [review for review in self.reviews
@@ -412,6 +456,17 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
+
+    @cachedproperty
+    def show_user_review_link(self):
+        """Show self in the review table if can review and not asked."""
+        reviewers = [review.reviewer for review in self.reviews]
+        # The owner of the source branch should not get a review link.
+        return (self.context.isPersonValidReviewer(self.user) and
+                self.user not in reviewers and
+                self.user != self.context.source_branch.owner and
+                self.context.isMergable())
+
 
 class BranchMergeProposalVoteLinkView(BranchMergeProposalVoteView):
     """A view to show the votes with hyperlinks to the comments."""
@@ -512,7 +567,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+        if not self.context.isMergable():
             self.addError("The merge proposal is not an a valid state to "
                           "mark as 'Needs review'.")
 

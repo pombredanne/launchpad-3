@@ -85,12 +85,6 @@
 
   <tal:votes replace="structure context/@@+votes-with-links"/>
 
-  <div tal:define="link context/menu:context/request_review"
-       tal:condition="link/enabled"
-       tal:content="structure link/render">
-       Request review
-  </div>
-
   <tal:comments repeat="row view/comments" >
     <div tal:content="structure row/comment/@@+fragment-summary"
          tal:attributes="style row/style" />
@@ -131,6 +125,11 @@
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>
+
+  <div class="back-link">
+    &laquo; Back to <tal:link replace="structure context/source_branch/fmt:bzr-link"/>
+  </div>
+
 </div>
 
 </body>

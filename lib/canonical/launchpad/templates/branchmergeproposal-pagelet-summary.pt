@@ -8,8 +8,10 @@
     <tr>
       <th>Status:</th>
       <td>
-        <tal:status replace="context/queue_status/title">
-        Work in progress</tal:status>
+        <span tal:attributes="class string:mergestatus${context/queue_status/name}"
+              tal:content="context/queue_status/title">
+                    >
+        Work in progress</span>
         <tal:queued condition="context/queue_status/enumvalue:QUEUED">
           (<a tal:attributes="href view/queue_location">view queue</a>)
         </tal:queued>
