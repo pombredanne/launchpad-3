@@ -27,11 +27,13 @@ for a distribution:
     >>> distros = webservice.get("/distros").jsonBody()
     >>> for entry in distros['entries']:
     ...    print entry['self_link']
-    http://api.launchpad.dev/beta/ubuntu
-    http://api.launchpad.dev/beta/kubuntu
-    http://api.launchpad.dev/beta/ubuntutest
-    http://api.launchpad.dev/beta/debian
-    http://api.launchpad.dev/beta/gentoo
+    http://.../ubuntu
+    http://.../kubuntu
+    http://.../ubuntutest
+    http://.../debian
+    http://.../gentoo
+
+Look at ubuntutest's archives:
 
     >>> distro = distros['entries'][2]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
@@ -42,6 +44,8 @@ Each distribution also has a main_archive:
 
     >>> print ubuntu['main_archive_link']
     http://.../ubuntutest/+archive/primary
+
+And it has the following attributes:
 
     >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
     >>> for key, value in sorted(main_archive.items()):
@@ -62,3 +66,11 @@ And also a collection of all its archives:
     http://api.launchpad.dev/beta/ubuntutest/+archive/primary
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
 
+Attempting to grab a non-existent archive will result in an error:
+
+    >>> bogus_archive = "ubuntutest/+archive/bogus"
+    >>> webservice.get(bogus_archive).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 404 Not Found
+    ...
