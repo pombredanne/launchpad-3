@@ -202,7 +202,7 @@ class BranchNavigationMenu(NavigationMenu):
 
     def merges(self):
         url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merging')
+        return Link(url, 'Merge Proposals')
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
