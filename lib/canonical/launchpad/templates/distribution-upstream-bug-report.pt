@@ -85,10 +85,12 @@
 
       <p class="warning message" tal:condition="view/data"
          style="width: 40%">
-        This report is an alpha release and has accounting limitations.
+        This report is a beta release and has accounting limitations.
         You can use it to guide your work, but do not take the
-        percentages too literally. See the Help tab for information on
-        the counts.
+        percentages too literally. See the
+        <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
+          >UpstreamReport wiki page</a>
+        for information on how to read this report.
       </p>
 
       <table class="listing sortable" id="upstream-report"
