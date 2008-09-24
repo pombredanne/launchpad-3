@@ -766,6 +766,14 @@ class ArchiveSet:
         return Archive.selectOneBy(
             distribution=distribution, purpose=purpose, name=name)
 
+    def getByDistroAndName(self, distribution, name):
+        """See `IArchiveSet`."""
+        return Archive.selectOne("""
+            Archive.distribution = %s AND
+            Archive.name = %s AND
+            Archive.purpose != %s
+            """ % sqlvalues(distribution, name, ArchivePurpose.PPA))
+
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):
         """See `IArchiveSet`."""

@@ -426,6 +426,9 @@ class IArchiveSet(Interface):
         :raises AssertionError if used for with ArchivePurpose.PPA.
         """
 
+    def getByDistroAndName(distribution, name):
+        """Return the `IArchive` with the given distribution and name."""
+
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
 
