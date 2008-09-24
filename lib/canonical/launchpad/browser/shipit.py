@@ -236,6 +236,7 @@ class ShipItRequestView(GeneralFormView):
     process_status = None
     index = ViewPageTemplateFile('../templates/shipit-requestcds.pt')
 
+    # pylint: disable-msg=W0231
     def __init__(self, context, request):
         """Override GeneralFormView.__init__() not to set up widgets."""
         self.context = context
