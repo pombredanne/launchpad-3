@@ -128,9 +128,7 @@ CDs of the Server edition.
   'http://shipit.ubuntu.dev/adminrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '15'
-  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '5'
   >>> browser.getControl(name='field.kubuntu_quantityx86').value = '10'
-  >>> browser.getControl(name='field.kubuntu_quantityamd64').value = '2'
   >>> browser.getControl(name='field.server_quantityx86').value = '1'
   >>> browser.getControl(name='field.server_quantityamd64').value = '1'
 
@@ -152,12 +150,8 @@ approved.
   True
   >>> browser.getControl(name='field.ubuntu_quantityx86approved').value
   '15'
-  >>> browser.getControl(name='field.ubuntu_quantityamd64approved').value
-  '5'
   >>> browser.getControl(name='field.kubuntu_quantityx86approved').value
   '10'
-  >>> browser.getControl(name='field.kubuntu_quantityamd64approved').value
-  '2'
   >>> browser.getControl(name='field.server_quantityx86approved').value
   '1'
   >>> browser.getControl(name='field.server_quantityamd64approved').value

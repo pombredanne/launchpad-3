@@ -254,13 +254,11 @@ class ShipItRequestView(GeneralFormView):
         These fields include the 'reason' and quantity widgets for users to
         make custom orders.
         """
-        ubuntu_kubuntu_and_server = [
-            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
-        if self.flavour in ubuntu_kubuntu_and_server:
+        if self.flavour == ShipItFlavour.SERVER:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.EDUBUNTU:
+        elif self.flavour in ShipItFlavour.items:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86'}
         else:
@@ -849,10 +847,10 @@ class ShippingRequestApproveOrDenyView(
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
              ShipItArchitecture.AMD64: None},
@@ -998,10 +996,10 @@ class ShippingRequestAdminView(
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
              ShipItArchitecture.AMD64: None},
