@@ -562,7 +562,7 @@ class PackageUpload(SQLBase):
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, summary_text, dry_run,
-        changes_file_object):
+        changesfile_content):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (
@@ -579,35 +579,40 @@ class PackageUpload(SQLBase):
         if self.isPPA():
             rejection_template = get_email_template(
                 'ppa-upload-rejection.txt')
+            attach_changes = False
         else:
             rejection_template = get_email_template('upload-rejection.txt')
+            attach_changes = True
+
         self._sendMail(
-            recipients,
-            "%s rejected" % self.changesfile.filename,
-            rejection_template % interpolations,
-            dry_run, changes_file_object=changes_file_object)
+            recipients, "%s rejected" % self.changesfile.filename,
+            rejection_template % interpolations, dry_run,
+            changesfile_content=changesfile_content,
+            attach_changes=attach_changes)
 
     def _sendSuccessNotification(
         self, recipients, announce_list, changes_lines, changes,
-        summarystring, dry_run, changes_file_object):
+        summarystring, dry_run, changesfile_content):
         """Send a success email."""
 
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
+            # Add the date field.
+            message.DATE = 'Date: %s' % changes['date']
+
             # Add the debian 'Changed-By:' field.
             changed_by = changes.get('changed-by')
             if changed_by is not None:
                 changed_by = sanitize_string(changed_by)
-                message.CHANGEDBY = (
-                    ' -- %s  %s' % (changed_by, changes['date']))
+                message.CHANGEDBY = '\nChanged-By: %s' % changed_by
 
-            # If the maintainer is set, make it available to the template.
+            # Add maintainer if present and different from changed-by.
             maintainer = changes.get('maintainer')
             if maintainer is not None:
                 maintainer = sanitize_string(maintainer)
                 if maintainer != changed_by:
-                    message.MAINTAINER = '\n\nMaintainer: %s' % maintainer
+                    message.MAINTAINER = '\nMaintainer: %s' % maintainer
 
             # Add a 'Signed-By:' line if this is a signed upload and the
             # signer/sponsor differs from the changed-by.
@@ -628,9 +633,7 @@ class PackageUpload(SQLBase):
                 message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
             if self.sources or self.builds:
-                message.SPR_URL = (
-                    'Source package release: %s' %
-                    canonical_url(self.sourcepackagerelease))
+                message.SPR_URL = canonical_url(self.sourcepackagerelease)
 
             body = message.template % message.__dict__
 
@@ -651,10 +654,14 @@ class PackageUpload(SQLBase):
 
             if self.isPPA():
                 subject = "[PPA %s] %s" % (self.archive.owner.name, subject)
+                attach_changes = False
+            else:
+                attach_changes = True
 
             self._sendMail(
                 recipients, subject, body, dry_run, from_addr=from_addr,
-                bcc=bcc, changes_file_object=changes_file_object)
+                bcc=bcc, changesfile_content=changesfile_content,
+                attach_changes=attach_changes)
 
         class NewMessage:
             """New message."""
@@ -842,16 +849,23 @@ class PackageUpload(SQLBase):
             debug(self.logger,"No recipients on email, not sending.")
             return
 
+        # Make the content of the actual changes file available to the
+        # various email generating/sending functions.
+        if changes_file_object is not None:
+            changesfile_content = changes_file_object.read()
+        else:
+            changesfile_content = 'No changes file content available'
+
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
             self._sendRejectionNotification(
                 recipients, changes_lines, summary_text, dry_run,
-                changes_file_object)
+                changesfile_content)
             return
 
         self._sendSuccessNotification(
             recipients, announce_list, changes_lines, changes, summarystring,
-            dry_run, changes_file_object)
+            dry_run, changesfile_content)
 
     def _getRecipients(self, changes):
         """Return a list of recipients for notification emails."""
@@ -918,19 +932,23 @@ class PackageUpload(SQLBase):
 
     def _sendMail(
         self, to_addrs, subject, mail_text, dry_run, from_addr=None, bcc=None,
-        changes_file_object=None):
+        changesfile_content=None, attach_changes=False):
         """Send an email to to_addrs with the given text and subject.
 
-        :changes_file_object: A file object with the actual changesfile.
-        :from_addr: The email address to be used as the sender.  Must be a
-                    valid ASCII str instance or a unicode one.
-                    Defaults to the email for config.uploader.
-        :to_addrs: A list of email addresses to be used as recipients.  Each
-                   email must be a valid ASCII str instance or a unicode one.
+        :to_addrs: A list of email addresses to be used as recipients. Each
+            email must be a valid ASCII str instance or a unicode one.
         :subject: The email's subject.
-        :mail_text: The text body of the email.  Unicode is preserved in the
-                    email.
+        :mail_text: The text body of the email. Unicode is preserved in the
+            email.
+        :dry_run: Whether or not an email should actually be sent. But
+            please note that this flag is (largely) ignored.
+        :from_addr: The email address to be used as the sender. Must be a
+            valid ASCII str instance or a unicode one.  Defaults to the email
+            for config.uploader.
         :bcc: Optional email Blind Carbon Copy address(es).
+        :changesfile_content: The content of the actual changesfile.
+        :attach_changes: A flag governing whether the original changesfile
+            content shall be attached to the email.
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
 
@@ -1012,17 +1030,19 @@ class PackageUpload(SQLBase):
             message.attach(MIMEText(
                sanitize_string(mail_text).encode('utf-8'), 'plain', 'utf-8'))
 
-            # Add the original changesfile as an attachment.
-            if changes_file_object is not None:
-                changesfile_text = sanitize_string(changes_file_object.read())
-            else:
-                changesfile_text = ("Sorry, changesfile not available.")
+            if attach_changes:
+                # Add the original changesfile as an attachment.
+                if changesfile_content is not None:
+                    changesfile_text = sanitize_string(changesfile_content)
+                else:
+                    changesfile_text = ("Sorry, changesfile not available.")
 
-            attachment = MIMEText(
-                changesfile_text.encode('utf-8'), 'plain', 'utf-8')
-            attachment.add_header(
-                'Content-Disposition', 'attachment; filename="changesfile"')
-            message.attach(attachment)
+                attachment = MIMEText(
+                    changesfile_text.encode('utf-8'), 'plain', 'utf-8')
+                attachment.add_header(
+                    'Content-Disposition',
+                    'attachment; filename="changesfile"')
+                message.attach(attachment)
 
             # And finally send the message.
             sendmail(message)

@@ -6,9 +6,12 @@
 
   <!-- Distribution -->
   <content class="canonical.launchpad.database.Distribution">
-    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+    <allow interface="canonical.launchpad.interfaces.IDistributionPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <require
+      permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.IDistributionEditRestricted"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description

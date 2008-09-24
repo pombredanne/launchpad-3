@@ -261,7 +261,8 @@ The headings:
     </thead>
     ...
 
-The data:
+The source packages list is presented publicly, including the
+available changesfile.
 
     >>> def print_ppa_package_rows(contents):
     ...     for ppa_row in find_tags_by_class(contents, 'ppa_package_row'):
@@ -270,51 +271,9 @@ The data:
     >>> print_ppa_package_rows(anon_browser.contents)
     Source              Published   Status     Series      Section  Built
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
-    comm... - 1.0-1                 Pending    Warty       Devel
-    iceweasel - 1.0     2007-07-09  Published  Warty       Editors
+    com...(changesfile)             Pending    Warty       Devel
+    ice...(changesfile) 2007-07-09  Published  Warty       Editors
     pmount - 0.1-1      2007-07-09  Published  Warty       Editors
-
-Note that the changesfile link is not presented for anonymous access
-neither for PPA owners.
-
-It will only presented for users with admin permissions in the PPA in
-question, i.e, launchpad-admins members. We have to restrict public
-changesfile access (including PPA owner or team administrators) in
-order to prevent 'replay attacks', as described in bug #159304.
-
-The changesfile link is not presented when accessed by 'cprov' user,
-the PPA owner.
-
-    >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print_ppa_package_rows(cprov_browser.contents)
-    Source                    Published   Status     Series   Section  Built
-    ...
-    commercialpackage - 1.0-1             Pending    Warty    Devel
-    ...
-
-It is presented when cprov's PPA page is accessed either by an LP-admins
-user or by the source package uploader.
-
-Here's the LP-admins user variant.
-
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print_ppa_package_rows(admin_browser.contents)
-    Source                         Published   Status  Series Section  Built
-    ...
-    comm... - 1.0-1  (changesfile)             Pending Warty  Devel
-    ...
-
-And this will work for the source package uploader.
-
-    >>> sabdfl_browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> sabdfl_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print_ppa_package_rows(sabdfl_browser.contents)
-    Source                         Published   Status  Series Section  Built
-    ...
-    comm... - 1.0-1  (changesfile)             Pending Warty  Devel
-    ...
 
 Each data row is expandable to contain some sections containing:
 
@@ -341,6 +300,7 @@ Each data row is expandable to contain some sections containing:
 The package was copied from a PPA. The archive title will hence link
 back to the source PPA.
 
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
     >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
     'http://launchpad.dev/~sabdfl/+archive'
 
@@ -414,7 +374,7 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Built
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
-    comm... - 1.0-1             Pending    Warty            Devel
+    comm...(changesfile)        Pending    Warty            Devel
 
 Use can explicitly select 'published' filter and will get the same result.
 
@@ -424,7 +384,7 @@ Use can explicitly select 'published' filter and will get the same result.
     ...    print extract_text(ppa_row)
     Source          Published   Status     Series           Section  Built
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
-    comm... - 1.0-1             Pending    Warty            Devel
+    comm...(changesfile)        Pending    Warty            Devel
 
 When needed the users can select the 'superseded' filter and the
 result will only contain packages SUPERSEDED or DELETED.
@@ -434,7 +394,7 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
     Source            Published    Status        Series   Section  Built
-    iceweasel - 1.0   2007-07-09   Superseded    Warty    Editors
+    i...(changesfile) 2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
 The 'Any Status' filter is also available, so the user can search over
@@ -446,8 +406,8 @@ any package ever published in the context PPA.
     ...    print extract_text(ppa_row)
     Source             Published    Status     Series      Section  Built
     cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
-    comm... - 1.0-1                 Pending    Warty       Devel
-    iceweasel - 1.0    2007-07-09   Superseded Warty       Editors
+    co...(changesfile)              Pending    Warty       Devel
+    ic...(changesfile) 2007-07-09   Superseded Warty       Editors
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 
@@ -647,10 +607,12 @@ of downloading the buildlog).
     >>> print anon_browser.title
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
-This feature is also useful from the PPA owner perspective. When
-Celso's visualise there that there was a failure while building
-'cdrkit' on i386 he can quickly 'retry' the failure.
+This feature is also useful from the PPA owner perspective. When Celso
+sees that there was a failure while building 'cdrkit' on i386 he can
+quickly 'retry' the failure.
 
+    >>> cprov_browser = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
 
     >>> cprov_browser.getLink('i386').click()

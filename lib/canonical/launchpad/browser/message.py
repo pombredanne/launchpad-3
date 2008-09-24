@@ -8,13 +8,14 @@ __all__ = ['MessageAddView']
 from zope.interface import providedBy, implements
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.interfaces import IIndexedMessage
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class MessageAddView(SQLObjectAddView):
-    """View class for adding an IMessage to an IMessageTarget."""
+    """View class for adding an IMessage to an IBug."""
 
     def __init__(self, context, request):
         self._nextURL = '.'
@@ -49,9 +50,26 @@ class BugMessageCanonicalUrlData:
         self.path = "comments/%d" % list(bug.messages).index(message)
 
 
+class IndexedBugMessageCanonicalUrlData:
+    """An optimized bug message canonical_url implementation.
+
+    This implementation relies on the message being decorated with
+    its index and context.
+    """
+    implements(ICanonicalUrlData)
+    rootsite = 'bugs'
+
+    def __init__(self, message):
+        self.inside = message.inside
+        self.path = "comments/%d" % message.index
+
+
 def message_to_canonical_url_data(message):
     """This factory creates `ICanonicalUrlData` for BugMessage."""
-    if message.bugs.count() == 0:
-        # Will result in a ComponentLookupError
-        return None
-    return BugMessageCanonicalUrlData(message.bugs[0], message)
+    if IIndexedMessage.providedBy(message):
+        return IndexedBugMessageCanonicalUrlData(message)
+    else:
+        if message.bugs.count() == 0:
+            # Will result in a ComponentLookupError
+            return None
+        return BugMessageCanonicalUrlData(message.bugs[0], message)

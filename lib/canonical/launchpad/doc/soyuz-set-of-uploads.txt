@@ -70,14 +70,12 @@ Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import DistroSeriesSet
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
-  >>> drs = DistroSeriesSet()
-  >>> breezy = drs.new(
-  ...     ubuntutest, 'breezy', 'Breezy Badger', 'The Breezy Badger',
+  >>> breezy = ubuntutest.newSeries(
+  ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
   >>> breezy_i386 = breezy.newArch(
@@ -362,15 +360,11 @@ Check the email recipient for displayname containing special chars,
   <BLANKLINE>
     * Changer using non-preferred email
   <BLANKLINE>
-   -- Celso R. Providelo <cprov@ubuntu.com>  Tue, 25 Apr 2006 10:36:14 -0300 =
-  <BLANKLINE>
-  <BLANKLINE>
-  Maintainer: Launchpad team <launchpad@lists.canonical.com> =
-  <BLANKLINE>
-  Signed-By: Foo B. Bar <foo.bar@canonical.com> =
-  <BLANKLINE>
-  Source package release: http://launchpad.dev/ubuntutest/breezy/+source/bar/=
-  1.0-4
+  Date: Tue, 25 Apr 2006 10:36:14 -0300
+  Changed-By: Celso R. Providelo <cprov@ubuntu.com>
+  Maintainer: Launchpad team <launchpad@lists.canonical.com>
+  Signed-By: Foo B. Bar <foo.bar@canonical.com>
+  http://launchpad.dev/ubuntutest/breezy/+source/bar/1.0-4
   <BLANKLINE>
   =3D=3D
   <BLANKLINE>

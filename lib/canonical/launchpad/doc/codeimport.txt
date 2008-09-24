@@ -138,54 +138,6 @@ specified subversion branch url.
     >>> svn_import == existing_import
     True
 
-
-== Creating a CodeImport from existing data ==
-
-The first production code that creates CodeImports will be a sync
-script that creates CodeImports from the existing information in the
-ProductSeries table.  The only ProductSeries with such information in
-the sample data is evolution/trunk.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSeriesSet, ImportStatus)
-    >>> [series] = getUtility(IProductSeriesSet).searchImports(
-    ...     importstatus=ImportStatus.PROCESSING)
-    >>> series.product.name
-    u'evolution'
-    >>> series.name
-    u'trunk'
-    >>> series.cvsroot
-    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
-    >>> series.cvsmodule
-    u'evolution'
-
-Once we've found the series, creating a new CodeImport with the same
-source details is a fairly simple matter.
-
-    >>> from canonical.launchpad.database.codeimport import CodeImport
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
-    >>> if series.importstatus in (ImportStatus.SYNCING,
-    ...                            ImportStatus.PROCESSING):
-    ...     review_status = CodeImportReviewStatus.REVIEWED
-    ... else:
-    ...     review_status = CodeImportReviewStatus.NEW
-    >>> from_existing_import = CodeImport(
-    ...     registrant=vcs_imports,
-    ...     owner=vcs_imports,
-    ...     branch=series.import_branch,
-    ...     rcs_type=series.rcstype,
-    ...     cvs_root=series.cvsroot,
-    ...     cvs_module=series.cvsmodule,
-    ...     svn_branch_url=series.svnrepository,
-    ...     review_status=review_status)
-
-This CodeImport is associated to the evolution/main ProductSeries
-(because the series' import_branch is the branch of the CodeImport):
-
-    >>> from_existing_import.series.name
-    u'trunk'
-
-
 == Updating code import details ==
 
 Members of the VCS Imports team (import operators), or Launchpad
@@ -220,6 +172,7 @@ created if done through the web UI, so we'll add nopriv here.
 
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> ignore_old_emails = pop_notifications()
     >>> modify_event = code_import.updateFromData(
     ...     {'review_status': CodeImportReviewStatus.REVIEWED,
@@ -321,7 +274,6 @@ present the import's details on the page of the branch.
 Finally, you can search for imports by review status.  For instance,
 there is a single sample CodeImport with the "REVIEWED" status:
 
-    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> reviewed_imports = list(code_import_set.search(
     ...     review_status=CodeImportReviewStatus.REVIEWED))
     >>> reviewed_imports
