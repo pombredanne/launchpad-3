@@ -137,7 +137,7 @@ class BugContextMenu(ContextMenu):
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
              'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog']
+             'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -271,6 +271,18 @@ class BugContextMenu(ContextMenu):
         """Return the 'Activity log' Link."""
         text = 'Activity log'
         return Link('+activity', text)
+
+    def affectsmetoo(self):
+        """Return the 'This bug affects me too' link."""
+        user = getUtility(ILaunchBag).user
+        enabled = user is not None
+
+        if enabled and not self.context.bug.isAffectingUser(user):
+            text = "Does this bug affect you?"
+        else:
+            text = "This bug does not affect me"
+
+        return Link('+affectsmetoo', text, icon='edit', enabled=enabled)
 
 
 class MaloneView(LaunchpadFormView):
