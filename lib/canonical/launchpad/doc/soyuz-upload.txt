@@ -71,7 +71,9 @@ session.
 
   >>> from canonical.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
+  >>> from cStringIO import StringIO
   >>> import glob
+  >>> import time
   >>>
   >>> test_files_dir = os.path.join(config.root,
   ...                               "lib/canonical/launchpad/scripts/"
@@ -531,6 +533,7 @@ These packages must now be in the publishing history. Let's check it.
 
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
@@ -559,11 +562,10 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   INFO      Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
   ...
-  >>> "DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library" in stderr
-  True
-  >>> "DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library" in stderr
-  True
+
 
 # XXX cprov 2006-04-12 bug=3989
 
@@ -657,11 +659,9 @@ already on disk, verify the contents are as expected.
   INFO      Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
   ...
-  >>> "DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content." in stderr
-  True
-  >>> "DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content." in stderr
-  True
 
 Invalidates SQLObject cache to cope with publisher.
 
@@ -774,3 +774,4 @@ Feito! ;-)
 
 
 vim:ft=doctest:ts=4:sw=4:et
+
