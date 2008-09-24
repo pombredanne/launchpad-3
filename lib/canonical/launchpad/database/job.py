@@ -41,7 +41,8 @@ class Job(SQLBase):
     status = EnumCol(enum=JobStatus, notNull=True, default=JobStatus.WAITING)
     _valid_transitions = {
         JobStatus.WAITING: (JobStatus.RUNNING,),
-        JobStatus.RUNNING: (JobStatus.COMPLETED, JobStatus.FAILED),
+        JobStatus.RUNNING: (
+            JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
     }
@@ -62,6 +63,10 @@ class Job(SQLBase):
 
     def fail(self):
         self._set_status(JobStatus.FAILED)
+        self.date_ended = datetime.datetime.now(UTC)
+
+    def queue(self):
+        self._set_status(JobStatus.WAITING)
         self.date_ended = datetime.datetime.now(UTC)
 
     def destroySelf(self):

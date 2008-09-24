@@ -103,6 +103,25 @@ class TestJob(TestCase):
         job = Job(status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.fail)
 
+    def test_queue(self):
+        job = Job(status=JobStatus.RUNNING)
+        self.assertEqual(None, job.date_ended)
+        job.queue()
+        self.assertNotEqual(None, job.date_ended)
+        self.assertEqual(job.status, JobStatus.WAITING)
+
+    def test_queue_completed(self):
+        job = Job(status=JobStatus.COMPLETED)
+        self.assertRaises(InvalidTransition, job.queue)
+
+    def test_queue_waiting(self):
+        job = Job(status=JobStatus.WAITING)
+        self.assertRaises(InvalidTransition, job.queue)
+
+    def test_queue_failed(self):
+        job = Job(status=JobStatus.FAILED)
+        self.assertRaises(InvalidTransition, job.queue)
+
 
 class TestJobDependency(TestCase):
 
