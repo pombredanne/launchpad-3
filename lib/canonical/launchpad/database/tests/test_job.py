@@ -53,6 +53,15 @@ class TestJob(TestCase):
         self.assertEqual(None, job.date_ended)
         self.assertEqual(job.status, JobStatus.RUNNING)
 
+    def test_start_increments_attempt_count(self):
+        job = Job(date_ended=UTC_NOW)
+        self.assertEqual(0, job.attempt_count)
+        job.start()
+        self.assertEqual(1, job.attempt_count)
+        job.queue()
+        job.start()
+        self.assertEqual(2, job.attempt_count)
+
     def test_start_when_completed(self):
         job = Job(status=JobStatus.COMPLETED)
         self.assertRaises(InvalidTransition, job.start)

@@ -12,7 +12,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 import pytz
-from sqlobject import IntCol
+from sqlobject import IntCol, StringCol
 from storm.references import ReferenceSet
 from zope.interface import implements
 
@@ -34,11 +34,22 @@ class Job(SQLBase):
 
     implements(IJob)
 
+    scheduled_start = UtcDateTimeCol()
+
     date_created = UtcDateTimeCol()
+
     date_started = UtcDateTimeCol()
+
     date_ended = UtcDateTimeCol()
+
     lease_expires = UtcDateTimeCol()
+
+    log = StringCol()
+
     status = EnumCol(enum=JobStatus, notNull=True, default=JobStatus.WAITING)
+
+    attempt_count = IntCol(default=0)
+
     _valid_transitions = {
         JobStatus.WAITING: (JobStatus.RUNNING,),
         JobStatus.RUNNING: (
@@ -56,6 +67,7 @@ class Job(SQLBase):
         self._set_status(JobStatus.RUNNING)
         self.date_started = datetime.datetime.now(UTC)
         self.date_ended = None
+        self.attempt_count += 1
 
     def complete(self):
         self._set_status(JobStatus.COMPLETED)
