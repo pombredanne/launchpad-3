@@ -3,6 +3,8 @@ SET client_min_messages=ERROR;
 CREATE TABLE Job (
   id SERIAL PRIMARY KEY,
   status INTEGER NOT NULL DEFAULT 0,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  scheduled_start TIMESTAMP WITHOUT TIME ZONE,
   log TEXT,
   lease_expires TIMESTAMP WITHOUT TIME ZONE,
   date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
