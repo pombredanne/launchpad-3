@@ -30,15 +30,17 @@ Create a distribution series and an arch series for dapper:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
-    ... IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
-    >>> drs = getUtility(IDistroSeriesSet)
     >>> hoary = ubuntu.getSeries("hoary")
-    >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
-    ...                  "My summary", "My description", "5.10",
-    ...                  hoary, celebs.launchpad_developers)
+
+    # Only the distro owner or admins can create a series.
+    >>> login('support@ubuntu.com')
+    >>> dapper = ubuntu.newSeries("dapper", "Dapper Dragoon", "My title",
+    ...                           "My summary", "My description", "5.10",
+    ...                           hoary, celebs.launchpad_developers)
+    >>> login(ANONYMOUS)
 
 Check it was properly created and create its DistroArchSeriess.
 

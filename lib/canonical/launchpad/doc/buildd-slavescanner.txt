@@ -1175,7 +1175,11 @@ Mark's PPA:
     >>> for build_file in candidate.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
-    >>> unused_dep = cprov_archive.addArchiveDependency(sabdfl_archive)
+
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> unused_dep = cprov_archive.addArchiveDependency(
+    ...      sabdfl_archive, PackagePublishingPocket.RELEASE,
+    ...      getUtility(IComponentSet)['main'])
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)

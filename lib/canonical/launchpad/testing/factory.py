@@ -29,15 +29,14 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
-    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
-    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
-    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems,
-    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError,
-    )
+    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
+    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
+    IStandardShipItRequestSet, ITranslationGroupSet, License,
+    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -263,7 +262,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         if summary is None:
             summary = self.getUniqueString()
-        return product.newSeries(owner=owner, name=name, summary=summary)
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        return naked_product.newSeries(owner=owner, name=name,
+                                       summary=summary)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -765,7 +768,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if name is None:
             name = self.getUniqueString()
-        series = product.newSeries(
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        series = naked_product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
         if import_branch is not None:
             series.import_branch = import_branch
@@ -828,8 +834,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
 
-        return getUtility(IDistroSeriesSet).new(
-            distribution=distribution,
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_distribution = removeSecurityProxy(distribution)
+        return naked_distribution.newSeries(
             version="%s.0" % self.getUniqueInteger(),
             name=name,
             displayname=self.getUniqueString(),

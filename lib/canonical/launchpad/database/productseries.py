@@ -26,6 +26,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
@@ -444,6 +445,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    def addRelease(self, version, owner, codename=None, summary=None,
+                   description=None, changelog=None):
+        """See `IProductSeries`."""
+        return ProductRelease(version=version,
+                              productseries=self,
+                              owner=owner,
+                              codename=codename,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductSeriesSet:
