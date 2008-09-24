@@ -134,11 +134,12 @@ def traverse_archive(distribution, name):
 
     :param name: The name of the archive, e.g. 'partner'
     """
-    try:
-        return getUtility(
-            IArchiveSet).getByDistroAndName(distribution, name)
-    except SQLObjectNotFound:
+    archive = getUtility(
+        IArchiveSet).getByDistroAndName(distribution, name)
+    if archive is None:
         return NotFoundError(name)
+    else:
+        return archive
 
 
 class ArchiveURL:

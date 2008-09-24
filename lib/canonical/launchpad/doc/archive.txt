@@ -1062,6 +1062,13 @@ at some point, but it's not needed right now.
     >>> print partner_archive.title
     Partner Archive for Ubuntu Test
 
+Passing an invalid name will cause an empty result set.
+
+    >>> bogus = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'bogus')
+    >>> print bogus
+    None
+
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
