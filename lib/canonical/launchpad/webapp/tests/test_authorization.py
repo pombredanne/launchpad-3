@@ -119,13 +119,6 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         self.factory = ObjectFactory()
         ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
 
-    def getPermission(self):
-        """Return a newly registered, arbitrary permission name."""
-        permission = self.factory.getUniqueString()
-        ztapi.provideUtility(
-            ILaunchpadPermission, PermissionAccessLevel(), permission)
-        return permission
-
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
         data = StringIO.StringIO()
