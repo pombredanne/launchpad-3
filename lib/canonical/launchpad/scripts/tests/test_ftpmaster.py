@@ -11,7 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IDistroSeriesSet, ISectionSet,
+    IComponentSet, IDistributionSet, ISectionSet,
     PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
@@ -350,8 +350,8 @@ class TestArchiveOverrider(unittest.TestCase):
         self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
 
-        potato = getUtility(IDistroSeriesSet).new(
-            self.ubuntu, 'potato', 'Potato', 'Ubuntu potato', 'summary',
+        potato = self.ubuntu.newSeries(
+            'potato', 'Potato', 'Ubuntu potato', 'summary',
             'no', '2.2', self.warty, self.warty.owner)
         potato_i386 = potato.newArch(
             'i386', self.warty['i386'].processorfamily, True, potato.owner)

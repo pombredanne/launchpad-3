@@ -38,16 +38,19 @@ Create a distribution release and an arch release for breezy:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
-    >>> distroseries_set = getUtility(IDistroSeriesSet)
     >>> hoary = ubuntu.getSeries("hoary")
-    >>> breezy = distroseries_set.new(
-    ...     ubuntu, "breezy", "Breezy Badger", "My title",
+
+    # Only the distro owner and admins can create a new series.
+    >>> login('support@ubuntu.com')
+    >>> breezy = ubuntu.newSeries(
+    ...     "breezy", "Breezy Badger", "My title",
     ...     "My summary", "My description", "5.10",
     ...     hoary, celebs.launchpad_developers)
+    >>> login(ANONYMOUS)
+
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -676,10 +679,14 @@ specified in the testing configuration.
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> lenny = distroseries_set.new(
-    ...     debian, "lenny", "lenny", "Lenny",
+
+    # Only the distro owner and admins can create a new series.
+    >>> login('mark@hbd.com')
+    >>> lenny = debian.newSeries(
+    ...     "lenny", "lenny", "Lenny",
     ...     "---", "!!!", "8.06",
     ...     hoary, celebs.launchpad_developers)
+    >>> login(ANONYMOUS)
 
 Note that we will create a Lenny/i386 port (DistroArchSeries) to check
 if no binaries get imported by mistake. However this is not required

@@ -21,6 +21,7 @@ page.
     >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -31,6 +32,7 @@ the page she is not given the option to redeem a voucher.
     >>> browser.open('http://launchpad.dev/~marilize/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     Marilize Coetzee does not own any commercial projects. Only project owners can redeem
     vouchers for a project.
@@ -51,6 +53,7 @@ the '+vouchers' page on any user.
     >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -60,6 +63,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> browser.open('http://launchpad.dev/~name12/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
+    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Sample Person does not have any unredeemed vouchers available.
     Here are the steps to obtain a commercial subscription:...
@@ -152,33 +156,3 @@ If the 'Cancel' button is selected the person's overview page is shown.
     >>> browser.getControl('Cancel').click()
     >>> print browser.url
     http://launchpad.dev/~bac
-
-
-== Protecting the rollout ==
-
-If the is_subscription_feature_active config variable is false,
-then a simple message will be displayed instead of showing the form.
-# XXX BradCrittenden 2008-05-22 bug=234070
-# Remove this config when the feature is launched.
-
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> test_data = dedent("""
-    ...     [commercial]
-    ...     is_subscription_feature_active: False
-    ...     """)
-    >>> config.push('test_data', test_data)
-    >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> browser.open('http://launchpad.dev/~bac/+vouchers')
-    >>> main = find_main_content(browser.contents)
-    >>> print extract_text(main)
-    Redeem Vouchers for Commercial Subscriptions
-    Voucher redemption is not yet enabled in Launchpad.
-
-
-== Cleanup ==
-
-    >>> test_config_data = config.pop('test_data')

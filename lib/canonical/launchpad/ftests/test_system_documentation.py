@@ -12,7 +12,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
@@ -115,13 +114,6 @@ def peopleKarmaTearDown(test):
     DatabaseLayer.force_dirty_database()
     tearDown(test)
 
-def branchStatusSetUp(test):
-    test._authserver = AuthserverTacTestSetup()
-    test._authserver.setUp()
-
-def branchStatusTearDown(test):
-    test._authserver.tearDown()
-
 def bugNotificationSendingSetUp(test):
     lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
@@ -129,6 +121,11 @@ def bugNotificationSendingSetUp(test):
 
 def bugNotificationSendingTearDown(test):
     tearDown(test)
+
+def cveSetUp(test):
+    lobotomize_stevea()
+    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
+    setUp(test)
 
 def statisticianSetUp(test):
     setUp(test)
@@ -359,7 +356,7 @@ special = {
             ),
     'cve-update.txt': LayeredDocFileSuite(
             '../doc/cve-update.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+            setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
             ),
     'nascentupload.txt': LayeredDocFileSuite(
             '../doc/nascentupload.txt',
@@ -467,6 +464,12 @@ special = {
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer
+            ),
+    'bugzilla-import.txt': LayeredDocFileSuite(
+            '../doc/bugzilla-import.txt',
+            setUp=setUp, tearDown=tearDown,
+            stdout_logging_level=logging.WARNING,
+            layer=LaunchpadZopelessLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',

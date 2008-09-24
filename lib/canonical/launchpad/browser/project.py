@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -291,6 +291,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
     facet = 'translations'
     links = ['changetranslators']
 
+    @enabled_with_permission('launchpad.Edit')
     def changetranslators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
