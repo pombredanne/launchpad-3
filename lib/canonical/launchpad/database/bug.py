@@ -28,13 +28,14 @@ from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
-    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
-    IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
-    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
+    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
+    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
+    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
+    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
+    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.helpers import shortlist
@@ -219,6 +220,14 @@ class Bug(SQLBase):
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
+
+    @property
+    def indexed_messages(self):
+        """See `IMessageTarget`."""
+        inside = self.bugtasks[0]
+        return [
+            IndexedMessage(message, inside, index)
+            for index, message in enumerate(self.messages)]
 
     @property
     def displayname(self):
