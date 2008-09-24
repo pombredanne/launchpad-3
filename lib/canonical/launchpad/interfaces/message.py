@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'IndexedMessage',
     'DuplicateMessageId',
+    'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
@@ -13,16 +15,18 @@ __all__ = [
     'UnknownSender',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute, implements
 from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 #from canonical.launchpad.interfaces.bug import IBug
 #from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
+from canonical.lazr import decorates
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
@@ -170,6 +174,26 @@ class IMessageSet(Interface):
         will match that implied by the input structure, with all replies
         to a message appearing after that message.
         """
+
+class IIndexedMessage(Interface):
+    """An `IMessage` decorated with its index and context."""
+    inside = Reference(title=_('Inside'), schema=IBugTask,
+                       description=_("The bug task which is "
+                                     "the context for this message."),
+                       required=True, readonly=True)
+    index = Int(title=_("Index"),
+                description=_("The index of this message in the list "
+                              "of messages in its context."))
+
+class IndexedMessage:
+    """Adds the `inside` and `index` attributes to an IMessage."""
+    decorates(IMessage)
+    implements(IIndexedMessage)
+
+    def __init__(self, context, inside, index):
+        self.context = context
+        self.inside = inside
+        self.index = index
 
 
 class IMessageChunk(Interface):
