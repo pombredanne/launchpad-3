@@ -21,8 +21,8 @@ This works for PPAs:
     >>> print main['self_link']
     http://.../ubuntu/+archive/primary
 
-And also for distribution archives; we can get a list of all archives
-for a distribution:
+Distributions can provide information about their archives.  Looking
+at "ubuntutest":
 
     >>> distros = webservice.get("/distros").jsonBody()
     >>> for entry in distros['entries']:
@@ -33,19 +33,15 @@ for a distribution:
     http://.../debian
     http://.../gentoo
 
-Look at ubuntutest's archives:
-
     >>> distro = distros['entries'][2]
     >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
-    >>> print ubuntu['archives_collection_link']
-    http://.../ubuntutest/archives
 
-Each distribution also has a main_archive:
+"ubuntutest" has a "main_archive" which is always present:
 
     >>> print ubuntu['main_archive_link']
     http://.../ubuntutest/+archive/primary
 
-And it has the following attributes:
+The archive has the following attributes:
 
     >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
     >>> for key, value in sorted(main_archive.items()):
@@ -57,8 +53,10 @@ And it has the following attributes:
     resource_type_link: http://.../#archive
     self_link: http://.../ubuntutest/+archive/primary
 
-And also a collection of all its archives:
+A distribution can also provide a list of all its archives:
 
+    >>> print ubuntu['archives_collection_link']
+    http://.../ubuntutest/archives
     >>> archives = webservice.get(
     ...     ubuntu['archives_collection_link']).jsonBody()
     >>> for entry in archives['entries']:
@@ -66,7 +64,7 @@ And also a collection of all its archives:
     http://api.launchpad.dev/beta/ubuntutest/+archive/primary
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
 
-Attempting to grab a non-existent archive will result in an error:
+Attempting to grab a non-existent archive will result in a 404 error:
 
     >>> bogus_archive = "ubuntutest/+archive/bogus"
     >>> webservice.get(bogus_archive).jsonBody()
