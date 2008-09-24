@@ -18,7 +18,6 @@ from twisted.web.xmlrpc import Proxy
 from canonical.config import config
 
 from canonical.codehosting import sshserver
-from canonical.codehosting.transport import set_up_logging
 
 
 def getPublicKeyString(data):
@@ -77,7 +76,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging()
+        sshserver.set_up_logging()
         service.Service.startService(self)
         self.service.startService()
 
