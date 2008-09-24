@@ -71,9 +71,7 @@ session.
 
   >>> from canonical.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
-  >>> from cStringIO import StringIO
   >>> import glob
-  >>> import time
   >>>
   >>> test_files_dir = os.path.join(config.root,
   ...                               "lib/canonical/launchpad/scripts/"
@@ -533,7 +531,6 @@ These packages must now be in the publishing history. Let's check it.
 
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
