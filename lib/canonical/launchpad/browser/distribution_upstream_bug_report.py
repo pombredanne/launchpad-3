@@ -88,25 +88,20 @@ class BugReportData:
 
     @property
     def row_class(self):
-        percentages = [
+        percentages = (
             self.triaged_bugs_percentage,
             self.upstream_bugs_percentage,
             self.watched_bugs_percentage,
-            ]
+            )
 
-        # If any of the percentages is < BAD_THRESHOLD, return 'bad'.
-        for percentage in percentages:
-            if percentage < self.BAD_THRESHOLD:
-                return 'bad'
-
-        # Only return 'good' if *all* the percentages are >
-        # GOOD_THRESHOLD. Otherwise, return ''.
-        good = True
-        for percentage in percentages:
-            if percentage < self.GOOD_THRESHOLD:
-                good = False
-
-        if good:
+        if len([percentage for percentage in percentages
+               if percentage < self.BAD_THRESHOLD]) > 0:
+            # If any of the percentages is < BAD_THRESHOLD, return 'bad'.
+            return 'bad'
+        elif len([percentage for percentage in percentages
+                 if percentage > self.GOOD_THRESHOLD]) == len(percentages):
+            # Only return 'good' if *all* the percentages are >
+            # GOOD_THRESHOLD. Otherwise, return ''.
             return 'good'
         else:
             return ''
