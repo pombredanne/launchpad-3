@@ -70,39 +70,6 @@ def email_branch_modified_notifications(branch, to_addresses,
 def send_branch_revision_notifications(branch, from_address, message, diff,
                                        subject):
     """Notify subscribers that a revision has been added (or removed)."""
-    diff_size = diff.count('\n') + 1
-
-    diff_size_to_email = dict(
-        [(item, set()) for item in BranchSubscriptionDiffSize.items])
-
-    recipients = branch.getNotificationRecipients()
-    interested_levels = (
-        BranchSubscriptionNotificationLevel.DIFFSONLY,
-        BranchSubscriptionNotificationLevel.FULL)
-    for email_address in recipients.getEmails():
-        subscription, ignored = recipients.getReason(email_address)
-        if subscription.notification_level in interested_levels:
-            diff_size_to_email[subscription.max_diff_lines].add(email_address)
-
-    for max_diff in diff_size_to_email:
-        addresses = diff_size_to_email[max_diff]
-        if len(addresses) == 0:
-            continue
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = message
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (message, diff_msg)
-            else:
-                contents = "%s\n%s" % (message, diff)
-        else:
-            contents = "%s\n%s" % (message, diff)
-        email_branch_modified_notifications(
-            branch, addresses, from_address, contents, recipients, subject)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -219,6 +186,13 @@ class RecipientReason:
 class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
+    def __init__(self, subject, template_name, recipients, from_address,
+                 delta=None, message=None, diff=None):
+        BaseMailer.__init__(subject, template_name, recipients, from_address,
+                            delta)
+        self.message = message
+        self.diff = diff
+
     @staticmethod
     def forBranchModified(branch, recipients, from_address, delta):
         branch_title = branch.title
@@ -227,6 +201,44 @@ class BranchMailer(BaseMailer):
         subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
         return BranchMailer(subject, 'branch-modified.txt', recipients,
                             from_address, delta=delta)
+
+    @classmethod
+    def forRevision(klass, db_branch, from_address, message, diff, subject):
+        diff_size = diff.count('\n') + 1
+        diff_size_to_email = dict(
+            [(item, set()) for item in BranchSubscriptionDiffSize.items])
+
+        recipients = branch.getNotificationRecipients()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for email_address in recipients.getEmails():
+            subscription, ignored = recipients.getReason(email_address)
+            if subscription.notification_level in interested_levels:
+                diff_size_to_email[subscription.max_diff_lines].add(email_address)
+
+        for max_diff in diff_size_to_email:
+            addresses = diff_size_to_email[max_diff]
+            if len(addresses) == 0:
+                continue
+            if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+                if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                    contents = message
+                elif diff_size > max_diff.value:
+                    diff_msg = (
+                        'The size of the diff (%d lines) is larger than your '
+                        'specified limit of %d lines' % (
+                        diff_size, max_diff.value))
+                    contents = "%s\n%s" % (message, diff_msg)
+                else:
+                    contents = "%s\n%s" % (message, diff)
+            else:
+                contents = "%s\n%s" % (message, diff)
+            email_branch_modified_notifications(
+                branch, addresses, from_address, contents, recipients, subject)
+
+        return klass(subject, None, recipients, from_address, diff=diff,
+              message=message)
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)

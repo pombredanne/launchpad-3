@@ -327,9 +327,8 @@ class BranchMailer:
                 self.db_branch, self.email_from, message, '', None)
         else:
             for message, diff, subject in self.pending_emails:
-                send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff,
-                    subject)
+                BranchMailer.forRevision(self.db_branch, self.email_from,
+                    message, diff, subject).sendAll()
 
         self.trans_manager.commit()
 
