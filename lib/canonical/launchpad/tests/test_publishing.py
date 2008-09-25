@@ -158,7 +158,7 @@ class SoyuzTestPublisher:
             archive=archive, dateuploaded=date_uploaded)
 
         if filename is None:
-            filename = "%s.dsc" % sourcename
+            filename = "%s_%s.dsc" % (sourcename, version)
         alias = self.addMockFile(
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
@@ -265,7 +265,8 @@ class SoyuzTestPublisher:
             filearchtag = distroarchseries.architecturetag
         else:
             filearchtag = 'all'
-        filename = '%s_%s.deb' % (binaryname, filearchtag)
+        filename = '%s_%s_%s.deb' % (binaryname, sourcepackagerelease.version,
+                                     filearchtag)
         alias = self.addMockFile(
             filename, filecontent=filecontent,
             restricted=build.archive.private)
