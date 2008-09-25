@@ -185,7 +185,7 @@ class BranchOpener(object):
 
     The external interface is `open`.  Subclasses must override
     `shouldFollowReferences` and `checkOneURL`, and tests override
-    `followReference` and `openBranch`.
+    `followReference`.
     """
 
     def open(self, url):
@@ -195,7 +195,7 @@ class BranchOpener(object):
         `checkOneURL` methods.
         """
         self.checkSource(url)
-        return self.openBranch(url)
+        return Branch.open(url)
 
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
@@ -204,13 +204,6 @@ class BranchOpener(object):
         """
         bzrdir = BzrDir.open(url)
         return bzrdir.get_branch_reference()
-
-    def openBranch(self, url):
-        """Open the Bazaar branch at `url`.
-
-        This exists as a separate method only to be overriden in unit tests.
-        """
-        return Branch.open(url)
 
     def _iter_references(self, url):
         """Iterate over branch references starting at 'url'.
