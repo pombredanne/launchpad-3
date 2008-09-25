@@ -6,15 +6,21 @@ import StringIO
 import unittest
 import urlparse
 
+from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
+from canonical.launchpad.webapp.servers import (
+    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
+    VHostWebServiceRequestPublicationFactory,
+    VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
+    WEBSERVICE_PATH_OVERRIDE, WebServiceClientRequest, WebServicePublication,
+    WebServiceTestRequest)
 
 class SetInWSGIEnvironmentTestCase(unittest.TestCase):
 
     def test_set(self):
         # Test that setInWSGIEnvironment() can set keys in the WSGI
         # environment.
-        from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
         data = StringIO.StringIO('foo')
         env = {}
         request = LaunchpadBrowserRequest(data, env)
@@ -24,7 +30,6 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
     def test_set_fails_for_existing_key(self):
         # Test that setInWSGIEnvironment() fails if the user tries to
         # set a key that existed in the WSGI environment.
-        from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
         data = StringIO.StringIO('foo')
         env = {'key': 'old value'}
         request = LaunchpadBrowserRequest(data, env)
@@ -35,7 +40,6 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
     def test_set_twice(self):
         # Test that setInWSGIEnvironment() can change the value of
         # keys in the WSGI environment that it had previously set.
-        from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
         data = StringIO.StringIO('foo')
         env = {}
         request = LaunchpadBrowserRequest(data, env)
@@ -46,7 +50,6 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
     def test_set_after_retry(self):
         # Test that setInWSGIEnvironment() a key in the environment
         # can be set twice over a request retry.
-        from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
         data = StringIO.StringIO('foo')
         env = {}
         request = LaunchpadBrowserRequest(data, env)
@@ -59,15 +62,8 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
 class TestVhostWebserviceFactory(unittest.TestCase):
 
     def setUp(self):
-        from canonical.launchpad.webapp.servers import (
-            VHostWebServiceRequestPublicationFactory,
-            BugsBrowserRequest,
-            BugsPublication,
-            WEBSERVICE_PATH_OVERRIDE)
-
         self.factory = VHostWebServiceRequestPublicationFactory(
             'bugs', BugsBrowserRequest, BugsPublication)
-
         self.WEBSERVICE_PATH_OVERRIDE = WEBSERVICE_PATH_OVERRIDE
 
     def wsgi_env(self, path, method='GET'):
@@ -92,10 +88,6 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
-        from canonical.launchpad.webapp.servers import (
-            WebServiceClientRequest,
-            WebServicePublication)
-
         env = self.wsgi_env('/' + self.WEBSERVICE_PATH_OVERRIDE)
 
         # Necessary preamble and sanity check.  We need to call
@@ -122,10 +114,6 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         specified in it's constructor if the request is not bound for the
         web service.
         """
-        from canonical.launchpad.webapp.servers import (
-            BugsBrowserRequest,
-            BugsPublication)
-
         env = self.wsgi_env('/foo')
         self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
@@ -147,9 +135,6 @@ class TestVhostWebserviceFactory(unittest.TestCase):
         """The factory should accept the HTTP methods for requests that
         should be processed by the web service.
         """
-        from canonical.launchpad.webapp.servers import (
-            WebServiceRequestPublicationFactory)
-
         allowed_methods = WebServiceRequestPublicationFactory.default_methods
 
         for method in allowed_methods:
@@ -168,10 +153,6 @@ class TestVhostWebserviceFactory(unittest.TestCase):
 
         This includes methods like 'PUT' and 'PATCH'.
         """
-        from canonical.launchpad.webapp.servers import (
-            VirtualHostRequestPublicationFactory,
-            WebServiceRequestPublicationFactory)
-
         vhost_methods = VirtualHostRequestPublicationFactory.default_methods
         ws_methods = WebServiceRequestPublicationFactory.default_methods
 
@@ -235,9 +216,6 @@ class TestWebServiceRequestTraversal(unittest.TestCase):
         """Requests that have /api at the root of their path should trim
         the 'api' name from the traversal stack.
         """
-        from canonical.launchpad.webapp.servers import (
-            WebServiceClientRequest,
-            WEBSERVICE_PATH_OVERRIDE)
         from zope.publisher.base import DefaultPublication
 
         # First, we need to forge a request to the API.
@@ -275,10 +253,6 @@ class TestWebServiceRequest(unittest.TestCase):
         """Requests to the /api path should return the original request's
         host, not api.launchpad.net.
         """
-        # WebServiceTestRequest will suffice, as it too should conform to
-        # the Same Origin web browser policy.
-        from canonical.launchpad.webapp.servers import WebServiceTestRequest
-
         # Simulate a request to bugs.launchpad.net/api
         server_url = 'http://bugs.launchpad.dev'
         env = {
@@ -287,6 +261,8 @@ class TestWebServiceRequest(unittest.TestCase):
             'HTTP_HOST': 'bugs.launchpad.dev',
             }
 
+        # WebServiceTestRequest will suffice, as it too should conform to
+        # the Same Origin web browser policy.
         request = WebServiceTestRequest(environ=env)
         self.assertEqual(request.getApplicationURL(), server_url)
 
