@@ -7,6 +7,8 @@ __metaclass__ = type
 import StringIO
 import unittest
 
+import transaction
+
 from zope.app.testing import ztapi
 from zope.interface import implements, classProvides
 from zope.testing.cleanup import CleanUp
@@ -214,6 +216,25 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         policy.checkPermission(permission, obj)
         self.assertEqual(
             ['checkUnauthenticated', ('checkAuthenticated', principal)],
+            checker_factory.calls)
+
+    def test_checkPermission_commit_clears_cache(self):
+        # Committing a transaction clears the cache.
+        request = self.makeRequest()
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkPermission before setting the principal, the
+        # security policy calls checkUnauthenticated on the checker.
+        policy.checkPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated'], checker_factory.calls)
+        transaction.commit()
+        # After committing a transaction, the policy calls
+        # checkUnauthenticated again rather than finding a value in the cache.
+        policy.checkPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated', 'checkUnauthenticated'],
             checker_factory.calls)
 
 

@@ -9,6 +9,9 @@ import threading
 import xmlrpclib
 from datetime import datetime
 
+import transaction
+from transaction.interfaces import ISynchronizer
+
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
@@ -431,9 +434,13 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     launchpad request class.
     """
 
-    implements(ILaunchpadBrowserApplicationRequest)
+    implements(ILaunchpadBrowserApplicationRequest, ISynchronizer)
 
     retry_max_count = 5    # How many times we're willing to retry
+
+    def __init__(self, body_instream, environ, response=None):
+        BasicLaunchpadRequest.__init__(self, body_instream, environ, response)
+        transaction.manager.registerSynch(self)
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
@@ -452,6 +459,17 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
 
+    def beforeCompletion(self, transaction):
+        """See `ISynchronizer`."""
+        pass
+
+    def afterCompletion(self, transaction):
+        """See `ISynchronizer`."""
+        self.clearSecurityPolicyCache()
+
+    def newTransaction(self, transaction):
+        """See `ISynchronizer`."""
+        pass
 
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
