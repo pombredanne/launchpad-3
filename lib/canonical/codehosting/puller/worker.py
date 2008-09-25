@@ -180,13 +180,43 @@ def identical_formats(branch_one, branch_two):
             get_vfs_format_classes(branch_two))
 
 
-class BranchOpener(object):
-    """A `BranchOpener` opens branches with an eye to safety.
+class BranchPolicy:
+    """Policy on how to mirror branches."""
 
-    The external interface is `open`.  Subclasses must override
-    `shouldFollowReferences` and `checkOneURL`, and tests override
-    `followReference`.
-    """
+    def shouldFollowReferences(self):
+        """Whether we traverse references when mirroring.
+
+        Subclasses must override this method.
+
+        If we encounter a branch reference and this returns false, an error is
+        raised.
+
+        :returns: A boolean to indicate whether to follow a branch reference.
+        """
+        raise NotImplementedError(self.shouldFollowReferences)
+
+    def checkOneURL(self, url):
+        """Check the safety of the source URL.
+
+        Subclasses must override this method.
+
+        :param url: The source URL to check.
+        :raise BadUrl: subclasses are expected to raise this or a subclass
+            when it finds a URL it deems to be unsafe.
+        """
+        raise NotImplementedError(self.checkOneURL)
+
+
+class BranchOpener(object):
+    """A `BranchOpener` opens branches with an eye to safety."""
+
+    def __init__(self, policy):
+        """Construct a branch opener with 'policy'.
+
+        :param policy: A `BranchPolicy` that tells us what URLs are valid and
+            similar things.
+        """
+        self.policy = policy
 
     def open(self, url):
         """Open the Bazaar branch at url, first checking for safety.
@@ -224,7 +254,7 @@ class BranchOpener(object):
             url = self.followReference(url)
             if url is None:
                 break
-            if not self.shouldFollowReferences():
+            if not self.policy.shouldFollowReferences():
                 raise BranchReferenceForbidden(url)
 
     def _iter_stacked_on(self, url):
@@ -274,30 +304,7 @@ class BranchOpener(object):
         :raise StackingLoopError: If the stacked branches form a loop.
         """
         for url in self._iter_stacked_on(url):
-            self.checkOneURL(url)
-
-    def shouldFollowReferences(self):
-        """Whether we traverse references when mirroring.
-
-        Subclasses must override this method.
-
-        If we encounter a branch reference and this returns false, an error is
-        raised.
-
-        :returns: A boolean to indicate whether to follow a branch reference.
-        """
-        raise NotImplementedError(self.shouldFollowReferences)
-
-    def checkOneURL(self, url):
-        """Check the safety of the source URL.
-
-        Subclasses must override this method.
-
-        :param url: The source URL to check.
-        :raise BadUrl: subclasses are expected to raise this or a subclass
-            when it finds a URL it deems to be unsafe.
-        """
-        raise NotImplementedError(self.checkOneURL)
+            self.policy.checkOneURL(url)
 
     def getStackedOnURL(self, source_branch, destination_url):
         """Return the stacked-on URL for the destination branch."""
@@ -375,7 +382,13 @@ class BranchOpener(object):
 
 
 class HostedBranchOpener(BranchOpener):
-    """Specialization of `BranchOpener` for HOSTED branches.
+
+    def __init__(self):
+        super(HostedBranchOpener, self).__init__(HostedBranchPolicy())
+
+
+class HostedBranchPolicy(BranchPolicy):
+    """Mirroring policy for HOSTED branches.
 
     In summary:
 
@@ -406,7 +419,13 @@ class HostedBranchOpener(BranchOpener):
 
 
 class MirroredBranchOpener(BranchOpener):
-    """Specialization of `BranchOpener` for MIRRORED branches.
+
+    def __init__(self):
+        super(MirroredBranchOpener, self).__init__(MirroredBranchPolicy())
+
+
+class MirroredBranchPolicy(BranchPolicy):
+    """Mirroring policy for MIRRORED branches.
 
     In summary:
 
@@ -442,7 +461,13 @@ class MirroredBranchOpener(BranchOpener):
 
 
 class ImportedBranchOpener(BranchOpener):
-    """Specialization of `BranchOpener` for IMPORTED branches.
+
+    def __init__(self):
+        super(ImportedBranchOpener, self).__init__(ImportedBranchPolicy())
+
+
+class ImportedBranchPolicy(BranchPolicy):
+    """Mirroring policy for IMPORTED branches.
 
     In summary:
 

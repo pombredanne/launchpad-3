@@ -13,7 +13,7 @@ from bzrlib.urlutils import local_path_from_url
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
-    BranchOpener, PullerWorker, PullerWorkerProtocol)
+    BranchOpener, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -21,6 +21,12 @@ from canonical.launchpad.testing import TestCaseWithFactory
 
 class AcceptAnythingOpener(BranchOpener):
     """A specialization of `BranchOpener` that opens any branch."""
+
+    def __init__(self):
+        super(AcceptAnythingOpener, self).__init__(AcceptAnythingPolicy())
+
+
+class AcceptAnythingPolicy(BranchPolicy):
 
     def checkOneURL(self, url):
         """See `BranchOpener.checkOneURL`.

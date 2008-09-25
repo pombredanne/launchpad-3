@@ -22,9 +22,10 @@ from bzrlib.transport import get_transport
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.worker import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
-    BranchReferenceForbidden, BranchReferenceLoopError, HostedBranchOpener,
-    ImportedBranchOpener, MirroredBranchOpener, PullerWorkerProtocol,
-    StackingLoopError, get_vfs_format_classes, install_worker_ui_factory,
+    BranchPolicy, BranchReferenceForbidden, BranchReferenceLoopError,
+    HostedBranchOpener, ImportedBranchOpener, MirroredBranchOpener,
+    MirroredBranchPolicy, PullerWorkerProtocol, StackingLoopError,
+    get_vfs_format_classes, install_worker_ui_factory,
     StackedOnBranchNotFound)
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.launchpad.interfaces.branch import BranchType
@@ -235,6 +236,24 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 class TestBranchOpenerCheckSource(TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
+    class BlacklistPolicy(BranchPolicy):
+        """Branch policy that forbids certain URLs."""
+
+        def __init__(self, should_follow_references, unsafe_urls=None):
+            if unsafe_urls is None:
+                unsafe_urls = set()
+            self._unsafe_urls = unsafe_urls
+            self._should_follow_references = should_follow_references
+            self.check_one_url_calls = []
+
+        def shouldFollowReferences(self):
+            return self._should_follow_references
+
+        def checkOneURL(self, url):
+            self.check_one_url_calls.append(url)
+            if url in self._unsafe_urls:
+                raise BadUrl(url)
+
     class StubbedBranchOpener(BranchOpener):
         """BranchOpener that provides canned answers.
 
@@ -243,39 +262,37 @@ class TestBranchOpenerCheckSource(TestCase):
         being tested in this class.
         """
 
-        def __init__(self, should_follow_references, references,
-                     unsafe_urls=None):
-            self._should_follow_references = should_follow_references
+        def __init__(self, references, policy):
+            super(TestBranchOpenerCheckSource.StubbedBranchOpener,
+                  self).__init__(policy)
             self._reference_values = {}
             for i in range(len(references) - 1):
                 self._reference_values[references[i]] = references[i+1]
-            if unsafe_urls is None:
-                unsafe_urls = set()
-            self.unsafe_urls = unsafe_urls
             self.follow_reference_calls = []
-            self.check_one_url_calls = []
+
+        @property
+        def check_one_url_calls(self):
+            return self.policy.check_one_url_calls
 
         def followReference(self, url):
             self.follow_reference_calls.append(url)
             return self._reference_values[url]
 
-        def shouldFollowReferences(self):
-            return self._should_follow_references
-
-        def checkOneURL(self, url):
-            self.check_one_url_calls.append(url)
-            if url in self.unsafe_urls:
-                raise BadUrl(url)
+    def makeBranchOpener(self, should_follow_references, references,
+                         unsafe_urls=None):
+        policy = self.BlacklistPolicy(should_follow_references, unsafe_urls)
+        opener = self.StubbedBranchOpener(references, policy)
+        return opener
 
     def testCheckInitialURL(self):
         # checkSource rejects all URLs that are not allowed.
-        opener = self.StubbedBranchOpener(None, [], set(['a']))
+        opener = self.makeBranchOpener(None, [], set(['a']))
         self.assertRaises(BadUrl, opener.checkSource, 'a')
 
     def testNotReference(self):
         # When branch references are forbidden, checkSource does not raise on
         # non-references.
-        opener = self.StubbedBranchOpener(False, ['a', None])
+        opener = self.makeBranchOpener(False, ['a', None])
         # This raises a NotBranchError since it passes the checks and tries to
         # open 'a'.
         self.assertRaises(NotBranchError, opener.checkSource, 'a')
@@ -284,7 +301,7 @@ class TestBranchOpenerCheckSource(TestCase):
     def testBranchReferenceForbidden(self):
         # checkSource raises BranchReferenceForbidden if branch references are
         # forbidden and the source URL points to a branch reference.
-        opener = self.StubbedBranchOpener(False, ['a', 'b'])
+        opener = self.makeBranchOpener(False, ['a', 'b'])
         self.assertRaises(
             BranchReferenceForbidden, opener.checkSource, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
@@ -292,7 +309,7 @@ class TestBranchOpenerCheckSource(TestCase):
     def testAllowedReference(self):
         # checkSource does not raise if following references is allowed and
         # the source URL points to a branch reference to a permitted location.
-        opener = self.StubbedBranchOpener(True, ['a', 'b', None])
+        opener = self.makeBranchOpener(True, ['a', 'b', None])
         # This raises a NotBranchError since it passes the checks and tries to
         # open 'a'.
         self.assertRaises(NotBranchError, opener.checkSource, 'a')
@@ -300,7 +317,7 @@ class TestBranchOpenerCheckSource(TestCase):
 
     def testCheckReferencedURLs(self):
         # checkSource checks if the URL a reference points to is safe.
-        opener = self.StubbedBranchOpener(
+        opener = self.makeBranchOpener(
             True, ['a', 'b', None], unsafe_urls=set('b'))
         self.assertRaises(BadUrl, opener.checkSource, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
@@ -309,7 +326,7 @@ class TestBranchOpenerCheckSource(TestCase):
         # checkSource raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a self-referencing branch
         # reference.
-        opener = self.StubbedBranchOpener(True, ['a', 'a'])
+        opener = self.makeBranchOpener(True, ['a', 'a'])
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
@@ -318,7 +335,7 @@ class TestBranchOpenerCheckSource(TestCase):
         # checkSource raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a loop of branch references.
         references = ['a', 'b', 'a']
-        opener = self.StubbedBranchOpener(True, references)
+        opener = self.makeBranchOpener(True, references)
         self.assertRaises(
             BranchReferenceLoopError, opener.checkSource, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
@@ -326,14 +343,18 @@ class TestBranchOpenerCheckSource(TestCase):
 
 class TestBranchOpenerStacking(TestCaseWithTransport):
 
-    def makeBranchOpener(self, allowed_urls):
-        allowed_urls = [url.rstrip('/') for url in allowed_urls]
-        opener = BranchOpener()
-        def checkOneURL(url):
-            if url.rstrip('/') not in allowed_urls:
+    class OnlyAllowedURLs(BranchPolicy):
+
+        def __init__(self, allowed_urls):
+            self.allowed_urls = [url.rstrip('/') for url in allowed_urls]
+
+        def checkOneURL(self, url):
+            if url.rstrip('/') not in self.allowed_urls:
                 raise BadUrl(url)
-        opener.checkOneURL = checkOneURL
-        return opener
+
+    def makeBranchOpener(self, allowed_urls):
+        policy = self.OnlyAllowedURLs(allowed_urls)
+        return BranchOpener(policy)
 
     def makeBranch(self, path, branch_format, repository_format):
         """Make a Bazaar branch at 'path' with the given formats."""
@@ -474,7 +495,7 @@ class TestReferenceMirroring(TestCaseWithTransport):
     def testFollowReferenceValue(self):
         # BranchOpener.followReference gives the reference value for
         # a branch reference.
-        opener = BranchOpener()
+        opener = BranchOpener(BranchPolicy())
         reference_value = 'http://example.com/branch'
         reference_url = self.createBranchReference(reference_value)
         self.assertEqual(
@@ -484,55 +505,55 @@ class TestReferenceMirroring(TestCaseWithTransport):
         # BranchOpener.followReference gives None for a normal branch.
         self.make_branch('repo')
         branch_url = self.get_url('repo')
-        opener = BranchOpener()
+        opener = BranchOpener(BranchPolicy())
         self.assertIs(None, opener.followReference(branch_url))
 
 
-class TestMirroredBranchOpener(TestCase):
-    """Tests specific to `MirroredBranchOpener`."""
+class TestMirroredBranchPolicy(TestCase):
+    """Tests specific to `MirroredBranchPolicy`."""
 
     def setUp(self):
         self.factory = LaunchpadObjectFactory()
 
     def testNoFileURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlScheme, opener.checkOneURL,
             self.factory.getUniqueURL(scheme='file'))
 
     def testNoUnknownSchemeURLs(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlScheme, opener.checkOneURL,
             self.factory.getUniqueURL(scheme='decorator+scheme'))
 
     def testNoSSHURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlSsh, opener.checkOneURL,
             self.factory.getUniqueURL(scheme='bzr+ssh'))
 
     def testNoSftpURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlSsh, opener.checkOneURL,
             self.factory.getUniqueURL(scheme='sftp'))
 
     def testNoLaunchpadURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlLaunchpad, opener.checkOneURL,
             self.factory.getUniqueURL(host='bazaar.launchpad.dev'))
 
     def testNoHTTPSLaunchpadURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlLaunchpad, opener.checkOneURL,
             self.factory.getUniqueURL(
                 host='bazaar.launchpad.dev', scheme='https'))
 
     def testNoOtherHostLaunchpadURL(self):
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         self.assertRaises(
             BadUrlLaunchpad, opener.checkOneURL,
             self.factory.getUniqueURL(host='code.launchpad.dev'))
@@ -540,7 +561,7 @@ class TestMirroredBranchOpener(TestCase):
     def testLocalhost(self):
         self.pushConfig(
             'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
-        opener = MirroredBranchOpener()
+        opener = MirroredBranchPolicy()
         localhost_url = self.factory.getUniqueURL(host='localhost')
         self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
         localhost_url = self.factory.getUniqueURL(host='127.0.0.1')
