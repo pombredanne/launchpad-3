@@ -386,18 +386,15 @@ class BranchMirrorer(object):
         """Mirror 'source_branch' to 'destination_url'."""
         branch, up_to_date = self.openDestinationBranch(
             source_branch, destination_url)
-        if up_to_date:
-            return branch
-
-        # If the branch is locked, try to break it.  Our special UI
-        # factory will allow the breaking of locks that look like they
-        # were left over from previous puller worker runs.  We will
-        # block on other locks and fail if they are not broken before
-        # the timeout expires (currently 5 minutes).
-        if branch.get_physical_lock_status():
-            branch.break_lock()
-
-        self.updateBranch(source_branch, branch)
+        if not up_to_date:
+            # If the branch is locked, try to break it. Our special UI factory
+            # will allow the breaking of locks that look like they were left
+            # over from previous puller worker runs. We will block on other
+            # locks and fail if they are not broken before the timeout expires
+            # (currently 5 minutes).
+            if branch.get_physical_lock_status():
+                branch.break_lock()
+            self.updateBranch(source_branch, branch)
         return branch
 
 
