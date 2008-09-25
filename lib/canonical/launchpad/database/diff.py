@@ -113,10 +113,10 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.from_revision_spec)
         to_revision_id=self._get_revision_id(
             bzr_branch, self.to_revision_spec)
-        diff = StaticDiff.acquire(from_revision_id, to_revision_id,
-                                  bzr_branch.repository)
+        static_diff = StaticDiff.acquire(
+            from_revision_id, to_revision_id, bzr_branch.repository)
         self.job.complete()
-        return diff
+        return static_diff
 
 
 class StaticDiffJobSource:
