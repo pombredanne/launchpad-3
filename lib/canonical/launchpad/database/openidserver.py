@@ -112,6 +112,11 @@ class OpenIDRPConfig(SQLBase):
 class OpenIDRPConfigSet:
     implements(IOpenIDRPConfigSet)
 
+    def _normalizeTrustRoot(self, trust_root):
+        if not trust_root.endswith('/'):
+            trust_root = trust_root + '/'
+        return trust_root
+
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
             creation_rationale=PersonCreationRationale
@@ -121,6 +126,7 @@ class OpenIDRPConfigSet:
             allowed_sreg = ','.join(sorted(allowed_sreg))
         else:
             allowed_sreg = None
+        trust_root = self._normalizeTrustRoot(trust_root)
         return OpenIDRPConfig(
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
@@ -139,6 +145,7 @@ class OpenIDRPConfigSet:
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
+        trust_root = self._normalizeTrustRoot(trust_root)
         return OpenIDRPConfig.selectOneBy(trust_root=trust_root)
 
 
@@ -263,4 +270,3 @@ class OpenIDRPSummarySet:
                 trust_root=trust_root, date_created=date_used,
                 date_last_used=date_used, total_logins=1)
         return summary
-
