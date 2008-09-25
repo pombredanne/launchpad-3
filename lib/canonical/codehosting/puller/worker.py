@@ -447,7 +447,9 @@ class MirroredBranchPolicy(BranchPolicy):
         Mirrored branches are stacked on the default stacked-on branch of
         their product.
         """
-        return self.stacked_on_url
+        if self.stacked_on_url is None:
+            return None
+        return urlutils.join(destination_url, self.stacked_on_url)
 
     def shouldFollowReferences(self):
         """See `BranchPolicy.shouldFollowReferences`.

@@ -549,11 +549,12 @@ class TestMirroredBranchPolicy(TestCase):
     def test_specified_stacked_on_url(self):
         # If a default stacked-on URL is specified, then the
         # MirroredBranchPolicy will tell branches to be stacked on that.
-        url = self.factory.getUniqueURL()
-        policy = MirroredBranchPolicy(url)
-        # This implementation of the method doesn't actually care about the
-        # arguments.
-        self.assertEqual(url, policy.getStackedOnURL(None, None))
+        stacked_on_url = '/foo'
+        policy = MirroredBranchPolicy(stacked_on_url)
+        destination_url = 'http://example.com/bar'
+        self.assertEqual(
+            'http://example.com/foo',
+            policy.getStackedOnURL(None, destination_url))
 
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
