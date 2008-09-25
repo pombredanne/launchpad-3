@@ -93,7 +93,6 @@ class GoogleServiceTestSetup:
                     raise
                 # The process with the given pid doesn't exist, so there's
                 # nothing to kill or wait for.
-                pass
             else:
                 cls.service.wait()
         cls.service = None
