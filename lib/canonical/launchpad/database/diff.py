@@ -108,6 +108,7 @@ class StaticDiffJob(SQLBase):
 
     def run(self):
         """See IStaticDiffJob."""
+        self.job.start()
         bzr_branch = Branch.open(self.branch.warehouse_url)
         from_revision_id=self._get_revision_id(
             bzr_branch, self.from_revision_spec)
@@ -117,7 +118,7 @@ class StaticDiffJob(SQLBase):
                                          bzr_branch.repository)
         for code_mail_job in self.dependant_code_mail_jobs:
             code_mail_job.static_diff = static_diff
-        self.destroySelf()
+        self.job.complete()
         return static_diff
 
     @property

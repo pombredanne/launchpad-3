@@ -15,7 +15,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.codehosting.scanner.tests.test_bzrsync import FakeTransportServer
 from canonical.launchpad.database.diff import *
 from canonical.launchpad.database.job import Job
-from canonical.launchpad.interfaces import IDiff, IStaticDiff, IStaticDiffJob
+from canonical.launchpad.interfaces import (
+    IDiff, IStaticDiff, IStaticDiffJob, JobStatus,)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -129,15 +130,14 @@ class TestStaticDiffJob(BzrTestCase):
         static_diff2 = job2.run()
         self.assertTrue(static_diff1 is static_diff2)
 
-    def test_run_destroys_job(self):
+    def test_run_sets_complete(self):
         self.useBzrBranches()
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
         job = StaticDiffJob(branch=branch, from_revision_spec='0',
                             to_revision_spec='1')
-        job_id = job.id
         job.run()
-        self.assertRaises(SQLObjectNotFound, StaticDiffJob.get, job_id)
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
 
     def test_destroySelf_destroys_job(self):
         branch = self.factory.makeBranch()

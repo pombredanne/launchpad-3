@@ -88,6 +88,7 @@ def get_diff(db_branch, bzr_branch, bzr_revision):
     diff_job = getUtility(IStaticDiffJobSource).create(
         db_branch, basis_spec, revision_spec)
     static_diff = diff_job.run()
+    diff_job.destroySelf()
     transaction.commit()
     lfa = static_diff.diff.diff_text
     lfa.open()

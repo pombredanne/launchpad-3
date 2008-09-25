@@ -86,9 +86,10 @@ class CodeMailJob(SQLBase):
         mail.set_payload(append_footer(self.body, self.footer), 'utf-8')
         return mail
 
-    def sendMail(self):
+    def run(self):
+        self.job.start()
         sendmail(self.toMessage(), [self.to_address])
-        self.destroySelf()
+        self.job.complete()
 
 
 class CodeMailJobSource:

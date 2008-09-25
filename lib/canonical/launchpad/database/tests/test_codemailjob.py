@@ -9,9 +9,8 @@ import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
 import pytz
-from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import ICodeMailJob
+from canonical.launchpad.interfaces import ICodeMailJob, JobStatus
 from canonical.launchpad.database import CodeMailJob
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -52,13 +51,13 @@ class TestCodeMailJob(TestCaseWithFactory):
         self.assertEqual(
             'My body\n-- \nMy footer', message.get_payload(decode=True))
 
-    def testSend(self):
+    def test_run(self):
         mail_job = self.makeExampleMail()
         db_id = mail_job.id
-        mail_job.sendMail()
+        mail_job.run()
         message = pop_notifications()[0]
         self.checkMessageFromExample(message)
-        self.assertRaises(SQLObjectNotFound, CodeMailJob.get, db_id)
+        self.assertEqual(JobStatus.COMPLETED, mail_job.job.status)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
