@@ -75,7 +75,7 @@ from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical import pidfile
+from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
@@ -163,7 +163,7 @@ def disconnect_stores():
         transaction.abort()
         for store in stores:
             store.close()
- 
+
 
 def reconnect_stores(database_config_section='launchpad'):
     """Reconnect Storm stores, resetting the dbconfig to its defaults.

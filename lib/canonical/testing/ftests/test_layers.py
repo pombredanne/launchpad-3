@@ -19,11 +19,11 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.pidfile import pidfile_path
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.pidfile import pidfile_path
 from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
     LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,

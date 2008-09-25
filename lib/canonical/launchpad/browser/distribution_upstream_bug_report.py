@@ -55,6 +55,9 @@ class BugReportData:
     UPSTREAM_THRESHOLD = 90
     WATCH_THRESHOLD = 90
 
+    BAD_THRESHOLD = 20
+    GOOD_THRESHOLD = 90
+
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
                  watched_bugs=0):
         self.open_bugs = open_bugs
@@ -82,6 +85,32 @@ class BugReportData:
             return 100.0 * self.watched_bugs / self.upstream_bugs
         else:
             return 0.0
+
+    @property
+    def row_class(self):
+        """Return the class to be used for the current table row.
+
+        :returns: 'good' if all *_percentage properties are > 90;
+            'bad' if any of the *_percentage properties are < 20;
+            '' otherwise.
+        """
+        percentages = (
+            self.triaged_bugs_percentage,
+            self.upstream_bugs_percentage,
+            self.watched_bugs_percentage,
+            )
+
+        if len([percentage for percentage in percentages
+               if percentage < self.BAD_THRESHOLD]) > 0:
+            # If any of the percentages is < BAD_THRESHOLD, return 'bad'.
+            return 'bad'
+        elif len([percentage for percentage in percentages
+                 if percentage > self.GOOD_THRESHOLD]) == len(percentages):
+            # Only return 'good' if *all* the percentages are >
+            # GOOD_THRESHOLD. Otherwise, return ''.
+            return 'good'
+        else:
+            return ''
 
     @property
     def triaged_bugs_class(self):
