@@ -70,7 +70,7 @@ class FakeTransportServer:
         self._chroot_server.setUp()
 
     def tearDown(self):
-        self._chroot_server.tearDown
+        self._chroot_server.tearDown()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):

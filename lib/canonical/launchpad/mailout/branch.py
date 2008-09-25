@@ -10,33 +10,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.components.branch import BranchDelta
-from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ICodeMailJobSource)
-from canonical.launchpad.mail import (get_msgid, simple_sendmail,
-    format_address)
+from canonical.launchpad.mail import (get_msgid, format_address)
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
-
-
-def email_branch_modified_notifications(branch, branch_title, to_addresses,
-                                        from_address, contents,
-                                        recipients, subject=None):
-    """Send notification emails using the branch email template.
-
-    Emails are sent one at a time to the listed addresses.
-    """
-    headers = {'X-Launchpad-Branch': branch.unique_name}
-    if branch.product is not None:
-        headers['X-Launchpad-Project'] = branch.product.name
-
-    for address in to_addresses:
-
-
-        headers['X-Launchpad-Message-Rationale'] = rationale
-
-        simple_sendmail(from_address, address, subject, body, headers)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -163,8 +142,8 @@ class BranchMailer(BaseMailer):
         self.message = message
         self.diff = diff
 
-    @staticmethod
-    def forBranchModified(branch, recipients, from_address, delta):
+    @classmethod
+    def forBranchModified(klass, branch, recipients, from_address, delta):
         subject = klass._branchSubject(branch)
         return BranchMailer(subject, 'branch-modified.txt', recipients,
                             from_address, delta=delta)

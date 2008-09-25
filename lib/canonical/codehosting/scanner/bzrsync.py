@@ -27,10 +27,9 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
     ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet,
-    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat, 
-    BranchSubscriptionDiffSize)
+    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat,)
 from canonical.launchpad.mailout.branch import (
-    BranchMailer as MailoutMailer, RecipientReason)
+    BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
 
 
