@@ -1,14 +1,10 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 import unittest
-from zope.testing.doctestunit import DocTestSuite
-import canonical.pidfile
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 def test_suite():
-    suite = DocTestSuite(canonical.pidfile)
-    return suite
+    return LayeredDocFileSuite('pidfile.txt', stdout_logging=False)
 
 if __name__ == "__main__":
     DEFAULT = test_suite()
     unittest.main(defaultTest='DEFAULT')
-

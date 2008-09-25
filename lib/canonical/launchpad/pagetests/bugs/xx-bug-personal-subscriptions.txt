@@ -270,3 +270,25 @@ up in the indirect subscriptions.
     From duplicates:
     Also notified:
     Mark Shuttleworth
+
+
+== Displaying subscribers (bug #273886) ==
+
+The display names of subscribers are escaped in the subscribers list.
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> login(ANONYMOUS)
+    >>> factory = LaunchpadObjectFactory()
+    >>> abuser = factory.makePerson(
+    ...     name='abuser',
+    ...     displayname='<script>javascript:alert("YO")</script>')
+    >>> logout()
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> browser.getControl('Person').value = 'abuser'
+    >>> browser.getControl('Add').click()
+    >>> subscriber_list = find_tag_by_id(
+    ...     browser.contents, 'subscribers-direct')
+    >>> for subscriber in subscriber_list.findAll('div'):
+    ...     if '~abuser' in subscriber.a['href']:
+    ...         print subscriber.a.contents[2].strip()
+    &lt;script&gt;javascript:alert("YO")&lt;/script&gt;

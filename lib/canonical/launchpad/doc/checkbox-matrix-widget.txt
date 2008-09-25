@@ -43,10 +43,6 @@ It should render as many rows as are specified by the column_count attribute.
     >>> html = matrix_widget.renderValue(all_licenses)
     >>> soup = BeautifulSoup(html)
     >>> row_count = math.ceil(len(License) / float(matrix_widget.column_count))
-    >>> len(soup.table('tr'))
-    8
-    >>> row_count
-    8.0
     >>> len(soup.table('tr')) == row_count
     True
     >>> len(soup.table.tr('td'))
