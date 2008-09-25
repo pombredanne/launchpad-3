@@ -7,8 +7,7 @@ This works for PPAs:
     >>> print archive['self_link']
     http://.../~cprov/+archive
 
-    >>> ppa = webservice.get(archive['self_link']).jsonBody()
-    >>> for key, value in sorted(ppa.items()):
+    >>> for key, value in sorted(archive.items()):
     ...     print "%s: %s" % (key, value)
     description: packages to help my friends.
     distribution_link: http://.../ubuntu
@@ -34,8 +33,7 @@ at "ubuntutest":
     http://.../debian
     http://.../gentoo
 
-    >>> distro = distros['entries'][2]
-    >>> ubuntu = webservice.get(distro['self_link']).jsonBody()
+    >>> ubuntu = distros['entries'][2]
 
 "ubuntutest" has a "main_archive" which is always present:
 
@@ -61,10 +59,9 @@ A distribution can also provide a list of all its archives:
     http://.../ubuntutest/archives
     >>> archives = webservice.get(
     ...     ubuntu['archives_collection_link']).jsonBody()
-    >>> for entry in archives['entries']:
-    ...     print entry['self_link']
-    http://api.launchpad.dev/beta/ubuntutest/+archive/primary
+    >>> print_self_link_of_entries(archives)
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
+    http://api.launchpad.dev/beta/ubuntutest/+archive/primary
 
 Attempting to grab a non-existent archive will result in a 404 error:
 

@@ -129,7 +129,7 @@ class ArchiveBadges(HasBadgeBase):
 
 def traverse_archive(distribution, name):
     """For distribution archives, traverse to the right place.
-    
+
     This traversal only applies to distribution archives, not PPAs.
 
     :param name: The name of the archive, e.g. 'partner'
