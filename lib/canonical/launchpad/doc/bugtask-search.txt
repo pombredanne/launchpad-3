@@ -135,8 +135,7 @@ For example, no Firefox bugs are found when searching for
     0
 
 If we add a comment containg the the search string to bug one, that bug
-will be returned by the search only if search_comments is True. The bug
-is not found when searched.
+will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -147,6 +146,8 @@ is not found when searched.
     # bugtask to be returned twice.
     >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
     <Message at ...>
+
+When the search_comments config option is False, the bug is not found.
 
     >>> from canonical.config import config
     >>> search_comments = """
@@ -160,7 +161,7 @@ is not found when searched.
 
     >>> config_data = config.pop('search_comments')
 
-If the search_comments config option is True, bugs are found.
+If the search_comments config option is True, the bug is found.
 
     >>> config.push('search_comments', search_comments % True)
 

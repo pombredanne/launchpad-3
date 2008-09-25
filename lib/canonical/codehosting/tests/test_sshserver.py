@@ -239,14 +239,14 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     def test_configuredBannerSentOnSuccess(self):
         # If a banner is set in the codehosting config then we send it to the
         # user when they log in.
-        config.push('banner', self.banner_conf)
+        config.push('codehosting_overlay', self.banner_conf)
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
             self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_SUCCESS])
             self.assertBannerSent(config.codehosting.banner + '\r\n')
         def cleanup(ignored):
-            config.pop('banner')
+            config.pop('codehosting_overlay')
             return ignored
         return d.addCallback(check).addBoth(cleanup)
 
@@ -254,7 +254,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # We don't send the banner on each authentication attempt, just on the
         # first one. It is usual for there to be many authentication attempts
         # per SSH session.
-        config.push('banner', self.banner_conf)
+        config.push('codehosting_overlay', self.banner_conf)
 
         d = self.requestUnsupportedAuthentication()
         d.addCallback(lambda ignored: self.requestSuccessfulAuthentication())
@@ -267,14 +267,14 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertBannerSent(config.codehosting.banner + '\r\n')
 
         def cleanup(ignored):
-            config.pop('banner')
+            config.pop('codehosting_overlay')
             return ignored
         return d.addCallback(check).addBoth(cleanup)
 
     def test_configuredBannerNotSentOnFailure(self):
         # Failed authentication attempts do not get the configured banner
         # sent.
-        config.push('banner', self.banner_conf)
+        config.push('codehosting_overlay', self.banner_conf)
 
         d = self.requestFailedAuthentication()
 
@@ -284,7 +284,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertBannerSent(MockChecker.error_message + '\r\n')
 
         def cleanup(ignored):
-            config.pop('banner')
+            config.pop('codehosting_overlay')
             return ignored
 
         return d.addCallback(check).addBoth(cleanup)
