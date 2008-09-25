@@ -382,6 +382,24 @@ class BranchMirrorer(object):
             raise StackedOnBranchNotFound()
         dest_branch.pull(source_branch, overwrite=True)
 
+    def mirror(self, source_branch, destination_url):
+        """Mirror 'source_branch' to 'destination_url'."""
+        branch, up_to_date = self.openDestinationBranch(
+            source_branch, destination_url)
+        if up_to_date:
+            return branch
+
+        # If the branch is locked, try to break it.  Our special UI
+        # factory will allow the breaking of locks that look like they
+        # were left over from previous puller worker runs.  We will
+        # block on other locks and fail if they are not broken before
+        # the timeout expires (currently 5 minutes).
+        if branch.get_physical_lock_status():
+            branch.break_lock()
+
+        self.updateBranch(source_branch, branch)
+        return branch
+
 
 class HostedBranchPolicy(BranchPolicy):
     """Mirroring policy for HOSTED branches.
@@ -534,29 +552,6 @@ class PullerWorker:
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
-    def _mirrorToDestBranch(self, source_branch, destination_url):
-        """Mirror 'source_branch' to 'destination_url'.
-
-        :param source_branch: The Bazaar source branch to be mirrored.
-        :param destination_url: The place to mirror it to. Must be writable.
-        :return: The Bazaar destination branch.
-        """
-        branch, up_to_date = self.branch_mirrorer.openDestinationBranch(
-            source_branch, destination_url)
-        if up_to_date:
-            return branch
-
-        # If the branch is locked, try to break it.  Our special UI
-        # factory will allow the breaking of locks that look like they
-        # were left over from previous puller worker runs.  We will
-        # block on other locks and fail if they are not broken before
-        # the timeout expires (currently 5 minutes).
-        if branch.get_physical_lock_status():
-            branch.break_lock()
-
-        self.branch_mirrorer.updateBranch(source_branch, branch)
-        return branch
-
     def _record_oops(self, message=None):
         """Record an oops for the current exception.
 
@@ -592,7 +587,7 @@ class PullerWorker:
             stacked_on_url = get_stacked_on_url(source_branch)
             if stacked_on_url is not None:
                 self.protocol.setStackedOn(stacked_on_url)
-            return self._mirrorToDestBranch(source_branch, self.dest)
+            return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
             server.tearDown()
 
