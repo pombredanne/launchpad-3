@@ -50,7 +50,6 @@ from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
-    BranchMergeProposalStatus,
     BranchType,
     BranchVisibilityRule,
     CodeImportJobState,
@@ -70,8 +69,6 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
-
-
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
