@@ -8,7 +8,7 @@ import pytz
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
@@ -47,7 +47,6 @@ class TestPerson(unittest.TestCase):
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
         sample_person.deactivateAccount("blah!")
-        flush_database_updates()
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -56,7 +55,6 @@ class TestPerson(unittest.TestCase):
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
-        flush_database_updates()
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
     def test_getDirectMemberIParticipateIn(self):
@@ -78,7 +76,6 @@ class TestPerson(unittest.TestCase):
         # warty_team.
         login(warty_team.teamowner.preferredemail.email)
         warty_team.acceptInvitationToBeMemberOf(ubuntu_team, comment="foo")
-        flush_database_updates()
         self.failUnless(warty_team in ubuntu_team.activemembers)
         self.failUnlessEqual(
             sample_person._getDirectMemberIParticipateIn(ubuntu_team),
@@ -189,7 +186,6 @@ class TestPerson(unittest.TestCase):
         bug_params.setBugTarget(product=self.bzr)
         bug = getUtility(IBugSet).createBug(bug_params)
         bug.bugtasks[0].transitionToAssignee(self.otherteam)
-        flush_database_updates()
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ValueError, exc:
@@ -232,6 +228,20 @@ class TestPerson(unittest.TestCase):
                 'This team cannot be made private since it is referenced by a'
                 ' teammembership.')
 
+class TestPersonSet(unittest.TestCase):
+    """Test `IPersonSet`."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+        self.person_set = getUtility(IPersonSet)
+
+    def test_isNameBlacklisted(self):
+        cursor().execute(
+            "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
+        self.failUnless(self.person_set.isNameBlacklisted('foo'))
+        self.failIf(self.person_set.isNameBlacklisted('bar'))
+
 
 class TestCreatePersonAndEmail(unittest.TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
@@ -249,25 +259,25 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             NameAlreadyTaken, self.person_set.createPersonAndEmail,
             'testing2@example.com', PersonCreationRationale.UNKNOWN,
             name='zzzz')
-        
+
     def test_duplicated_email_not_accepted(self):
         self.person_set.createPersonAndEmail(
             'testing@example.com', PersonCreationRationale.UNKNOWN)
         self.assertRaises(
             EmailAddressAlreadyTaken, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN)
-        
+
     def test_invalid_email_not_accepted(self):
         self.assertRaises(
             InvalidEmailAddress, self.person_set.createPersonAndEmail,
             'testing@.com', PersonCreationRationale.UNKNOWN)
-        
+
     def test_invalid_name_not_accepted(self):
         self.assertRaises(
             InvalidName, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN,
             name='/john')
-        
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
