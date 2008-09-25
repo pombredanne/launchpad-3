@@ -1570,3 +1570,168 @@ If there is a matching archive it is returned.
     ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one
+
+
+== Archive files ==
+
+`IArchive` provides a method that looks up files involved in the context
+archive, getFileByName()
+
+The given filename is looked up in the context corresponding to its
+extension:
+
+ * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc';
+ * Binary files: '.deb' and '.udeb';
+ * Source changesfile: '_source.changes';
+ * Binary changesfile: '.changes';
+ * Build logs: '.txt.gz';
+ * Build upload logs: '_log.txt';
+ * Package diffs: '.diff.gz';
+
+Any other extension will result in a `AssertionError`.
+
+    >>> cprov.archive.getFileByName('biscuit.cookie')
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'biscuit.cookie' format and/or extension is not
+    supported.
+
+Create a test source publication.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> test_publisher.addFakeChroots()
+    >>> test_source = test_publisher.getPubSource(
+    ...     archive=cprov.archive, sourcename='test-pkg',
+    ...     version='1.0')
+
+When the file exists, the corresponding `ILibraryFileAlias` is returned.
+
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+
+    >>> result = cprov.archive.getFileByName('test-pkg_1.0.dsc')
+    >>> verifyObject(ILibraryFileAlias, result)
+    True
+
+Otherwise a `NotFoundError` is raised.
+
+    >>> cprov.archive.getFileByName('test-pkg_1.0.orig.tar.gz')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'test-pkg_1.0.orig.tar.gz'
+
+Adding and retrieving a original source tarball.
+
+    >>> orig_tar_gz = test_publisher.addMockFile(
+    ...     'test-pkg_1.0.orig.tar.gz')
+    >>> unused = test_source.sourcepackagerelease.addFile(orig_tar_gz)
+
+    >>> libraryfile = cprov.archive.getFileByName('test-pkg_1.0.orig.tar.gz')
+
+    >>> libraryfile == orig_tar_gz
+    True
+
+Adding and retrieving a source diff.
+
+    >>> diff_gz = test_publisher.addMockFile('test-pkg_1.0.diff.gz')
+    >>> unused = test_source.sourcepackagerelease.addFile(diff_gz)
+
+    >>> cprov.archive.getFileByName('test-pkg_1.0.diff.gz') == diff_gz
+    True
+
+Adding and retrieving a binary 'deb'.
+
+    >>> binary_pubs = test_publisher.getPubBinaries(
+    ...     binaryname='test', pub_source=test_source)
+    >>> deb = binary_pubs[0].binarypackagerelease.files[0].libraryfile
+
+    >>> deb == cprov.archive.getFileByName('test_1.0_all.deb')
+    True
+
+Adding and retrieving a binary 'udeb'.
+
+    >>> [build] = test_source.getBuilds()
+    >>> binary = test_publisher.uploadBinaryForBuild(
+    ...     build, binaryname='micro-test')
+    >>> unused = test_publisher.publishBinaryInArchive(binary, cprov.archive)
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> bin_file = removeSecurityProxy(binary.files[0].libraryfile)
+    >>> bin_file.filename = 'micro-test_1.0_all.udeb'
+
+    >>> bin_file == cprov.archive.getFileByName('micro-test_1.0_all.udeb')
+    True
+
+Adding and retrieving a source changesfile.
+
+    >>> source_upload = test_source.distroseries.createQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     changesfilename='test-pkg_1.0_source.changes',
+    ...     changesfilecontent='Bogus',
+    ...     archive=cprov.archive)
+
+    >>> unused = source_upload.addSource(test_source.sourcepackagerelease)
+
+    >>> cprov.archive.getFileByName('test-pkg_1.0_source.changes')
+    <LibraryFileAlias ...>
+
+Adding and retrieving a binary changesfile.
+
+    >>> binary_upload = test_source.distroseries.createQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     changesfilename='test-pkg_1.0_all.changes',
+    ...     changesfilecontent='Bogus',
+    ...     archive=cprov.archive)
+
+    >>> unused = binary_upload.addBuild(build)
+
+    >>> binary_upload.changesfile == cprov.archive.getFileByName(
+    ...     'test-pkg_1.0_all.changes')
+    True
+
+Adding and retrieving a buildlog.
+
+    >>> buildlog_name = (
+    ...    'buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz')
+    >>> buildlog = test_publisher.addMockFile(buildlog_name)
+    >>> build.buildlog = buildlog
+
+    >>> buildlog == cprov.archive.getFileByName(buildlog_name)
+    True
+
+Adding and retrieving a upload_log.
+
+    >>> upload_log_name = 'upload_%d_log.txt' % build.id
+    >>> upload_log = test_publisher.addMockFile(upload_log_name)
+    >>> build.upload_log = upload_log
+
+    >>> upload_log == cprov.archive.getFileByName(upload_log_name)
+    True
+
+Adding and retrieving a package-diff.
+
+    >>> another_test_source = test_publisher.getPubSource(
+    ...     archive=cprov.archive, sourcename='test-pkg',
+    ...     version='1.1')
+
+    >>> print another_test_source.sourcepackagerelease.package_diffs.count()
+    0
+
+    >>> package_diff  = test_source.sourcepackagerelease.requestDiffTo(
+    ...     cprov, another_test_source.sourcepackagerelease)
+
+    >>> print another_test_source.sourcepackagerelease.package_diffs.count()
+    1
+
+    >>> diff_name = 'test-pkg_1.0_1.1.diff.gz'
+    >>> diff = test_publisher.addMockFile(diff_name)
+    >>> package_diff.diff_content = diff
+
+    >>> diff == cprov.archive.getFileByName(diff_name)
+    True
+
+

@@ -18,6 +18,7 @@ from zope.interface import implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
+from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -25,6 +26,9 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
@@ -33,9 +37,12 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.database.queue import (
+    PackageUpload, PackageUploadSource, PackageUploadBuild)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet)
 from canonical.launchpad.interfaces.archivepermission import (
@@ -44,7 +51,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities)
+    IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.webapp.interfaces import (
@@ -702,6 +709,92 @@ class Archive(SQLBase):
         permissions = permission_set.checkAuthenticated(
             user, self, permission, component)
         return permissions.count() > 0
+
+    def getFileByName(self, filename):
+        """See `IArchive`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        base_clauses = (
+            LibraryFileAlias.filename == filename,
+            )
+
+        if re_issource.match(filename):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageReleaseFile.sourcepackagereleaseID,
+                SourcePackageReleaseFile.libraryfileID ==
+                    LibraryFileAlias.id,
+                )
+        elif re_isadeb.match(filename):
+            clauses = (
+                BinaryPackagePublishingHistory.archive == self.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageFile.binarypackagereleaseID,
+                BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+                )
+        elif filename.endswith('_source.changes'):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    PackageUploadSource.sourcepackagereleaseID,
+                PackageUploadSource.packageuploadID == PackageUpload.id,
+                PackageUpload.changesfileID == LibraryFileAlias.id,
+                )
+        elif filename.endswith('.changes'):
+            clauses = (
+                BinaryPackagePublishingHistory.archive == self.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id,
+                BinaryPackageRelease.buildID == PackageUploadBuild.buildID,
+                PackageUploadBuild.packageuploadID == PackageUpload.id,
+                PackageUpload.changesfileID == LibraryFileAlias.id,
+                )
+        elif filename.endswith('.txt.gz'):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    Build.sourcepackagereleaseID,
+                Build.archive == self.id,
+                Build.buildlogID == LibraryFileAlias.id,
+                )
+        elif filename.endswith('_log.txt'):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    Build.sourcepackagereleaseID,
+                Build.archive == self.id,
+                Build.upload_logID == LibraryFileAlias.id,
+                )
+        else:
+            raise AssertionError(
+                "'%s' format and/or extension is not supported." % filename)
+
+        def do_query():
+            result = store.find((LibraryFileAlias), *(base_clauses + clauses))
+            result = result.config(distinct=True)
+            result.order_by(LibraryFileAlias.id)
+            return result.first()
+
+        archive_file = do_query()
+
+        if archive_file is None:
+            # If a diff.gz wasn't found in the source-files domain, try in
+            # the PackageDiff domain.
+            if filename.endswith('.diff.gz'):
+                clauses = (
+                    SourcePackagePublishingHistory.archive == self.id,
+                    SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                        PackageDiff.to_sourceID,
+                    PackageDiff.diff_contentID == LibraryFileAlias.id,
+                    )
+                package_diff_file = do_query()
+                if package_diff_file is not None:
+                    return package_diff_file
+
+            raise NotFoundError(filename)
+
+        return archive_file
 
 
 class ArchiveSet:
