@@ -143,16 +143,15 @@ class LaunchpadFormView(LaunchpadView):
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
 
-        for field in self.form_fields:
-            if field.__name__ in self.custom_widgets:
-                field.custom_widget = self.custom_widgets[field.__name__]
-
     def setUpWidgets(self, context=None):
         """Set up the widgets using the view's form fields and the context.
 
         If no context is given, the view's context is used."""
         if context is None:
             context = self.context
+        for field in self.form_fields:
+            if field.__name__ in self.custom_widgets:
+                field.custom_widget = self.custom_widgets[field.__name__]
         # XXX: jamesh 2006-08-02:
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
@@ -300,7 +299,7 @@ class LaunchpadFormView(LaunchpadView):
     def validate_cancel(self, action, data):
         """Noop validation in case we cancel.
 
-        You can use this in your Form views by simply setting 
+        You can use this in your Form views by simply setting
         validator='validate_cancel' in the @action line of your cancel
         button."""
         return []
