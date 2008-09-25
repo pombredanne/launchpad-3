@@ -33,6 +33,7 @@ __all__ = [
     'BadUrlLaunchpad',
     'BadUrlSsh',
     'BranchMirrorer',
+    'BranchPolicy',
     'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
