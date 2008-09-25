@@ -62,6 +62,17 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         finally:
             self.resetCookies()
 
+    def chooseRequestClass(self, method, path, environment):
+        """See `HTTPCaller`.
+
+        Default version doesn't put PATH_INFO, which we use.
+        """
+        if 'PATH_INFO' not in environment:
+            environment = dict(environment)
+            environment['PATH_INFO'] = path
+        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
+            method, path, environment)
+
     def resetCookies(self):
         self.cookies = SimpleCookie()
 
