@@ -65,6 +65,7 @@ SMTPPORT = %(smtp_port)d
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 XMLRPC_SUBSCRIPTION_BATCH_SIZE = %(xmlrpc_subscription_batch_size)s
+LAUNCHPAD_SHARED_SECRET = '%(shared_secret)s'
 
 # RFC 2369 header information
 LIST_HELP_HEADER = '%(list_help_header)s'
@@ -101,6 +102,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     list_owner_header_template=config.mailman.list_owner_header_template,
     footer=footer,
     var_dir=config.mailman.build_var_dir,
+    shared_secret=config.mailman.shared_secret,
     )
     finally:
         config_file.close()

@@ -220,6 +220,10 @@ def sendmail(message, to_addrs=None):
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
 
+    # Add a shared secret header for pre-approval with Mailman.
+    del message['X-Launchpad-Shared-Secret']
+    message['X-Launchpad-Shared-Secret'] = config.mailman.shared_secret
+
     raw_message = message.as_string()
     if isZopeless():
         # Zopeless email sending is not unit tested, and won't be.

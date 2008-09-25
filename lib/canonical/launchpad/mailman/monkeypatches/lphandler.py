@@ -31,7 +31,9 @@ def process(mlist, msg, msgdata):
     # is the contact address for a project's answer tracker, an automated
     # message will be sent from Launchpad.  Check for a header that indicates
     # this was a Launchpad generated message.
-    if msg['x-generated-by'] == 'Launchpad (canonical.com)':
+    if msg['x-launchpad-shared-secret'] == mm_cfg.LAUNCHPAD_SHARED_SECRET:
+        # Delete the header so it doesn't leak to end users.
+        del msg['x-launchpad-shared-secret']
         # Since this message is coming from Launchpad, pre-approve it.  Yes,
         # this could be spoofed, but there's really no other way (currently)
         # to do it.
