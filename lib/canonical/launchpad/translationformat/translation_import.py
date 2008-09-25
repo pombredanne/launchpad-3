@@ -299,10 +299,8 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        # Get the importer needed to import a file of this format.
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
-        # Check that we really got an importer.
         assert importer is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
@@ -311,35 +309,39 @@ class TranslationImporter:
         if translation_import_queue_entry.pofile is None:
             # Importing a translation template (POT file).
             file_importer = POTFileImporter(
-                translation_import_queue_entry, importer, logger )
+                translation_import_queue_entry, importer, logger)
         else:
             # Importing a translation (PO file).
             file_importer = POFileImporter(
-                translation_import_queue_entry, importer, logger )
-                
+                translation_import_queue_entry, importer, logger)
+
         # Do the import and return the errors.
         return file_importer.importFile()
-               
+
 class FileImporter(object):
-    """
-    Base class for importing translations (PO) or translation templates (POT).
-    
+    """Base class for importing translations or translation templates.
+
     This class is meant to be subclassed for the specialised tasks of
-    importing translations or translation templates respectively. It contains
-    all code common to both tasks. Provides method hooks for the derived
-    classes to implement but does not provide default implementation for these
-    hooks. It can therefore not be instantiated directly.
-    
-    The hooks that must be implemented are:
-    markAndCheck( message )
-    setUpMsgset( message, potmsgset, flags_comment )
+    importing translations (PO)or translation templates (POT) respectively.
+    Subclasses need to implement the importMessage method and extend
+    the constructor to set self.pofile and self.potemplate correctly.
     """
-    
-    def __init__( self, translation_import_queue_entry, importer, logger ):
-        """
-        Base constructor to set up common attributes and parse the imported
+
+    def __init__(self, translation_import_queue_entry,
+                 importer, logger = None):
+        """Base constructor to set up common attributes and parse the imported
         file into a member variable (self.translation_file).
+
+        Subclasses must extend this constructor to set the default values
+        according to their needs, most importantly self.pofile and
+        self.potemplate.
+
+        :param translation_import_queue_entry: The queue entry, as has been
+            provided to TranslationImporter.importFile.
+        :param importer: The importer to use for parsing the file.
+        :param logger: An optional logger.
         """
+
         self.translation_import_queue_entry = translation_import_queue_entry
         self.importer = importer
         self.logger = logger
@@ -347,12 +349,8 @@ class FileImporter(object):
         # These two must be set correctly by the derived classes.
         self.pofile = None
         self.potemplate = None
-        
-        # Get the exporter to display a message in error messages.
-        self.format_exporter = (
-            getUtility(
-                ITranslationExporter).getExporterProducingTargetFileFormat(
-                    translation_import_queue_entry.format) )
+
+        self._cached_format_exporter = None
 
         # Parse the file using the importer.
         self.translation_file = importer.parse(
@@ -364,26 +362,39 @@ class FileImporter(object):
         self.pofile_in_db = None
         self.errors = []
 
-    def getOrCreatePOTMessageSet(self, message):
+    def getOrCreatePOTMsgSet(self, message):
+        """Get the POTMsgSet that this message belongs to or create a new
+        one if none was found.
+
+        :param message: The message.
+        :return: The POTMsgSet instance, existing or new.
         """
-        """
-        # Get the msgid OR create the IPOTMsgSet for it,
-        # if it's the first time we see this msgid.
         potmsgset = (
             self.potemplate.getPOTMsgSetByMsgIDText(
                 message.msgid_singular, plural_text=message.msgid_plural,
-                context=message.context) )
+                context=message.context))
         if potmsgset is None:
             potmsgset = (
                 self.potemplate.createMessageSetFromText(
                     message.msgid_singular, message.msgid_plural,
-                    context=message.context) )
+                    context=message.context))
         return potmsgset
 
     def storeTranslationsInDatabase(self, message, potmsgset):
+        """Try to store translations in the database.
+
+        Perform check if a PO file is available and if the message has any
+        translations that can be stored. If an exception is caught, an error
+        is added to the list in self.errors but the translations are stored
+        anyway (ignoring further errors) unless the exception was
+        TranslationConflict.
+
+        :param message: The message who's translations will be stored.
+        :param potmsgset: The POTMsgSet that this message belongs to.
+
+        :return: The updated translation_message entry or None, if no storing
+            war done.
         """
-        """
-        # Store translations.
         if self.pofile is None:
             # It's neither an IPOFile nor an IPOTemplate that needs to
             # store English strings in an IPOFile.
@@ -401,7 +412,7 @@ class FileImporter(object):
                 self.lock_timestamp, force_edition_rights=self.is_editor)
 
         except TranslationConflict:
-            self._addConflictError( message, potmsgset )
+            self._addConflictError(message, potmsgset)
             if self.logger is not None:
                 self.logger.info(
                     "Conflicting updates on message %d." % potmsgset.id)
@@ -417,32 +428,39 @@ class FileImporter(object):
                 force_edition_rights=self.is_editor)
 
             # Add the pomsgset to the list of pomsgsets with errors.
-            self._addUpdateError( message, potmsgset, unicode(e) )
+            self._addUpdateError(message, potmsgset, unicode(e))
         return translation_message
 
     def importMessage(self, message):
-        """
+        """Import a single message.
+
+        This method must be implemented by the derived class to perform all
+        necessary steps to import a single message into the database.
+
+        :param message: The message to be imported.
+
+        :raise NotImplementedError: if no implementation is provided.
         """
         raise NotImplementedError
-    
+
     def finishImport(self):
-        """
+        """Perform finishing steps after all messages have been imported.
+
+        This method may be implemented by the derived class, if such steps
+        are necessary.
         """
 
     def importFile(self):
-        """
-        Import a parsed file into the database.
-        
-        Loops through all message entries in the parsed file and performs
-        various checks on them, calling the hook message along the way.
-        
+        """Import a parsed file into the database.
+
+        Loop through all message entries in the parsed file and import them
+        using the importMessage.
+
         :return: The errors encountered during the import.
         """
-        # Messages are counted to maintain the original sequence.
-        self.count = 0
         # Collect errors here.
         self.errors = []
-        
+
         for message in self.translation_file.messages:
             if not message.msgid_singular:
                 # The message has no msgid, we ignore it and jump to next
@@ -450,66 +468,69 @@ class FileImporter(object):
                 continue
 
             self.importMessage(message)
-            
+
         self.finishImport()
 
         return self.errors
 
-    def _addUpdateError( self, message, potmsgset, errormsg ):
-        """
-        Add an error returned by updateTranslation.
+    @property
+    def format_exporter(self):
+        """Get the exporter to display a message in error messages."""
+        if self._cached_format_exporter is None:
+            self._cached_format_exporter = getUtility(
+                  ITranslationExporter).getExporterProducingTargetFileFormat(
+                        self.translation_import_queue_entry.format)
+        return self._cached_format_exporter
+
+
+    def _addUpdateError(self, message, potmsgset, errormsg):
+        """Add an error returned by updateTranslation.
 
         This has been put in a method enhance clarity by removing the long
         error text from the calling method.
-        
+
         :param message: The current message from the translation file.
         :param potmsgset: The current messageset for this message id.
         :param errormsg: The errormessage returned by updateTranslation.
         """
-        self.errors.append( {
+        self.errors.append({
             'potmsgset': potmsgset,
             'pofile': self.pofile,
             'pomessage': self.format_exporter.exportTranslationMessageData(
                 message),
             'error-message': unicode(errormsg)
-        } )
+        })
 
-    def _addConflictError( self, message, potmsgset ):
-        """
-        Add an error if there was an edit conflict.
+    def _addConflictError(self, message, potmsgset):
+        """Add an error if there was an edit conflict.
 
         This has been put in a method enhance clarity by removing the long
         error text from the calling method.
-        
+
         :param message: The current message from the translation file.
         :param potmsgset: The current messageset for this message id.
         """
-        self.addUpdateError(message, potmsgset, 
+        self.addUpdateError(message, potmsgset,
             "This message was updated by someone else after you"
             " got the translation file. This translation is now"
             " stored as a suggestion, if you want to set it as"
             " the used one, go to %s/+translate and approve"
             " it." % canonical_url(self.pofile))
 
-        
-class POTFileImporter( FileImporter ):
-    """
-    Import a translation template file.
-    
-    Implements the hook methods for FileImporter.doImport().
-    """
-    
-    def __init__( self, translation_import_queue_entry, importer, logger ):
-        """
-        Construct an Importer for a translation template.
-        """
-        assert( translation_import_queue_entry.pofile is None,
-            "Pofile must be None when importing a template." )
+
+class POTFileImporter(FileImporter):
+    """Import a translation template file."""
+
+    def __init__(self, translation_import_queue_entry, importer, logger):
+        """Construct an Importer for a translation template."""
+
+        assert(translation_import_queue_entry.pofile is None,
+            "Pofile must be None when importing a template.")
 
         # Call base constructor
-        super( POTFileImporter, self ).__init__(
-             translation_import_queue_entry, importer, logger )
-            
+        super(POTFileImporter, self).__init__(
+             translation_import_queue_entry, importer, logger)
+
         self.pofile = None
         self.potemplate = translation_import_queue_entry.potemplate
 
@@ -523,7 +544,7 @@ class POTFileImporter( FileImporter ):
             self.pofile = self.potemplate.getPOFileByLang('en')
             if self.pofile is None:
                 self.pofile = self.potemplate.newPOFile('en')
-        
+
         # Expire old messages.
         self.potemplate.expireAllMessages()
         if self.translation_file.header is not None:
@@ -537,28 +558,31 @@ class POTFileImporter( FileImporter ):
         # editors.
         self.is_editor = True
         self.last_translator = (
-            translation_import_queue_entry.importer )
+            translation_import_queue_entry.importer)
 
+        # Messages are counted to maintain the original sequence.
         self.count = 0
 
     def importMessage(self, message):
-        """
-        """
+        """See FileImporter."""
         self.count += 1
-        
+
         if 'fuzzy' in message.flags:
             message.flags.remove('fuzzy')
             message._translations = None
 
-        flags_comment = u", "+u", ".join(message.flags)
+        if len(message.flags) > 0:
+            flags_comment = u", "+u", ".join(message.flags)
+        else:
+            flags_comment = u""
 
-        potmsgset = self.getOrCreatePOTMessageSet(message)
+        potmsgset = self.getOrCreatePOTMsgSet(message)
         potmsgset.setSequence(potmsgset.potemplate, self.count)
         potmsgset.commenttext = message.comment
         potmsgset.sourcecomment = message.source_comment
         potmsgset.filereferences = message.file_references
         potmsgset.flagscomment = flags_comment
-        
+
         translation_message = self.storeTranslationsInDatabase(
                                   message, potmsgset)
 
@@ -570,24 +594,19 @@ class POTFileImporter( FileImporter ):
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
 
-class POFileImporter( FileImporter ):
-    """
-    Import a translation file.
-    
-    Implements the hook methods for FileImporter.doImport().
-    """
-    
-    def __init__( self, translation_import_queue_entry, importer, logger ):
-        """
-        Construct an Importer for a translation template.
-        """
-        assert( translation_import_queue_entry.pofile is not None,
-            "Pofile must not be None when importing a translation." )
+class POFileImporter(FileImporter):
+    """Import a translation file."""
+
+    def __init__(self, translation_import_queue_entry, importer, logger):
+        """Construct an Importer for a translation file."""
+        
+        assert(translation_import_queue_entry.pofile is not None,
+            "Pofile must not be None when importing a translation.")
 
         # Call base constructor
-        super( POFileImporter, self ).__init__(
-             translation_import_queue_entry, importer, logger )
-            
+        super(POFileImporter, self).__init__(
+             translation_import_queue_entry, importer, logger)
+
         self.pofile = translation_import_queue_entry.pofile
         self.potemplate = self.pofile.potemplate
 
@@ -604,7 +623,7 @@ class POFileImporter( FileImporter ):
             # Launchpad. If it was not exported from Launchpad, it will be
             # None.
             self.lock_timestamp = (
-                self.translation_file.header.launchpad_export_date )
+                self.translation_file.header.launchpad_export_date)
 
         if (not self.translation_import_queue_entry.is_published and
             self.lock_timestamp is None):
@@ -620,17 +639,17 @@ class POFileImporter( FileImporter ):
         # We may not be able to guess it from the translation file, so
         # we take the importer as the last translator then.
         name, email = self.translation_file.header.getLastTranslator()
-        self.last_translator = ( self._getPersonByEmail(email, name) )
+        self.last_translator = (self._getPersonByEmail(email, name))
         if self.last_translator is None:
             self.last_translator = (
-                self.translation_import_queue_entry.importer )
+                self.translation_import_queue_entry.importer)
 
         # Use the importer rights to make sure the imported
         # translations are actually accepted instead of being just
         # suggestions.
         self.is_editor = (
             self.pofile.canEditTranslations(
-                self.translation_import_queue_entry.importer) )
+                self.translation_import_queue_entry.importer))
 
         self.pofile_in_db = (
             ExistingPOFileInDatabase(
@@ -638,8 +657,7 @@ class POFileImporter( FileImporter ):
                 is_imported=self.translation_import_queue_entry.is_published))
 
     def _getPersonByEmail(self, email, name=None):
-        """
-        Return the person for given email.
+        """Return the person for given email.
 
         If the person is unknown in Launchpad, the account will be created but
         it will not have a password and thus, will be disabled.
@@ -667,35 +685,31 @@ class POFileImporter( FileImporter ):
         return person
 
     def importMessage(self, message):
-        """
-        """
+        """See FileImporter."""
         # Mark this message as seen in the import
         self.pofile_in_db.markMessageAsSeen(message)
-        # Check for same imported or local translation
         if self.translation_import_queue_entry.is_published:
-            same_translation = (
-                self.pofile_in_db.isAlreadyImportedTheSame(
-                    message) )
+            if self.pofile_in_db.isAlreadyImportedTheSame(message):
+                return
         else:
-            same_translation = (
-                self.pofile_in_db.isAlreadyTranslatedTheSame(
-                    message))
+            if self.pofile_in_db.isAlreadyTranslatedTheSame(message):
+                return
 
-        if same_translation:
-            return
-
-        potmsgset = self.getOrCreatePOTMessageSet(message)
+        potmsgset = self.getOrCreatePOTMsgSet(message)
         if potmsgset.sequence == 0:
             # We are importing a message that does not exist in
             # latest translation template so we can update its values.
             potmsgset.sourcecomment = message.source_comment
             potmsgset.filereferences = message.file_references
-        
+
         if 'fuzzy' in message.flags:
             message.flags.remove('fuzzy')
             message._translations = None
-        
-        flags_comment = u", "+u", ".join(message.flags)
+
+        if len(message.flags) > 0:
+            flags_comment = u", "+u", ".join(message.flags)
+        else:
+            flags_comment = u""
 
         translation_message = self.storeTranslationsInDatabase(
             message, potmsgset)
@@ -707,19 +721,20 @@ class POFileImporter( FileImporter ):
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
-        
-    def finishImport( self ):
+
+    def finishImport(self):
         """ Mark messages that were not imported. """
-        # Get relevant messages from dB
+        # Get relevant messages from DB.
         unseen = self.pofile_in_db.getUnseenMessages()
         for unseen_message in unseen:
-            # Get the message from the message set
             (msgid, plural, context) = unseen_message
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
                 msgid, plural_text=plural, context=context)
-            translationmessage = potmsgset.getImportedTranslationMessage(
-                self.pofile.language)
-            # Mark this message as not imported
-            if translationmessage is not None:
-                translationmessage.is_imported = False
+            previous_imported_message = (
+                potmsgset.getImportedTranslationMessage(
+                    self.pofile.language))
+            if previous_imported_message is not None:
+                # The message was not imported this time, it therefore looses
+                # its imported status.
+                previous_imported_message.is_imported = False
 
