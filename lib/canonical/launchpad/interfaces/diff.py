@@ -66,6 +66,9 @@ class IStaticDiffJob(Interface):
 
     to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
 
+    def destroySelf():
+        """Destroy this object."""
+
     def run():
         """Acquire the static diff this job requires.
 

@@ -107,14 +107,16 @@ class StaticDiffJob(SQLBase):
 
     def run(self):
         """See IStaticDiffJob."""
+        self.job.start()
         bzr_branch = Branch.open(self.branch.warehouse_url)
         from_revision_id=self._get_revision_id(
             bzr_branch, self.from_revision_spec)
         to_revision_id=self._get_revision_id(
             bzr_branch, self.to_revision_spec)
-        self.destroySelf()
-        return StaticDiff.acquire(from_revision_id, to_revision_id,
+        diff = StaticDiff.acquire(from_revision_id, to_revision_id,
                                   bzr_branch.repository)
+        self.job.complete()
+        return diff
 
 
 class StaticDiffJobSource:
