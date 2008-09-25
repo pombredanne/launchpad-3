@@ -517,56 +517,56 @@ class TestMirroredBranchPolicy(TestCase):
         self.factory = LaunchpadObjectFactory()
 
     def testNoFileURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlScheme, opener.checkOneURL,
+            BadUrlScheme, policy.checkOneURL,
             self.factory.getUniqueURL(scheme='file'))
 
     def testNoUnknownSchemeURLs(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlScheme, opener.checkOneURL,
+            BadUrlScheme, policy.checkOneURL,
             self.factory.getUniqueURL(scheme='decorator+scheme'))
 
     def testNoSSHURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlSsh, opener.checkOneURL,
+            BadUrlSsh, policy.checkOneURL,
             self.factory.getUniqueURL(scheme='bzr+ssh'))
 
     def testNoSftpURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlSsh, opener.checkOneURL,
+            BadUrlSsh, policy.checkOneURL,
             self.factory.getUniqueURL(scheme='sftp'))
 
     def testNoLaunchpadURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlLaunchpad, opener.checkOneURL,
+            BadUrlLaunchpad, policy.checkOneURL,
             self.factory.getUniqueURL(host='bazaar.launchpad.dev'))
 
     def testNoHTTPSLaunchpadURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlLaunchpad, opener.checkOneURL,
+            BadUrlLaunchpad, policy.checkOneURL,
             self.factory.getUniqueURL(
                 host='bazaar.launchpad.dev', scheme='https'))
 
     def testNoOtherHostLaunchpadURL(self):
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         self.assertRaises(
-            BadUrlLaunchpad, opener.checkOneURL,
+            BadUrlLaunchpad, policy.checkOneURL,
             self.factory.getUniqueURL(host='code.launchpad.dev'))
 
     def testLocalhost(self):
         self.pushConfig(
             'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
-        opener = MirroredBranchPolicy()
+        policy = MirroredBranchPolicy()
         localhost_url = self.factory.getUniqueURL(host='localhost')
-        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+        self.assertRaises(BadUrl, policy.checkOneURL, localhost_url)
         localhost_url = self.factory.getUniqueURL(host='127.0.0.1')
-        self.assertRaises(BadUrl, opener.checkOneURL, localhost_url)
+        self.assertRaises(BadUrl, policy.checkOneURL, localhost_url)
 
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
