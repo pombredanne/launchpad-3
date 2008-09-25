@@ -1332,15 +1332,23 @@ class LayerProcessController:
         if cls.appserver is not None:
             # Unfortunately, Popen.wait() does not support a timeout, so poll
             # for a little while, then SIGKILL the process if it refuses to
-            # exit.  The test runner will barf if we hang here for more than
+            # exit.  test_on_merge.py will barf if we hang here for more than
             # 900 seconds (15 minutes).
             until = datetime.datetime.now() + WAIT_INTERVAL
-            kill_signal = signal.SIGTERM
-            while cls.appserver.poll() is None:
-                os.kill(cls.appserver.pid, kill_signal)
+            os.kill(cls.appserver.pid, signal.SIGTERM)
+            last_chance = False
+            while True:
+                # Sleep and poll for process exit.
+                if cls.appserver.poll() is not None:
+                    break
                 time.sleep(0.5)
+                # If we slept long enough, send a harder kill and wait again.
+                # If we already had our last chance, raise an exception.
                 if datetime.datetime.now() > until:
-                    kill_signal = signal.SIGKILL
+                    if last_chance:
+                        raise RuntimeError("The appserver just wouldn't die")
+                    last_chance = True
+                    os.kill(cls.appserver.pid, signal.SIGKILL)
                     until = datetime.datetime.now() + WAIT_INTERVAL
             cls.appserver = None
 
