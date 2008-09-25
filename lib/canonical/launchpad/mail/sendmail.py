@@ -37,6 +37,7 @@ from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 from canonical.launchpad.mail.stub import TestMailer
+from canonical.launchpad import versioninfo
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -218,7 +219,9 @@ def sendmail(message, to_addrs=None):
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
-    message['X-Generated-By'] = 'Launchpad (canonical.com)'
+    message['X-Generated-By'] = generated = Header('Launchpad (canonical.com)')
+    generated.append('; Revision %d' % (versioninfo.revno,))
+    generated.append('; Instance %s' % (config.name,))
 
     raw_message = message.as_string()
     if isZopeless():
@@ -283,4 +286,3 @@ if __name__ == '__main__':
             'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
             'Testing Zopeless', 'This is the body')
     tm.uninstall()
-

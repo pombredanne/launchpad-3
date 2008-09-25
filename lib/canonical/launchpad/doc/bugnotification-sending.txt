@@ -1041,7 +1041,7 @@ makes it write out the emails it sends.
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
-    X-Generated-By: Launchpad (canonical.com)
+    ...
     <BLANKLINE>
     another comment.
     <BLANKLINE>

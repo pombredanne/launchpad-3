@@ -4,9 +4,11 @@ __metaclass__ = type
 
 import unittest
 import email
+import re
 from email.MIMEText import MIMEText
 import transaction
 from zope.testing.doctest import DocTestSuite
+from zope.testing.renormalizing import RENormalizing
 
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.mail import stub, simple_sendmail
@@ -93,10 +95,18 @@ def test_simple_sendmail():
     >>> message['Content-Transfer-Encoding']
     'quoted-printable'
 
+    The message has a number of additional headers added by default.
+    'X-Generated-By' not only indicates that the source is Launchpad, but
+    shows the bzr revision and instance name.
+
+    >>> message['X-Generated-By']
+    'Launchpad (canonical.com) ; Revision 1999 ; Instance launchpad-lazr.conf'
+
     """
 
 def test_suite():
-    suite = DocTestSuite()
+    suite = DocTestSuite(checker=RENormalizing([
+        (re.compile(r'Revision \d+'), 'Revision 1999')]))
     suite.layer = LaunchpadFunctionalLayer
     return suite
 
