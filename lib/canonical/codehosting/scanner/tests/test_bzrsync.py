@@ -842,7 +842,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def assertNoPendingEmails(self, bzrsync):
         self.assertEqual(
-            len(bzrsync._branch_mailer.pending_emails), 0,
+            len(bzrsync._branch_mailer.queued_mail_jobs), 0,
             "There should be no pending emails.")
 
     def test_no_subscribers(self):

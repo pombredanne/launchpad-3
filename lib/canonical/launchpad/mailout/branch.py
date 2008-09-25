@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -170,7 +171,8 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, message, diff, subject):
+    def forRevision(klass, db_branch, from_address, message, diff_job,
+                    subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
             BranchSubscriptionNotificationLevel.DIFFSONLY,
@@ -183,8 +185,18 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
+        if diff_job is None:
+            revision_diff = ''
+        else:
+            static_diff = diff_job.run()
+            diff_job.destroySelf()
+            transaction.commit()
+            lfa = static_diff.diff.diff_text
+            lfa.open()
+            revision_diff = lfa.read().decode('utf8', 'replace')
+            static_diff.destroySelf()
         return klass(subject, None, recipient_dict, from_address,
-              message=message, diff=diff, revision_body=True)
+              message=message, diff=revision_diff, revision_body=True)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
