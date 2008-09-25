@@ -338,7 +338,7 @@ class BranchOpener(object):
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
-        bzrdir.clone_on_transport(dest_transport, preserve_stacking=True)
+        bzrdir.clone_on_transport(dest_transport, stacked_on=stacked_on_url)
         return Branch.open(destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
