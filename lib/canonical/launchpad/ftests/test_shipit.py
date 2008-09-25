@@ -213,12 +213,12 @@ class TestShippingRun(unittest.TestCase):
     def test_create_shipping_run_sets_requests_count(self):
         requestset = ShippingRequestSet()
         approved_request_ids = requestset.getUnshippedRequestsIDs(
-            ShippingRequestPriority.NORMAL)
+            ShippingRequestPriority.NORMAL, ShipItDistroSeries.HARDY)
         non_approved_request = requestset.getOldestPending()
         self.failIf(non_approved_request is None)
         run = requestset._create_shipping_run(
             approved_request_ids + [non_approved_request.id])
-        self.failUnless(run.requests_count == len(approved_request_ids))
+        self.failUnlessEqual(run.requests_count, len(approved_request_ids))
 
 
 class TestPeopleTrustedOnShipIt(unittest.TestCase):

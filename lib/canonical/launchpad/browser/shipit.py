@@ -21,7 +21,6 @@ __all__ = [
     'StandardShipItRequestSetNavigation',
     'StandardShipItRequestsView']
 
-from copy import copy
 from operator import attrgetter
 
 from zope.event import notify
@@ -74,7 +73,7 @@ class ShipitFrontPageView(LaunchpadView):
 
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
-        self.series = get_current_series_for_flavour(self.flavour)
+        self.series = ShipItConstants.current_distroseries
 
     @property
     def prerelease_mode(self):
@@ -104,24 +103,6 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).user))
 
 
-def get_current_series_for_flavour(flavour):
-    """Return the current `ShipItDistroSeries`.
-
-    If the given flavour is Kubuntu and the current series is 8.04 we make
-    a copy of the series and update its title because Kubuntu 8.04 is not LTS.
-
-    XXX: salgado, 2008-04-18: As you can guess, this is a hack needed because
-    Kubuntu 8.04 is not LTS like the others (Ubuntu, Server and Edubuntu) and
-    can be removed as soon as we stop shipping Hardy.
-    """
-    series = ShipItConstants.current_distroseries
-    if (flavour == ShipItFlavour.KUBUNTU
-        and series == ShipItDistroSeries.HARDY):
-        series = copy(series)
-        series.title = series.title.replace(' LTS', '')
-    return series
-
-
 # XXX: GuilhermeSalgado 2005-09-09:
 # The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
@@ -140,7 +121,7 @@ class ShipItLoginView(LoginOrRegister):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.series = get_current_series_for_flavour(self.flavour)
+        self.series = ShipItConstants.current_distroseries
         self.origin = self.possible_origins[self.flavour]
 
     def is_open(self):
@@ -242,7 +223,7 @@ class ShipItRequestView(GeneralFormView):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
-        self.series = get_current_series_for_flavour(self.flavour)
+        self.series = ShipItConstants.current_distroseries
         self.fieldNames = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']

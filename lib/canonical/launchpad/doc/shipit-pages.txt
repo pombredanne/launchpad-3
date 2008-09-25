@@ -156,35 +156,3 @@ widgets.
     [('edubuntu_quantityx86approved', 0), ('highpriority', False),
      ('kubuntu_quantityx86approved', 0), ('server_quantityamd64approved', 0),
      ('server_quantityx86approved', 0), ('ubuntu_quantityx86approved', 10)]
-
-
-== Hardy-specific changes ==
-
-Although Hardy is an LTS release it has been decided that Kubuntu Hardy
-will not be LTS, so we need a small hack to make sure we don't say
-"8.04 LTS" when talking about Kubuntu in the same way we do when talking
-about Ubuntu/Edubuntu.
-
-The simplest way to do so is by storing a modified HARDY item from
-ShipItDistroSeries in the views that render public pages.
-
-    >>> view = create_view(shipit, '+index', layer=ShipItUbuntuLayer)
-    >>> view.initialize()
-    >>> view.series.title
-    '8.04 LTS (Hardy Heron)'
-    >>> create_view(shipit, 'login', layer=ShipItUbuntuLayer).series.title
-    '8.04 LTS (Hardy Heron)'
-    >>> create_view(
-    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer).series.title
-    '8.04 LTS (Hardy Heron)'
-
-    >>> view = create_view(shipit, '+index', layer=ShipItKUbuntuLayer)
-    >>> view.initialize()
-    >>> view.series.title
-    '8.04 (Hardy Heron)'
-    >>> create_view(shipit, 'login', layer=ShipItKUbuntuLayer).series.title
-    '8.04 (Hardy Heron)'
-    >>> create_view(
-    ...     shipit, 'myrequest', layer=ShipItKUbuntuLayer).series.title
-    '8.04 (Hardy Heron)'
-
