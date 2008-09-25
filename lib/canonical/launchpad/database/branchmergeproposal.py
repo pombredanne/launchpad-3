@@ -235,8 +235,11 @@ class BranchMergeProposal(SQLBase):
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-        self.date_review_requested = UTC_NOW
+        # Don't reset the date_review_requested if we are already in the
+        # review state.
+        if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
+            self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""

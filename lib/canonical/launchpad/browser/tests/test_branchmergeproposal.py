@@ -7,11 +7,16 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+
+from canonical.launchpad.browser.branch import RegisterBranchMergeProposalView
 from canonical.launchpad.browser.branchmergeproposal import (
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
-from canonical.launchpad.testing import TestCaseWithFactory, time_counter
+from canonical.launchpad.testing import (
+    login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
@@ -151,6 +156,129 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [albert, bob],
             [review.reviewer for review in view.current_reviews])
+
+
+class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+    """Test the merge proposal registration view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeBranch()
+        self.source_branch = self.factory.makeBranch(
+            product=self.target_branch.product)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = RegisterBranchMergeProposalView(
+            self.source_branch, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def _getProposal(self):
+        # There will only be one proposal and it will be in needs review
+        # state.
+        landing_targets = list(self.source_branch.landing_targets)
+        self.assertEqual(1, len(landing_targets))
+        proposal = landing_targets[0]
+        self.assertEqual(self.target_branch, proposal.target_branch)
+        self.assertEqual(BranchMergeProposalStatus.NEEDS_REVIEW,
+                         proposal.queue_status)
+        return proposal
+
+    def assertNoComments(self, proposal):
+        # There should be no comments.
+        self.assertEqual(0, len(list(proposal.all_comments)))
+
+    def assertOneComment(self, proposal, comment_text):
+        # There should be one and only one comment with the text specified.
+        all_comments = list(proposal.all_comments)
+        self.assertEqual(1, len(all_comments))
+        self.assertEqual(
+            comment_text,
+            all_comments[0].message.text_contents)
+
+    def assertNoPendingReviews(self, proposal):
+        # There should be no votes recorded for the proposal.
+        self.assertEqual(0, len(list(proposal.votes)))
+
+    def assertOnePendingReview(self, proposal, reviewer, review_type=None):
+        # There should be one pending vote for the reviewer with the specified
+        # review type.
+        votes = list(proposal.votes)
+        self.assertEqual(1, len(votes))
+        self.assertEqual(reviewer, votes[0].reviewer)
+        self.assertEqual(self.user, votes[0].registrant)
+        self.assertIs(None, votes[0].comment)
+        if review_type is None:
+            self.assertIs(None, votes[0].review_type)
+        else:
+            self.assertEqual(review_type, votes[0].review_type)
+
+    def test_register_simplest_case(self):
+        # This simplest case is where the user only specifies the target
+        # branch, and not an initial comment or reviewer.
+        view = self._createView()
+        view.register_action.success({'target_branch': self.target_branch})
+        proposal = self._getProposal()
+        self.assertNoPendingReviews(proposal)
+        self.assertNoComments(proposal)
+
+    def test_register_initial_comment(self):
+        # If the user specifies an initial comment, this is added to the
+        # proposal.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'comment': "This is the first comment."})
+
+        proposal = self._getProposal()
+        self.assertNoPendingReviews(proposal)
+        self.assertOneComment(proposal, "This is the first comment.")
+
+    def test_register_request_reviewer(self):
+        # If the user requests a reviewer, then a pending vote is added to the
+        # proposal.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer})
+
+        proposal = self._getProposal()
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertNoComments(proposal)
+
+    def test_register_request_review_type(self):
+        # A specific review type can be requested of the reviewer, and if
+        # specified is recorded with the pending review.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer,
+             'review_type': 'god-like'})
+
+        proposal = self._getProposal()
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertNoComments(proposal)
+
+    def test_register_comment_and_review(self):
+        # The user can give an initial comment and review request.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer,
+             'review_type': 'god-like',
+             'comment': "This is the first comment."})
+
+        proposal = self._getProposal()
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertOneComment(proposal, "This is the first comment.")
 
 
 def test_suite():

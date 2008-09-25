@@ -32,7 +32,7 @@ from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice
+from zope.schema import Choice, Text, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -46,9 +46,11 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
+    BranchMergeProposalStatus,
     BranchType,
     BranchVisibilityRule,
     CodeImportJobState,
@@ -68,6 +70,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
+
+
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -1050,12 +1054,17 @@ class RegisterProposalStatus(EnumeratedType):
 class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
     use_template(IBranchMergeProposal,
-                 include=['target_branch', 'dependent_branch', 'whiteboard'])
+                 include=['target_branch'])
 
-    status = Choice(
-        title=_('Status'), required=True,
-        vocabulary=RegisterProposalStatus,
-        default=RegisterProposalStatus.NEEDS_REVIEW)
+    comment = Text(title=_('Initial Comment'), required=False)
+
+    review_candidate = PublicPersonChoice(
+        title=_('Reviewer'), required=False,
+        description=_('A person who you want to review this.'),
+        vocabulary='ValidPersonOrTeam')
+
+    review_type = TextLine(
+        title=_('Review Type'), required=False)
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1064,7 +1073,17 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('status', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def initial_values(self):
+        """The default reviewer is the code reviewer of the target."""
+        # If there is a development focus branch for the product, then default
+        # the reviewer to be the review team for that branch.
+        reviewer = None
+        dev_focus_branch = self.context.product.development_focus.user_branch
+        if dev_focus_branch is not None:
+            reviewer = dev_focus_branch.code_reviewer
+        return {'review_candidate': reviewer}
 
     @property
     def cancel_url(self):
@@ -1076,28 +1095,27 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
-    @action('Register', name='register')
+    @action('Propose Merge', name='register')
     def register_action(self, action, data):
         """Register the new branch merge proposal."""
 
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
-        dependent_branch = data['dependent_branch']
-        whiteboard = data['whiteboard']
-        status = data['status']
-
-        # If the dependent_branch is set explicitly the same as the
-        # target_branch, it is the same as if it was not set at all.
-        if dependent_branch == target_branch:
-            dependent_branch = None
 
         try:
-            needs_review = status == RegisterProposalStatus.NEEDS_REVIEW
+            # Always default to needs review until we have the wonder of AJAX
+            # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                dependent_branch=dependent_branch, whiteboard=whiteboard,
-                needs_review=needs_review)
+                needs_review=True)
+            reviewer = data.get('review_candidate')
+            if reviewer is not None:
+                proposal.nominateReviewer(
+                    reviewer, self.user, data.get('review_type'))
+            initial_comment = data.get('comment')
+            if initial_comment is not None:
+                proposal.createComment(self.user, None, initial_comment)
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
@@ -1105,7 +1123,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     def validate(self, data):
         source_branch = self.context
         target_branch = data.get('target_branch')
-        dependent_branch = data.get('dependent_branch')
 
         # Make sure that the target branch is different from the context.
         if target_branch is None:
@@ -1123,22 +1140,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 self.setFieldError(
                     'target_branch',
                     "The target branch must belong to the same project "
-                    "as the source branch.")
-
-        if dependent_branch is None:
-            # Skip the following tests.
-            pass
-        elif dependent_branch == source_branch:
-            self.setFieldError(
-                'dependent_branch',
-                "The dependent branch cannot be the same as the source "
-                "branch.")
-        else:
-            # Make sure that the dependent_branch is in the project.
-            if dependent_branch.product != source_branch.product:
-                self.setFieldError(
-                    'dependent_branch',
-                    "The dependent branch must belong to the same project "
                     "as the source branch.")
 
 
