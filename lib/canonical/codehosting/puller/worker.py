@@ -313,10 +313,6 @@ class BranchMirrorer(object):
         for url in self._iter_stacked_on(url):
             self.policy.checkOneURL(url)
 
-    def getStackedOnURL(self, source_branch, destination_url):
-        """Return the stacked-on URL for the destination branch."""
-        return self.policy.getStackedOnURL(source_branch, destination_url)
-
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
 
@@ -336,7 +332,8 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        stacked_on_url = self.getStackedOnURL(source_branch, destination_url)
+        stacked_on_url = self.policy.getStackedOnURL(
+            source_branch, destination_url)
         if stacked_on_url is not None:
             try:
                 Branch.open(stacked_on_url)
@@ -372,7 +369,8 @@ class BranchMirrorer(object):
         # source branch.  Note that we expect this to be fairly
         # common, as, as of r6889, it is possible for a branch to be
         # pulled before the stacking information is set at all.
-        stacked_on_url = get_stacked_on_url(source_branch)
+        stacked_on_url = self.policy.getStackedOnURL(
+            source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
