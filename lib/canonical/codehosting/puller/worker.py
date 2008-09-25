@@ -107,7 +107,7 @@ def get_canonical_url_for_branch_name(unique_name):
     else:
         scheme = 'http'
     hostname = config.vhost.code.hostname
-    return scheme + '://' + hostname + '/~' + unique_name
+    return scheme + '://' + hostname + '/' + unique_name
 
 
 class PullerWorkerProtocol:
