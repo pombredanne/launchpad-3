@@ -464,7 +464,12 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         pass
 
     def afterCompletion(self, transaction):
-        """See `ISynchronizer`."""
+        """See `ISynchronizer`.
+
+        We clear the cache of security policy results on commit, as objects
+        will be refetched from the database and the security checks may result
+        in different answers.
+        """
         self.clearSecurityPolicyCache()
 
     def newTransaction(self, transaction):
