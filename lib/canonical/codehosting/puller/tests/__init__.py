@@ -13,20 +13,50 @@ from bzrlib.urlutils import local_path_from_url
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
-    BranchOpener, BranchPolicy, PullerWorker, PullerWorkerProtocol)
+    BadUrl, BranchOpener, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
 
 
-class AcceptAnythingPolicy(BranchPolicy):
+class BlacklistPolicy(BranchPolicy):
+    """Branch policy that forbids certain URLs."""
+
+    def __init__(self, should_follow_references, unsafe_urls=None):
+        if unsafe_urls is None:
+            unsafe_urls = set()
+        self._unsafe_urls = unsafe_urls
+        self._should_follow_references = should_follow_references
+
+    def shouldFollowReferences(self):
+        return self._should_follow_references
 
     def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
+        if url in self._unsafe_urls:
+            raise BadUrl(url)
 
-        Accept anything, to make testing easier.
-        """
-        pass
+
+class AcceptAnythingPolicy(BlacklistPolicy):
+    """Accept anything, to make testing easier."""
+
+    def __init__(self):
+        super(AcceptAnythingPolicy, self).__init__(True, set())
+
+
+class WhitelistPolicy(BranchPolicy):
+    """Branch policy that only allows certain URLs."""
+
+    def __init__(self, should_follow_references, allowed_urls=None):
+        if allowed_urls is None:
+            allowed_urls = []
+        self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
+
+    def shouldFollowReferences(self):
+        return self._should_follow_references
+
+    def checkOneURL(self, url):
+        if url.rstrip('/') not in self.allowed_urls:
+            raise BadUrl(url)
 
 
 class PullerWorkerMixin:

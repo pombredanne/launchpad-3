@@ -26,7 +26,8 @@ from canonical.codehosting.puller.worker import (
     HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
     PullerWorkerProtocol, StackingLoopError, get_vfs_format_classes,
     install_worker_ui_factory, StackedOnBranchNotFound)
-from canonical.codehosting.puller.tests import PullerWorkerMixin
+from canonical.codehosting.puller.tests import (
+    BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import reset_logging
@@ -237,24 +238,6 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 class TestBranchOpenerCheckSource(TestCase):
     """Unit tests for `BranchOpener.checkSource`."""
 
-    class BlacklistPolicy(BranchPolicy):
-        """Branch policy that forbids certain URLs."""
-
-        def __init__(self, should_follow_references, unsafe_urls=None):
-            if unsafe_urls is None:
-                unsafe_urls = set()
-            self._unsafe_urls = unsafe_urls
-            self._should_follow_references = should_follow_references
-            self.check_one_url_calls = []
-
-        def shouldFollowReferences(self):
-            return self._should_follow_references
-
-        def checkOneURL(self, url):
-            self.check_one_url_calls.append(url)
-            if url in self._unsafe_urls:
-                raise BadUrl(url)
-
     class StubbedBranchOpener(BranchOpener):
         """BranchOpener that provides canned answers.
 
@@ -271,17 +254,13 @@ class TestBranchOpenerCheckSource(TestCase):
                 self._reference_values[references[i]] = references[i+1]
             self.follow_reference_calls = []
 
-        @property
-        def check_one_url_calls(self):
-            return self.policy.check_one_url_calls
-
         def followReference(self, url):
             self.follow_reference_calls.append(url)
             return self._reference_values[url]
 
     def makeBranchOpener(self, should_follow_references, references,
                          unsafe_urls=None):
-        policy = self.BlacklistPolicy(should_follow_references, unsafe_urls)
+        policy = BlacklistPolicy(should_follow_references, unsafe_urls)
         opener = self.StubbedBranchOpener(references, policy)
         return opener
 
@@ -344,17 +323,8 @@ class TestBranchOpenerCheckSource(TestCase):
 
 class TestBranchOpenerStacking(TestCaseWithTransport):
 
-    class OnlyAllowedURLs(BranchPolicy):
-
-        def __init__(self, allowed_urls):
-            self.allowed_urls = [url.rstrip('/') for url in allowed_urls]
-
-        def checkOneURL(self, url):
-            if url.rstrip('/') not in self.allowed_urls:
-                raise BadUrl(url)
-
     def makeBranchOpener(self, allowed_urls):
-        policy = self.OnlyAllowedURLs(allowed_urls)
+        policy = WhitelistPolicy(True, allowed_urls)
         return BranchOpener(policy)
 
     def makeBranch(self, path, branch_format, repository_format):
