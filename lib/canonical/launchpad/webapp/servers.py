@@ -281,9 +281,8 @@ class VirtualHostRequestPublicationFactory:
             self.checkRequest(environment))
 
         if not real_request_factory:
-            real_request_factory = self.request_factory
-            publication_factory = self.publication_factory
-
+            real_request_factory, publication_factory = (
+                self.getRequestAndPublicationFactories(environment))
 
         host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
@@ -304,6 +303,19 @@ class VirtualHostRequestPublicationFactory:
         self._thread_local.environment = None
         return (request_factory, publication_factory)
 
+    def getRequestAndPublicationFactories(self, environment):
+        """Return the request and publication factories to use.
+
+        You can override this method if the request and publication can
+        vary based on the environment.
+        """
+        return self.request_factory, self.publication_factory
+
+    def getAcceptableMethods(self, environment):
+        """Returns the HTTP methods acceptable in this particular environment
+        """
+        return self.methods
+
     def checkRequest(self, environment):
         """Makes sure that the incoming HTTP request is of an expected type.
 
@@ -317,7 +329,7 @@ class VirtualHostRequestPublicationFactory:
         """
         method = environment.get('REQUEST_METHOD')
 
-        if method in self.methods:
+        if method in self.getAcceptableMethods(environment):
             factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
@@ -381,29 +393,31 @@ class VHostWebServiceRequestPublicationFactory(
     request's path points to a web service resource.
     """
 
-    def canHandle(self, environment):
-        """See `IRequestPublicationFactory`.
+    def getAcceptableMethods(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
 
-        :attention: This method has the side-effect of setting the
-            object's environment.  If the request is bound for the
-            Launchpad web service (see `isWebServicePath`), then its
-            request factory type, publication factory type, and accepted
-            HTTP methods are also modified.
+        If this is a request for a webservice path, returns the appropriate
+        methods.
         """
-        path_info = environment.get('PATH_INFO', '')
-        if self.isWebServicePath(path_info):
-            self.setWebServiceFactoryDefaults()
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceRequestPublicationFactory.default_methods
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getAcceptableMethods(environment)
 
-        return super(
-            VHostWebServiceRequestPublicationFactory,
-            self).canHandle(environment)
+    def getRequestAndPublicationFactories(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
 
-    def setWebServiceFactoryDefaults(self):
-        """Set the factory defaults for processing a web service request.
+        If this is a request for a webservice path, returns the appropriate
+        factories.
         """
-        self.request_factory = WebServiceClientRequest
-        self.publication_factory = WebServicePublication
-        self.methods = WebServiceRequestPublicationFactory.default_methods
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceClientRequest, WebServicePublication
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getRequestAndPublicationFactories(environment)
 
     def isWebServicePath(self, path):
         """Does the path refer to a web service resource?"""
@@ -1399,18 +1413,17 @@ def register_launchpad_request_publication_factories():
     DEATH TO ZCML!
     """
     VHRP = VirtualHostRequestPublicationFactory
+    VWSHRP = VHostWebServiceRequestPublicationFactory
 
     factories = [
-        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
-                                            WebServicePublication),
-        VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
-             handle_default_host=True),
-        VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VHRP('code', CodeBrowserRequest, CodePublication),
-        VHRP('translations', TranslationsBrowserRequest,
-             TranslationsPublication),
-        VHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VHRP('answers', AnswersBrowserRequest, AnswersPublication),
+        VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
+               handle_default_host=True),
+        VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
+        VWSHRP('code', CodeBrowserRequest, CodePublication),
+        VWSHRP('translations', TranslationsBrowserRequest,
+               TranslationsPublication),
+        VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
+        VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
         VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
         VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
              ShipItPublication),
@@ -1419,6 +1432,8 @@ def register_launchpad_request_publication_factories():
         VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
              ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
+        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
+                                            WebServicePublication),
         XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
                                         PublicXMLRPCPublication)
         ]

@@ -967,42 +967,6 @@ defined against IDishSet, so there's an AssertionError.
     from DishCollection to ICollection.
 
 
-== API Requests to other hosts ==
-
-JavaScript working with the API must deal with the browser's Same Origin
-Policy - requests may only be made to the host that the page was loaded
-from.  For example, we can not visit a page on http://bugs.launchpad.net
-and make a request to http://api.launchpad.net.
-
-Instead of directing the request to api.launchpad.net, we may direct it
-at the /api subpath of the current virtual host, such as
-http://bugs.launchpad.net/api.  Such requests are handled as if they
-were directed at the api.launchpad.net subdomain.
-
-The URLs in the returned representations point to the current host,
-rather than the api host.  The canonical_url() function also returns
-links to the current host.
-
-The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
-request to http://api.launchpad.net/beta/, but with the links pointing
-to a different host.
-
-    >>> request = create_web_service_request('/api/beta/',
-    ...     http_host='bugs.launchpad.dev')
-    >>> ignore = request.traverse(app)
-    >>> response = app(request)
-    >>> representation = simplejson.loads(response)
-
-    >>> representation["cookbooks_collection_link"]
-    u'http://bugs.launchpad.dev/api/beta/cookbooks'
-
-The canonical URL for the service root resource also points to the bugs
-host:
-
-    >>> canonical_url(app)
-    u'http://bugs.launchpad.dev/api/beta/'
-
-
 == Collection resources ==
 
 The default root navigation defined in our model contains the top-level
