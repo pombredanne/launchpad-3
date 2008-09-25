@@ -184,6 +184,12 @@ def identical_formats(branch_one, branch_two):
 class BranchPolicy:
     """Policy on how to mirror branches."""
 
+    def getStackedOnURL(self, source_branch, destination_url):
+        stacked_on_url = get_stacked_on_url(source_branch)
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
+        return stacked_on_url
+
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.
 
@@ -309,10 +315,7 @@ class BranchMirrorer(object):
 
     def getStackedOnURL(self, source_branch, destination_url):
         """Return the stacked-on URL for the destination branch."""
-        stacked_on_url = get_stacked_on_url(source_branch)
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-        return stacked_on_url
+        return self.policy.getStackedOnURL(source_branch, destination_url)
 
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
