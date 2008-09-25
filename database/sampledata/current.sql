@@ -9800,6 +9800,13 @@ INSERT INTO translator (id, translationgroup, language, translator, datecreated)
 ALTER TABLE translator ENABLE TRIGGER ALL;
 
 
+ALTER TABLE usertouseremail DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE usertouseremail ENABLE TRIGGER ALL;
+
+
 ALTER TABLE vote DISABLE TRIGGER ALL;
 
 INSERT INTO vote (id, person, poll, preference, option, token) VALUES (1, NULL, 1, 1, 4, '9WjxQq2V9p');
