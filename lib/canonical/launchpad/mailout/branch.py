@@ -78,13 +78,15 @@ class RecipientReason:
     """Reason for sending mail to a recipient."""
 
     def __init__(self, subscriber, recipient, branch, mail_header,
-        reason_template, merge_proposal=None):
+        reason_template, merge_proposal=None,
+        max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
         self.mail_header = mail_header
         self.reason_template = reason_template
         self.merge_proposal = merge_proposal
+        self.max_diff_lines = max_diff_lines
 
     @classmethod
     def forBranchSubscriber(
@@ -93,7 +95,7 @@ class RecipientReason:
         return klass(
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
-            merge_proposal)
+            merge_proposal, subscription.max_diff_lines)
 
     @classmethod
     def forReviewer(klass, vote_reference, recipient):
@@ -175,40 +177,27 @@ class BranchMailer(BaseMailer):
     @classmethod
     def forRevision(klass, db_branch, from_address, message, diff,
                     max_diff, recipients, subject):
-        diff_size = diff.count('\n') + 1
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = message
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (message, diff_msg)
-            else:
-                contents = "%s\n%s" % (message, diff)
-        else:
-            contents = "%s\n%s" % (message, diff)
         branch_title = db_branch.title
         if branch_title is None:
             branch_title = ''
         if subject is None:
             subject = '[Branch %s] %s' % (db_branch.unique_name, branch_title)
         return klass(subject, None, recipients, from_address,
-              message=contents, revision_body=True, branch_title=branch_title)
+              message=message, diff=diff, revision_body=True,
+              branch_title=branch_title)
 
     def _getBody(self, email):
         if not self.revision_body:
             return BaseMailer._getMailer(self, email)
         template = get_email_template('branch-modified.txt')
+        subscription, rationale = self._recipients.getReason(email)
         params = {
-            'delta': self.message,
+            'delta': self._diffText(subscription.max_diff_lines),
             'branch_title': self.branch_title,
             'unsubscribe': '',
             'reason': ('You are receiving this branch notification '
                        'because you are subscribed to it.'),
             }
-        subscription, rationale = self._recipients.getReason(email)
         # The only time that the subscription will be empty is if the owner
         # of the branch is being notified.
         if subscription is None:
@@ -225,6 +214,23 @@ class BranchMailer(BaseMailer):
             pass
         params['branch_url'] = canonical_url(subscription.branch)
         return template % params
+
+    def _diffText(self, max_diff):
+        diff_size = self.diff.count('\n') + 1
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = self.message
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (self.message, diff_msg)
+            else:
+                contents = "%s\n%s" % (self.message, self.diff)
+        else:
+            contents = "%s\n%s" % (self.message, self.diff)
+        return contents
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
