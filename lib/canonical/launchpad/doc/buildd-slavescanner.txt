@@ -853,8 +853,9 @@ to demonstrate this, and also make the archive private:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
-    >>> secure_pub.archive.private = True
-    >>> secure_pub.archive.buildd_secret = "secret"
+    >>> test_archive = secure_pub.archive
+    >>> test_archive.private = True
+    >>> test_archive.buildd_secret = "secret"
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
@@ -879,14 +880,37 @@ If we publish the source, the build candidate will be found again:
     >>> another_candidate.id == new_candidate.id
     True
 
-We'll reset the archive back to non-private for further tests:
+If the source is subsequently deleted or superseded before the build
+starts it is also returned as a candidate so that the build can be
+superseded.  The current candidate's source is published twice, so
+we can supersede one and delete the other will will have the effect of
+making the build be superseded and no candidate is returned.
 
-    >>> source = new_candidate.build.sourcepackagerelease
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub = removeSecurityProxy(
     ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> secure_pub.status = PackagePublishingStatus.DELETED
+    >>> secure_pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+
+    >>> print current_job.build.buildstate.name
+    NEEDSBUILD
+
+    >>> another_candidate = a_builder.findBuildCandidate()
+    >>> print another_candidate
+    None
+
+    >>> print current_job.build.buildstate.name
+    SUPERSEDED
+
+We'll reset the archive back to non-private for further tests:
+
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> secure_pub.archive.private = False
+    >>> test_archive.private = False
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
