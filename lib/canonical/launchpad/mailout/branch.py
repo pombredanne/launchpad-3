@@ -157,12 +157,11 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff=None, revision_body=False):
+                 delta=None, message=None, diff=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta)
         self.message = message
         self.diff = diff
-        self.revision_body = revision_body
 
     @staticmethod
     def forBranchModified(branch, recipients, from_address, delta):
@@ -195,8 +194,8 @@ class BranchMailer(BaseMailer):
             lfa.open()
             revision_diff = lfa.read().decode('utf8', 'replace')
             static_diff.destroySelf()
-        return klass(subject, None, recipient_dict, from_address,
-              message=message, diff=revision_diff, revision_body=True)
+        return klass(subject, 'branch-modified.txt', recipient_dict,
+            from_address, message=message, diff=revision_diff)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -207,39 +206,9 @@ class BranchMailer(BaseMailer):
             branch_title = ''
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
-    def _getBody(self, email):
-        if not self.revision_body:
-            return BaseMailer._getMailer(self, email)
-        template = get_email_template('branch-modified.txt')
-        subscription, rationale = self._recipients.getReason(email)
-        branch_title = subscription.branch.title
-        if branch_title is None:
-            branch_title = ''
-        params = {
-            'delta': self._diffText(subscription.max_diff_lines),
-            'branch_title': branch_title,
-            'unsubscribe': '',
-            'reason': ('You are receiving this branch notification '
-                       'because you are subscribed to it.'),
-            }
-        # The only time that the subscription will be empty is if the owner
-        # of the branch is being notified.
-        if subscription is None:
-            params['rationale'] = (
-                "You are getting this email as you are the owner of "
-                "the branch and someone has edited the details.")
-        elif not subscription.subscriber.isTeam():
-            # Give the users a link to unsubscribe.
-            params['unsubscribe'] = (
-                "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(subscription.branch))
-        else:
-            # Don't give teams an option to unsubscribe.
-            pass
-        params['branch_url'] = canonical_url(subscription.branch)
-        return template % params
-
     def _diffText(self, max_diff):
+        if self.diff is None:
+            return ''
         diff_size = self.diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
@@ -271,6 +240,7 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
+        params ['delta'] = self._diffText(reason.max_diff_lines)
         return params
 
     def sendAll(self):
