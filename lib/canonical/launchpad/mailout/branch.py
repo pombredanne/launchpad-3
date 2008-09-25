@@ -208,7 +208,7 @@ class BranchMailer(BaseMailer):
         diff_size_to_email = dict(
             [(item, set()) for item in BranchSubscriptionDiffSize.items])
 
-        recipients = branch.getNotificationRecipients()
+        recipients = db_branch.getNotificationRecipients()
         interested_levels = (
             BranchSubscriptionNotificationLevel.DIFFSONLY,
             BranchSubscriptionNotificationLevel.FULL)
@@ -235,10 +235,10 @@ class BranchMailer(BaseMailer):
             else:
                 contents = "%s\n%s" % (message, diff)
             email_branch_modified_notifications(
-                branch, addresses, from_address, contents, recipients, subject)
+                db_branch, addresses, from_address, contents, recipients, subject)
 
-        return klass(subject, None, recipients, from_address, diff=diff,
-              message=message)
+        #return klass(subject, None, recipients, from_address, diff=diff,
+        #      message=contents)
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)

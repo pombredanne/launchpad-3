@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet,
     IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
-    send_branch_revision_notifications)
+    BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -328,10 +328,16 @@ class BranchMailer:
                 self.db_branch, self.email_from, message, '', None)
         else:
             for message, diff, subject in self.pending_emails:
-                BranchMailer.forRevision(self.db_branch, self.email_from,
-                    message, diff, subject).sendAll()
+                send_branch_revision_notifications(
+                    self.db_branch, self.email_from, message, diff, subject)
 
         self.trans_manager.commit()
+
+
+def send_branch_revision_notifications(db_branch, email_from, message, diff,
+                                       subject):
+        MailoutMailer.forRevision(
+            db_branch, email_from, message, diff, subject)
 
 
 class WarehouseBranchOpener(BranchOpener):
