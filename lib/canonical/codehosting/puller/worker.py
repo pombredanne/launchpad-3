@@ -306,6 +306,13 @@ class BranchOpener(object):
         """
         raise NotImplementedError(self.checkOneURL)
 
+    def getStackedOnURL(self, source_branch, destination_url):
+        """Return the stacked-on URL for the destination branch."""
+        stacked_on_url = get_stacked_on_url(source_branch)
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
+        return stacked_on_url
+
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
 
@@ -325,9 +332,8 @@ class BranchOpener(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        stacked_on_url = get_stacked_on_url(source_branch)
+        stacked_on_url = self.getStackedOnURL(source_branch, destination_url)
         if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
             try:
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
