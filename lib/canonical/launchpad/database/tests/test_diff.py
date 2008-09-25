@@ -12,8 +12,9 @@ from bzrlib.transport import get_transport
 from canonical.testing import LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 
-from canonical.codehosting.scanner.tests.test_bzrsync import FakeTransportServer
-from canonical.launchpad.database.diff import *
+from canonical.codehosting.scanner.tests.test_bzrsync import (
+    FakeTransportServer)
+from canonical.launchpad.database.diff import Diff, StaticDiff, StaticDiffJob
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
     IDiff, IStaticDiff, IStaticDiffJob, JobStatus,)
