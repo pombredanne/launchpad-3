@@ -3,19 +3,20 @@
 __metaclass__ = type
 
 import unittest
-import email
 import re
-from email.MIMEText import MIMEText
-import transaction
 from zope.testing.doctest import DocTestSuite
 from zope.testing.renormalizing import RENormalizing
 
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.mail import stub, simple_sendmail
 
 def test_simple_sendmail():
     r"""
     Send an email (faked by TestMailer - no actual email is sent)
+
+    >>> import email
+    >>> from email.MIMEText import MIMEText
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub, simple_sendmail
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'

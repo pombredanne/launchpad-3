@@ -219,9 +219,9 @@ def sendmail(message, to_addrs=None):
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
-    message['X-Generated-By'] = generated = Header('Launchpad (canonical.com)')
-    generated.append('; Revision %d' % (versioninfo.revno,))
-    generated.append('; Instance %s' % (config.name,))
+    message['X-Generated-By'] = gen = Header('Launchpad (canonical.com)')
+    gen.append('; Revision %d' % (versioninfo.revno,))
+    gen.append('; Instance %s' % (config.name,))
 
     # Add a shared secret header for pre-approval with Mailman.
     del message['X-Launchpad-Shared-Secret']
