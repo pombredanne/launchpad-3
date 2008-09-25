@@ -156,44 +156,56 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff=None, revision_body=False,
-                 branch_title=None):
+                 delta=None, message=None, diff=None, revision_body=False):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta)
         self.message = message
         self.diff = diff
         self.revision_body = revision_body
-        self.branch_title = branch_title
 
     @staticmethod
     def forBranchModified(branch, recipients, from_address, delta):
-        branch_title = branch.title
-        if branch_title is None:
-            branch_title = ''
-        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
+        subject = klass._branchSubject(branch)
         return BranchMailer(subject, 'branch-modified.txt', recipients,
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, message, diff,
-                    max_diff, recipients, subject):
+    def forRevision(klass, db_branch, from_address, message, diff, subject):
+        recipients = db_branch.getNotificationRecipients()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        recipient_dict = {}
+        for recipient in recipients:
+            subscription, rationale = recipients.getReason(recipient)
+            if subscription.notification_level in interested_levels:
+                subscriber_reason = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, rationale)
+                recipient_dict[recipient] = subscriber_reason
+        subject = klass._branchSubject(db_branch, subject)
+        return klass(subject, None, recipient_dict, from_address,
+              message=message, diff=diff, revision_body=True)
+
+    @staticmethod
+    def _branchSubject(db_branch, subject=None):
+        if subject is not None:
+            return subject
         branch_title = db_branch.title
         if branch_title is None:
             branch_title = ''
-        if subject is None:
-            subject = '[Branch %s] %s' % (db_branch.unique_name, branch_title)
-        return klass(subject, None, recipients, from_address,
-              message=message, diff=diff, revision_body=True,
-              branch_title=branch_title)
+        return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
     def _getBody(self, email):
         if not self.revision_body:
             return BaseMailer._getMailer(self, email)
         template = get_email_template('branch-modified.txt')
         subscription, rationale = self._recipients.getReason(email)
+        branch_title = subscription.branch.title
+        if branch_title is None:
+            branch_title = ''
         params = {
             'delta': self._diffText(subscription.max_diff_lines),
-            'branch_title': self.branch_title,
+            'branch_title': branch_title,
             'unsubscribe': '',
             'reason': ('You are receiving this branch notification '
                        'because you are subscribed to it.'),

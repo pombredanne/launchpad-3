@@ -325,39 +325,15 @@ class BranchMailer:
             message = ('First scan of the branch detected %s'
                        ' in the revision history of the branch.' %
                        revisions)
-            send_branch_revision_notifications(
+            mailer = MailoutMailer.forRevision(
                 self.db_branch, self.email_from, message, '', None)
+            mailer.sendAll()
         else:
             for message, diff, subject in self.pending_emails:
-                send_branch_revision_notifications(
+                mailer = MailoutMailer.forRevision(
                     self.db_branch, self.email_from, message, diff, subject)
-
+                mailer.sendAll()
         self.trans_manager.commit()
-
-
-def send_branch_revision_notifications(db_branch, email_from, message, diff,
-                                       subject):
-    diff_size_to_recipients = dict(
-        [(item, {}) for item in BranchSubscriptionDiffSize.items])
-
-    recipients = db_branch.getNotificationRecipients()
-    interested_levels = (
-        BranchSubscriptionNotificationLevel.DIFFSONLY,
-        BranchSubscriptionNotificationLevel.FULL)
-    for recipient in recipients:
-        subscription, rationale = recipients.getReason(recipient)
-        max_diff = subscription.max_diff_lines
-        if subscription.notification_level in interested_levels:
-            subscriber_reason = RecipientReason.forBranchSubscriber(
-                subscription, recipient, rationale)
-            diff_size_to_recipients[max_diff][recipient] = subscriber_reason
-
-    for max_diff, recipients in diff_size_to_recipients.items():
-        if len(recipients) == 0:
-            continue
-        MailoutMailer.forRevision(
-            db_branch, email_from, message, diff, max_diff,
-            recipients, subject).sendAll()
 
 
 class WarehouseBranchOpener(BranchOpener):
