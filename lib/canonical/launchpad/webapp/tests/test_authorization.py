@@ -176,6 +176,25 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         self.assertEqual(
             [('checkAuthenticated', principal)], checker_factory.calls)
 
+    def test_checkPermission_clearSecurityPolicyCache_resets_cache(self):
+        # Calling clearSecurityPolicyCache on the request clears the cache.
+        request = self.makeRequest()
+        policy = LaunchpadSecurityPolicy(request)
+        obj, permission, checker_factory = (
+            self.getObjectPermissionAndCheckerFactory())
+        # When we call checkPermission for the first time, the security policy
+        # calls checkUnauthenticated on the checker.
+        policy.checkPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated'], checker_factory.calls)
+        request.clearSecurityPolicyCache()
+        # After clearing the cache the policy calls checkUnauthenticated
+        # again.
+        policy.checkPermission(permission, obj)
+        self.assertEqual(
+            ['checkUnauthenticated', 'checkUnauthenticated'],
+            checker_factory.calls)
+
     def test_checkPermission_setPrincipal_resets_cache(self):
         # Setting the principal on the request clears the cache of results
         # (this is important during login).

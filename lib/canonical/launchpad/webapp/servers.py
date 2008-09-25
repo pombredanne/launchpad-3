@@ -445,9 +445,12 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         return BrowserFormNG(self.form)
 
     def setPrincipal(self, principal):
+        self.clearSecurityPolicyCache()
+        BrowserRequest.setPrincipal(self, principal)
+
+    def clearSecurityPolicyCache(self):
         if LAUNCHPAD_SECURITY_POLICY_CACHE_KEY in self.annotations:
             del self.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]
-        BrowserRequest.setPrincipal(self, principal)
 
 
 class BrowserFormNG:
