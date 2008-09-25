@@ -32,8 +32,8 @@ __all__ = [
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
     'LaunchpadZopelessLayer',
-    'LayerIsolationError',
     'LayerInvariantError',
+    'LayerIsolationError',
     'LibrarianLayer',
     'PageTestLayer',
     'TwistedAppServerLayer',
@@ -101,6 +101,7 @@ from canonical.testing.smtpcontrol import SMTPControl
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
+WAIT_INTERVAL = datetime.timedelta(seconds=120)
 
 
 class MockRootFolder:
@@ -907,9 +908,9 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        teh_googles = GoogleServiceTestSetup()
-        teh_googles.setUp()
-        atexit.register(teh_googles.tearDown)
+        google = GoogleServiceTestSetup()
+        google.setUp()
+        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
@@ -1272,7 +1273,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
                 event.set()
 
 
-class AppServerProcessController:
+class LayerProcessController:
     """Controller for starting and stopping subprocesses.
 
     Layers which need to start and stop a child process appserver or smtp
@@ -1329,9 +1330,18 @@ class AppServerProcessController:
     def stopAppServer(cls):
         """Kill the appserver and wait until it's exited."""
         if cls.appserver is not None:
-            if cls.appserver.poll() is None:
-                os.kill(cls.appserver.pid, signal.SIGTERM)
-                cls.appserver.wait()
+            # Unfortunately, Popen.wait() does not support a timeout, so poll
+            # for a little while, then SIGKILL the process if it refuses to
+            # exit.  The test runner will barf if we hang here for more than
+            # 900 seconds (15 minutes).
+            until = datetime.datetime.now() + WAIT_INTERVAL
+            kill_signal = signal.SIGTERM
+            while cls.appserver.poll() is None:
+                os.kill(cls.appserver.pid, kill_signal)
+                time.sleep(0.5)
+                if datetime.datetime.now() > until:
+                    kill_signal = signal.SIGKILL
+                    until = datetime.datetime.now() + WAIT_INTERVAL
             cls.appserver = None
 
     @classmethod
@@ -1416,14 +1426,14 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        AppServerProcessController.startSMTPServer()
-        AppServerProcessController.startAppServer()
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        AppServerProcessController.stopAppServer()
-        AppServerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1433,24 +1443,24 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        AppServerProcessController.postTestInvariants()
+        LayerProcessController.postTestInvariants()
 
 
 class ZopelessAppServerLayer(LaunchpadZopelessLayer):
-    """Layer for tests that run in the zopeless environment with an app server.
+    """Layer for tests that run in the zopeless environment with an appserver.
     """
 
     @classmethod
     @profiled
     def setUp(cls):
-        AppServerProcessController.startSMTPServer()
-        AppServerProcessController.startAppServer()
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        AppServerProcessController.stopAppServer()
-        AppServerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1460,7 +1470,7 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        AppServerProcessController.postTestInvariants()
+        LayerProcessController.postTestInvariants()
 
 
 class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
@@ -1470,14 +1480,14 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        AppServerProcessController.startSMTPServer()
-        AppServerProcessController.startAppServer()
+        LayerProcessController.startSMTPServer()
+        LayerProcessController.startAppServer()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        AppServerProcessController.stopAppServer()
-        AppServerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
 
     @classmethod
     @profiled
@@ -1487,4 +1497,4 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        AppServerProcessController.postTestInvariants()
+        LayerProcessController.postTestInvariants()

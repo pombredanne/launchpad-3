@@ -17,21 +17,21 @@ Three mailing lists are created.
 Now we'll restart Mailman with a batch size of 1.
 
     >>> from canonical.launchpad.mailman import runmailman
-    >>> from canonical.testing.layers import AppServerProcessController
+    >>> from canonical.testing.layers import LayerProcessController
     >>> runmailman.stop_mailman(
-    ...     quiet=True, config=AppServerProcessController.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
 
-    >>> AppServerProcessController.appserver_config.push('batching test',
+    >>> LayerProcessController.appserver_config.push('batching test',
     ...     """
     ...     [mailman]
     ...     subscription_batch_size: 1
     ...     """)
-    >>> AppServerProcessController.appserver_config.validate()
+    >>> LayerProcessController.appserver_config.validate()
     True
 
     >>> runmailman.start_mailman(
-    ...     quiet=True, config=AppServerProcessController.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_restart()
 
 Anne now subscribes to all three mailing lists.
@@ -59,12 +59,12 @@ And indeed, she is now a member of all three mailing lists.
 == Clean up ==
 
     >>> runmailman.stop_mailman(
-    ...     quiet=True, config=AppServerProcessController.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
 
-    >>> ignore = AppServerProcessController.appserver_config.pop(
+    >>> ignore = LayerProcessController.appserver_config.pop(
     ...     'batching test')
 
     >>> runmailman.start_mailman(
-    ...     quiet=True, config=AppServerProcessController.appserver_config)
+    ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_restart()

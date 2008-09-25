@@ -19,7 +19,7 @@ from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
     tearDown as tearDownBrowser)
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import AppServerProcessController
+from canonical.testing.layers import LayerProcessController
 
 
 HERE = os.path.dirname(__file__)
@@ -29,8 +29,8 @@ def setUp(testobj):
     """Set up for all integration doctests."""
     # We'll always need an smtp server.
     setUpBrowser(testobj)
-    AppServerProcessController.smtp_controller.reset()
-    testobj.globs['smtpd'] = AppServerProcessController.smtp_controller
+    LayerProcessController.smtp_controller.reset()
+    testobj.globs['smtpd'] = LayerProcessController.smtp_controller
     testobj.globs['mhonarc_watcher'] = MailmanLayer.mhonarc_watcher
     testobj.globs['smtpd_watcher'] = MailmanLayer.smtpd_watcher
     testobj.globs['vette_watcher'] = MailmanLayer.vette_watcher
@@ -42,7 +42,7 @@ def setUp(testobj):
 def tearDown(testobj):
     """Common tear down for the integration tests."""
     tearDownBrowser(testobj)
-    AppServerProcessController.smtp_controller.reset()
+    LayerProcessController.smtp_controller.reset()
     # Clear out any qfiles hanging around from a previous run.  Do this first
     # to prevent stale list references.
     for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):

@@ -20,15 +20,15 @@ from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
 from canonical.pidfile import pidfile_path
+from canonical.lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-from canonical.launchpad.mailman.config import configure_smtp
 from canonical.testing.layers import (
-    AppServerLayer, AppServerProcessController, BaseLayer, DatabaseLayer,
-    FunctionalLayer, LaunchpadFunctionalLayer, LaunchpadLayer,
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, LayerInvariantError,
-    LayerIsolationError, LibrarianLayer, ZopelessLayer)
+    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
+    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
+    LayerProcessController, LibrarianLayer, ZopelessLayer)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -328,7 +328,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
         self.assertEqual(user, 'librarian')
 
 
-class AppServerProcessControllerInvariantsTestCase(BaseTestCase):
+class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     layer = AppServerLayer
 
     want_component_architecture = True
@@ -339,7 +339,7 @@ class AppServerProcessControllerInvariantsTestCase(BaseTestCase):
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.
-        mainsite = AppServerProcessController.appserver_config.vhost.mainsite
+        mainsite = LayerProcessController.appserver_config.vhost.mainsite
         home_page = urlopen(mainsite.rooturl).read()
         self.failUnless(
             'What is Launchpad?' in home_page,
@@ -348,58 +348,58 @@ class AppServerProcessControllerInvariantsTestCase(BaseTestCase):
     def testSMTPServerIsAvailable(self):
         # Test that the SMTP server is up and running.
         smtpd = smtplib.SMTP()
-        host, port = configure_smtp(config.mailman.smtp)
+        host, port = as_host_port(config.mailman.smtp)
         code, message = smtpd.connect(host, port)
         self.assertEqual(code, 220)
 
     def testStartingAppServerTwiceRaisesInvariantError(self):
         # Starting the appserver twice should raise an exception.
         self.assertRaises(LayerInvariantError,
-                          AppServerProcessController.startAppServer)
+                          LayerProcessController.startAppServer)
 
     def testStartingSMTPServerTwiceRaisesInvariantError(self):
         # Starting the SMTP server twice should raise an exception.
         self.assertRaises(LayerInvariantError,
-                          AppServerProcessController.startSMTPServer)
+                          LayerProcessController.startSMTPServer)
 
 
-class AppServerProcessControllerTestCase(unittest.TestCase):
-    """Tests for the `AppServerProcessController`."""
+class LayerProcessControllerTestCase(unittest.TestCase):
+    """Tests for the `LayerProcessController`."""
     # We need the database to be set up, no more.
     layer = DatabaseLayer
 
     def tearDown(self):
         # Stop both servers.  It's okay if they aren't running.
-        AppServerProcessController.stopSMTPServer()
-        AppServerProcessController.stopAppServer()
+        LayerProcessController.stopSMTPServer()
+        LayerProcessController.stopAppServer()
 
     def test_stopAppServer(self):
         # Test that stopping the app server kills the process and remove the
         # PID file.
-        AppServerProcessController.startAppServer()
-        pid = AppServerProcessController.appserver.pid
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
         pid_file = pidfile_path('launchpad',
-                                AppServerProcessController.appserver_config)
-        AppServerProcessController.stopAppServer()
+                                LayerProcessController.appserver_config)
+        LayerProcessController.stopAppServer()
         self.assertRaises(OSError, os.kill, pid, 0)
         self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
-        self.failUnless(AppServerProcessController.appserver is None,
+        self.failUnless(LayerProcessController.appserver is None,
                         "appserver class attribute wasn't reset")
 
     def test_postTestInvariants(self):
         # A LayerIsolationError should be raised if the app server dies in the
         # middle of a test.
-        AppServerProcessController.startAppServer()
-        pid = AppServerProcessController.appserver.pid
+        LayerProcessController.startAppServer()
+        pid = LayerProcessController.appserver.pid
         os.kill(pid, signal.SIGTERM)
-        AppServerProcessController.appserver.wait()
+        LayerProcessController.appserver.wait()
         self.assertRaises(LayerIsolationError,
-                          AppServerProcessController.postTestInvariants)
+                          LayerProcessController.postTestInvariants)
 
     def test_postTestInvariants_dbIsReset(self):
         # The database should be reset by the test invariants.
-        AppServerProcessController.startAppServer()
-        AppServerProcessController.postTestInvariants()
+        LayerProcessController.startAppServer()
+        LayerProcessController.postTestInvariants()
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
