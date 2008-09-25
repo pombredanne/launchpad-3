@@ -1219,7 +1219,9 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusNEW          {color: black;}
 
 .voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
 .voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
 .voteABSTAIN       {color: grey;}
 .votePENDING       {color: #f60;}
 
@@ -1237,7 +1239,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
 
-.greylink a:link {
+.greylink a:link, .greylink a:visited {
   color: grey;
 }
 

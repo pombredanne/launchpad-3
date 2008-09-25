@@ -360,6 +360,8 @@ class DecoratedCodeReviewVoteReference:
         CodeReviewVote.DISAPPROVE: _('Disapproved'),
         CodeReviewVote.APPROVE: _('Approved'),
         CodeReviewVote.ABSTAIN: _('Abstained'),
+        CodeReviewVote.NEEDS_FIXING: CodeReviewVote.NEEDS_FIXING.title,
+        CodeReviewVote.RESUBMIT: CodeReviewVote.RESUBMIT.title,
         }
 
     def __init__(self, context, user, users_vote):
@@ -432,22 +434,15 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
                 for vote in self.context.votes]
 
-    def _getOrderedReviews(self, actual_vote):
-        """Return votes with the specified vote ordered newest first."""
-        reviews = [review for review in self.reviews
-                   if (review.comment is not None and
-                       review.comment.vote == actual_vote)]
-        return sorted(reviews, key=operator.attrgetter('date_of_comment'),
-                      reverse=True)
-
     @cachedproperty
     def current_reviews(self):
         """The current votes ordered by vote then date."""
         # We want the reviews in a specific order.
         # Disapprovals first, then approvals, then abstentions.
-        return (self._getOrderedReviews(CodeReviewVote.DISAPPROVE) +
-                self._getOrderedReviews(CodeReviewVote.APPROVE) +
-                self._getOrderedReviews(CodeReviewVote.ABSTAIN))
+        reviews = [review for review in self.reviews
+                   if review.comment is not None]
+        return sorted(reviews, key=operator.attrgetter('date_of_comment'),
+                      reverse=True)
 
     @cachedproperty
     def requested_reviews(self):
@@ -465,7 +460,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # The owner of the source branch should not get a review link.
         return (self.context.isPersonValidReviewer(self.user) and
                 self.user not in reviewers and
-                self.user != self.context.source_branch.owner and
                 self.context.isMergable())
 
 
@@ -1087,9 +1081,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         # If the user is not in the review team, nor in any team that has been
         # reqeuested to review and doesn't already have a vote reference, then
         # error out as the user must have URL hacked to get here.
+
+        # TODO: move to db class to expose for API
+
         if self.user is None:
-            valid_voter = False
-        elif self.user == self.context.source_branch.owner:
             valid_voter = False
         elif self.context.isPersonValidReviewer(self.user):
             valid_voter = True

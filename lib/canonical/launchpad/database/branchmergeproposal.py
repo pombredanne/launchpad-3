@@ -571,9 +571,13 @@ class BranchMergeProposalGetter:
         # First get the count of comments.
         query = """
             SELECT bmp.id, count(crm.*)
-            FROM BranchMergeProposal bmp, CodeReviewMessage crm
+            FROM BranchMergeProposal bmp, CodeReviewMessage crm,
+                 Message m, MessageChunk mc
             WHERE bmp.id IN %s
               AND bmp.id = crm.branch_merge_proposal
+              AND crm.message = m.id
+              AND mc.message = m.id
+              AND mc.content is not NULL
             GROUP BY bmp.id
             """ % ids
         comment_counts = dict(store.execute(query))
