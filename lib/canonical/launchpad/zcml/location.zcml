@@ -7,8 +7,12 @@
   <!-- Location -->
   <content class="canonical.launchpad.database.PersonLocation">
     <require
+      permission="zope.Public"
+      attributes="visible" />
+    <require
       permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.IPersonLocation" />
+      attributes="latitude longitude time_zone last_modified_by
+                  date_last_modified person" />
   </content>
 
 </configure>
