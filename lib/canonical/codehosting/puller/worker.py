@@ -32,7 +32,7 @@ __all__ = [
     'BadUrlFile',
     'BadUrlLaunchpad',
     'BadUrlSsh',
-    'BranchOpener',
+    'BranchMirrorer',
     'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
@@ -207,8 +207,8 @@ class BranchPolicy:
         raise NotImplementedError(self.checkOneURL)
 
 
-class BranchOpener(object):
-    """A `BranchOpener` opens branches with an eye to safety."""
+class BranchMirrorer(object):
+    """A `BranchMirrorer` opens branches with an eye to safety."""
 
     def __init__(self, policy):
         """Construct a branch opener with 'policy'.
@@ -391,7 +391,7 @@ class HostedBranchPolicy(BranchPolicy):
     """
 
     def shouldFollowReferences(self):
-        """See `BranchOpener.shouldFollowReferences`.
+        """See `BranchPolicy.shouldFollowReferences`.
 
         We do not traverse references for HOSTED branches because that may
         cause us to connect to remote locations, which we do not allow because
@@ -400,7 +400,7 @@ class HostedBranchPolicy(BranchPolicy):
         return False
 
     def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
+        """See `BranchPolicy.checkOneURL`.
 
         If the URL we are mirroring from is anything but a
         lp-hosted:///~user/project/branch URL, something has gone badly wrong,
@@ -422,7 +422,7 @@ class MirroredBranchPolicy(BranchPolicy):
     """
 
     def shouldFollowReferences(self):
-        """See `BranchOpener.shouldFollowReferences`.
+        """See `BranchPolicy.shouldFollowReferences`.
 
         We traverse branch references for MIRRORED branches because they
         provide a useful redirection mechanism and we want to be consistent
@@ -431,7 +431,7 @@ class MirroredBranchPolicy(BranchPolicy):
         return True
 
     def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
+        """See `BranchPolicy.checkOneURL`.
 
         We refuse to mirror from Launchpad or a ssh-like or file URL.
         """
@@ -458,7 +458,7 @@ class ImportedBranchPolicy(BranchPolicy):
     """
 
     def shouldFollowReferences(self):
-        """See `BranchOpener.shouldFollowReferences`.
+        """See `BranchPolicy.shouldFollowReferences`.
 
         We do not traverse references for IMPORTED branches because the
         code-import system should never produce branch references.
@@ -466,7 +466,7 @@ class ImportedBranchPolicy(BranchPolicy):
         return False
 
     def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
+        """See `BranchPolicy.checkOneURL`.
 
         If the URL we are mirroring from does not start how we expect the pull
         URLs of import branches to start, something has gone badly wrong, so
@@ -495,10 +495,10 @@ class PullerWorker:
         else:
             raise AssertionError(
                 "Unexpected branch type: %r" % branch_type)
-        return BranchOpener(policy)
+        return BranchMirrorer(policy)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 default_stacked_on_branch, protocol, branch_opener=None,
+                 default_stacked_on_branch, protocol, branch_mirrorer=None,
                  oops_prefix=None):
         """Construct a `PullerWorker`.
 
@@ -513,7 +513,7 @@ class PullerWorker:
             stacked-on branch for the product of the branch we are mirroring.
             None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_opener: An instance of `BranchOpener`.  If not passed,
+        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not passed,
             one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
@@ -523,9 +523,9 @@ class PullerWorker:
         self.branch_id = branch_id
         self.unique_name = unique_name
         self.branch_type = branch_type
-        if branch_opener is None:
-            branch_opener = self._checkerForBranchType(branch_type)
-        self.branch_opener = branch_opener
+        if branch_mirrorer is None:
+            branch_mirrorer = self._checkerForBranchType(branch_type)
+        self.branch_mirrorer = branch_mirrorer
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
@@ -539,7 +539,7 @@ class PullerWorker:
         :param destination_url: The place to mirror it to. Must be writable.
         :return: The Bazaar destination branch.
         """
-        branch, up_to_date = self.branch_opener.openDestinationBranch(
+        branch, up_to_date = self.branch_mirrorer.openDestinationBranch(
             source_branch, destination_url)
         if up_to_date:
             return branch
@@ -552,7 +552,7 @@ class PullerWorker:
         if branch.get_physical_lock_status():
             branch.break_lock()
 
-        self.branch_opener.updateBranch(source_branch, branch)
+        self.branch_mirrorer.updateBranch(source_branch, branch)
         return branch
 
     def _record_oops(self, message=None):
@@ -586,7 +586,7 @@ class PullerWorker:
         server = get_puller_server()
         server.setUp()
         try:
-            source_branch = self.branch_opener.open(self.source)
+            source_branch = self.branch_mirrorer.open(self.source)
             stacked_on_url = get_stacked_on_url(source_branch)
             if stacked_on_url is not None:
                 self.protocol.setStackedOn(stacked_on_url)

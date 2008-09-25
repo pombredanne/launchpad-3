@@ -15,7 +15,7 @@ from bzrlib.errors import (
     NotBranchError)
 
 from canonical.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
     BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
 from canonical.launchpad.interfaces import BranchType
@@ -43,7 +43,7 @@ class TestErrorCatching(unittest.TestCase):
     `PullerWorker.mirror`.
     """
 
-    class CustomErrorOpener(BranchOpener):
+    class CustomErrorOpener(BranchMirrorer):
         def __init__(self, exc):
             self.exc = exc
         def open(self, url):
@@ -55,7 +55,7 @@ class TestErrorCatching(unittest.TestCase):
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=branch_type,
             default_stacked_on_branch=None,
-            protocol=StubbedPullerWorkerProtocol(), branch_opener=opener,
+            protocol=StubbedPullerWorkerProtocol(), branch_mirrorer=opener,
             oops_prefix='TOKEN')
         return worker
 

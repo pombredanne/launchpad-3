@@ -13,7 +13,7 @@ from bzrlib.urlutils import local_path_from_url
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
-    BadUrl, BranchOpener, BranchPolicy, PullerWorker, PullerWorkerProtocol)
+    BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -76,14 +76,15 @@ class PullerWorkerMixin:
         if oops_prefix is None:
             oops_prefix = ''
         if branch_type is None:
-            opener = BranchOpener(AcceptAnythingPolicy())
+            opener = BranchMirrorer(AcceptAnythingPolicy())
         else:
             opener = None
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type,
             default_stacked_on_branch=default_stacked_on_branch,
-            protocol=protocol, branch_opener=opener, oops_prefix=oops_prefix)
+            protocol=protocol, branch_mirrorer=opener,
+            oops_prefix=oops_prefix)
 
 
 class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
