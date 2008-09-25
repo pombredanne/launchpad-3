@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat, 
     BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
-    BranchMailer as MailoutMailer)
+    BranchMailer as MailoutMailer, RecipientReason)
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -337,25 +337,27 @@ class BranchMailer:
 
 def send_branch_revision_notifications(db_branch, email_from, message, diff,
                                        subject):
-    diff_size_to_email = dict(
-        [(item, set()) for item in BranchSubscriptionDiffSize.items])
+    diff_size_to_recipients = dict(
+        [(item, {}) for item in BranchSubscriptionDiffSize.items])
 
     recipients = db_branch.getNotificationRecipients()
     interested_levels = (
         BranchSubscriptionNotificationLevel.DIFFSONLY,
         BranchSubscriptionNotificationLevel.FULL)
-    for email_address in recipients.getEmails():
-        subscription, ignored = recipients.getReason(email_address)
+    for recipient in recipients:
+        subscription, rationale = recipients.getReason(recipient)
+        max_diff = subscription.max_diff_lines
         if subscription.notification_level in interested_levels:
-            diff_size_to_email[subscription.max_diff_lines].add(email_address)
+            subscriber_reason = RecipientReason.forBranchSubscriber(
+                subscription, recipient, rationale)
+            diff_size_to_recipients[max_diff][recipient] = subscriber_reason
 
-    for max_diff in diff_size_to_email:
-        addresses = diff_size_to_email[max_diff]
-        if len(addresses) == 0:
+    for max_diff, recipients in diff_size_to_recipients.items():
+        if len(recipients) == 0:
             continue
         MailoutMailer.forRevision(
-            db_branch, addresses, email_from, message, diff, max_diff,
-            recipients, subject)
+            db_branch, email_from, message, diff, max_diff,
+            recipients, subject).sendAll()
 
 
 class WarehouseBranchOpener(BranchOpener):

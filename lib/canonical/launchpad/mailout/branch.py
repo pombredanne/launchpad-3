@@ -31,40 +31,12 @@ def email_branch_modified_notifications(branch, branch_title, to_addresses,
     if branch.product is not None:
         headers['X-Launchpad-Project'] = branch.product.name
 
-    template = get_email_template('branch-modified.txt')
     for address in to_addresses:
-        params = {
-            'delta': contents,
-            'branch_title': branch_title,
-            'branch_url': canonical_url(branch),
-            'unsubscribe': '',
-            'reason': ('You are receiving this branch notification '
-                       'because you are subscribed to it.'),
-            }
-        subscription, rationale = recipients.getReason(address)
-        # The only time that the subscription will be empty is if the owner
-        # of the branch is being notified.
-        if subscription is None:
-            params['rationale'] = (
-                "You are getting this email as you are the owner of "
-                "the branch and someone has edited the details.")
-        elif not subscription.person.isTeam():
-            # Give the users a link to unsubscribe.
-            params['unsubscribe'] = (
-                "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(branch))
-        else:
-            # Don't give teams an option to unsubscribe.
-            pass
+
+
         headers['X-Launchpad-Message-Rationale'] = rationale
 
-        body = template % params
         simple_sendmail(from_address, address, subject, body, headers)
-
-
-def send_branch_revision_notifications(branch, from_address, message, diff,
-                                       subject):
-    """Notify subscribers that a revision has been added (or removed)."""
 
 
 def send_branch_modified_notifications(branch, event):
@@ -182,11 +154,14 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff=None):
-        BaseMailer.__init__(subject, template_name, recipients, from_address,
-                            delta)
+                 delta=None, message=None, diff=None, revision_body=False,
+                 branch_title=None):
+        BaseMailer.__init__(self, subject, template_name, recipients,
+                            from_address, delta)
         self.message = message
         self.diff = diff
+        self.revision_body = revision_body
+        self.branch_title = branch_title
 
     @staticmethod
     def forBranchModified(branch, recipients, from_address, delta):
@@ -198,7 +173,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, addresses, from_address, message, diff,
+    def forRevision(klass, db_branch, from_address, message, diff,
                     max_diff, recipients, subject):
         diff_size = diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
@@ -219,13 +194,37 @@ class BranchMailer(BaseMailer):
             branch_title = ''
         if subject is None:
             subject = '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+        return klass(subject, None, recipients, from_address,
+              message=contents, revision_body=True, branch_title=branch_title)
 
-        email_branch_modified_notifications(
-            db_branch, branch_title, addresses, from_address, contents,
-            recipients, subject)
-
-        #return klass(subject, None, recipients, from_address, diff=diff,
-        #      message=contents)
+    def _getBody(self, email):
+        if not self.revision_body:
+            return BaseMailer._getMailer(self, email)
+        template = get_email_template('branch-modified.txt')
+        params = {
+            'delta': self.message,
+            'branch_title': self.branch_title,
+            'unsubscribe': '',
+            'reason': ('You are receiving this branch notification '
+                       'because you are subscribed to it.'),
+            }
+        subscription, rationale = self._recipients.getReason(email)
+        # The only time that the subscription will be empty is if the owner
+        # of the branch is being notified.
+        if subscription is None:
+            params['rationale'] = (
+                "You are getting this email as you are the owner of "
+                "the branch and someone has edited the details.")
+        elif not subscription.subscriber.isTeam():
+            # Give the users a link to unsubscribe.
+            params['unsubscribe'] = (
+                "\nTo unsubscribe from this branch go to "
+                "%s/+edit-subscription." % canonical_url(subscription.branch))
+        else:
+            # Don't give teams an option to unsubscribe.
+            pass
+        params['branch_url'] = canonical_url(subscription.branch)
+        return template % params
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
