@@ -98,7 +98,8 @@ class BMPMailer(BaseMailer):
 
     def sendAll(self):
         for job in self.queue():
-            job.sendMail()
+            job.run()
+            job.destroySelf()
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
 
