@@ -381,12 +381,6 @@ class BranchOpener(object):
         dest_branch.pull(source_branch, overwrite=True)
 
 
-class HostedBranchOpener(BranchOpener):
-
-    def __init__(self):
-        super(HostedBranchOpener, self).__init__(HostedBranchPolicy())
-
-
 class HostedBranchPolicy(BranchPolicy):
     """Mirroring policy for HOSTED branches.
 
@@ -416,12 +410,6 @@ class HostedBranchPolicy(BranchPolicy):
         if uri.scheme != 'lp-hosted':
             raise AssertionError(
                 "Non-hosted url %r for hosted branch." % url)
-
-
-class MirroredBranchOpener(BranchOpener):
-
-    def __init__(self):
-        super(MirroredBranchOpener, self).__init__(MirroredBranchPolicy())
 
 
 class MirroredBranchPolicy(BranchPolicy):
@@ -458,12 +446,6 @@ class MirroredBranchPolicy(BranchPolicy):
             raise BadUrlSsh(url)
         elif uri.scheme not in ['http', 'https']:
             raise BadUrlScheme(uri.scheme, url)
-
-
-class ImportedBranchOpener(BranchOpener):
-
-    def __init__(self):
-        super(ImportedBranchOpener, self).__init__(ImportedBranchPolicy())
 
 
 class ImportedBranchPolicy(BranchPolicy):
@@ -505,14 +487,15 @@ class PullerWorker:
     def _checkerForBranchType(self, branch_type):
         """Return an instance of an appropriate subclass of `URLChecker`."""
         if branch_type == BranchType.HOSTED:
-            return HostedBranchOpener()
+            policy = HostedBranchPolicy()
         elif branch_type == BranchType.MIRRORED:
-            return MirroredBranchOpener()
+            policy = MirroredBranchPolicy()
         elif branch_type == BranchType.IMPORTED:
-            return ImportedBranchOpener()
+            policy = ImportedBranchPolicy()
         else:
             raise AssertionError(
                 "Unexpected branch type: %r" % branch_type)
+        return BranchOpener(policy)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  default_stacked_on_branch, protocol, branch_opener=None,
