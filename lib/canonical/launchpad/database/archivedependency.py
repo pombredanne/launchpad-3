@@ -13,8 +13,11 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IArchiveDependency
+from canonical.launchpad.interfaces.archivedependency import (
+    IArchiveDependency)
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 
 
 class ArchiveDependency(SQLBase):
@@ -34,3 +37,8 @@ class ArchiveDependency(SQLBase):
     dependency = ForeignKey(
         foreignKey='Archive', dbName='dependency', notNull=True)
 
+    pocket = EnumCol(
+        dbName='pocket', notNull=True, schema=PackagePublishingPocket)
+
+    component = ForeignKey(
+        foreignKey='Component', dbName='component', notNull=True)
