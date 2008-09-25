@@ -438,6 +438,17 @@ class MirroredBranchPolicy(BranchPolicy):
      - only open non-Launchpad http: and https: URLs.
     """
 
+    def __init__(self, stacked_on_url=None):
+        self.stacked_on_url = stacked_on_url
+
+    def getStackedOnURL(self, source_branch, destination_url):
+        """See `BranchPolicy.getStackedOnURL`.
+
+        Mirrored branches are stacked on the default stacked-on branch of
+        their product.
+        """
+        return self.stacked_on_url
+
     def shouldFollowReferences(self):
         """See `BranchPolicy.shouldFollowReferences`.
 
