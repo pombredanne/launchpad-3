@@ -19,13 +19,6 @@ from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
 
 
-class AcceptAnythingOpener(BranchOpener):
-    """A specialization of `BranchOpener` that opens any branch."""
-
-    def __init__(self):
-        super(AcceptAnythingOpener, self).__init__(AcceptAnythingPolicy())
-
-
 class AcceptAnythingPolicy(BranchPolicy):
 
     def checkOneURL(self, url):
@@ -53,7 +46,7 @@ class PullerWorkerMixin:
         if oops_prefix is None:
             oops_prefix = ''
         if branch_type is None:
-            opener = AcceptAnythingOpener()
+            opener = BranchOpener(AcceptAnythingPolicy())
         else:
             opener = None
         return PullerWorker(
