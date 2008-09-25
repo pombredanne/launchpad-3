@@ -114,8 +114,8 @@ class StaticDiffJob(SQLBase):
             bzr_branch, self.from_revision_spec)
         to_revision_id=self._get_revision_id(
             bzr_branch, self.to_revision_spec)
-        static_diff = StaticDiff.acquire(from_revision_id, to_revision_id,
-                                         bzr_branch.repository)
+        static_diff = StaticDiff.acquire(
+            from_revision_id, to_revision_id, bzr_branch.repository)
         for code_mail_job in self.dependant_code_mail_jobs:
             code_mail_job.static_diff = static_diff
         self.job.complete()
