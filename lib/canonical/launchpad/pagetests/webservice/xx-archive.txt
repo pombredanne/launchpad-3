@@ -16,6 +16,7 @@ This works for PPAs:
     owner_link: http://.../~cprov
     resource_type_link: http://.../#archive
     self_link: http://.../~cprov/+archive
+    title: PPA for Celso Providelo
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
     >>> print main['self_link']
@@ -52,6 +53,7 @@ The archive has the following attributes:
     owner_link: http://.../~ubuntu-team
     resource_type_link: http://.../#archive
     self_link: http://.../ubuntutest/+archive/primary
+    title: Primary Archive for Ubuntu Test
 
 A distribution can also provide a list of all its archives:
 

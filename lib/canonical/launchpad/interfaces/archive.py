@@ -128,7 +128,8 @@ class IArchive(IHasOwner):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
-    title = Attribute("Archive Title.")
+    title = exported(
+        Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
