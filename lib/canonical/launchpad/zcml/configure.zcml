@@ -163,6 +163,7 @@
     <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
+    <include file="voucher.zcml" />
 
     <include file="fields.zcml" />
     <include file="widgets.zcml" />

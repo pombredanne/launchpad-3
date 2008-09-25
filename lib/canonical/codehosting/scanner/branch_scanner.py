@@ -1,7 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
-# Author: Gustavo Niemeyer <gustavo@niemeyer.net>
-#         David Allouche <david@allouche.net>
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 """Internal helpers for cronscripts/branches-scanner.py"""
 
@@ -13,12 +11,11 @@ __all__ = ['BranchScanner']
 import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
-from bzrlib.transport import get_transport
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
+from canonical.codehosting.branchfs import get_scanner_server
 from canonical.codehosting.scanner.bzrsync import BzrSync
-from canonical.codehosting.transport import get_scanner_server
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 

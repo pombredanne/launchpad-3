@@ -12,7 +12,7 @@ import signal
 import subprocess
 
 from canonical.config import config
-from canonical.pidfile import make_pidfile, pidfile_path
+from canonical.lazr.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
@@ -173,8 +173,6 @@ SERVICES = {
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
-    'authserver': TacFile('authserver', 'daemons/authserver.tac',
-                          config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
