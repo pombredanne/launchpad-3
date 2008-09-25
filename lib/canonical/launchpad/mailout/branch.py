@@ -247,7 +247,8 @@ class BranchMailer(BaseMailer):
 
     def sendAll(self):
         for job in self.queue():
-            job.sendMail()
+            job.run()
+            job.destroySelf()
 
     def generateEmail(self, subscriber):
         """Rather roundabout.  Best not to use..."""
