@@ -12,11 +12,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ICodeMailJobSource)
 from canonical.launchpad.mail import (get_msgid, simple_sendmail,
     format_address)
-from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -66,8 +65,9 @@ def send_branch_modified_notifications(branch, event):
             actual_recipients[recipient] = RecipientReason.forBranchOwner(
                 branch, recipient)
         else:
-            actual_recipients[recipient] = RecipientReason.forBranchSubscriber(
-                subscription, recipient, rationale)
+            actual_recipients[recipient] = \
+                RecipientReason.forBranchSubscriber(
+                    subscription, recipient, rationale)
     from_address = format_address(
         event.user.displayname, event.user.preferredemail.email)
     mailer = BranchMailer.forBranchModified(branch, actual_recipients,

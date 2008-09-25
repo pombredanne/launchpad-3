@@ -12,9 +12,9 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Object, Choice, Int, Text, TextLine)
+    Object, Int, Text, TextLine)
 from zope.interface import (
-    Interface, Attribute)
+    Interface)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.job import IJob

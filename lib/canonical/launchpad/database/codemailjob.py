@@ -18,7 +18,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad import _
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
     ICodeMailJob, ICodeMailJobSource)

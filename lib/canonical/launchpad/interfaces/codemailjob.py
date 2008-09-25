@@ -38,5 +38,7 @@ class ICodeMailJob(Interface):
 
 class ICodeMailJobSource(Interface):
 
-    def create():
+    def create(self, from_address, reply_to_address, to_address, rationale,
+               branch_url, branch_project_name, subject, body, footer,
+               message_id, in_reply_to):
         """Create a CodeMailJob."""

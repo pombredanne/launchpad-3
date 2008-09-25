@@ -11,7 +11,6 @@ from canonical.testing import LaunchpadFunctionalLayer
 import pytz
 
 from canonical.launchpad.interfaces import ICodeMailJob, JobStatus
-from canonical.launchpad.database import CodeMailJob
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.testing import verifyObject
