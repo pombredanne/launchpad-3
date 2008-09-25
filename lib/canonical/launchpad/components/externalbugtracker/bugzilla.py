@@ -645,10 +645,10 @@ class BugzillaLPPlugin(Bugzilla):
         # Extract the Launchpad bug ID and return it. Return None if
         # there isn't one or it's set to an empty string.
         launchpad_bug_id = internals.get('launchpad_id', None)
-        if launchpad_bug_id is None or launchpad_bug_id == '':
-            return None
-        else:
-            return launchpad_bug_id
+        if launchpad_bug_id == '':
+            launchpad_bug_id = None
+
+        return launchpad_bug_id
 
     @needs_authentication
     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
