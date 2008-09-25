@@ -20,18 +20,13 @@ from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
 
-def email_branch_modified_notifications(branch, to_addresses,
+def email_branch_modified_notifications(branch, branch_title, to_addresses,
                                         from_address, contents,
                                         recipients, subject=None):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
     """
-    branch_title = branch.title
-    if branch_title is None:
-        branch_title = ''
-    if subject is None:
-        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
     if branch.product is not None:
         headers['X-Launchpad-Project'] = branch.product.name
@@ -203,39 +198,31 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, message, diff, subject):
+    def forRevision(klass, db_branch, addresses, from_address, message, diff,
+                    max_diff, recipients, subject):
         diff_size = diff.count('\n') + 1
-        diff_size_to_email = dict(
-            [(item, set()) for item in BranchSubscriptionDiffSize.items])
-
-        recipients = db_branch.getNotificationRecipients()
-        interested_levels = (
-            BranchSubscriptionNotificationLevel.DIFFSONLY,
-            BranchSubscriptionNotificationLevel.FULL)
-        for email_address in recipients.getEmails():
-            subscription, ignored = recipients.getReason(email_address)
-            if subscription.notification_level in interested_levels:
-                diff_size_to_email[subscription.max_diff_lines].add(email_address)
-
-        for max_diff in diff_size_to_email:
-            addresses = diff_size_to_email[max_diff]
-            if len(addresses) == 0:
-                continue
-            if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-                if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                    contents = message
-                elif diff_size > max_diff.value:
-                    diff_msg = (
-                        'The size of the diff (%d lines) is larger than your '
-                        'specified limit of %d lines' % (
-                        diff_size, max_diff.value))
-                    contents = "%s\n%s" % (message, diff_msg)
-                else:
-                    contents = "%s\n%s" % (message, diff)
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = message
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    'The size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = "%s\n%s" % (message, diff_msg)
             else:
                 contents = "%s\n%s" % (message, diff)
-            email_branch_modified_notifications(
-                db_branch, addresses, from_address, contents, recipients, subject)
+        else:
+            contents = "%s\n%s" % (message, diff)
+        branch_title = db_branch.title
+        if branch_title is None:
+            branch_title = ''
+        if subject is None:
+            subject = '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+
+        email_branch_modified_notifications(
+            db_branch, branch_title, addresses, from_address, contents,
+            recipients, subject)
 
         #return klass(subject, None, recipients, from_address, diff=diff,
         #      message=contents)

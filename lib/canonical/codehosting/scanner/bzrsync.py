@@ -28,7 +28,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
     ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet,
-    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat)
+    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat, 
+    BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
     BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
@@ -336,8 +337,25 @@ class BranchMailer:
 
 def send_branch_revision_notifications(db_branch, email_from, message, diff,
                                        subject):
+    diff_size_to_email = dict(
+        [(item, set()) for item in BranchSubscriptionDiffSize.items])
+
+    recipients = db_branch.getNotificationRecipients()
+    interested_levels = (
+        BranchSubscriptionNotificationLevel.DIFFSONLY,
+        BranchSubscriptionNotificationLevel.FULL)
+    for email_address in recipients.getEmails():
+        subscription, ignored = recipients.getReason(email_address)
+        if subscription.notification_level in interested_levels:
+            diff_size_to_email[subscription.max_diff_lines].add(email_address)
+
+    for max_diff in diff_size_to_email:
+        addresses = diff_size_to_email[max_diff]
+        if len(addresses) == 0:
+            continue
         MailoutMailer.forRevision(
-            db_branch, email_from, message, diff, subject)
+            db_branch, addresses, email_from, message, diff, max_diff,
+            recipients, subject)
 
 
 class WarehouseBranchOpener(BranchOpener):
