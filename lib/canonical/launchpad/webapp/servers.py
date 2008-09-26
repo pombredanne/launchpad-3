@@ -1122,6 +1122,18 @@ class WebServicePublication(LaunchpadBrowserPublication):
         txn.commit()
 
     def getPrincipal(self, request):
+        """See `LaunchpadBrowserPublication`.
+
+        Web service requests are authentified using OAuth, except for the
+        one made using (presumably) JavaScript on the /api override path.
+        """
+        # Use the regular HTTP authentication, when the request is not
+        # on the API virtual host but comes through the path_override on
+        # the other regular virtual hosts.
+        request_path = request.get('PATH_INFO', '')
+        if request_path.startswith("/%s" % WEBSERVICE_PATH_OVERRIDE):
+            return super(WebServicePublication, self).getPrincipal(request)
+
         # Fetch OAuth authorization information from the request.
         form = get_oauth_authorization(request)
 
