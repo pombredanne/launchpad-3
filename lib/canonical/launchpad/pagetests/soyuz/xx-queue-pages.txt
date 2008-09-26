@@ -437,9 +437,8 @@ One rejection email is generated:
   >>> rejection['Subject']
   'netapplet-1.0.0.tar.gz rejected'
 
-The body of the rejection email is now in the new, human readable format.
-Please note also that in this case the rejection reason is not available
-and that that's stated in the notification email body.
+Please note that in this case the rejection reason is not available
+and how that's stated in the notification email body.
 
   >>> body = rejection.get_payload()[0]
   >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
