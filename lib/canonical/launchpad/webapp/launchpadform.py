@@ -147,11 +147,11 @@ class LaunchpadFormView(LaunchpadView):
         """Set up the widgets using the view's form fields and the context.
 
         If no context is given, the view's context is used."""
-        if context is None:
-            context = self.context
         for field in self.form_fields:
             if field.__name__ in self.custom_widgets:
                 field.custom_widget = self.custom_widgets[field.__name__]
+        if context is None:
+            context = self.context
         # XXX: jamesh 2006-08-02:
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(

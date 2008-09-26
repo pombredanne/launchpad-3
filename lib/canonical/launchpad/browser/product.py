@@ -1214,8 +1214,7 @@ class ProductAdminView(ProductEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
     def validate(self, data):

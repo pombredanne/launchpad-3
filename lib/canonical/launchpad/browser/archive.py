@@ -328,6 +328,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         `createSelectedSourcesField` methods.
         """
         LaunchpadFormView.setUpFields(self)
+        for field in self.form_fields:
+            if field.__name__ in self.custom_widgets:
+                field.custom_widget = self.custom_widgets[field.__name__]
 
         # Build and store 'status_filter' field.
         status_field = self.createSimplifiedStatusFilterField()
@@ -374,8 +377,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         return form.Fields(
             Choice(__name__='status_filter', title=_("Status Filter"),
                    vocabulary=self.simplified_status_vocabulary,
-                   required=True, default=self.default_status_filter.value),
-            custom_widget=self.custom_widgets['status_filter'])
+                   required=True, default=self.default_status_filter.value))
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -396,8 +398,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_('Select one or more sources to be submitted '
-                               'to an action.')),
-            custom_widget=self.custom_widgets['selected_sources'])
+                               'to an action.')))
 
     def refreshSelectedSourcesWidget(self):
         """Refresh 'selected_sources' widget.
@@ -629,8 +630,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    vocabulary=SimpleVocabulary(terms),
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
-                   required=required),
-            custom_widget=self.custom_widgets['destination_archive'])
+                   required=required))
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
@@ -650,8 +650,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    title=_('Destination series'),
                    vocabulary=SimpleVocabulary(terms),
                    description=_("Select the destination series."),
-                   required=False),
-            custom_widget=self.custom_widgets['destination_series'])
+                   required=False))
 
     def createIncludeBinariesField(self):
         """Create the 'include_binaries' field.
@@ -680,8 +679,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                                  "to the destination archive."),
                    missing_value=rebuild_sources,
                    default=False,
-                   required=True),
-            custom_widget=self.custom_widgets['include_binaries'])
+                   required=True))
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -831,8 +829,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_(
-                    'Select one or more dependencies to be removed.')),
-            custom_widget=self.custom_widgets['selected_dependencies'])
+                    'Select one or more dependencies to be removed.')))
 
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.

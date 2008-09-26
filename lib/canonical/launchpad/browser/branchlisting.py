@@ -389,9 +389,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         fields = []
         for field_name in self.field_names:
             if field_name == 'sort_by':
-                field = form.FormField(
-                    self.sort_by_field,
-                    custom_widget=self.custom_widgets[field_name])
+                field = form.FormField(self.sort_by_field)
             else:
                 field = self.form_fields[field_name]
             fields.append(field)
