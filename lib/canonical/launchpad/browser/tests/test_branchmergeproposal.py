@@ -178,7 +178,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view.initialize()
         return view
 
-    def _getProposal(self):
+    def _getSourceProposal(self):
         # There will only be one proposal and it will be in needs review
         # state.
         landing_targets = list(self.source_branch.landing_targets)
@@ -191,19 +191,18 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
     def assertNoComments(self, proposal):
         # There should be no comments.
-        self.assertEqual(0, len(list(proposal.all_comments)))
+        self.assertEqual([], list(proposal.all_comments))
 
     def assertOneComment(self, proposal, comment_text):
         # There should be one and only one comment with the text specified.
-        all_comments = list(proposal.all_comments)
-        self.assertEqual(1, len(all_comments))
         self.assertEqual(
-            comment_text,
-            all_comments[0].message.text_contents)
+            [comment_text],
+            [comment.message.text_contents
+             for comment in proposal.all_comments])
 
     def assertNoPendingReviews(self, proposal):
         # There should be no votes recorded for the proposal.
-        self.assertEqual(0, len(list(proposal.votes)))
+        self.assertEqual([], list(proposal.votes))
 
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
         # There should be one pending vote for the reviewer with the specified
@@ -223,7 +222,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         # branch, and not an initial comment or reviewer.
         view = self._createView()
         view.register_action.success({'target_branch': self.target_branch})
-        proposal = self._getProposal()
+        proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
         self.assertNoComments(proposal)
 
@@ -235,7 +234,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             {'target_branch': self.target_branch,
              'comment': "This is the first comment."})
 
-        proposal = self._getProposal()
+        proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
         self.assertOneComment(proposal, "This is the first comment.")
 
@@ -248,13 +247,13 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             {'target_branch': self.target_branch,
              'review_candidate': reviewer})
 
-        proposal = self._getProposal()
+        proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
         self.assertNoComments(proposal)
 
     def test_register_request_review_type(self):
-        # A specific review type can be requested of the reviewer, and if
-        # specified is recorded with the pending review.
+        # We can request a specific review type of the reviewer.  If we do, it
+        # is recorded along with the pending review.
         reviewer = self.factory.makePerson()
         view = self._createView()
         view.register_action.success(
@@ -262,12 +261,13 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
              'review_candidate': reviewer,
              'review_type': 'god-like'})
 
-        proposal = self._getProposal()
+        proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertNoComments(proposal)
 
     def test_register_comment_and_review(self):
-        # The user can give an initial comment and review request.
+        # The user can give an initial comment and request a review from
+        # someone.
         reviewer = self.factory.makePerson()
         view = self._createView()
         view.register_action.success(
@@ -276,7 +276,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
              'review_type': 'god-like',
              'comment': "This is the first comment."})
 
-        proposal = self._getProposal()
+        proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertOneComment(proposal, "This is the first comment.")
 

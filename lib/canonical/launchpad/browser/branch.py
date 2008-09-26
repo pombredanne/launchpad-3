@@ -1053,11 +1053,13 @@ class RegisterProposalSchema(Interface):
     use_template(IBranchMergeProposal,
                  include=['target_branch'])
 
-    comment = Text(title=_('Initial Comment'), required=False)
+    comment = Text(
+        title=_('Initial Comment'), required=False,
+        description=_('Describe your change.'))
 
     review_candidate = PublicPersonChoice(
         title=_('Reviewer'), required=False,
-        description=_('A person who you want to review this.'),
+        description=_('A person or team who you want to review this.'),
         vocabulary='ValidPersonOrTeam')
 
     review_type = TextLine(

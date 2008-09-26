@@ -4,10 +4,13 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 from unittest import TestCase, TestLoader
 
+from pytz import UTC
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposalGetter)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
@@ -21,9 +24,9 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+    LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadFunctionalLayer
 
 
 class TestBranchMergeProposalTransitions(TestCase):
@@ -170,6 +173,51 @@ class TestBranchMergeProposalTransitions(TestCase):
         all_states = BranchMergeProposalStatus.items
         self.assertEqual(sorted(all_states), sorted(keys),
                          "Missing possible states from the transition graph.")
+
+
+class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
+    """Test the resetting of date_review_reqeuested."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _createMergeProposal(self, needs_review):
+        # Create and return a merge proposal.
+        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeBranch(
+            product=source_branch.product)
+        login_person(target_branch.owner)
+        return source_branch.addLandingTarget(
+            source_branch.owner, target_branch,
+            date_created=datetime(2000, 1, 1, 12, tzinfo=UTC),
+            needs_review=needs_review)
+
+    def test_date_set_on_change(self):
+        # When the proposal changes to needs review state the date is
+        # recoreded.
+        proposal = self._createMergeProposal(needs_review=False)
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+        self.assertIs(None, proposal.date_review_requested)
+        # Requesting the merge then sets the date review requested.
+        proposal.requestReview()
+        self.assertSqlAttributeEqualsDate(
+            proposal, 'date_review_requested', UTC_NOW)
+
+    def test_date_not_reset_on_rerequest(self):
+        # When the proposal changes to needs review state the date is
+        # recoreded.
+        proposal = self._createMergeProposal(needs_review=True)
+        self.assertEqual(
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            proposal.queue_status)
+        self.assertEqual(
+            proposal.date_created, proposal.date_review_requested)
+        # Requesting the merge again will not reset the date review requested.
+        proposal.requestReview()
+        self.assertEqual(
+            proposal.date_created, proposal.date_review_requested)
+
 
 class TestBranchMergeProposalCanReview(TestCase):
     """Test the different cases that makes a branch deletable or not."""
