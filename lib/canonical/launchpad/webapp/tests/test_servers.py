@@ -4,7 +4,6 @@ __metaclass__ = type
 
 import StringIO
 import unittest
-import urlparse
 
 from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS

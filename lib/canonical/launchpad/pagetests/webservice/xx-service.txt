@@ -164,7 +164,7 @@ to a different host.
     >>> print root['people_collection_link']
     http://bugs.launchpad.dev/api/beta/people
 
-Requests on these hosts also honors the standard Launchpad authorization
+Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
 
     >>> from canonical.launchpad.testing.pages import WebServiceCaller

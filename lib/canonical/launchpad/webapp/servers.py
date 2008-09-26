@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import pytz
 import threading
-import urllib
 import xmlrpclib
 from datetime import datetime
 
