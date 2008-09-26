@@ -168,6 +168,7 @@ class FileImporterTestCase(unittest.TestCase):
         retval = self.file_importer.storeTranslationsInDatabase(
             message, potmsgset)
         # XXX Not working
+        # 
 #        self.failUnless(
 #            (retval is None) and
 #            (len(self.file_importer.errors) == 1),
@@ -210,7 +211,6 @@ class FileImporterTestCase(unittest.TestCase):
     def test_POTFileImporter_importFile(self):
         # Run the whole show and see what comes out.
         errors = self.pot_importer.importFile()
-        transaction.commit()
         self.failUnlessEqual(len(errors), 0,
             "POTFileImporter.importFile returns errors where there should "
             "be none.")
@@ -226,13 +226,40 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnless(self.po_importer.pofile is not None,
             "POFileImporter has no reference to an IPOFile.")
 
-    def test_POFileImporter_importMessage_implemented(self):
+    def test_POFileImporter_importMessage(self):
         try:
             self.po_importer.importMessage(None)
         except NotImplementedError:
             self.fail("POFileImporter does not implement importMessage()")
         except:
             pass
+
+    def test_POFileImporter_getPersonByEmail(self):
+        """Check whether we create new persons with the correct explanation.
+
+        When importing a POFile, it may be necessary to create new Person
+        entries, to represent the last translators of that POFile.
+        """
+        test_email = 'danilo@canonical.com'
+        personset = getUtility(IPersonSet)
+
+        # The account we are going to use is not yet in Launchpad.
+        self.failUnless(
+            personset.getByEmail(test_email) is None,
+            'There is already an account for %s' % test_email)
+
+        person = self.po_importer._getPersonByEmail(test_email)
+
+        self.failUnlessEqual(
+            person.creation_rationale.name, 'POFILEIMPORT',
+            '%s was not created due to a POFile import' % test_email)
+        self.failUnlessEqual(
+            person.creation_comment,
+            'when importing the %s translation of %s' % (
+                self.po_importer.pofile.language.displayname,
+                self.po_importer.potemplate.displayname),
+            'Did not create the correct comment for %s' % test_email)
+
 
 def test_suite():
     suite = unittest.TestSuite()

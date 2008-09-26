@@ -6,6 +6,10 @@
 
     <content class="canonical.launchpad.database.POTMsgSet">
       <allow interface="canonical.launchpad.interfaces.IPOTMsgSet"/>
+      <require
+        permission="launchpad.Admin"
+        set_attributes="commenttext sourcecomment filereferences flagscomment"
+        />
     </content>
 
 </configure>
