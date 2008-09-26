@@ -2,9 +2,18 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Message', 'MessageSet', 'MessageChunk']
+__all__ = [
+    'Message',
+    'MessageChunk',
+    'MessageSet',
+    'Throttle',
+    'UserToUserEmail',
+    ]
+
 
 import email
+import datetime
+
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
@@ -15,17 +24,23 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.store import Store
+from storm.locals import (
+    And, Count, DateTime, Int, RawStr, Reference, Store, Storm)
 
 import pytz
 
+from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
-    InvalidEmailMessage, NotFoundError, PersonCreationRationale,
+    ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.message import (
+    IMessage, IMessageChunk, IMessageSet, IThrottle, IUserToUserEmail,
+    InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -34,6 +49,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
 MAX_EMAIL_SIZE = 10 * 1024 * 1024
+
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -505,3 +521,77 @@ class MessageChunk(SQLBase):
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
 
+
+class UserToUserEmail(Storm):
+    """See `IUserToUserEmail`."""
+
+    implements(IUserToUserEmail)
+
+    __storm_table__ = 'UserToUserEmail'
+    
+    id = Int(primary=True)
+
+    sender_email_id = Int()
+    sender_email = Reference(sender_email_id, 'EmailAddress.id')
+
+    recipient_email_id = Int()
+    recipient_email = Reference(recipient_email_id, 'EmailAddress.id')
+
+    date_sent = DateTime()
+
+    subject = RawStr()
+
+    message_id = RawStr()
+
+    def __init__(self, message):
+        """Create a new user-to-user email entry.
+
+        :param message: the message being sent
+        :type message: `email.message.Message`
+        """
+        from_ = message['from']
+        assert from_ is not None, 'Message has no From: field'
+        to = message['to']
+        assert to is not None, 'Message has no To: field'
+        date = message['date']
+        assert date is not None, 'Message has no Date: field'
+        message_id = message['message-id']
+        assert message_id is not None, 'Message has no Message-ID: field'
+        subject = message['subject']
+        assert subject is not None, 'Message has no Subject: field'
+        email_set = getUtility(IEmailAddressSet)
+        sender_email = email_set.getByEmail(from_)
+        assert sender_email is not None, (
+            'Sender email not found: %s' % from_)
+        self.sender_email = sender_email
+        print to
+        recipient_email = email_set.getByEmail(to)
+        assert recipient_email is not None, (
+            'Recipient email not found %s' % to)
+        self.recipient_email = recipient_email
+        self.date_sent = date
+        self.message_id = message_id
+        self.subject = subject
+
+
+class Throttle:
+    """See `IThrottle`."""
+
+    implements(IThrottle)
+
+    def allow(self, sender_email):
+        """See `IThrottle`."""
+        # Users are only allowed to send X number of messages in a certain
+        # period of time.  Both the number of messages and the time period are
+        # configurable.
+        now = datetime.now(pytz.timezone('UTC'))
+        window = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        # Count the number of messages from the sender since the throttle
+        # date.
+        store = Store.of(sender_email)
+        messages_sent = store.find(
+            UserToUserEmail,
+            And(UserToUserEmail.sender_email == sender_email,
+                UserToUserEmail.date_sent >= window)).count()
+        return messages_sent < config.launchpad.user_to_user_max_messages

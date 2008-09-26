@@ -1,0 +1,90 @@
+= Direct user-to-user email =
+
+Launchpad users can send emails to each other directly, through the Launchpad
+web interface.  Launchpad tracks these both for informational purposes and to
+limit or throttle the number of messages that any one person can send.  The
+throttling happens over a configurable interval.
+
+Anne and Bart are Launchpad users.
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> anne = factory.makePerson('anne@example.com', 'anne')
+    >>> bart = factory.makePerson('bart@example.com', 'bart')
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> anne_email = email_set.getByEmail('anne@example.com')
+    >>> bart_email = email_set.getByEmail('bart@example.com')
+    >>> print bart_email
+
+Anne wants to contact Bart to ask him a question about his Launchpad project,
+but Bart's email addresses are hidden.  Anne decides to use Launchpad's direct
+user-to-user contact form to send Bart a message.  Is she allowed to?
+
+    >>> from canonical.launchpad.interfaces.message import IThrottle
+    >>> throttle = getUtility(IThrottle)
+    >>> throttle.allow(anne_email)
+    True
+
+Launchpad records the event when Anne sends the message to Bart.
+
+    >>> from email import message_from_string
+    >>> from canonical.launchpad.database.message import UserToUserEmail
+
+    >>> contact = UserToUserEmail(message_from_string("""\
+    ... From: anne@example.com
+    ... To: bart@example.com
+    ... Date: Thu, 25 Sep 2008 15:29:38 +0100
+    ... Message-ID: <aardvark>
+    ... Subject: Project Bumstead
+    ...
+    ... This looks just like project Blonde.  Please contact me.
+    ... """))
+
+    >>> from store.locals import Store
+    >>> Store.of(anne_email).add(contact)
+
+Anne really likes Bart's project, so she sends him another message.
+
+    >>> throttle.allow(anne_email)
+    True
+
+    >>> contact = UserToUserEmail(message_from_string("""\
+    ... From: anne@example.com
+    ... To: bart@example.com
+    ... Date: Thu, 25 Sep 2008 15:30:38 +0100
+    ... Message-ID: <badger>
+    ... Subject: Re: Project Bumstead
+    ...
+    ... No really, this is so cool!
+    ... """))
+
+    >>> from store.locals import Store
+    >>> Store.of(anne_email).add(contact)
+
+Anne also likes Cris's project, and wants to contact her directly.
+
+    >>> throttle.allow(anne_email)
+    True
+
+    >>> cris = factory.makePerson('cris@example.com', 'cris')
+    >>> contact = UserToUserEmail(message_from_string("""\
+    ... From: anne@example.com
+    ... To: cris@example.com
+    ... Date: Thu, 25 Sep 2008 15:31:38 +0100
+    ... Message-ID: <cougar>
+    ... Subject: Project Dagwood
+    ...
+    ... Not as cool as Bumstead, but still neat.
+    ... """))
+
+    >>> from store.locals import Store
+    >>> Store.of(anne_email).add(contact)
+
+Anne is no longer allowed to contact any Launchpad users directly, at least
+until tomorrow.
+
+    >>> throttle.allow(anne_email)
+    False
