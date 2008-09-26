@@ -33,40 +33,26 @@ class CurrentOpenIDEndPoint:
         else:
             return 'id'
 
-    @staticmethod
-    def getRootURL(vhost=None):
-        """The OpenID root URL for the current request.
+    @classmethod
+    def getServiceURL(cls):
+        """The OpenID server URL (/+openid) for the current request."""
+        return allvhosts.configs[cls.getVHost()].rooturl + '+openid'
 
-        :param vhost: The preferred vhost configuration to use, otherwise
-            use the vhost associated with the current request.
-        """
-        if vhost is None:
-            vhost = CurrentOpenIDEndPoint.getVHost()
-        return allvhosts.configs[vhost].rooturl
-
-    @staticmethod
-    def getServiceURL(vhost=None):
-        """The OpenID server URL (/+openid) for the current request.
-
-        :param vhost: The preferred vhost configuration to use, otherwise
-            use the vhost associated with the current request.
-        """
-        return CurrentOpenIDEndPoint.getRootURL(vhost=vhost) + '+openid'
-
-    @staticmethod
-    def supportsURL(identity_url):
+    @classmethod
+    def supportsURL(cls, identity_url):
         """Does the OpenID current vhost support the identity_url?"""
-        if CurrentOpenIDEndPoint.isRequestForOldVHost():
-            root_url = CurrentOpenIDEndPoint.getRootURL(vhost='openid')
+        if cls.isRequestForOldVHost():
+            root_url = allvhosts.configs['openid'].rooturl
             return identity_url.startswith(root_url + '+id')
-        root_url = CurrentOpenIDEndPoint.getRootURL(vhost='id')
-        identity_url_re = re.compile(r'%s\d\d\d' % root_url)
-        return identity_url_re.match(identity_url) is not None
+        else:
+            root_url = allvhosts.configs['id'].rooturl
+            identity_url_re = re.compile(r'%s\d\d\d' % root_url)
+            return identity_url_re.match(identity_url) is not None
 
-    @staticmethod
-    def isRequestForOldVHost():
+    @classmethod
+    def isRequestForOldVHost(cls):
         """Is the request for the old 'openid' vhost."""
-        return CurrentOpenIDEndPoint.getVHost() == 'openid'
+        return cls.getVHost() == 'openid'
 
 
 class OpenIDPersistentIdentity:
@@ -90,7 +76,7 @@ class OpenIDPersistentIdentity:
     @property
     def new_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = CurrentOpenIDEndPoint.getRootURL('id')
+        identity_root_url = allvhosts.configs['id'].rooturl
         return identity_root_url + self.new_openid_identifier.encode('ascii')
 
     @property
@@ -105,7 +91,7 @@ class OpenIDPersistentIdentity:
     @property
     def old_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = CurrentOpenIDEndPoint.getRootURL('openid')
+        identity_root_url = allvhosts.configs['openid'].rooturl
         return identity_root_url + self.old_openid_identifier.encode('ascii')
 
     @property

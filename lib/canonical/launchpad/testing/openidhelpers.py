@@ -20,8 +20,8 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
-from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class ConsumerView(LaunchpadView):
@@ -58,7 +58,7 @@ def get_requested_server_url(url='http://openid.launchpad.dev/'):
     if vhost not in ('id', 'openid'):
         # The claimed URL is not on Launchpad, fallback to the beta rules.
         vhost = 'openid'
-    return CurrentOpenIDEndPoint.getServiceURL(vhost)
+    return allvhosts.configs[vhost].rooturl + '+openid'
 
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
