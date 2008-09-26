@@ -65,7 +65,8 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     def chooseRequestClass(self, method, path, environment):
         """See `HTTPCaller`.
 
-        Default version doesn't set PATH_INFO, which we use.
+        This version adds the 'PATH_INFO' variable to the environment,
+        because some of our factories expects it.
         """
         if 'PATH_INFO' not in environment:
             environment = dict(environment)

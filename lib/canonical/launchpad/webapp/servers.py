@@ -311,7 +311,7 @@ class VirtualHostRequestPublicationFactory:
         return self.request_factory, self.publication_factory
 
     def getAcceptableMethods(self, environment):
-        """Returns the HTTP methods acceptable in this particular environment
+        """Return the HTTP methods acceptable in this particular environment.
         """
         return self.methods
 
@@ -1123,7 +1123,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
 
-        Web service requests are authentified using OAuth, except for the
+        Web service requests are authenticated using OAuth, except for the
         one made using (presumably) JavaScript on the /api override path.
         """
         # Use the regular HTTP authentication, when the request is not
