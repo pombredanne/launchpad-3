@@ -1001,7 +1001,7 @@ class TestScanUnrecognizedFormat(BzrSyncTestCase):
 
 
 class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
-    """Test the scanners ability to mark merge proposals as merged."""
+    """Test the scanner's ability to mark merge proposals as merged."""
 
     @run_as_db_user(config.launchpad.dbuser)
     def createProposal(self, source, target):
@@ -1010,6 +1010,8 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         transaction.commit()
 
     def _createBranchesAndProposal(self):
+        # Create two branches where the trunk has the branch as a merge.  Also
+        # create a merge proposal from the branch to the trunk.
         (db_trunk, trunk_tree), (db_branch, branch_tree) = (
             self.makeBranchWithMerge('base', 'trunk', 'branch', 'merge'))
         trunk_id = db_trunk.id
@@ -1022,20 +1024,30 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         proposal = list(db_branch.landing_targets)[0]
         return proposal, db_trunk, db_branch, branch_tree
 
+    def _scanTheBranches(self, branch1, branch2):
+        for branch in (branch1, branch2):
+            scanner = self.makeBzrSync(branch)
+            scanner.syncBranchAndClose()
+
     def test_autoMergeProposals_real_merge(self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target, mark it as merged.
-
         proposal, db_trunk, db_branch, branch_tree = (
             self._createBranchesAndProposal())
-        # Scan the branch tree first.
-        scanner = self.makeBzrSync(db_branch)
-        scanner.syncBranchAndClose()
 
-        # Now scan the trunk branch.
-        scanner = self.makeBzrSync(db_trunk)
-        scanner.syncBranchAndClose()
+        self._scanTheBranches(db_branch, db_trunk)
+        # The proposal should now be merged.
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED,
+            proposal.queue_status)
 
+    def test_autoMergeProposals_real_merge_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target, mark it as merged.
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        self._scanTheBranches(db_trunk, db_branch)
         # The proposal should now be merged.
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
@@ -1051,13 +1063,24 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
 
         proposal.rejectBranch(db_trunk.owner, 'branch')
 
-        # Scan the branch tree first.
-        scanner = self.makeBzrSync(db_branch)
-        scanner.syncBranchAndClose()
+        self._scanTheBranches(db_branch, db_trunk)
 
-        # Now scan the trunk branch.
-        scanner = self.makeBzrSync(db_trunk)
-        scanner.syncBranchAndClose()
+        # The proposal should stay rejected..
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_rejected_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target but the proposal is in a final state the
+        # proposal is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        proposal.rejectBranch(db_trunk.owner, 'branch')
+
+        self._scanTheBranches(db_trunk, db_branch)
 
         # The proposal should stay rejected..
         self.assertEqual(
@@ -1077,13 +1100,25 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             current_proposal_status,
             BranchMergeProposalStatus.MERGED)
 
-        # Scan the branch tree first.
-        scanner = self.makeBzrSync(db_branch)
-        scanner.syncBranchAndClose()
+        self._scanTheBranches(db_branch, db_trunk)
 
-        # Now scan the trunk branch.
-        scanner = self.makeBzrSync(db_trunk)
-        scanner.syncBranchAndClose()
+        # The proposal should stay in the same state.
+        self.assertEqual(current_proposal_status, proposal.queue_status)
+
+    def test_autoMergeProposals_not_merged_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is not in
+        # the ancestry of the target it is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        branch_tree.commit(u'another revision', rev_id='another-rev')
+        current_proposal_status = proposal.queue_status
+        self.assertNotEqual(
+            current_proposal_status,
+            BranchMergeProposalStatus.MERGED)
+
+        self._scanTheBranches(db_trunk, db_branch)
 
         # The proposal should stay in the same state.
         self.assertEqual(current_proposal_status, proposal.queue_status)
