@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -153,7 +153,7 @@ class MessageSet:
         return message
 
     def _decode_header(self, header):
-        r"""Decode an RFC 2097 encoded header.
+        r"""Decode an RFC 2047 encoded header.
 
             >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
             u'F\xf6\xf6 b\xe4r'
@@ -174,8 +174,8 @@ class MessageSet:
         for bytes, charset in bits:
             if charset is None:
                 charset = 'us-ascii'
-            # XXX 2008-09-26 gary:
-            # The RFC 2097 encoding names and the Python encoding names are
+            # 2008-09-26 gary:
+            # The RFC 2047 encoding names and the Python encoding names are
             # not always the same. A safer and more correct approach would use
             #   bytes.decode(email.Charset.Charset(charset).input_codec,
             #                'replace')

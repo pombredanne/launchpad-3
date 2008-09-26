@@ -227,10 +227,10 @@ def sendmail(message, to_addrs=None):
     # Add a shared secret header for pre-approval with Mailman. This approach
     # helps security, but still exposes us to a replay attack; we consider the
     # risk low.
-    del message['X-Launchpad-Shared-Secret']
+    del message['X-Launchpad-Hash']
     hash = sha.new(config.mailman.shared_secret)
     hash.update(str(message['message-id']))
-    message['X-Launchpad-Shared-Secret'] = hash.hexdigest()
+    message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
     if isZopeless():
