@@ -81,7 +81,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <a tal:attributes="href branch/fmt:url;
+          <img src="/@@/branch"> <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
              tal:content="branch/bzr_identity">
                Name
@@ -89,7 +89,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
           <tal:associated-series repeat="series branch/associated_product_series"
                                  condition="context/view/show_series_links">
             <tal:first-series condition="repeat/series/start">
-              <br/><strong>Series:</strong>
+            <br/><strong style="margin-left: 2.5em;">Series:</strong>
             </tal:first-series>
             <tal:comment condition="nothing">
               The lack of whitespace in the following tal expression

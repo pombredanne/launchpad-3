@@ -1640,7 +1640,6 @@ class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
     show_series_links = True
-    show_set_development_focus = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @property
@@ -1675,6 +1674,8 @@ class ProductBranchListingView(BranchListingView):
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
