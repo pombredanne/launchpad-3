@@ -86,11 +86,10 @@ class LaunchpadBrowserPublication(
 
     root_object_interface = ILaunchpadRoot
 
-    db_policy = None
-
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
+        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -152,8 +151,8 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.db_policy = IDatabasePolicy(request)
-        self.db_policy.beforeTraversal()
+        self.thread_locals.db_policy = IDatabasePolicy(request)
+        self.thread_locals.db_policy.beforeTraversal()
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -351,9 +350,9 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.db_policy is not None:
-            self.db_policy.afterCall()
-            self.db_policy = None
+        if self.thread_locals.db_policy is not None:
+            self.thread_locals.db_policy.afterCall()
+            self.thread_locals.db_policy = None
 
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
