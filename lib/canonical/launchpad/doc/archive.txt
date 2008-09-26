@@ -832,11 +832,18 @@ Celso's PPA has no dependencies stored in the sampledata.
     >>> print_dependencies(cprov.archive)
     No dependencies recorded.
 
-We will make Celso's PPA to depend on Mark's PPA.
+We will make Celso's PPA to depend on Mark's PPA, specifically on its
+RELEASE pocket and 'main' component.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
+
+    >>> release_pocket = PackagePublishingPocket.RELEASE
+
     >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     sabdfl.archive)
+    ...     sabdfl.archive, release_pocket, main_component)
 
 The `IArchiveDependency` object simply maps the desired relationship.
 
@@ -852,14 +859,17 @@ The archive dependency is immediately recorded on Celso's PPA.
     PPA for Mark Shuttleworth
 
 'getArchiveDependency' returns the corresponding `IArchiveDependency`
-for a given 'dependency' if it exists, otherwise it returns None.
+for a given 'dependency', 'pocket' and 'component' if it exists,
+otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
-    ...     sabdfl.archive).dependency.title
+    ...     sabdfl.archive, release_pocket, main_component
+    ...     ).dependency.title
     PPA for Mark Shuttleworth
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> print cprov.archive.getArchiveDependency(no_priv.archive)
+    >>> print cprov.archive.getArchiveDependency(
+    ...     no_priv.archive, release_pocket, main_component)
     None
 
 As mentioned above, the archive dependency engine doesn't follow
@@ -871,7 +881,7 @@ dependency is published in Mark's PPA.
     No dependencies recorded.
 
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
-    ...     cprov.archive)
+    ...     cprov.archive, release_pocket, main_component)
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
@@ -881,37 +891,68 @@ dependency is published in Mark's PPA.
 
 'dependency' is already recorded (duplicated).
 
-    >>> no_priv.archive.addArchiveDependency(cprov.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: This dependency is already recorded.
 
 'dependency' and target archive are the same.
 
-    >>> no_priv.archive.addArchiveDependency(no_priv.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     no_priv.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: An archive should not depend on itself.
 
 A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
-EMBARGOED) are explicitly forbidden until we can analyse the impact of
+COPY) are explicitly forbidden until we can analyse the impact of
 allowing them.
 
     >>> ubuntu = no_priv.archive.distribution
-    >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: Archive dependencies only applies to PPAs.
 
-'removeArchiveDependency' allow us to purge a recorded 'dependency'.
+Dependencies for other pockets than RELEASE or other components than
+'main' currently result in an error.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, PackagePublishingPocket.UPDATES,
+    ...     main_component)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: PPA dependencies only applies to RELEASE pocket.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, release_pocket,
+    ...     getUtility(IComponentSet)['universe'])
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: PPA dependencies only applies to 'main' component.
+
+'removeArchiveDependency' allow us to purge a recorded
+`ArchiveDependency` corresponding to the given 'dependency', 'pocket'
+and 'component'.
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
 
-    >>> no_priv.archive.removeArchiveDependency(cprov.archive)
+    >>> no_priv.archive.removeArchiveDependency(
+    ...     cprov.archive, release_pocket, main_component)
 
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
+
+Attempts to remove a non-existent dependency results in a AssertionError.
+
+    >>> no_priv.archive.removeArchiveDependency(
+    ...     sabdfl.archive, release_pocket, main_component)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This dependency does not exist.
 
 Since the 'dependency' property only returns explicitly recorded
 archive dependencies and we usually need the expanded list when
@@ -1449,8 +1490,6 @@ that check a user's permission to upload and/or administer a
 distroseries upload queue respectively.  See archivepermission.txt
 for more details.
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 

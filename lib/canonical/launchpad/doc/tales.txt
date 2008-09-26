@@ -801,6 +801,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...     interaction = None
     ...     principal = None
     ...
+    ...     def __init__(self):
+    ...         self.annotations = {}
+    ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
     ...

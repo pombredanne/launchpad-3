@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
@@ -915,7 +916,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
-            self.context.removeArchiveDependency(dependency)
+            self.context.removeArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE,
+                getUtility(IComponentSet)['main'])
 
         self.refreshSelectedDependenciesWidget()
 
@@ -952,7 +955,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "An archive should not depend on itself.")
             return
 
-        if self.context.getArchiveDependency(dependency_candidate):
+        if self.context.getArchiveDependency(
+            dependency_candidate, PackagePublishingPocket.RELEASE,
+            getUtility(IComponentSet)['main']):
             self.setFieldError('dependency_candidate',
                                "This dependency is already recorded.")
             return
@@ -964,7 +969,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             return
 
         dependency_candidate = data.get('dependency_candidate')
-        self.context.addArchiveDependency(dependency_candidate)
+        self.context.addArchiveDependency(
+            dependency_candidate, PackagePublishingPocket.RELEASE,
+            getUtility(IComponentSet)['main'])
         self.refreshSelectedDependenciesWidget()
 
         self.request.response.addNotification(

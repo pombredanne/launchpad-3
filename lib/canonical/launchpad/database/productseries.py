@@ -26,6 +26,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
@@ -337,10 +338,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    def searchTasks(self, search_params):
-        """See IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See IBugTarget."""
@@ -445,6 +445,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
+
+    def addRelease(self, version, owner, codename=None, summary=None,
+                   description=None, changelog=None):
+        """See `IProductSeries`."""
+        return ProductRelease(version=version,
+                              productseries=self,
+                              owner=owner,
+                              codename=codename,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductSeriesSet:

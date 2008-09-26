@@ -43,9 +43,11 @@ from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -656,19 +658,20 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency):
+    def getArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency)
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
 
-    def removeArchiveDependency(self, dependency):
+    def removeArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency)
+        dependency = self.getArchiveDependency(dependency, pocket, component)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency):
+    def addArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
@@ -677,12 +680,21 @@ class Archive(SQLBase):
         if not dependency.is_ppa:
             raise ArchiveDependencyError(
                 "Archive dependencies only applies to PPAs.")
+        else:
+            if pocket is not PackagePublishingPocket.RELEASE:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to RELEASE pocket.")
+            if component.id is not getUtility(IComponentSet)['main'].id:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to 'main' component.")
 
-        if self.getArchiveDependency(dependency):
+        if self.getArchiveDependency(dependency, pocket, component):
             raise ArchiveDependencyError(
                 "This dependency is already recorded.")
 
-        return ArchiveDependency(archive=self, dependency=dependency)
+        return ArchiveDependency(
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""

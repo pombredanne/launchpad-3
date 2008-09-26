@@ -277,27 +277,35 @@ class IArchive(IHasOwner):
         not found.
         """
 
-    def getArchiveDependency(dependency):
+    def getArchiveDependency(dependency, pocket, component):
         """Return the `IArchiveDependency` object for the given dependency.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
+
         :return: `IArchiveDependency` or None if a corresponding object
             could not be found.
         """
 
-    def removeArchiveDependency(dependency):
+    def removeArchiveDependency(dependency, pocket, component):
         """Remove the `IArchiveDependency` record for the given dependency.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
         """
 
-    def addArchiveDependency(dependency):
+    def addArchiveDependency(dependency, pocket, component):
         """Record an archive dependency record for the context archive.
 
         Raises `ArchiveDependencyError` if given 'dependency' does not fit
         the context archive.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
+
         :return: a `IArchiveDependency` object targeted to the context
             `IArchive` requiring 'dependency' `IArchive`.
         """

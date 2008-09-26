@@ -35,8 +35,9 @@ from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
+from canonical.codehosting.branchfs import LaunchpadServer
+from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.sshserver import LaunchpadAvatar
-from canonical.codehosting.transport import BlockingProxy, LaunchpadServer
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 

@@ -62,8 +62,11 @@ addresses for a set of people:
     >>> guadamen = personset.getByName('guadamen')
     >>> [emailaddress.email for emailaddress in
     ...  emailset.getPreferredEmailForPeople(guadamen.allmembers)]
-    [u'colin.watson@ubuntulinux.com', u'edgar@monteparadiso.hr',
-     u'foo.bar@canonical.com', u'support@ubuntu.com']
+    [u'celso.providelo@canonical.com', u'colin.watson@ubuntulinux.com',
+     u'daniel.silverstone@canonical.com', u'edgar@monteparadiso.hr',
+     u'foo.bar@canonical.com', u'jeff.waugh@ubuntulinux.com',
+     u'limi@plone.org', u'mark@hbd.com', u'steve.alexander@ubuntulinux.com',
+     u'support@ubuntu.com']
 
 
 == Deleting email addresses ==

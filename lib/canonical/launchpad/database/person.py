@@ -48,6 +48,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.oauth import OAuthAccessToken
@@ -97,6 +98,7 @@ from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
@@ -180,7 +182,8 @@ def validate_person_visibility(person, attr, value):
     return value
 
 
-class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
+class Person(
+    SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -993,9 +996,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             return None
 
-    def searchTasks(self, search_params, *args):
-        """See `IPerson`."""
-        return getUtility(IBugTaskSet).search(search_params, *args)
+    def _customizeSearchParams(self, search_params):
+        """No-op, to satisfy a requirement of HasBugsBase."""
+        pass
+
+    def searchTasks(self, search_params, *args, **kwargs):
+        """See `IHasBugs`."""
+        if len(kwargs) > 0:
+            # if keyword arguments are supplied, use the deault
+            # implementation in HasBugsBase.
+            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+        else:
+            # Otherwise pass all positional arguments to the
+            # implementation in BugTaskSet.
+            return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
@@ -2163,8 +2177,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def safe_email_or_blank(self):
         """See `IPerson`."""
-        if ((self.preferredemail is not None) and
-            not(self.hide_email_addresses)):
+        if (self.preferredemail is not None
+            and not self.hide_email_addresses):
             return self.preferredemail.email
         else:
             return ''
@@ -2330,7 +2344,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
-        assert IBugTarget.providedBy(target), (
+        assert (IBugTarget.providedBy(target) or
+                IProject.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
