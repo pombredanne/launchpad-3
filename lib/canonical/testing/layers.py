@@ -1326,6 +1326,29 @@ class LayerProcessController:
             cls.smtp_controller = None
 
     @classmethod
+    def _kill(cls, sig):
+        """Kill the appserver with `sig`.
+
+        :param sig: the signal to kill with
+        :type sig: int
+        :return: True if the signal was delivered, otherwise False.
+        :rtype: bool
+        """
+        try:
+            os.kill(cls.appserver.pid, sig)
+        except OSError, error:
+            if error.errno == errno.ESRCH:
+                # The child process doesn't exist.  Maybe it went away by the
+                # time we got here.
+                cls.appserver = None
+                return False
+            else:
+                # Something else went wrong.
+                raise
+        else:
+            return True
+
+    @classmethod
     @profiled
     def stopAppServer(cls):
         """Kill the appserver and wait until it's exited."""
@@ -1335,8 +1358,10 @@ class LayerProcessController:
             # exit.  test_on_merge.py will barf if we hang here for more than
             # 900 seconds (15 minutes).
             until = datetime.datetime.now() + WAIT_INTERVAL
-            os.kill(cls.appserver.pid, signal.SIGTERM)
             last_chance = False
+            if not cls._kill(signal.SIGTERM):
+                # The process is already gone.
+                return
             while True:
                 # Sleep and poll for process exit.
                 if cls.appserver.poll() is not None:
@@ -1348,7 +1373,9 @@ class LayerProcessController:
                     if last_chance:
                         raise RuntimeError("The appserver just wouldn't die")
                     last_chance = True
-                    os.kill(cls.appserver.pid, signal.SIGKILL)
+                    if not cls._kill(signal.SIGKILL):
+                        # The process is already gone.
+                        return
                     until = datetime.datetime.now() + WAIT_INTERVAL
             cls.appserver = None
 
