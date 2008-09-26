@@ -605,6 +605,11 @@ class Builder(SQLBase):
         # to place the source in the archive, which is where builders
         # download the source from in the case of private builds (because
         # it's a secure location).
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
         clauses = ["""
             ((archive.private IS TRUE AND
               EXISTS (
@@ -616,7 +621,7 @@ class Builder(SQLBase):
                       SourcePackagePublishingHistory.sourcepackagerelease =
                          Build.sourcepackagerelease AND
                       SourcePackagePublishingHistory.archive = Archive.id AND
-                      SourcePackagePublishingHistory.status = %s))
+                      SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
             buildqueue.build = build.id AND
@@ -625,7 +630,7 @@ class Builder(SQLBase):
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(PackagePublishingStatus.PUBLISHED,
+        """ % sqlvalues(private_statuses,
                         BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
