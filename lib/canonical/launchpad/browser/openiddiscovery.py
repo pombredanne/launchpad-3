@@ -54,8 +54,7 @@ class OpenIDApplicationNavigation(Navigation):
         """Return the IOpenIDPersistentIdentity if it is active, or None."""
         account = getUtility(IAccountSet).getByOpenIDIdentifier(
             openid_identifier)
-        if (account is None
-            or removeSecurityProxy(account).status != AccountStatus.ACTIVE):
+        if account is None or account.status != AccountStatus.ACTIVE:
             return None
         return IOpenIDPersistentIdentity(account)
 
@@ -87,14 +86,15 @@ class OpenIDApplicationNavigation(Navigation):
         names to equivalent persistent identity URLs.
         """
         if OpenIDVHost.supportsURL(self.request.getURL()):
-            # Retreive the IOpenIDPersistentIdentity for /nnn/user-name.
+            # Retrieve the IOpenIDPersistentIdentity for /nnn/user-name.
             identifier = '%s/%s' % (name, self.request.stepstogo.consume())
             identity = self._get_active_identity(identifier)
             if identity is not None:
                 return identity
         # Redirect /~user-name to equivalent persistent identity URLs.
         person = getUtility(IPersonSet).getByName(name)
-        if person is not None and person.is_openid_enabled:
+        if (person is not None and person.is_openid_enabled
+            and person.account.status == AccountStatus.ACTIVE):
             openid_identity = IOpenIDPersistentIdentity(person.account)
             target = openid_identity.openid_identity_url
             return RedirectionView(target, self.request, 303)

@@ -84,9 +84,9 @@ openid_identity_url is the new URL format.
     >>> sample_identity.openid_identity_url
     'http://id.launchpad.dev/123/name12'
 
-The OpenIDPersistentIdentity class provides the supportsURL()
-staticmethod to test if the format of the identity URL is supported.
-This verifies that the vhost and path are a valid combination.
+The OpenIDVHost class provides the supportsURL() staticmethod to test if
+the format of the identity URL is supported. This verifies that the
+vhost and path are a valid combination.
 
     >>> from canonical.launchpad.components.openidserver import OpenIDVHost
 
@@ -149,7 +149,7 @@ identity end point. It provides two URLs for navigation.
 The OpenIDPersistentIdentity's openid_identity_url:
 
     >>> identity_view.openid_identity_url
-    u'http://openid.launchpad.dev/+id/name12_oid'
+    'http://openid.launchpad.dev/+id/name12_oid'
 
 The URL for the server:
 

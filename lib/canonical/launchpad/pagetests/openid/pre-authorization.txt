@@ -41,7 +41,7 @@ to authorize that consumer when he wants to log into it.
 
     # XXX sinzui 2008-09-09 bug=264783:
     # Switch this test to the new openid_identifier and remove the
-    # OldIdTestRequest.
+    # OpenIDTestRequest.
     >>> from zope.interface import implements
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.layers import OpenIDLayer

@@ -54,7 +54,7 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
 
 def get_requested_server_url(url='http://openid.launchpad.dev/'):
     """Return the OpenID Server URL."""
-    vhost, rest_ = url[len('http://'):].split('.', 1)
+    vhost, ignored = url[len('http://'):].split('.', 1)
     if vhost not in ('id', 'openid'):
         # The claimed URL is not on Launchpad, fallback to the beta rules.
         vhost = 'openid'
