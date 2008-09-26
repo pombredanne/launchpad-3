@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'OpenIDPersistentIdentity',
-    'OpenIDVHost',
+    'CurrentOpenIDEndPoint',
     ]
 
 import re
@@ -21,7 +21,7 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-class OpenIDVHost:
+class CurrentOpenIDEndPoint:
     """A utility for working with multiple OpenID End Points."""
 
     @staticmethod
@@ -41,7 +41,7 @@ class OpenIDVHost:
             use the vhost associated with the current request.
         """
         if vhost is None:
-            vhost = OpenIDVHost.getVHost()
+            vhost = CurrentOpenIDEndPoint.getVHost()
         return allvhosts.configs[vhost].rooturl
 
     @staticmethod
@@ -51,17 +51,22 @@ class OpenIDVHost:
         :param vhost: The preferred vhost configuration to use, otherwise
             use the vhost associated with the current request.
         """
-        return OpenIDVHost.getRootURL(vhost=vhost) + '+openid'
+        return CurrentOpenIDEndPoint.getRootURL(vhost=vhost) + '+openid'
 
     @staticmethod
     def supportsURL(identity_url):
         """Does the OpenID current vhost support the identity_url?"""
-        if OpenIDVHost.getVHost() == 'openid':
-            root_url = OpenIDVHost.getRootURL(vhost='openid')
+        if CurrentOpenIDEndPoint.isRequestForOldVHost():
+            root_url = CurrentOpenIDEndPoint.getRootURL(vhost='openid')
             return identity_url.startswith(root_url + '+id')
-        root_url = OpenIDVHost.getRootURL(vhost='id')
+        root_url = CurrentOpenIDEndPoint.getRootURL(vhost='id')
         identity_url_re = re.compile(r'%s\d\d\d' % root_url)
         return identity_url_re.match(identity_url) is not None
+
+    @staticmethod
+    def isRequestForOldVHost():
+        """Is the request for the old 'openid' vhost."""
+        return CurrentOpenIDEndPoint.getVHost() == 'openid'
 
 
 class OpenIDPersistentIdentity:
@@ -85,7 +90,7 @@ class OpenIDPersistentIdentity:
     @property
     def new_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = OpenIDVHost.getRootURL('id')
+        identity_root_url = CurrentOpenIDEndPoint.getRootURL('id')
         return identity_root_url + self.new_openid_identifier.encode('ascii')
 
     @property
@@ -100,7 +105,7 @@ class OpenIDPersistentIdentity:
     @property
     def old_openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
-        identity_root_url = OpenIDVHost.getRootURL('openid')
+        identity_root_url = CurrentOpenIDEndPoint.getRootURL('openid')
         return identity_root_url + self.old_openid_identifier.encode('ascii')
 
     @property
@@ -109,7 +114,8 @@ class OpenIDPersistentIdentity:
         only_old_identifier = (
             self.new_openid_identifier is None
             and self.old_openid_identifier is not None)
-        if only_old_identifier or OpenIDVHost.getVHost() == 'openid':
+        if (only_old_identifier
+            or CurrentOpenIDEndPoint.isRequestForOldVHost()):
             return self.old_openid_identity_url
         else:
             return self.new_openid_identity_url
@@ -117,7 +123,7 @@ class OpenIDPersistentIdentity:
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        if OpenIDVHost.getVHost() == 'openid':
+        if CurrentOpenIDEndPoint.isRequestForOldVHost():
             return self.old_openid_identifier
         else:
             return self.new_openid_identifier

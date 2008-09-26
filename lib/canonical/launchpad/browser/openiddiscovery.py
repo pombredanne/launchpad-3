@@ -16,7 +16,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.components.openidserver import OpenIDVHost
+from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
@@ -43,7 +43,7 @@ class OpenIDApplicationURL:
     @cachedproperty
     def rootsite(self):
         """The root site of the application."""
-        return OpenIDVHost.getVHost()
+        return CurrentOpenIDEndPoint.getVHost()
 
 
 class OpenIDApplicationNavigation(Navigation):
@@ -61,7 +61,7 @@ class OpenIDApplicationNavigation(Navigation):
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        if OpenIDVHost.supportsURL(self.request.getURL()):
+        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
             return self._get_active_identity(name)
         else:
             raise NotFoundError(name)
@@ -85,7 +85,7 @@ class OpenIDApplicationNavigation(Navigation):
         If an IOpenIDPersistentIdentity cannot be retrieved, redirect person
         names to equivalent persistent identity URLs.
         """
-        if OpenIDVHost.supportsURL(self.request.getURL()):
+        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
             # Retrieve the IOpenIDPersistentIdentity for /nnn/user-name.
             identifier = '%s/%s' % (name, self.request.stepstogo.consume())
             identity = self._get_active_identity(identifier)
@@ -160,7 +160,7 @@ class XRDSContentNegotiationMixin:
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return OpenIDVHost.getServiceURL()
+        return CurrentOpenIDEndPoint.getServiceURL()
 
 
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
