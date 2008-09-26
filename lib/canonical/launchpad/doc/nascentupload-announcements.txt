@@ -178,7 +178,7 @@ header however.
   >>> notification['X-Launchpad-Component']
   'component=universe, section=devel'
 
-The body of the rejection email is now in the new, human readable format.
+This is the body of the rejection email.
 
   >>> body = notification.get_payload()[0]
   >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE

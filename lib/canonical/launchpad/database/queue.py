@@ -643,7 +643,7 @@ class PackageUpload(SQLBase):
 
         self._handleCommonBodyContent(message, changes)
         if message.SUMMARY is None:
-            message.SUMMARY = 'Rejection reason not available'
+            message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
 
