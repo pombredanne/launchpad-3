@@ -54,7 +54,7 @@ class TestErrorCatching(unittest.TestCase):
         worker = PullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=branch_type,
-            default_stacked_on_branch=None,
+            default_stacked_on_url=None,
             protocol=StubbedPullerWorkerProtocol(), branch_mirrorer=opener,
             oops_prefix='TOKEN')
         return worker
@@ -194,8 +194,7 @@ class TestErrorCatching(unittest.TestCase):
             NotBranchError('lp-hosted:///~user/project/branch'),
             branch_type=BranchType.HOSTED)
         msg = self.getMirrorFailureForException(worker=worker)
-        expected_msg = 'Not a branch: "lp:~%s".' % (
-            worker.unique_name,)
+        expected_msg = 'Not a branch: "lp:%s".' % (worker.unique_name,)
         self.assertEqual(expected_msg, msg)
 
     def testNotBranchErrorImported(self):
