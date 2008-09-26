@@ -519,7 +519,7 @@ class PullerWorker:
         if branch_type == BranchType.HOSTED:
             policy = HostedBranchPolicy()
         elif branch_type == BranchType.MIRRORED:
-            policy = MirroredBranchPolicy()
+            policy = MirroredBranchPolicy(self.default_stacked_on_branch)
         elif branch_type == BranchType.IMPORTED:
             policy = ImportedBranchPolicy()
         else:
@@ -553,6 +553,7 @@ class PullerWorker:
         self.branch_id = branch_id
         self.unique_name = unique_name
         self.branch_type = branch_type
+        self.default_stacked_on_branch = default_stacked_on_branch
         if branch_mirrorer is None:
             branch_mirrorer = self._checkerForBranchType(branch_type)
         self.branch_mirrorer = branch_mirrorer
