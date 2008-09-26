@@ -1089,6 +1089,5 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(current_proposal_status, proposal.queue_status)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
