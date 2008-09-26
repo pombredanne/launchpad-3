@@ -560,10 +560,74 @@ class PackageUpload(SQLBase):
                         component, section))
         return summary
 
+    def _handleCommonBodyContent(self, message, changes):
+        """Put together pieces of the body common to all emails.
+
+        Sets the date, changed-by, maintainer, signer and origin properties on
+        the message as appropriate.
+
+        :message: An object containing the various pieces of the notification
+            email.
+        :changes: A dictionary with the changes file content.
+        """
+        # Add the date field.
+        message.DATE = 'Date: %s' % changes['date']
+
+        # Add the debian 'Changed-By:' field.
+        changed_by = changes.get('changed-by')
+        if changed_by is not None:
+            changed_by = sanitize_string(changed_by)
+            message.CHANGEDBY = '\nChanged-By: %s' % changed_by
+
+        # Add maintainer if present and different from changed-by.
+        maintainer = changes.get('maintainer')
+        if maintainer is not None:
+            maintainer = sanitize_string(maintainer)
+            if maintainer != changed_by:
+                message.MAINTAINER = '\nMaintainer: %s' % maintainer
+
+        # Add a 'Signed-By:' line if this is a signed upload and the
+        # signer/sponsor differs from the changed-by.
+        if self.signing_key is not None:
+            # This is a signed upload.
+            signer = self.signing_key.owner
+
+            signer_name = sanitize_string(signer.displayname)
+            signer_email = sanitize_string(signer.preferredemail.email)
+
+            signer_signature = '%s <%s>' % (signer_name, signer_email)
+
+            if changed_by != signer_signature:
+                message.SIGNER = '\nSigned-By: %s' % signer_signature
+
+        # Add the debian 'Origin:' field if present.
+        if changes.get('origin') is not None:
+            message.ORIGIN = '\nOrigin: %s' % changes['origin']
+
+        if self.sources or self.builds:
+            message.SPR_URL = canonical_url(self.sourcepackagerelease)
+
     def _sendRejectionNotification(
-        self, recipients, changes_lines, summary_text, dry_run,
+        self, recipients, changes_lines, changes, summary_text, dry_run,
         changesfile_content):
         """Send a rejection email."""
+
+        class PPARejectedMessage:
+            """PPA rejected message."""
+            template = get_email_template('ppa-upload-rejection.txt')
+            SUMMARY = summary_text
+            CHANGESFILE = guess_encoding("".join(changes_lines))
+
+        class RejectedMessage:
+            """Rejected message."""
+            template = get_email_template('upload-rejection.txt')
+            SUMMARY = summary_text
+            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGEDBY = ''
+            ORIGIN = ''
+            SIGNER = ''
+            MAINTAINER = ''
+            SPR_URL = ''
 
         default_recipient = "%s <%s>" % (
             config.uploader.default_recipient_name,
@@ -571,23 +635,23 @@ class PackageUpload(SQLBase):
         if not recipients:
             recipients = [default_recipient]
 
-        interpolations = {
-            "SUMMARY": summary_text,
-            "CHANGESFILE": guess_encoding("".join(changes_lines)),
-        }
         debug(self.logger, "Sending rejection email.")
         if self.isPPA():
-            rejection_template = get_email_template(
-                'ppa-upload-rejection.txt')
+            message = PPARejectedMessage
             attach_changes = False
         else:
-            rejection_template = get_email_template('upload-rejection.txt')
+            message = RejectedMessage
             attach_changes = True
+
+        self._handleCommonBodyContent(message, changes)
+        if message.SUMMARY is None:
+            message.SUMMARY = 'Rejection reason not available'
+
+        body = message.template % message.__dict__
 
         self._sendMail(
             recipients, "%s rejected" % self.changesfile.filename,
-            rejection_template % interpolations, dry_run,
-            changesfile_content=changesfile_content,
+            body, dry_run, changesfile_content=changesfile_content,
             attach_changes=attach_changes)
 
     def _sendSuccessNotification(
@@ -598,43 +662,7 @@ class PackageUpload(SQLBase):
         def do_sendmail(message, recipients=recipients, from_addr=None,
                         bcc=None):
             """Perform substitutions on a template and send the email."""
-            # Add the date field.
-            message.DATE = 'Date: %s' % changes['date']
-
-            # Add the debian 'Changed-By:' field.
-            changed_by = changes.get('changed-by')
-            if changed_by is not None:
-                changed_by = sanitize_string(changed_by)
-                message.CHANGEDBY = '\nChanged-By: %s' % changed_by
-
-            # Add maintainer if present and different from changed-by.
-            maintainer = changes.get('maintainer')
-            if maintainer is not None:
-                maintainer = sanitize_string(maintainer)
-                if maintainer != changed_by:
-                    message.MAINTAINER = '\nMaintainer: %s' % maintainer
-
-            # Add a 'Signed-By:' line if this is a signed upload and the
-            # signer/sponsor differs from the changed-by.
-            if self.signing_key is not None:
-                # This is a signed upload.
-                signer = self.signing_key.owner
-
-                signer_name = sanitize_string(signer.displayname)
-                signer_email = sanitize_string(signer.preferredemail.email)
-
-                signer_signature = '%s <%s>' % (signer_name, signer_email)
-
-                if changed_by != signer_signature:
-                    message.SIGNER = '\nSigned-By: %s' % signer_signature
-
-            # Add the debian 'Origin:' field if present.
-            if changes.get('origin') is not None:
-                message.ORIGIN = '\nOrigin: %s' % changes['origin']
-
-            if self.sources or self.builds:
-                message.SPR_URL = canonical_url(self.sourcepackagerelease)
-
+            self._handleCommonBodyContent(message, changes)
             body = message.template % message.__dict__
 
             # Weed out duplicate name entries.
@@ -732,7 +760,6 @@ class PackageUpload(SQLBase):
             SIGNER = ''
             MAINTAINER = ''
             SPR_URL = ''
-
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
@@ -859,7 +886,7 @@ class PackageUpload(SQLBase):
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
             self._sendRejectionNotification(
-                recipients, changes_lines, summary_text, dry_run,
+                recipients, changes_lines, changes, summary_text, dry_run,
                 changesfile_content)
             return
 
