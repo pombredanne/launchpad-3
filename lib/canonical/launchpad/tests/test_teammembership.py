@@ -12,7 +12,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
-    flush_database_caches, flush_database_updates, cursor)
+    cursor, flush_database_caches, flush_database_updates, sqlvalues)
 from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces.person import (
@@ -636,13 +636,13 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
-    def _runScript(self):
+    def _runScript(self, expected_returncode=0):
         process = subprocess.Popen(
             'cronscripts/check-teamparticipation.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (out, err) = process.communicate()
-        self.assertEqual(process.returncode, 0, (out, err))
+        self.assertEqual(process.returncode, expected_returncode, (out, err))
         return out, err
 
     def test_no_output_if_no_invalid_entries(self):
@@ -651,34 +651,90 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         self.assertEqual((out, err), ('', ''))
 
     def test_report_invalid_teamparticipation_entries(self):
-        """The script reports invalid TeamParticipation entries.
+        """The script reports missing/spurious TeamParticipation entries.
 
         As well as missing self-participation.
         """
         cur = cursor()
-        # Create a new entry in the Person table and update its
-        # TeamParticipation so that the person is a participant in a team
-        # (without being a member) and the person is not a member of itself.
+        # Create a new entry in the Person table and change its
+        # self-participation entry, making that person a participant in a team
+        # where it should not be as well as making that person not a member of
+        # itself (as everybody should be).
         cur.execute("""
             INSERT INTO
                 Person (id, name, displayname, creation_rationale)
                 VALUES (9999, 'zzzzz', 'zzzzzz', 1);
             UPDATE TeamParticipation
                 SET team = (
-                    SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
+                    SELECT id
+                    FROM Person
+                    WHERE teamowner IS NOT NULL
+                    ORDER BY name
+                    LIMIT 1)
                 WHERE person = 9999;
             """)
+        # Now add the new person as a member of another team but don't create
+        # the relevant TeamParticipation for that person on that team.
+        cur.execute("""
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9999,
+                    (SELECT id
+                        FROM Person
+                        WHERE teamowner IS NOT NULL
+                        ORDER BY name desc
+                        LIMIT 1),
+                    %s);
+            """ % sqlvalues(TeamMembershipStatus.APPROVED))
         import transaction
         transaction.commit()
 
         out, err = self._runScript()
-        self.assertEqual(err, '', (out, err))
+        self.assertEqual(out, '', (out, err))
         self.failUnless(
-            re.search('Invalid TeamParticipation entry for zzzzz', out),
+            re.search('missing TeamParticipation entries for zzzzz', err),
             (out, err))
         self.failUnless(
-            re.search('not members of themselves:.*zzzzz.*', out),
+            re.search('spurious TeamParticipation entries for zzzzz', err),
             (out, err))
+        self.failUnless(
+            re.search('not members of themselves:.*zzzzz.*', err),
+            (out, err))
+
+    def test_report_circular_team_references(self):
+        """The script reports circular references between teams.
+
+        If that happens, though, the script will have to report the circular
+        references and exit, to avoid an infinite loop when checking for
+        missing/spurious TeamParticipation entries.
+        """
+        # Create two new teams and make them members of each other.
+        cursor().execute("""
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9998, 'test-team1', 'team1', 1);
+            INSERT INTO
+                Person (id, name, displayname, teamowner)
+                VALUES (9997, 'test-team2', 'team2', 1);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9998, 9997, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9998, 9997);
+            INSERT INTO
+                TeamMembership (person, team, status)
+                VALUES (9997, 9998, %(approved)s);
+            INSERT INTO
+                TeamParticipation (person, team)
+                VALUES (9997, 9998);
+            """ % sqlvalues(approved=TeamMembershipStatus.APPROVED))
+        import transaction
+        transaction.commit()
+        out, err = self._runScript(expected_returncode=1)
+        self.assertEqual(out, '', (out, err))
+        self.failUnless(
+            re.search('Circular references found', err), (out, err))
 
 
 def test_suite():

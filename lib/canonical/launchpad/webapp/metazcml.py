@@ -5,6 +5,7 @@ __metaclass__ = type
 import inspect
 
 import zope.app.form.browser.metaconfigure
+import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.component.servicenames
 from zope.app.component.contentdirective import ContentDirective
@@ -18,6 +19,7 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.security.metadirectives import IDefinePermissionDirective
 from zope.app.security.permission import Permission
 from zope.component import getUtility
+import zope.configuration.config
 from zope.configuration.fields import (
     GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements

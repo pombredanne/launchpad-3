@@ -1413,7 +1413,7 @@ team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
 
-team_map = ContextBrowsername('Map of %s Participants')
+team_map = ContextBrowsername('Map of %s participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
