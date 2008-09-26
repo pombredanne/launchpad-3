@@ -24,6 +24,7 @@ from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting.branchfs import get_puller_server
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
@@ -49,17 +50,20 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, source_path, branch):
+    def assertMirrored(self, source_path, db_branch, destination_path=None):
         """Assert that 'branch' was mirrored succesfully."""
         # Make sure that we are testing the actual data.
-        removeSecurityProxy(branch).sync()
-        self.assertEqual(None, branch.mirror_status_message)
-        self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
-        self.assertEqual(0, branch.mirror_failures)
-        hosted_branch = Branch.open(source_path)
-        mirrored_branch = Branch.open(self.getMirroredPath(branch))
+        removeSecurityProxy(db_branch).sync()
+        self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
-            hosted_branch.last_revision(), branch.last_mirrored_id)
+            db_branch.last_mirror_attempt, db_branch.last_mirrored)
+        self.assertEqual(0, db_branch.mirror_failures)
+        hosted_branch = Branch.open(source_path)
+        if destination_path is None:
+            destination_path = self.getMirroredPath(db_branch)
+        mirrored_branch = Branch.open(destination_path)
+        self.assertEqual(
+            hosted_branch.last_revision(), db_branch.last_mirrored_id)
         self.assertEqual(
             hosted_branch.last_revision(), mirrored_branch.last_revision())
 
@@ -240,8 +244,15 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(tree.basedir, db_branch)
-        mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
+
+        # To open this branch, we're going to need to use the Launchpad vfs.
+        server = get_puller_server()
+        server.setUp()
+        self.addCleanup(server.tearDown)
+
+        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
+        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
+        mirrored_branch = Branch.open(mirrored_url)
         self.assertEqual(
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())

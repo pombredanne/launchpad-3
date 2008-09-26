@@ -198,10 +198,7 @@ class BranchPolicy:
         :return: The URL of the branch to stack the mirrored copy on. None if
             the mirrored copy should not be stacked.
         """
-        stacked_on_url = get_stacked_on_url(source_branch)
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-        return stacked_on_url
+        return get_stacked_on_url(source_branch)
 
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.
@@ -345,15 +342,22 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        stacked_on_url = self.policy.getStackedOnURL(
+        policy_stacked_on_url = self.policy.getStackedOnURL(
             source_branch, destination_url)
-        if stacked_on_url is not None:
+        if policy_stacked_on_url is not None:
+            stacked_on_url = urlutils.join(
+                destination_url, policy_stacked_on_url)
             try:
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
+        else:
+            stacked_on_url = None
         bzrdir.clone_on_transport(dest_transport, stacked_on=stacked_on_url)
-        return Branch.open(destination_url)
+        branch = Branch.open(destination_url)
+        if policy_stacked_on_url is not None:
+            branch.set_stacked_on_url(policy_stacked_on_url)
+        return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.
