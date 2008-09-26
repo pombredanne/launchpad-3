@@ -11,12 +11,17 @@ __all__ = [
     'ImplicitTypeSchema',
     'ImplicitTypeSection',
     'Section',
-    'SectionSchema',]
+    'SectionSchema',
+    'as_seconds',
+    ]
+
+
+import re
+import datetime
+import StringIO
 
 from ConfigParser import NoSectionError, RawConfigParser
 from os.path import abspath, basename, dirname
-import re
-import StringIO
 from textwrap import dedent
 
 from zope.interface import implements
@@ -644,3 +649,55 @@ class Category:
         if full_name in self._sections:
             return self._sections[full_name]
         raise AttributeError("No section named %s." % name)
+
+
+def _sort_order(a, b):
+    """Sort timedelta suffixes from greatest to least."""
+    if len(a) == 0:
+        return -1
+    if len(b) == 0:
+        return 1
+    order = dict(
+        w=0,    # weeks
+        d=1,    # days
+        h=2,    # hours
+        m=3,    # minutes
+        s=4,    # seconds
+        )
+    suffix_a = order.get(a[-1])
+    suffix_b = order.get(b[-1])
+    if suffix_a is None or suffix_b is None:
+        raise ValueError
+    return cmp(suffix_a, suffix_b)
+
+
+def as_timedelta(value):
+    """Convert a value string to the equivalent timedeta."""
+    # Technically, the regex will match multiple decimal points in the
+    # left-hand side, but that's okay because the float/int conversion below
+    # will properly complain if there's more than one dot.
+    components = sorted(re.findall(r'([\d.]+[smhdw])', value),
+                        cmp=_sort_order)
+    # Complain if the components are out of order.
+    if ''.join(components) != value:
+        raise ValueError
+    keywords = dict((interval[0].lower(), interval)
+                    for interval in ('weeks', 'days', 'hours',
+                                     'minutes', 'seconds'))
+    keyword_arguments = {}
+    for interval in components:
+        if len(interval) == 0:
+            raise ValueError
+        keyword = keywords.get(interval[-1].lower())
+        if keyword is None:
+            raise ValueError
+        if keyword in keyword_arguments:
+            raise ValueError
+        if '.' in interval[:-1]:
+            converted = float(interval[:-1])
+        else:
+            converted = int(interval[:-1])
+        keyword_arguments[keyword] = converted
+    if len(keyword_arguments) == 0:
+        raise ValueError
+    return datetime.timedelta(**keyword_arguments)
