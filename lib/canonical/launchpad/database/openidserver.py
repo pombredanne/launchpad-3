@@ -159,9 +159,10 @@ class OpenIDRPConfigSet:
         # XXX: BradCrittenden 2008-09-26 bug=274774: Until the database is
         # updated to normalize existing data the query must look for
         # trust_roots that end in '/' and those that do not.
-        return store.find(OpenIDRPConfig,
-                          Or(OpenIDRPConfig.trust_root==trust_root,
-                             OpenIDRPConfig.trust_root==trust_root[:-1])).one()
+        return store.find(
+            OpenIDRPConfig,
+            Or(OpenIDRPConfig.trust_root==trust_root,
+               OpenIDRPConfig.trust_root==trust_root[:-1])).one()
 
 
 class LaunchpadOpenIDStore(PostgreSQLStore):
