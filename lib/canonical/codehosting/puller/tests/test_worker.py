@@ -568,8 +568,7 @@ class TestMirroredBranchPolicy(TestCase):
         policy = MirroredBranchPolicy(stacked_on_url)
         destination_url = 'http://example.com/bar'
         self.assertEqual(
-            'http://example.com/foo',
-            policy.getStackedOnURL(None, destination_url))
+            '/foo', policy.getStackedOnURL(None, destination_url))
 
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):

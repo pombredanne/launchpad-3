@@ -27,7 +27,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
+from canonical.launchpad.interfaces import (
+    BranchType, IProductSet, IScriptActivitySet)
 from canonical.testing import ZopelessAppServerLayer
 
 
@@ -190,22 +191,34 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
-    def _enableDefaultStacking(self, product):
+    def _getProductWithStacking(self):
         # Only products that are explicitly specified in
         # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
+        # we look up one of those products in the sample data. Normally, we'd
+        # edit the configuration, but this has to work across process
+        # boundaries.
+        from canonical.launchpad.database.product import (
+            get_allowed_default_stacking_names)
+        product_name = get_allowed_default_stacking_names()[0]
+        return getUtility(IProductSet).getByName(product_name)
 
     def _makeDefaultStackedOnBranch(self):
-        """Make a default stacked-on branch."""
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
+        """Make a default stacked-on branch.
+
+        This creates a database branch on a product that allows default
+        stacking, makes it the default stacked-on branch for that product,
+        then creates a Bazaar branch for it. The Bazaar branch goes directly
+        into the mirrored area and has a stackable format.
+
+        :return: `IBranch`.
+        """
+        # Make the branch.
+        product = self._getProductWithStacking()
         default_branch = self.factory.makeBranch(product=product)
+        # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
+        # Put a Bazaar branch into the mirrored area.
         default_branch_path = self.getMirroredPath(default_branch)
         ensure_base(get_transport(default_branch_path))
         BzrDir.create_branch_convenience(
