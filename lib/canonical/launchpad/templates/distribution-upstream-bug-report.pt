@@ -13,9 +13,9 @@
 <metal:heading fill-slot="head_epilogue">
     <style type="text/css">
     <!--
-      td.good { background: lightgreen; }
-      td.bad { background: #ffaaaa; }
       td.amount a { display: block; }
+      tr.good { background: #d7ffbf; }
+      tr.bad { background: #ffbfbf; }
     -->
     </style>
 </metal:heading>
@@ -85,10 +85,12 @@
 
       <p class="warning message" tal:condition="view/data"
          style="width: 40%">
-        This report is an alpha release and has accounting limitations.
+        This report is a beta release and has accounting limitations.
         You can use it to guide your work, but do not take the
-        percentages too literally. See the Help tab for information on
-        the counts.
+        percentages too literally. See the
+        <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
+          >UpstreamReport wiki page</a>
+        for information on how to read this report.
       </p>
 
       <table class="listing sortable" id="upstream-report"
@@ -112,7 +114,7 @@
           </tr>
         </thead>
         <tbody id="upstream-report-content">
-          <tr tal:repeat="item view/data">
+          <tr tal:repeat="item view/data" tal:attributes="class item/row_class">
             <td>
               <a tal:attributes="href item/dsp/fmt:url"
                  tal:content="item/dsp/name"></a>
