@@ -82,15 +82,27 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
-    def test_mirror_opener(self):
+    def test_mirror_opener_with_stacked_on_url(self):
         # A PullerWorker for a mirrored branch gets a MirroredBranchPolicy as
-        # the policy of its branch_mirrorer.
+        # the policy of its branch_mirrorer. The default stacked-on URL is
+        # passed through.
         url = '/~foo/bar/baz'
         worker = self.makePullerWorker(
             branch_type=BranchType.MIRRORED, default_stacked_on_url=url)
         policy = worker.branch_mirrorer.policy
         self.assertIsInstance(policy, MirroredBranchPolicy)
         self.assertEqual(url, policy.stacked_on_url)
+
+    def test_mirror_opener_without_stacked_on_url(self):
+        # A PullerWorker for a mirrored branch get a MirroredBranchPolicy as
+        # the policy of its mirrorer. If a default stacked-on URL is not
+        # specified (indicated by an empty string), then the stacked_on_url is
+        # None.
+        worker = self.makePullerWorker(
+            branch_type=BranchType.MIRRORED, default_stacked_on_url='')
+        policy = worker.branch_mirrorer.policy
+        self.assertIsInstance(policy, MirroredBranchPolicy)
+        self.assertIs(None, policy.stacked_on_url)
 
     def testHostedOpener(self):
         # A PullerWorker for a hosted branch gets a HostedBranchPolicy as

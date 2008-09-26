@@ -566,6 +566,8 @@ class PullerWorker:
         self.branch_id = branch_id
         self.unique_name = unique_name
         self.branch_type = branch_type
+        if default_stacked_on_url == '':
+            default_stacked_on_url = None
         self.default_stacked_on_url = default_stacked_on_url
         if branch_mirrorer is None:
             branch_mirrorer = self._checkerForBranchType(branch_type)
