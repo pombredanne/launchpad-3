@@ -173,7 +173,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_mirrorAMirroredBranch(self):
+    def test_mirror_a_mirrored_branch(self):
         """Run the puller on a populated mirrored branch pull queue."""
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
         tree = self.make_branch_and_tree('.')

@@ -74,7 +74,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     (options, arguments) = parser.parse_args()
     (source_url, destination_url, branch_id, unique_name,
-     branch_type_name, oops_prefix, default_stacked_on_branch) = arguments
+     branch_type_name, oops_prefix, default_stacked_on_url) = arguments
 
     branch_type = BranchType.items[branch_type_name]
     section_name = 'supermirror_%s_puller' % branch_type_map[branch_type]
@@ -86,4 +86,4 @@ if __name__ == '__main__':
     install_worker_ui_factory(protocol)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
-        default_stacked_on_branch, protocol, oops_prefix=oops_prefix).mirror()
+        default_stacked_on_url, protocol, oops_prefix=oops_prefix).mirror()
