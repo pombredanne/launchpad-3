@@ -80,10 +80,10 @@ copy package interface can see packages to be copied.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
-    cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
-    iceweasel - 1.0 2007-07-09  Published  Warty            Editors
-    pmount - 0.1-1  2007-07-09  Published  Warty            Editors
+    Source            Published   Status     Series           Section  Built
+    cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
+    iceweasel...(...) 2007-07-09  Published  Warty            Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
 
 == How does this copy-thing work ? ==
@@ -737,9 +737,9 @@ sources and binaries are copied to their PPA.
     PPA for James Blackwell Friends
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source           Uploader    Published   Status   Series  Section  Built
-    iceweasel - 1.0  no signer               Pending  Hoary   Editors
-    pmount - 0.1-1   no signer               Pending  Hoary   Editors
+    Source            Uploader    Published   Status   Series  Section  Built
+    iceweasel...(...) no signer               Pending  Hoary   Editors
+    pmount - 0.1-1    no signer               Pending  Hoary   Editors
 
 James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
@@ -999,11 +999,11 @@ packages since they would not be published in the destination anyway.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
-    cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
-    foo - 1.1                   Published  Hoary            Base
-    iceweasel - 1.0 2007-07-09  Published  Warty            Editors
-    pmount - 0.1-1  2007-07-09  Published  Warty            Editors
+    Source            Published   Status     Series           Section  Built
+    cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
+    foo - 1.1                     Published  Hoary            Base
+    iceweasel...(...) 2007-07-09  Published  Warty            Editors
+    pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
     >>> foo_pub_id = getPPAPubIDsFor('cprov', 'foo')[0]
     >>> jblack_browser.getControl(
@@ -1057,9 +1057,9 @@ to copy the *same* version with different contents to grumpy in his PPA.
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
-    Source          Published   Status     Series           Section  Built
-    foo - 1.1                   Published  Hoary            Base
-    iceweasel - 1.0 2007-07-09  Published  Breezy-autotest  Editors
+    Source            Published   Status     Series           Section  Built
+    foo - 1.1                     Published  Hoary            Base
+    iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
     >>> foo_pub_id = getPPAPubIDsFor('sabdfl', 'foo')[0]
     >>> jblack_browser.getControl(

@@ -17,7 +17,7 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.pidfile import pidfile_path
+from canonical.lazr.pidfile import pidfile_path
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
@@ -361,7 +361,8 @@ class BaseAppServerSetupTestCase(unittest.TestCase):
         # Test that tearDown kills the app server and remove the PID file.
         _BaseAppServerLayer.setUp()
         pid = AppServerLayer.appserver.pid
-        pid_file = pidfile_path('launchpad', _BaseAppServerLayer.appserver_config)
+        pid_file = pidfile_path('launchpad',
+                                _BaseAppServerLayer.appserver_config)
         _BaseAppServerLayer.tearDown()
         self.assertRaises(OSError, os.kill, pid, 0)
         self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
@@ -374,10 +375,11 @@ class BaseAppServerSetupTestCase(unittest.TestCase):
         _BaseAppServerLayer.testSetUp()
         os.kill(AppServerLayer.appserver.pid, signal.SIGTERM)
         _BaseAppServerLayer.appserver.wait()
-        self.assertRaises(LayerIsolationError, _BaseAppServerLayer.testTearDown)
+        self.assertRaises(LayerIsolationError,
+                          _BaseAppServerLayer.testTearDown)
 
     def test_testTearDownResetsDB(self):
-        # The database should be reset after each test since 
+        # The database should be reset after each test since
         _BaseAppServerLayer.setUp()
         _BaseAppServerLayer.testSetUp()
         _BaseAppServerLayer.testTearDown()

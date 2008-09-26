@@ -445,6 +445,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'get_bugs',
             'login',
             'time',
+            'set_link',
             ],
         'Test': ['login_required']
         }
@@ -453,6 +454,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     auth_required_methods = [
         'add_comment',
         'login_required',
+        'set_link',
         ]
 
     expired_cookie = None
@@ -559,14 +561,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
-        # Reset the headers so that we don't end up with long strings of
-        # repeating cookies.
-        self.last_response_headers = HTTPMessage(StringIO())
-
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
-        self.last_response_headers.addheader(
-            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
+        self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
+        self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
 
         # We always return the same user ID.
         # This has to be listified because xmlrpclib tries to expand
@@ -711,6 +707,26 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # expand sequences of length 1. Trying to do that on a dict will
         # cause it to explode.
         return [{'comment_id': comment_id}]
+
+    def set_link(self, arguments):
+        """Set the Launchpad bug ID for a given Bugzilla bug.
+
+        :returns: The current Launchpad bug ID for the Bugzilla bug or
+            0 if one is not set.
+        """
+        bug_id = int(arguments['id'])
+        launchpad_id = arguments['launchpad_id']
+
+        # Extract the current launchpad_id from the bug, then update
+        # that field.
+        bug = self.bugs[bug_id]
+        old_launchpad_id = bug['internals'].get('launchpad_id', 0)
+        bug['internals']['launchpad_id'] = launchpad_id
+
+        # We need to return a list here because xmlrpclib will try to
+        # expand sequences of length 1, which will fail horribly when
+        # the sequence is in fact a dict.
+        return [{'launchpad_id': old_launchpad_id}]
 
 
 class TestMantis(Mantis):

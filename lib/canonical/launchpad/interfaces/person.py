@@ -566,15 +566,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    branches = Attribute(
-        "All branches related to this person. They might be registered, "
-        "authored or subscribed by this person.")
-    authored_branches = Attribute("The branches whose author is this person.")
-    registered_branches = Attribute(
-        "The branches whose owner is this person and which either have no"
-        "author or an author different from this person.")
-    subscribed_branches = Attribute(
-        "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
             title=_("All TeamMemberships for Teams this Person is an "
@@ -1579,6 +1570,9 @@ class IPersonSet(Interface):
     @collection_default_content()
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
+
+    def isNameBlacklisted(self, name):
+        """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
