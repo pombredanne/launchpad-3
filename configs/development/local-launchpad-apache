@@ -2,6 +2,7 @@ NameVirtualHost 127.0.0.88:80
 
 <VirtualHost 127.0.0.88:80>
   ServerName xmlrpc-private.launchpad.dev
+  ServerName xmlrpc.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
