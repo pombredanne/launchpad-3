@@ -49,9 +49,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         This is outside of the IBranch interface so that the authserver can
         access the information without logging in as a particular user.
 
-        :return: (id, url, unique_name), where `id` is the branch database ID,
-            `url` is the URL to pull from and `unique_name` is the
-            `unique_name` property without the initial '~'.
+        :return: (id, url, unique_name, default_stacked_on_url), where 'id'
+            is the branch database ID, 'url' is the URL to pull from,
+            'unique_name' is the `unique_name` property and
+            'default_stacked_on_url' is the URL of the branch to stack on by
+            default (normally of the form '/~foo/bar/baz').
         """
         branch = removeSecurityProxy(branch)
         if branch.branch_type == BranchType.REMOTE:
@@ -64,7 +66,7 @@ class BranchPuller(LaunchpadXMLRPCView):
         if default_branch is None:
             default_branch = ''
         else:
-            default_branch = default_branch.unique_name
+            default_branch = '/' + default_branch.unique_name
         return (
             branch.id, branch.getPullURL(), branch.unique_name,
             default_branch)
