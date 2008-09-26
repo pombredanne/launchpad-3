@@ -16,10 +16,13 @@ __all__ = [
 
 from datetime import datetime
 import pytz
+import re
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
+from storm.expr import Or
+from zope.component import getUtility
 from zope.interface import implements, classProvides
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
@@ -32,6 +35,8 @@ from canonical.launchpad.interfaces.openidserver import (
     IOpenIDAuthorizationSet, IOpenIDPersistentIdentity, IOpenIDRPConfig,
     IOpenIDRPConfigSet, IOpenIDRPSummary, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -112,10 +117,14 @@ class OpenIDRPConfig(SQLBase):
 class OpenIDRPConfigSet:
     implements(IOpenIDRPConfigSet)
 
+    url_re = re.compile("^(.+?)\/*$")
+
     def _normalizeTrustRoot(self, trust_root):
-        if not trust_root.endswith('/'):
-            trust_root = trust_root + '/'
-        return trust_root
+        """Given a trust root URL ensure it ends with exactly one '/'."""
+        match = self.url_re.match(trust_root)
+        assert match is not None, (
+            "Attempting to normalize trust root %s failed." % trust_root)
+        return "%s/" % match.group(1)
 
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
@@ -146,7 +155,13 @@ class OpenIDRPConfigSet:
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
         trust_root = self._normalizeTrustRoot(trust_root)
-        return OpenIDRPConfig.selectOneBy(trust_root=trust_root)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        # XXX: BradCrittenden 2008-09-26 bug=274774: Until the database is
+        # updated to normalize existing data the query must look for
+        # trust_roots that end in '/' and those that do not.
+        return store.find(OpenIDRPConfig,
+                          Or(OpenIDRPConfig.trust_root==trust_root,
+                             OpenIDRPConfig.trust_root==trust_root[:-1])).one()
 
 
 class LaunchpadOpenIDStore(PostgreSQLStore):
