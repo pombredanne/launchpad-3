@@ -344,6 +344,8 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
+        # Remove from the queue.
+        self.queue_position = None
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -352,6 +354,8 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
+        # Remove from the queue.
+        self.queue_position = None
 
         if merged_revno is not None:
             branch_revision = BranchRevision.selectOneBy(

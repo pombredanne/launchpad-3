@@ -29,7 +29,7 @@ from canonical.launchpad.testing import (
 from canonical.testing import DatabaseFunctionalLayer
 
 
-class TestBranchMergeProposalTransitions(TestCase):
+class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     """Test the state transitions of branch merge proposals."""
 
     layer = DatabaseFunctionalLayer
@@ -48,12 +48,9 @@ class TestBranchMergeProposalTransitions(TestCase):
         }
 
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        self.factory = LaunchpadObjectFactory()
-        owner = self.factory.makePerson()
-        self.target_branch = self.factory.makeBranch(owner=owner)
-        login(self.target_branch.owner.preferredemail.email)
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeBranch()
+        login_person(self.target_branch.owner)
 
     def assertProposalState(self, proposal, state):
         """Assert that the `queue_status` of the `proposal` is `state`."""
@@ -154,11 +151,41 @@ class TestBranchMergeProposalTransitions(TestCase):
             else:
                 self.assertBadTransition(queued, status)
 
+    def test_transitions_from_queued_dequeue(self):
+        # When a proposal is dequeued it is set to code approved, and the
+        # queue position is reset.
         proposal = self.factory.makeBranchMergeProposal(
-            target_branch=self.target_branch, set_state=queued)
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
         proposal.dequeue()
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertIs(None, proposal.queue_position)
+        self.assertIs(None, proposal.queuer)
+        self.assertIs(None, proposal.queued_revision_id)
+        self.assertIs(None, proposal.date_queued)
+
+    def test_transitions_from_queued_to_merged(self):
+        # When a proposal is marked as merged from queued, the queue_position
+        # is reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
+        proposal.markAsMerged()
+        self.assertProposalState(
+            proposal, BranchMergeProposalStatus.MERGED)
+        self.assertIs(None, proposal.queue_position)
+
+    def test_transitions_from_queued_to_merge_failed(self):
+        # When a proposal is marked as merged from queued, the queue_position
+        # is reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
+        proposal.mergeFailed(None)
+        self.assertProposalState(
+            proposal, BranchMergeProposalStatus.MERGE_FAILED)
+        self.assertIs(None, proposal.queue_position)
 
     def test_transitions_from_superseded(self):
         """Superseded is a terminal state, so no transitions are valid."""
