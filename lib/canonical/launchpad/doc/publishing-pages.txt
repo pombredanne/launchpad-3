@@ -95,3 +95,28 @@ BinaryPackagePublishingHistoryView.
     >>> print binary_details_view.is_binary
     True
 
+Make sure the 'timestamp_map' class attribute in BasePublishingRecordView
+covers all PackagePublishingStatus values.
+This test will fail if we add a new value to the PackagePublishingStatus
+enumeration but neglect to update BasePublishingRecordView.timestamp_map
+accordingly.
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from canonical.launchpad.browser.publishing import (
+    ...     BasePublishingRecordView)
+    >>> for pps in PackagePublishingStatus.items:
+    ...     print '%s -> %s' % (
+    ...         pps, BasePublishingRecordView.timestamp_map[pps])
+    Pending -> datecreated
+    Published -> datepublished
+    Superseded -> datesuperseded
+    Deleted -> dateremoved
+    Obsolete -> scheduleddeletiondate
+
+Any key that's not in the PackagePublishingStatus enumeration will cause an
+exception to be thrown.
+
+    >>> print BasePublishingRecordView.timestamp_map['key_not_there']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'key_not_there'
