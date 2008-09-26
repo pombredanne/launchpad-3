@@ -21,6 +21,7 @@ __all__ = [
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+import sha
 import sets
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -219,13 +220,17 @@ def sendmail(message, to_addrs=None):
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
-    message['X-Generated-By'] = gen = Header('Launchpad (canonical.com)')
-    gen.append('; Revision %d' % (versioninfo.revno,))
-    gen.append('; Instance %s' % (config.name,))
+    message['X-Generated-By'] = 'Launchpad (canonical.com)'
+    message.set_param('Revision', str(versioninfo.revno), 'X-Generated-By')
+    message.set_param('Instance', config.name, 'X-Generated-By')
 
-    # Add a shared secret header for pre-approval with Mailman.
+    # Add a shared secret header for pre-approval with Mailman. This approach
+    # helps security, but still exposes us to a replay attack; we consider the
+    # risk low.
     del message['X-Launchpad-Shared-Secret']
-    message['X-Launchpad-Shared-Secret'] = config.mailman.shared_secret
+    hash = sha.new(config.mailman.shared_secret)
+    hash.update(str(message['message-id']))
+    message['X-Launchpad-Shared-Secret'] = hash.hexdigest()
 
     raw_message = message.as_string()
     if isZopeless():

@@ -101,13 +101,13 @@ def test_simple_sendmail():
     shows the bzr revision and instance name.
 
     >>> message['X-Generated-By']
-    'Launchpad (canonical.com) ; Revision 1999 ; Instance launchpad-lazr.conf'
+    'Launchpad (canonical.com); Revision="1999";\n\tInstance="launchpad-lazr.conf"'
 
     """
 
 def test_suite():
     suite = DocTestSuite(checker=RENormalizing([
-        (re.compile(r'Revision \d+'), 'Revision 1999')]))
+        (re.compile(r'Revision="\d+"'), 'Revision="1999"')]))
     suite.layer = LaunchpadFunctionalLayer
     return suite
 

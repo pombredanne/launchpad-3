@@ -2,7 +2,7 @@
 
 """A global pipeline handler for determining Launchpad membership."""
 
-
+import sha
 import xmlrpclib
 
 from Mailman import Errors
@@ -30,15 +30,19 @@ def process(mlist, msg, msgdata):
     # For example, if the list is a contact address for a team and that team
     # is the contact address for a project's answer tracker, an automated
     # message will be sent from Launchpad.  Check for a header that indicates
-    # this was a Launchpad generated message.
-    if msg['x-launchpad-shared-secret'] == mm_cfg.LAUNCHPAD_SHARED_SECRET:
-        # Delete the header so it doesn't leak to end users.
-        del msg['x-launchpad-shared-secret']
-        # Since this message is coming from Launchpad, pre-approve it.  Yes,
-        # this could be spoofed, but there's really no other way (currently)
-        # to do it.
-        msgdata['approved'] = True
-        return
+    # this was a Launchpad generated message.  See
+    # canonical.launchpad.mail.sendmail.sendmail for where this is set.
+    secret = msg['x-launchpad-shared-secret']
+    message_id = msg['message-id']
+    if secret and message_id:
+        hash = sha.new(mm_cfg.LAUNCHPAD_SHARED_SECRET)
+        hash.update(message_id)
+        if secret == hash.hexdigest():
+            # Since this message is coming from Launchpad, pre-approve it.
+            # Yes, this could be spoofed, but there's really no other way
+            # (currently) to do it.
+            msgdata['approved'] = True
+            return
     # This handler can just return if the sender is a member of Launchpad.
     if is_member:
         return

@@ -174,6 +174,16 @@ class MessageSet:
         for bytes, charset in bits:
             if charset is None:
                 charset = 'us-ascii'
+            # XXX 2008-09-26 gary:
+            # The RFC 2097 encoding names and the Python encoding names are
+            # not always the same. A safer and more correct approach would use
+            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #                'replace')
+            # or similar, rather than
+            #   bytes.decode(charset, 'replace')
+            # That said, this has not bitten us so far, and is only likely to
+            # cause problems in unusual encodings that we are hopefully
+            # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
                 (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
 
@@ -504,4 +514,3 @@ class MessageChunk(SQLBase):
                 "Type:       %s\n"
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
-
