@@ -8,7 +8,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter,
+    IProductSet, IPOTemplateSet, ITranslationImporter,
     TranslationFileFormat)
 from canonical.launchpad.translationformat import (
     importers, is_identical_translation, TranslationImporter,

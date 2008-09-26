@@ -7,15 +7,11 @@ import unittest
 import transaction
 import datetime
 from zope.component import getUtility
-from zope.interface.verify import verifyObject
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, ITranslationFormatImporter,
-    ITranslationImportQueue, TranslationFileFormat)
+    IPersonSet, ITranslationImportQueue)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory)
-from canonical.launchpad.database import (
-    POTemplate, POFile)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.translation_import import (
@@ -214,7 +210,7 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessEqual(len(errors), 0,
             "POTFileImporter.importFile returns errors where there should "
             "be none.")
-        potmsgset=self.potemplate.getPOTMsgSetByMsgIDText(TEST_MSGID)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(TEST_MSGID)
         self.failUnless(potmsgset is not None,
             "POTFileImporter.importFile does not create an IPOTMsgSet "
             "object in the database.")
