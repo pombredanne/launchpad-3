@@ -185,6 +185,16 @@ class BranchPolicy:
     """Policy on how to mirror branches."""
 
     def getStackedOnURL(self, source_branch, destination_url):
+        """Return the URL of the branch to stack the mirrored copy on.
+
+        By default, we stacked the copy on the same URL as the source,
+        relative to the new URL.
+
+        :param source_branch: The branch to be mirrored.
+        :param destination_url: The place to mirror it to.
+        :return: The URL of the branch to stack the mirrored copy on. None if
+            the mirrored copy should not be stacked.
+        """
         stacked_on_url = get_stacked_on_url(source_branch)
         if stacked_on_url is not None:
             stacked_on_url = urlutils.join(destination_url, stacked_on_url)
