@@ -438,6 +438,8 @@ One rejection email is generated:
   'netapplet-1.0.0.tar.gz rejected'
 
 The body of the rejection email is now in the new, human readable format.
+Please note also that in this case the rejection reason is not available
+and that that's stated in the notification email body.
 
   >>> body = rejection.get_payload()[0]
   >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
@@ -447,70 +449,9 @@ The body of the rejection email is now in the new, human readable format.
   <BLANKLINE>
   Rejected:
   Rejection reason not available
-  <BLANKLINE>
-  ed (0.2-21) unstable; urgency=3Dlow
-  <BLANKLINE>
-    * Bump version number for soyuz testing
-  <BLANKLINE>
-  Date: Wed, 15 Feb 2006 11:29:18 +0000
-  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  Maintainer: James Troup <james@nocrew.org>
-  <BLANKLINE>
-  =3D=3D=3D
-  <BLANKLINE>
-  If you don't understand why your files were rejected, or if the
-  override file requires editing, please go to:
-  http://answers.launchpad.net/soyuz
-  <BLANKLINE>
-  -- =
-  <BLANKLINE>
+  ...
   You are receiving this email because you are the uploader, maintainer or
   signer of the above package.
-  <BLANKLINE>
-
-In order to facilitate scripts that parse announcement emails, the changes
-file is enclosed as an attachment.
-
-  >>> attachment = rejection.get_payload()[1]
-  >>> print attachment.as_string() # doctest: -NORMALIZE_WHITESPACE
-  Content-Type: text/plain; charset="utf-8"
-  MIME-Version: 1.0
-  Content-Transfer-Encoding: quoted-printable
-  Content-Disposition: attachment; filename="changesfile"
-  <BLANKLINE>
-  -----BEGIN PGP SIGNED MESSAGE-----
-  Hash: SHA1
-  <BLANKLINE>
-  Format: 1.7
-  Date: Wed, 15 Feb 2006 11:29:18 +0000
-  Source: ed
-  Binary: ed
-  Architecture: source
-  Version: 0.2-21
-  Distribution: unstable
-  Urgency: low
-  Maintainer: James Troup <james@nocrew.org>
-  Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
-  Description: =
-  <BLANKLINE>
-   ed         - The classic unix line editor
-  Changes: =
-  <BLANKLINE>
-   ed (0.2-21) unstable; urgency=3Dlow
-   .
-     * Bump version number for soyuz testing
-  Files: =
-  <BLANKLINE>
-   4d1708f58c6431069fbcb8742fe54da8 522 editors important ed_0.2-21.dsc
-   7280d666af19a45ef08f88368421b4c5 8577 editors important ed_0.2-21.diff.gz
-  <BLANKLINE>
-  -----BEGIN PGP SIGNATURE-----
-  Version: GnuPG v1.4.1 (GNU/Linux)
-  <BLANKLINE>
-  iD8DBQFD8xC3K8hAFiBoeJURArj8AKC731NLTJNLfFabVzN2QndmPPl/ywCgxcgQ
-  ohzdmAsBZwvpKHjsCJyyWAI=3D
-  =3DGUzT
-  -----END PGP SIGNATURE-----
   <BLANKLINE>
 
 The override controls are now available for rejected packages.
