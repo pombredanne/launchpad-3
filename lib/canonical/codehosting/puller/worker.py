@@ -519,7 +519,7 @@ class PullerWorker:
         if branch_type == BranchType.HOSTED:
             policy = HostedBranchPolicy()
         elif branch_type == BranchType.MIRRORED:
-            policy = MirroredBranchPolicy(self.default_stacked_on_branch)
+            policy = MirroredBranchPolicy(self.default_stacked_on_url)
         elif branch_type == BranchType.IMPORTED:
             policy = ImportedBranchPolicy()
         else:
@@ -528,7 +528,7 @@ class PullerWorker:
         return BranchMirrorer(policy)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
-                 default_stacked_on_branch, protocol, branch_mirrorer=None,
+                 default_stacked_on_url, protocol, branch_mirrorer=None,
                  oops_prefix=None):
         """Construct a `PullerWorker`.
 
@@ -539,7 +539,7 @@ class PullerWorker:
             (without the tilde).
         :param branch_type: A member of the BranchType enum.  It is expected
             that tests that do not depend on its value will pass None.
-        :param default_stacked_on_branch: The unique name of the default
+        :param default_stacked_on_url: The unique name of the default
             stacked-on branch for the product of the branch we are mirroring.
             None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
@@ -553,7 +553,7 @@ class PullerWorker:
         self.branch_id = branch_id
         self.unique_name = unique_name
         self.branch_type = branch_type
-        self.default_stacked_on_branch = default_stacked_on_branch
+        self.default_stacked_on_url = default_stacked_on_url
         if branch_mirrorer is None:
             branch_mirrorer = self._checkerForBranchType(branch_type)
         self.branch_mirrorer = branch_mirrorer

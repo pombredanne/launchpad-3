@@ -87,7 +87,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # the policy of its branch_mirrorer.
         url = '/~foo/bar/baz'
         worker = self.makePullerWorker(
-            branch_type=BranchType.MIRRORED, default_stacked_on_branch=url)
+            branch_type=BranchType.MIRRORED, default_stacked_on_url=url)
         policy = worker.branch_mirrorer.policy
         self.assertIsInstance(policy, MirroredBranchPolicy)
         self.assertEqual(url, policy.stacked_on_url)

@@ -68,7 +68,7 @@ class PullerWorkerMixin:
     """
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
-                         default_stacked_on_branch=None, protocol=None,
+                         default_stacked_on_url=None, protocol=None,
                          oops_prefix=None):
         """Anonymous creation method for PullerWorker."""
         if protocol is None:
@@ -82,9 +82,8 @@ class PullerWorkerMixin:
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type,
-            default_stacked_on_branch=default_stacked_on_branch,
-            protocol=protocol, branch_mirrorer=opener,
-            oops_prefix=oops_prefix)
+            default_stacked_on_url=default_stacked_on_url, protocol=protocol,
+            branch_mirrorer=opener, oops_prefix=oops_prefix)
 
 
 class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
