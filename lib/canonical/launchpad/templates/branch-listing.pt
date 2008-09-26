@@ -81,7 +81,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       </tal:allow-setting-dev-focus>
       <tr tal:repeat="branch context/branches">
         <td>
-          <img src="/@@/branch"> <a tal:attributes="href branch/fmt:url;
+          <img src="/@@/branch" /> <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
              tal:content="branch/bzr_identity">
                Name
