@@ -26,13 +26,13 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, login_person, TestCaseWithFactory, time_counter)
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestBranchMergeProposalTransitions(TestCase):
     """Test the state transitions of branch merge proposals."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     # All transitions between states are handled my method calls
     # on the proposal.
@@ -222,7 +222,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
 class TestBranchMergeProposalCanReview(TestCase):
     """Test the different cases that makes a branch deletable or not."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -252,7 +252,7 @@ class TestBranchMergeProposalCanReview(TestCase):
 class TestBranchMergeProposalQueueing(TestCase):
     """Test the enqueueing and dequeueing of merge proposals."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -329,7 +329,7 @@ class TestBranchMergeProposalQueueing(TestCase):
 class TestRootComment(TestCase):
     """Test the behavior of the root_comment attribute"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -359,7 +359,7 @@ class TestRootComment(TestCase):
 class TestMergeProposalAllComments(TestCase):
     """Tester for `BranchMergeProposal.all_comments`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -384,7 +384,7 @@ class TestMergeProposalAllComments(TestCase):
 class TestMergeProposalGetComment(TestCase):
     """Tester for `BranchMergeProposal.getComment`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -410,7 +410,7 @@ class TestMergeProposalGetComment(TestCase):
 class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -511,7 +511,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -525,7 +525,7 @@ class TestGetAddress(TestCaseWithFactory):
 class TestBranchMergeProposalGetter(TestCaseWithFactory):
     """Test that the BranchMergeProposalGetter behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
@@ -547,7 +547,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
 class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
     """Test the getProposalsForContext method."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Use an administrator so the permission checks for things
@@ -713,7 +713,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
