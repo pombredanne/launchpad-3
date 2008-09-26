@@ -45,6 +45,7 @@ class TestErrorCatching(unittest.TestCase):
 
     class CustomErrorOpener(BranchMirrorer):
         def __init__(self, exc):
+            super(TestErrorCatching.CustomErrorOpener, self).__init__(None)
             self.exc = exc
         def open(self, url):
             raise self.exc
