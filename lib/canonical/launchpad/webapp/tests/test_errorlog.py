@@ -23,7 +23,7 @@ from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
@@ -622,6 +622,24 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(''.join(lines[13:17]), exc_tb)
 
 
+class TestSensitiveRequestVariables(unittest.TestCase):
+    """Test request variables that should not end up in the stored OOPS.
+
+    The _is_sensitive() method will return True for any variable name that
+    should not be included in the OOPS.
+    """
+
+    def test_oauth_signature_is_sensitive(self):
+        """The OAuth signature can be in the body of a POST request, but if
+        that happens we don't want it to be included in the OOPS, so we need
+        to mark it as sensitive.
+        """
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://api.launchpad.dev'},
+            form={'oauth_signature': '&BTXPJ6pQTvh49r9p'})
+        self.failUnless(_is_sensitive(request, 'oauth_signature'))
+
+
 class TestRequestWithUnauthenticatedPrincipal(TestRequest):
     principal = UnauthenticatedPrincipal(42)
 
@@ -645,6 +663,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestErrorReport))
     suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
+    suite.addTest(unittest.makeSuite(TestSensitiveRequestVariables))
     return suite
 
 if __name__ == '__main__':
