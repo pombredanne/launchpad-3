@@ -53,7 +53,6 @@ class TestBranchPuller(PullerBranchTestCase):
     def assertMirrored(self, source_path, db_branch, destination_path=None):
         """Assert that 'branch' was mirrored succesfully."""
         # Make sure that we are testing the actual data.
-        removeSecurityProxy(db_branch).sync()
         self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
             db_branch.last_mirror_attempt, db_branch.last_mirrored)
