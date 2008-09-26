@@ -1640,6 +1640,7 @@ class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
     show_series_links = True
+    show_set_development_focus = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @property
