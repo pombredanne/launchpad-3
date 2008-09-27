@@ -776,12 +776,6 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        if virtualized:
-            archive_purposes = [ArchivePurpose.PPA]
-        else:
-            archive_purposes = [
-                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
-
         query = """
            BuildQueue.build = Build.id AND
            Build.archive = Archive.id AND
@@ -789,8 +783,8 @@ class BuilderSet(object):
            DistroArchSeries.processorfamily = Processor.family AND
            Processor.id = %s AND
            Build.buildstate = %s AND
-           Archive.purpose IN %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+           Archive.require_virtualized = %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
 
         clauseTables = [
             'Build', 'DistroArchSeries', 'Processor', 'Archive']
