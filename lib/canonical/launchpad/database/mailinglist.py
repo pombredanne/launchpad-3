@@ -16,6 +16,7 @@ __all__ = [
 from email import message_from_string
 from email.Header import decode_header, make_header
 from itertools import repeat
+from socket import getfqdn
 from string import Template
 
 from storm.expr import And, LeftJoin
@@ -49,7 +50,6 @@ from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
@@ -167,9 +167,11 @@ class MailingList(SQLBase):
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (
-            self.team.name,
-            configure_hostname(config.mailman.build_host_name))
+        if config.mailman.build_host_name:
+            host_name = config.mailman.build_host_name
+        else:
+            host_name = getfqdn()
+        return '%s@%s' % (self.team.name, host_name)
 
     @property
     def archive_url(self):
@@ -418,6 +420,7 @@ class MailingList(SQLBase):
             LeftJoin(MailingListSubscription,
                      MailingListSubscription.personID
                      == EmailAddress.personID),
+            # pylint: disable-msg=C0301
             LeftJoin(MailingList,
                      MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,
@@ -438,6 +441,7 @@ class MailingList(SQLBase):
             LeftJoin(MailingListSubscription,
                      MailingListSubscription.email_addressID
                      == EmailAddress.id),
+            # pylint: disable-msg=C0301
             LeftJoin(MailingList,
                      MailingList.id == MailingListSubscription.mailing_listID),
             LeftJoin(TeamParticipation,

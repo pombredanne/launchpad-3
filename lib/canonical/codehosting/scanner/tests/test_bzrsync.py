@@ -825,6 +825,25 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
         self.assertEqualDiff(diff, expected)
 
+    def test_only_nodiff_subscribers_means_no_diff_generated(self):
+        self.layer.switchDbUser('launchpad')
+        subscriptions = self.db_branch.getSubscriptionsByLevel(
+            [BranchSubscriptionNotificationLevel.FULL])
+        for s in subscriptions:
+            s.max_diff_lines = BranchSubscriptionDiffSize.NODIFF
+        self.layer.commit()
+        self.layer.switchDbUser(config.branchscanner.dbuser)
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+
+        self.writeToFile(filename='foo', contents='bar')
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
+        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
+
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
     """Tests BzrSync support for not generating branch email notifications

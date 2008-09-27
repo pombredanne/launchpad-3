@@ -32,34 +32,22 @@ class IHasBugs(Interface):
 
     export_as_webservice_entry()
 
-    open_bugtasks = exported(CollectionField(
-        title=_("A list of open bugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    closed_bugtasks = exported(CollectionField(
-        title=_("A list of closed bugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    inprogress_bugtasks = exported(CollectionField(
-        title=_("A list of in-progress bugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    critical_bugtasks = exported(CollectionField(
-        title=_("A list of critical BugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    new_bugtasks = exported(CollectionField(
-        title=_("A list of New BugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    unassigned_bugtasks = exported(CollectionField(
-        title=_("A list of unassigned BugTasks for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
-    all_bugtasks = exported(CollectionField(
-        title=_("A list of all BugTasks ever reported for this target."),
-        readonly=True, required=False,
-        value_type=Reference(schema=IBugTask)))
+    # XXX Tom Berger 2008-09-26, Bug #274735
+    # The following are attributes, rather than fields, and must remain
+    # so, to make sure that they are not being copied into snapshots.
+    # Eventually, we'd like to remove these attributes from the content
+    # class altogether.
+    open_bugtasks = Attribute("A list of open bugTasks for this target.")
+    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
+    inprogress_bugtasks = Attribute(
+        "A list of in-progress bugTasks for this target.")
+    critical_bugtasks = Attribute(
+        "A list of critical BugTasks for this target.")
+    new_bugtasks = Attribute("A list of New BugTasks for this target.")
+    unassigned_bugtasks = Attribute(
+        "A list of unassigned BugTasks for this target.")
+    all_bugtasks = Attribute(
+        "A list of all BugTasks ever reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(

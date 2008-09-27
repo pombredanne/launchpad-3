@@ -1150,7 +1150,11 @@ class ServiceRootResource(HTTPResource):
         top-level entry resources (should there be any) are not
         represented.
         """
-        data_for_json = {}
+        type_url = "%s#%s" % (
+            canonical_url(
+                self.request.publication.getApplication(self.request)),
+            "service-root")
+        data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
             data_for_json[link_name] = canonical_url(publication)
@@ -1181,6 +1185,16 @@ class ServiceRootResource(HTTPResource):
             top_level_resources[link_name] = utility
 
         return top_level_resources
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            adapter.singular_type)
 
 
 class Entry:
