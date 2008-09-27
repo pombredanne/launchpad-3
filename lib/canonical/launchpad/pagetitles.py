@@ -1218,6 +1218,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_edubuntu = 'Getting Edubuntu'
+
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
