@@ -167,6 +167,13 @@
         attribute="__call__"
         />
 
+    <browser:page
+        name="+affectsmetoo"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugMarkAsAffectingUserView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-mark-as-affecting-user.pt" />
+
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require

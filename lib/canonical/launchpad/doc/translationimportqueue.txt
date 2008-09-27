@@ -224,8 +224,8 @@ between different sourcepackages.
 The info we use is:
     - The sourcepackagename: All KDE language packs have
       the sourcepackagename following this pattern:
-      kde-i18n-LANGCODE. We get from here the language where the .po
-      files belong.
+      kde-i18n-LANGCODE or kde-l10n-LANGCODE. We get from here the
+      language where the .po files belong.
     - The .po filename: All .po files are stored using the translation
       domain as its filename. This information helps us to get the
       IPOTemplate where we should associate this .po file.

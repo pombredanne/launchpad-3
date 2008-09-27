@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
     ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp.uri import URI
@@ -211,6 +213,7 @@ class BranchMailer:
         self.db_branch = db_branch
         self.pending_emails = []
         self.subscribers_want_notification = False
+        self.generate_diffs = False
         self.initial_scan = None
         self.email_from = config.canonical.noreply_from_address
 
@@ -231,7 +234,12 @@ class BranchMailer:
                        BranchSubscriptionNotificationLevel.FULL)
 
         subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
-        self.subscribers_want_notification = (subscriptions.count() > 0)
+        for subscription in subscriptions:
+            self.subscribers_want_notification = True
+            if (subscription.max_diff_lines !=
+                BranchSubscriptionDiffSize.NODIFF):
+                self.generate_diffs = True
+                break
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
@@ -269,7 +277,10 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            revision_diff = get_diff(bzr_branch, bzr_revision)
+            if self.generate_diffs:
+                revision_diff = get_diff(bzr_branch, bzr_revision)
+            else:
+                revision_diff = ''
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
