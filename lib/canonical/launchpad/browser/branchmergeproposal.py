@@ -958,6 +958,7 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         self.form_fields = status_field + self.form_fields
 
     @action('Change Status', name='update')
+    @notify
     def update_action(self, action, data):
         """Update the status."""
 
