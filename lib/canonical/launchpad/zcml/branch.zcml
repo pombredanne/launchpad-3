@@ -28,7 +28,8 @@
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
-                    branch_format repository_format control_format stacked_on"
+                    branch_format repository_format control_format stacked_on
+                    createBranchRevisionFromIDs"
                     />
     <require
         permission="launchpad.Edit"

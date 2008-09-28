@@ -54,7 +54,6 @@ from canonical.launchpad.interfaces.bugwatch import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -1027,6 +1026,8 @@ class BugTaskSearchParams:
         search_params.owner = owner
         search_params.distribution = distribution
         if has_patch:
+            # Import this here to avoid circular imports
+            from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
             search_params.attachmenttype = BugAttachmentType.PATCH
             search_params.has_patch = has_patch
         search_params.has_cve = has_cve

@@ -20,11 +20,11 @@ from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.config import config
+from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import BlockingProxy
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 

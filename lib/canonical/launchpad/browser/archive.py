@@ -16,6 +16,7 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
+    'traverse_archive',
     ]
 
 
@@ -26,6 +27,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -43,6 +45,7 @@ from canonical.launchpad.interfaces.archive import (
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
@@ -57,6 +60,7 @@ from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import (
@@ -122,6 +126,43 @@ class ArchiveBadges(HasBadgeBase):
     def getPrivateBadgeTitle(self):
         """Return private badge info useful for a tooltip."""
         return "This archive is private."
+
+
+def traverse_archive(distribution, name):
+    """For distribution archives, traverse to the right place.
+
+    This traversal only applies to distribution archives, not PPAs.
+
+    :param name: The name of the archive, e.g. 'partner'
+    """
+    archive = getUtility(
+        IArchiveSet).getByDistroAndName(distribution, name)
+    if archive is None:
+        return NotFoundError(name)
+    else:
+        return archive
+
+
+class ArchiveURL:
+    """Dynamic URL declaration for `IDistributionArchive`.
+
+    When dealing with distribution archives we want to present them under
+    IDistribution as /<distro>/+archive/<name>, for example:
+    /ubuntu/+archive/partner
+    """
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.distribution
+
+    @property
+    def path(self):
+        return u"+archive/%s" % self.context.name.lower()
 
 
 class ArchiveNavigation(Navigation):
@@ -875,7 +916,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
-            self.context.removeArchiveDependency(dependency)
+            self.context.removeArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE,
+                getUtility(IComponentSet)['main'])
 
         self.refreshSelectedDependenciesWidget()
 
@@ -912,7 +955,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "An archive should not depend on itself.")
             return
 
-        if self.context.getArchiveDependency(dependency_candidate):
+        if self.context.getArchiveDependency(
+            dependency_candidate, PackagePublishingPocket.RELEASE,
+            getUtility(IComponentSet)['main']):
             self.setFieldError('dependency_candidate',
                                "This dependency is already recorded.")
             return
@@ -924,7 +969,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             return
 
         dependency_candidate = data.get('dependency_candidate')
-        self.context.addArchiveDependency(dependency_candidate)
+        self.context.addArchiveDependency(
+            dependency_candidate, PackagePublishingPocket.RELEASE,
+            getUtility(IComponentSet)['main'])
         self.refreshSelectedDependenciesWidget()
 
         self.request.response.addNotification(
