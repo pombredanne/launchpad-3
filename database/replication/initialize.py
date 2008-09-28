@@ -40,8 +40,8 @@ def duplicate_schema():
     # We can't use pg_dump to replicate security as not all of the roles
     # may exist in the slave databases' clusters yet.
     rv = subprocess.call(
-        "pg_dump -x -s -U slony launchpad_dev "
-        "| psql -q -U slony launchpad_dev_slave1", shell=True)
+        "pg_dump -x -s -U slony lpmain_demo "
+        "| psql -q -U slony authdb_demo", shell=True)
     if rv != 0:
         log.fatal("Schema duplication failed, pg_dump returned %d" % rv)
         sys.exit(rv)
@@ -49,7 +49,7 @@ def duplicate_schema():
     # Now setup security on the slaves and create any needed roles,
     log.info('Setting up security on slave')
     rv = subprocess.call([
-        "../schema/security.py",  "-d", "launchpad_dev"])
+        "../schema/security.py",  "-d", "authdb_demo"])
     if rv != 0:
         print >> sys.stderr, "ERR: security setup failed, returning %d" % rv
         sys.exit(rv)
