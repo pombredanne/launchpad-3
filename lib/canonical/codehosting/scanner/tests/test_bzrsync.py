@@ -609,18 +609,6 @@ class TestBzrSyncModified(BzrSyncTestCase):
             new_parents=len(parent_ids), new_authors=1)
         return fake_revision
 
-    def test_sync_twice(self):
-        # Synchronise the fake revision:
-        # Verify that synchronising the revision twice passes and does
-        # not create a second revision object:
-        fake_revision = self.makeSyncedRevision()
-        counts = self.getCounts()
-        self.bzrsync.syncOneRevision(
-            fake_revision, {fake_revision.revision_id: None})
-        self.assertCounts(
-            counts, new_revisions=0, new_numbers=0,
-            new_parents=0, new_authors=0)
-
 
 class TestBzrSyncEmail(BzrSyncTestCase):
     """Tests BzrSync support for generating branch email notifications."""
@@ -839,6 +827,25 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             # \ufffd is the substitution character.
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
         self.assertEqualDiff(diff, expected)
+
+    def test_only_nodiff_subscribers_means_no_diff_generated(self):
+        self.layer.switchDbUser('launchpad')
+        subscriptions = self.db_branch.getSubscriptionsByLevel(
+            [BranchSubscriptionNotificationLevel.FULL])
+        for s in subscriptions:
+            s.max_diff_lines = BranchSubscriptionDiffSize.NODIFF
+        self.layer.commit()
+        self.layer.switchDbUser(config.branchscanner.dbuser)
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+
+        self.writeToFile(filename='foo', contents='bar')
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
+        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):

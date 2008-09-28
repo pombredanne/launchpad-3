@@ -42,7 +42,8 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
-from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.hwdb import (
+    IHWSubmission, IHWSubmissionSet)
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -227,12 +228,10 @@ class EditPackaging(EditByRegistryExpertsOrOwnersOrAdmins):
 class EditProductReleaseFile(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductReleaseFile
+
     def checkAuthenticated(self, user):
-        if (user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
-            user.inTeam(self.obj.productrelease.productseries.owner) or
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
-            return True
-        return False
+        return EditProductRelease(self.obj.productrelease).checkAuthenticated(
+            user)
 
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
@@ -741,7 +740,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
-    please consult with SABDFL before modifying these permissions.
+    please consult with Kiko and MDZ on the mailing list before modifying
+    these permissions.
     """
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries
@@ -1718,6 +1718,11 @@ class ViewHWSubmission(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class EditHWSubmission(AdminByAdminsTeam):
+    permission = 'launchpad.Edit'
+    usedfor = IHWSubmission
 
 
 class ViewArchive(AuthorizationBase):

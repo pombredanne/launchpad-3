@@ -62,6 +62,18 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         finally:
             self.resetCookies()
 
+    def chooseRequestClass(self, method, path, environment):
+        """See `HTTPCaller`.
+
+        This version adds the 'PATH_INFO' variable to the environment,
+        because some of our factories expects it.
+        """
+        if 'PATH_INFO' not in environment:
+            environment = dict(environment)
+            environment['PATH_INFO'] = path
+        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
+            method, path, environment)
+
     def resetCookies(self):
         self.cookies = SimpleCookie()
 
@@ -194,7 +206,9 @@ class WebServiceCaller:
 
     def named_get(self, path_or_url, operation_name, headers=None,
                   api_version=DEFAULT_API_VERSION, **kwargs):
-        data = self._convertArgs(operation_name, kwargs)
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, self._quote_value(value))
+                         for key, value in kwargs.items()])
         return self.get("%s?%s" % (path_or_url, data), data, headers,
                         api_version=api_version)
 
@@ -209,6 +223,15 @@ class WebServiceCaller:
         """Make a PATCH request."""
         return self._make_request_with_entity_body(
             path, 'PATCH', media_type, data, headers, api_version=api_version)
+
+    def _quote_value(self, value):
+        """Quote a value for inclusion in a named GET.
+
+        This may mean turning the value into a JSON string.
+        """
+        if not isinstance(value, basestring):
+            value = simplejson.dumps(value)
+        return urllib.quote(value)
 
     def _make_request_with_entity_body(self, path, method, media_type, data,
                                        headers, api_version):
@@ -389,7 +412,7 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content):
+def extract_text(content, extract_image_text=False):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
@@ -416,6 +439,17 @@ def extract_text(content):
                     continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
+
+                # If extract_image_text is True and the node is an
+                # image, try to find its title or alt attributes.
+                if extract_image_text and node.name.lower() == 'img':
+                    # Title outweighs alt text for the purposes of
+                    # pagetest output.
+                    if node.get('title') is not None:
+                        result.append(node['title'])
+                    elif node.get('alt') is not None:
+                        result.append(node['alt'])
+
             # Process this node's children next.
             nodes[0:0] = list(node)
 

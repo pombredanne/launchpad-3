@@ -1,47 +1,38 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
-"""Tests for the Launchpad code hosting Bazaar transport."""
+"""Tests for the branch filesystem."""
 
 __metaclass__ = type
 
-import codecs
-import logging
 import os
-from StringIO import StringIO
-import shutil
-import sys
-import tempfile
 import unittest
 
-from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import (
     TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
-from bzrlib.tests import test_transport_implementations
 from bzrlib.transport import (
-    chroot, get_transport, _get_protocol_handlers, register_transport, Server,
-    Transport, unregister_transport)
+    get_transport, _get_protocol_handlers, register_transport, Server,
+    unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.urlutils import escape, local_path_to_url
-
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.authserver.interfaces import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.branchfs import (
+    AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
+    LaunchpadServer)
+from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
-from canonical.codehosting.tests.helpers import (
-    FakeLaunchpad, TestResultWrapper)
-from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, AsyncVirtualTransport, BlockingProxy,
-    InvalidControlDirectory, LaunchpadInternalServer, LaunchpadServer,
-    set_up_logging)
-from canonical.config import config
-from canonical.testing import reset_logging, TwistedLayer
+from canonical.codehosting.tests.helpers import FakeLaunchpad
+from canonical.codehosting.transport import AsyncVirtualTransport
+from canonical.launchpad.interfaces.codehosting import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+from canonical.testing import TwistedLayer
 
 
 class MixinBaseLaunchpadServerTests:
@@ -896,190 +887,6 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.assertEqual('mirror', transport.listable())
 
 
-class TestLoggingSetup(BzrTestCase):
-
-    def setUp(self):
-        BzrTestCase.setUp(self)
-
-        # Configure the debug logfile
-        self._real_debug_logfile = config.codehosting.debug_logfile
-        file_handle, filename = tempfile.mkstemp()
-        config.codehosting.debug_logfile = filename
-
-        # Trap stderr.
-        self._real_stderr = sys.stderr
-        sys.stderr = codecs.getwriter('utf8')(StringIO())
-
-        # We want to use Bazaar's default logging -- not its test logging --
-        # so here we disable the testing logging system (which restores
-        # default logging).
-        self._finishLogFile()
-
-    def tearDown(self):
-        sys.stderr = self._real_stderr
-        config.codehosting.debug_logfile = self._real_debug_logfile
-        BzrTestCase.tearDown(self)
-        # We don't use BaseLayer because we want to keep the amount of
-        # pre-configured logging systems to an absolute minimum, in order to
-        # make it easier to test this particular logging system.
-        reset_logging()
-
-    def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
-        # set_up_logging fails with an AssertionError if it cannot create the
-        # directory that the log file will go in.
-        file_handle, filename = tempfile.mkstemp()
-        def remove_file():
-            os.unlink(filename)
-        self.addCleanup(remove_file)
-
-        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
-        self.assertRaises(AssertionError, set_up_logging)
-
-    def test_makesLogDirectory(self):
-        # If the specified logfile is in a directory that doesn't exist, then
-        # set_up_logging makes that directory.
-        directory = tempfile.mkdtemp()
-        def remove_directory():
-            shutil.rmtree(directory)
-        self.addCleanup(remove_directory)
-
-        config.codehosting.debug_logfile = os.path.join(
-            directory, 'subdir', 'debug.log')
-        set_up_logging()
-        self.failUnless(os.path.isdir(os.path.join(directory, 'subdir')))
-
-    def test_returnsCodehostingLogger(self):
-        # set_up_logging returns the 'codehosting' logger.
-        self.assertIs(set_up_logging(), logging.getLogger('codehosting'))
-
-    def test_codehostingLogGoesToDebugLogfile(self):
-        # Once set_up_logging is called, messages logged to the codehosting
-        # logger are stored in config.codehosting.debug_logfile.
-
-        set_up_logging()
-
-        # Make sure that a logged message goes to the debug logfile
-        logging.getLogger('codehosting').debug('Hello hello')
-        self.failUnless(
-            open(config.codehosting.debug_logfile).read().endswith(
-                'Hello hello\n'))
-
-    def test_codehostingLogDoesntGoToStderr(self):
-        # Once set_up_logging is called, any messages logged to the
-        # codehosting logger should *not* be logged to stderr. If they are,
-        # they will appear on the user's terminal.
-
-        set_up_logging()
-
-        # Make sure that a logged message does not go to stderr.
-        logging.getLogger('codehosting').info('Hello hello')
-        self.assertEqual(sys.stderr.getvalue(), '')
-
-    def test_codehostingLogDoesntGoToStderrEvenWhenNoLogfile(self):
-        # Once set_up_logging is called, any messages logged to the
-        # codehosting logger should *not* be logged to stderr, even if there's
-        # no debug_logfile set.
-
-        config.codehosting.debug_logfile = None
-        set_up_logging()
-
-        # Make sure that a logged message does not go to stderr.
-        logging.getLogger('codehosting').info('Hello hello')
-        self.assertEqual(sys.stderr.getvalue(), '')
-
-    def test_leavesBzrHandlersUnchanged(self):
-        # Bazaar's log handling is untouched by set_up_logging.
-        root_handlers = logging.getLogger('').handlers
-        bzr_handlers = logging.getLogger('bzr').handlers
-
-        set_up_logging()
-
-        self.assertEqual(root_handlers, logging.getLogger('').handlers)
-        self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
-
-
-class TestingServer(LaunchpadInternalServer):
-    """A Server that provides instances of LaunchpadTransport for testing.
-
-    See the comment in `_transportFactory` about what we actually test and
-    `TestLaunchpadTransportImplementation` for the actual TestCase class.
-    """
-
-    def __init__(self):
-        """Initialize the server.
-
-        We register ourselves with the scheme lp-testing=${id(self)}:///
-        using the `FakeLaunchpad` authserver client and backed onto a
-        MemoryTransport.
-        """
-        LaunchpadInternalServer.__init__(
-            self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(FakeLaunchpad()), MemoryTransport())
-        self._chroot_servers = []
-
-    def _transportFactory(self, url):
-        """See `LaunchpadInternalServer._transportFactory`.
-
-        As `LaunchpadTransport` 'acts all kinds of crazy' above the .bzr
-        directory of a branch (forbidding file or directory creation at some
-        levels, enforcing naming restrictions at others), we test a
-        LaunchpadTransport chrooted into the .bzr directory of a branch.
-        """
-        if url != self._scheme:
-            raise AssertionError(
-                "Don't know how to create non-root transport. Not needed for "
-                "testing.")
-        root_transport = LaunchpadInternalServer._transportFactory(self, url)
-        # We clone to this particular URL because FakeLaunchpad's constructor
-        # creates a branch with this URL.  This is an instance of the Mystery
-        # Guest test anti-pattern.
-        bzrdir_transport = root_transport.clone('~testuser/firefox/qux/.bzr')
-        bzrdir_transport.ensure_base()
-        chroot_server = chroot.ChrootServer(bzrdir_transport)
-        chroot_server.setUp()
-        self._chroot_servers.append(chroot_server)
-        return get_transport(chroot_server.get_url())
-
-    def tearDown(self):
-        """See `LaunchpadInternalServer.tearDown`.
-
-        In addition to calling the overridden method, we tear down any
-        ChrootServer instances we've set up.
-        """
-        for chroot_server in self._chroot_servers:
-            chroot_server.tearDown()
-        LaunchpadInternalServer.tearDown(self)
-
-
-class TestLaunchpadTransportImplementation(
-        test_transport_implementations.TransportTests):
-    """Implementation tests for `LaunchpadTransport`.
-
-    We test the transport chrooted to the .bzr directory of a branch -- see
-    `TestingServer._transportFactory` for more.
-    """
-    # TransportTests tests that get_transport() returns an instance of
-    # `transport_class`, but the instances we're actually testing are
-    # instances of ChrootTransport wrapping instances of SynchronousAdapter
-    # which wraps the LaunchpadTransport we're actually interested in.  This
-    # doesn't seem interesting to check, so we just set transport_class to
-    # the base Transport class.
-    transport_class = Transport
-
-    def setUp(self):
-        """Arrange for `get_transport` to return wrapped LaunchpadTransports.
-        """
-        self.transport_server = TestingServer
-        super(TestLaunchpadTransportImplementation, self).setUp()
-
-    def run(self, result=None):
-        """Run the test, with the result wrapped so that it knows about skips.
-        """
-        if result is None:
-            result = self.defaultTestResult()
-        super(TestLaunchpadTransportImplementation, self).run(
-            TestResultWrapper(result))
-
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
+
