@@ -1014,3 +1014,96 @@ removed from the beginning/end.
 
     >>> implicit_config['section_33'].key2
     'multiline value 1\nmultiline value 2'
+
+
+== Type conversion helpers ==
+
+lazr.config provides a few helpers for doing explicit type conversion.  These
+functions have to be imported and called explicitly on the configuration
+variable values.
+
+
+=== Host and port ===
+
+There is a helper for converting from a host:port string to a 2-tuple of
+(host, port).
+
+    >>> from canonical.lazr.config import as_host_port
+    >>> as_host_port('host:25')
+    ('host', 25)
+
+The port string is optional, in which case, port 25 is the default (for
+historical reasons).
+
+    >>> as_host_port('host')
+    ('host', 25)
+
+The default port can be overridden.
+
+    >>> as_host_port('host', default_port=22)
+    ('host', 22)
+
+The default port is ignored if it is given in the value.
+
+    >>> as_host_port('host:80', default_port=22)
+    ('host', 80)
+
+The host name is also optional, as denoted by a leading colon.  When omitted,
+localhost is used.
+
+    >>> as_host_port(':80')
+    ('localhost', 80)
+
+The default host name can be overridden though.
+
+    >>> as_host_port(':80', default_host='myhost')
+    ('myhost', 80)
+
+The default host name is ignored if the value string contains it.
+
+    >>> as_host_port('yourhost:80', default_host='myhost')
+    ('yourhost', 80)
+
+A ValueError occurs if the port number in the configuration value string is
+not an integer.
+
+    >>> as_host_port(':foo')
+    Traceback (most recent call last):
+    ...
+    ValueError: invalid literal for int(): foo
+
+
+=== User and group ===
+
+A helper is provided for turning a chown(1)-style user:group specification
+into a 2-tuple of the user name and group name.
+
+    >>> from canonical.lazr.config import as_username_groupname
+
+The value string must contain both a user name and group name, separated by a
+colon, otherwise an exception is raised.
+
+    >>> as_username_groupname('foo')
+    Traceback (most recent call last):
+    ...
+    ValueError: need more than 1 value to unpack
+
+When both are given, the strings are returned unchanged or validated.
+
+    >>> as_username_groupname('person:group')
+    ('person', 'group')
+
+Numeric values can be given, but they are not converted into their symbolic
+names.
+
+    >>> as_username_groupname('25:26')
+    ('25', '26')
+
+By default the current user and group names are returned.
+
+    >>> import grp, os, pwd
+    >>> user, group = as_username_groupname()
+    >>> user == pwd.getpwuid(os.getuid()).pw_name
+    True
+    >>> group == grp.getgrgid(os.getgid()).gr_name
+    True

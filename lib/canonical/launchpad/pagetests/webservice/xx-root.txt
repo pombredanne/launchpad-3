@@ -10,11 +10,14 @@ links to the top-level web service objects.
   [u'bugs_collection_link', u'distributions_collection_link', u'me_link',
    u'people_collection_link', u'pillars_link',
    u'project_groups_collection_link',
-   u'projects_collection_link']
+   u'projects_collection_link',
+   u'resource_type_link']
   >>> top_level_links['bugs_collection_link']
   u'http://.../bugs'
   >>> top_level_links['me_link']
   u'http://.../people/+me'
+  >>> top_level_links['resource_type_link']
+  u'http://.../#service-root'
 
 The client can explore the entire web service by following these links
 to other resources, and following the links served in those resources'

@@ -1,0 +1,73 @@
+= Archives =
+
+For archives we publish a subset of their attributes.
+This works for PPAs:
+
+    >>> archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> print archive['self_link']
+    http://.../~cprov/+archive
+
+    >>> for key, value in sorted(archive.items()):
+    ...     print "%s: %s" % (key, value)
+    description: packages to help my friends.
+    distribution_link: http://.../ubuntu
+    name: default
+    owner_link: http://.../~cprov
+    resource_type_link: http://.../#archive
+    self_link: http://.../~cprov/+archive
+    title: PPA for Celso Providelo
+
+    >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
+    >>> print main['self_link']
+    http://.../ubuntu/+archive/primary
+
+Distributions can provide information about their archives.  Looking
+at "ubuntutest":
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> for entry in distros['entries']:
+    ...    print entry['self_link']
+    http://.../ubuntu
+    http://.../kubuntu
+    http://.../ubuntutest
+    http://.../debian
+    http://.../gentoo
+
+    >>> ubuntu = distros['entries'][2]
+
+"ubuntutest" has a "main_archive" which is always present:
+
+    >>> print ubuntu['main_archive_link']
+    http://.../ubuntutest/+archive/primary
+
+The archive has the following attributes:
+
+    >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
+    >>> for key, value in sorted(main_archive.items()):
+    ...     print "%s: %s" % (key, value)
+    description: None
+    distribution_link: http://.../ubuntutest
+    name: primary
+    owner_link: http://.../~ubuntu-team
+    resource_type_link: http://.../#archive
+    self_link: http://.../ubuntutest/+archive/primary
+    title: Primary Archive for Ubuntu Test
+
+A distribution can also provide a list of all its archives:
+
+    >>> print ubuntu['archives_collection_link']
+    http://.../ubuntutest/archives
+    >>> archives = webservice.get(
+    ...     ubuntu['archives_collection_link']).jsonBody()
+    >>> print_self_link_of_entries(archives)
+    http://api.launchpad.dev/beta/ubuntutest/+archive/partner
+    http://api.launchpad.dev/beta/ubuntutest/+archive/primary
+
+Attempting to grab a non-existent archive will result in a 404 error:
+
+    >>> bogus_archive = "ubuntutest/+archive/bogus"
+    >>> webservice.get(bogus_archive).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 404 Not Found
+    ...
