@@ -51,8 +51,15 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
     def assertMirrored(self, source_path, db_branch, destination_path=None):
-        """Assert that 'branch' was mirrored succesfully."""
-        # Make sure that we are testing the actual data.
+        """Assert that 'db_branch' was mirrored succesfully.
+
+        :param source_path: The URL of the branch that was mirrored.
+        :param db_branch: The `IBranch` representing the branch that was
+            mirrored.
+        :param destination_path: If specified, the URL to examine for the
+            destination branch. If unspecified, look directly at the mirrored
+            area on the filesystem.
+        """
         self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
             db_branch.last_mirror_attempt, db_branch.last_mirrored)
