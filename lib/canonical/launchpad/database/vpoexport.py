@@ -53,11 +53,18 @@ class VPOExportSet:
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
+    # Obsolete translations are marked with a sequence number of 0, so they
+    # would get sorted to the front of the file during export. To avoid that,
+    # sequence numbers of 0 are sorted as if they where the maximum integer
+    # value so that they appear at the end of the file.
     sort_column_names = [
         'potemplate',
         'language',
         'variant',
-        'sequence',
+        'CASE '
+            'WHEN sequence = 0 THEN 2147483647 '
+            'ELSE sequence '
+        'END',
         'id',
     ]
     sort_columns = ', '.join(
