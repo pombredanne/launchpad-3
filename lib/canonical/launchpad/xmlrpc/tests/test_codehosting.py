@@ -730,7 +730,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 class FakeBranch:
 
-    def __init__(self, branch_id, branch_type, url=None, unique_name=None):
+    def __init__(self, branch_id, branch_type, url=None, unique_name=None,
+                 stacked_on=None, private=False):
         self.id = branch_id
         self.branch_type = branch_type
         self.last_mirror_attempt = None
@@ -742,6 +743,8 @@ class FakeBranch:
         self.mirror_failures = 0
         self.stacked_on = None
         self.mirror_status_message = None
+        self.stacked_on = stacked_on
+        self.private = private
 
     @classmethod
     def _get_store(cls):
@@ -780,7 +783,7 @@ class FakeObjectFactory(ObjectFactory):
         super(FakeObjectFactory, self).__init__()
         self._branch_source = FakeBranch._branch_source = branch_source
 
-    def makeBranch(self, branch_type=None):
+    def makeBranch(self, branch_type=None, stacked_on=None, private=False):
         branch_id = self.getUniqueInteger()
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
@@ -788,7 +791,7 @@ class FakeObjectFactory(ObjectFactory):
             url = None
         branch = FakeBranch(
             branch_id, branch_type, url=url,
-            unique_name=self.getUniqueString())
+            unique_name=self.getUniqueString(), stacked_on=stacked_on)
         self._branch_source._branches[branch_id] = branch
         return branch
 
@@ -815,6 +818,7 @@ class FakeBranchPuller:
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         branch.last_mirror_attempt = UTC_NOW
+        branch.next_mirror_time = None
         return True
 
     def mirrorComplete(self, branch_id, last_revision_id):
@@ -824,7 +828,9 @@ class FakeBranchPuller:
         branch.last_mirrored_id = last_revision_id
         branch.last_mirrored = UTC_NOW
         branch.mirror_failures = 0
-        branch.next_mirror_time = None
+        for stacked_branch in self._branch_source.getBranches():
+            if stacked_branch.stacked_on is branch:
+                stacked_branch.requestMirror()
         return True
 
     def mirrorFailed(self, branch_id, reason):
@@ -873,6 +879,9 @@ class FakeLaunchpadFrontend:
 
     def getBranch(self, branch_id):
         return self._branches.get(branch_id)
+
+    def getBranches(self):
+        return self._branches.itervalues()
 
     def getLastActivity(self, activity_name):
         return self._script_activities.get(activity_name)
