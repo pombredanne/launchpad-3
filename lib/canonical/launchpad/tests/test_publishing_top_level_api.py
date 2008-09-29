@@ -113,9 +113,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
 
         # source and binary PUBLISHED on disk.
-        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_dsc = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_dsc).read().strip(),'Hello')
-        foo_deb = "%s/main/f/foo/foo-bin_all.deb" % self.pool_dir
+        foo_deb = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
     def checkPublicationsAreIgnored(self, pocket):

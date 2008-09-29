@@ -25,9 +25,7 @@ another branch.
     >>> sample_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/firefox/main')
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'This is the whiteboard')
-    >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.getControl('Propose Merge').click()
 
 When a branch is the target of one or more merge proposals, a
 merge queue is visible for that branch.  The merge queue contains
@@ -48,7 +46,6 @@ the branch is ready to be merged with the target branch.
 
     >>> printMergeProposals(sample_browser, 'landing-candidates')
     ~sabdfl/firefox/release-0.9 (New) - view proposal details
-    This is the whiteboard
     Merge proposed by Sample Person
     Needs review
 
@@ -129,7 +126,7 @@ queue for merging branches that have been approved.
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/firefox/main')
     >>> cancel = nopriv_browser.getLink('Cancel')
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
 
 Consume notification.
 

@@ -381,6 +381,20 @@ class BranchPullQueueTest(TestCaseWithFactory):
         self.assertEqual(
             expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
 
+    def _enableDefaultStacking(self, product):
+        # Only products that are explicitly specified in
+        # allow_default_stacking will have values for default stacked-on. Here
+        # we add the just-created product to allow_default_stacking so we can
+        # test stacking with private branches.
+        self.pushConfig(
+            'codehosting', allow_default_stacking='%s,%s' % (
+                config.codehosting.allow_default_stacking, product.name))
+
+    def _makeProductWithStacking(self):
+        product = self.factory.makeProduct()
+        self._enableDefaultStacking(product)
+        return product
+
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches
         to pull.
@@ -398,6 +412,36 @@ class BranchPullQueueTest(TestCaseWithFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
         return branch
+
+    def test_getBranchPullInfo_no_default_stacked_branch(self):
+        # If there's no default stacked branch for the project that a branch
+        # is on, then _getBranchPullInfo returns (id, url, unique_name, '').
+        branch = self.factory.makeBranch()
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
+
+    def test_getBranchPullInfo_default_stacked_branch(self):
+        # If there's a default stacked branch for the project that a branch is
+        # on, then _getBranchPullInfo returns (id, url, unique_name,
+        # default_branch_unique_name).
+        product = self._makeProductWithStacking()
+        branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        default_branch = self.factory.makeBranch(product=product)
+        series.user_branch = default_branch
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name,
+             '/' + default_branch.unique_name), info)
+
+    def test_getBranchPullInfo_junk(self):
+        # _getBranchPullInfo returns (id, url, unique_name, '') for junk
+        # branches.
+        branch = self.factory.makeBranch(product=None)
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)

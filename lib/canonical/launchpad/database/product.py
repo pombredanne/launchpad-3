@@ -929,6 +929,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
+
 def get_allowed_default_stacking_names():
     """Return a list of names of `Product`s that allow default stacking."""
     return config.codehosting.allow_default_stacking.split(',')

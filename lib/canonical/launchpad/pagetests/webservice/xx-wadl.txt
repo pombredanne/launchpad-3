@@ -312,7 +312,8 @@ for every link in the JSON representation.
 
     >>> params = sorted([param for param in service_root_repr], key=name_attrib)
     >>> (bug_set_param, distro_set_param, me_param, person_set_param,
-    ...  pillar_param, project_group_set_param, project_set_param) = params
+    ...  pillar_param, project_group_set_param, project_set_param,
+    ...  resource_type_param) = params
 
     >>> person_set_param.tag
     '...param'
@@ -327,6 +328,12 @@ for every link in the JSON representation.
     'me_link'
     >>> me_param.attrib['path']
     "$['me_link']"
+
+    >>> resource_type_param.attrib['name']
+    'resource_type_link'
+
+    >>> resource_type_param.attrib['path']
+    "$['resource_type_link']"
 
 This is saying that applying the JSONPath expression
 '$['people_collection_link']' to the JSON document will give you
