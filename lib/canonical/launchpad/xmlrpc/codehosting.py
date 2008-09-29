@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'BranchFileSystem',
     'BranchPuller',
+    'datetime_from_tuple',
     ]
 
 
