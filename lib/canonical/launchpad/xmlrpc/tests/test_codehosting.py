@@ -106,7 +106,7 @@ class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
     :ivar frontend: A nullary callable that returns an object that implements
-        getPullerEndpoint, getLaunchpadObjectFactory and getBranch.
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranchSet.
     """
 
     def setUp(self):
@@ -114,7 +114,7 @@ class BranchPullerTest(TestCaseWithFactory):
         frontend = self.frontend()
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branch_getter = frontend.getBranch
+        self.branch_set = frontend.getBranchSet()
         self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
@@ -162,7 +162,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(self.branch_getter(branch_id), None)
+        self.assertIs(self.branch_set.get(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -736,8 +736,8 @@ class RealLaunchpadFrontend:
     def getLaunchpadObjectFactory(self):
         return LaunchpadObjectFactory()
 
-    def getBranch(self, branch_id):
-        return getUtility(IBranchSet).get(branch_id)
+    def getBranchSet(self):
+        return getUtility(IBranchSet)
 
     def getLastActivity(self, activity_name):
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)

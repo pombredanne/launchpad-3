@@ -42,7 +42,7 @@ class FakeBranch:
                     'Expected only id and one other. Got %r' % kwargs)
                 attribute = kwargs.keys()[0]
                 expected_value = kwargs[attribute]
-                branch = cls._branch_source.getBranch(branch_id)
+                branch = cls._branch_source.getBranchSet().get(branch_id)
                 if branch is None:
                     return None
                 if expected_value is getattr(branch, attribute):
@@ -187,9 +187,6 @@ class FakeLaunchpadFrontend:
 
     def getLaunchpadObjectFactory(self):
         return self._factory
-
-    def getBranch(self, branch_id):
-        return self._branch_set.get(branch_id)
 
     def getBranchSet(self):
         return self._branch_set
