@@ -27,8 +27,7 @@ import urllib
 
 import simplejson
 
-from zope.app.datetimeutils import (
-    DateError, DateTimeError, DateTimeParser, SyntaxError)
+from zope.app.datetimeutils import DateTimeError, DateTimeParser
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -299,22 +298,18 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
                 raise ValueError("Time not in UTC.")
             return datetime(year, month, day, hours, minutes,
                             seconds, microseconds, pytz.utc)
-        except (DateError, DateTimeError, SyntaxError):
+        except DateTimeError: # DateError and SyntaxError inherit from this.
             raise ValueError("Value doesn't look like a date.")
 
 
-class DateFieldMarshaller(SimpleFieldMarshaller):
+class DateFieldMarshaller(DateTimeFieldMarshaller):
     """A marshaller that transforms its value into a date object."""
 
     def _marshall_from_json_data(self, value):
         """Parse the value as a datetime.date object."""
-        try:
-            value = DateTimeParser().parse(value)
-            (year, month, day, hours, minutes, secondsAndMicroseconds,
-                timezone) = value
-            return date(year, month, day)
-        except (DateError, DateTimeError, SyntaxError):
-            raise ValueError("Value doesn't look like a date.")
+        super_class= super(DateFieldMarshaller, self)
+        date_time = super_class._marshall_from_json_data(value)
+        return date_time.date()
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
