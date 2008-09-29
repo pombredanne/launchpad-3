@@ -15,6 +15,7 @@ from canonical.launchpad.xmlrpc import faults
 
 
 class FakeStore:
+    """Fake store that implements find well enough to pass tests."""
 
     def __init__(self, object_set):
         self._object_set = object_set
@@ -34,33 +35,14 @@ class FakeStore:
 
 
 class FakeDatabaseObject:
+    """Base class for fake database objects."""
 
     def _set_object_set(self, object_set):
         self.__storm_object_info__ = {'store': FakeStore(object_set)}
 
 
-class FakeBranch(FakeDatabaseObject):
-
-    def __init__(self, branch_type, url=None, unique_name=None,
-                 stacked_on=None, private=False):
-        self.branch_type = branch_type
-        self.last_mirror_attempt = None
-        self.last_mirrored = None
-        self.last_mirrored_id = None
-        self.next_mirror_time = None
-        self.url = url
-        self.unique_name = unique_name
-        self.mirror_failures = 0
-        self.stacked_on = None
-        self.mirror_status_message = None
-        self.stacked_on = stacked_on
-        self.private = private
-
-    def requestMirror(self):
-        self.next_mirror_time = UTC_NOW
-
-
 class ObjectSet:
+    """Generic set of database objects."""
 
     def __init__(self):
         self._objects = []
@@ -84,6 +66,27 @@ class ObjectSet:
         for obj in self:
             if obj.name == name:
                 return obj
+
+
+class FakeBranch(FakeDatabaseObject):
+
+    def __init__(self, branch_type, url=None, unique_name=None,
+                 stacked_on=None, private=False):
+        self.branch_type = branch_type
+        self.last_mirror_attempt = None
+        self.last_mirrored = None
+        self.last_mirrored_id = None
+        self.next_mirror_time = None
+        self.url = url
+        self.unique_name = unique_name
+        self.mirror_failures = 0
+        self.stacked_on = None
+        self.mirror_status_message = None
+        self.stacked_on = stacked_on
+        self.private = private
+
+    def requestMirror(self):
+        self.next_mirror_time = UTC_NOW
 
 
 class FakeScriptActivity(FakeDatabaseObject):
