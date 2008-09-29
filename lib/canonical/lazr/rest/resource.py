@@ -624,7 +624,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
-        if media_type != self.JSON_TYPE:
+        if not media_type.startswith(self.JSON_TYPE):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of %s.' % self.JSON_TYPE
         try:
