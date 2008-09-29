@@ -698,10 +698,11 @@ class Build(SQLBase):
             raise AssertionError(
                 "'%s' format and/or extension is not supported." % filename)
 
-        if file_object.filename != filename:
-            raise NotFoundError(filename)
+        if file_object is not None and file_object.filename == filename:
+            return file_object
 
-        return file_object
+        raise NotFoundError(filename)
+
 
 class BuildSet:
     implements(IBuildSet)
