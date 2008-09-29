@@ -234,12 +234,6 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)
 
-    def do_log(self, message):
-        """The worker can log a message. At the moment, we ignore it."""
-        # XXX: JonathanLange 2008-09-26: Don't ignore it. Find somewhere
-        # sensible to log it.
-        pass
-
     def do_mirrorDeferred(self):
         self.reported_mirror_finished = True
 

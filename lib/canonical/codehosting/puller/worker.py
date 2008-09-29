@@ -132,9 +132,6 @@ class PullerWorkerProtocol:
     def setStackedOn(self, stacked_on_location):
         self.sendEvent('setStackedOn', stacked_on_location)
 
-    def log(self, message):
-        self.sendEvent('log', message)
-
     def startMirroring(self):
         self.sendEvent('startMirroring')
 
