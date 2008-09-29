@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces.build import (
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.webapp.interfaces import (
@@ -748,6 +749,7 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     PackageUploadSource.sourcepackagereleaseID,
                 PackageUploadSource.packageuploadID == PackageUpload.id,
+                PackageUpload.status == PackageUploadStatus.DONE,
                 PackageUpload.changesfileID == LibraryFileAlias.id,
                 )
         else:

@@ -123,8 +123,8 @@ Adding and retrieving a source changesfile.
     ...     changesfilename='test-pkg_1.0_source.changes',
     ...     changesfilecontent='Bogus',
     ...     archive=cprov.archive)
-
     >>> unused = source_upload.addSource(test_source.sourcepackagerelease)
+    >>> source_upload.setDone()
 
     >>> cprov.archive.getFileByName('test-pkg_1.0_source.changes')
     <LibraryFileAlias ...>
