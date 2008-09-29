@@ -53,7 +53,27 @@
       <h3>Changelog</h3>
         <tal:changelog
            replace="structure context/sourcepackagerelease/@@+changelog"/>
-      <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs" />
+      <div tal:attributes="id string:diff-for-${context/sourcepackagerelease/version}"
+           tal:define="diffs context/sourcepackagerelease/package_diffs"
+           tal:condition="diffs">
+        <h3>Available diffs</h3>
+        <ul>
+           <li tal:repeat="diff diffs">
+              <tal:pending condition="not: diff/date_fulfilled">
+                 <tal:pending-diff replace="diff/title">
+                   1.0 (in Ubuntu) to 1.1
+                 </tal:pending-diff>
+              </tal:pending>
+              <tal:fulfilled condition="diff/date_fulfilled">
+                 <a tal:attributes="href string:+files/${diff/diff_content/filename}"
+                    tal:content="diff/title">1.0 (in Ubuntu) to 1.1</a>
+                 (<tal:size
+                    replace="diff/diff_content/content/filesize/fmt:bytes"
+                    >100 bytes</tal:size>)
+              </tal:fulfilled>
+           </li>
+        </ul>
+      </div>
       <h3>Builds</h3>
       <ul style="margin-top: 0; margin-bottom: 0">
         <li tal:repeat="build view/builds">
