@@ -561,6 +561,10 @@ class TestPullerMasterSpawning(TrialTestCase):
 
     @property
     def oops_prefixes(self):
+        """The OOPS prefixes passed to workers on the command line."""
+        # The OOPS prefix is the second-last argument on the command line. We
+        # harvest these from 'commands_spawned', which is a log of the
+        # commands passed to reactor.spawnProcess.
         return [arguments[-2] for arguments in self.commands_spawned]
 
     def spawnProcess(self, protocol, executable, arguments, env):

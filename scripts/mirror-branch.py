@@ -19,7 +19,7 @@ Where:
   branch_type is one of HOSTED, MIRRORED, IMPORTED
   oops_prefix is the OOPS prefix to use, unique in the set of running
       instances of this script.
-  default_stacked_on_url is the deafult stacked on URL of the product that
+  default_stacked_on_url is the default stacked-on URL of the product that
       the branch is in.
 """
 
