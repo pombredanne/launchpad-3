@@ -101,7 +101,7 @@ class FakeObjectFactory(ObjectFactory):
         branch = FakeBranch(
             branch_id, branch_type, url=url,
             unique_name=self.getUniqueString(), stacked_on=stacked_on)
-        self._branch_source._branches._add(branch)
+        self._branch_source.getBranchSet()._add(branch)
         return branch
 
 
@@ -176,10 +176,10 @@ class FakeBranchPuller:
 class FakeLaunchpadFrontend:
 
     def __init__(self):
-        self._branches = ObjectSet()
-        self._script_activities = ObjectSet()
+        self._branch_set = ObjectSet()
+        self._script_activity_set = ObjectSet()
         self._puller = FakeBranchPuller(
-            self._branches, self._script_activities)
+            self._branch_set, self._script_activity_set)
         self._factory = FakeObjectFactory(self)
 
     def getPullerEndpoint(self):
@@ -189,10 +189,10 @@ class FakeLaunchpadFrontend:
         return self._factory
 
     def getBranch(self, branch_id):
-        return self._branches.get(branch_id)
+        return self._branch_set.get(branch_id)
 
-    def getBranches(self):
-        return self._branches
+    def getBranchSet(self):
+        return self._branch_set
 
     def getLastActivity(self, activity_name):
-        return self._script_activities.getByName(activity_name)
+        return self._script_activity_set.getByName(activity_name)
