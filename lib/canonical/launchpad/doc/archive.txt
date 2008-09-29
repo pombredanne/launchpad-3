@@ -1589,4 +1589,3 @@ If there is a matching archive it is returned.
     ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one
-
