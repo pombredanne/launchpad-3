@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd. All rights reserved.
+# Copyright 2007-2008 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -15,7 +15,7 @@ class PropertyFileFormatTestCase(unittest.TestCase):
 
     def _baseContentEncodingTest(self, content):
         """This is a base function to check different encodings."""
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
 
         expected = {u'default-first-title-mac': [u'Introducci\xf3n'],
                     u'default-last-title-mac': [u'Conclusi\xf3n']}
@@ -46,7 +46,7 @@ class PropertyFileFormatTestCase(unittest.TestCase):
             default-last-title-mac = Conclusi\xf3n
             '''
         self.assertRaises(
-            TranslationFormatInvalidInputError, PropertyFile,
+            TranslationFormatInvalidInputError, PropertyFile, None,
             'test.properties', content)
 
     def test_TrailingBackslashPropertyFileTest(self):
@@ -59,7 +59,7 @@ class PropertyFileFormatTestCase(unittest.TestCase):
 default-first-title-mac=Introd\
 ucci\u00F3n
 '''
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
 
         expected = {u'default-first-title-mac': [u'Introducci\xf3n']}
         parsed = dict([(message.msgid_singular, message.translations)
@@ -73,7 +73,7 @@ ucci\u00F3n
         """
         content = 'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
 
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
 
         expected = {u'default-first-title-mac': [u'\'Something\' \"more\"']}
         parsed = dict([(message.msgid_singular, message.translations)
@@ -91,7 +91,7 @@ ucci\u00F3n
             foo = bar
             '''
 
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
         expected = {u'default-first-title-mac': u'Foo bar comment.\n',
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
@@ -108,7 +108,7 @@ ucci\u00F3n
             foo = bar // Something
             '''
 
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
         expected_comments = {
             u'default-first-title-mac': u'Foo bar comment.\n',
             u'foo': u'Something\n'
@@ -147,7 +147,7 @@ ucci\u00F3n
             long_comment = foo
             '''
 
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
         expected = {
             u'default-first-title-mac': u' single line comment \n',
             u'foo': u" Multi line comment\n   yeah, it's multiple! \n",
@@ -160,6 +160,22 @@ ucci\u00F3n
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
+    def test_URLNotComment(self):
+        """Double slash in a URL is not treated as end-of-line comment."""
+        content = '''
+            url = https://admin.example.com/ // Double slash in URL!
+            '''
+        property_file = PropertyFile('test.properties', None, dedent(content))
+        message = None
+        for entry in property_file.messages:
+            self.assertEquals(message, None, "More messages than expected.")
+            message = entry
+
+        self.assertEquals(message.msgid_singular, u"url")
+        self.assertEquals(
+            message.singular_text, u"https://admin.example.com/")
+        self.assertEquals(message.source_comment, u"Double slash in URL!\n")
+
     def test_InvalidLinePropertyFileTest(self):
         """Test whether an invalid line is ignored."""
         content = '''
@@ -171,7 +187,7 @@ ucci\u00F3n
             foo = bar
             '''
 
-        property_file = PropertyFile('test.properties', dedent(content))
+        property_file = PropertyFile('test.properties', None, dedent(content))
         expected = {u'default-first-title-mac': u'Foo bar comment.\n',
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
@@ -182,7 +198,7 @@ ucci\u00F3n
         """Test parsing of multiline entries."""
         content = (
             'multiline-key = This is the first one\\nThis is the second one.')
-        property_file = PropertyFile('test.properties', content)
+        property_file = PropertyFile('test.properties', None, content)
         expected = {
             u'multiline-key': (
                 [u'This is the first one\nThis is the second one.'])
@@ -194,7 +210,7 @@ ucci\u00F3n
     def test_WhiteSpaceBeforeComment(self):
         """Test that single line comment is detected even with white space."""
         content = ' # foo = bar'
-        property_file = PropertyFile('test.properties', content)
+        property_file = PropertyFile('test.properties', None, content)
         # No message should be parsed.
         expected = {}
         parsed = dict([(message.msgid_singular, message.translations)

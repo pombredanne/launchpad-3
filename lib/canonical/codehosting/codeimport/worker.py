@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'CodeImportSourceDetails',
     'ForeignTreeStore',
     'ImportWorker',
     'get_default_bazaar_branch_store',
@@ -13,38 +14,26 @@ __all__ = [
 
 import os
 import shutil
-import tempfile
 
 from bzrlib.branch import Branch
-from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.osutils import pumpfile
 from bzrlib.urlutils import join as urljoin
 
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
+from canonical.launchpad.interfaces import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
-
-
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        create_prefix(transport)
 
 
 class BazaarBranchStore:
@@ -133,17 +122,36 @@ class CodeImportSourceDetails:
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
-        branch_id = int(arguments[0])
-        rcstype = arguments[1]
+        branch_id = int(arguments.pop(0))
+        rcstype = arguments.pop(0)
         if rcstype == 'svn':
-            [svn_branch_url] = arguments[2:]
+            [svn_branch_url] = arguments
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
             svn_branch_url = None
-            [cvs_root, cvs_module] = arguments[2:]
+            [cvs_root, cvs_module] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+        return cls(
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+
+    @classmethod
+    def fromCodeImport(cls, code_import):
+        """Convert a `CodeImport` to an instance."""
+        if code_import.rcs_type == RevisionControlSystems.SVN:
+            rcstype = 'svn'
+            svn_branch_url = str(code_import.svn_branch_url)
+            cvs_root = cvs_module = None
+        elif code_import.rcs_type == RevisionControlSystems.CVS:
+            rcstype = 'cvs'
+            svn_branch_url = None
+            cvs_root = str(code_import.cvs_root)
+            cvs_module = str(code_import.cvs_module)
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return cls(
+            code_import.branch.id, rcstype, svn_branch_url,
+            cvs_root, cvs_module)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
@@ -268,31 +276,25 @@ class ImportWorker:
         self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
-        self.working_directory = tempfile.mkdtemp()
-        self._foreign_branch = None
         self._logger = logger
-        self._bazaar_working_tree_path = os.path.join(
-            self.working_directory, self.BZR_WORKING_TREE_PATH)
-        self._foreign_working_tree_path = os.path.join(
-            self.working_directory, self.FOREIGN_WORKING_TREE_PATH)
 
     def getBazaarWorkingTree(self):
         """Return the Bazaar `WorkingTree` that we are importing into."""
-        if os.path.isdir(self._bazaar_working_tree_path):
-            shutil.rmtree(self._bazaar_working_tree_path)
+        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
+            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
         return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self._bazaar_working_tree_path)
+            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
 
         :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
         """
-        if os.path.isdir(self._foreign_working_tree_path):
-            shutil.rmtree(self._foreign_working_tree_path)
-        os.mkdir(self._foreign_working_tree_path)
+        if os.path.isdir(self.FOREIGN_WORKING_TREE_PATH):
+            shutil.rmtree(self.FOREIGN_WORKING_TREE_PATH)
+        os.mkdir(self.FOREIGN_WORKING_TREE_PATH)
         return self.foreign_tree_store.fetch(
-            self.source_details, self._foreign_working_tree_path)
+            self.source_details, self.FOREIGN_WORKING_TREE_PATH)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -337,6 +339,13 @@ class ImportWorker:
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
+    def getWorkingDirectory(self):
+        """The directory we should change to and store all scratch files in.
+        """
+        base = config.codeimportworker.working_directory_root
+        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        return os.path.join(base, dirname)
+
     def run(self):
         """Run the code import job.
 
@@ -353,6 +362,11 @@ class ImportWorker:
          5. Archives the foreign tree, so that we can update it quickly next
             time.
         """
+        working_directory = self.getWorkingDirectory()
+        if os.path.exists(working_directory):
+            shutil.rmtree(working_directory)
+        os.makedirs(working_directory)
+        os.chdir(working_directory)
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
@@ -360,5 +374,3 @@ class ImportWorker:
             self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
-        shutil.rmtree(bazaar_tree.basedir)
-        shutil.rmtree(foreign_tree.local_path)

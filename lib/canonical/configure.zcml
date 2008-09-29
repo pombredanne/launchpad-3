@@ -9,6 +9,7 @@
         file="meta-overrides.zcml" />
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    <include package="canonical.lazr.rest" file="meta.zcml" />
     <include package="canonical.librarian" />
 
     <interface
@@ -68,13 +69,11 @@
 
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
-         The Resources registration is needed because currently in Zope,
-         published browser views are looked up as no-name views.  View
-         look-up will use views on the same layer
-         before more general views on a different layer.  So we need to
-         re-register the resources container on the new layer.
-         This workaround will no longer be needed once published browser
-         pages are registered to provide a specific interface.
+         The separate registration for the resources namespace (@@) is needed
+         because otherwise the lookup for /@@/ will fail because the
+         layer-specifif defaultView directive also registers the 
+         default view name as an unnamed adapter.
+         -->
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
@@ -85,9 +84,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BlueprintsLayer"
         />
 
@@ -100,9 +98,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.CodeLayer"
         />
 
@@ -115,9 +112,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -130,9 +126,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BugsLayer"
         />
 
@@ -145,20 +140,18 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
 
     <!-- virtual host: openid -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IOpenIdApplication"
-        class="zope.app.publisher.browser.resources.Resources"
+        for="canonical.launchpad.interfaces.IOpenIDApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
-        layer="canonical.launchpad.layers.OpenIdLayer"
+        layer="canonical.launchpad.layers.OpenIDLayer"
         />
 
     <!-- This should really be on ILaunchpadRoot for all layers, and we should
@@ -167,49 +160,9 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-malone"
-          template="launchpad/templates/root-portlet-malone.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.BountySetView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-bounties"
-          template="launchpad/templates/root-portlet-bounties.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.RosettaApplicationView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-rosetta"
-          template="launchpad/templates/root-portlet-rosetta.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.FOAFSearchView"
-        permission="zope.Public"
-        >
-        <browser:page
-          name="+portlet-foaf"
-          template="launchpad/templates/root-portlet-foaf.pt" />
-    </browser:pages>
 
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />

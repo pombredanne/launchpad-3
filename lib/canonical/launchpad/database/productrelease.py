@@ -4,11 +4,14 @@
 __metaclass__ = type
 __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
+from StringIO import StringIO
+
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -16,7 +19,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     NotFoundError, UpstreamFileType)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.validators.person import validate_public_person
+
+
+SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
 
 
 class ProductRelease(SQLBase):
@@ -26,7 +33,6 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     version = StringCol(notNull=True)
     codename = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
@@ -36,7 +42,7 @@ class ProductRelease(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
 
@@ -60,25 +66,63 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, signature,
-                     uploader,
-                     file_type=UpstreamFileType.CODETARBALL,
-                     description=None):
+    @staticmethod
+    def normalizeFilename(filename):
+        # Replace slashes in the filename with less problematic dashes.
+        return filename.replace('/', '-')
+
+    def _getFileObjectAndSize(self, file_or_data):
+        """Return an object and length for file_or_data.
+
+        :param file_or_data: A string or a file object or StringIO object.
+        :return: file object or StringIO object and size.
+        """
+        if isinstance(file_or_data, basestring):
+            file_size = len(file_or_data)
+            file_obj = StringIO(file_or_data)
+        else:
+            assert isinstance(file_or_data, (file, StringIO)), (
+                "file_or_data is not an expected type")
+            file_obj = file_or_data
+            start = file_obj.tell()
+            file_obj.seek(0, SEEK_END)
+            file_size = file_obj.tell()
+            file_obj.seek(start)
+        return file_obj, file_size
+
+    def addReleaseFile(self, filename, file_content, content_type,
+                       uploader, signature_filename=None,
+                       signature_content=None,
+                       file_type=UpstreamFileType.CODETARBALL,
+                       description=None):
         """See `IProductRelease`."""
+        # Create the alias for the file.
+        filename = self.normalizeFilename(filename)
+        file_obj, file_size = self._getFileObjectAndSize(file_content)
+
+        alias = getUtility(ILibraryFileAliasSet).create(
+            name=filename,
+            size=file_size,
+            file=file_obj,
+            contentType=content_type)
+        if signature_filename is not None and signature_content is not None:
+            signature_obj, signature_size = self._getFileObjectAndSize(
+                signature_content)
+            signature_filename = self.normalizeFilename(
+                signature_filename)
+            signature_alias = getUtility(ILibraryFileAliasSet).create(
+                name=signature_filename,
+                size=signature_size,
+                file=signature_obj,
+                contentType='application/pgp-signature')
+        else:
+            signature_alias = None
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  signature=signature,
+                                  signature=signature_alias,
                                   filetype=file_type,
                                   description=description,
                                   uploader=uploader)
-
-    def deleteFileAlias(self, alias):
-        """See `IProductRelease`."""
-        for f in self.files:
-            if f.libraryfile.id == alias.id:
-                f.destroySelf()
-                return
-        raise NotFoundError(alias.filename)
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""
@@ -87,6 +131,13 @@ class ProductRelease(SQLBase):
                 return file_.libraryfile
             elif file_.signature and file_.signature.filename == name:
                 return file_.signature
+        raise NotFoundError(name)
+
+    def getProductReleaseFileByName(self, name):
+        """See `IProductRelease`."""
+        for file_ in self.files:
+            if file_.libraryfile.filename == name:
+                return file_
         raise NotFoundError(name)
 
 
@@ -112,7 +163,7 @@ class ProductReleaseFile(SQLBase):
 
     uploader = ForeignKey(
         dbName="uploader", foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -120,18 +171,6 @@ class ProductReleaseFile(SQLBase):
 class ProductReleaseSet(object):
     """See `IProductReleaseSet`."""
     implements(IProductReleaseSet)
-
-    def new(self, version, productseries, owner, codename=None, summary=None,
-            description=None, changelog=None):
-        """See `IProductReleaseSet`."""
-        return ProductRelease(version=version,
-                              productseries=productseries,
-                              owner=owner,
-                              codename=codename,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
-
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""
@@ -141,3 +180,22 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
+
+    def getReleasesForSerieses(self, serieses):
+        """See `IProductReleaseSet`."""
+        if len(list(serieses)) == 0:
+            return ProductRelease.select('1 = 2')
+        return ProductRelease.select("""
+            ProductRelease.productseries IN %s
+            """ % sqlvalues([series.id for series in serieses]),
+            orderBy='-datereleased')
+
+    def getFilesForReleases(self, releases):
+        """See `IProductReleaseSet`."""
+        if len(list(releases)) == 0:
+            return ProductReleaseFile.select('1 = 2')
+        return ProductReleaseFile.select(
+            """ProductReleaseFile.productrelease IN %s""" % (
+            sqlvalues([release.id for release in releases])),
+            orderBy='-date_uploaded',
+            prejoins=['libraryfile'])

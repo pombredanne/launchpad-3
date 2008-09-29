@@ -8,6 +8,7 @@ __all__ = [
     'CannotChangeSubscription',
     'CannotSubscribe',
     'CannotUnsubscribe',
+    'IHeldMessageDetails',
     'IMailingList',
     'IMailingListAPIView',
     'IMailingListApplication',
@@ -15,19 +16,22 @@ __all__ = [
     'IMailingListSubscription',
     'IMessageApproval',
     'IMessageApprovalSet',
-    'MailingListAutoSubscribePolicy',
     'MailingListStatus',
+    'PURGE_STATES',
     'PostedMessageStatus',
+    'UnsafeToPurge',
     ]
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -126,40 +130,21 @@ class MailingListStatus(DBEnumeratedType):
         Mailman was unsuccessful in modifying the mailing list.
         """)
 
+    PURGED = DBItem(12, """
+        Purged
 
-class MailingListAutoSubscribePolicy(DBEnumeratedType):
-    """A person's auto-subscription policy.
-
-    When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
-    automatically subscribed to any team mailing list that the team may have.
-
-    This does not describe what happens when a team that already has members
-    gets a new team mailing list.  In that case, its members are never
-    automatically subscribed to the mailing list.
-    """
-
-    NEVER = DBItem(0, """
-        Never subscribe automatically
-
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
+        All Mailman artifacts for this mailing list have been purged, so the
+        list can be treated as if it never existed, except for foreign key
+        references such as from a MessageApproval.
         """)
 
-    ON_REGISTRATION = DBItem(1, """
-        Subscribe on self-registration
 
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
-        """)
-
-    ALWAYS = DBItem(2, """
-        Always subscribe automatically
-
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
-        """)
+PURGE_STATES = (
+    MailingListStatus.REGISTERED,
+    MailingListStatus.DECLINED,
+    MailingListStatus.FAILED,
+    MailingListStatus.INACTIVE,
+    )
 
 
 class PostedMessageStatus(DBEnumeratedType):
@@ -289,13 +274,17 @@ class IMailingList(Interface):
             'be None.'),
         readonly=True)
 
-    def isUsable():
-        """Is this mailing list in a state to accept messages?
+    is_public = Bool(
+        title=_('Is this mailing list, and its team, public?'),
+        readonly=True)
 
-        This doesn't neccessarily mean that the list is in perfect
-        shape: its status might be `MailingListStatus.MOD_FAILED`. But
-        it should be able to handle messages.
-        """
+    is_usable = Bool(
+        title=_('Is this mailing list in a state to accept messages?'),
+        description=_(
+            "This doesn't necessarily mean that the list is in perfect "
+            'shape; its status might be `MailingListStatus.MOD_FAILED`. But '
+            'it should be able to handle messages.'),
+        readonly=True)
 
     def review(reviewer, status):
         """Review the mailing list's registration.
@@ -430,7 +419,7 @@ class IMailingList(Interface):
         """Return the set of all email addresses for members.
 
         :return: an iterator over the all the registered and validated
-            IEmailAddresses for all subscribed members of the mailing list, in
+            IEmailAddresses for all members of the mailing list's team, in
             no particular order.  These represent all the addresses which are
             allowed to post to the mailing list.
         """
@@ -440,6 +429,24 @@ class IMailingList(Interface):
 
         :param message: The IMessage to hold.
         :return: The IMessageApproval representing the held message.
+        """
+
+    def getReviewableMessages():
+        """Return the set of all held messages for this list requiring review.
+
+        :return: A sequence of `IMessageApproval`s for this mailing list,
+            where the status is `PostedMessageStatus.NEW`.  The returned set
+            is ordered first by the date the message was posted, then by
+            Message-ID.
+        """
+
+    def purge():
+        """Place the mailing list into the PURGED state, if safe to do so.
+
+        :raise: UnsafeToPurge when the mailing list is not safe to place into
+            the purged state.  This exception is raised almost exclusively
+            when the mailing list is in a state indicating it is active and
+            usable on the Mailman side.
         """
 
 
@@ -675,9 +682,15 @@ class IMessageApproval(Interface):
         required=True, readonly=True)
 
     posted_message = Object(
-        schema=IMessage,
+        schema=ILibraryFileAlias,
         title=_('Posted message'),
-        description=_('The message that was posted and held.'),
+        description=_('An alias to the posted message in the librarian.'),
+        required=True, readonly=True)
+
+    message = Object(
+        schema=IMessage,
+        title=_('The posted message object'),
+        description=_('The posted message'),
         required=True, readonly=True)
 
     posted_date = Datetime(
@@ -763,7 +776,67 @@ class IMessageApprovalSet(Interface):
 
         :param status: A PostedMessageStatus enum value.
         :return: An iterator over all the matching held messages.
+        :rtype: sequence of MessageApproval
         """
+
+
+class IHeldMessageDetails(Interface):
+    """Details on a held message.
+
+    This is used via the adaptation machinery to provide a unified detailed
+    set of information about a held message, from several related but separate
+    objects.
+    """
+    message_approval = Object(
+        schema=IMessageApproval,
+        title=_('The held message record'),
+        description=_('The held message record'),
+        required=True)
+
+    message = Object(
+        schema=IMessage,
+        title=_('The message record'),
+        description=_('The representation of the message in the librarian'),
+        required=True)
+
+    message_id = Text(
+        title=_('Message-ID'),
+        description=_('The RFC 2822 Message-ID header.'),
+        required=True, readonly=True)
+
+    subject = Text(
+        title=_('Subject'),
+        description=_('The RFC 2822 Subject header.'),
+        required=True, readonly=True)
+
+    sender = Text(
+        title=_('Message author'),
+        description=_('The message originator (i.e. author), formatted as '
+                      'per RFC 2822 and derived from the RFC 2822 originator '
+                      'fields From and Reply-To.  This is a unicode string.'),
+        required=True, readonly=True)
+
+    author = Object(
+        schema=IPerson,
+        title=_('Message author'),
+        description=_('The person who sent the message'),
+        required=True, readonly=True)
+
+    date = Text(
+        title=_('Date'),
+        description=_('The RFC 2822 Date header.'),
+        required=True, readonly=True)
+
+    body = Text(
+        title=_('Plain text message body'),
+        description=_('The message body as plain text.'),
+        required=True, readonly=True)
+
+    email_message = Text(
+        title=_('The email message object'),
+        description=_('The email.message.Message object created from the '
+                      "original message's raw text."),
+        required=True, readonly=True)
 
 
 class CannotSubscribe(Exception):
@@ -775,12 +848,14 @@ class CannotSubscribe(Exception):
     a team, or when `person` does not own the given email address.
     """
 
+
 class CannotUnsubscribe(Exception):
     """The person cannot unsubscribe from the mailing list.
 
     This is raised when Person who is not a member of the mailing list tries
     to unsubscribe from the mailing list.
     """
+
 
 class CannotChangeSubscription(Exception):
     """The subscription change cannot be fulfilled.
@@ -790,3 +865,15 @@ class CannotChangeSubscription(Exception):
     a member of the team linked to this mailing list, when `person` is a team,
     or when `person` does not own the given email address.
     """
+
+
+class UnsafeToPurge(Exception):
+    """It is not safe to purge this mailing list."""
+
+    def __init__(self, mailing_list):
+        Exception.__init__(self)
+        self._mailing_list = mailing_list
+
+    def __str__(self):
+        return 'Cannot purge mailing list in %s state: %s' % (
+            self._mailing_list.status.name, self._mailing_list.team.name)

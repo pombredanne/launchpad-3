@@ -174,7 +174,7 @@ def browserLanguages(request):
     return IRequestPreferredLanguages(request).getPreferredLanguages()
 
 
-def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
+def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
     standard output.
 
@@ -189,7 +189,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """
 
     p = subprocess.Popen(
-            command, shell=True, stdin=subprocess.PIPE,
+            command, env=env, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
     (output, nothing) = p.communicate(input)
@@ -231,7 +231,10 @@ def contactEmailAddresses(person):
     # This str() call can be removed as soon as Andrew lands his
     # unicode-simple-sendmail branch, because that will make
     # simple_sendmail handle unicode email addresses.
-    return set(str(mail_person.preferredemail.email)
+    # Need to remove the security proxy of the email address because the
+    # logged in user may not have permission to see it.
+    from zope.security.proxy import removeSecurityProxy
+    return set(str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in emailPeople(person))
 
 
@@ -601,11 +604,13 @@ def truncate_text(text, max_length):
 def english_list(items, conjunction='and'):
     """Return all the items concatenated into a English-style string.
 
-    Follows the advice given in The Elements of Style, chapter II,
+    Follows the advice given in The Elements of Style, chapter I,
     section 2:
 
     "In a series of three or more terms with a single conjunction, use
      a comma after each term except the last."
+
+    Beware that this is US English and is wrong for non-US.
     """
     items = list(items)
     if len(items) <= 2:

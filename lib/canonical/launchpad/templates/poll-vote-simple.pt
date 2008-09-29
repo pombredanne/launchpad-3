@@ -29,8 +29,9 @@
 
   <div metal:fill-slot="main">
 
+      <h1 tal:content="context/title" />
+
     <tal:open-poll condition="context/isOpen">
-    <h1>Simple vote</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p
@@ -39,11 +40,10 @@
       class="informational message"
     />
 
-    <div class="highlighted" style="font-size: 80%;">
-      <tal:proposition replace="structure context/proposition/fmt:text-to-html">
-         The proposition goes here.
-      </tal:proposition>
-    </div>
+      <div
+        class="highlighted"
+        tal:content="structure context/proposition/fmt:text-to-html"
+      />
 
     <form action="" method="POST">
 

@@ -1,0 +1,59 @@
+/*
+ * A few bits and pieces from LP's style.css that are needed on
+ * shipit.ubuntu.com.
+ */
+
+/* --- Error, warning, and info messages --- */
+
+.error, .warning, .informational {
+  padding: 0.5em;
+}
+.message {
+  background: 5px 0.5em no-repeat;
+  margin: 1em 0 0.5em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+}
+.error .message, .warning .message, .informational .message {
+  margin: 0.25em 0 0;
+  padding: 0 0 0 25px;
+  background: 0 0 no-repeat;
+}
+.error {color: #db1f22;}
+.error.message, .error .message {
+  background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
+}
+.warning {background-color: #fcdd99; color: black;}
+.warning.message, .warning .message {
+  background-image: url(/@@/warning);
+}
+.helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
+    padding: 0.5em; font-size: smaller; padding-left: 3em
+}
+.helpwanted.message, .helpwanted .message {
+  background-image: url(/@@/helpwanted);
+}
+.informational {background-color: #fcfc99; color: black;}
+.informational.message, .informational .message {
+  background-image: url(/@@/info);
+}
+
+th {text-align: right;}
+td.cdchoice {
+  border: 2px solid #D3CAAA;
+  text-align: center;
+  font-size: 120%;
+}
+td.cdchoice a {
+  display: block;
+  background-color: #eeeced;
+  padding: 10px;
+  height: 90px;
+  font-weight: bold;
+}
+td.cdchoice a:hover {
+  background-color: #f0eee3;
+}

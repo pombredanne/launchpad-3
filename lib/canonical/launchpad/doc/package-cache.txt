@@ -158,13 +158,16 @@ cache when it's updated the next time.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> ubuntu.updateCompleteSourcePackageCache(
+  >>> updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
   DEBUG: Considering source 'mozilla-firefox'
   ...
   DEBUG: Considering source 'cdrkit'
   DEBUG: Creating new source cache entry.
   ...
+
+  >>> print updates
+  10
 
 The current transaction should be committed since the script only
 commits full batches of 50 elements:
@@ -252,13 +255,16 @@ cache will be added to it.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> warty.updateCompletePackageCache(
+  >>> updates = warty.updateCompletePackageCache(
   ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
   DEBUG: Considering binary 'mozilla-firefox'
   ...
   DEBUG: Considering binary 'cdrkit'
   DEBUG: Creating new binary cache entry.
   ...
+
+  >>> print updates
+  6
 
 Transaction behaves exactly the same as for Source Caches, except that
 it commits full batches of 100 elements.
@@ -342,12 +348,12 @@ term used in the pmount binary summary) fail.
 If we populate the package caches and update the archive caches, the
 same queries work, pointing to Celso's PPA.
 
-  >>> ubuntu.updateCompleteSourcePackageCache(
+  >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
   DEBUG: Considering source 'pmount'
   ...
 
-  >>> warty.updateCompletePackageCache(
+  >>> binary_updates = warty.updateCompletePackageCache(
   ...    archive=cprov.archive, ztm=transaction, log=TestLog())
   DEBUG: Considering binary 'mozilla-firefox'
   ...
@@ -356,8 +362,14 @@ same queries work, pointing to Celso's PPA.
   >>> transaction.commit()
   >>> flush_database_updates()
 
+  >>> cprov.archive.sources_cached == source_updates
+  True
+
   >>> print cprov.archive.sources_cached
   3
+
+  >>> cprov.archive.binaries_cached == binary_updates
+  True
 
   >>> print cprov.archive.binaries_cached
   2

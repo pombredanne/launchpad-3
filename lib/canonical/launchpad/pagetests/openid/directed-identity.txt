@@ -40,7 +40,6 @@ response and do further validation as normal.
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
 
-
 If we happened to be logged into Launchpad previously, we would be
 presented with an authorization screen instead:
 

@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -24,7 +24,7 @@
   </div>
 
   <div metal:use-macro="context/@@launchpad_form/form" />
-    
+
 </div>
 
 </body>

@@ -81,7 +81,9 @@ indicate that Mailman is in the process of creating the lists.
 
 Should Mailman poll the actions again before it completes creating these
 lists, there will be nothing to do because lists in the CONSTRUCTING state
-don't show up as needing to be created.
+don't show up as needing to be created.  The lists will show up as being
+unsynchronized since the lists are in different states on Mailman and
+Launchpad.
 
     >>> print_actions(mailinglist_api.getPendingActions())
     team-one --> unsynchronized constructing

@@ -19,12 +19,9 @@
       >branch name</a
       ><img src="/@@/private" alt=" (private)"
             tal:condition="branch/private"/>:
-      <span tal:condition="branch/author"
-            tal:replace="branch/author/name"
-      >author</span> 
-      <span tal:condition="not:branch/author"
-            tal:replace="branch/owner/name"
-      >registrant</span> 
+      <a tal:replace="structure branch/owner/fmt:link">
+            Guilherme Salgado
+      </a>
     </li>
   </ul>
 

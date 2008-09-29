@@ -8,7 +8,7 @@ Page to edit a product - does the page load as the product owner?
     >>> print browser.contents
     <!DOCTYPE...
     ...<title>Change project details</title>...
-    ...<h1>Change project details</h1>...
+    ...<h2>Change project details:</h2>...
 
 We try to change the project related to that product. First with a invalid
 project.
@@ -32,10 +32,10 @@ Now we try to edit with a project that exists.
     http://launchpad.dev/firefox
 
 
-Now we test if we edited it successfully. 
+Now we test if we edited it successfully.
 
-    >>> 'The GNOME Project' in browser.contents
-    True
+    >>> extract_text(find_tag_by_id(browser.contents, 'partof'))
+    u'Part of: GNOME'
 
 
 == Setting Development Focus ==
@@ -46,7 +46,7 @@ The Firefox product's trunk series is set as the development focus:
     >>> print browser.contents
     <!...
     ...
-    ...trunk...development fo...
+    ...trunk...focus of development...
     ...
     ...1.0...
     ...
@@ -63,10 +63,38 @@ We can change this to the 1.0 series through the edit form:
     >>> print browser.contents
     <!...
     ...
-    ...1.0...development fo...
+    ...1.0...focus of development...
     ...
     ...trunk...
     ...
+
+
+== Administering Products ==
+
+Regular users can't access the 'Administer' link.
+
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> browser.getLink('Administer')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+And they can't go directly to the +admin page.
+
+  >>> browser.open('http://launchpad.dev/firefox/+admin')
+  Traceback (most recent call last):
+  ...
+  Unauthorized...
+
+But administrators can access the page:
+
+  >>> admin_browser.open('http://launchpad.dev/firefox')
+  >>> admin_browser.getLink('Administer').click()
+
+  >>> admin_browser.url
+  'http://launchpad.dev/firefox/+admin'
+  >>> admin_browser.title
+  'Administer Mozilla Firefox in Launchpad'
 
 
 == Renaming Products ==
@@ -79,12 +107,11 @@ First a user adds a product named newproductname.
     >>> user_browser.getControl('Title').value = 'title'
     >>> user_browser.getControl('Summary').value = 'summary'
     >>> user_browser.getControl(name='field.description').value = 'description'
-    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
     >>> user_browser.getControl('Add').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname
-
 
 Then a product named newproductname2.
 
@@ -94,17 +121,16 @@ Then a product named newproductname2.
     >>> user_browser.getControl('Title').value = 'title2'
     >>> user_browser.getControl('Summary').value = 'summary2'
     >>> user_browser.getControl(name='field.description').value = 'description2'
-    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl(name='field.license_info').value = 'foo'
     >>> user_browser.getControl('Add').click()
     >>> print user_browser.url
     http://launchpad.dev/newproductname2
- 
 
 Now we try to change newproductname2's name to newproductname.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/newproductname2/+review')
+    ...     'http://launchpad.dev/newproductname2/+admin')
     >>> admin_browser.getControl('Name').value = 'newproductname'
     >>> admin_browser.getControl(name='field.actions.change').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'error'):
@@ -120,9 +146,62 @@ Now we try to change it to newproductname3.  We expect that the change will
 be accepted because there is no product called newproductname3
 
     >>> admin_browser.getControl('Name').value = 'newproductname3'
-    >>> admin_browser.getControl(name='field.actions.change').click() 
+    >>> admin_browser.getControl(name='field.actions.change').click()
     >>> print admin_browser.url
     http://launchpad.dev/newproductname3
+
+
+== Changing Maintainer and Registrant ==
+
+Administrators can change the owner of a project.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/newproductname3')
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Maintainer: No Privileges Person
+    ...
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/newproductname3/+admin')
+    >>> admin_browser.getControl('Maintainer').value = 'cprov'
+    >>> admin_browser.getControl(name='field.actions.change').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Maintainer: Celso Providelo
+    ...
+
+And the registrant can also be changed, even though this should rarely happen.
+The registrant is a read-only field that is set when the product is
+created but we allow admins to change it to correct data.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/newproductname3')
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Registered ... by No Privileges Person
+    ...
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/newproductname3/+admin')
+    >>> admin_browser.getControl('Registrant').value = 'cprov'
+    >>> admin_browser.getControl(name='field.actions.change').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Registered ... by Celso Providelo
+    ...
+
+The registrant really should only be a person, not a team, but that
+constraint has to be relaxed to account for old data where we do have
+teams as registrants.
+
+    >>> admin_browser.open('http://launchpad.dev/newproductname3/+admin')
+    >>> admin_browser.getControl('Registrant').value = 'registry'
+    >>> admin_browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Details...
+    Registered ... by Registry Administrators
+    ...
 
 
 == Registry Experts ==
@@ -151,6 +230,13 @@ They sure can:
     >>> browser.title
     'Mozilla Firefox by no-priv in Launchpad'
 
+But, alas, they still can't access +admin.
+
+    >>> browser.open('http://launchpad.dev/firefox/+admin')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
 
 == Display error when trying to remove all licenses ==
 
@@ -167,28 +253,32 @@ again have zero licenses.
     Select all licenses for this software or select
     Other/Proprietary or Other/Open Source.
 
-== Admin can use the reviewer whiteboard on +review page ==
 
-A Launchpad Admin can use the reviewer whiteboard on the +review page
+== Commercial Admin can use the reviewer whiteboard on +review-license page ==
+
+A Commercial Admin can use the reviewer whiteboard on the +review-license page
 for storing random notes about a project. At first the whiteboard is
 empty, then we store some insightful notes in it.
 
-   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
-   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
-   ''
-   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value = \
-   ... """Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
-   ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
-   ... over this project 2007-12-04."""
-   >>> admin_browser.getControl(name='field.actions.change').click()
-   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
-   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
-   'Registered by https://launchpad.net/kurt but orphaned...'
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
+    ''
+    >>> commercial_browser.getControl(
+    ...     name='field.reviewer_whiteboard').value = \
+    ... """Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
+    ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
+    ... over this project 2007-12-04."""
+    >>> commercial_browser.getControl(name='field.actions.change').click()
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> commercial_browser.getControl(name='field.reviewer_whiteboard').value
+    'Registered by https://launchpad.net/kurt but orphaned...'
 
-A Launchpad Admin can also see the project whiteboard on the index page.
+A Commercial Admin can also see the project whiteboard on the index page.
 
-   >>> admin_browser.open('http://launchpad.dev/firefox')
-   >>> contents = find_main_content(admin_browser.contents)
+   >>> commercial_browser.open('http://launchpad.dev/firefox')
+   >>> contents = find_main_content(commercial_browser.contents)
    >>> print extract_text(contents.find(id='project-admin-whiteboard'))
    Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
    Contacted the upstream maintainer (bart@foo.com) to discuss handing
@@ -204,3 +294,46 @@ Launchpad Admin, and so cannot see the reviewer whiteboard.
    >>> print contents.find(id='project-admin-whiteboard')
    None
 
+
+== Deactivate a product ==
+
+The Admins and Commercial Admins can deactivate a project.
+
+    >>> commercial_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> commercial_browser.getControl(name='field.active').value = False
+    >>> commercial_browser.getControl(name='field.actions.change').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox
+
+The product overview page should show a notice that a product is
+inactive with a link to a form to re-activate it. Admins and
+Commercial Admins can still see the product, but regular users
+can't.
+
+    >>> commercial_browser.open('http://launchpad.dev/firefox/')
+    >>> contents = find_main_content(commercial_browser.contents)
+    >>> print contents.find(id='project-inactive')
+    <p...This project is currently inactive...
+    <a...href="+review-license"...
+    >>> admin_browser.open('http://launchpad.dev/firefox/')
+    >>> contents = find_main_content(admin_browser.contents)
+    >>> print contents.find(id='project-inactive')
+    <p...This project is currently inactive...
+    <a...href="+review-license"...
+    >>> user_browser.open('http://launchpad.dev/firefox/')
+    Traceback (most recent call last):
+    ...
+    NotFound...
+
+The product can then be reactivated.
+
+    >>> commercial_browser.getLink('(change this)').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/+review-license
+    >>> commercial_browser.getControl(name='field.active').value = True
+    >>> commercial_browser.getControl(name='field.actions.change').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/firefox/
+    >>> contents = find_main_content(commercial_browser.contents)
+    >>> print contents.find(id='project-inactive')
+    None

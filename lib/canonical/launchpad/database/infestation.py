@@ -18,14 +18,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import BoolCol, ForeignKey
 
 from canonical.launchpad.interfaces import (
     BugInfestationStatus, IBugPackageInfestation, IBugPackageInfestationSet, 
     IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class BugProductInfestation(SQLBase):
@@ -35,7 +35,7 @@ class BugProductInfestation(SQLBase):
 
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(notNull=True, default=False)
+    explicit = BoolCol(notNull=True, default=False)
     productrelease = ForeignKey(dbName="productrelease",
         foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
@@ -43,15 +43,15 @@ class BugProductInfestation(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True)
     creator = ForeignKey(
         dbName="creator", foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
         dbName="verifiedby", foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     lastmodified = UtcDateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(
         dbName="lastmodifiedby", foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     # used for launchpad pages
     def _title(self):
@@ -69,7 +69,7 @@ class BugPackageInfestation(SQLBase):
 
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(dbName='explicit', notNull=True, default=False)
+    explicit = BoolCol(dbName='explicit', notNull=True, default=False)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
@@ -77,15 +77,15 @@ class BugPackageInfestation(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')
     verifiedby = ForeignKey(
         dbName='verifiedby', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
     lastmodified = UtcDateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(
         dbName='lastmodifiedby', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
 
     # used for launchpad pages
     def title(self):

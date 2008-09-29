@@ -18,10 +18,27 @@
 
     <!-- BugTracker -->
     <content class="canonical.launchpad.database.BugTracker">
-        <allow interface="canonical.launchpad.interfaces.IBugTracker" />
-        <require permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugTracker" />
+      <implements interface="canonical.launchpad.interfaces.IBugTracker" />
+      <require
+          permission="zope.Public"
+          attributes="aliases baseurl bugtrackertype contactdetails
+                      getBugsWatching getBugWatchesNeedingUpdate
+                      getLinkedPersonByName id imported_bug_messages
+                      latestwatches name owner products projects
+                      summary title watches" />
+      <require
+          permission="launchpad.Edit"
+          attributes="destroySelf ensurePersonForSelf linkPersonToSelf"
+          set_attributes="aliases baseurl bugtrackertype contactdetails
+                          name owner summary title" />
     </content>
+
+    <adapter
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+      for="canonical.launchpad.interfaces.IBugTracker"
+      factory="canonical.launchpad.browser.BugTrackerBreadcrumbBuilder"
+      permission="zope.Public"
+      />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTracker"
@@ -47,15 +64,6 @@
         <browser:page
             name="+portlet-projects"
             template="../templates/bugtracker-portlet-projects.pt"
-            />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTracker"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.BugTrackerEditView">
-        <browser:page name="+oldedit"
-            template="../templates/bugtracker-edit.pt"
             />
     </browser:pages>
 

@@ -124,7 +124,7 @@
     </rdfs:range>
     <rdfs:label>Creation date</rdfs:label>
     <rdfs:comment>
-        Date of creation in UTC timezone, in the form YYYY-MM-DD
+        Date of creation in UTC time zone, in the form YYYY-MM-DD
     </rdfs:comment>
 </owl:ObjectProperty>
 

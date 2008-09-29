@@ -4,34 +4,36 @@
 
 __metaclass__ = type
 __all__ = [
-    'AvatarTestCase', 'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'deferToThread', 'make_bazaar_branch_and_tree']
+    'AvatarTestCase',
+    'adapt_suite',
+    'BranchTestCase',
+    'CodeHostingTestProviderAdapter',
+    'CodeHostingRepositoryTestProviderAdapter',
+    'create_branch_with_one_revision',
+    'deferToThread',
+    'FakeLaunchpad',
+    'LoomTestMixin',
+    'make_bazaar_branch_and_tree',
+    'ServerTestCase',
+    'TestResultWrapper',
+    ]
 
 import os
-import shutil
 import threading
 import unittest
 
-import transaction
-
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, TransportNotPossible
+from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
 from bzrlib.errors import SmartProtocolError
 
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
-
-from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
-from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
+from canonical.launchpad.interfaces.codehosting import (
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
+from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
@@ -47,8 +49,6 @@ class AvatarTestCase(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -68,15 +68,6 @@ class AvatarTestCase(TrialTestCase):
             'initialBranches': [(2, []), (3, [])]
         }
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test
-        # runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
-
 
 def exception_names(exceptions):
     """Return a list of exception names for the given exception list."""
@@ -88,85 +79,32 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
+    elif exceptions is PermissionDenied:
+        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
 
 
-class BranchTestCase(TestCaseWithTransport):
-    """Base class for tests that do a lot of things with branches."""
+class LoomTestMixin:
+    """Mixin to provide Bazaar test classes with limited loom support."""
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        self._factory = LaunchpadObjectFactory()
-
-    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
-        """Create a local branch with one revision, return the working tree.
-        """
-        tree = self.make_branch_and_tree(base_directory)
-        self.local_branch = tree.branch
-        self.build_tree([os.path.join(base_directory, 'foo')])
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
-        return tree
-
-    def emptyPullQueues(self):
-        transaction.begin()
-        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
-        transaction.commit()
-
-    def getUniqueInteger(self):
-        """Return an integer unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueInteger()
-
-    def getUniqueString(self, prefix=None):
-        """Return a string to this run of the test case.
-
-        The string returned will always be a valid name that can be used in
-        Launchpad URLs.
-
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to the name of the test.
-        """
-        if prefix is None:
-            prefix = self.id().split('.')[-1]
-        # Delegate to the factory.
-        return self._factory.getUniqueString(prefix)
-
-    def getUniqueURL(self):
-        """Return a URL unique to this run of the test case."""
-        # Delegate to the factory.
-        return self._factory.getUniqueURL()
-
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
-        # Delegate to the factory.
-        return self._factory.makePerson(email, name)
-
-    def makeProduct(self):
-        """Create and return a new, arbitrary Product."""
-        # Delegate to the factory.
-        return self._factory.makeProduct()
-
-    def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
-        """Create and return a new, arbitrary Branch of the given type.
-
-        Any parameters for IBranchSet.new can be specified to override the
-        default ones.
-        """
-        # Delegate to the factory.
-        return self._factory.makeBranch(
-            branch_type, owner, name, product, url, **optional_branch_args)
-
-    def restrictSecurityPolicy(self):
-        """Switch to using 'LaunchpadSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+    def loomify(self, branch):
+        tree = branch.create_checkout('checkout')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loom_tree = tree.bzrdir.open_workingtree()
+        loom_tree.lock_write()
+        loom_tree.branch.new_thread('bottom-thread')
+        loom_tree.commit('this is a commit', rev_id='commit-1')
+        loom_tree.unlock()
+        loom_tree.branch.record_loom('sample loom')
+        self.get_transport().delete_tree('checkout')
+        return loom_tree
 
     def makeLoomBranchAndTree(self, tree_directory):
         """Make a looms-enabled branch and working tree."""
@@ -186,7 +124,7 @@ class BranchTestCase(TestCaseWithTransport):
         return loom_tree
 
 
-class ServerTestCase(TrialTestCase, BranchTestCase):
+class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
@@ -203,11 +141,7 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
             self.installServer(self.getDefaultServer())
 
         self.server.setUp()
-
-    def tearDown(self):
-        deferred1 = self.server.tearDown()
-        deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
-        return defer.gatherResults([deferred1, deferred2])
+        self.addCleanup(self.server.tearDown)
 
     def __str__(self):
         return self.id()
@@ -302,6 +236,19 @@ class FakeLaunchpad:
         item_set[new_id] = item_dict
         return new_id
 
+    def getDefaultStackedOnBranch(self, login_id, product_name):
+        if product_name == '+junk':
+            return ''
+        elif product_name == 'evolution':
+            # This has to match the sample data. :(
+            return '/~vcs-imports/evolution/main'
+        elif product_name == 'firefox':
+            return ''
+        else:
+            raise ValueError(
+                "The crappy mock authserver doesn't know how to translate: %r"
+                % (product_name,))
+
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.
 
@@ -349,6 +296,8 @@ class FakeLaunchpad:
                 product = self._product_set[branch['product_id']]['name']
             if ((owner['name'], product, branch['name'])
                 == (user_name, product_name, branch_name)):
+                if login_id == LAUNCHPAD_SERVICES:
+                    return branch_id, 'r'
                 logged_in_user = self._lookup(self._person_set, login_id)
                 if owner['id'] in logged_in_user['teams']:
                     return branch_id, 'w'
@@ -449,8 +398,31 @@ def create_branch_with_one_revision(branch_dir):
         tree = BzrDir.create_standalone_workingtree(branch_dir)
     except FileExists:
         return
-    f = open(branch_dir + 'hello', 'w')
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
     f.write('foo')
     f.close()
     tree.commit('message')
     return tree
+
+
+class TestResultWrapper:
+    """A wrapper for `TestResult` that knows about bzrlib's `TestSkipped`."""
+
+    def __init__(self, result):
+        self.result = result
+
+    def addError(self, test_case, exc_info):
+        if not isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
+            self.result.addError(test_case, exc_info)
+
+    def addFailure(self, test_case, exc_info):
+        self.result.addFailure(test_case, exc_info)
+
+    def addSuccess(self, test_case):
+        self.result.addSuccess(test_case)
+
+    def startTest(self, test_case):
+        self.result.startTest(test_case)
+
+    def stopTest(self, test_case):
+        self.result.stopTest(test_case)

@@ -1,32 +1,41 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'BadBranchSearchContext',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
+    'BranchPersonSearchContext',
+    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
+    'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
+    'get_blacklisted_hostnames',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchNavigationMenu',
+    'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
@@ -34,10 +43,34 @@ __all__ = [
 from cgi import escape
 from datetime import timedelta
 import re
-from zope.interface import Interface, Attribute
 
+# ensure correct plugins are loaded
+import canonical.codehosting
+from bzrlib.branch import (
+    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
+    BzrBranchFormat6, BzrBranchFormat7)
+from bzrlib.bzrdir import (
+    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
+from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
+    RepositoryFormatKnit3, RepositoryFormatKnit4)
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
+    RepositoryFormatPackDevelopment1, RepositoryFormatPackDevelopment1Subtree)
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
+    RepositoryFormat7)
 from zope.component import getUtility
+from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
+
+from canonical.lazr.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.fields import ReferenceChoice
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation, exported)
 
 from canonical.config import config
 
@@ -48,8 +81,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -65,47 +96,38 @@ class BranchLifecycleStatus(DBEnumeratedType):
     NEW = DBItem(1, """
         New
 
-        This branch has just been created.
+        Has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
         Experimental
 
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
+        Still under active development, and not suitable for merging into
+        release branches.
         """)
 
     DEVELOPMENT = DBItem(30, """
         Development
 
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
+        Shaping up nicely, but incomplete or untested, and not yet ready for
+        merging or production use.
         """)
 
     MATURE = DBItem(50, """
         Mature
 
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
+        Completely addresses the issues it is supposed to, tested, and stable
+        enough for merging into other branches.
         """)
 
     MERGED = DBItem(70, """
         Merged
 
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
+        Successfully merged into its target branch(es). No further development
+        is anticipated.
         """)
 
-    ABANDONED = DBItem(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """)
+    ABANDONED = DBItem(80, "Abandoned")
 
 
 class BranchType(DBEnumeratedType):
@@ -141,6 +163,127 @@ class BranchType(DBEnumeratedType):
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
         """)
+
+
+def _format_enum(num, format, format_string=None, description=None):
+    instance = format()
+    if format_string is None:
+        format_string = instance.get_format_string()
+    if description is None:
+        description = instance.get_format_description()
+    return DBItem(num, format_string, description)
+
+
+class BranchFormat(DBEnumeratedType):
+    """Branch on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Branch 4 was only used with all-in-one formats, so it didn't have its
+    # own marker.  It was implied by the control directory marker.
+    BZR_BRANCH_4 = _format_enum(
+        4, BzrBranchFormat4, 'Fake Bazaar Branch 4 marker')
+
+    BRANCH_REFERENCE = _format_enum(1, BranchReferenceFormat)
+
+    BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
+
+    BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
+
+    BZR_BRANCH_7 = _format_enum(7, BzrBranchFormat7)
+
+    BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
+
+    BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
+
+
+class RepositoryFormat(DBEnumeratedType):
+    """Repository on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    # Repository formats prior to format 7 had no marker because they
+    # were implied by the control directory format.
+    BZR_REPOSITORY_4 = _format_enum(
+        4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
+
+    BZR_REPOSITORY_5 = _format_enum(
+        5, RepositoryFormat5, 'Fake Bazaar repository 5 marker')
+
+    BZR_REPOSITORY_6 = _format_enum(
+        6, RepositoryFormat6, 'Fake Bazaar repository 6 marker')
+
+    BZR_REPOSITORY_7 = _format_enum(7, RepositoryFormat7)
+
+    BZR_KNIT_1 = _format_enum(101, RepositoryFormatKnit1)
+
+    BZR_KNIT_3 = _format_enum(103, RepositoryFormatKnit3)
+
+    BZR_KNIT_4 = _format_enum(104, RepositoryFormatKnit4)
+
+    BZR_KNITPACK_1 = _format_enum(201, RepositoryFormatKnitPack1)
+
+    BZR_KNITPACK_3 = _format_enum(203, RepositoryFormatKnitPack3)
+
+    BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
+
+    BZR_KNITPACK_5 = _format_enum(
+        205, RepositoryFormatKnitPack5,
+        description='Packs 5 (needs bzr 1.6, supports stacking)\n')
+
+    BZR_KNITPACK_5_RRB = DBItem(206,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6)\n',
+        'Packs 5-Rich Root (needs bzr 1.6, supports stacking)'
+        )
+
+    BZR_KNITPACK_5_RR = DBItem(207,
+        'Bazaar RepositoryFormatKnitPack5RichRoot (bzr 1.6.1)\n',
+        'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
+        )
+
+    BZR_PACK_DEV_0 = DBItem(300,
+        'Bazaar development format 0 (needs bzr.dev from before 1.3)\n',
+        'Development repository format, currently the same as pack-0.92',
+        )
+
+    BZR_PACK_DEV_0_SUBTREE = DBItem(301,
+        'Bazaar development format 0 with subtree support (needs bzr.dev from'
+        ' before 1.3)\n',
+        'Development repository format, currently the same as'
+        ' pack-0.92-subtree\n',
+        )
+
+    BZR_DEV_1 = _format_enum(
+        302, RepositoryFormatPackDevelopment1)
+
+    BZR_DEV_1_SUBTREE = _format_enum(
+        303, RepositoryFormatPackDevelopment1Subtree)
+
+
+class ControlFormat(DBEnumeratedType):
+    """Control directory (BzrDir) format.
+
+    This indicates what control directory format is on disk.  Must be updated
+    as new formats become available.
+    """
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
+    BZR_DIR_4 = _format_enum(4, BzrDirFormat4)
+
+    BZR_DIR_5 = _format_enum(5, BzrDirFormat5)
+
+    BZR_DIR_6 = _format_enum(6, BzrDirFormat6)
+
+    BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
 
 
 class UICreatableBranchType(EnumeratedType):
@@ -214,6 +357,20 @@ class BranchTypeError(Exception):
     """
 
 
+class BadBranchSearchContext(Exception):
+    """The context is not valid for a branch search."""
+
+
+def get_blacklisted_hostnames():
+    """Return a list of hostnames blacklisted for Branch URLs."""
+    hostnames = config.codehosting.blacklisted_hostnames
+    # If nothing specified, return an empty list. Special-casing since
+    # ''.split(',') == [''].
+    if hostnames == '':
+        return []
+    return hostnames.split(',')
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -237,6 +394,22 @@ class BranchURIField(URIField):
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
                 mapping={'domain': escape(launchpad_domain)})
+            raise LaunchpadValidationError(structured(message))
+
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                message = _(
+                    'Launchpad cannot mirror branches from %s.' % hostname)
+                raise LaunchpadValidationError(structured(message))
+
+        # As well as the check against the config, we also need to check
+        # against the actual text used in the database constraint.
+        constraint_text = 'http://bazaar.launchpad.net'
+        if value.startswith(constraint_text):
+            message = _(
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(constraint_text)})
             raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -293,8 +466,14 @@ class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
 
+class IBranchNavigationMenu(Interface):
+    """A marker interface to indicate the need to show the branch menu."""
+
+
 class IBranch(IHasOwner):
     """A Bazaar branch."""
+    # Mark branches as exported entries for the Launchpad API.
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -308,38 +487,74 @@ class IBranch(IHasOwner):
     #   1) define a separate schema to use in the UI (sledgehammer solution)
     #   2) work out some way to specify a restricted vocabulary in the view
     # Personally I'd like a LAZR way to do number 2.
-    branch_type = Choice(
-        title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType)
+    branch_type = exported(
+        Choice(
+            title=_("Branch Type"), required=True, readonly=True,
+            vocabulary=UICreatableBranchType))
 
-    name = TextLine(
-        title=_('Name'), required=True, description=_("Keep very "
-        "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=branch_name_validator)
-    title = Title(
-        title=_('Title'), required=False, description=_("Describe the "
-        "branch as clearly as possible in up to 70 characters. This "
-        "title is displayed in every branch list or report."))
-    summary = Summary(
-        title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will be "
-        "displayed on the branch page."))
-    url = BranchURIField(
-        title=_('Branch URL'), required=False,
-        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
-        allow_userinfo=False,
-        allow_query=False,
-        allow_fragment=False,
-        trailing_slash=False,
-        description=_("This is the external location where the Bazaar "
-                      "branch is hosted."))
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True, constraint=branch_name_validator,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
 
-    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the branch.'))
-    mirror_status_message = Text(
-        title=_('The last message we got when mirroring this branch '
-                'into supermirror.'), required=False, readonly=False)
+    title = exported(
+        Title(
+            title=_('Title'), required=False,
+            description=_(
+                "Describe the branch as clearly as possible in up to 70 "
+                "characters. This title is displayed in every branch list "
+                "or report.")))
+
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=False,
+            description=_(
+                "A single-paragraph description of the branch. This will be "
+                "displayed on the branch page.")))
+
+    url = exported(
+        BranchURIField(
+            title=_('Branch URL'), required=False,
+            allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+            allow_userinfo=False,
+            allow_query=False,
+            allow_fragment=False,
+            trailing_slash=False,
+            description=_(
+                "This is the external location where the Bazaar "
+                "branch is hosted.")))
+
+    branch_format = exported(
+        Choice(
+            title=_("Branch Format"),
+            required=False, readonly=True,
+            vocabulary=BranchFormat))
+
+    repository_format = exported(
+        Choice(
+            title=_("Repository Format"),
+            required=False, readonly=True,
+            vocabulary=RepositoryFormat))
+
+    control_format = exported(
+        Choice(
+            title=_("Control Directory"),
+            required=False, readonly=True,
+            vocabulary=ControlFormat))
+
+    whiteboard = exported(
+        Whiteboard(
+            title=_('Whiteboard'), required=False,
+            description=_('Notes on the current status of the branch.')))
+
+    mirror_status_message = exported(
+        Text(
+            title=_('The last message we got when mirroring this branch '
+                    'into supermirror.'),
+            required=False, readonly=True))
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
@@ -347,44 +562,67 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    registrant = Attribute("The user that registered the branch.")
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True,
-        vocabulary='PersonActiveMembershipPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
-    author = PublicPersonChoice(
-        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The author of the branch. Leave blank if the author "
-                      "does not have a Launchpad account."))
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The reviewer of a branch is the person or team that "
-                      "is responsible for authorising code to be merged."))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The user that registered the branch."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'),
+            required=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("Either yourself or a team you are a member of. "
+                        "This controls who can modify the branch.")))
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Reviewer'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for authorising code to be "
+                          "merged.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
-    product = Choice(
-        title=_('Project'), required=False, vocabulary='Product',
-        description=_("The project this branch belongs to."))
+    # ReferenceChoice is Interface rather than IProduct as IProduct imports
+    # IBranch and we'd get import errors.  IPerson does a similar trick.
+    # The schema is set properly to `IProduct` in _schema_circular_imports.
+    product = exported(
+        ReferenceChoice(
+            title=_('Project'),
+            required=False,
+            vocabulary='Product',
+            schema=Interface,
+            description=_("The project this branch belongs to.")),
+        exported_as='project')
+
     product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and project names.")
-    displayname = Attribute(
-        "The branch title if provided, or the unique_name.")
-    sort_key = Attribute(
-        "Key for sorting branches for display.")
+    unique_name = exported(
+        Text(title=_('Unique name'), readonly=True,
+             description=_("Unique name of the branch, including the "
+                           "owner and project names.")))
+
+    displayname = exported(
+        Text(title=_('Display name'), readonly=True,
+             description=_(
+                "The branch title if provided, or the unique_name.")),
+        exported_as='display_name')
 
     # Stats and status attributes
-    lifecycle_status = Choice(
-        title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Status'), vocabulary=BranchLifecycleStatus,
+            default=BranchLifecycleStatus.NEW))
 
-    # Mirroring attributes
+    # Mirroring attributes. For more information about how these all relate to
+    # each other, look at
+    # 'lib/canonical/launchpad/doc/puller-state-table.ods'.
     last_mirrored = Datetime(
         title=_("Last time this branch was successfully mirrored."),
         required=False)
@@ -397,11 +635,6 @@ class IBranch(IHasOwner):
         required=False)
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
-    pull_disabled = Bool(
-        title=_("Do not try to pull this branch anymore."),
-        description=_("Disable periodic pulling of this branch by Launchpad. "
-                      "That will prevent connection attempts to the branch "
-                      "URL. Use this if the branch is no longer available."))
     next_mirror_time = Datetime(
         title=_("If this value is more recent than the last mirror attempt, "
                 "then the branch will be mirrored on the next mirror run."),
@@ -417,8 +650,10 @@ class IBranch(IHasOwner):
                       "successfully scanned."))
     revision_count = Int(
         title=_("Revision count"),
-        description=_("The number of revisions in the branch")
+        description=_("The revision number of the tip of the branch.")
         )
+
+    stacked_on = Attribute('Stacked-on branch')
 
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
@@ -433,11 +668,6 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
-
-    related_bug_tasks = Attribute(
-        "For each related_bug, the bug task reported against this branch's "
-        "product or the first bug task (in case where there is no task "
-        "reported against the branch's product).")
 
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
@@ -455,10 +685,17 @@ class IBranch(IHasOwner):
         "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_last_modified = Datetime(
-        title=_('Date Last Modified'), required=True, readonly=False)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            required=True,
+            readonly=True))
+
+    date_last_modified = exported(
+        Datetime(
+            title=_('Date Last Modified'),
+            required=True,
+            readonly=False))
 
     def destroySelf(break_references=False):
         """Delete the specified branch.
@@ -484,7 +721,8 @@ class IBranch(IHasOwner):
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None, date_created=None):
+                         whiteboard=None, date_created=None,
+                         needs_review=False):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -501,6 +739,18 @@ class IBranch(IHasOwner):
             pertinant to the landing such as testing notes.
         :param date_created: Used to specify the date_created value of the
             merge request.
+        :param needs_review: Used to specify the the proposal is ready for
+            review right now.
+        """
+
+    def getStackedBranches():
+        """The branches that are stacked on this one."""
+
+    def getStackedBranchesWithIncompleteMirrors():
+        """Branches that are stacked on this one but aren't done mirroring.
+
+        In particular, these are branches that have started mirroring but have
+        not yet succeeded. Failed branches are included.
         """
 
     def getMergeQueue():
@@ -515,22 +765,12 @@ class IBranch(IHasOwner):
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    def getBzrUploadURL(person=None):
-        """Return the URL for this person to push to the branch.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
-
-    def getBzrDownloadURL(person=None):
-        """Return the URL for this person to branch the branch.
-
-        If the branch is public, the anonymous http location is used,
-        otherwise the url uses the smartserver.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
+    bzr_identity = Attribute(
+        "The shortest lp spec URL for this branch. "
+        "If the branch is associated with a product as the primary "
+        "development focus, then the result should be lp:product.  If "
+        "the branch is related to a series, then lp:product/series. "
+        "Otherwise the result is lp:~user/product/branch-name.")
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -588,20 +828,27 @@ class IBranch(IHasOwner):
         :return: An SQLObject query result.
         """
 
-    def getBranchRevision(sequence):
-        """Get the `BranchRevision` for the given sequence number.
+    def getBranchRevision(sequence=None, revision=None, revision_id=None):
+        """Get the associated `BranchRevision`.
 
-        If no such `BranchRevision` exists, None is returned.
-        """
+        One and only one parameter is to be not None.
 
-    def getBranchRevisionByRevisionId(revision_id):
-        """Get the `BranchRevision for the given revision id.
-
-        If no such `BranchRevision` exists, None is returned.
+        :param sequence: The revno of the revision in the mainline history.
+        :param revision: A `Revision` object.
+        :param revision_id: A revision id string.
+        :return: A `BranchRevision` or None.
         """
 
     def createBranchRevision(sequence, revision):
         """Create a new `BranchRevision` for this branch."""
+
+    def createBranchRevisionFromIDs(revision_id_sequence_pairs):
+        """Create a batch of BranchRevision objects.
+
+        :param revision_id_sequence_pairs: A sequence of (revision_id,
+            sequence) pairs.  The revision_ids are assumed to have been
+            inserted already; no checking of this is done.
+        """
 
     def getTipRevision():
         """Return the `Revision` associated with the `last_scanned_id`.
@@ -643,6 +890,7 @@ class IBranch(IHasOwner):
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
+    @export_write_operation()
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -699,7 +947,7 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, creator, owner, product, url, title=None,
+    def new(branch_type, name, registrant, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, whiteboard=None, date_created=None):
         """Create a new branch.
@@ -711,10 +959,24 @@ class IBranchSet(Interface):
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
+    def getByProductAndName(product, name):
+        """Find all branches in a product with a given name."""
+
+    def getByProductAndNameStartsWith(product, name):
+        """Find all branches in a product a name that starts with `name`."""
+
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
+        """
+
+    def getRewriteMap():
+        """Return the branches that can appear in the rewrite map.
+
+        This returns only public, non-remote branches. The results *will*
+        include branches that aren't explicitly private but are stacked-on
+        private branches. The rewrite map generator filters these out itself.
         """
 
     def getByUrl(url, default=None):
@@ -728,13 +990,6 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
-
-    def getProductDevelopmentBranches(products):
-        """Return branches that are associated with the products dev series.
-
-        The branches will be either the import branches if imported, or
-        the user branches if native.
-        """
 
     def getActiveUserBranchSummaryForProducts(products):
         """Return the branch count and last commit time for the products.
@@ -813,30 +1068,24 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with person with appropriate lifecycle.
+    def getBranchesForContext(
+        context=None,
+        lifecycle_statuses=None,
+        visible_by_user=None,
+        sort_by=None):
+        """Branches associated with the context.
 
-        XXX: thumper 2007-03-23:
-        The intent here is to just show interesting branches for the
-        person.
-        Following a chat with lifeless we'd like this to be listed and
-        ordered by interest and last activity where activity is defined
-        as linking a bug or spec, changing the status of said link,
-        updating ui attributes of the branch, committing code to the
-        branch.
-        Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered or own.
-
-        All branches that are either registered or owned by person
-        are shown, as well as their subscribed branches.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
+        :param context: If None, all possible branches are returned, otherwise
+            the results will be appropriately filtered by the type of the
+            context.
+        :type context: Something that implements IProject, IProduct, or
+            IPerson.
+        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
+            then branches of any lifecycle_status are returned, otherwise
+            only branches with a lifecycle_status of one of the
+            lifecycle_statuses are returned.
+        :type lifecycle_statuses: One or more values from the
+            BranchLifecycleStatus enumeration.
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
@@ -846,148 +1095,6 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesOwnedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches owned by person with appropriate lifecycle.
-
-        Only branches that are owned by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesRegisteredByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches registered by person with appropriate lifecycle.
-
-        Only branches registered by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesSubscribedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches subscribed by person with appropriate lifecycle.
-
-        All branches where the person has subscribed to the branch
-        are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesForProduct(
-        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with product with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormant: Boolean.
-        """
-
-    def getBranchesForProject(
-        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches associated with project with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        :param hide_dormant: A flag to indicate whether or not to show
-            dormant branches.  A branch is dormant if it has not had any
-            activity for a significant period of time.  The dormant time
-            frame is specified in `config.launchpad.branch_dormant_days`.
-        :type hide_dormanty Boolean.
         """
 
     def getHostedBranchesForPerson(person):
@@ -1008,20 +1115,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesWithRecentRevisionsForProduct(product, quantity,
-                                                 visible_by_user=None):
-        """Return the product's branches that have the most recent revisions.
-
-        :param quantity: At most `quantity` branches are returned.
-        :type quantity: int
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        """
-
     def getPullQueue(branch_type):
         """Return a queue of branches to mirror using the puller.
 
@@ -1029,7 +1122,16 @@ class IBranchSet(Interface):
         """
 
     def getTargetBranchesForUsersMergeProposals(user, product):
-        """Return a sequence of branches the user has targetted before."""
+        """Return a sequence of branches the user has targeted before."""
+
+    def isBranchNameAvailable(owner, product, branch_name):
+        """Is the specified branch_name valid for the owner and product.
+
+        :param owner: A `Person` who may be an individual or team.
+        :param product: A `Product` or None for a junk branch.
+        :param branch_name: The proposed branch name.
+        """
+
 
 
 class IBranchDelta(Interface):
@@ -1085,6 +1187,12 @@ class BranchListingSort(EnumeratedType):
     # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
     # that are not visible in the listing!
 
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
     PRODUCT = Item("""
         by project name
 
@@ -1095,12 +1203,6 @@ class BranchListingSort(EnumeratedType):
         by lifecycle status
 
         Sort branches by the lifecycle status.
-        """)
-
-    AUTHOR = Item("""
-        by author name
-
-        Sort branches by the display name of the author.
         """)
 
     NAME = Item("""
@@ -1162,6 +1264,54 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
-    hide_dormant = Bool(
-        title=_("Hide dormant branches"),
-        description=_("Hide dormant branches"))
+
+class BranchPersonSearchRestriction(EnumeratedType):
+    """How to further restrict the query for a branch search for people."""
+
+    ALL = Item("""
+        All related branches
+
+        All branches owned, registered or subscribed to by the person.
+        """)
+
+    REGISTERED = Item("""
+        Registered branches
+
+        Only return the branches registered by the person.
+        """)
+
+    OWNED = Item("""
+        Owned branches
+
+        Only return the branches owned by the person.
+        """)
+
+    SUBSCRIBED = Item("""
+        Subscribed branches
+
+        Only return the branches subscribed to by the person.
+        """)
+
+
+class IBranchPersonSearchContext(Interface):
+    """A `Person` with a search restriction."""
+
+    person = PublicPersonChoice(
+        title=_('Person'), required=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person to restrict the branch search to."))
+
+    restriction = Choice(
+        title=_("Search restriction"), required=True,
+        vocabulary=BranchPersonSearchRestriction)
+
+
+class BranchPersonSearchContext:
+    """The simple implementation for the person search context."""
+    implements(IBranchPersonSearchContext)
+
+    def __init__(self, person, restriction=None):
+        self.person = person
+        if restriction is None:
+            restriction = BranchPersonSearchRestriction.ALL
+        self.restriction = restriction

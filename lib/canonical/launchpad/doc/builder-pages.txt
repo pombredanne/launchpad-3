@@ -2,7 +2,6 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -135,8 +134,8 @@ where builder 'Frog' is building a job from Celso's private PPA.
     ...    IBuildSet, IBuilderSet, IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
@@ -146,15 +145,15 @@ where builder 'Frog' is building a job from Celso's private PPA.
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
     >>> private_job = BuildQueue(
     ...     build=cprov_builds[random_build], builder=frog)
+    >>> private_job_id = private_job.id
 
 Finally, we will remove any publications of the source behind our
 build of interest that are not in cprov's archive, so that we know
 we're dealing with a single private source publication.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> random_spr = cprov_builds[random_build].sourcepackagerelease
     >>> non_cprov_publications = [
-    ...     pub for pub in random_spr.publishings 
+    ...     pub for pub in random_spr.publishings
     ...     if pub.archive != cprov.archive]
     >>> for pub in non_cprov_publications:
     ...     discard = pub.supersede()
@@ -184,12 +183,14 @@ is widely available:
     None
 
     >>> print frog.status
-    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
 all the 'private' information is exposed.
 
+    >>> import transaction
+    >>> transaction.commit()
     >>> login("foo.bar@canonical.com")
 
     >>> empty_request = LaunchpadTestRequest(form={})
@@ -208,13 +209,22 @@ all the 'private' information is exposed.
     None
 
     >>> print admin_view.context.status
-    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see
 browser/builder.py for futher information on this) and the builder
-shows up as 'NOT OK'.
+shows up as 'Building private build'.
 
+XXX Julian 2008-09-10
+The Storm store has to be reset here because otherwise the cachedproperty
+used in the security adapter will re-used for the next login with the wrong
+values.  This is only a problem in tests.  This code can be removed after
+bug 268612 is fixed.
+
+    >>> from storm.store import Store
+    >>> store = Store.of(frog)
+    >>> store.reset()
     >>> login('no-priv@canonical.com')
 
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
@@ -232,7 +242,7 @@ shows up as 'NOT OK'.
     None
 
     >>> print nopriv_view.context.status
-    NOT OK: (AUTO)
+    Building private build
 
 XXX cprov 20080214: this is clearly a counterintuitive way to identify
 builders building private jobs. We will certainly have to fine-tune it
@@ -242,13 +252,14 @@ Once the private job is gone, Frog 'real' details are exposed publicly
 again.
 
     >>> login("foo.bar@canonical.com")
-    >>> private_job.destroySelf()
+    >>> private_job = store.get(BuildQueue, private_job_id)
+    >>> Store.of(private_job).remove(private_job)
 
     >>> login('no-priv@canonical.com')
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
 
     >>> print nopriv_view.context.status
-    IDLE (AUTO)
+    Idle
 
     >>> login(ANONYMOUS)
 
@@ -258,11 +269,11 @@ again.
 BuilderSetView offer a way to treat the currently registered builders
 in categories. They are:
 
- * 'Building other packages': a group of builders capable of building
-   'trusted' sources, ubuntu official packages. The 'non-vitualized'
-   build-farm.
+ * 'Official distribution build machines': a group of builders capable
+   of building 'trusted' sources, ubuntu official packages. The
+   'non-vitualized' build-farm.
 
- * 'Building PPP packages': a group of builders capable of building
+ * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
     >>> from canonical.launchpad.interfaces import IBuilderSet
@@ -313,6 +324,12 @@ architectures.
     ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
     ...     virtualized=False)
 
+Newly created builders will be in manual mode because we don't want
+them going straight into the build farm until tested.
+
+    >>> a_builder.manual
+    True
+
 The 'Other' builder category is a `BuilderCategory` class, which
 contains the following attributes:
 
@@ -330,7 +347,7 @@ contains the following attributes:
     <...BuilderCategory ...>
 
     >>> print builder_category.title
-    Building other packages
+    Official distribution build machines
 
     >>> print builder_category.virtualized
     False
@@ -384,7 +401,7 @@ The 'PPA' builder category is also available in BuilderSetView as a
     >>> builder_category = builderset_view.ppa_builders
 
     >>> print builder_category.title
-    Building PPA packages
+    PPA build machines
 
     >>> print builder_category.virtualized
     True

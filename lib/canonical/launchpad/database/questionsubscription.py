@@ -14,7 +14,7 @@ from sqlobject import ForeignKey
 from canonical.launchpad.interfaces import IQuestionSubscription
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class QuestionSubscription(SQLBase):
@@ -29,6 +29,6 @@ class QuestionSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
 

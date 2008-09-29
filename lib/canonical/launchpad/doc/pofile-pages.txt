@@ -112,7 +112,7 @@ The id for this message set is the one we expected.
 
 And as it's the first entry, its sequence number is also the right one.
 
-    >>> potmsgset.sequence
+    >>> potmsgset.getSequence(potmsgset.potemplate)
     1
 
 Test that the associated text to translate is the one we want. We initialize
@@ -194,7 +194,7 @@ The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     print potmsgset.sequence
+    ...     print potmsgset.getSequence(potmsgset.potemplate)
     1
     2
     3
@@ -239,7 +239,7 @@ their sequence is 0.
 
     >>> from canonical.launchpad.database import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
-    >>> potmsgset.sequence
+    >>> potmsgset.getSequence(potmsgset.potemplate)
     0
     >>> form = {
     ...     'batch': '10',

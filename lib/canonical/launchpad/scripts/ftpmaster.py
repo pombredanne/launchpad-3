@@ -13,7 +13,6 @@ __all__ = [
     'LpQueryDistro',
     'ManageChrootScript',
     'ObsoleteDistroseries',
-    'PackageCopier',
     'PackageRemover',
     'PubSourceChecker',
     'SyncSource',
@@ -31,20 +30,21 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
-    IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
-    NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingPriority)
+    DistroSeriesStatus, IBinaryPackageNameSet, IBinaryPackageReleaseSet,
+    IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
+    NotFoundError, PackagePublishingPocket, PackagePublishingPriority,
+    PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript,
-    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -255,6 +255,10 @@ class ArchiveCruftCheckerError(Exception):
     Mostly used to describe errors in the initialisation of this object.
     """
 
+class TagFileNotFound(Exception):
+    """Raised when an archive tag file could not be found."""
+
+
 class ArchiveCruftChecker:
     """Perform overall checks to identify and remove obsolete records.
 
@@ -316,8 +320,9 @@ class ArchiveCruftChecker:
 
     @property
     def dist_archive(self):
-        return os.path.join(self.archive_path, self.distro.name,
-                            'dists', self.distroseries.name)
+        return os.path.join(
+            self.archive_path, self.distro.name, 'dists',
+            self.distroseries.name + pocketsuffix[self.pocket])
 
     def gunzipTagFileContent(self, filename):
         """Gunzip the contents of passed filename.
@@ -337,8 +342,8 @@ class ArchiveCruftChecker:
          * the contents parsed by apt_pkg.ParseTagFile()
         """
         if not os.path.exists(filename):
-            raise ArchiveCruftCheckerError(
-                "File does not exist: %s" % filename)
+            raise TagFileNotFound("File does not exist: %s" % filename)
+
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
@@ -365,8 +370,12 @@ class ArchiveCruftChecker:
                 self.dist_archive, "%s/source/Sources.gz" % component)
 
             self.logger.debug("Processing %s" % filename)
-            temp_fd, temp_filename, parsed_sources = (
-                self.gunzipTagFileContent(filename))
+            try:
+                temp_fd, temp_filename, parsed_sources = (
+                    self.gunzipTagFileContent(filename))
+            except TagFileNotFound, warning:
+                self.logger.warn(warning)
+                return
             try:
                 while parsed_sources.Step():
                     source = parsed_sources.Section.Find("Package")
@@ -406,8 +415,13 @@ class ArchiveCruftChecker:
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
         self.logger.debug("Processing %s" % filename)
-        temp_fd, temp_filename, parsed_packages = (
-            self.gunzipTagFileContent(filename))
+        try:
+            temp_fd, temp_filename, parsed_packages = (
+                self.gunzipTagFileContent(filename))
+        except TagFileNotFound, warning:
+            self.logger.warn(warning)
+            return
+
         try:
             while parsed_packages.Step():
                 package = parsed_packages.Section.Find('Package')
@@ -458,8 +472,12 @@ class ArchiveCruftChecker:
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
-        temp_fd, temp_filename, parsed_packages = (
-            self.gunzipTagFileContent(filename))
+        try:
+            temp_fd, temp_filename, parsed_packages = (
+                self.gunzipTagFileContent(filename))
+        except TagFileNotFound, warning:
+            self.logger.warn(warning)
+            return
 
         try:
             while parsed_packages.Step():
@@ -600,9 +618,9 @@ class ArchiveCruftChecker:
                 raise ArchiveCruftCheckerError(
                     "Invalid suite: '%s'" % self.suite)
 
-        if not os.path.exists(self.archive_path):
+        if not os.path.exists(self.dist_archive):
             raise ArchiveCruftCheckerError(
-                "Invalid archive path: '%s'" % self.archive_path)
+                "Invalid archive path: '%s'" % self.dist_archive)
 
         apt_pkg.init()
         self.processSources()
@@ -1113,158 +1131,6 @@ class SyncSource:
                     % (filename, actual_size, expected_size))
 
 
-class PackageCopier(SoyuzScript):
-    """SoyuzScript that copies published packages between locations.
-
-    Possible exceptions raised are:
-    * PackageLocationError: specified package or distro does not exist
-    * PackageCopyError: the copy operation itself has failed
-    * LaunchpadScriptFailure: only raised if entering via main(), ie this
-        code is running as a genuine script.  In this case, this is
-        also the _only_ exception to be raised.
-
-    The test harness doesn't enter via main(), it calls doCopy(), so
-    it only sees the first two exceptions.
-    """
-
-    usage = '%prog -s warty mozilla-firefox --to-suite hoary'
-    description = 'MOVE or COPY a published package to another suite.'
-
-    def add_my_options(self):
-
-        SoyuzScript.add_my_options(self)
-
-        self.parser.add_option(
-            "-b", "--include-binaries", dest="include_binaries",
-            default=False, action="store_true",
-            help='Whether to copy related binaries or not.')
-
-        self.parser.add_option(
-            '--to-distribution', dest='to_distribution',
-            default='ubuntu', action='store',
-            help='Destination distribution name.')
-
-        self.parser.add_option(
-            '--to-suite', dest='to_suite', default=None,
-            action='store', help='Destination suite name.')
-
-        self.parser.add_option(
-            '--to-ppa', dest='to_ppa', default=None,
-            action='store', help='Destination PPA owner name.')
-
-        self.parser.add_option(
-            '--to-partner', dest='to_partner', default=False,
-            action='store_true', help='Destination set to PARTNER archive.')
-
-    def checkCopyOptions(self):
-        """Check if the locations options are sane.
-
-         * Catch Cross-PARTNER copies, they are not allowed.
-         * Catch simulataneous PPA and PARTNER locations or destinations,
-           results are unpredictable (in fact, the code will ignore PPA and
-           operate only in PARTNER, but that's odd)
-        """
-        if ((self.options.partner_archive and not self.options.to_partner)
-            or (self.options.to_partner and not
-                self.options.partner_archive)):
-            raise SoyuzScriptError(
-                "Cross-PARTNER copies are not allowed.")
-
-        if self.options.archive_owner_name and self.options.partner_archive:
-            raise SoyuzScriptError(
-                "Cannot operate with location PARTNER and PPA "
-                "simultaneously.")
-
-        if self.options.to_ppa and self.options.to_partner:
-            raise SoyuzScriptError(
-                "Cannot operate with destination PARTNER and PPA "
-                "simultaneously.")
-
-    def mainTask(self):
-        """Execute package copy procedure.
-
-        Copy source publication and optionally also copy its binaries by
-        passing '-b' (include_binary) option.
-
-        Modules using this class outside of its normal usage in the
-        copy-package.py script can call this method to start the copy.
-
-        In this case the caller can override test_args on __init__
-        to set the command line arguments.
-
-        Can raise SoyuzScriptError.
-        """
-        assert self.location, (
-            "location is not available, call PackageCopier.setupLocation() "
-            "before dealing with mainTask.")
-
-        self.checkCopyOptions()
-
-        sourcename = self.args[0]
-
-        self.setupDestination()
-
-        self.logger.info("FROM: %s" % (self.location))
-        self.logger.info("TO: %s" % (self.destination))
-
-        to_copy = []
-        source_pub = self.findLatestPublishedSource(sourcename)
-        to_copy.append(source_pub)
-        if self.options.include_binaries:
-            to_copy.extend(source_pub.getPublishedBinaries())
-
-        self.logger.info("Copy candidates:")
-        for candidate in to_copy:
-            self.logger.info('\t%s' % candidate.displayname)
-
-        copies = []
-        for candidate in to_copy:
-            try:
-                copied = candidate.copyTo(
-                    distroseries = self.destination.distroseries,
-                    pocket = self.destination.pocket,
-                    archive = self.destination.archive)
-            except NotFoundError:
-                self.logger.warn('Could not copy %s' % candidate.displayname)
-            else:
-                copies.append(copied)
-
-        if len(copies) == 1:
-            self.logger.info(
-                "%s package successfully copied." % len(copies))
-        elif len(copies) > 1:
-            self.logger.info(
-                "%s packages successfully copied." % len(copies))
-        else:
-            self.logger.info("No package copied (bug ?!?).")
-
-        # Information returned mainly for the benefit of the test harness.
-        return copies
-
-    def setupDestination(self):
-        """Build PackageLocation for the destination context."""
-        if self.options.to_partner:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PARTNER)
-        elif self.options.to_ppa:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite,
-                ArchivePurpose.PPA,
-                self.options.to_ppa)
-        else:
-            self.destination = build_package_location(
-                self.options.to_distribution,
-                self.options.to_suite)
-
-        if self.location == self.destination:
-            raise SoyuzScriptError(
-                "Can not sync between the same locations: '%s' to '%s'" % (
-                self.location, self.destination))
-
-
 class LpQueryDistro(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
 
@@ -1274,8 +1140,8 @@ class LpQueryDistro(LaunchpadScript):
         Also initialise the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'supported', 'archs', 'official_archs',
-            'nominated_arch_indep']
+            'current', 'development', 'supported', 'pending_suites', 'archs',
+            'official_archs', 'nominated_arch_indep', 'pocket_suffixes']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -1348,7 +1214,7 @@ class LpQueryDistro(LaunchpadScript):
         self._buildLocation()
 
         try:
-            action_result = getattr(self, 'get_' + self.action_name)
+            action_result = getattr(self, self.action_name)
         except AttributeError:
             raise AssertionError(
                 "No handler found for action '%s'" % self.action_name)
@@ -1384,7 +1250,7 @@ class LpQueryDistro(LaunchpadScript):
                 % (status.name, self.location.distribution.name))
 
     @property
-    def get_current(self):
+    def current(self):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
@@ -1401,7 +1267,7 @@ class LpQueryDistro(LaunchpadScript):
         return series.name
 
     @property
-    def get_development(self):
+    def development(self):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
@@ -1433,7 +1299,7 @@ class LpQueryDistro(LaunchpadScript):
         return series.name
 
     @property
-    def get_supported(self):
+    def supported(self):
         """Return the names of the distroseries currently supported.
 
         'supported' means not EXPERIMENTAL or OBSOLETE.
@@ -1462,7 +1328,29 @@ class LpQueryDistro(LaunchpadScript):
         return " ".join(supported_series)
 
     @property
-    def get_archs(self):
+    def pending_suites(self):
+        """Return the suite names containing PENDING publication.
+
+        It check for sources and/or binary publications.
+        """
+        self.checkNoSuiteDefined()
+        pending_suites = set()
+        pending_sources = self.location.archive.getPublishedSources(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_sources:
+            pending_suites.add((pub.distroseries, pub.pocket))
+
+        pending_binaries = self.location.archive.getAllPublishedBinaries(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_binaries:
+            pending_suites.add(
+                (pub.distroarchseries.distroseries, pub.pocket))
+
+        return " ".join([distroseries.name + pocketsuffix[pocket]
+                         for distroseries, pocket in pending_suites])
+
+    @property
+    def archs(self):
         """Return a space-separated list of architecture tags.
 
         It is restricted for the context distribution and suite.
@@ -1471,7 +1359,7 @@ class LpQueryDistro(LaunchpadScript):
         return " ".join(arch.architecturetag for arch in architectures)
 
     @property
-    def get_official_archs(self):
+    def official_archs(self):
         """Return a space-separated list of official architecture tags.
 
         It is restricted to the context distribution and suite.
@@ -1482,13 +1370,25 @@ class LpQueryDistro(LaunchpadScript):
                         if arch.official)
 
     @property
-    def get_nominated_arch_indep(self):
+    def nominated_arch_indep(self):
         """Return the nominated arch indep architecture tag.
 
         It is restricted to the context distribution and suite.
         """
         series = self.location.distroseries
         return series.nominatedarchindep.architecturetag
+
+    @property
+    def pocket_suffixes(self):
+        """Return a space-separated list of non-empty pocket suffixes.
+
+        The RELEASE pocket (whose suffix is the empty string) is omitted.
+
+        The returned space-separated string is ordered alphabetically.
+        """
+        sorted_non_empty_suffixes = sorted(
+            suffix for suffix in pocketsuffix.values() if suffix != '')
+        return " ".join(sorted_non_empty_suffixes)
 
 
 class PackageRemover(SoyuzScript):

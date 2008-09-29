@@ -267,7 +267,8 @@ class CustomUploadFile(NascentUploadFile):
         libraryfile = self.librarian.create(
             self.filename, self.size,
             open(self.filepath, "rb"),
-            self.content_type)
+            self.content_type,
+            restricted=self.policy.archive.private)
         return libraryfile
 
 
@@ -850,6 +851,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # record. It will be check in slave-scanner procedure to
             # certify that the build was processed correctly.
             build.buildstate = BuildStatus.FULLYBUILT
+            # Also purge any previous failed upload_log stored, so its
+            # content can be garbage-collected since it's not useful
+            # anymore.
+            build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right
@@ -909,7 +914,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,
-             self.size, open(self.filepath, "rb"), self.content_type)
+             self.size, open(self.filepath, "rb"), self.content_type,
+             restricted=self.policy.archive.private)
         binary.addFile(library_file)
         return binary
 

@@ -12,14 +12,10 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <!-- Page to render a HTML snippet for a single MessageChunk -->
-    <browser:page
-        name="+snippet"
-        for="canonical.launchpad.interfaces.IMessageChunk"
-        facet="overview"
-        template="../templates/messagechunk-snippet.pt"
-        permission="launchpad.AnyPerson"
-        />
+    <class class="canonical.launchpad.interfaces.IndexedMessage">
+      <allow interface="canonical.launchpad.interfaces.IMessage" />
+      <allow interface="canonical.launchpad.interfaces.IIndexedMessage" />
+    </class>
 
     <!-- MessageChunk -->
     <content class="canonical.launchpad.database.MessageChunk">
@@ -38,4 +34,11 @@
     provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
     factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
     />
+
+  <!-- Adapt several related objects to provide unified details -->
+  <adapter for="canonical.launchpad.interfaces.IMessageApproval"
+    provides="canonical.launchpad.interfaces.IHeldMessageDetails"
+    factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
+    />
+
 </configure>

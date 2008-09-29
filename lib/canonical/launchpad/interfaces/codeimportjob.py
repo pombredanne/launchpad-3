@@ -13,7 +13,6 @@ __all__ = [
     'ICodeImportJobSet',
     'ICodeImportJobSetPublic',
     'ICodeImportJobWorkflow',
-    'ICodeImportJobWorkflowPublic',
     ]
 
 from zope.interface import Interface
@@ -128,6 +127,14 @@ class ICodeImportJobSet(Interface):
         :return: A `CodeImportJob` or None if this database id is not found.
         """
 
+    def getReclaimableJobs():
+        """Get the set of jobs that can be reclaimed.
+
+        A job is reclaimable if its heartbeat has not been updated for
+        config.codeimportworker.maximum_heartbeat_interval seconds.
+        """
+
+
 class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.
 
@@ -138,8 +145,11 @@ class ICodeImportJobSetPublic(Interface):
     # we implement endpoint specific authentication for the private xml-rpc
     # server.
 
-    def getJobForMachine(machine):
+    def getJobForMachine(hostname):
         """Select a job for the given machine to run and mark it as started.
+
+        If there is not already a CodeImportMachine with the given hostname,
+        one will be created in the the ONLINE state.
 
         This method selects a job that is due to be run for running on the
         given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.
@@ -202,6 +212,20 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.logtail == logtail.
         """
 
+    def startJob(import_job, machine):
+        """Record that `machine` is about to start work on `import_job`.
+
+        :param import_job: `CodeImportJob` object.
+        :param machine: `CodeImportMachine` that will be working on the job.
+        :precondition: `import_job`.state == PENDING.
+        :precondition: `machine`.state == ONLINE.
+        :postcondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job`.machine == machine.
+        :postcondition: `import_job`.date_started == UTC_NOW.
+        :postcondition: `import_job`.heartbeat == UTC_NOW.
+        :postcondition: A START `CodeImportEvent` was created.
+        """
+
     def finishJob(import_job, status, logfile_alias):
         """Record that a job finished running.
 
@@ -224,27 +248,23 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
 
+    def reclaimJob(import_job):
+        """Record that `import_job` has been reclaimed.
 
-class ICodeImportJobWorkflowPublic(Interface):
-    """Parts of the CodeImportJobWorkflow interface that need to be public.
+        This should be called when the job's heartbeat has not been updated
+        for what the code import watchdog deems is 'too long'.
 
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated.
-    """
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
+        This method creates a CodeImportResult object that records that the
+        job was reclaimed, deletes `import_job` from the database and creates
+        a new job that is due again immediately.
 
-    def startJob(import_job, machine):
-        """Record that `machine` is about to start work on `import_job`.
+        In the conditions below, let `code_import = import_job.code_import`.
 
         :param import_job: `CodeImportJob` object.
-        :param machine: `CodeImportMachine` that will be working on the job.
-        :precondition: `import_job`.state == PENDING.
-        :precondition: `machine`.state == ONLINE.
-        :postcondition: `import_job`.state == RUNNING.
-        :postcondition: `import_job`.machine == machine.
-        :postcondition: `import_job`.date_started == UTC_NOW.
-        :postcondition: `import_job`.heartbeat == UTC_NOW.
-        :postcondition: A START `CodeImportEvent` was created.
+        :precondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job` is deleted.
+        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job.date_due` is UTC_NOW.
+        :postcondition: A `CodeImportResult` was created.
+        :postcondition: A FINISH `CodeImportEvent` was created.
         """

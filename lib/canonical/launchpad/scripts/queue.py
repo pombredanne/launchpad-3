@@ -12,6 +12,7 @@ __all__ = [
     'CommandRunner',
     'CommandRunnerError',
     'QueueActionError',
+    'name_priority_map',
     'name_queue_map'
     ]
 

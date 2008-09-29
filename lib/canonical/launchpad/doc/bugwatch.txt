@@ -230,7 +230,7 @@ status with it. Before we do this we need to login as the Bug Watch
 Updater and get a bug watch and a bugtask to test with.
 
     >>> login('bugwatch@bugs.launchpad.net')
-    >>> bug_watch_updater = getUtility(ILaunchBag).user
+    >>> bug_watch_updater_user = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> print len(bug_one.bugtasks)
     3
@@ -305,7 +305,7 @@ The Bug Watch Updater didn't receive any karma for the changed bug
 tasks, because it's not a valid person and only valid persons can get karma.
 
     >>> from canonical.launchpad.database import Karma
-    >>> Karma.selectBy(personID=bug_watch_updater.id).count()
+    >>> Karma.selectBy(personID=bug_watch_updater_user.id).count()
     0
 
 Finally, let's make sure that bug notifications were added:
@@ -448,10 +448,11 @@ slaves must be updated through their conjoined master.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRoundup)
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> bug_watch_updater = BugWatchUpdater(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
+    INFO Updating 1 watches on http://some.where
 
     >>> bug.bugtasks[0].status.title
     'New'
-

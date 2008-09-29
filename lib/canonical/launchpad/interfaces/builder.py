@@ -99,17 +99,17 @@ class IBuilder(IHasOwner):
                       'details.'))
 
     virtualized = Bool(
-        title=_('Virtualised'), required=True,
+        title=_('Virtualized'), required=True, default=False,
         description=_('Whether or not the builder is a virtual Xen '
                       'instance.'))
 
     manual = Bool(
-        title=_('Manual Mode'), required=False,
+        title=_('Manual Mode'), required=False, default=False,
         description=_('The auto-build system does not dispatch '
                       'jobs automatically for slaves in manual mode.'))
 
     builderok = Bool(
-        title=_('Builder State OK'), required=False,
+        title=_('Builder State OK'), required=True, default=True,
         description=_('Whether or not the builder is ok'))
 
     failnotes = Text(
@@ -122,7 +122,7 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active'), required=False,
+        title=_('Active'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
@@ -147,6 +147,19 @@ class IBuilder(IHasOwner):
         :param logger: A logger used for providing debug information.
         :param libraryfilealias: A library file alias representing the needed
             file.
+        """
+
+    def cachePrivateSourceOnSlave(logger, build_queue_item):
+        """Ask the slave to download source files for a private build.
+
+        The slave will cache the files for the source in build_queue_item
+        to its local disk in preparation for a private build.  Private builds
+        will always take the source files from the archive rather than the
+        librarian since the archive has more granular access to each
+        archive's files.
+
+        :param logger: A logger used for providing debug information.
+        :param build_queue_item: The `IBuildQueue` being built.
         """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
@@ -233,7 +246,7 @@ class IBuilder(IHasOwner):
             other than the build slave failing.
         """
 
-    def transferSlaveFileToLibrarian(file_sha1, filename):
+    def transferSlaveFileToLibrarian(file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.
 
         :param file_sha1: The file's sha1, which is how the file is addressed
@@ -241,6 +254,7 @@ class IBuilder(IHasOwner):
             will cause the build log to be retrieved and gzipped.
         :param filename: The name of the file to be given to the librarian file
             alias.
+        :param private: True if the build is for a private archive.
         :return: A librarian file alias.
         """
 
@@ -256,6 +270,20 @@ class IBuilder(IHasOwner):
 
         This method can only be executed in the builddmaster machine, since
         it will actually issues the XMLRPC call to the buildd-slave.
+        """
+
+    def handleTimeout(logger, error_message):
+        """Handle buildd slave communication timeout situations.
+
+        In case of a virtualized/PPA buildd slave an attempt will be made
+        to reset it first (using `resumeSlaveHost`). Only if that fails
+        will it be (marked as) failed (using `failbuilder`).
+
+        Conversely, a non-virtualized buildd slave will be (marked as)
+        failed straightaway.
+
+        :param logger: The logger object to be used for logging.
+        :param error_message: The error message to be used for logging.
         """
 
 
@@ -277,8 +305,16 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            virtualized=True):
-        """Create a new Builder entry."""
+            active=True, virtualized=False, vm_host=None):
+        """Create a new Builder entry.
+
+        Additionally to the given arguments, builder are created with
+        'builderok' and 'manual' set to True.
+
+        It means that, once created, they will be presented as 'functional'
+        in the UI but will not receive any job until an administrator move
+        it to the automatic mode.
+        """
 
     def count():
         """Return the number of builders in the system."""

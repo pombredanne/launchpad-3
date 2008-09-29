@@ -20,7 +20,6 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/product/@@+portlet-summary" />
-  <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -29,11 +28,15 @@
 
 <div metal:fill-slot="main">
 
+
+  <div id="series-details">
     <p tal:content="context/summary">
         $ProductSeries.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the status of
         this series of releases.
     </p>
+    Status: <strong tal:content="context/status/title" />
+  </div>
 
     <p>
       <img src="/@@/info" />
@@ -54,7 +57,7 @@
 
     <h2>Code for this series</h2>
 
-    <div tal:replace="structure context/@@+importstatus" />
+    <div tal:replace="structure context/@@+code-summary" />
 
 </div>
 

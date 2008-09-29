@@ -11,7 +11,7 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -49,6 +49,11 @@ class CodeImportReviewStatus(DBEnumeratedType):
 
         This code import has been approved, but it has been suspended
         and is not processed.""")
+
+    FAILING = DBItem(40, """Failing
+
+        The code import is failing for some reason and is no longer being
+        attempted.""")
 
 
 class ICodeImport(Interface):
@@ -137,57 +142,32 @@ class ICodeImport(Interface):
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad administrators."))
 
+    def getImportDetailsForDisplay():
+        """Get a one-line summary of the location this import is from."""
+
     import_job = Choice(
         title=_("Current job"),
         readonly=True, vocabulary='CodeImportJob',
         description=_(
             "The current job for this import, either pending or running."))
 
-    def approve(data, user):
-        """Approve the import.
-
-        Additional attributes can also be updated.
-        A code import job will be created for the import.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
-
-    def suspend(data, user):
-        """Suspend the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
-
-    def invalidate(data, user):
-        """Invalidate the import.
-
-        Additional attributes can also be updated.
-        If there was a pending job, it will be removed.
-
-        :param data: dictionary whose keys are attribute names and values are
-            attribute values.
-        :param user: user who made the change, to record in the
-            `CodeImportEvent`.
-        """
+    results = Attribute("The results for this code import.")
 
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 
-        Create a MODIFY `CodeImportEvent` if needed.
+        Creates and returns a MODIFY `CodeImportEvent` if changes were made.
+
+        This method preserves the invariant that a `CodeImportJob` exists for
+        a given import if and only if its review_status is REVIEWED, creating
+        and deleting jobs as necessary.
 
         :param data: dictionary whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
             `CodeImportEvent`.
+        :return: The MODIFY `CodeImportEvent`, if any changes were made, or
+            None if no changes were made.
         """
 
 
@@ -200,6 +180,16 @@ class ICodeImportSet(Interface):
 
     def getAll():
         """Return an iterable of all CodeImport objects."""
+
+    def getActiveImports(text=None):
+        """Return an iterable of all 'active' CodeImport objects.
+
+        Active is defined, somewhat arbitrarily, as having
+        review_status==REVIEWED and having completed at least once.
+
+        :param text: If specifed, limit to the results to those that contain
+            ``text`` in the product or project titles and descriptions.
+        """
 
     def get(id):
         """Get a CodeImport by its id.

@@ -14,11 +14,12 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
@@ -28,16 +29,30 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from canonical.launchpad.database.librarian import LibraryFileContent
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
-    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
-    PackagePublishingStatus)
+    IDistributionArchive, IPPA)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IHasBuildRecords, IBuildSet)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Archive(SQLBase):
@@ -47,15 +62,29 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=False)
+        storm_validator=validate_public_person, notNull=True)
+
+    def _validate_archive_name(self, attr, value):
+        """Only allow renaming of COPY archives.
+
+        Also assert the name is valid when set via an unproxied object.
+        """
+        if not self._SO_creating:
+            assert self.purpose == ArchivePurpose.COPY, (
+                "Only COPY archives can be renamed.")
+        assert valid_name(value), "Invalid name given to unproxied object."
+        return value
+
+    name = StringCol(
+        dbName='name', notNull=True, storm_validator=_validate_archive_name)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution', notNull=False)
 
-    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
-        schema=ArchivePurpose)
+    purpose = EnumCol(
+        dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     enabled = BoolCol(dbName='enabled', notNull=True, default=True)
 
@@ -80,6 +109,32 @@ class Archive(SQLBase):
 
     buildd_secret = StringCol(dbName='buildd_secret', default=None)
 
+    total_count = IntCol(dbName='total_count', notNull=True, default=0)
+
+    pending_count = IntCol(dbName='pending_count', notNull=True, default=0)
+
+    succeeded_count = IntCol(
+        dbName='succeeded_count', notNull=True, default=0)
+
+    building_count = IntCol(
+        dbName='building_count', notNull=True, default=0)
+
+    failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
+
+    date_created = UtcDateTimeCol(dbName='date_created')
+
+    def _init(self, *args, **kw):
+        """Provide the right interface for URL traversal."""
+        SQLBase._init(self, *args, **kw)
+
+        # Provide the additional marker interface depending on what type
+        # of archive this is.  See also the browser:url declarations in
+        # zcml/archive.zcml.
+        if self.is_ppa:
+            alsoProvides(self, IPPA)
+        else:
+            alsoProvides(self, IDistributionArchive)
+
     @property
     def is_ppa(self):
         """See `IArchive`."""
@@ -99,10 +154,10 @@ class Archive(SQLBase):
     def series_with_sources(self):
         """See `IArchive`."""
         cur = cursor()
-        q = """SELECT DISTINCT distroseries FROM
+        query = """SELECT DISTINCT distroseries FROM
                       SourcePackagePublishingHistory WHERE
                       SourcePackagePublishingHistory.archive = %s"""
-        cur.execute(q % self.id)
+        cur.execute(query % self.id)
         published_series_ids = [int(row[0]) for row in cur.fetchall()]
         return [s for s in self.distribution.serieses if s.id in
                 published_series_ids]
@@ -243,8 +298,10 @@ class Archive(SQLBase):
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if not isinstance(status, list):
-                status = [status]
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -259,7 +316,12 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
-        preJoins = ['sourcepackagerelease']
+        preJoins = [
+            'sourcepackagerelease.creator',
+            'sourcepackagerelease.dscsigningkey',
+            'distroseries',
+            'section',
+            ]
 
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
@@ -267,7 +329,7 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None):
+    def getSourcesForDeletion(self, name=None, status=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -289,11 +351,23 @@ class Archive(SQLBase):
                 Build.sourcepackagerelease = SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
+        source_deletable_states = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
         clauses.append("""
-           (%s OR SourcePackagePublishingHistory.status = %s)
+           (%s OR SourcePackagePublishingHistory.status IN %s)
         """ % (has_published_binaries_clause,
-               quote(PackagePublishingStatus.PUBLISHED)))
+               quote(source_deletable_states)))
 
+        if status is not None:
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
+            clauses.append("""
+                SourcePackagePublishingHistory.status IN %s
+            """ % sqlvalues(status))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
@@ -323,22 +397,25 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        cur = cursor()
-        query = """
-            SELECT SUM(filesize) FROM LibraryFileContent WHERE id IN (
-               SELECT DISTINCT(lfc.id) FROM
-                   LibraryFileContent lfc, LibraryFileAlias lfa,
-                   SourcePackageFilePublishing spfp
-               WHERE
-                   lfc.id=lfa.content AND
-                   lfa.id=spfp.libraryfilealias AND
-                   spfp.archive=%s);
-        """ % sqlvalues(self)
-        cur.execute(query)
-        size = cur.fetchall()[0][0]
-        if size is None:
-            return 0
-        return int(size)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(
+            (LibraryFileContent),
+            SourcePackagePublishingHistory.archive == self.id,
+            SourcePackagePublishingHistory.dateremoved == None,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageReleaseFile.sourcepackagereleaseID,
+            SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id)
+
+        # We need to select distinct `LibraryFileContent`s because that how
+        # they end up published in the archive disk. Duplications may happen
+        # because of the publishing records join, the same `LibraryFileAlias`
+        # gets logically re-published in several locations and the fact that
+        # the same `LibraryFileContent` can be shared by multiple
+        # `LibraryFileAlias.` (librarian-gc).
+        result = result.config(distinct=True)
+        size = sum([lfc.filesize for lfc in result])
+        return size
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -377,19 +454,23 @@ class Archive(SQLBase):
             """ % sqlvalues(version))
         else:
             order_const = "debversion_sort_key(BinaryPackageRelease.version)"
-            desc_version_order = SQLConstant(order_const+" DESC")
+            desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if not isinstance(status, list):
-                status = [status]
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
 
         if distroarchseries is not None:
-            if not isinstance(distroarchseries, list):
-                distroarchseries = [distroarchseries]
+            try:
+                distroarchseries = tuple(distroarchseries)
+            except TypeError:
+                distroarchseries = (distroarchseries,)
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
@@ -477,23 +558,18 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        query = """
-             LibraryFileContent.id=LibraryFileAlias.content AND
-             LibraryFileAlias.id=
-                 BinaryPackageFilePublishing.libraryfilealias AND
-             BinaryPackageFilePublishing.archive=%s
-        """ % sqlvalues(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.find(
+            (LibraryFileContent),
+            BinaryPackagePublishingHistory.archive == self.id,
+            BinaryPackagePublishingHistory.dateremoved == None,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageFile.binarypackagereleaseID,
+            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
-        # We are careful to use DISTINCT here to eliminate files that
-        # are published in more than one place.
-        result = LibraryFileContent.select(query, clauseTables=clauseTables,
-            distinct=True)
-
-        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
-        # where it ignores DISTINCT on a .sum() operation, so resort to
-        # Python addition.  Revert to using result.sum('filesize') when
-        # SQLObject gets dropped.
+        # See `IArchive.sources_size`.
+        result = result.config(distinct=True)
         size = sum([lfc.filesize for lfc in result])
         return size
 
@@ -528,9 +604,9 @@ class Archive(SQLBase):
         # Compiled regexp to remove puntication.
         clean_text = re.compile('(,|;|:|\.|\?|!)')
 
-        # XXX cprov 20080402: The set() is only used because we have
-        # a limitation in our FTI setup, it only indexes the first 2500
-        # chars of the target columns. See bug 207969. When such limitation
+        # XXX cprov 20080402 bug=207969: The set() is only used because we
+        # have a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. When such limitation
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
@@ -582,19 +658,20 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency):
+    def getArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency)
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
 
-    def removeArchiveDependency(self, dependency):
+    def removeArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency)
+        dependency = self.getArchiveDependency(dependency, pocket, component)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency):
+    def addArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
@@ -603,12 +680,41 @@ class Archive(SQLBase):
         if not dependency.is_ppa:
             raise ArchiveDependencyError(
                 "Archive dependencies only applies to PPAs.")
+        else:
+            if pocket is not PackagePublishingPocket.RELEASE:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to RELEASE pocket.")
+            if component.id is not getUtility(IComponentSet)['main'].id:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to 'main' component.")
 
-        if self.getArchiveDependency(dependency):
+        if self.getArchiveDependency(dependency, pocket, component):
             raise ArchiveDependencyError(
                 "This dependency is already recorded.")
 
-        return ArchiveDependency(archive=self, dependency=dependency)
+        return ArchiveDependency(
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
+
+    def canUpload(self, user, component_or_package=None):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return user.inTeam(self.owner)
+        else:
+            return self._authenticate(
+                user, component_or_package, ArchivePermissionType.UPLOAD)
+
+    def canAdministerQueue(self, user, component):
+        """See `IArchive`."""
+        return self._authenticate(
+            user, component, ArchivePermissionType.QUEUE_ADMIN)
+
+    def _authenticate(self, user, component, permission):
+        """Private helper method to check permissions."""
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.checkAuthenticated(
+            user, self, permission, component)
+        return permissions.count() > 0
 
 
 class ArchiveSet:
@@ -630,38 +736,97 @@ class ArchiveSet:
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
-    def getByDistroPurpose(self, distribution, purpose):
-        """See `IArchiveSet`."""
-        return Archive.selectOneBy(distribution=distribution, purpose=purpose)
+    def _getDefaultArchiveNameByPurpose(self, purpose):
+        """Return the default for a archive in a given purpose.
 
-    def new(self, distribution=None, purpose=None, owner=None,
-            description=None):
+        The default names are:
+
+         * PRIMARY: 'primary';
+         * PARTNER: 'partner';
+         * PPA: 'default'.
+
+        :param purpose: queried `ArchivePurpose`.
+
+        :raise: `AssertionError` If the given purpose is not in this list,
+            i.e. doesn't have a default name.
+
+        :return: the name text to be used as name.
+        """
+        name_by_purpose = {
+            ArchivePurpose.PRIMARY: 'primary',
+            ArchivePurpose.PPA: 'default',
+            ArchivePurpose.PARTNER: 'partner',
+            }
+
+        if purpose not in name_by_purpose.keys():
+            raise AssertionError(
+                "'%s' purpose has no default name." % purpose.name)
+
+        return name_by_purpose[purpose]
+
+    def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
         if purpose == ArchivePurpose.PPA:
-            assert owner, "Owner required when purpose is PPA."
+            raise AssertionError(
+                "This method should not be used to lookup PPAs. "
+                "Use 'getPPAByDistributionAndOwnerName' instead.")
 
+        if name is None:
+            name = self._getDefaultArchiveNameByPurpose(purpose)
+
+        return Archive.selectOneBy(
+            distribution=distribution, purpose=purpose, name=name)
+
+    def getByDistroAndName(self, distribution, name):
+        """See `IArchiveSet`."""
+        return Archive.selectOne("""
+            Archive.distribution = %s AND
+            Archive.name = %s AND
+            Archive.purpose != %s
+            """ % sqlvalues(distribution, name, ArchivePurpose.PPA))
+
+    def new(self, purpose, owner, name=None, distribution=None,
+            description=None):
+        """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
-        return Archive(owner=owner, distribution=distribution,
-                       description=description, purpose=purpose)
+        if name is None:
+            name = self._getDefaultArchiveNameByPurpose(purpose)
 
-    def ensure(self, owner, distribution, purpose, description=None):
-        """See `IArchiveSet`."""
-        if owner is not None:
-            archive = owner.archive
-            if archive is None:
-                archive = self.new(distribution=distribution, purpose=purpose,
-                                   owner=owner, description=description)
-        else:
-            archive = self.getByDistroPurpose(distribution, purpose)
-            if archive is None:
-                archive = self.new(distribution, purpose)
-        return archive
+        return Archive(
+            owner=owner, distribution=distribution, name=name,
+            description=description, purpose=purpose)
 
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
+
+    @property
+    def number_of_ppa_sources(self):
+        cur = cursor()
+        query = """
+             SELECT SUM(sources_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(query)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
+
+    @property
+    def number_of_ppa_binaries(self):
+        cur = cursor()
+        query = """
+             SELECT SUM(binaries_cached) FROM Archive
+             WHERE purpose = %s AND private = FALSE
+        """ % sqlvalues(ArchivePurpose.PPA)
+        cur.execute(query)
+        size = cur.fetchall()[0][0]
+        if size is None:
+            return 0
+        return int(size)
 
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
@@ -675,3 +840,89 @@ class ArchiveSet:
         return Archive.select(
             query, clauseTables=['Person', 'TeamParticipation'],
             orderBy=['Person.displayname'])
+
+    def getLatestPPASourcePublicationsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        query = """
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            Archive.private = FALSE AND
+            DistroSeries.distribution = %s AND
+            Archive.purpose = %s
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        return SourcePackagePublishingHistory.select(
+            query, limit=5, clauseTables=['Archive', 'DistroSeries'],
+            orderBy=['-datecreated', '-id'])
+
+
+    def getMostActivePPAsForDistribution(self, distribution):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        query = """
+             SELECT a.id, count(*) as C
+             FROM Archive a, SourcePackagePublishingHistory spph
+             WHERE
+                 spph.archive = a.id AND
+                 a.private = FALSE AND
+                 spph.datecreated >= now() - INTERVAL '1 week' AND
+                 a.distribution = %s AND
+                 a.purpose = %s
+             GROUP BY a.id
+             ORDER BY C DESC, a.id
+             LIMIT 5
+        """ % sqlvalues(distribution, ArchivePurpose.PPA)
+
+        cur.execute(query)
+
+        most_active = []
+        for archive_id, number_of_uploads in cur.fetchall():
+            archive = Archive.get(int(archive_id))
+            the_dict = {'archive': archive, 'uploads': number_of_uploads}
+            most_active.append(the_dict)
+
+        return most_active
+
+    def getBuildCountersForArchitecture(self, archive, distroarchseries):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        query = """
+            SELECT buildstate, count(id) FROM Build
+            WHERE archive = %s AND distroarchseries = %s
+            GROUP BY buildstate ORDER BY buildstate;
+        """ % sqlvalues(archive, distroarchseries)
+        cur.execute(query)
+        result = cur.fetchall()
+
+        status_map = {
+            'failed': (
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                ),
+            'pending': (
+                BuildStatus.BUILDING,
+                BuildStatus.NEEDSBUILD,
+                ),
+            'succeeded': (
+                BuildStatus.FULLYBUILT,
+                ),
+            }
+
+        status_and_counters = {}
+
+        # Set 'total' counter
+        status_and_counters['total'] = sum(
+            [counter for status, counter in result])
+
+        # Set each counter according 'status_map'
+        for key, status in status_map.iteritems():
+            status_and_counters[key] = 0
+            for status_value, status_counter in result:
+                status_values = [item.value for item in status]
+                if status_value in status_values:
+                    status_and_counters[key] += status_counter
+
+        return status_and_counters

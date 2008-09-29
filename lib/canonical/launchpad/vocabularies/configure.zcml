@@ -146,11 +146,6 @@
     />
 
   <vocabulary
-    name="PersonActiveMembershipPlusSelf"
-    factory="canonical.launchpad.vocabularies.PersonActiveMembershipPlusSelfVocabulary"
-    />
-
-  <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
     />
@@ -206,6 +201,11 @@
     />
 
   <vocabulary
+    name="CommercialProjects"
+    factory="canonical.launchpad.vocabularies.CommercialProjectsVocabulary"
+    />
+
+  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
     />
@@ -228,6 +228,11 @@
   <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="UserTeamsParticipationPlusSelf"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationPlusSelfVocabulary"
     />
 
   <vocabulary
@@ -258,6 +263,11 @@
   <vocabulary
     name="ValidTeam"
     factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidPerson"
+    factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
     />
 
   <vocabulary

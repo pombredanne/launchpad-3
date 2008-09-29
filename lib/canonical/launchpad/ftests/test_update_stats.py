@@ -177,7 +177,7 @@ class UpdateStatsTest(unittest.TestCase):
         for key in keys:
             cur.execute("""
                 SELECT value from LaunchpadStatistic WHERE name=%(key)s
-                """, vars())
+                """, dict(key=key))
             row = cur.fetchone()
             self.failIf(row is None, '%s not updated' % key)
             self.failUnless(row[0] >= 0, '%s is invalid' % key)

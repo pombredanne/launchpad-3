@@ -13,7 +13,10 @@ distributions, product groups and products.
     ...     admin_browser.getControl(
     ...         name='field.bug_reporting_guidelines').value = (
     ...         "The version of %s you're using." % (context_name,))
-    ...     admin_browser.getControl('Change').click()
+    ...     if context_path == 'ubuntu':
+    ...         admin_browser.getControl('Change', index=3).click()
+    ...     else:
+    ...         admin_browser.getControl('Change').click()
 
 The guidelines are not displayed on the initial basic bug-reporting
 page, because that page does not include a bug description field.

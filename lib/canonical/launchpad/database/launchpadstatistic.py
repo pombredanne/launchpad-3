@@ -150,7 +150,7 @@ class LaunchpadStatisticSet:
                 distinct=True, clauseTables=['Question']).count())
         self.update(
             'reviewed_products',
-            Product.selectBy(reviewed=True, active=True).count())
+            Product.selectBy(license_reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
         self.update(

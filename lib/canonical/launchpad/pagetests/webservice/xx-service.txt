@@ -4,11 +4,87 @@ Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
 
+== Authorization ==
+
+  # XXX leonardr 2008-05-22 spec=api-bugs-remote:
+  # Once we launch the web service this test will be removed
+  # because all users will have access to the web service.
+
+In a development environment, any Launchpad person with an OAuth token
+can make a request of the web service. Here's the 'no-priv' user
+making a request.
+
+  >>> print user_webservice.get("/~launchpad").getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+But in production, only Launchpad people who belong to a particular
+team of beta testers are allowed to make requests. This code
+configures that team so that web service clients must be authorized as
+a member of the 'admins' team.
+
+  >>> from canonical.config import config
+  >>> print config.vhost.api.beta_test_team
+  None
+
+  >>> from textwrap import dedent
+  >>> test_data = dedent("""
+  ...     [vhost.api]
+  ...     beta_test_team: admins
+  ...     """)
+  >>> config.push('test', test_data)
+
+Now 'no-priv' can no longer make web service requests.
+
+  >>> print user_webservice.get("/~launchpad").getOutput()
+  HTTP/1.1 401 Unauthorized
+  ...
+  no-priv is not a member of the beta test team.
+  ...
+
+But 'salgado' belongs to the 'admins' team, and so can make web
+service requests.
+
+  >>> print webservice.get("/~launchpad").getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+If for some reason the variable's value is set to a nonsensical value,
+access to the web service will be cut off altogether.
+
+  >>> test_config = config.pop('test')
+  >>> from textwrap import dedent
+  >>> test_data = dedent("""
+  ...     [vhost.api]
+  ...     beta_test_team: nosuchteam
+  ...     """)
+  >>> config.push('test', test_data)
+
+  >>> print webservice.get("/~launchpad").getOutput()
+  HTTP/1.1 401 Unauthorized
+  ...
+  salgado is not a member of the beta test team.
+  ...
+
+  >>> test_config = config.pop('test')
+
+
 == Nonexistent resources ==
 
 An attempt to access a nonexistent resource yields a 404 error.
 
   >>> print webservice.get("/no-such-resource")
+  HTTP/1.1 404 Not Found
+  ...
+
+An attempt to access an existing resource without versioning the URL
+yields a 404 error.
+
+  >>> print webservice.get("/people", api_version="/")
+  HTTP/1.1 404 Not Found
+  ...
+
+  >>> print webservice.get("/", api_version="/")
   HTTP/1.1 404 Not Found
   ...
 
@@ -35,7 +111,7 @@ resource yields a 405 error.
 
   >>> print webservice.delete("/~salgado")
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET PUT PATCH
+  Allow: GET POST PUT PATCH
   ...
 
   >>> print webservice.delete("/debian/+source/mozilla-firefox/+bug/1")
@@ -61,5 +137,53 @@ web service:
 
     >>> print webservice.get("/+builds")
     HTTP/1.1 404 Not Found
+    ...
+
+== API Requests to other hosts ==
+
+JavaScript working with the API must deal with the browser's Same Origin
+Policy - requests may only be made to the host that the page was loaded
+from.  For example, we can not visit a page on http://bugs.launchpad.net
+and make a request to http://api.launchpad.net.
+
+Instead of directing the request to api.launchpad.net, we may direct it
+at the /api subpath of the current virtual host, such as
+http://bugs.launchpad.net/api.  Such requests are handled as if they
+were directed at the api.launchpad.net subdomain.
+
+The URLs in the returned representations point to the current host,
+rather than the api host.  The canonical_url() function also returns
+links to the current host.
+
+The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+request to http://api.launchpad.net/beta/, but with the links pointing
+to a different host.
+
+    >>> root = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    >>> print root['people_collection_link']
+    http://bugs.launchpad.dev/api/beta/people
+
+Requests on these hosts also honor the standard Launchpad authorization
+scheme (and don't require OAuth).
+
+    >>> from canonical.launchpad.testing.pages import WebServiceCaller
+    >>> noauth_webservice = WebServiceCaller()
+    >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+    >>> print noauth_webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://bugs.launchpad.dev/api/beta/~name12
+    <BLANKLINE>
+
+But the regular authentication still doesn't work on the normal API
+virtual host:
+
+    >>> print noauth_webservice.get(
+    ...     'http://api.launchpad.dev/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 401 Unauthorized
     ...
 

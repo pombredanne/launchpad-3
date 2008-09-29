@@ -16,6 +16,8 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
+from storm.store import Store
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -29,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
@@ -43,7 +45,8 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.RT:          'Ticket/Display.html?id=%s',
     BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
     BugTrackerType.TRAC:        'ticket/%s',
-    BugTrackerType.SAVANNAH:    'bugs/?%s',
+    BugTrackerType.SAVANE:      'bugs/?%s',
+    BugTrackerType.PHPPROJECT:  'bug.php?id=%s',
     }
 
 
@@ -63,7 +66,7 @@ class BugWatch(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -112,7 +115,9 @@ class BugWatch(SQLBase):
 
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.importance = malone_importance
+            linked_bugtask.transitionToImportance(
+                malone_importance,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
             if linked_bugtask.importance != old_bugtask.importance:
                 event = SQLObjectModifiedEvent(
@@ -178,7 +183,11 @@ class BugWatch(SQLBase):
                 "running on %(bugtracker)s.",
             BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
                 "doesn't support importing bugs from %(bugtrackertype)s"
-                " bug trackers."}
+                " bug trackers.",
+            BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
+                "private on the remote bug tracker. Launchpad cannot import "
+                "the status of private remote bugs.",
+            }
 
         if self.last_error_type in error_message_mapping:
             message = error_message_mapping[self.last_error_type]
@@ -197,7 +206,7 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         query = """
             BugMessage.message = Message.id
-            AND Message.rfc822msgid = %s
+            AND BugMessage.remote_comment_id = %s
             AND BugMessage.bugwatch = %s
         """ % sqlvalues(comment_id, self)
 
@@ -220,7 +229,17 @@ class BugWatch(SQLBase):
         bug_watch_updater = getUtility(
             ILaunchpadCelebrities).bug_watch_updater
         bug_message = self.bug.linkMessage(
-            message, bugwatch=self, user=bug_watch_updater)
+            message, bugwatch=self, user=bug_watch_updater,
+            remote_comment_id=comment_id)
+        return bug_message
+
+    def getImportedBugMessages(self):
+        """See `IBugWatch`."""
+        store = Store.of(self)
+        # If a comment is linked to a bug watch, it means it's imported.
+        return store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)
 
 
 class BugWatchSet(BugSetBase):
@@ -239,9 +258,10 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
-            BugTrackerType.SAVANNAH: self.parseSavannahURL,
-            BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
+            BugTrackerType.SAVANE: self.parseSavaneURL,
+            BugTrackerType.SOURCEFORGE: self.parseSourceForgeLikeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
         }
 
     def get(self, watch_id):
@@ -255,7 +275,7 @@ class BugWatchSet(BugSetBase):
         return BugWatch.select()
 
     def fromText(self, text, bug, owner):
-        """See IBugTrackerSet.fromText."""
+        """See `IBugWatchSet`."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
         matches = list(find_uris_in_text(text))
@@ -418,13 +438,16 @@ class BugWatchSet(BugSetBase):
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
-    def parseSourceForgeURL(self, scheme, host, path, query):
-        """Extract the SourceForge base URL and bug ID.
+    def parseSourceForgeLikeURL(self, scheme, host, path, query):
+        """Extract the SourceForge-like base URLs and bug IDs.
 
-        Only the path is considered. If it looks like a SF URL, we
-        return the global SF instance. This makes it possible for people
-        to use alternative host names, like sf.net.
+        Both path and hostname are considered. If the hostname
+        corresponds to one of the aliases for the SourceForge celebrity,
+        that celebrity will be returned (there can be only one
+        SourceForge instance in Launchpad).
         """
+        # We're only interested in URLs that look like they come from a
+        # *Forge bugtracker.
         if (not path.startswith('/support/tracker.php') and
             not path.startswith('/tracker/index.php')):
             return None
@@ -432,14 +455,21 @@ class BugWatchSet(BugSetBase):
             return None
 
         remote_bug = query['aid']
-        # There's only one global SF instance registered in Launchpad.
+
+        # There's only one global SF instance registered in Launchpad,
+        # so we return that if the hostnames match.
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
+        sf_hosts = [urlsplit(alias)[1] for alias in sf_tracker.aliases]
+        sf_hosts.append(urlsplit(sf_tracker.baseurl)[2])
+        if host in sf_hosts:
+            return sf_tracker.baseurl, remote_bug
+        else:
+            base_url = urlunsplit((scheme, host, '/', '', ''))
+            return base_url, remote_bug
 
-        return sf_tracker.baseurl, remote_bug
-
-    def parseSavannahURL(self, scheme, host, path, query):
-        """Extract GNU Savannah base URL and bug ID."""
-        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+    def parseSavaneURL(self, scheme, host, path, query):
+        """Extract Savane base URL and bug ID."""
+        # Savane bugs URLs are in the form /bugs/?<bug-id>, so we
         # exclude any path that isn't '/bugs/'. We also exclude query
         # string that have a length of more or less than one, since in
         # such cases we'd be taking a guess at the bug ID, which would
@@ -447,16 +477,24 @@ class BugWatchSet(BugSetBase):
         if path != '/bugs/' or len(query) != 1:
             return None
 
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad, so we return that one if the hostname matches.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+        savannah_hosts = [
+            urlsplit(alias)[1] for alias in savannah_tracker.aliases
+            ]
+        savannah_hosts.append(urlsplit(savannah_tracker.baseurl)[1])
+
         # The remote bug is actually a key in the query dict rather than
         # a value, so we simply use the first and only key we come
         # across as a best-effort guess.
         remote_bug = query.popitem()[0]
 
-        # There's only one global Savannah bugtracker registered with
-        # Launchpad.
-        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
-
-        return savannah_tracker.baseurl, remote_bug
+        if host in savannah_hosts:
+            return savannah_tracker.baseurl, remote_bug
+        else:
+            base_url = urlunsplit((scheme, host, '/', '', ''))
+            return base_url, remote_bug
 
     def parseEmailAddressURL(self, scheme, host, path, query):
         """Extract an email address from a bug URL.
@@ -475,6 +513,17 @@ class BugWatchSet(BugSetBase):
             return None
 
         return '%s:%s' % (scheme, path), ''
+
+    def parsePHPProjectURL(self, scheme, host, path, query):
+        """Extract a PHP project bug tracker base URL and bug ID."""
+        # The URLs have the form bug.php?id=<bug-id>.
+        if path != '/bug.php' or len(query) != 1:
+            return None
+        remote_bug = query.get('id')
+        if remote_bug is None:
+            return None
+        base_url = urlunsplit((scheme, host, '/', '', ''))
+        return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):
         """See `IBugWatchSet`."""

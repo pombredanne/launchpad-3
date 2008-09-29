@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -15,6 +15,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
+from storm.store import Store
 
 import pytz
 
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
     InvalidEmailMessage, NotFoundError, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -47,12 +48,12 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
         dbName='distribution', notNull=False, default=None)
-    rfc822msgid = StringCol(unique=True, notNull=True)
+    rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
@@ -100,6 +101,7 @@ class Message(SQLBase):
     # interface because it is used as a UI field in MessageAddView
     content = None
 
+
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.
 
@@ -144,19 +146,53 @@ class MessageSet:
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     def _decode_header(self, header):
-        """Decode an encoded header possibly containing Unicode."""
+        r"""Decode an RFC 2047 encoded header.
+
+            >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
+            u'F\xf6\xf6 b\xe4r'
+
+        If the header isn't encoded properly, the characters that can't
+        be decoded are replaced with unicode question marks.
+
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
+            u'F\ufffd\ufffd'
+        """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())
 
         bits = email.Header.decode_header(header)
-        return unicode(email.Header.make_header(bits))
+        # Re-encode the header parts using utf-8, replacing undecodable
+        # characters with question marks.
+        re_encoded_bits = []
+        for bytes, charset in bits:
+            if charset is None:
+                charset = 'us-ascii'
+            # 2008-09-26 gary:
+            # The RFC 2047 encoding names and the Python encoding names are
+            # not always the same. A safer and more correct approach would use
+            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #                'replace')
+            # or similar, rather than
+            #   bytes.decode(charset, 'replace')
+            # That said, this has not bitten us so far, and is only likely to
+            # cause problems in unusual encodings that we are hopefully
+            # unlikely to encounter in this part of the code.
+            re_encoded_bits.append(
+                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+
+        return unicode(email.Header.make_header(re_encoded_bits))
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
-            create_missing_persons=False, fallback_parent=None):
+            create_missing_persons=False, fallback_parent=None,
+            date_created=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -205,7 +241,6 @@ class MessageSet:
                 # in the database, but the message headers and/or content
                 # are different. For the moment, we have chosen to allow
                 # this, but in future we may want to flag it in some way
-                pass
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.
@@ -274,14 +309,18 @@ class MessageSet:
             parent = fallback_parent
 
         # figure out the date of the message
-        try:
-            datestr = parsed_message['date']
-            thedate = parsedate_tz(datestr)
-            timestamp = mktime_tz(thedate)
-            datecreated = datetime.fromtimestamp(timestamp,
-                tz=pytz.timezone('UTC'))
-        except (TypeError, ValueError, OverflowError):
-            raise InvalidEmailMessage('Invalid date %s' % datestr)
+        if date_created is not None:
+            datecreated = date_created
+        else:
+            try:
+                datestr = parsed_message['date']
+                thedate = parsedate_tz(datestr)
+                timestamp = mktime_tz(thedate)
+                datecreated = datetime.fromtimestamp(timestamp,
+                    tz=pytz.timezone('UTC'))
+            except (TypeError, ValueError, OverflowError):
+                raise InvalidEmailMessage('Invalid date %s' % datestr)
+
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
         now = datetime.now(pytz.timezone('UTC'))
@@ -347,11 +386,18 @@ class MessageSet:
             #   text/plain content is stored as a blob.
             content_disposition = part.get('Content-disposition', '').lower()
             no_attachment = not content_disposition.startswith('attachment')
-            if (mime_type == 'text/plain' and no_attachment 
+            if (mime_type == 'text/plain' and no_attachment
                 and part.get_filename() is None):
+
+                # Get the charset for the message part. If one isn't
+                # specified, default to latin-1 to prevent
+                # UnicodeDecodeErrors.
                 charset = part.get_content_charset()
-                if charset:
-                    content = content.decode(charset, 'replace')
+                if charset is None:
+                    charset = 'latin-1'
+
+                content = content.decode(charset, 'replace')
+
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
@@ -361,13 +407,19 @@ class MessageSet:
                 filename = part.get_filename() or 'unnamed'
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
-                # parameters as sent
+                # parameters as sent. If Content-Type is None we default
+                # to application/octet-stream.
+                if part['content-type'] is None:
+                    content_type = 'application/octet-stream'
+                else:
+                    content_type = part['content-type']
+
                 if len(content) > 0:
                     blob = file_alias_set.create(
                         name=filename,
                         size=len(content),
                         file=cStringIO(content),
-                        contentType=part['content-type']
+                        contentType=content_type
                         )
                     MessageChunk(message=message, sequence=sequence,
                                  blob=blob)
@@ -385,7 +437,48 @@ class MessageSet:
         #         MessageChunk(
         #             message=message, sequence=sequence, content=epilogue
         #             )
+
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
+
+    @staticmethod
+    def _parentToChild(messages):
+        """Return a mapping from parent to child and list of root messages."""
+        result = {}
+        roots = []
+        for message in messages:
+            if message.parent is None:
+                roots.append(message)
+            else:
+                result.setdefault(message.parent, []).append(message)
+            result.setdefault(message, [])
+        return result, roots
+
+    @classmethod
+    def threadMessages(klass, messages):
+        """See `IMessageSet`."""
+        result, roots = klass._parentToChild(messages)
+        def get_children(node):
+            children = []
+            for child in result[node]:
+                children.append((child, get_children(child)))
+            return children
+        threads = []
+        for root in roots:
+            threads.append((root, get_children(root)))
+        return threads
+
+    @classmethod
+    def flattenThreads(klass, threaded_messages, _depth=0):
+        """See `IMessageSet`."""
+        for message, children in threaded_messages:
+            yield (_depth, message)
+            for depth, message in klass.flattenThreads(children, _depth + 1):
+                yield depth, message
+
 
 class MessageChunk(SQLBase):
     """One part of a possibly multipart Message"""
@@ -421,4 +514,3 @@ class MessageChunk(SQLBase):
                 "Type:       %s\n"
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
-

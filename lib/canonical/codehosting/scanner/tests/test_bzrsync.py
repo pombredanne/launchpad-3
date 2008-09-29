@@ -9,14 +9,17 @@ import email
 import os
 import random
 import time
+import transaction
 import unittest
 
-from bzrlib.osutils import relpath
-from bzrlib.revision import NULL_REVISION
+from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
+from bzrlib.transport import (
+    get_transport, register_transport, unregister_transport)
+from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
-from bzrlib.urlutils import local_path_from_url, local_path_to_url
 from bzrlib.tests import TestCaseWithTransport
 import pytz
+from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
 
 from canonical.config import config
@@ -24,14 +27,33 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSet, IPersonSet, IRevisionSet)
+    BranchFormat, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, RevisionModifiedError, get_diff, get_revision_message)
-from canonical.codehosting.codeimport.tests.helpers import (
-    instrument_method, InstrumentedMethodObserver)
+    BzrSync, get_diff, get_revision_message, InvalidStackedBranchURL)
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
+
+
+def run_as_db_user(username):
+    """Create a decorator that will run a function as the given database user.
+    """
+    def _run_with_different_user(f):
+        def decorated(*args, **kwargs):
+            current_user = LaunchpadZopelessLayer.txn._dbuser
+            if current_user == username:
+                return f(*args, **kwargs)
+            LaunchpadZopelessLayer.switchDbUser(username)
+            try:
+                return f(*args, **kwargs)
+            finally:
+                LaunchpadZopelessLayer.switchDbUser(current_user)
+        return mergeFunctionMetadata(f, decorated)
+    return _run_with_different_user
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
@@ -39,23 +61,41 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     layer = LaunchpadZopelessLayer
 
-    AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self._warehouse_root_url = config.supermirror.warehouse_root_url
-        config.supermirror.warehouse_root_url = (
-            local_path_to_url(os.getcwd()) + '/')
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
+        self.lp_db_user = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        self.txn = LaunchpadZopelessLayer.txn
-        self._setUpAuthor()
+        # The lp-mirrored transport is set up by the branch_scanner module.
+        # Here we set up a fake so that we can test without worrying about
+        # authservers and the like.
+        self._setUpFakeTransport()
 
-    def tearDown(self):
-        config.supermirror.warehouse_root_url = self._warehouse_root_url
-        TestCaseWithTransport.tearDown(self)
+    def _setUpFakeTransport(self):
+        # The scanner tests assume that branches live on a Launchpad virtual
+        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
+        # entire virtual filesystem here, we fake it by having a chrooted file
+        # transport do the work.
+        #
+        # The related method `makeBzrBranchAndTree` takes a database branch
+        # and creates the branch in the correct location on our fake
+        # filesystem.
+        self._url_prefix = 'lp-mirrored:///'
+        register_transport(self._url_prefix, self._fakeTransportFactory)
+        self._chroot_server = ChrootServer(self.get_transport())
+        self._chroot_server.setUp()
+        self.addCleanup(self._chroot_server.tearDown)
+        self.addCleanup(
+            lambda: unregister_transport(
+                self._url_prefix, self._fakeTransportFactory))
+
+    def _fakeTransportFactory(self, url):
+        self.assertTrue(url.startswith(self._url_prefix))
+        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
+        return get_transport(url)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -68,25 +108,19 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
 
-    def makeBzrBranchAndTree(self, db_branch):
+    def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        path = relpath(os.getcwd(),
-                       local_path_from_url(db_branch.warehouse_url))
-        return self.make_branch_and_tree(path)
+        ensure_base(self.get_transport(db_branch.unique_name))
+        return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
-    def makeDatabaseBranch(self):
+    def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
-        new_branch = self.factory.makeBranch()
+        new_branch = self.factory.makeBranch(*args, **kwargs)
+        # Unsubscribe the implicit owner subscription.
+        new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
-
-    def _setUpAuthor(self):
-        self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
-        if not self.db_author:
-            self.txn.begin()
-            self.db_author = RevisionAuthor(name=self.AUTHOR)
-            self.txn.commit()
 
     def getCounts(self):
         """Return the number of rows in core revision-related tables.
@@ -109,26 +143,22 @@ class BzrSyncTestCase(TestCaseWithTransport):
          new_revisionnumber_count,
          new_revisionparent_count,
          new_revisionauthor_count) = self.getCounts()
-        revision_pair = (old_revision_count+new_revisions,
-                         new_revision_count)
-        revisionnumber_pair = (old_revisionnumber_count+new_numbers,
-                               new_revisionnumber_count)
-        revisionparent_pair = (old_revisionparent_count+new_parents,
-                               new_revisionparent_count)
-        revisionauthor_pair = (old_revisionauthor_count+new_authors,
-                               new_revisionauthor_count)
-        self.assertEqual(revision_pair[0], revision_pair[1],
-                         "Wrong Revision count (should be %d, not %d)"
-                         % revision_pair)
-        self.assertEqual(revisionnumber_pair[0], revisionnumber_pair[1],
-                         "Wrong BranchRevision count (should be %d, not %d)"
-                         % revisionnumber_pair)
-        self.assertEqual(revisionparent_pair[0], revisionparent_pair[1],
-                         "Wrong RevisionParent count (should be %d, not %d)"
-                         % revisionparent_pair)
-        self.assertEqual(revisionauthor_pair[0], revisionauthor_pair[1],
-                         "Wrong RevisionAuthor count (should be %d, not %d)"
-                         % revisionauthor_pair)
+        self.assertEqual(
+            new_revisions,
+            new_revision_count - old_revision_count,
+            "Wrong number of new database Revisions.")
+        self.assertEqual(
+            new_numbers,
+            new_revisionnumber_count - old_revisionnumber_count,
+            "Wrong number of new BranchRevisions.")
+        self.assertEqual(
+            new_parents,
+            new_revisionparent_count - old_revisionparent_count,
+            "Wrong number of new RevisionParents.")
+        self.assertEqual(
+            new_authors,
+            new_revisionauthor_count - old_revisionauthor_count,
+            "Wrong number of new RevisionAuthors.")
 
     def makeBzrSync(self, db_branch):
         """Create a BzrSync instance for the test branch.
@@ -136,13 +166,15 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(self.txn, db_branch)
+        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
 
-    def syncAndCount(self, new_revisions=0, new_numbers=0,
+    def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
         """Run BzrSync and assert the number of rows added to each table."""
+        if db_branch is None:
+            db_branch = self.db_branch
         counts = self.getCounts()
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.makeBzrSync(db_branch).syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -153,7 +185,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         if message is None:
             message = self.LOG
         if committer is None:
-            committer = self.AUTHOR
+            committer = self.factory.getUniqueString()
         if extra_parents is not None:
             self.bzr_tree.add_pending_merge(*extra_parents)
         self.bzr_tree.commit(
@@ -196,13 +228,16 @@ class BzrSyncTestCase(TestCaseWithTransport):
             branch into the mainline branch.
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
+
+        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
         trunk_tree = self.makeBzrBranchAndTree(db_branch)
         trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
         # Branch from the base revision.
-        new_db_branch = self.makeDatabaseBranch()
+        new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
         branch_tree = self.makeBzrBranchAndTree(new_db_branch)
         branch_tree.pull(trunk_tree.branch)
 
@@ -213,6 +248,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Merge branch into trunk.
         trunk_tree.merge_from_branch(branch_tree.branch)
         trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
@@ -277,13 +315,13 @@ class TestBzrSync(BzrSyncTestCase):
     def test_import_revision(self):
         # Importing a revision in history adds one revision and number.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
 
     def test_import_uncommit(self):
         # Second import honours uncommit.
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.uncommitRevision()
         self.syncAndCount(new_numbers=-1)
         self.assertEqual(self.db_branch.revision_count, 0)
@@ -295,11 +333,11 @@ class TestBzrSync(BzrSyncTestCase):
         # 1 (in this case) revision has been removed,
         # and another email with the diff and log message.
         self.commitRevision('first')
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         self.uncommitRevision()
         self.commitRevision('second')
-        self.syncAndCount(new_revisions=1)
+        self.syncAndCount(new_revisions=1, new_authors=1)
         self.assertEqual(self.db_branch.revision_count, 1)
         [revno] = self.db_branch.revision_history
         self.assertEqual(revno.revision.log_body, 'second')
@@ -308,9 +346,10 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertCounts(counts, new_revisions=1, new_numbers=1)
+        self.assertCounts(
+            counts, new_revisions=1, new_numbers=1, new_authors=1)
 
     def test_new_author(self):
         # Importing a different committer adds it as an author.
@@ -318,41 +357,14 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(committer=author)
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         db_author = RevisionAuthor.selectOneBy(name=author)
-        self.assertTrue(db_author)
         self.assertEquals(db_author.name, author)
 
     def test_new_parent(self):
         # Importing two revisions should import a new parent.
         self.commitRevision()
         self.commitRevision()
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
-
-    def test_shorten_history(self):
-        # Commit some revisions with two paths to the head revision.
-        self.commitRevision()
-        merge_rev_id = self.bzr_branch.last_revision()
-        self.commitRevision()
-        self.commitRevision(extra_parents=[merge_rev_id])
-        self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
-        self.assertEqual(self.db_branch.revision_count, 3)
-
-        # Sync with the shorter history.
-        counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch)
-        def patchedRetrieveBranchDetails(bzr_branch):
-            unpatchedRetrieveBranchDetails(bzr_branch)
-            full_history = bzrsync.bzr_history
-            bzrsync.bzr_history = (full_history[:-2] + full_history[-1:])
-            bzrsync.bzr_ancestry.remove(full_history[-2])
-        unpatchedRetrieveBranchDetails = bzrsync.retrieveBranchDetails
-        bzrsync.retrieveBranchDetails = patchedRetrieveBranchDetails
-        bzrsync.syncBranchAndClose()
-
-        # The new history is one revision shorter.
-        self.assertCounts(
-            counts, new_revisions=0, new_numbers=-1,
-            new_parents=0, new_authors=0)
-        self.assertEqual(self.db_branch.revision_count, 2)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
 
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
@@ -361,7 +373,7 @@ class TestBzrSync(BzrSyncTestCase):
         last_modified = self.db_branch.date_last_modified
         last_scanned = self.db_branch.last_scanned
         self.commitRevision()
-        self.syncAndCount(new_revisions=1, new_numbers=1)
+        self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         self.assertEquals(self.bzr_branch.last_revision(),
                           self.db_branch.last_scanned_id)
         self.assertTrue(self.db_branch.last_scanned > last_scanned,
@@ -376,7 +388,8 @@ class TestBzrSync(BzrSyncTestCase):
                             timestamp=1000000000.0, timezone=0)
         self.commitRevision(rev_id='rev-2',
                             timestamp=1000000000.0, timezone=28800)
-        self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+        self.syncAndCount(
+            new_revisions=2, new_numbers=2, new_parents=1, new_authors=2)
         rev_1 = Revision.selectOneBy(revision_id='rev-1')
         rev_2 = Revision.selectOneBy(revision_id='rev-2')
         UTC = pytz.timezone('UTC')
@@ -387,16 +400,21 @@ class TestBzrSync(BzrSyncTestCase):
     def test_get_revisions_empty(self):
         # An empty branch should have no revisions.
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzrsync.retrieveBranchDetails(self.bzr_branch)
-        self.assertEqual([], list(bzrsync.getRevisions()))
+        bzr_ancestry, bzr_history = (
+            bzrsync.retrieveBranchDetails(self.bzr_branch))
+        self.assertEqual(
+            [], list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
 
     def test_get_revisions_linear(self):
         # If the branch has a linear ancestry, getRevisions() should yield
         # each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzrsync.retrieveBranchDetails(self.bzr_branch)
-        self.assertEqual([('rev-1', 1)], list(bzrsync.getRevisions()))
+        bzr_ancestry, bzr_history = (
+            bzrsync.retrieveBranchDetails(self.bzr_branch))
+        self.assertEqual(
+            [('rev-1', 1)],
+            list(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
 
     def test_get_revisions_branched(self):
         # Confirm that these revisions are generated by getRevisions with None
@@ -404,10 +422,12 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzrsync.retrieveBranchDetails(bzr_tree.branch)
+        bzr_ancestry, bzr_history = (
+            bzrsync.retrieveBranchDetails(bzr_tree.branch))
         expected = set(
             [('base', 1), ('trunk', 2), ('merge', 3), ('branch', None)])
-        self.assertEqual(expected, set(bzrsync.getRevisions()))
+        self.assertEqual(
+            expected, set(bzrsync.getRevisions(bzr_history, bzr_ancestry)))
 
     def test_sync_with_merged_branches(self):
         # Confirm that when we syncHistory, all of the revisions are included
@@ -453,11 +473,11 @@ class TestBzrSync(BzrSyncTestCase):
         (db_trunk, trunk_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_trunk)
-        bzrsync.retrieveBranchDetails(trunk_tree.branch)
-        self.assertEqual('merge', bzrsync.last_revision)
+        bzr_ancestry, bzr_history = (
+            bzrsync.retrieveBranchDetails(trunk_tree.branch))
         expected_ancestry = set(['base', 'trunk', 'branch', 'merge'])
-        self.assertEqual(expected_ancestry, bzrsync.bzr_ancestry)
-        self.assertEqual(['base', 'trunk', 'merge'], bzrsync.bzr_history)
+        self.assertEqual(expected_ancestry, bzr_ancestry)
+        self.assertEqual(['base', 'trunk', 'merge'], bzr_history)
 
     def test_retrieveDatabaseAncestry(self):
         # retrieveDatabaseAncestry should set db_ancestry and db_history to
@@ -485,105 +505,51 @@ class TestBzrSync(BzrSyncTestCase):
         self.makeBzrBranchAndTree(branch)
 
         bzrsync = self.makeBzrSync(branch)
-        bzrsync.retrieveDatabaseAncestry()
-        self.assertEqual(expected_ancestry, set(bzrsync.db_ancestry))
-        self.assertEqual(expected_history, list(bzrsync.db_history))
-        self.assertEqual(expected_mapping, bzrsync.db_branch_revision_map)
+        db_ancestry, db_history, db_branch_revision_map = (
+            bzrsync.retrieveDatabaseAncestry())
+        self.assertEqual(expected_ancestry, set(db_ancestry))
+        self.assertEqual(expected_history, list(db_history))
+        self.assertEqual(expected_mapping, db_branch_revision_map)
 
 
-class TestBzrSyncPerformance(BzrSyncTestCase):
+class TestScanStackedBranches(BzrSyncTestCase):
+    """Tests for scanning stacked branches."""
 
-    # TODO: Turn these into unit tests for planDatabaseChanges. To do this, we
-    # need to change the BzrSync constructor to either delay the opening of
-    # the bzr branch, so those unit-tests need not set up a dummy bzr branch.
-    # -- DavidAllouche 2007-03-01
+    @run_as_db_user(config.launchpad.dbuser)
+    def testStackedBranchBadURL(self):
+        # The scanner will raise an InvalidStackedBranchURL when it tries to
+        # open a branch stacked on a non- lp-mirrored:// schema.
+        db_branch = self.makeDatabaseBranch()
+        stacked_on_branch = self.make_branch('stacked-on', format='1.6')
+        self.assertFalse(stacked_on_branch.base.startswith('lp-mirrored://'))
+        bzr_tree = self.makeBzrBranchAndTree(db_branch, format='1.6')
+        bzr_tree.branch.set_stacked_on_url(stacked_on_branch.base)
+        scanner = self.makeBzrSync(db_branch)
+        self.assertRaises(InvalidStackedBranchURL, scanner.syncBranchAndClose)
 
-    def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        self.clearCalls()
+    @run_as_db_user(config.launchpad.dbuser)
+    def testStackedBranch(self):
+        # We can scan a stacked branch that's stacked on a branch that has an
+        # lp-mirrored:// URL.
+        db_stacked_on_branch = self.factory.makeBranch()
+        stacked_on_tree = self.makeBzrBranchAndTree(
+            db_stacked_on_branch, format='1.6')
+        db_stacked_branch = self.factory.makeBranch()
+        stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format='1.6')
+        stacked_tree.branch.set_stacked_on_url(
+            'lp-mirrored:///%s' % db_stacked_on_branch.unique_name)
+        scanner = self.makeBzrSync(db_stacked_branch)
+        # This does not raise an exception.
+        scanner.syncBranchAndClose()
+        
 
-    def clearCalls(self):
-        """Clear the record of instrumented method calls."""
-        self.calls = {
-            'syncRevisions': [],
-            'insertBranchRevisions': [],
-            'deleteBranchRevisions': []}
-
-    def makeBzrSync(self, db_branch):
-        bzrsync = BzrSyncTestCase.makeBzrSync(self, db_branch)
-
-        def unary_method_called(name, args, kwargs):
-            (single_arg,) = args
-            self.assertEqual(kwargs, {})
-            self.calls[name].append(single_arg)
-        unary_observer = InstrumentedMethodObserver(
-            called=unary_method_called)
-
-        def collect_second_argument(name, args, kwargs):
-            self.assertEqual(kwargs, {})
-            self.calls[name].append(args[1])
-        second_arg_observer = InstrumentedMethodObserver(
-            called=collect_second_argument)
-        instrument_method(second_arg_observer, bzrsync, 'syncRevisions')
-        instrument_method(unary_observer, bzrsync, 'deleteBranchRevisions')
-        instrument_method(
-            second_arg_observer, bzrsync, 'insertBranchRevisions')
-        return bzrsync
-
-    def test_no_change(self):
-        # Nothing should be changed if we sync a branch that hasn't been
-        # changed since the last sync
-        self.makeBranchWithMerge('base', 'trunk', 'branch', 'merge')
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        # Second scan has nothing to do.
-        self.clearCalls()
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        assert len(self.calls) == 3, \
-               'update test for additional instrumentation'
-        self.assertEqual(map(len, self.calls['syncRevisions']), [0])
-        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
-        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [0])
-
-    def test_one_more_commit(self):
-        # Scanning a branch which has already been scanned, and to which a
-        # single simple commit was added, only do the minimal amount of work.
-        self.commitRevision(rev_id='rev-1')
-        # First scan checks the full ancestry, which is only one revision.
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        # Add a single simple revision to the branch.
-        self.commitRevision(rev_id='rev-2')
-        # Second scan only checks the added revision.
-        self.clearCalls()
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        assert len(self.calls) == 3, \
-               'update test for additional instrumentation'
-        self.assertEqual(map(len, self.calls['syncRevisions']), [1])
-        self.assertEqual(map(len, self.calls['deleteBranchRevisions']), [0])
-        self.assertEqual(map(len, self.calls['insertBranchRevisions']), [1])
-
-
-class TestBzrSyncModified(BzrSyncTestCase):
+class TestBzrSyncOneRevision(BzrSyncTestCase):
+    """Tests for `BzrSync.syncOneRevision`."""
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
         self.bzrsync = self.makeBzrSync(self.db_branch)
-
-    def test_timestampToDatetime_with_negative_fractional(self):
-        # timestampToDatetime should convert a negative, fractional timestamp
-        # into a valid, sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = -0.5
-        date = self.bzrsync._timestampToDatetime(timestamp)
-        self.assertEqual(
-            date, datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC))
-
-    def test_timestampToDatetime(self):
-        # timestampTODatetime should convert a regular timestamp into a valid,
-        # sane datetime object.
-        UTC = pytz.timezone('UTC')
-        timestamp = time.time()
-        date = datetime.datetime.fromtimestamp(timestamp, tz=UTC)
-        self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
 
     def test_ancient_revision(self):
         # Test that we can sync revisions with negative, fractional
@@ -594,82 +560,54 @@ class TestBzrSyncModified(BzrSyncTestCase):
         old_timestamp = -0.5
         old_date = datetime.datetime(1969, 12, 31, 23, 59, 59, 500000, UTC)
 
-        class FakeRevision:
-            """A revision with a negative, fractional timestamp.
-            """
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = old_timestamp
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
+        # Fake revision with negative timestamp.
+        fake_rev = BzrRevision(
+            revision_id='rev42', parent_ids=['rev1', 'rev2'],
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=old_timestamp, timezone=0, properties={})
 
         # Sync the revision.  The second parameter is a dict of revision ids
         # to revnos, and will error if the revision id is not in the dict.
-        self.bzrsync.syncOneRevision(FakeRevision(), {'rev42': None})
+        self.bzrsync.syncOneRevision(fake_rev, {'rev42': None})
 
         # Find the revision we just synced and check that it has the correct
         # date.
         revision = getUtility(IRevisionSet).getByRevisionId(
-            FakeRevision.revision_id)
+            fake_rev.revision_id)
         self.assertEqual(old_date, revision.revision_date)
 
-    def test_revision_modified(self):
-        # test that modifications to the list of parents get caught.
-        class FakeRevision:
-            revision_id = 'rev42'
-            parent_ids = ['rev1', 'rev2']
-            committer = self.AUTHOR
-            message = self.LOG
-            timestamp = 1000000000.0
-            timezone = 0
-            properties = {}
-            def get_apparent_author(self):
-                return self.committer
 
-        # Synchronise the fake revision:
+class TestBzrSyncModified(BzrSyncTestCase):
+    """Tests for BzrSync.syncOneRevision when the revision has been modified.
+    """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        self.bzrsync = self.makeBzrSync(self.db_branch)
+
+    def makeRevision(self, parent_ids):
+        """Make a fake Bazaar revision for testing `syncOneRevision`."""
+        return BzrRevision(
+            revision_id=self.factory.getUniqueString(), parent_ids=parent_ids,
+            committer=self.factory.getUniqueString(), message=self.LOG,
+            timestamp=1000000000.0, timezone=0, properties={})
+
+    def makeSyncedRevision(self):
+        """Return a fake revision that has already been synced.
+
+        :param parent_ids: The list of parent IDs for the revision.
+        """
+        revision_id = self.factory.getUniqueString()
+        parent_ids = [
+            self.factory.getUniqueString(), self.factory.getUniqueString()]
+        fake_revision = self.makeRevision(parent_ids)
         counts = self.getCounts()
-        fake_revision = FakeRevision()
-        fake_revision_dict = {'rev42': None}
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
+        self.bzrsync.syncOneRevision(
+            fake_revision, {fake_revision.revision_id: None})
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
-            new_parents=2, new_authors=0)
-
-        # Verify that synchronising the revision twice passes and does
-        # not create a second revision object:
-        counts = self.getCounts()
-        self.bzrsync.syncOneRevision(fake_revision, fake_revision_dict)
-        self.assertCounts(
-            counts, new_revisions=0, new_numbers=0,
-            new_parents=0, new_authors=0)
-
-        # Verify that adding a parent gets caught:
-        fake_revision.parent_ids.append('rev3')
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
-
-        # Verify that removing a parent gets caught:
-        fake_revision.parent_ids = ['rev1']
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
-
-        # Verify that reordering the parents gets caught:
-        fake_revision.parent_ids = ['rev2', 'rev1']
-        self.assertRaises(
-            RevisionModifiedError,
-            self.bzrsync.syncOneRevision,
-            fake_revision,
-            fake_revision_dict)
+            new_parents=len(parent_ids), new_authors=1)
+        return fake_revision
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
@@ -740,7 +678,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
                          contents="Hello World\n")
-        self.commitRevision('second')
+        author = self.factory.getUniqueString()
+        self.commitRevision('second', committer=author)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(len(stub.test_emails), 2)
         [uncommit_email, recommit_email] = stub.test_emails
@@ -755,7 +694,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'Subject: [Branch %s] Rev 1: second'
             % self.db_branch.unique_name,
             'revno: 1',
-            'committer: Revision Author <author@example.com>',
+            'committer: %s' % author,
             'branch nick: %s'  % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
@@ -889,6 +828,25 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
         self.assertEqualDiff(diff, expected)
 
+    def test_only_nodiff_subscribers_means_no_diff_generated(self):
+        self.layer.switchDbUser('launchpad')
+        subscriptions = self.db_branch.getSubscriptionsByLevel(
+            [BranchSubscriptionNotificationLevel.FULL])
+        for s in subscriptions:
+            s.max_diff_lines = BranchSubscriptionDiffSize.NODIFF
+        self.layer.commit()
+        self.layer.switchDbUser(config.branchscanner.dbuser)
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+
+        self.writeToFile(filename='foo', contents='bar')
+        self.commitRevision()
+        sync = self.makeBzrSync(self.db_branch)
+        sync.syncBranchAndClose()
+        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
+        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
+
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
     """Tests BzrSync support for not generating branch email notifications
@@ -959,6 +917,218 @@ class TestRevisionProperty(BzrSyncTestCase):
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
         self.assertEquals(properties, db_revision.getProperties())
+
+
+class TestScanFormatPack(BzrSyncTestCase):
+    """Test scanning of pack-format repositories."""
+
+    def testRecognizePack(self):
+        """Ensure scanner records correct formats for pack branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_6)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_KNITPACK_1)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_METADIR_1)
+
+
+class TestScanFormatKnit(BzrSyncTestCase):
+    """Test scanning of knit-format repositories."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'knit')
+
+    def testRecognizeKnit(self):
+        """Ensure scanner records correct formats for knit branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_5)
+
+
+class TestScanBranchFormat7(BzrSyncTestCase):
+    """Test scanning of development format branchs."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(
+            self, db_branch, 'development1')
+
+    def testRecognizeDevelopment(self):
+        """Ensure scanner records correct format for development branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(
+            self.db_branch.branch_format, BranchFormat.BZR_BRANCH_7)
+
+
+class TestScanFormatWeave(BzrSyncTestCase):
+    """Test scanning of weave-format branches.
+
+    Weave is an "all-in-one" format, where branch, repo and tree formats are
+    implied by the control directory format."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'weave')
+
+    def testRecognizeWeave(self):
+        """Ensure scanner records correct weave formats."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_4)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_REPOSITORY_6)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_DIR_6)
+
+
+class TestScanUnrecognizedFormat(BzrSyncTestCase):
+    """Test scanning unrecognized formats"""
+
+    def testUnrecognize(self):
+        """Scanner should record UNRECOGNIZED for all format values."""
+        class MockFormat:
+            def get_format_string(self):
+                return 'Unrecognizable'
+
+        class MockWithFormat:
+            def __init__(self):
+                self._format = MockFormat()
+
+        class MockBranch(MockWithFormat):
+            bzrdir = MockWithFormat()
+            repository = MockWithFormat()
+
+        branch = MockBranch()
+        self.makeBzrSync(self.db_branch).setFormats(branch)
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.UNRECOGNIZED)
+
+
+class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
+    """Test the scanner's ability to mark merge proposals as merged."""
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def createProposal(self, source, target):
+        # The scanner doesn't have insert rights, so do it here.
+        proposal = source.addLandingTarget(source.owner, target)
+        transaction.commit()
+
+    def _createBranchesAndProposal(self):
+        # Create two branches where the trunk has the branch as a merge.  Also
+        # create a merge proposal from the branch to the trunk.
+        (db_trunk, trunk_tree), (db_branch, branch_tree) = (
+            self.makeBranchWithMerge('base', 'trunk', 'branch', 'merge'))
+        trunk_id = db_trunk.id
+        branch_id = db_branch.id
+        self.createProposal(db_branch, db_trunk)
+        # Reget the objects due to transaction boundary.
+        branchset = getUtility(IBranchSet)
+        db_trunk = branchset[trunk_id]
+        db_branch = branchset[branch_id]
+        proposal = list(db_branch.landing_targets)[0]
+        return proposal, db_trunk, db_branch, branch_tree
+
+    def _scanTheBranches(self, branch1, branch2):
+        for branch in (branch1, branch2):
+            scanner = self.makeBzrSync(branch)
+            scanner.syncBranchAndClose()
+
+    def test_autoMergeProposals_real_merge(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target, mark it as merged.
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        self._scanTheBranches(db_branch, db_trunk)
+        # The proposal should now be merged.
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_real_merge_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target, mark it as merged.
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        self._scanTheBranches(db_trunk, db_branch)
+        # The proposal should now be merged.
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_rejected_proposal(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target but the proposal is in a final state the
+        # proposal is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        proposal.rejectBranch(db_trunk.owner, 'branch')
+
+        self._scanTheBranches(db_branch, db_trunk)
+
+        # The proposal should stay rejected..
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_rejected_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target but the proposal is in a final state the
+        # proposal is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        proposal.rejectBranch(db_trunk.owner, 'branch')
+
+        self._scanTheBranches(db_trunk, db_branch)
+
+        # The proposal should stay rejected..
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_not_merged_proposal(self):
+        # If there is a merge proposal where the tip of the source is not in
+        # the ancestry of the target it is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        branch_tree.commit(u'another revision', rev_id='another-rev')
+        current_proposal_status = proposal.queue_status
+        self.assertNotEqual(
+            current_proposal_status,
+            BranchMergeProposalStatus.MERGED)
+
+        self._scanTheBranches(db_branch, db_trunk)
+
+        # The proposal should stay in the same state.
+        self.assertEqual(current_proposal_status, proposal.queue_status)
+
+    def test_autoMergeProposals_not_merged_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is not in
+        # the ancestry of the target it is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        branch_tree.commit(u'another revision', rev_id='another-rev')
+        current_proposal_status = proposal.queue_status
+        self.assertNotEqual(
+            current_proposal_status,
+            BranchMergeProposalStatus.MERGED)
+
+        self._scanTheBranches(db_trunk, db_branch)
+
+        # The proposal should stay in the same state.
+        self.assertEqual(current_proposal_status, proposal.queue_status)
 
 
 def test_suite():

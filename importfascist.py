@@ -29,12 +29,10 @@ permitted_database_imports = text_lines_to_set("""
     zope.testing.doctest
     canonical.librarian.db
     canonical.doap.fileimporter
-    canonical.foaf.nickname
     canonical.archivepublisher.ftparchive
     canonical.archivepublisher.publishing
     canonical.archivepublisher.domination
     canonical.archivepublisher.deathrow
-    canonical.authserver.database
     canonical.launchpad.vocabularies.dbobjects
     canonical.launchpad.validators.person
     canonical.librarian.client
@@ -154,7 +152,10 @@ class NotFoundPolicyViolation(JackbootError):
                 % self.import_into)
 
 
+# pylint: disable-msg=W0102,W0602
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
+    global naughty_imports
+
     try:
         # XXX sinzui 2008-04-17:
         # import_fascist screws zope configuration module;
@@ -170,7 +171,9 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
     if name == 'sre' or name == 'textwrap':
         return module
 
-    global naughty_imports
+    # Mailman 2.1 code base is originally circa 1998, so yeah, no __all__'s.
+    if name.startswith('Mailman'):
+        return module
 
     # Some uses of __import__ pass None for globals, so handle that.
     import_into = None
@@ -197,7 +200,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             raise error
 
     if fromlist is not None and import_into.startswith('canonical'):
-        # We only want to warn about "from foo import bar" violations in our 
+        # We only want to warn about "from foo import bar" violations in our
         # own code.
         if list(fromlist) == ['*'] and not hasattr(module, '__all__'):
             # "from foo import *" is naughty if foo has no __all__
@@ -206,8 +209,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             raise error
         elif (list(fromlist) != ['*'] and hasattr(module, '__all__') and
               not is_test_module(import_into)):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
-            # foo actually has an __all__).  Unless foo is within a tests
+            # "from foo import bar" is naughty if bar isn't in foo.__all__
+            # (and foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
                 if attrname != '__doc__' and attrname not in module.__all__:

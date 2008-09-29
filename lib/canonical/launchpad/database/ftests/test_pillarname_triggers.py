@@ -38,7 +38,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.product IS NULL
                     AND PillarName.project IS NULL
                     AND Distribution.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Distribution will populate PillarName
@@ -94,14 +94,14 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.distribution IS NULL
                     AND PillarName.project IS NULL
                     AND Product.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Product will populate PillarName
         cur.execute("""
-            INSERT INTO Product (owner, name, displayname, title, summary)
+            INSERT INTO Product (owner, registrant, name, displayname, title, summary)
             VALUES (
-                1, 'whatever', 'whatever', 'whatever', 'whatever'
+                1, 1, 'whatever', 'whatever', 'whatever', 'whatever'
                 )
             """)
         self.failUnless(is_in_sync('whatever'))
@@ -146,16 +146,16 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     AND PillarName.product IS NULL
                     AND PillarName.distribution IS NULL
                     AND Project.name = %(name)s
-                """, vars())
+                """, dict(name=name))
             return cur.fetchone()[0] == 1
 
         # Inserting a new Project will populate PillarName
         cur.execute("""
             INSERT INTO Project (
-                name, owner, displayname, title, summary, description
+                name, owner, registrant, displayname, title, summary, description
                 )
                 VALUES (
-                    'whatever', 1, 'whatever', 'whatever',
+                    'whatever', 1, 1, 'whatever', 'whatever',
                     'whatever', 'whatever'
                     )
             """)

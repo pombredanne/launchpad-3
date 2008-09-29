@@ -32,7 +32,7 @@ Nor to 'normal' users.
 Not even the owner of the project can get to it.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> owner_browser.open('http://code.launchpad.dev/firefox')
     >>> owner_browser.getLink('Define branch visibility')
     Traceback (most recent call last):
     ...
@@ -45,10 +45,10 @@ Not even the owner of the project can get to it.
 
 Launchpad admins however, can get to it.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox')
+    >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> admin_browser.getLink('Define branch visibility').click()
     >>> print admin_browser.url
-    http://launchpad.dev/firefox/+branchvisibility
+    http://code.launchpad.dev/firefox/+branchvisibility
 
 
 == Default policies ==

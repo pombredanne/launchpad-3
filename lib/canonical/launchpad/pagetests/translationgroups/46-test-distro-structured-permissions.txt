@@ -1,6 +1,5 @@
 First, we state that netapplet is using Launchpad Translations.
 
-
     >>> admin_browser.open('http://launchpad.dev/netapplet')
     >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getControl(
@@ -18,6 +17,7 @@ as the translation group for the netapplet product...
     >>> admin_browser.getControl('Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
+
     >>> admin_browser.getControl('Translation group').displayValue = [
     ...     'Just a testing team']
     >>> admin_browser.getControl(
@@ -37,6 +37,7 @@ as the translation group for the netapplet product...
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.title
     Set translation group for The GNOME Project
+
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):
     ...     print tag.renderContents()
@@ -55,10 +56,12 @@ directly, in this example, we are using 'tsukimi' account.
     ...Translating into Spanish...
     ...Dial-up connection...
 
-Next test is with a non member of that translation team, the 'No Privileges'
-account. We check that we get the warning that we are not members of the team.
+Next test is with a non member of that translation team, the 'No
+Privileges' account. We check that we get the warning that we are not
+members of the team.
 
-    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
     ...         'netapplet/es/+translate')
@@ -66,9 +69,9 @@ account. We check that we get the warning that we are not members of the team.
     >>> print content
     <...
     ...Translating into Spanish...
-    ...Your translations will be held for review...
+    ...Your suggestions will be held for review...
 
-And finally, we test that a language without a team lets to anyone (in this
+And finally, we test that a language without a team lets anyone (in this
 case, the 'No Privileges' account) to translate directly.
 
     >>> no_priv_browser.open(
@@ -79,6 +82,3 @@ case, the 'No Privileges' account) to translate directly.
     <...
     ...Translating into French...
 
-    >>> portlet = find_portlet(no_priv_browser.contents, 'French translators')
-    >>> print portlet.renderContents()
-    <...No translators currently designated for this PO file...

@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesStatus',
     'IDistroSeries',
+    'IDistroSeriesEditRestricted',
+    'IDistroSeriesPublic',
     'IDistroSeriesSet',
     ]
 
@@ -15,58 +17,56 @@ from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationGoal)
 
-from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.email import email_validator
 
 from canonical.launchpad import _
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
-class DistroSeriesStatus(DBEnumeratedType):
-    """Distribution Release Status
 
-    A DistroSeries (warty, hoary, or grumpy for example) changes state
+# XXX: salgado, 2008-06-02: We should use a more generic name here as this
+# enum is used in ProductSeries.status as well.
+class DistroSeriesStatus(DBEnumeratedType):
+    """Distro/Product Series Status
+
+    A Distro or Product series (warty, hoary, 1.4 for example) changes state
     throughout its development. This schema describes the level of
-    development of the distroseries. The typical sequence for a
-    distroseries is to progress from experimental to development to
-    frozen to current to supported to obsolete, in a linear fashion.
+    development of the series.
     """
 
     EXPERIMENTAL = DBItem(1, """
         Experimental
 
-        This distroseries contains code that is far from active
-        release planning or management. Typically, distroseriess
-        that are beyond the current "development" release will be
-        marked as "experimental". We create those so that people
-        have a place to upload code which is expected to be part
-        of that distant future release, but which we do not want
-        to interfere with the current development release.
+        This series contains code that is far from active release planning or
+        management.
+
+        In the case of Ubuntu, series that are beyond the current
+        "development" release will be marked as "experimental". We create
+        those so that people have a place to upload code which is expected to
+        be part of that distant future release, but which we do not want to
+        interfere with the current development release.
         """)
 
     DEVELOPMENT = DBItem(2, """
         Active Development
 
-        The distroseries that is under active current development
-        will be tagged as "development". Typically there is only
-        one active development release at a time. When that freezes
-        and releases, the next release along switches from "experimental"
-        to "development".
+        The series that is under active development.
         """)
 
     FROZEN = DBItem(3, """
         Pre-release Freeze
 
-        When a distroseries is near to release the administrators
-        will freeze it, which typically means that new package uploads
-        require significant review before being accepted into the
-        release.
+        When a series is near to release the administrators will freeze it,
+        which typically means all changes require significant review before
+        being accepted.
         """)
 
     CURRENT = DBItem(4, """
@@ -79,22 +79,36 @@ class DistroSeriesStatus(DBEnumeratedType):
     SUPPORTED = DBItem(5, """
         Supported
 
-        This distroseries is still supported, but it is no longer
-        the current stable release. In Ubuntu we normally support
-        a distroseries for 2 years from release.
+        This series is still supported, but it is no longer the current stable
+        release.
         """)
 
     OBSOLETE = DBItem(6, """
         Obsolete
 
-        This distroseries is no longer supported, it is considered
-        obsolete and should not be used on production systems.
+        This series is no longer supported, it is considered obsolete and
+        should not be used on production systems.
+        """)
+
+    FUTURE = DBItem(7, """
+        Future
+
+        This is a future series of this product/distro in which the developers
+        haven't started working yet.
         """)
 
 
-class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                     ISpecificationGoal):
-    """A series of an operating system distribution."""
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    def newMilestone(name, dateexpected=None, description=None):
+        """Create a new milestone for this DistroSeries."""
+
+
+class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
+                          IBugTarget, ISpecificationGoal, IHasMilestones):
+    """Public IDistroSeries properties."""
+
     id = Attribute("The distroseries's unique number.")
     name = TextLine(
         title=_("Name"), required=True,
@@ -146,9 +160,10 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
     changeslist = TextLine(
-        title=_("Changeslist"), required=True,
-        description=_("The changes list address for the distroseries."),
-        constraint=valid_email)
+        title=_("E-mail changes to"), required=True,
+        description=_("The mailing list or other e-mail address that "
+                      "Launchpad should notify about new uploads."),
+        constraint=email_validator)
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
@@ -162,22 +177,16 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("All architectures in this series.")
-    ppa_architectures = Attribute(
+    virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
-    milestones = Attribute(_(
-        "The visible milestones associated with this series, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this distroseries, ordered "
-        "by date expected."))
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '
         'DistroSeries, and the Distribution to which it belong.')
-    bugcontact = Attribute(
+    bug_supervisor = Attribute(
         'Currently just a reference to the Distribution bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Distribution security contact.')
@@ -334,6 +343,16 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """Return a IDistroSeriesSourcePackageRelease
 
         sourcepackagerelease is an ISourcePackageRelease.
+        """
+
+    def getCurrentSourceReleases(source_package_names):
+        """Get the current release of a list of source packages.
+
+        :param source_package_names: a list of `ISourcePackageName`
+            instances.
+
+        :return: a dict where the key is a `ISourcePackage`
+            and the value is a `IDistroSeriesSourcePackageRelease`.
         """
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
@@ -501,12 +520,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DEBUG level messages.
         """
 
-    def updateCompletePackageCache(archive, log, ztm):
+    def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
         Consider all binary package names published in this distro series.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number of packages updated.
         """
 
     def updatePackageCache(binarypackagename, archive, log):
@@ -540,11 +565,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
-
-    def newMilestone(name, dateexpected=None, description=None):
-        """Create a new milestone for this DistroSeries."""
 
     def initialiseFromParent():
         """Copy in all of the parent distroseries's configuration. This
@@ -589,6 +611,17 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         or any other database object remaining valid across this call!
         """
 
+
+class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
+    """A series of an operating system distribution."""
+
+
+# We assign the schema for an `IHasBugs` method argument here
+# in order to avoid circular dependencies.
+IHasBugs['searchTasks'].queryTaggedValue('lazr.webservice.exported')[
+    'params']['nominated_for'].schema = IDistroSeries
+
+
 class IDistroSeriesSet(Interface):
     """The set of distro seriess."""
 
@@ -632,7 +665,3 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
-
-    def new(distribution, name, displayname, title, summary, description,
-            version, parent_series, owner):
-        """Creates a new distroseries"""

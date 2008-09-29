@@ -256,9 +256,9 @@ publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
    >>> login("foo.bar@canonical.com")
-   >>> humpy = distroseriesset.new(ubuntu, 'humpy', 'Humpy Hippo',
-   ...                              'The Humpy Hippo', 'Fat', 'Yo Momma',
-   ...                              '99.2',hoary, hoary.owner)
+   >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
+   ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
+   ...                          '99.2',hoary, hoary.owner)
    >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
    ...                            True, humpy.owner)
    >>> humpy.nominatedarchindep = humpy_i386
@@ -292,9 +292,9 @@ resulted of the sourcepackagerelease in question, but built anywhere.
 Initialise a new distroseries based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
 
-   >>> bumpy = distroseriesset.new(ubuntu, 'bumpy', 'Bumpy',
-   ...                              'The Bumpy', 'Fat', 'Boom',
-   ...                              '99.3', warty, warty.owner)
+   >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
+   ...                          'The Bumpy', 'Fat', 'Boom',
+   ...                          '99.3', warty, warty.owner)
 
    >>> bumpy_i386 = bumpy.newArch('i386', warty['i386'].processorfamily,
    ...                            True, bumpy.owner)
@@ -314,8 +314,9 @@ Check the content IDRSPR binaries & builds attributes:
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchseries.title
-   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
@@ -471,8 +472,9 @@ Supersede previous netapplet publication:
    >>> print superseded_netapplet.status.name
    SUPERSEDED
 
-   >>> superseded_netapplet.datesuperseded
-   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+   >>> from canonical.database.sqlbase import get_transaction_timestamp
+   >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
+   True
 
 
 == DistroSeries Translations migration ==
@@ -482,9 +484,6 @@ transaction manager (in this case a fake one) to make these work.
 
     >>> class FakeTransactionManager:
     ...     """Mock transaction manager for test."""
-    ...     # The translations-copying code does not want its connection reset
-    ...     # after every transaction.  Give it a field to change.
-    ...     reset_after_transaction = True
     ...     def begin(self):
     ...         pass
     ...     def commit(self):
@@ -669,8 +668,8 @@ translated in Hoary but not in Humpy.
     >>> def add_translation(pofile, potmsgset, translation):
     ...     """Set translation for given message set in given `POFile`."""
     ...     potmsgset.updateTranslation(
-    ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
-    ...         is_imported=False, lock_timestamp=now())
+    ...         pofile, carlos, { 0: translation }, is_imported=False,
+    ...         lock_timestamp=now())
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_humpy, 0, u"Obsolete message", None)
@@ -707,14 +706,14 @@ Carlos also updates a regular string in the parent release.
     ...     u'evolution addressbook')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 And another update in a string that was previously untranslated.
 
     >>> potmsgset_hoary = potemplate_hoary.getPOTMsgSetByMsgIDText(u'has ')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'empty string translated' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 Update a string in the child release.
 
@@ -722,7 +721,7 @@ Update a string in the child release.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_humpy.updateTranslation(
     ...     pofile_es_humpy, carlos, { 0: u'humpy updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
 
 These are the respective expected numbers of translated messages, messages
 whose translations have changed in Launchpad, ones that are newly translated
@@ -764,9 +763,9 @@ the total number of current translations that matters.
     ...         query, clauseTables=['POTMsgSet']).count()
 
     >>> count_current_translations(pofile_es_hoary)
-    13
+    11
     >>> count_current_translations(pofile_es_humpy)
-    12
+    10
 
 There are also some obsolete messages.
 
@@ -804,8 +803,8 @@ messages-with-context.  The obsolete messages do not show up.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
-    @@ -43,7 +43,7 @@
+     msgid "have "
+    @@ -42,7 +42,7 @@
     <BLANKLINE>
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
@@ -859,7 +858,7 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     <BLANKLINE>
      msgctxt "context1"
@@ -897,7 +896,7 @@ of those string when we next migrate updates.
     ...     u'current addressbook folder')
     >>> dummy = potmsgset_hoary.updateTranslation(
     ...     pofile_es_hoary, carlos, { 0: u'second hoary updated string' },
-    ...     is_fuzzy=False, is_imported=False, lock_timestamp=now())
+    ...     is_imported=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
     >>> print compare_translations(hoary, humpy)
@@ -914,7 +913,7 @@ of those string when we next migrate updates.
     +msgstr "humpy updated string"
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
-     #, fuzzy
+     msgid "have "
     @@ -281,12 +281,12 @@
     ...
 
@@ -939,8 +938,8 @@ Thus Humpy now has one more message translated than Hoary does.
 Finally, prepare a new distro series to do the copy using an external script
 to do the translation migration to this new distro series.
 
-    >>> testing_series = distroseriesset.new(
-    ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
+    >>> testing_series = ubuntu.newSeries(
+    ...     'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
     >>> testing_series.defer_translation_imports = False
     >>> testing_series.hide_all_translations
@@ -979,6 +978,7 @@ set.
             automatically.
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -988,6 +988,7 @@ set.
 It succeeds, however, when we pass the --force option.  The script then
 sets the defer_translation_imports flag itself before copying.
 
+    >>> transaction.abort()
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
     ...     ['--distribution=ubuntu', '--series=testing', '-v', '--force'])
@@ -1003,6 +1004,7 @@ sets the defer_translation_imports flag itself before copying.
 After completing, the script restores the defer_translation_imports
 flag to its previous value (off).
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -1129,7 +1131,7 @@ publication in question:
    u'web'
 
    >>> warty_mozilla_pub_binaries = warty_pub_source.getPublishedBinaries()
-   >>> warty_mozilla_pub_binaries.count()
+   >>> len(warty_mozilla_pub_binaries)
    4
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
@@ -1221,10 +1223,10 @@ and in the main archives for this distroseries:
     ...     print(
     ...         source.sourcepackagerelease.sourcepackagename.name,
     ...         source.sourcepackagerelease.version)
-    (u'mozilla-firefox', u'0.9')
     (u'netapplet', u'0.99.6-1')
     (u'alsa-utils', u'1.0.8-1ubuntu1')
     (u'alsa-utils', u'1.0.9a-4')
+    (u'mozilla-firefox', u'0.9')
     (u'cdrkit', u'1.0')
     (u'iceweasel', u'1.0')
 
@@ -1399,7 +1401,6 @@ on the distribution.
     ...     print d.name
     jblack
 
-
 Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
@@ -1418,6 +1419,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     ...     print d.name
     sabdfl
 
+
 == Lastest Uploads ==
 
 IDistroSeries provides the 'getLatestUpload' method which returns a
@@ -1430,8 +1432,9 @@ uploaded and published in its context.
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
-    ...     print upload.name, upload.version
-    mozilla-firefox 0.9
+    ...     print upload.title
+    iceweasel 1.0 (source) in ubuntu warty
+    mozilla-firefox 0.9 (source) in ubuntu warty
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

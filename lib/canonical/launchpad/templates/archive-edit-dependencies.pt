@@ -6,18 +6,12 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
   >
 <body>
 
-<metal:portlets fill-slot="portlets">
-   <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
-</metal:portlets>
-
 <div metal:fill-slot="main">
-
-  <tal:privacy-icon replace="structure context/@@+privacy-icon"/>
 
   <h1>Edit dependencies for <tal:title replace="context/title" /></h1>
 

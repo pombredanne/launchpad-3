@@ -24,7 +24,7 @@ If we add an attachment to the bug report...
     >>> login("test@canonical.com")
     >>> bug_11 =  getUtility(IBugSet).get(11)
     >>> attachment = bug_11.addAttachment(
-    ...     owner=None, file_=StringIO.StringIO('whatever'),
+    ...     owner=None, data=StringIO.StringIO('whatever'),
     ...     comment=bug_11.initial_message, filename='test.txt',
     ...     is_patch=False, content_type='text/plain',
     ...     description='sample data')

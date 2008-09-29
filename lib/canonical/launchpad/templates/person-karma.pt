@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 <body>
@@ -59,7 +59,7 @@
   </table>
 
   <tal:latest_events condition="context/latestKarma">
-  
+
     <h2>Latest actions</h2>
 
     <table class="listing sortable" id="karmaactions">

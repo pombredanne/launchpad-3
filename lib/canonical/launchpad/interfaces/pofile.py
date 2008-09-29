@@ -109,10 +109,6 @@ class IPOFile(IRosettaStats):
             '''),
         vocabulary=TranslationPermission)
 
-    fuzzy_count = Int(
-        title=_('The number of fuzzy messages in this po file.'),
-        required=True, readonly=True)
-
     from_sourcepackagename = Field(
         title=_('The source package this pofile comes from.'),
         description=_('''
@@ -193,11 +189,11 @@ class IPOFile(IRosettaStats):
         Raise NotFoundError if it does not exist.
         """
 
+    def findPOTMsgSetsContaining(text):
+        """Get POTMsgSets where English text or translation contain `text`."""
+
     def getPOTMsgSetTranslated():
         """Get pot messages that are translated for this translation file."""
-
-    def getPOTMsgSetFuzzy():
-        """Get pot message sets with a translation that must be checked."""
 
     def getPOTMsgSetUntranslated():
         """Get pot message sets that are untranslated for this file."""

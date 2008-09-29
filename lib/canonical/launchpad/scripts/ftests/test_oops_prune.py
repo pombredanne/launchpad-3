@@ -13,7 +13,6 @@ import shutil
 from subprocess import Popen, PIPE, STDOUT
 import sys
 import tempfile
-from textwrap import dedent
 import unittest
 
 from pytz import UTC
@@ -47,7 +46,7 @@ class TestOopsPrune(unittest.TestCase):
                     )
             os.mkdir(date_dir)
             # Note - one of these is lowercase to demonstrate case handling
-            for oops_id in ['A666','A1234.gz', 'A5678.bz2', 'a666']:
+            for oops_id in ['A666', 'A1234.gz', 'A5678.bz2', 'a666']:
                 oops_filename = os.path.join(date_dir, '000.%s' % oops_id)
                 open(oops_filename, 'w').write('Fnord')
 
@@ -125,9 +124,9 @@ class TestOopsPrune(unittest.TestCase):
         # Make sure that 2A666 and 2a666 are wanted.
         unwanted_ids = set(path_to_oopsid(path) for path in unwanted)
         self.failUnlessEqual(
-                unwanted_ids,
-                set(['2A1234', '2A5678', '3A666', '3a666', '3A1234', '3A5678'])
-                )
+            unwanted_ids,
+            set(['2A1234', '2A5678', '3A666', '3a666', '3A1234', '3A5678'])
+            )
         # Make sure the paths are valid
         for unwanted_path in unwanted:
             self.failUnless(os.path.exists(unwanted_path))
@@ -203,7 +202,8 @@ class TestOopsPrune(unittest.TestCase):
         orig_count = 0
         for dirpath, dirnames, filenames in os.walk(self.oops_dir):
             for filename in filenames:
-                if re.search(r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
+                if re.search(
+                    r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
                     orig_count += 1
 
         # Run the script, which should make no changes with the --dry-run
@@ -221,10 +221,24 @@ class TestOopsPrune(unittest.TestCase):
         new_count = 0
         for dirpath, dirnames, filenames in os.walk(self.oops_dir):
             for filename in filenames:
-                if re.search(r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
+                if re.search(
+                    r'^\d+\.\d+[a-zA-Z]\d+(?:\.gz|\.bz2)?$', filename):
                     new_count += 1
 
         self.failUnlessEqual(orig_count, new_count)
+
+    def test_script_default_error_dir(self):
+        # Verify that the script runs without the error_dir argument.
+        default_error_dir = config.error_reports.error_dir
+        unwanted = unwanted_oops_files(default_error_dir, 90)
+        # Commit so our script can see changes made by the setUp method.
+        LaunchpadZopelessLayer.commit()
+        process = Popen([
+            sys.executable,
+            os.path.join(config.root, 'cronscripts', 'oops-prune.py'), '-q'],
+            stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        (out, err) = process.communicate()
+        self.failUnlessEqual(out, '')
 
     def test_prune_empty_oops_directories(self):
         # And a directory empty of OOPS reports

@@ -1,4 +1,11 @@
-= FTPMASTER Tools = 
+= FTPMASTER Tools =
+
+This test commits to the test database in subprocesses and so needs to
+force the DatabaseLayer to fully tear down and restore the database
+after this test.
+
+  >>> from canonical.testing.layers import DatabaseLayer
+  >>> DatabaseLayer.force_dirty_database()
 
 Queue Tool is a script designed to handle queue content.
 This test  will check its output, since the script itself would

@@ -27,6 +27,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
@@ -35,7 +36,9 @@ from canonical.launchpad.interfaces import (
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -45,6 +48,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.bugtask import (
+    search_value_to_where_condition)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.questionbug import QuestionBug
@@ -56,6 +61,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
 
@@ -106,7 +112,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     language = ForeignKey(
@@ -118,10 +124,10 @@ class Question(SQLBase, BugLinkTargetMixin):
         default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     answerer = ForeignKey(
         dbName='answerer', notNull=False, foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='QuestionMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -437,14 +443,18 @@ class Question(SQLBase, BugLinkTargetMixin):
             if sub.person.id == person.id:
                 return sub
         # Since no previous subscription existed, create a new one.
-        return QuestionSubscription(question=self, person=person)
+        sub = QuestionSubscription(question=self, person=person)
+        Store.of(sub).flush()
+        return sub
 
     def unsubscribe(self, person):
         """See `IQuestion`."""
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                store = Store.of(sub)
                 sub.destroySelf()
+                store.flush()
                 return
 
     def getSubscribers(self):
@@ -650,6 +660,62 @@ class QuestionSet:
             return Question.get(question_id)
         except SQLObjectNotFound:
             return default
+
+    def getOpenQuestionCountByPackages(self, packages):
+        """See `IQuestionSet`."""
+        distributions = list(
+            set(package.distribution for package in packages))
+        # We can't get counts for all packages in one query, since we'd
+        # need to match on (distribution, sourcepackagename). Issue one
+        # query per distribution instead.
+        counts = {}
+        for distribution in distributions:
+            counts.update(self._getOpenQuestionCountsForDistribution(
+                distribution, packages))
+        return counts
+
+    def _getOpenQuestionCountsForDistribution(self, distribution, packages):
+        """Get question counts by package belonging to the given distribution.
+
+        See `IQuestionSet.getOpenQuestionCountByPackages` for more
+        information.
+        """
+        packages = [
+            package for package in packages
+            if package.distribution == distribution]
+        package_name_ids = [
+            package.sourcepackagename.id for package in packages]
+        open_statuses = [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]
+
+        query = """
+            SELECT Question.distribution,
+                   Question.sourcepackagename,
+                   COUNT(*) AS open_questions
+            FROM Question
+            WHERE Question.status IN %(open_statuses)s
+                AND Question.sourcepackagename IN %(package_names)s
+                AND Question.distribution = %(distribution)s
+            GROUP BY Question.distribution, Question.sourcepackagename
+            """ % sqlvalues(
+                open_statuses=open_statuses,
+                package_names=package_name_ids,
+                distribution=distribution,
+                )
+        cur = cursor()
+        cur.execute(query)
+        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_questions = set()
+        # Only packages with open questions are included in the query
+        # result, so initialize each package to 0.
+        counts = dict((package, 0) for package in packages)
+        for distro_id, spn_id, open_questions in cur.fetchall():
+            # The SourcePackageNames here should already be pre-fetched,
+            # so that .get(spn_id) won't issue a DB query.
+            sourcepackagename = sourcepackagename_set.get(spn_id)
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            counts[source_package] = open_questions
+
+        return counts
 
 
 class QuestionSearch:
@@ -1089,7 +1155,8 @@ class QuestionTargetMixin:
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
-        AnswerContact(person=person, **params)
+        answer_contact = AnswerContact(person=person, **params)
+        Store.of(answer_contact).flush()
         return True
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
@@ -1160,7 +1227,9 @@ class QuestionTargetMixin:
             person=person, **self.getTargetTypes())
         if answer_contact is None:
             return False
+        store = Store.of(answer_contact)
         answer_contact.destroySelf()
+        store.flush()
         return True
 
     def getSupportedLanguages(self):

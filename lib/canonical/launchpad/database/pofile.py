@@ -25,10 +25,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
@@ -138,11 +138,34 @@ def _can_edit_translations(pofile, person):
 def _can_add_suggestions(pofile, person):
     """Whether a person is able to add suggestions.
 
-    Any user that can edit translations can add suggestions, the others will
-    be able to add suggestions only if the permission is not CLOSED.
+    Besides people who have permission to edit the translation, this
+    includes any logged-in user for translations in STRUCTURED mode, and
+    any logged-in user for translations in RESTRICTED mode that have a
+    translation team assigned.
     """
-    return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission != TranslationPermission.CLOSED)
+    if person is None:
+        return False
+    if _can_edit_translations(pofile, person):
+        return True
+
+    if pofile.translationpermission == TranslationPermission.OPEN:
+        # We would return True here, except OPEN mode already allows
+        # anyone to edit (see above).
+        raise AssertionError(
+            "Translation is OPEN, but user is not allowed to edit.")
+    elif pofile.translationpermission == TranslationPermission.STRUCTURED:
+        return True
+    elif pofile.translationpermission == TranslationPermission.RESTRICTED:
+        # Only allow suggestions if there is someone to review them.
+        groups = pofile.potemplate.translationgroups
+        for group in groups:
+            if group.query_translator(pofile.language):
+                return True
+        return False
+    elif pofile.translationpermission == TranslationPermission.CLOSED:
+        return False
+
+    raise AssertionError("Unknown translation mode.")
 
 
 class POFileMixIn(RosettaStats):
@@ -182,10 +205,117 @@ class POFileMixIn(RosettaStats):
                 "Can't index with type %s. (Must be unicode.)"
                 % type(msgid_text))
 
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(key=msgid_text,
-                                                            context=context)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            singular_text=msgid_text, context=context)
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
+
+    def areMsgIDsNotEnglish(self):
+        """Whether POFile msgid's are not English messages at the same time.
+
+        Happens commonly with "identifier-like" msgids, like in
+        Firefox or OpenOffice.org.
+        """
+        translation_importer = getUtility(ITranslationImporter)
+        format_importer = translation_importer.getTranslationFormatImporter(
+            self.potemplate.source_file_format)
+        return format_importer.uses_source_string_msgids
+
+    def _getTranslationSearchQuery(self, pofile, plural_form, text):
+        """Query for finding `text` in `plural_form` translations of `pofile`.
+        """
+        translation_match = """
+        -- Find translations containing `text`.
+        -- Like in findPOTMsgSetsContaining(), to avoid seqscans on
+        -- POTranslation table, we do ILIKE comparison on them in
+        -- a subselect which is first filtered by the POFile.
+        (POTMsgSet.id IN (
+          SELECT POTMsgSet.id FROM POTMsgSet
+            JOIN TranslationMessage
+              ON TranslationMessage.potmsgset=POTMsgSet.id
+            WHERE
+              TranslationMessage.pofile=%(pofile)s AND
+              TranslationMessage.msgstr%(plural_form)d IN (
+                SELECT POTranslation.id FROM POTranslation WHERE
+                  POTranslation.id IN (
+                    SELECT DISTINCT(msgstr%(plural_form)d)
+                      FROM TranslationMessage
+                      WHERE TranslationMessage.pofile=%(pofile)s
+                  ) AND
+                  POTranslation.translation
+                    ILIKE '%%' || %(text)s || '%%')
+                  ))""" % dict(pofile=quote(pofile),
+                               plural_form=plural_form,
+                               text=quote_like(text))
+        return translation_match
+
+
+    def _getTemplateSearchQuery(self, text):
+        """Query for finding `text` in msgids of this POFile.
+        """
+        english_match = """
+        -- Step 1a: get POTMsgSets where msgid_singular contains `text`
+        -- To avoid seqscans on POMsgID table (what LIKE usually
+        -- does), we do ILIKE comparison on them in a subselect first
+        -- filtered by this POTemplate.
+           ((POTMsgSet.msgid_singular IS NOT NULL AND
+             POTMsgSet.msgid_singular IN (
+               SELECT POMsgID.id FROM POMsgID
+                 WHERE id IN (
+                   SELECT DISTINCT(msgid_singular)
+                     FROM POTMsgSet
+                     WHERE POTMsgSet.potemplate=%s
+                 ) AND
+                 msgid ILIKE '%%' || %s || '%%')) OR
+        -- Step 1b: like above, just on msgid_plural.
+            (POTMsgSet.msgid_plural IS NOT NULL AND
+             POTMsgSet.msgid_plural IN (
+               SELECT POMsgID.id FROM POMsgID
+                 WHERE id IN (
+                   SELECT DISTINCT(msgid_plural)
+                     FROM POTMsgSet
+                     WHERE POTMsgSet.potemplate=%s
+                 ) AND
+                 msgid ILIKE '%%' || %s || '%%'))
+           )""" % (quote(self.potemplate), quote_like(text),
+                   quote(self.potemplate), quote_like(text))
+        return english_match
+
+    def findPOTMsgSetsContaining(self, text):
+        """See `IPOFile`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            # Only count the number of POTMsgSet that are current.
+            'POTMsgSet.sequence > 0',
+            ]
+
+        if text is not None:
+            assert len(text) > 1, (
+                "You can not search for strings shorter than 2 characters.")
+
+            if self.areMsgIDsNotEnglish():
+                # If msgids are not in English, use English PO file
+                # to fetch original strings instead.
+                en_pofile = self.potemplate.getPOFileByLang('en')
+                english_match = self._getTranslationSearchQuery(
+                    en_pofile, 0, text)
+            else:
+                english_match = self._getTemplateSearchQuery(text)
+
+            # Do not look for translations in a DummyPOFile.
+            if self.id is not None:
+                search_clauses = [english_match]
+                for plural_form in range(self.plural_forms):
+                    translation_match = self._getTranslationSearchQuery(
+                        self, plural_form, text)
+                    search_clauses.append(translation_match)
+
+                clauses.append("(" + " OR ".join(search_clauses) + ")")
+            else:
+                clauses.append(english_match)
+
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
 
 class POFile(SQLBase, POFileMixIn):
@@ -212,7 +342,7 @@ class POFile(SQLBase, POFileMixIn):
                           notNull=True)
     lasttranslator = ForeignKey(
         dbName='lasttranslator', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
@@ -234,7 +364,7 @@ class POFile(SQLBase, POFileMixIn):
                                 default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -406,25 +536,12 @@ class POFile(SQLBase, POFileMixIn):
             'POTMsgSet.sequence > 0',
             'TranslationMessage.potmsgset = POTMsgSet.id',
             'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'TranslationMessage.is_current',
-            'NOT TranslationMessage.is_fuzzy']
+            'TranslationMessage.is_current']
         self._appendCompletePluralFormsConditions(query)
 
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
-
-    def getPOTMsgSetFuzzy(self):
-        """See `IPOFile`."""
-        return POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_current AND
-            TranslationMessage.is_fuzzy
-            ''' % sqlvalues(self.potemplate, self),
-            clauseTables=['TranslationMessage'], orderBy='POTmsgSet.sequence')
 
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
@@ -450,7 +567,7 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
-                 (NOT TranslationMessage.is_fuzzy AND (%s))))
+                 (%s)))
             """ % (quote(self), quote(self.potemplate),
                    ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
@@ -500,8 +617,7 @@ class POFile(SQLBase, POFileMixIn):
             JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE AND
-                NOT imported.was_fuzzy_in_last_import
+                imported.is_imported IS TRUE
             JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id <> current.id AND
@@ -558,17 +674,6 @@ class POFile(SQLBase, POFileMixIn):
         """See `IRosettaStats`."""
         return self.unreviewed_count
 
-    @property
-    def fuzzy_count(self):
-        """See `IPOFile`."""
-        return TranslationMessage.select("""
-            TranslationMessage.pofile = %s AND
-            TranslationMessage.is_fuzzy AND
-            TranslationMessage.is_current AND
-            TranslationMessage.potmsgset = POTMsgSet.id AND
-            POTMsgSet.sequence > 0
-            """ % sqlvalues(self), clauseTables=['POTMsgSet']).count()
-
     def getStatistics(self):
         """See `IPOFile`."""
         return (
@@ -593,7 +698,6 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
-
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -602,7 +706,6 @@ class POFile(SQLBase, POFileMixIn):
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
                  'TranslationMessage.is_imported IS TRUE',
-                 'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
                  'POTMsgSet.sequence > 0']
         self._appendCompletePluralFormsConditions(query)
@@ -617,7 +720,6 @@ class POFile(SQLBase, POFileMixIn):
         # were not translated.
         query = [
             'TranslationMessage.pofile = %s' % sqlvalues(self),
-            'NOT TranslationMessage.is_fuzzy',
             'TranslationMessage.is_current IS TRUE']
         # Check only complete translations.  For messages with only a single
         # msgid, that's anything with a singular translation; for ones with a
@@ -637,7 +739,6 @@ class POFile(SQLBase, POFileMixIn):
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
-                NOT imported.was_fuzzy_in_last_import AND
                 (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
@@ -952,10 +1053,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-    def getPOTMsgSetFuzzy(self):
-        """See `IPOFile`."""
-        return self.emptySelectResults()
-
     def getPOTMsgSetUntranslated(self):
         """See `IPOFile`."""
         return self.potemplate.getPOTMsgSets()
@@ -1003,11 +1100,6 @@ class DummyPOFile(POFileMixIn):
     def untranslatedCount(self, language=None):
         """See `IRosettaStats`."""
         return self.messageCount()
-
-    @property
-    def fuzzy_count(self):
-        """See `IPOFile`."""
-        return 0
 
     def currentPercentage(self, language=None):
         """See `IRosettaStats`."""
@@ -1157,7 +1249,7 @@ class POFileTranslator(SQLBase):
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
@@ -1288,9 +1380,6 @@ class POFileToTranslationFileDataAdapter:
                     for flag in row.flags_comment.split(',')
                     if flag
                     ])
-
-            if row.is_fuzzy:
-                msgset.flags.add('fuzzy')
 
             messages.append(msgset)
 

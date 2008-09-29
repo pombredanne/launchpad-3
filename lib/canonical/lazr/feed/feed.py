@@ -32,9 +32,9 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-# XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
-# canonical.launchpad, but we're doing it here as an expediency to get a
-# working prototype.  Bug 153795.
+# XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
+# from canonical.launchpad, but we're doing it here as an expediency to get a
+# working prototype.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url, urlappend, urlparse)
@@ -102,9 +102,9 @@ class FeedBase(LaunchpadView):
         """
         # Get the creation date, if available.  Otherwise use a fixed date, as
         # allowed by the RFC.
-        if hasattr(self.context, 'datecreated'):
+        if getattr(self.context, 'datecreated', None) is not None:
             datecreated = self.context.datecreated.date().isoformat()
-        elif hasattr(self.context, 'date_created'):
+        elif getattr(self.context, 'date_created', None) is not None:
             datecreated = self.context.date_created.date().isoformat()
         else:
             datecreated = "2008"
@@ -139,7 +139,11 @@ class FeedBase(LaunchpadView):
     @property
     def feed_format(self):
         """See `IFeed`."""
-        path = self.request['PATH_INFO']
+        # If the full URL is http://feeds.launchpad.dev/announcements.atom/foo
+        # getURL() will return http://feeds.launchpad.dev/announcements.atom
+        # when traversing the feed, which will allow os.path.splitext()
+        # to split off ".atom" correctly.
+        path = self.request.getURL()
         extension = os.path.splitext(path)[1]
         if extension in SUPPORTED_FEEDS:
             return extension[1:]
@@ -301,6 +305,7 @@ class FeedTypedData:
                 convertEntities=BeautifulSoup.HTML_ENTITIES)
             altered_content = unicode(soup)
         return altered_content
+
 
 class FeedPerson:
     """See `IFeedPerson`.

@@ -7,7 +7,8 @@ Let's do some imports we will need to test this class.
     >>> from canonical.launchpad.database import (
     ...     POTemplate, POTMsgSet, TranslationMessage)
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IProductSet, ITranslationMessage)
+    ...     ILanguageSet, IPersonSet, IProductSet, ITranslationMessage,
+    ...     ITranslatorSet)
 
     >>> potemplate = POTemplate.get(1)
     >>> potmsgsets = potemplate.getPOTMsgSets()
@@ -106,21 +107,29 @@ We are working with Evolution POFile.
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
 
-We will be working with Serbian (sr) translations, with the new PO file.
+No Privileges Person is going to work on Serbian (sr) translation, with
+the new PO file.
 
     >>> pofile_sr = evolution_potemplate.newPOFile('sr')
     >>> serbian = pofile_sr.language
     >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
     ...     u'evolution addressbook')
 
-A non-privileged user can only submit a suggestion, which will not be
+This is a Restricted translation, and No Privileges Person is not the
+assigned reviewer.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> sr_translation_reviewer = getUtility(ITranslatorSet).new(
+    ...     evolution.translationgroup, serbian, foobar)
+
+No Privileges Person can only submit a suggestion, which will not be
 hidden.
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> login('no-priv@canonical.com')
 
     >>> new_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'suggestion'}, is_fuzzy=False,
+    ...     pofile_sr, nopriv, {0: u'suggestion'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> new_suggestion.is_hidden
@@ -134,7 +143,7 @@ Carlos is a privileged translator that will do the updates.
 An imported translation is not hidden when submitted.
 
     >>> imported_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, carlos, {0: u'foo'}, is_fuzzy=False,
+    ...     pofile_sr, carlos, {0: u'foo'},
     ...     is_imported=True, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> imported_translation.is_hidden
@@ -148,7 +157,7 @@ A previous suggestion is now hidden.
 A newly submitted non-imported translation is not hidden either.
 
     >>> current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, carlos, {0: u'bar'}, is_fuzzy=False,
+    ...     pofile_sr, carlos, {0: u'bar'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> current_translation.is_hidden
@@ -162,7 +171,7 @@ However, previous imported translation is not hidden yet.
 If a new current translation is submitted, the old one is hidden.
 
     >>> new_current_translation = potmsgset.updateTranslation(
-    ...     pofile_sr, carlos, {0: u'new'}, is_fuzzy=False,
+    ...     pofile_sr, carlos, {0: u'new'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> new_current_translation.is_hidden
@@ -182,7 +191,7 @@ and last current translation is not hidden either.
     >>> login('no-priv@canonical.com')
 
     >>> another_suggestion = potmsgset.updateTranslation(
-    ...     pofile_sr, nopriv, {0: u'another suggestion'}, is_fuzzy=False,
+    ...     pofile_sr, nopriv, {0: u'another suggestion'},
     ...     is_imported=False, lock_timestamp=datetime.now(UTC))
     >>> transaction.commit()
     >>> another_suggestion.is_hidden
@@ -206,7 +215,7 @@ If the message has no actual translation, the translations attribute
 contains just a None.
 
     >>> empty_message = potmsgset.updateTranslation(
-    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     pofile_sr, carlos, {}, is_imported=False,
     ...     lock_timestamp=datetime.now(UTC))
     >>> empty_message.translations
     [None]
@@ -214,7 +223,8 @@ contains just a None.
 For a message with plurals, it's the POFile's number of plural forms.
 
     >>> spanish = getUtility(ILanguageSet)['es']
-    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d contact')
+    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact', u'%d contacts')
     >>> plural_message = plural_potmsgset.getCurrentTranslationMessage(
     ...     spanish)
     >>> plural_message.translations
@@ -224,7 +234,7 @@ If the message does not translate all those forms, we get None entries
 in the list.
 
     >>> empty_message = plural_potmsgset.updateTranslation(
-    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     pofile_sr, carlos, {}, is_imported=False,
     ...     lock_timestamp=datetime.now(UTC))
     >>> empty_message.translations
     [None, None, None]

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['TranslationsOverview']
@@ -48,14 +48,14 @@ class TranslationsOverview:
         SELECT LOWER(COALESCE(product_name, distro_name)) AS name,
                product_id,
                distro_id,
-               total_karma AS karma
+               LN(total_karma)/LN(2) AS karma
           FROM (
             SELECT
                 product.displayname AS product_name,
                 product.id AS product_id,
                 distribution.displayname AS distro_name,
                 distribution.id AS distro_id,
-                LN(SUM(karmavalue))/LN(2) AS total_karma
+                SUM(karmavalue) AS total_karma
               FROM karmacache
                    LEFT JOIN product ON
                      product=product.id
@@ -66,7 +66,9 @@ class TranslationsOverview:
                     (product.official_rosetta OR distribution.official_rosetta)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
-              ORDER BY total_karma DESC LIMIT %d) AS something
+              HAVING SUM(karmavalue) > 0
+              ORDER BY total_karma DESC
+              LIMIT %d) AS something
           ORDER BY name""" % int(limit)
         cur = cursor()
         cur.execute(query)

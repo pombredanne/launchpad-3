@@ -224,14 +224,17 @@ modify() method.
 Announcements can be retracted at any time. Retracting an announcement
 updates the date_last_modified and sets the announcement.active flag to False
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> print apache_asia.date_last_modified
     None
     >>> print apache_asia.active
     True
     >>> apache_asia.retract()
     >>> flush_database_updates()
-    >>> apache_asia.date_last_modified
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> apache_asia.date_last_modified == transaction_timestamp
+    True
     >>> apache_asia.active
     False
 

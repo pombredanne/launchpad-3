@@ -26,11 +26,6 @@
     classes="DistroArchSeriesBinaryPackageReleaseNavigation"
     />
 
-  <browser:menus
-    module="canonical.launchpad.browser.distroarchseriesbinarypackagerelease"
-    classes="DistroArchSeriesBinaryPackageReleaseFacets"
-    />
-
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
     class="canonical.launchpad.browser.DistroArchSeriesBinaryPackageReleaseView"

@@ -45,10 +45,8 @@ able to mark the branch as private.
 Since the branch is now private, it will have the standard Launchpad
 presentation for private things.
 
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img...private...>
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This branch is private
 
 If Sample Person changes the branch from private back to public, the page
 reverts to its normal presentation.
@@ -56,10 +54,8 @@ reverts to its normal presentation.
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Keep branch confidential').selected = False
     >>> browser.getControl('Change Branch').click()
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div id="container">...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    None
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This branch is public
 
 
 == Private Only branches ==
@@ -80,10 +76,8 @@ Mark the public branch private.
 
 The branch is now private, so it assumes the standard private presentation.
 
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img...private...>
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This branch is private
 
 However when the user now looks to edit the branch details, there
 is no option to mark the branch as public.

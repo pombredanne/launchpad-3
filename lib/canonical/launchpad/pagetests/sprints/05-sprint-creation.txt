@@ -81,7 +81,7 @@ for the new sprint.
   >>> user_browser.url
   'http://launchpad.dev/sprints/ltsponsteroids'
 
-Since the sprint's timezone was set to UTC, the dates are displayed in
+Since the sprint's time zone was set to UTC, the dates are displayed in
 that time zone:
 
   >>> print find_portlet(user_browser.contents, 'Meeting details')
@@ -101,7 +101,7 @@ a warning to that effect on the page.
   True
 
 
-Add a new sprint with a different timezone is also handled correctly.
+Add a new sprint with a different time zone is also handled correctly.
 
   >>> user_browser.open('http://launchpad.dev/sprints/+new')
   >>> user_browser.getControl('Name').value = 'africa-sprint'

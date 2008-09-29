@@ -159,7 +159,11 @@ class Dominator:
     def _getOtherBinaryPublications(self, dominated):
         """Return remaining publications of the same binarypackagerelease.
 
-        Return only binaries published or pending in the same component/
+        It only considers binary publications in the same distroseries,
+        pocket and archive context, which is the limit where the domination
+        should happen.
+
+        Return only binaries published or pending in the same component,
         section and priority, this way the just-made override will be
         preserved.
         """
@@ -171,13 +175,14 @@ class Dominator:
             SecureBinaryPackagePublishingHistory.distroarchseries IN %s AND
             SecureBinaryPackagePublishingHistory.binarypackagerelease = %s AND
             SecureBinaryPackagePublishingHistory.pocket = %s AND
+            SecureBinaryPackagePublishingHistory.archive = %s AND
             SecureBinaryPackagePublishingHistory.component = %s AND
             SecureBinaryPackagePublishingHistory.section = %s AND
             SecureBinaryPackagePublishingHistory.priority = %s
         """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
                         dominated.binarypackagerelease, dominated.pocket,
-                        dominated.component, dominated.section,
-                        dominated.priority)
+                        dominated.archive, dominated.component,
+                        dominated.section, dominated.priority)
         return SecureBinaryPackagePublishingHistory.select(query)
 
     def _dominateBinary(self, dominated, dominant):

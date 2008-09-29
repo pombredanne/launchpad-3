@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """View classes for ITranslationMessage interface."""
 
@@ -10,7 +10,6 @@ __all__ = [
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
-    'CurrentTranslationMessageSOP',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
     'TranslationMessageSuggestions',
@@ -38,16 +37,17 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.potemplate import (
-    POTemplateFacets, POTemplateSOP)
+from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
     TranslationConflict, TranslationConstants, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
+
 
 #
 # Translation-related formatting functions
@@ -298,12 +298,6 @@ class CurrentTranslationMessageFacets(POTemplateFacets):
         POTemplateFacets.__init__(self, context.pofile.potemplate)
 
 
-class CurrentTranslationMessageSOP(POTemplateSOP):
-
-    def __init__(self, context):
-        POTemplateSOP.__init__(self, context.pofile.potemplate)
-
-
 class CurrentTranslationMessageAppMenus(ApplicationMenu):
     usedfor = ITranslationMessage
     facet = 'translations'
@@ -317,6 +311,7 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
+    @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -400,8 +395,6 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: kiko 2006-10-18:
-            # This should refer people to +addticket, right?
             self.request.response.addErrorNotification(
                 structured("""
             <p>
@@ -414,8 +407,8 @@ class BaseTranslationView(LaunchpadView):
             application to see whether anyone has submitted it yet.  If not,
             please file the information there as a question.  The preferred
             format for such questions is described in the
-            <a href="https://help.launchpad.net/RosettaFAQ">Frequently Asked
-            Questions list</a>.
+            <a href="https://help.launchpad.net/FAQ/Translations">Frequently
+            Asked Questions list</a>.
             </p>
             <p>
             This only needs to be done once per language. Thanks for helping
@@ -546,12 +539,13 @@ class BaseTranslationView(LaunchpadView):
             # translation submitted, so we don't need to store anything.
             return None
 
-        is_fuzzy = self.form_posted_needsreview.get(potmsgset, False)
+        force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
 
         try:
             potmsgset.updateTranslation(
-                self.pofile, self.user, translations, is_fuzzy,
-                is_imported=False, lock_timestamp=self.lock_timestamp)
+                self.pofile, self.user, translations,
+                is_imported=False, lock_timestamp=self.lock_timestamp,
+                force_suggestion=force_suggestion)
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -594,13 +588,13 @@ class BaseTranslationView(LaunchpadView):
         # so we prepare the new render with the same values.
         if current_translation_message.potmsgset in (
             self.form_posted_needsreview):
-            is_fuzzy = self.form_posted_needsreview[
+            force_suggestion = self.form_posted_needsreview[
                 current_translation_message.potmsgset]
         else:
-            is_fuzzy = current_translation_message.is_fuzzy
+            force_suggestion = False
 
         return view_class(current_translation_message, self.request,
-            plural_indices_to_store, translations, is_fuzzy, error,
+            plural_indices_to_store, translations, force_suggestion, error,
             self.second_lang_code, self.form_is_writeable)
 
     #
@@ -691,8 +685,7 @@ class BaseTranslationView(LaunchpadView):
     @cachedproperty
     def form_is_writeable(self):
         """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.pofile.canAddSuggestions(self.user))
+        return self.pofile.canAddSuggestions(self.user)
 
     def _extractFormPostedTranslations(self, potmsgset):
         """Look for translations for this `POTMsgSet` in the form submitted.
@@ -959,8 +952,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     #   self.pluralform_indices
 
     def __init__(self, current_translation_message, request,
-                 plural_indices_to_store, translations, is_fuzzy, error,
-                 second_lang_code, form_is_writeable):
+                 plural_indices_to_store, translations, force_suggestion,
+                 error, second_lang_code, form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -969,8 +962,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         :param translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
             translations.
-        :param is_fuzzy: A flag that notes current fuzzy flag overlaid with
-            the form-submitted.
+        :param force_suggestion: Should this be a suggestion even for editors.
         :param error: The error related to self.context submission or None.
         :param second_lang_code: The result of submiting
             field.alternative_value.
@@ -982,7 +974,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
-        self.is_fuzzy = is_fuzzy
+        self.force_suggestion = force_suggestion
         self.user_is_official_translator = (
             current_translation_message.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
@@ -1290,7 +1282,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
-        return self.context.potmsgset.sequence
+        return self.context.potmsgset.getSequence(
+            self.context.potmsgset.potemplate)
 
     @property
     def singular_text(self):
@@ -1420,13 +1413,15 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=set()):
+                 plural_form, seen_translations=None):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.pofile
         self.user_is_official_translator = user_is_official_translator
         self.form_is_writeable = form_is_writeable
         self.submissions = []
+        if seen_translations is None:
+            seen_translations = set()
 
         for submission in submissions:
             # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of

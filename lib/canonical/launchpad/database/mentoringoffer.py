@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class MentoringOffer(SQLBase):
@@ -35,11 +35,11 @@ class MentoringOffer(SQLBase):
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     bug = ForeignKey(dbName='bug', notNull=False,
                      foreignKey='Bug', default=None)
     specification = ForeignKey(dbName='specification', notNull=False,

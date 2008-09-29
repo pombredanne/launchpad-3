@@ -12,10 +12,10 @@ import signal
 import subprocess
 
 from canonical.config import config
-from canonical.pidfile import make_pidfile, pidfile_path
+from canonical.lazr.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
-
+from canonical.launchpad.testing import googletestservice
 
 TWISTD_SCRIPT = None
 
@@ -47,6 +47,8 @@ class TacFile(Service):
             attributes.
         :param pre_launch: A callable that is called before the launch process.
         """
+        # No point calling super's __init__.
+        # pylint: disable-msg=W0231
         self.name = name
         self.tac_filename = tac_filename
         self.config = configuration
@@ -58,6 +60,14 @@ class TacFile(Service):
     @property
     def should_launch(self):
         return self.config is not None and self.config.launch
+
+    @property
+    def logfile(self):
+        """Return the log file to use.
+
+        Default to the value of the configuration key logfile.
+        """
+        return self.config.logfile
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -98,11 +108,7 @@ class TacFile(Service):
         #    raise RuntimeError(
         #        "%s did not start: %d"
         #        % (self.name, process.returncode))
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
 
 
 class MailmanService(Service):
@@ -128,11 +134,32 @@ class CodebrowseService(Service):
             ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
             stdin=subprocess.PIPE)
         process.stdin.close()
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
+
+class GoogleWebService(Service):
+
+    @property
+    def should_launch(self):
+        return config.google_test_service.launch
+
+    def launch(self):
+        if self.should_launch:
+            process = googletestservice.start_as_process()
+            stop_at_exit(process)
+
+
+def stop_at_exit(process):
+    """Create and register an atexit hook for killing a process.
+
+    The hook will BLOCK until the process dies.
+
+    :param process: An instance of subprocess.Popen.
+    """
+    def stop_process():
+        if process.poll() is None:
+            os.kill(process.pid, signal.SIGTERM)
+            process.wait()
+    atexit.register(stop_process)
 
 
 def prepare_for_librarian():
@@ -146,11 +173,10 @@ SERVICES = {
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),
-    'authserver': TacFile('authserver', 'daemons/authserver.tac',
-                          config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
+    'google-webservice': GoogleWebService(),
     }
 
 

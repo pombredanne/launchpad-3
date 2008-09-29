@@ -98,7 +98,7 @@ result in an UnknownRemoteStatusError being raised.
     >>> rt.convertRemoteStatus('spam').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: spam
 
 
 == Initialisation ==
@@ -203,7 +203,6 @@ remote status for, the bug watch that we have created.
 We now add some more watches against remote bugs in the example.com bug
 tracker with a variety of statuses.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     rt.convertRemoteStatus)
     Remote bug 1585: New

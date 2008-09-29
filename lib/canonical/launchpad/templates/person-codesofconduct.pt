@@ -11,17 +11,8 @@
 >
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Code of conduct signatures</h1>
-</metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+  <h1>Code of conduct signatures</h1>
 
   <tal:changes condition="view/performCoCChanges" />
 
@@ -38,7 +29,7 @@
     <form name="coc" action="" method="post">
 
       <h2>Active signatures</h2>
-        <p>If you change your mind about agreeing to a code of conduct, 
+        <p>If you change your mind about agreeing to a code of conduct,
         you can deactivate your signature.</p>
           <table>
             <tbody>
@@ -53,14 +44,15 @@
                 <td>
                   <div>
                     <label
+                      class="signature"
                       tal:attributes="for string:code${sig/id}"
                       tal:content="sig/displayname"
                     >blah</label>
                   </div>
-                  <div
+                  <pre
                     class="discreet"
                     tal:content="sig/signedcode"
-                  >SIGNATURE</div>
+                  >SIGNATURE</pre>
                 </td>
               </tr>
             </tbody>
@@ -78,7 +70,7 @@
           Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
           <a href="/~admins">Launchpad Administrator</a>.
         </p>
-      <ul> 
+      <ul>
          <li tal:repeat="sig context/inactivesignatures"
              tal:content="sig/displayname"/>
       </ul>

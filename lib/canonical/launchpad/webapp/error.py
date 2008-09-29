@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -14,6 +14,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, set_request_started)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
@@ -58,7 +60,7 @@ class SystemErrorView:
         # if canonical.launchpad.layers.PageTestLayer.providedBy(
         #     self.request):
         #     self.pagetesting = True
-        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
+        # XXX mpt 20080109 bug=181472: We don't use this any more.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
@@ -146,6 +148,14 @@ class SystemErrorView:
         else:
             return self.index()
 
+    @property
+    def layer_help(self):
+        if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
+            return '''<a href="http://help.launchpad.net/Feeds">
+                      Help with Launchpad feeds</a>'''
+        else:
+            return None
+
 
 class ProtocolErrorView(SystemErrorView):
     """View for protocol errors.
@@ -163,6 +173,7 @@ class ProtocolErrorView(SystemErrorView):
             self.request.response.setHeader(header, value)
         return self.index()
 
+
 class NotFoundView(SystemErrorView):
 
     response_code = 404
@@ -173,7 +184,7 @@ class NotFoundView(SystemErrorView):
     @cachedproperty
     def referrer(self):
         """If there is a referring page, return its URL.
-        
+
         Otherwise return None.
         """
         referrer = self.request.get('HTTP_REFERER')
@@ -193,6 +204,25 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
+        # Reset the timeout timer, so that we can issue db queries when
+        # rendering the page.
+        clear_request_started()
+        set_request_started()
+
+
+class InvalidBatchSizeView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
+
+    response_code = 400
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False
+
+    @property
+    def max_batch_size(self):
+        """Return the maximum configured batch size."""
+        return config.launchpad.max_batch_size
 
 
 class TranslationUnavailableView(SystemErrorView):

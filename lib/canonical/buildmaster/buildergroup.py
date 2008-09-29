@@ -55,9 +55,9 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # XXX RBC 2007-05-23 bug 31546, 30633: builders that are not 'ok'
-            # are not worth rechecking here for some currently undocumented
-            # reason.
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
             if builder.builderok:
                 self.updateBuilderStatus(builder, arch)
 
@@ -81,11 +81,14 @@ class BuilderGroup:
         # exceptions raised in the Builder API since we already started the
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
-                socket.error, BuildDaemonError), reason:
+                BuildDaemonError), reason:
             builder.failbuilder(str(reason))
             self.logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
+        except socket.error, reason:
+            error_message = str(reason)
+            builder.handleTimeout(self.logger, error_message)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.
@@ -153,7 +156,8 @@ class BuilderGroup:
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', queueItem.getLogFileName())
+            'buildlog', queueItem.getLogFileName(),
+            queueItem.build.archive.private)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
@@ -406,7 +410,7 @@ class BuilderGroup:
         # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != BuildStatus.FULLYBUILT or
-            len(build.binarypackages) == 0):
+            build.binarypackages.count() == 0):
             self.logger.debug("Build %s upload failed." % build.id)
             # update builder
             queueItem.build.buildstate = BuildStatus.FAILEDTOUPLOAD
@@ -427,6 +431,9 @@ class BuilderGroup:
                     break
             else:
                 uploader_log_content = 'Could not find upload log file'
+            # Store the upload_log_contents in librarian so it can be
+            # accessed by anyone with permission to see the build.
+            queueItem.build.storeUploadLog(uploader_log_content)
             # Notify the build failure.
             queueItem.build.notify(extra_info=uploader_log_content)
         else:

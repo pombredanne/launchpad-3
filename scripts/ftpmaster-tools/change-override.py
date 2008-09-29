@@ -63,8 +63,8 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     # instatiate and initialize changer object
     changer = ArchiveOverrider(log, distro_name=options.distro_name,

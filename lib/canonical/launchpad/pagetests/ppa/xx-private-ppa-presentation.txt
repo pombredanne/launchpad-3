@@ -8,10 +8,8 @@ describes the appearance.
 Public PPAs appear like any other launchpad page.
 
     >>> browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print find_tag_by_id(browser.contents, 'container')
-    <div id="container">...</div>
-    >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    None
+    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
+    This archive is public
 
 == Private presentation ==
 
@@ -30,54 +28,5 @@ presentation for private items.
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print find_tag_by_id(cprov_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
-    <img...>
-
-All of the other PPA "action" pages are presented similarly.
-
-The "Change Details" page:
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> cprov_browser.getLink("Change details").click()
-    >>> print find_tag_by_id(cprov_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
-    <img...>
-
-The "View build records" page:
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> cprov_browser.getLink("View build records").click()
-    >>> print find_tag_by_id(cprov_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
-    <img...>
-
-The "Delete packages" page:
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> cprov_browser.getLink("Delete packages").click()
-    >>> print find_tag_by_id(cprov_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
-    <img...>
-
-The "Edit dependencies" page:
-
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> cprov_browser.getLink("Edit dependencies").click()
-    >>> print find_tag_by_id(cprov_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(cprov_browser.contents, 'privatebadge')
-    <img...>
-
-And for the administrator, the "Administer archive" page:
-
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> print find_tag_by_id(admin_browser.contents, 'container')
-    <div...class="private"...</div>
-    >>> print find_tag_by_id(admin_browser.contents, 'privatebadge')
-    <img...>
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'privacy'))
+    This archive is private

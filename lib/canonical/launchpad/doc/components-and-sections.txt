@@ -20,8 +20,8 @@ Get an Component instance from the current sampledata:
 
 Test some attributes:
 
- >>> main.id, main.name
- (1, u'main')
+ >>> print main.id, main.name
+ 1 main
 
 Check if the instance corresponds to the declared interface:
 
@@ -41,38 +41,38 @@ Check we can use the set as a utility:
 Test iteration over the sampledata default components:
 
  >>> for c in component_set:
- ...    c.name
- u'main'
- u'restricted'
- u'universe'
- u'multiverse'
- u'partner'
+ ...    print c.name
+ main
+ restricted
+ universe
+ multiverse
+ partner
 
 by default, they are ordered by 'id'.
 
 Test __getitem__ method, retrieving a component by name:
 
- >>> component_set['universe'].name
- u'universe'
+ >>> print component_set['universe'].name
+ universe
 
 Test get method, retrieving a component by its id:
 
- >>> component_set.get(2).name
- u'restricted'
+ >>> print component_set.get(2).name
+ restricted
 
 New component creation for a given name:
 
  >>> new_comp = component_set.new('test')
- >>> new_comp.id, new_comp.name
- (6L, u'test')
+ >>> print new_comp.id, new_comp.name
+ 6 test
 
 Ensuring a component (if not found, create it):
 
  >>> component_set.ensure('test').id
- 6L
+ 6
 
  >>> component_set.ensure('test2').id
- 7L
+ 7
 
 
 Importing Section content class and its interface:
@@ -86,8 +86,8 @@ Get a Section instance from the current sampledata:
 
 Test some attributes:
 
- >>> base.id, base.name
- (1, u'base')
+ >>> print base.id, base.name
+ 1 base
 
 Check if the instance corresponds to the declared interface:
 
@@ -107,65 +107,65 @@ Check we can use the set as a utility:
 Test iteration over the sampledata default sections:
 
  >>> for s in section_set:
- ...    s.name
- u'base'
- u'web'
- u'editors'
- u'admin'
- u'comm'
- u'debian-installer'
- u'devel'
- u'doc'
- u'games'
- u'gnome'
- u'graphics'
- u'interpreters'
- u'kde'
- u'libdevel'
- u'libs'
- u'mail'
- u'math'
- u'misc'
- u'net'
- u'news'
- u'oldlibs'
- u'otherosfs'
- u'perl'
- u'python'
- u'shells'
- u'sound'
- u'tex'
- u'text'
- u'translations'
- u'utils'
- u'x11'
- u'electronics'
- u'embedded'
- u'hamradio'
- u'science'
+ ...    print s.name
+ base
+ web
+ editors
+ admin
+ comm
+ debian-installer
+ devel
+ doc
+ games
+ gnome
+ graphics
+ interpreters
+ kde
+ libdevel
+ libs
+ mail
+ math
+ misc
+ net
+ news
+ oldlibs
+ otherosfs
+ perl
+ python
+ shells
+ sound
+ tex
+ text
+ translations
+ utils
+ x11
+ electronics
+ embedded
+ hamradio
+ science
 
 by default they are ordered by 'id'.
 
 Test __getitem__ method, retrieving a section by name:
 
- >>> section_set['science'].name
- u'science'
+ >>> print section_set['science'].name
+ science
 
 Test get method, retrieving a section by its id:
 
- >>> section_set.get(2).name
- u'web'
+ >>> print section_set.get(2).name
+ web
 
 New section creation for a given name:
 
  >>> new_sec = section_set.new('test')
- >>> new_sec.id, new_sec.name
- (36L, u'test')
+ >>> print new_sec.id, new_sec.name
+ 36 test
 
 Ensuring a section (if not found, create it):
 
  >>> section_set.ensure('test').id
- 36L
+ 36
 
  >>> section_set.ensure('test2').id
- 37L
+ 37

@@ -1,0 +1,27 @@
+= The bugs index page for bug targets =
+
+The bugs index page for bug targets is one of the first Launchpad
+page to embed all its action links in the main content area, rather
+than in an 'Actions' portlet.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> print find_portlet(browser.contents, 'Actions')
+    None
+
+The thing you are most likely to want to do from this page is search,
+so the search field is focused by default.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print BeautifulSoup(browser.contents).body('script')[0]
+    <script...$('field.searchtext').focus();...
+
+But once you're on the search results page, you're quite likely to want
+to scroll through the results, so the search field should not be
+focused by default.
+
+    >>> browser.getControl(name='field.searchtext').value = 'test'
+    >>> browser.getControl('Search', index=0).click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/ubuntu/+bugs?...
+    >>> '.focus()' in find_main_content(browser.contents)
+    False

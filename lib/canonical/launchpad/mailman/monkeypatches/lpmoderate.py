@@ -7,6 +7,7 @@ import xmlrpclib
 
 from email.Utils import formatdate, make_msgid
 
+# pylint: disable-msg=F0401
 from Mailman import Errors
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
@@ -50,7 +51,11 @@ def process(mlist, msg, msgdata):
     # pickles the MailList object, mostly without regard to a known schema.
     assert mlist.Locked(), (
         'Mailing list should be locked: %s', mlist.internal_name())
-    holds = mlist.__dict__.setdefault('held_message_ids', {})
+    # For lists that were created before first-post moderation landed, add the
+    # mapping between message-ids and request-ids.
+    holds = getattr(mlist, 'held_message_ids', None)
+    if holds is None:
+        holds = mlist.held_message_ids = {}
     message_id = msg.get('message-id')
     if message_id is None:
         msg['Message-ID'] = message_id = make_msgid()

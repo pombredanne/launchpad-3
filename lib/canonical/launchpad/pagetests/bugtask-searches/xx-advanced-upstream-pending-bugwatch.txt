@@ -45,7 +45,6 @@ product. He does not provide bug watch information.
     >>> browser.getControl(
     ...     'I just want to register that it is upstream').selected = True
     >>> browser.getControl('Add to Bug Report').click()
-    >>> browser.getControl('Add Anyway').click()
     >>> browser.title
     'Bug #... in alsa-utils: ...Test Bug 1...'
 

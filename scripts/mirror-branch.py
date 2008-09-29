@@ -9,7 +9,7 @@ Do NOT run this script yourself unless you really know what you are doing. Use
 cronscripts/supermirror-pull.py instead.
 
 Usage: scripts/mirror-branch.py source_url dest_url branch_id unique_name \
-                                branch_type oops_prefix
+                                branch_type oops_prefix default_stacked_on_url
 
 Where:
   source_url is the location of the branch to be mirrored.
@@ -19,6 +19,8 @@ Where:
   branch_type is one of HOSTED, MIRRORED, IMPORTED
   oops_prefix is the OOPS prefix to use, unique in the set of running
       instances of this script.
+  default_stacked_on_url is the default stacked-on URL of the product that
+      the branch is in.
 """
 
 # This script does not use the standard Launchpad script framework as it is
@@ -72,7 +74,7 @@ if __name__ == '__main__':
     parser = OptionParser()
     (options, arguments) = parser.parse_args()
     (source_url, destination_url, branch_id, unique_name,
-     branch_type_name, oops_prefix) = arguments
+     branch_type_name, oops_prefix, default_stacked_on_url) = arguments
 
     branch_type = BranchType.items[branch_type_name]
     section_name = 'supermirror_%s_puller' % branch_type_map[branch_type]
@@ -84,4 +86,4 @@ if __name__ == '__main__':
     install_worker_ui_factory(protocol)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
-        protocol, oops_prefix).mirror()
+        default_stacked_on_url, protocol, oops_prefix=oops_prefix).mirror()

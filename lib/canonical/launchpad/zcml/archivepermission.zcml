@@ -1,0 +1,23 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- ArchivePermission -->
+  <content class="canonical.launchpad.database.ArchivePermission">
+    <allow interface="canonical.launchpad.interfaces.IArchivePermission"/>
+  </content>
+
+  <!-- ArchivePermissionSet -->
+  <content class="canonical.launchpad.database.ArchivePermissionSet">
+    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet"/>
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.ArchivePermissionSet"
+    provides="canonical.launchpad.interfaces.IArchivePermissionSet">
+    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet" />
+  </securedutility>
+
+</configure>

@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -57,7 +57,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
@@ -184,16 +184,32 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
-    @property
-    def guessed_language(self):
+    def _findCustomLanguageCode(self, language_code):
+        """Find applicable custom language code, if any."""
+        if self.distroseries is not None:
+            return self.distroseries.distribution.getCustomLanguageCode(
+                self.sourcepackagename, language_code)
+        else:
+            return self.productseries.product.getCustomLanguageCode(
+                language_code)
+
+    def _guessLanguage(self):
         """See ITranslationImportQueueEntry."""
         importer = getUtility(ITranslationImporter)
         if not importer.isTranslationName(self.path):
             # This does not look like the name of a translation file.
             return None
         filename = os.path.basename(self.path)
-        guessed_language, file_ext = os.path.splitext(filename)
-        return guessed_language
+        language_code, file_ext = os.path.splitext(filename)
+
+        custom_language_code = self._findCustomLanguageCode(language_code)
+        if custom_language_code:
+            if custom_language_code.language is None:
+                language_code = None
+            else:
+                language_code = custom_language_code.language.code
+
+        return language_code
 
     @property
     def import_into(self):
@@ -329,18 +345,21 @@ class TranslationImportQueueEntry(SQLBase):
         # We know the IPOTemplate associated with this entry so we can try to
         # detect the right IPOFile.
         # Let's try to guess the language.
-        if not importer.isTranslationName(self.path):
+        guessed_language = self._guessLanguage()
+        if guessed_language is None:
+            # Custom language code says to ignore imports with this language
+            # code.
+            self.status = RosettaImportStatus.DELETED
+            return None
+        elif guessed_language == '':
             # We don't recognize this as a translation file with a name
             # consisting of language code and format extension.  Look for an
             # existing translation file based on path match.
             return self._guessed_pofile_from_path
-
-        filename = os.path.basename(self.path)
-        guessed_language, file_ext = os.path.splitext(filename)
-
-        return self._get_pofile_from_language(guessed_language,
-            self.potemplate.translation_domain,
-            sourcepackagename=self.potemplate.sourcepackagename)
+        else:
+            return self._get_pofile_from_language(guessed_language,
+                self.potemplate.translation_domain,
+                sourcepackagename=self.potemplate.sourcepackagename)
 
     def _guess_multiple_directories_with_pofile(self):
         """Return `IPOFile` that we think is related to this entry, or None.
@@ -383,8 +402,13 @@ class TranslationImportQueueEntry(SQLBase):
         to link the .po and .pot files coming from different packages. The
         solution we take is to look for the translation domain across the
         whole distro series. In the concrete case of KDE language packs, they
-        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'.
+        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'
+        (KDE3) or kde-l10n-LANGCODE (KDE4).
         """
+        # Recognize "kde-i18n-LANGCODE" and "kde-l10n-LANGCODE" as
+        # special cases.
+        kde_prefix_pattern = '^kde-(i18n|l10n)-'
+
         importer = getUtility(ITranslationImporter)
 
         assert is_gettext_name(self.path), (
@@ -397,7 +421,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it with productseries.
             return None
 
-        if self.sourcepackagename.name.startswith('kde-i18n-'):
+        if re.match(kde_prefix_pattern, self.sourcepackagename.name):
             # We need to extract the language information from the package
             # name
 
@@ -410,9 +434,9 @@ class TranslationImportQueueEntry(SQLBase):
                 'zhtw': 'zh_TW',
                 }
 
-            lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
-            if lang_code in lang_mapping:
-                lang_code = lang_mapping[lang_code]
+            lang_code = re.sub(
+                kde_prefix_pattern, '', self.sourcepackagename.name)
+            lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
@@ -470,12 +494,12 @@ class TranslationImportQueueEntry(SQLBase):
                 return None
             translation_domain = potemplate.translation_domain
         else:
-            # The guessed language from the directory doesn't math the
+            # The guessed language from the directory doesn't match the
             # language from the filename. Leave it for an admin.
             return None
 
         if (self.sourcepackagename.name in ('k3b-i18n', 'koffice-l10n') or
-            self.sourcepackagename.name.startswith('kde-i18n-')):
+            re.match(kde_prefix_pattern, self.sourcepackagename.name)):
             # K3b and official KDE packages store translations and code in
             # different packages, so we don't know the sourcepackagename that
             # use the translations.
@@ -687,21 +711,20 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
-        # XXX: This whole set of ifs is a workaround for bug 44773
-        # (Python's gzip support sometimes fails to work when using
-        # plain tarfile.open()). The issue is that we can't rely on
-        # tarfile's smart detection of filetypes and instead need to
+        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
+        # workaround for bug 44773 (Python's gzip support sometimes fails to
+        # work when using plain tarfile.open()). The issue is that we can't
+        # rely on tarfile's smart detection of filetypes and instead need to
         # hardcode the type explicitly in the mode. We simulate magic
         # here to avoid depending on the python-magic package. We can
         # get rid of this when http://bugs.python.org/issue1488634 is
         # fixed.
         #
-        # XXX: Incidentally, this also works around bug #1982 (Python's
-        # bz2 support is not able to handle external file objects). That
-        # bug is worked around by using tarfile.open() which wraps the
-        # fileobj in a tarfile._Stream instance. We can get rid of this
-        # when we upgrade to python2.5 everywhere.
-        #       -- kiko, 2008-02-08
+        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
+        # bug #1982 (Python's bz2 support is not able to handle external file
+        # objects). That bug is worked around by using tarfile.open() which
+        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
+        # this when we upgrade to python2.5 everywhere.
         num_files = 0
 
         if content.startswith('BZh'):
@@ -790,7 +813,8 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status))
+            queries.append(
+                'TranslationImportQueueEntry.status = %s' % sqlvalues(status))
         if file_extensions:
             extension_clauses = [
                 "path LIKE '%%' || %s" % quote_like(extension)
@@ -839,7 +863,8 @@ class TranslationImportQueue:
         if status is None:
             status_clause = "TRUE"
         else:
-            status_clause = "status = %s" % sqlvalues(status)
+            status_clause = (
+                "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
 
         def product_sort_key(product):
             return product.name

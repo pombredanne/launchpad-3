@@ -11,12 +11,7 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
-Branch listing pages now hide dormant branches by default.  Dormant
-branches are branches that have not been updated or committed to for
-some time.  Since this is a time based change all the branches
-are reset here to be recently updated.
-
-    >>> from canonical.launchpad.ftests.branch_helper import (
+    >>> from canonical.launchpad.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
@@ -34,7 +29,7 @@ Adding a private branch that is only visible by No Privileges Person
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = getUtility(IBranchSet).new(
-    ...     BranchType.HOSTED, name='testing-branch', creator=no_priv,
+    ...     BranchType.HOSTED, name='testing-branch', registrant=no_priv,
     ...     owner=no_priv, product=None, url=None, title='A Private Branch')
     >>> branch.private = True
     >>> branch.product = landscape
@@ -96,36 +91,6 @@ Launchpad administrators are able to see all private branches.
     '...~name12/gnome-terminal/scanned...'
 
 
-== Product overview pages ==
-
-On the product overview page there is a portlet to show recently registered
-branches.
-
-    >>> def print_landscape_overview_branches(browser):
-    ...     browser.open('http://launchpad.dev/landscape')
-    ...     branches = find_portlet(browser.contents, 'Latest branches')
-    ...     if branches is None:
-    ...         print 'Latest code portlet not shown'
-    ...     else:
-    ...         for list_item in branches.fetch('li'):
-    ...             print "%r" % list_item.renderContents()
-
-    >>> print_landscape_overview_branches(anon_browser)
-    Latest code portlet not shown
-
-    >>> print_landscape_overview_branches(no_priv_browser)
-    '.../landscape/testing-branch...<img src="/@@/private"...'
-
-    >>> print_landscape_overview_branches(landscape_dev_browser)
-    '.../landscape/feature-x...<img...src="/@@/private"...'
-    '.../landscape/trunk...<img...src="/@@/private"...'
-
-    >>> print_landscape_overview_branches(admin_browser)
-    '.../landscape/testing-branch...<img...src="/@@/private"...'
-    '.../landscape/feature-x...<img...src="/@@/private"...'
-    '.../landscape/trunk...<img...src="/@@/private"...'
-
-
 == Landscape code listing page ==
 
 One of the most obvious places to hide private branches are the code
@@ -134,24 +99,29 @@ listing tab.
     >>> def print_landscape_code_listing(browser):
     ...     browser.open('http://code.launchpad.dev/landscape/+branches')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
-    ...     for row in table.tbody.fetch('tr'):
-    ...         print extract_text(row)
+    ...     # If there are no branches, the table is not shown.
+    ...     # So print the text shown in the application summary.
+    ...     if table is None:
+    ...         print extract_text(find_tag_by_id(
+    ...             browser.contents, 'application-summary'))
+    ...     else:
+    ...         for row in table.tbody.fetch('tr'):
+    ...             print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
-    There are no branches registered for The Landscape Project in Launchpad
-    today...
+    There are no branches for The Landscape Project in Launchpad...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    ~no-priv/landscape/testing-branch      New   ...
+    lp://dev/~no-priv/landscape/testing-branch      New   ...
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
     >>> print_landscape_code_listing(admin_browser)
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
-    ~no-priv/landscape/testing-branch      New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
+    lp://dev/~no-priv/landscape/testing-branch      New   ...
 
 
 == Person code listing pages ==
@@ -199,29 +169,27 @@ viewable branches.
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 12 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
-    Total of 11 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    Total of 10 branches listed
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(landscape_dev_browser, '/+registeredbranches')
     Total of 11 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
     >>> print_person_code_listing(admin_browser)
     Total of 12 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(admin_browser, '/+ownedbranches')
-    Total of 11 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    Total of 10 branches listed
+    lp://dev/~name12/landscape/feature-x            New   ...
     >>> print_person_code_listing(admin_browser, '/+registeredbranches')
     Total of 11 branches listed
-    ~name12/landscape/feature-x            New   ...
-    ~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~landscape-developers/landscape/trunk  New   ...
+    lp://dev/~name12/landscape/feature-x            New   ...
 
 
 == Bug branch links ==
@@ -246,7 +214,7 @@ There are no branches linked to this bug.
 
 Now link to a private branch.
 
-    >>> landscape_dev_browser.getLink('Add branch').click()
+    >>> landscape_dev_browser.getLink('Link a related branch').click()
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()
@@ -309,14 +277,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    Landscape trunk - Landscape Developers
+    lp://dev/~landscape-developers/landscape/trunk - Landscape Developers
 
 But normal people can't.
 

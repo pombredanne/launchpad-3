@@ -181,7 +181,7 @@ enters his search key and hit the 'Search' button.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
 Unfortunately, the search doesn't return any similar questions:
 
@@ -203,7 +203,7 @@ selected. He adds 'Invalid' to the selection, and run his search again.
     >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
     >>> browser.getControl('Invalid').selected = True
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
 This time, the search returns one item.
 
@@ -223,7 +223,7 @@ error is displayed when the user forgets to select a status.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getControl(name='field.status').displayValue = []
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
     >>> messages = find_tags_by_class(browser.contents, 'message')
     >>> print messages[0].renderContents()
     You must choose at least one status.
@@ -257,7 +257,7 @@ selects the 'oldest first' sort order.
 
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('oldest first').selected = True
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
     >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
@@ -301,7 +301,7 @@ dealing with plugins problems, he always start by a search for such
 problems:
 
     >>> browser.getControl(name='field.search_text').value = 'plug-in'
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
@@ -334,7 +334,7 @@ This report is also searchable. He's having a problem with Evolution, so
 he enters 'Evolution' as a keyword and hits the search button.
 
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
     >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
@@ -385,7 +385,7 @@ other statuses and hits the search button.
 
     >>> sample_person_browser.getControl('Open').selected = False
     >>> sample_person_browser.getControl('Invalid').selected = False
-    >>> sample_person_browser.getControl('Search').click()
+    >>> sample_person_browser.getControl('Search', index=0).click()
 
 The exact question he was searching for is displayed!
 
@@ -438,7 +438,7 @@ Like all other report, this one is searchable:
 
     >>> sample_person_browser.getControl(
     ...     name='field.search_text').value = 'evolution'
-    >>> sample_person_browser.getControl('Search').click()
+    >>> sample_person_browser.getControl('Search', index=0).click()
     >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
     >>> search_summary = find_main_content(sample_person_browser.contents)
@@ -512,7 +512,7 @@ questions to a particular status:
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
     >>> browser.getControl(name='field.status').displayValue = [
     ...     'Solved', 'Invalid']
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
@@ -641,7 +641,7 @@ there is an 'In' column displaying where the questions were filed.
 That listing is searchable:
 
     >>> browser.getControl(name='field.search_text').value = 'SVG'
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -704,7 +704,7 @@ Only the default set of statuses is searched:
 When no results are found, a message informs the user of this fact:
 
     >>> browser.getControl(name='field.status').displayValue = ['Expired']
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
     >>> print find_main_content(
     ...     browser.contents).first('p').renderContents()
@@ -715,7 +715,7 @@ display all questions asked in Launchpad with the selected statuses.
 
     >>> browser.getControl(name='field.status').displayValue = ['Open']
     >>> browser.getControl(name='field.search_text').value = ''
-    >>> browser.getControl('Search').click()
+    >>> browser.getControl('Search', index=0).click()
 
     >>> print_questions_with_target(browser.contents)
     Continue playing after shutdown             Ubuntu
@@ -771,7 +771,7 @@ The user can enter a search term and can select one of the matching
 item.
 
     >>> anon_browser.getControl(name='search').value = 'mozilla'
-    >>> anon_browser.getControl('Search').click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print anon_browser.getLink('mozilla').text
     mozilla
     >>> print anon_browser.getLink('mozilla').attrs['onclick']

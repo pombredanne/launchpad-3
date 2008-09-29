@@ -8,7 +8,7 @@ default blueprint page or the default branch page.
 
 == From the branch page ==
 
-There is a "Link to blueprint" item in the actions menu that is visible
+There is a "Link to a blueprint" item in the actions menu that is visible
 to everybody but which links to a page restricted with the
 launchpad.AnyPerson permission.
 
@@ -16,7 +16,7 @@ If the user is not logged in, they will be asked to log in.
 
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/firefox/main')
-    >>> anon_browser.getLink('Link to blueprint').click()
+    >>> anon_browser.getLink('Link to a blueprint').click()
     Traceback (most recent call last):
     ...
     Unauthorized: (...launchpad.AnyPerson')
@@ -39,7 +39,7 @@ product's blueprints.
     >>> printSpecBranchLinks(browser)
     No spec branch links
 
-    >>> browser.getLink('Link to blueprint').click()
+    >>> browser.getLink('Link to a blueprint').click()
     >>> browser.title
     'Link branch ...Mozilla Firefox Mainline... to a blueprint'
 
@@ -50,7 +50,7 @@ product's blueprints.
 
 Attempting to link to the same blueprint again gives an error.
 
-    >>> browser.getLink('Link to blueprint').click()
+    >>> browser.getLink('Link to another blueprint').click()
     >>> browser.getControl('Blueprint').value = ['canvas']
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):

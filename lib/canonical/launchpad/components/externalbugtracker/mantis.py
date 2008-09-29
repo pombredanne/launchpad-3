@@ -16,7 +16,7 @@ from urlparse import urlunparse
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
-    ExternalBugTracker, InvalidBugId, UnknownRemoteStatusError,
+    ExternalBugTracker, InvalidBugId, LookupTree, UnknownRemoteStatusError,
     UnparseableBugData)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
@@ -65,14 +65,14 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             url = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
-        # XXX: Previous versions of the Mantis external bug tracker
-        # fetched login_anon.php in addition to the login.php method
-        # above, but none of the Mantis installations tested actually
-        # needed this. For example, the ALSA bugtracker actually
+        # XXX: Gavin Panella 2007-08-28: Previous versions of the Mantis
+        # external bug tracker fetched login_anon.php in addition to the
+        # login.php method above, but none of the Mantis installations tested
+        # actually needed this. For example, the ALSA bugtracker actually
         # issues an error "Your account may be disabled" when
         # accessing this page. For now it's better to *not* try this
         # page because we may end up annoying admins with spurious
-        # login attempts. -- Gavin Panella, 2007-08-28.
+        # login attempts.
 
         return url
 
@@ -231,14 +231,13 @@ class Mantis(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
+        # XXX: Gavin Panella 2007-09-06 bug=137780:
         # You may find this zero in "\r\n0" funny. Well I don't. This is
         # to work around the fact that Mantis' CSV export doesn't cope
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
         # same number as fields as the header.
-        # XXX: kiko 2007-07-05: Report Mantis bug.
-        # XXX: allenap 2007-09-06: Reported in LP as bug #137780.
         csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:
@@ -460,35 +459,27 @@ class Mantis(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Mantis status', 'Mantis resolution'
+    _status_lookup = (
+        LookupTree(
+            ('assigned', BugTaskStatus.INPROGRESS),
+            ('feedback', BugTaskStatus.INCOMPLETE),
+            ('new', BugTaskStatus.NEW),
+            ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
+            ('resolved', 'closed',
+                LookupTree(
+                    ('reopened', BugTaskStatus.NEW),
+                    ('fixed', 'open', 'no change required',
+                     BugTaskStatus.FIXRELEASED),
+                    ('unable to reproduce', 'not fixable', 'suspended',
+                     'duplicate', BugTaskStatus.INVALID),
+                    ("won't fix", BugTaskStatus.WONTFIX))),
+            )
+        )
+
     def convertRemoteStatus(self, status_and_resolution):
-        remote_status, remote_resolution = status_and_resolution.split(
-            ": ", 1)
-
-        if remote_status == 'assigned':
-            return BugTaskStatus.INPROGRESS
-        if remote_status == 'feedback':
-            return BugTaskStatus.INCOMPLETE
-        if remote_status in ['new']:
-            return BugTaskStatus.NEW
-        if remote_status in ['confirmed', 'acknowledged']:
-            return BugTaskStatus.CONFIRMED
-        if remote_status in ['resolved', 'closed']:
-            if remote_resolution == 'fixed':
-                return BugTaskStatus.FIXRELEASED
-            if remote_resolution == 'reopened':
-                return BugTaskStatus.NEW
-            if remote_resolution in ["unable to reproduce", "not fixable",
-                                     'suspended']:
-                return BugTaskStatus.INVALID
-            if remote_resolution == "won't fix":
-                return BugTaskStatus.WONTFIX
-            if remote_resolution == 'duplicate':
-                # XXX: kiko 2007-07-05: Follow duplicates
-                return BugTaskStatus.INVALID
-            if remote_resolution in ['open', 'no change required']:
-                # XXX: kiko 2007-07-05: Pretty inconsistently used
-                return BugTaskStatus.FIXRELEASED
-
-        raise UnknownRemoteStatusError()
-
-
+        status, importance = status_and_resolution.split(": ", 1)
+        try:
+            return self._status_lookup.find(status, importance)
+        except KeyError:
+            raise UnknownRemoteStatusError(status_and_resolution)

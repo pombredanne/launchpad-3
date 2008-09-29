@@ -34,8 +34,8 @@ and BugWatch instances with which to work.
 
 The ISupportsCommentImport interface defines the methods that external
 bug trackers which support comment imports must provide. This interface
-defines three methods: getCommentIds(), getPosterForComment() and
-getMessageForComment().
+defines four methods: getCommentIds(), fetchComments(),
+getPosterForComment() and getMessageForComment().
 
 In order to test the importing of comments we will create a new
 ExternalBugTracker class which implements these three methods.
@@ -47,15 +47,21 @@ ExternalBugTracker class which implements these three methods.
     >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
     ...     implements(ISupportsCommentImport)
     ...
-    ...     comment_dict = {
+    ...     comment_dict = {}
+    ...     remote_comments = {
     ...         '1': "Example comment the first",
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
     ...
     ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
     ...
+    ...     def fetchComments(self, bug_watch, comment_ids):
+    ...         for id, comment in self.remote_comments.items():
+    ...             if id in comment_ids:
+    ...                 self.comment_dict[id] = comment
+    ...
     ...     def getCommentIds(self, bug_watch):
-    ...         return sorted(self.comment_dict.keys())
+    ...         return sorted(self.remote_comments.keys())
     ...
     ...     def getPosterForComment(self, bug_watch, comment_id):
     ...         """Return a tuple of (displayname, email)."""
@@ -84,44 +90,128 @@ comments in the comment_dict being imported into Launchpad.
     INFO:...:Imported 3 comments for remote bug 123456 on ...
 
 These three comments will be linked to the bug watch from which they
-were imported.
+were imported. They also have the remote_comment_id attribute set.
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
-    >>> for message in bug.messages[1:]:
-    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-    ...         bug, message)
-    ...     bug_message.bugwatch == bug_watch
-    ...     print bug_message.message.text_contents
+    >>> def print_bug_messages(bug, bug_watch):
+    ...     for message in bug.messages[1:]:
+    ...         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...             bug, message)
+    ...         print bug_message.bugwatch == bug_watch
+    ...         print "%s: %s" % (
+    ...             bug_message.remote_comment_id,
+    ...             bug_message.message.text_contents)
+    >>> print_bug_messages(bug, bug_watch)
     True
-    Example comment the first
+    1: Example comment the first
     True
-    Example comment the second
+    2: Example comment the second
     True
-    Example comment the third
+    3: Example comment the third
 
 If another comment is added on the remote tracker and the comment import
 process is run again only the new comment will be imported.
 
-    >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
+    >>> external_bugtracker.remote_comments['four'] = "Yet another comment."
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456 on ...
 
 Once again, the newly-imported comment will be linked to the bug watch
 form which it was imported.
 
-    >>> for message in bug.messages[1:]:
-    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-    ...         bug, message)
-    ...     bug_message.bugwatch == bug_watch
-    ...     print bug_message.message.text_contents
+    >>> print_bug_messages(bug, bug_watch)
     True
-    Example comment the first
+    1: Example comment the first
     True
-    Example comment the second
+    2: Example comment the second
     True
-    Example comment the third
+    3: Example comment the third
     True
+    four: Yet another comment.
+
+
+== Creating Person records ==
+
+In the examples above, joe.bloggs@example.com was used as the poster of
+all the comments. Since Joe didn't have a Launchpad account, it was
+created automatically for him, with the e-mail address marked as
+invalid.
+
+    >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
+    >>> bug.messages[-1].owner == joe
+    True
+
+    >>> joe.displayname
+    u'Joe Bloggs'
+    >>> print joe.preferredemail
+    None
+    >>> print joe.creation_rationale.name
+    BUGIMPORT
+    >>> print joe.creation_comment
+    when importing comments for Bugzilla *TESTING* #123456.
+
+If the poster's e-mail is already registered in Launchpad, the comment
+is associated with the existing account.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.preferredemail is not None
+    True
+    >>> external_bugtracker.poster_tuple = (
+    ...     'No Priv', 'no-priv@canonical.com')
+    >>> external_bugtracker.remote_comments['no-priv-comment'] = (
+    ...     "The fifth comment.")
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'no-priv'
+
+It's also possible for Launchpad to create Persons from remote
+bugtracker users when the remote bugtracker doesn't specify an email
+address. In those cases, the ExternalBugTracker's getPosterForComment()
+method will return a tuple of (displayname, None), which can then be
+used to create a Person based on the displayname alone.
+
+    >>> external_bugtracker.poster_tuple = ('noemail', None)
+    >>> external_bugtracker.remote_comments['no-email-comment'] = (
+    ...     "Yet another comment.")
+
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'noemail-bugzilla-checkwatches-1'
+
+    >>> print bug.messages[-1].owner.preferredemail
+    None
+
+A BugTrackerPerson record will have been created to map the new Person
+to the name 'noemail' on our example bugtracker.
+
+    >>> bug_watch.bugtracker.getLinkedPersonByName('noemail')
+    <BugTrackerPerson at ...>
+
+If the remote person is invalid (i.e. a Launchpad Person can't be
+created for them) an error will be logged and the comment will not be
+imported.
+
+    >>> external_bugtracker.poster_tuple = (None, None)
+    >>> external_bugtracker.remote_comments['invalid-person-comment'] = (
+    ...     "This will not be imported.")
+
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    WARNING:...:Unable to import remote comment author. No email address
+    or display name found.
+
+    >>> print bug.messages[-1].text_contents
     Yet another comment.
+
+Let's delete that comment now so that it doesn't break later tests.
+
+    >>> del external_bugtracker.remote_comments['invalid-person-comment']
+    >>> external_bugtracker.poster_tuple = (
+    ...     'No Priv', 'no-priv@canonical.com')
+
 
 == BugWatch comment importing functionality ==
 
@@ -136,7 +226,7 @@ linking it to the bug watch this method will, of course, return False.
     >>> message = getUtility(IMessageSet).fromText(
     ...     "Example Message", "With example content for you to read.")
 
-    >>> comment_id = message.rfc822msgid
+    >>> comment_id = 'a-comment'
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 
@@ -147,9 +237,13 @@ IBugWatch provides an addComment() method by which comments can be
 linked to a bug watch. This method accepts a Launchpad Message object
 representing the comment itself and a comment_id paramter, which can be
 used to pass the ID of the comment on the remote bug tracker from which
-the comment was imported.
+the comment was imported. It returns the created IBugMessage.
 
-    >>> bug_watch.addComment(comment_id, message)
+    >>> bug_messsage = bug_watch.addComment(comment_id, message)
+    >>> bug_messsage.bug == bug_watch.bug
+    True
+    >>> bug_messsage.message == message
+    True
 
 After using addComment() to add a comment, hasComment() will return True
 for that comment.
@@ -166,6 +260,28 @@ message and the bug to which the watch belongs.
 
     >>> bug_message.bugwatch == bug_watch
     True
+
+The list of imported messages can be retrieved using
+getImportedBugMessages().
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> factory = LaunchpadObjectFactory()
+    >>> bug_watch2 = factory.makeBugWatch('42')
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Imported comment', bugwatch=bug_watch2)
+    <Message at ...>
+    >>> bug_watch2.bug.newMessage(
+    ...     owner=bug_watch2.bug.owner, subject='None',
+    ...     content='Native comment')
+    <Message at ...>
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> for bug_message in bug_watch2.getImportedBugMessages():
+    ...     print bug_message.message.text_contents
+    Imported comment
 
     >>> commit()
 
@@ -211,6 +327,7 @@ DebBugs database. The message is linked to the bug watch for which it
 was imported.
 
     >>> bug_watch.addComment(message_two.rfc822msgid, message_two)
+    <BugMessage at ...>
     >>> bug_watch.hasComment(message_two.rfc822msgid)
     True
 
@@ -239,7 +356,6 @@ import process.
 
 We'll add a listener to check for Karma events.
 
-    >>> from zope.event import notify
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
@@ -247,12 +363,16 @@ We'll add a listener to check for Karma events.
 Importing a comment with a CVE reference will produce a CVE link in
 Launchpad but will result in no Karma records being created.
 
-    >>> external_bugtracker.comment_dict['5'] = (
-    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('123456')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> external_bugtracker.remote_comments = {
+    ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in bug.cves:
+    >>> for cve in bug_watch.bug.cves:
     ...     print cve.displayname
     CVE-1991-9911
 
@@ -264,18 +384,41 @@ includes a CVE reference appear to come from a valid Launchpad user.
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> external_bugtracker.poster_tuple = (
     ...     foo_bar.displayname, foo_bar.preferredemail.email)
-    >>> external_bugtracker.comment_dict['6'] = (
+    >>> external_bugtracker.remote_comments['6'] = (
     ...     "Another comment, another CVE: CVE-1999-0593.")
 
 Once again, CVE links are created but no karma is assigned.
 
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
-    INFO:...:Imported 2 comments for remote bug 123456...
+    INFO:...:Imported 1 comments for remote bug 123456...
 
-    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    >>> for cve in sorted([cve.displayname for cve in bug_watch.bug.cves]):
     ...     print cve
     CVE-1991-9911
     CVE-1999-0593
 
     >>> karma_helper.unregister_listener()
+
+== E-mail notifications ==
+
+When a comment is imported, a BugNotification record is created, so that
+an e-mail notification is sent about the comment.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('42')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> external_bugtracker.remote_comments = {
+    ...     '1': 'First imported comment',
+    ...     }
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 42 ...
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> latest_notification.bug.id == bug_watch.bug.id
+    True
+    >>> print latest_notification.message.text_contents
+    First imported comment
+

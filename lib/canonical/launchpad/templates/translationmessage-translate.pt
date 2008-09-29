@@ -6,23 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-
   <body>
-
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/pofile/@@+portlet-about" />
-      <div tal:replace="structure context/pofile/@@+portlet-details" />
-      <div tal:replace="structure context/pofile/@@+portlet-stats" />
-    </metal:leftportlets>
-
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/pofile/@@+portlet-translators" />
-      <div tal:replace="structure context/pofile/@@+portlet-contributors" />
-    </metal:rightportlets>
-
     <div metal:fill-slot="main">
 
       <div>
@@ -31,6 +18,7 @@
           evolution 2.10 template
         </a>
       </div>
+
       <tal:form-not-writeable condition="not:view/form_is_writeable">
         <h1>
           Browsing
@@ -61,11 +49,11 @@
               show the second language as a source of suggestions when
               translating into the first.
             </tal:comment>
-            <label>Make suggestions from:</label>
-            <tal:language-widget
-              content="structure view/alternative_language_widget" />
-            <input
-              type="submit" name="select_alternate_language" value="Change" />
+            <label>Using
+              <tal:language-widget
+                content="structure view/alternative_language_widget" />
+              as a guide</label>
+            <input type="submit" value="Change" />
           </form>
         </div>
 
@@ -91,26 +79,21 @@
             </tbody>
             <tfoot>
               <tr tal:condition="view/form_is_writeable">
-                <th colspan="5">
-                  <tal:review
-                    condition="not: view/user_is_official_translator"
-                  >
-                    Your translations will be held for review by the official
-                    translators for this file.
-                  </tal:review>
+                <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
-                         value="Save &amp; Continue"
-                         style="text-align: right;" />
+                         value="Save &amp; Continue" />
                 </th>
               </tr>
             </tfoot>
           </table>
 
         </form>
+
         <!-- Paging doodads. -->
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
+      <tal:status replace="structure context/pofile/@@+access" />
       </tal:havepluralforms>
     </div>
 

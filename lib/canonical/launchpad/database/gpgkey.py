@@ -21,6 +21,7 @@ class GPGKey(SQLBase):
     implements(IGPGKey)
 
     _table = 'GPGKey'
+    _defaultOrder = ['owner', 'keyid']
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
@@ -51,28 +52,35 @@ class GPGKeySet:
 
     def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=False):
-        """See IGPGKeySet"""
+        """See `IGPGKeySet`"""
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
 
     def get(self, key_id, default=None):
-        """See IGPGKeySet"""
+        """See `IGPGKeySet`"""
         try:
             return GPGKey.get(key_id)
         except SQLObjectNotFound:
             return default
 
     def getByFingerprint(self, fingerprint, default=None):
-        """See IGPGKeySet"""
+        """See `IGPGKeySet`"""
         result = GPGKey.selectOneBy(fingerprint=fingerprint)
         if result is None:
             return default
         return result
 
+    def getGPGKeysForPeople(self, people):
+        """See `IGPGKeySet`"""
+        return GPGKey.select("""
+            GPGKey.owner IN %s AND
+            GPGKey.active = True
+            """ % sqlvalues([person.id for person in people]))
+
     def getGPGKeys(self, ownerid=None, active=True):
-        """See IGPGKeySet"""
+        """See `IGPGKeySet`"""
         if active is False:
             query = """
                 active = false
@@ -90,5 +98,4 @@ class GPGKeySet:
             query += ' AND owner=%s' % sqlvalues(ownerid)
 
         return GPGKey.select(query, orderBy='id')
-
 

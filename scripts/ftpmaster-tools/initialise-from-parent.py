@@ -59,8 +59,8 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     try:
         # 'ubuntu' is the default option.distribution value

@@ -8,8 +8,9 @@ __metaclass__ = type
 import unittest
 import time
 
-import psycopg
-from canonical.database.postgresql import resetSequences
+import psycopg2
+from canonical.database.postgresql import (
+    generateResetSequencesSQL, resetSequences)
 
 
 class ConnectionWrapper(object):
@@ -29,7 +30,7 @@ class ConnectionWrapper(object):
             PgTestSetup.connections.remove(self)
             self.__dict__['real_connection'].close()
 
-    def rollback(self, InterfaceError=psycopg.InterfaceError):
+    def rollback(self, InterfaceError=psycopg2.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
         # circumstances. Silently ignoring this is probably not correct,
         # but the alternative is wasting further time chasing this
@@ -38,7 +39,7 @@ class ConnectionWrapper(object):
         # Need to store InterfaceError cleverly, otherwise it may have been
         # GCed when the world is being destroyed, leading to an odd
         # AttributeError with
-        #   except psycopg.InterfaceError:
+        #   except psycopg2.InterfaceError:
         # -- SteveAlexander 2005-03-22
         try:
             self.__dict__['real_connection'].rollback()
@@ -113,13 +114,13 @@ def fake_connect(*args, **kw):
 def installFakeConnect():
     global _org_connect
     assert _org_connect is None
-    _org_connect = psycopg.connect
-    psycopg.connect = fake_connect
+    _org_connect = psycopg2.connect
+    psycopg2.connect = fake_connect
 
 def uninstallFakeConnect():
     global _org_connect
     assert _org_connect is not None
-    psycopg.connect = _org_connect
+    psycopg2.connect = _org_connect
     _org_connect = None
 
 
@@ -138,7 +139,7 @@ class PgTestSetup(object):
     _reset_db = True
 
     def __init__(self, template=None, dbname=None, dbuser=None,
-            host=None, port=None):
+            host=None, port=None, reset_sequences_sql=None):
         '''Construct the PgTestSetup
 
         Note that dbuser is not used for setting up or tearing down
@@ -154,6 +155,7 @@ class PgTestSetup(object):
             self.host = host
         if port is not None:
             self.port = port
+        self.reset_sequences_sql = reset_sequences_sql
 
     def _connectionString(self, dbname, dbuser=None):
         connection_parameters = ['dbname=%s' % dbname]
@@ -164,6 +166,15 @@ class PgTestSetup(object):
         if self.port is not None:
             connection_parameters.append('port=%s' % self.host)
         return ' '.join(connection_parameters)
+
+    def generateResetSequencesSQL(self):
+        """Return a SQL statement that resets all sequences."""
+        con = psycopg2.connect(self._connectionString(self.dbname))
+        cur = con.cursor()
+        try:
+            return generateResetSequencesSQL(cur)
+        finally:
+            con.close()
 
     def setUp(self):
         '''Create a fresh database (dropping the old if necessary)
@@ -179,9 +190,12 @@ class PgTestSetup(object):
             # anyway (because they might have been incremented even if
             # nothing was committed), making sure not to disturb the
             # 'committed' flag, and we're done.
-            con = psycopg.connect(self._connectionString(self.dbname))
+            con = psycopg2.connect(self._connectionString(self.dbname))
             cur = con.cursor()
-            resetSequences(cur)
+            if self.reset_sequences_sql is None:
+                resetSequences(cur)
+            else:
+                cur.execute(self.reset_sequences_sql)
             con.commit()
             con.close()
             ConnectionWrapper.committed = False
@@ -194,7 +208,7 @@ class PgTestSetup(object):
         # template database that are slow in dropping off.
         attempts = 60
         for counter in range(0, attempts):
-            con = psycopg.connect(self._connectionString(self.template))
+            con = psycopg2.connect(self._connectionString(self.template))
             try:
                 con.set_isolation_level(0)
                 cur = con.cursor()
@@ -204,7 +218,7 @@ class PgTestSetup(object):
                         "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
                     break
-                except psycopg.ProgrammingError, x:
+                except psycopg2.DatabaseError, x:
                     if counter == attempts - 1:
                         raise
                     x = str(x)
@@ -234,7 +248,7 @@ class PgTestSetup(object):
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
-        con = psycopg.connect(
+        con = psycopg2.connect(
             self._connectionString(self.dbname, self.dbuser)
             )
         if isinstance(con, ConnectionWrapper):
@@ -250,8 +264,8 @@ class PgTestSetup(object):
         attempts = 100
         for i in range(0, attempts):
             try:
-                con = psycopg.connect(self._connectionString(self.template))
-            except psycopg.OperationalError, x:
+                con = psycopg2.connect(self._connectionString(self.template))
+            except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
                     return
                 raise
@@ -264,7 +278,7 @@ class PgTestSetup(object):
                 try:
                     cur = con.cursor()
                     cur.execute('SELECT _killall_backends(%s)', [self.dbname])
-                except psycopg.ProgrammingError:
+                except psycopg2.DatabaseError:
                     pass
 
                 # Drop the database, trying for a number of seconds in case
@@ -272,7 +286,7 @@ class PgTestSetup(object):
                 try:
                     cur = con.cursor()
                     cur.execute('DROP DATABASE %s' % self.dbname)
-                except psycopg.ProgrammingError, x:
+                except psycopg2.DatabaseError, x:
                     if i == attempts - 1:
                         # Too many failures - raise an exception
                         raise

@@ -440,7 +440,7 @@ class ImportBugTestCase(unittest.TestCase):
         # There are two bug watches
         self.assertEqual(bug.watches.count(), 2)
         self.assertEqual(sorted(watch.url for watch in bug.watches),
-                         ['http://bugzilla.gnome.org/bugs/show_bug.cgi?id=43',
+                         ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
                           'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):
@@ -708,6 +708,7 @@ class TestBugWatch:
         self.remotebug = str(self.id)
         self.bug = bug
         self.failing = failing
+        self.url = 'http://bugs.example.com/issues/%d' % id
 
     def updateStatus(self, new_remote_status, new_malone_status):
         """See `IBugWatch`."""

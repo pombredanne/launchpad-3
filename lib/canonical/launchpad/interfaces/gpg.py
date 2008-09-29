@@ -26,7 +26,7 @@ from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
 # needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
 class GPGKeyAlgorithm(DBEnumeratedType):
     """
-    GPG Compilant Key Algorithms Types:
+    GPG Compliant Key Algorithms Types:
 
     1 : "R", # RSA
     16: "g", # ElGamal
@@ -75,6 +75,8 @@ class IGPGKey(IHasOwner):
     keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
     can_encrypt = Bool(title=_("Key can be used for encryption"),
                        required=True)
+    owner = Int(title=_('Person'), required=True, readonly=True)
+    ownerID = Int(title=_('Owner ID'), required=True, readonly=True)
 
 
 class IGPGKeySet(Interface):
@@ -100,4 +102,7 @@ class IGPGKeySet(Interface):
 
         Optionally for a given owner and or a given status.
         """
+
+    def getGPGKeysForPeople(self, people):
+        """Return OpenPGP keys for a set of people."""
 

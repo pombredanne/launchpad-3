@@ -1,10 +1,11 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0322
 
 """Views, navigation and actions for BranchMergeProposals."""
 
 __metaclass__ = type
 __all__ = [
-    'BranchMergeProposalSOP',
+    'BranchMergeCandidateView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
@@ -12,53 +13,113 @@ __all__ = [
     'BranchMergeProposalEnqueueView',
     'BranchMergeProposalInlineDequeueView',
     'BranchMergeProposalJumpQueueView',
+    'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
+    'BranchMergeProposalPrimaryContext',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
+    'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
+    'BranchMergeProposalVoteLinkView',
+    'BranchMergeProposalVoteView',
     'BranchMergeProposalWorkInProgressView',
     ]
 
-from zope.interface import Interface
-from zope.schema import Int
+import operator
+
+from zope.component import getUtility
+from zope.event import notify as zope_notify
+from zope.formlib import form
+from zope.interface import Interface, implements
+from zope.schema import Int, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.fields import Summary, Whiteboard
+from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
-    IStructuralObjectPresentation)
+    IMessageSet,
+    WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    CodeReviewVote)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
+from canonical.launchpad.mailout.branchmergeproposal import (
+    BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadView, action)
-from canonical.launchpad.webapp.menu import structured
+    LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
+
+from canonical.lazr import decorates
 
 
-class BranchMergeProposalSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IBranchMergeProposal`.
+class BranchMergeProposalPrimaryContext:
+    """The primary context is the proposal is that of the source branch."""
 
-    Delegates the method calls to the SOP of the source branch.
-    """
-    def __init__(self, context):
-        StructuralObjectPresentation.__init__(self, context)
-        self.delegate = IStructuralObjectPresentation(
-            self.context.source_branch)
+    implements(IPrimaryContext)
 
-    def getIntroHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getIntroHeading()
+    def __init__(self, branch_merge_proposal):
+        self.context = IPrimaryContext(
+            branch_merge_proposal.source_branch).context
 
-    def getMainHeading(self):
-        """See `IStructuralHeaderPresentation`."""
-        return self.delegate.getMainHeading()
+
+def notify(func):
+    """Decorate a view method to send a notification."""
+    def decorator(view, *args, **kwargs):
+        snapshot = BranchMergeProposalDelta.snapshot(view.context)
+        result = func(view, *args, **kwargs)
+        zope_notify(SQLObjectModifiedEvent(view.context, snapshot, []))
+        return result
+    return decorator
+
+
+def update_and_notify(func):
+    """Decorate an action to update from a form and send a notification."""
+    @notify
+    def decorator(view, action, data):
+        result = func(view, action, data)
+        form.applyChanges(
+            view.context, view.form_fields, data, view.adapters)
+        return result
+    return decorator
+
+
+class BranchMergeCandidateView(LaunchpadView):
+    """Provides a small fragment of landing targets"""
+
+    def friendly_text(self):
+        """Prints friendly text for a branch."""
+        friendly_texts = {
+            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
+            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
+            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
+            BranchMergeProposalStatus.REJECTED : 'Rejected',
+            BranchMergeProposalStatus.MERGED : 'Merged',
+            BranchMergeProposalStatus.MERGE_FAILED :
+                'Approved [Merge Failed]',
+            BranchMergeProposalStatus.QUEUED : 'Queued',
+            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
+            }
+        return friendly_texts[self.context.queue_status]
+
+    @property
+    def queue_location(self):
+        """The location of the queue view."""
+        # Will point to the target_branch queue, or the queue
+        # with multiple targets if specified.
+        return canonical_url(self.context.target_branch) + '/+merge-queue'
 
 
 class BranchMergeProposalContextMenu(ContextMenu):
@@ -66,7 +127,12 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'review', 'merge', 'enqueue', 'dequeue', 'resubmit']
+             'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
+             'resubmit', 'update_merge_revno']
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def add_comment(self):
+        return Link('+comment', 'Add a comment/review', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -78,7 +144,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete proposal to merge'
-        return Link('+delete', text, icon='edit')
+        return Link('+delete', text, icon='remove')
 
     def _enabledForStatus(self, next_state):
         """True if the next_state is a valid transition for the current user.
@@ -96,49 +162,59 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Work in progress'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        return Link('+work-in-progress', text, icon='edit', enabled=enabled)
+        return Link('+work-in-progress', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
-        text = 'Request review'
+        text = 'Request a review'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.NEEDS_REVIEW)
-        return Link('+request-review', text, icon='edit', enabled=enabled)
+        if (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW):
+            enabled = True
+            if (self.context.votes.count()) > 0:
+                text = 'Request another review'
+        return Link('+request-review', text, icon='add', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def review(self):
         text = 'Review proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.CODE_APPROVED)
-        return Link('+review', text, icon='edit', enabled=enabled)
+        return Link('+review', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.MERGED)
-        return Link('+merged', text, icon='edit', enabled=enabled)
+        return Link('+merged', text, enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def update_merge_revno(self):
+        text = 'Update revision number'
+        return Link('+merged', text)
 
     @enabled_with_permission('launchpad.Edit')
     def enqueue(self):
         text = 'Queue for merging'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.QUEUED)
-        return Link('+enqueue', text, icon='edit', enabled=enabled)
+        return Link('+enqueue', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def dequeue(self):
         text = 'Remove from queue'
         enabled = (self.context.queue_status ==
                    BranchMergeProposalStatus.QUEUED)
-        return Link('+dequeue', text, icon='edit', enabled=enabled)
+        return Link('+dequeue', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def resubmit(self):
         text = 'Resubmit proposal'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
-        return Link('+resubmit', text, icon='edit', enabled=enabled)
+        return Link('+resubmit', text, enabled=enabled)
 
 
 class UnmergedRevisionsMixin:
@@ -174,8 +250,8 @@ class BranchMergeProposalRevisionIdMixin:
         if source_branch.branch_type == BranchType.REMOTE:
             return revision_id
         else:
-            branch_revision = source_branch.getBranchRevisionByRevisionId(
-                revision_id)
+            branch_revision = source_branch.getBranchRevision(
+                revision_id=revision_id)
             if branch_revision is None:
                 return "no longer in the source branch."
             elif branch_revision.sequence is None:
@@ -197,6 +273,23 @@ class BranchMergeProposalRevisionIdMixin:
             self.context.queued_revision_id)
 
 
+class BranchMergeProposalNavigation(Navigation):
+    """Navigation from BranchMergeProposal to CodeReviewComment views."""
+
+    usedfor = IBranchMergeProposal
+
+    @stepthrough('comments')
+    def traverse_comment(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getComment(id)
+        except WrongBranchMergeProposal:
+            return None
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -211,6 +304,112 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         # with multiple targets if specified.
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
+    @property
+    def comment_location(self):
+        """Location of page for commenting on this proposal."""
+        return canonical_url(self.context, view_name='+comment')
+
+    @property
+    def comments(self):
+        """Return comments associated with this proposal, plus styling info.
+
+        Comments are in threaded order, and the style indicates indenting
+        for use with threads.
+        """
+        message_to_comment = {}
+        messages = []
+        for comment in self.context.all_comments:
+            message_to_comment[comment.message] = comment
+            messages.append(comment.message)
+        message_set = getUtility(IMessageSet)
+        threads = message_set.threadMessages(messages)
+        result = []
+        for depth, message in message_set.flattenThreads(threads):
+            comment = message_to_comment[message]
+            style = 'margin-left: %dem;' % (2 * depth)
+            result.append(dict(style=style, comment=comment))
+        return result
+
+    @property
+    def has_bug_or_spec(self):
+        """Return whether or not the merge proposal has a linked bug or spec.
+        """
+        branch = self.context.source_branch
+        return branch.bug_branches or branch.spec_links
+
+
+class DecoratedCodeReviewVoteReference:
+    """Provide a code review vote that knows if it is important or not."""
+
+    decorates(ICodeReviewVoteReference)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def reviewer_relationship(self):
+        """The relationship of the reviewer to the code review."""
+        vote = self.context
+        if vote.reviewer != vote.registrant:
+            return _("Requested reviewer")
+        target_branch = vote.branch_merge_proposal.target_branch
+        if vote.reviewer.inTeam(target_branch.code_reviewer):
+            return _("Target branch reviewer")
+        else:
+            return None
+
+    @property
+    def date_of_comment(self):
+        """The date of the comment, not the date_created of the vote."""
+        return self.context.comment.message.datecreated
+
+
+class BranchMergeProposalVoteView(LaunchpadView):
+    """The view used for the tables of votes and requested reviews."""
+
+    __used_for__ = IBranchMergeProposal
+
+    # Show hyperlinks to the comments?
+    show_comment_links = False
+
+    @cachedproperty
+    def reviews(self):
+        """Return the decorated votes for the proposal."""
+        return [DecoratedCodeReviewVoteReference(vote)
+                for vote in self.context.votes]
+
+    def _getOrderedReviews(self, actual_vote):
+        """Return votes with the specified vote ordered newest first."""
+        reviews = [review for review in self.reviews
+                   if (review.comment is not None and
+                       review.comment.vote == actual_vote)]
+        return sorted(reviews, key=operator.attrgetter('date_of_comment'),
+                      reverse=True)
+
+    @property
+    def current_reviews(self):
+        """The current votes ordered by vote then date."""
+        # We want the reviews in a specific order.
+        # Disapprovals first, then approvals, then abstentions.
+        return (self._getOrderedReviews(CodeReviewVote.DISAPPROVE) +
+                self._getOrderedReviews(CodeReviewVote.APPROVE) +
+                self._getOrderedReviews(CodeReviewVote.ABSTAIN))
+
+    @property
+    def requested_reviews(self):
+        """Reviews requested but not yet done."""
+        reviews = [review for review in self.reviews
+                   if review.comment is None]
+        # Now sort so the most recently created is first.
+        return sorted(reviews, key=operator.attrgetter('date_created'),
+                      reverse=True)
+
+class BranchMergeProposalVoteLinkView(BranchMergeProposalVoteView):
+    """A view to show the votes with hyperlinks to the comments."""
+
+    # Show hyperlinks to the comments?
+    show_comment_links = True
+
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
     """The view used to set a proposal back to 'work in progress'."""
@@ -223,15 +422,14 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     @action('Set as work in progress', name='wip')
+    @notify
     def wip_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.setAsWorkInProgress()
         self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
@@ -240,26 +438,68 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
                           "mark as 'Work in progress'.")
 
 
+class IReviewRequest(Interface):
+    """Schema for requesting a review."""
+
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes about the merge.'))
+
+    review_candidate = PublicPersonChoice(
+        title=_('Reviewer'), required=False,
+        description=_('A person who you want to review this.'),
+        vocabulary='ValidPersonOrTeam')
+
+    review_type = TextLine(
+        title=_('Review type'), required=False)
+
+
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
-    schema = IBranchMergeProposal
-    field_names = ["whiteboard"]
+    schema = IReviewRequest
     label = "Request review"
+
+    @property
+    def initial_values(self):
+        """Force the non-BMP values to None."""
+        return {'review_candidate': None, 'review_type': None}
+
+    @property
+    def adapters(self):
+        """Force IReviewRequest handling for BranchMergeProposal."""
+        return {IReviewRequest: self.context}
+
+    @property
+    def is_needs_review(self):
+        """Return True if queue status is NEEDS_REVIEW."""
+        return (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action('Request review', name='review')
-    def review_action(self, action, data):
-        """Set the status to 'Needs review'."""
-        self.context.requestReview()
-        self.updateContextFromData(data)
+    cancel_url = next_url
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
+    def requestReview(self, candidate, review_type):
+        """Request a `review_type` review from `candidate` and email them."""
+        vote_reference = self.context.nominateReviewer(
+            candidate, self.user, review_type)
+        reason = RecipientReason.forReviewer(vote_reference, candidate)
+        mailer = BMPMailer.forReviewRequest(reason, self.context, self.user)
+        mailer.sendAll()
+
+    @action('Request review', name='review')
+    @notify
+    def review_action(self, action, data):
+        """Set 'Needs review' status, nominate reviewers, send emails."""
+        self.context.requestReview()
+        candidate = data.pop('review_candidate', None)
+        review_type = data.pop('review_type', None)
+        if candidate is not None:
+            self.requestReview(candidate, review_type)
+        form.applyChanges(self, self.form_fields, data, self.adapters)
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
@@ -285,14 +525,12 @@ class MergeProposalEditView(LaunchpadEditFormView,
                             BranchMergeProposalRevisionIdMixin):
     """A base class for merge proposal edit views."""
 
-    @property
-    def next_url(self):
-        # Since the property stops inherited classes from specifying
-        # an explicit next_url, have this property look for a _next_url
-        # and use that if found, and if one is not set, then use the
-        # canonical_url of the context (the merge proposal itself) as
-        # the default.
-        return getattr(self, '_next_url', canonical_url(self.context))
+    def initialize(self):
+        # Record next_url and cancel url now
+        self.next_url = canonical_url(self.context)
+        self.cancel_url = self.next_url
+        super(MergeProposalEditView, self).initialize()
+
 
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
@@ -303,10 +541,10 @@ class MergeProposalEditView(LaunchpadEditFormView,
         source_branch = self.context.source_branch
         # Get the revision number out of the data.
         if source_branch.branch_type == BranchType.REMOTE:
-            return data.pop('revision_number')
+            return str(data.pop('revision_number'))
         else:
             branch_revision = source_branch.getBranchRevision(
-                data.pop('revision_number'))
+                sequence=data.pop('revision_number'))
             return branch_revision.revision.revision_id
 
     def _validateRevisionNumber(self, data, revision_name):
@@ -346,18 +584,13 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     field_names = ["whiteboard"]
 
     @action('Resubmit', name='resubmit')
+    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        self.updateContextFromData(data)
         proposal = self.context.resubmit(self.user)
         self.request.response.addInfoNotification(_(
             "Please update the whiteboard for the new proposal."))
-        self._next_url = canonical_url(proposal) + "/+edit"
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
-        self.next_url = canonical_url(self.context)
+        self.next_url = canonical_url(proposal) + "/+edit"
 
 
 class BranchMergeProposalReviewView(MergeProposalEditView,
@@ -378,20 +611,16 @@ class BranchMergeProposalReviewView(MergeProposalEditView,
         return {'revision_number': self.context.source_branch.revision_count}
 
     @action('Approve', name='approve')
+    @update_and_notify
     def approve_action(self, action, data):
         """Set the status to approved."""
         self.context.approveBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
 
     @action('Reject', name='reject')
+    @update_and_notify
     def reject_action(self, action, data):
         """Set the status to rejected."""
         self.context.rejectBranch(self.user, self._getRevisionId(data))
-        self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
@@ -405,16 +634,12 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
-    field_names = ["whiteboard"]
+    field_names = ["commit_message", "whiteboard"]
 
     @action('Update', name='update')
     def update_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
 
 
 class BranchMergeProposalDeleteView(MergeProposalEditView):
@@ -435,11 +660,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
         """Delete the merge proposal and go back to the source branch."""
         self.context.deleteProposal()
         # Override the next url to be the source branch.
-        self._next_url = canonical_url(self.source_branch)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
+        self.next_url = canonical_url(self.source_branch)
 
 
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
@@ -450,28 +671,29 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
 
     @property
     def initial_values(self):
-        # Default to reviewing the tip of the source branch.
-        return {'merged_revno': self.context.source_branch.revision_count}
+        # Default to the tip of the target branch, on the assumption that the
+        # source branch has just been merged into it.
+        return {'merged_revno': self.context.target_branch.revision_count}
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     @action('Mark as Merged', name='mark_merged')
+    @notify
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
+        revno = data['merged_revno']
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.request.response.addWarningNotification(
-                'The proposal has already been marked as merged.')
+            self.context.merged_revno = revno
+            self.request.response.addNotification(
+                'The proposal\'s merged revision has been updated.')
         else:
-            revno = data['merged_revno']
             self.context.markAsMerged(revno, merge_reporter=self.user)
             self.request.response.addNotification(
                 'The proposal has now been marked as merged.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the merge proposal."""
 
     def validate(self, data):
         # Ensure a positive integer value.
@@ -534,6 +756,7 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
             self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
+    @update_and_notify
     def enqueue_action(self, action, data):
         """Update the whiteboard and enqueue the merge proposal."""
         if self.context.isPersonValidReviewer(self.user):
@@ -541,11 +764,6 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
         else:
             revision_id = self.context.reviewed_revision_id
         self.context.enqueue(self.user, revision_id)
-        self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the merge proposal."""
 
     def validate(self, data):
         """Make sure that the proposal has been reviewed.
@@ -571,15 +789,13 @@ class BranchMergeProposalDequeueView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     @action('Dequeue', name='dequeue')
+    @update_and_notify
     def dequeue_action(self, action, data):
         """Update the whiteboard and remove the proposal from the queue."""
         self.context.dequeue()
-        self.updateContextFromData(data)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the merge proposal."""
 
     def validate(self, data):
         """Make sure the proposal is queued before removing."""
@@ -597,7 +813,10 @@ class BranchMergeProposalInlineDequeueView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
+    cancel_url = next_url
+
     @action('Dequeue', name='dequeue')
+    @notify
     def dequeue_action(self, action, data):
         """Remove the proposal from the queue if queued."""
         if self.context.queue_status == BranchMergeProposalStatus.QUEUED:
@@ -623,6 +842,7 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
         return canonical_url(self.context.target_branch) + '/+merge-queue'
 
     @action('Move to front', name='move')
+    @notify
     def move_action(self, action, data):
         """Move the proposal to the front of the queue (if queued)."""
         if (self.context.queue_status == BranchMergeProposalStatus.QUEUED and
@@ -636,3 +856,55 @@ class BranchMergeProposalJumpQueueView(LaunchpadEditFormView):
     @property
     def action_url(self):
         return "%s/+jump-queue" % canonical_url(self.context)
+
+
+class BranchMergeProposalSubscribersView(LaunchpadView):
+    """Used to show the pagelet subscribers on the main proposal page."""
+
+    __used_for__ = IBranchMergeProposal
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        # Get the subscribers and dump them into two sets.
+        self._full_subscribers = set()
+        self._status_subscribers = set()
+        # Add subscribers from the source and target branches.
+        self._add_subscribers_for_branch(self.context.source_branch)
+        self._add_subscribers_for_branch(self.context.target_branch)
+        # Remove all the people from the comment_subscribers from the
+        # status_and_vote_subscribers as they recipients will get the email
+        # only once, and for the most detailed subscription from the source
+        # and target branches.
+        self._status_subscribers = (
+            self._status_subscribers - self._full_subscribers)
+
+    def _add_subscribers_for_branch(self, branch):
+        """Add the subscribers to the subscription sets for the branch."""
+        for subscription in branch.subscriptions:
+            level = subscription.review_level
+            if level == CodeReviewNotificationLevel.FULL:
+                self._full_subscribers.add(subscription.person)
+            elif level == CodeReviewNotificationLevel.STATUS:
+                self._status_subscribers.add(subscription.person)
+            else:
+                # We don't do anything right now with people who say they
+                # don't want to see anything.
+                pass
+
+    @cachedproperty
+    def full_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._full_subscribers, key=operator.attrgetter('displayname'))
+
+    @cachedproperty
+    def status_subscribers(self):
+        """A list of full subscribers ordered by displayname."""
+        return sorted(
+            self._status_subscribers, key=operator.attrgetter('displayname'))
+
+    @property
+    def has_subscribers(self):
+        """True if there are subscribers to the branch."""
+        return len(self.full_subscribers) + len(self.status_subscribers)
+

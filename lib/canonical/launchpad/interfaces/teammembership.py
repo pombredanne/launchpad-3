@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
     'ITeamMembershipSet',
@@ -17,6 +18,9 @@ from zope.schema import Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+   export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
 
@@ -89,27 +93,35 @@ class TeamMembershipStatus(DBEnumeratedType):
 
 class ITeamMembership(Interface):
     """TeamMembership for Users"""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Member"), required=True, readonly=False)
-    # Can't use Object(schema=IPerson) here because that would cause circular
-    # imports.
+    team = exported(
+        Reference(title=_("Team"), required=True, readonly=True,
+                  schema=Interface)) # Specified in interfaces/person.py.
+    person = exported(
+        Reference(title=_("Member"), required=True, readonly=True,
+                  schema=Interface), # Specified in interfaces/person.py.
+        exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
         _("The team admin who approved/rejected the member."))
     acknowledged_by = Attribute(
         _('The person (usually the member or someone acting on his behalf) '
           'that acknowledged (accepted/declined) a membership invitation.'))
-    last_changed_by = Attribute(_('Last person who change this'))
+    last_changed_by = exported(
+        Reference(title=_('Last person who change this'),
+                  required=False, readonly=True,
+                  schema=Interface)) # Specified in interfaces/person.py.
 
-    datejoined = Datetime(
-        title=_("Date joined"), required=False, readonly=True,
-        description=_(
-            "The date in which this membership was made active for the "
-            "first time."))
-    dateexpires = Datetime(
-        title=_("Date expires"), required=False, readonly=False)
+    datejoined = exported(
+        Datetime(title=_("Date joined"), required=False, readonly=True,
+                 description=_("The date in which this membership was made "
+                               "active for the first time.")),
+        exported_as='date_joined')
+    dateexpires = exported(
+        Datetime(title=_("Date expires"), required=False, readonly=True),
+        exported_as='date_expires')
     date_created = Datetime(
         title=_("Date created"), required=False, readonly=True,
         description=_("The date in which this membership was created."))
@@ -128,17 +140,18 @@ class ITeamMembership(Interface):
         title=_("Date last changed"), required=False, readonly=True,
         description=_("The date in which this membership was last changed."))
 
-    last_change_comment = Text(
-        title=_("Comment on the last change"), required=False, readonly=True)
+    last_change_comment = exported(
+        Text(title=_("Comment on the last change"), required=False,
+             readonly=True))
     proponent_comment = Text(
         title=_("Proponent comment"), required=False, readonly=True)
     acknowledger_comment = Text(
         title=_("Acknowledger comment"), required=False, readonly=True)
     reviewer_comment = Text(
         title=_("Reviewer comment"), required=False, readonly=True)
-    status = Choice(
-        title=_("The state of this membership"), required=True,
-        readonly=True, vocabulary=TeamMembershipStatus)
+    status = exported(
+        Choice(title=_("The state of this membership"), required=True,
+               readonly=True, vocabulary=TeamMembershipStatus))
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
@@ -222,13 +235,16 @@ class ITeamMembershipSet(Interface):
         equal to :when: and its status is either ADMIN or APPROVED.
         """
 
-    def new(person, team, status, dateexpires=None, reviewer=None,
-            reviewercomment=None):
-        """Create and return a new TeamMembership object.
+    def new(person, team, status, user, dateexpires=None, comment=None):
+        """Create and return a TeamMembership for the given person and team.
 
-        The status of this new object must be APPROVED, PROPOSED or ADMIN. If
-        the status is APPROVED or ADMIN, this method will also take care of
-        filling the TeamParticipation table.
+        :param status: The TeamMembership's status. Must be one of APPROVED,
+            PROPOSED or ADMIN. If the status is APPROVED or ADMIN, this method
+            will also take care of filling the TeamParticipation table.
+        :param user: The person whose action triggered this membership's
+            creation.
+        :param dateexpires: The date in which the membership should expire.
+        :param comment: The rationale for this membership's creation.
         """
 
     def getByPersonAndTeam(person, team):
@@ -250,6 +266,19 @@ class ITeamParticipation(Interface):
     """
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("The team"), required=True, readonly=False)
-    person = Int(title=_("The member"), required=True, readonly=False)
+    team = Reference(
+        title=_("The team"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
+    person = Reference(
+        title=_("The member"), required=True, readonly=True,
+        schema=Interface) # Specified in interfaces/person.py.
 
+
+class CyclicalTeamMembershipError(Exception):
+    """A change resulting in a team membership cycle was attempted.
+
+    Two teams cannot be members of each other and there cannot be
+    any cyclical relationships.  So if A is a member of B and B is
+    a member of C then attempting to make C a member of A will
+    result in this error being raised.
+    """    

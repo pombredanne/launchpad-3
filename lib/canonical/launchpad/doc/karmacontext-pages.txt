@@ -6,10 +6,11 @@ people with highest karma on that context.  We can see the top overall
 contributors on a given context and the top contributors by category.
 
     >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, TestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
     >>> evolution = getUtility(IProductSet).getByName('evolution')

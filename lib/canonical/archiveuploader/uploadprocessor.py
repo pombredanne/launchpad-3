@@ -189,11 +189,11 @@ class UploadProcessor:
         fsroot_lock = GlobalLock(lockfile_path)
         mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
 
-        # XXX cprov 20081024: The lockfile permission can only be changed
-        # by its owner. Since we can't predict which process will create
-        # it in production systems we simply ignore errors when trying to
-        # grant the right permission. At least, one of the process will
-        # be able to do so. See further information in bug #185731.
+        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
+        # changed by its owner. Since we can't predict which process will
+        # create it in production systems we simply ignore errors when trying
+        # to grant the right permission. At least, one of the process will
+        # be able to do so.
         try:
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
         except OSError, err:
@@ -265,15 +265,12 @@ class UploadProcessor:
             # emailer that it was a PPA failure.
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
-            archive = distribution.main_archive
-            # This is fine because the transaction will be aborted when
-            # the rejection happens.
-            archive.purpose = ArchivePurpose.PPA
-            # XXX cprov 20071212: overriding primary-archive is not exactly
+            # XXX cprov 20071212: using the first available PPA is not exactly
             # fine because it can confuse the code that sends rejection
             # messages if it relies only on archive.purpose (which should be
             # enough). On the other hand if we set an arbitrary owner it
             # will break nascentupload ACL calculations.
+            archive = distribution.getAllPPAs()[0]
             error = str(e)
 
         self.log.debug("Finding fresh policy")

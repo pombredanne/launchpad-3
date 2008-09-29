@@ -38,7 +38,7 @@
       <form name="mergerequest" action="" method="POST">
       <input type="hidden" name="dupe" tal:attributes="value request/dupe" />
       <table>
-        <tr tal:repeat="email view/dupeemails">
+        <tr tal:repeat="email view/naked_dupeemails">
           <td>
             <input type="checkbox" name="selected" checked="checked"
                    tal:attributes="value email/email" />

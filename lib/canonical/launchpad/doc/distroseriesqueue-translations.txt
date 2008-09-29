@@ -13,7 +13,7 @@ uploaded into the system.
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  ...    datadir, getPolicy, mock_logger)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -30,7 +30,8 @@ uploaded into the system.
   >>> hoary = distro_series_set.queryByName(ubuntu, 'hoary')
 
   # Create the Dapper distro series.
-  >>> dapper = distro_series_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
+  >>> dapper = ubuntu.newSeries(
+  ...     'dapper', 'Dapper', 'Dapper',
   ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
   # And an AMD 64 arch series.
@@ -268,7 +269,7 @@ Distribution archives (i.e. PPAs).
   >>> queue_item.archive = foobar_archive
 
   >>> queue_item.customfiles[0].publish(mock_logger)
-  DEBUG: Publishing custom pmount,pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG: Publishing custom pmount, pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
   DEBUG: Skipping translations since it is a PPA.
 
 

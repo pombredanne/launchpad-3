@@ -1,17 +1,19 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
-"""Single selection widget using a popup to select one item from a huge number.
-"""
+"""Single selection widget using a popup to select one item from many."""
 
 __metaclass__ = type
 
 import cgi
+import simplejson
 
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
 from zope.schema import TextLine
 from zope.app.form.browser.interfaces import ISimpleInputWidget
-from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
+from zope.app.form.browser.itemswidgets import (
+    ItemsWidgetBase, SingleDataHelper)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.publisher.interfaces import NotFound
@@ -129,11 +131,11 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     def popupHref(self):
         template = (
-            '''javascript:'''
-            '''popup_window('@@%s?'''
-            '''vocabulary=%s&field=%s&search='''
-            ''''+escape(document.getElementById('%s').value),'''
-            ''''%s','300','420')'''
+            "javascript:"
+            "popup_window('@@%s?"
+            "vocabulary=%s&field=%s&search="
+            "'+escape(document.getElementById('%s').value),"
+            "'%s','300','420')"
             ) % (self.popup_name, self.context.vocabularyName, self.name,
                  self.name, self.name)
         if self.onKeyPress:
@@ -162,6 +164,8 @@ class ISinglePopupView(Interface):
 
     def hasMoreThanOnePage(self):
         """Return True if there's more than one page with results."""
+
+    field = Attribute("The field parameter, sanitized.")
 
 
 class SinglePopupView(object):
@@ -192,7 +196,8 @@ class SinglePopupView(object):
             factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
-            raise UnexpectedFormData('Unknown vocabulary %s' % vocabulary_name)
+            raise UnexpectedFormData(
+                'Unknown vocabulary %s' % vocabulary_name)
 
         vocabulary = factory(self.context)
 
@@ -213,6 +218,11 @@ class SinglePopupView(object):
     def hasMoreThanOnePage(self):
         """See ISinglePopupView"""
         return len(self.batch.batchPageURLs()) > 1
+
+    @property
+    def field(self):
+        """See ISinglePopupView"""
+        return simplejson.dumps(self.request.form.get('field', None))
 
 
 class SearchForUpstreamPopupWidget(SinglePopupWidget):

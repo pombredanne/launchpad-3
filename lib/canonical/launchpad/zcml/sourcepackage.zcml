@@ -22,11 +22,20 @@
                   removeAnswerContact"
       />
   </content>
+
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
     for="canonical.launchpad.interfaces.ISourcePackage"
     factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
     />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.browser.SourcePackageBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+index"
@@ -40,7 +49,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
@@ -51,13 +60,6 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="SourcePackageNavigation"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    factory="canonical.launchpad.browser.SourcePackageSOP"
-    permission="zope.Public"
     />
 
   <browser:url
@@ -189,7 +191,7 @@
     name="+export"
     facet="translations"
     layer="canonical.launchpad.layers.TranslationsLayer"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.ExpensiveRequest"
     template="../templates/sourcepackage-export.pt"
     class="canonical.launchpad.browser.SourcePackageTranslationsExportView"
     />

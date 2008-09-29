@@ -7,7 +7,8 @@ from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, commit, rollback
+from canonical.librarian.db import read_transaction, write_transaction
+
 
 defaultResource = static.Data("""
         <html>
@@ -22,6 +23,7 @@ defaultResource = static.Data("""
         </body></html>
         """, type='text/html')
 fourOhFour = error.NoResource('No such resource')
+
 
 class NotFound(Exception):
     pass
@@ -75,17 +77,14 @@ class LibraryFileAliasResource(resource.Resource):
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
+    @write_transaction
     def _getFileAlias(self, aliasID):
-        begin()
         try:
-            try:
-                alias = self.storage.getFileAlias(aliasID)
-                alias.updateLastAccessed()
-                return alias.contentID, alias.filename, alias.mimetype
-            except LookupError:
-                raise NotFound
-        finally:
-            commit()
+            alias = self.storage.getFileAlias(aliasID)
+            alias.updateLastAccessed()
+            return alias.contentID, alias.filename, alias.mimetype
+        except LookupError:
+            raise NotFound
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
@@ -104,16 +103,18 @@ class LibraryFileAliasResource(resource.Resource):
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
 
-            # This fix is in response to Bug 173096.  The Ubuntu team wants
-            # their log files to be automatically unzipped.  Previously this
-            # was done by having Apache add an encoding for all content that
-            # was .gz or .tgz.  Doing so violates the intent of the
-            # Content-Encoding header and caused other gzipped files served
-            # from the Librarian to be treated incorrectly by browsers.  The
-            # fix shown here is to still support the encoding of Ubuntu log
-            # files while allowing others to pass with no encoding.  Apache
-            # will be changed to remove the Content-Encoding header for gzip.
+            # Files with the following extensions will be served as
+            # 'Content-Encoding: gzip' and 'Content-Type: text/plain',
+            # which indicates to browsers that, after being unzipped,
+            # their contents can be rendered inline.
+            #
+            #  * 'txt.gz': gzipped sources buildlogs;
+            #  * 'diff.gz': gzipped sources diffs;
+            #
             if filename.endswith(".txt.gz"):
+                encoding = "gzip"
+                mimetype = "text/plain"
+            elif filename.endswith(".diff.gz"):
                 encoding = "gzip"
                 mimetype = "text/plain"
             else:
@@ -153,16 +154,13 @@ class DigestSearchResource(resource.Resource):
         deferred.addErrback(_eb, request)
         return server.NOT_DONE_YET
 
+    @read_transaction
     def _matchingAliases(self, digest):
-        begin()
-        try:
-            library = self.storage.library
-            matches = ['%s/%s' % (aID, quote(aName))
-                       for fID in library.lookupBySHA1(digest)
-                       for aID, aName, aType in library.getAliases(fID)]
-            return matches
-        finally:
-            rollback()
+        library = self.storage.library
+        matches = ['%s/%s' % (aID, quote(aName))
+                   for fID in library.lookupBySHA1(digest)
+                   for aID, aName, aType in library.getAliases(fID)]
+        return matches
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)

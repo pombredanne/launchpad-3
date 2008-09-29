@@ -221,7 +221,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # a non-standard database user, and because there doesn't seem
         # any point running this test under both environments.
 
-        # XXX: Stuart Bishop 2007-04-11 Bug=4613: Disabled due to Bug #4613.
+        # XXX: Stuart Bishop 2007-04-11 bug=4613: Disabled due to Bug #4613.
         return
 
         # Add a file.
@@ -260,13 +260,13 @@ class DeletedContentTestCase(unittest.TestCase):
     def test_deletedContentNotFound(self):
         # Use a user with rights to change the deleted flag in the db.
         # This currently means a superuser.
-        LaunchpadZopelessLayer.switchDbUser('')
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
 
         alias = getUtility(ILibraryFileAliasSet).create(
                 'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
                 )
         alias_id = alias.id
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
 
         client = LibrarianClient()
 
@@ -288,7 +288,7 @@ class DeletedContentTestCase(unittest.TestCase):
             UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
             """, (alias.content.id,)
             )
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
 
         # Things become not found
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -303,8 +303,4 @@ class DeletedContentTestCase(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianWebTestCase))
-    suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
-    suite.addTest(unittest.makeSuite(DeletedContentTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

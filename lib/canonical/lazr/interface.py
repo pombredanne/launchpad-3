@@ -4,13 +4,17 @@
 
 __metaclass__ = type
 __all__ = [
+        'copy_attribute',
+        'copy_field',
         'use_template'
         ]
 
 import sys
 from copy import copy
 
+from zope.interface.interfaces import IAttribute
 from zope.schema import Field
+from zope.schema.interfaces import IField
 
 
 def use_template(template, include=None, exclude=None):
@@ -35,13 +39,45 @@ def use_template(template, include=None, exclude=None):
                    if name not in exclude]
 
     for name in include:
-        field = copy(template.get(name))
-        # Fields are ordered based on a global counter in the Field class.
-        # We increment and use Field.order to reorder the copied fields. 
-        # If fields are subsequently defined, they they will follow the
-        # copied fields.
-        if isinstance(field, Field):
-            Field.order += 1
-            field.order = Field.order
-        locals[name] = field
+        locals[name] = copy_attribute(template.get(name))
+
+
+def copy_attribute(attribute):
+    """Copy an interface attribute.
+
+    This makes sure that the relative ordering of IField is preserved.
+    """
+    if not IAttribute.providedBy(attribute):
+        raise TypeError("%r doesn't provide IAttribute." % attribute)
+
+    new_attribute = copy(attribute)
+    # Fields are ordered based on a global counter in the Field class.
+    # We increment and use Field.order to reorder the copied fields.
+    # If fields are subsequently defined, they they will follow the
+    # copied fields.
+    if isinstance(new_attribute, Field):
+        Field.order += 1
+        new_attribute.order = Field.order
+
+    # Reset the interface attribute. This will be set by the Interface
+    # constructor if the attribute becomes part of an Interface.
+    new_attribute.interface = None
+
+    return new_attribute
+
+
+def copy_field(field, **overrides):
+    """Copy a schema field and set optional field attributes.
+
+    :param field: The IField to copy.
+    :param **overrides: dictionary of attributes to override in the copy.
+    :returns: the new field.
+    """
+    if not IField.providedBy(field):
+        raise TypeError("%r doesn't provide IField." % field)
+    field_copy = copy_attribute(field)
+
+    for name, value in overrides.items():
+        setattr(field_copy, name, value)
+    return field_copy
 

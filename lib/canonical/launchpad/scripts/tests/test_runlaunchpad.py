@@ -66,10 +66,9 @@ class ServersToStart(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.configs = [config.librarian_server,
                         config.buildsequencer,
-                        config.authserver,
                         config.codehosting]
         self.old_launch_values = [conf.launch for conf in self.configs]
-        new_launch_values = [True, False, False, False]
+        new_launch_values = [True, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):
             conf.launch = launch_value
 
@@ -84,9 +83,16 @@ class ServersToStart(unittest.TestCase):
         """
         services = sorted(get_services_to_run([]))
         expected = [SERVICES['librarian']]
+
         # Mailman may or may not be asked to run.
         if config.mailman.launch:
             expected.append(SERVICES['mailman'])
+
+        # Likewise, the GoogleWebService may or may not be asked to
+        # run.
+        if config.google_test_service.launch:
+            expected.append(SERVICES['google-webservice'])
+
         expected = sorted(expected)
         self.assertEqual(expected, services)
 

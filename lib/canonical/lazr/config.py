@@ -11,13 +11,21 @@ __all__ = [
     'ImplicitTypeSchema',
     'ImplicitTypeSection',
     'Section',
-    'SectionSchema',]
+    'SectionSchema',
+    'as_host_port',
+    'as_username_groupname',
+    ]
+
+
+import StringIO
+import grp
+import os
+import pwd
+import re
 
 from ConfigParser import NoSectionError, RawConfigParser
-import copy
 from os.path import abspath, basename, dirname
-import re
-import StringIO
+from textwrap import dedent
 
 from zope.interface import implements
 
@@ -83,13 +91,16 @@ class Section:
     implements(ISection)
     decorates(ISectionSchema, context='schema')
 
-    def __init__(self, schema):
+    def __init__(self, schema, _options=None):
         """Create an `ISection` from schema.
 
         :param schema: The ISectionSchema that defines this ISection.
         """
         self.schema = schema
-        self._options = dict([(key, schema[key]) for key in schema])
+        if _options is None:
+            self._options = dict([(key, schema[key]) for key in schema])
+        else:
+            self._options = _options
 
     def __getitem__(self, key):
         """See `ISection`"""
@@ -129,7 +140,14 @@ class Section:
         The extension mechanism requires a copy of a section to prevent
         mutation.
         """
-        return copy.deepcopy(self)
+        new_section = self.__class__(self.schema, self._options.copy())
+        # XXX 2008-06-10 jamesh bug=237827:
+        # Evil legacy code sometimes assigns directly to the config
+        # section objects.  Copy those attributes over.
+        new_section.__dict__.update(
+            dict((key, value) for (key, value) in self.__dict__.iteritems()
+                 if key not in ['schema', '_options']))
+        return new_section
 
 
 class ImplicitTypeSection(Section):
@@ -144,7 +162,7 @@ class ImplicitTypeSection(Section):
         (?P<true> ^true$) |
         (?P<none> ^none$) |
         (?P<int> ^[+-]?\d+$) |
-        (?P<str> ^.*$)
+        (?P<str> ^.*)
         ''', re.IGNORECASE | re.VERBOSE)
 
     def _convert(self, value):
@@ -166,8 +184,8 @@ class ImplicitTypeSection(Section):
         elif match.group('int'):
             return int(value)
         else:
-            # match.group('str'); just return the value.
-            return value
+            # match.group('str'); just return the sripped value.
+            return value.strip()
 
     def __getitem__(self, key):
         """See `ISection`."""
@@ -479,9 +497,13 @@ class Config:
         place it on top of the overlay stack. If the conf_data extends
         another conf, a ConfigData object will be created for that first.
         """
+        conf_data = dedent(conf_data)
         confs = self._getExtendedConfs(conf_name, conf_data)
         confs.reverse()
         for conf_name, parser, encoding_errors in confs:
+            if self.data.filename == self.schema.filename == conf_name:
+                # Do not parse the schema file twice in a row.
+                continue
             config_data = self._createConfigData(
                 conf_name, parser, encoding_errors)
             self._overlays = (config_data, ) + self._overlays
@@ -630,3 +652,45 @@ class Category:
         if full_name in self._sections:
             return self._sections[full_name]
         raise AttributeError("No section named %s." % name)
+
+
+def as_host_port(value, default_host='localhost', default_port=25):
+    """Return a 2-tuple of (host, port) from a value like 'host:port'.
+
+    :param value: The configuration value.
+    :type value: string
+    :param default_host: Optional host name to use if the configuration value
+        is missing the host name.
+    :type default_host: string
+    :param default_port: Optional port number to use if the configuration
+        value is missing the port number.
+    :type default_port: integer
+    :return: a 2-tuple of the form (host, port)
+    :rtype: 2-tuple of (string, integer)
+    """
+    if ':' in value:
+        host, port = value.split(':')
+        if host == '':
+            host = default_host
+        port = int(port)
+    else:
+        host = value
+        port = default_port
+    return host, port
+
+
+def as_username_groupname(value=None):
+    """Turn a string of the form user:group into the user and group names.
+
+    :param value: The configuration value.
+    :type value: a string containing exactly one colon, or None
+    :return: a 2-tuple of (username, groupname).  If `value` was None, then
+        the current user and group names are returned.
+    :rtype: 2-tuple of type (string, string)
+    """
+    if value:
+        user, group = value.split(':', 1)
+    else:
+        user  = pwd.getpwuid(os.getuid()).pw_name
+        group = grp.getgrgid(os.getgid()).gr_name
+    return user, group

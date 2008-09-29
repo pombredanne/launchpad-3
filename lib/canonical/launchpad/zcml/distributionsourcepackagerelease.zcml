@@ -15,18 +15,13 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    path_expression="string:+source/${name}/${version}"
-    attribute_to_parent="distribution"
+    path_expression="version"
+    attribute_to_parent="sourcepackage"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistributionSourcePackageReleaseNavigation"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.distributionsourcepackagerelease"
-    classes="DistributionSourcePackageReleaseFacets"
     />
 
   <browser:pages
@@ -52,13 +47,5 @@
       template="../templates/distributionsourcepackagerelease-changes.pt"
       />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    name="+shortlink"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionSourcePackageReleaseShortLink"
-    attribute="__call__"
-    />
 
 </configure>

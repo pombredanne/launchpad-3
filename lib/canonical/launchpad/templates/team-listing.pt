@@ -24,7 +24,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="membership context/getActiveMemberships">
+      <tr tal:repeat="membership context/member_memberships">
         <td>
           <a tal:content="membership/person/browsername"
              tal:attributes="href membership/person/fmt:url" />

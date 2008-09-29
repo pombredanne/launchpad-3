@@ -5,9 +5,15 @@ __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
+<<<<<<< TREE
 from zope.session.interfaces import ISession
 from zope.session.http import CookieClientIdManager
 from zope.rdb.interfaces import IZopeDatabaseAdapter
+=======
+from zope.app.session.http import CookieClientIdManager
+
+from storm.zope.interfaces import IZStorm
+>>>>>>> MERGE-SOURCE
 
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
@@ -56,10 +62,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            da = getUtility(IZopeDatabaseAdapter, 'session')
-            cursor = da().cursor()
-            cursor.execute("SELECT secret FROM secret")
-            self._secret = cursor.fetchone()[0]
+            store = getUtility(IZStorm).get('session')
+            result = store.execute("SELECT secret FROM secret")
+            self._secret = result.get_one()[0]
         return self._secret
 
     def _set_secret(self, value):
@@ -79,16 +84,6 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        if request.getCookies().has_key(self.namespace):
-            # Session has already been set in a previous request
-            new_session = False
-        elif request.response.getCookie(self.namespace, None) is not None:
-            # Session has already been set for the first time in this request
-            new_session = False
-        else:
-            # Session has never been set
-            new_session = True
-
         # XXX: SteveAlexander, 2007-04-01.
         #      This is on the codepath where anon users get a session cookie
         #      set unnecessarily.
@@ -108,15 +103,5 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 
-        if new_session:
-            session = ISession(request)['launchpad.session']
-            referrer = request.get('HTTP_REFERER', None)
-            if referrer is not None:
-                referrer = referrer.decode('US-ASCII', 'replace')
-            session['initial_referrer'] = referrer
-            url = str(request.URL).decode('US-ASCII', 'replace')
-            if request.get('QUERY_STRING', None):
-                url = url + '?' + request['QUERY_STRING']
-            session['initial_url'] = url
 
 idmanager = LaunchpadCookieClientIdManager()

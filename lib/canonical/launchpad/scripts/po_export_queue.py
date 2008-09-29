@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import os
-import psycopg
+import psycopg2
 import textwrap
 import traceback
 from StringIO import StringIO
@@ -43,9 +43,9 @@ class ExportResult:
         return textwrap.dedent('''
             Hello %s,
 
-            Rosetta encountered problems exporting the files you
-            requested. The Rosetta team has been notified of this
-            problem. Please reply to this email for further assistance.
+            Launchpad encountered problems exporting the files you requested.
+            The Launchpad Translations team has been notified of this problem.
+            Please reply to this email for further assistance.
             ''' % person.browsername)
 
     def _getSuccessEmailBody(self, person):
@@ -53,8 +53,8 @@ class ExportResult:
         return textwrap.dedent('''
             Hello %s,
 
-            The files you requested from Rosetta are ready for download
-            from the following location:
+            The translation files you requested from Launchpad are ready for
+            download from the following location:
 
             \t%s''' % (person.browsername, self.url)
             )
@@ -102,11 +102,12 @@ class ExportResult:
             admins_email_body = textwrap.dedent('''
                 Hello admins,
 
-                Rosetta encountered problems exporting some files requested by
-                %s. This means we have a bug in
-                Launchpad that needs to be fixed to be able to proceed with
-                this export. You can see the list of failed files with the
-                error we got:
+                Launchpad encountered problems exporting translation files
+                requested by %s.
+
+                This means we have a bug in Launchpad that needs to be fixed
+                before this export can proceed.  Here is the list of failed
+                files and the error we got:
 
                 %s%s''') % (
                     person.browsername, self.failure, template_sentence)
@@ -183,7 +184,7 @@ def process_request(person, objects, format, logger):
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
-    except psycopg.Error:
+    except psycopg2.Error:
         # It's a DB exception, we don't catch it either, the export
         # should be done again in a new transaction.
         raise
@@ -235,7 +236,7 @@ def process_queue(transaction_manager, logger):
 
     try:
         process_request(person, objects, format, logger)
-    except psycopg.Error:
+    except psycopg2.Error:
         # We had a DB error, we don't try to recover it here, just exit
         # from the script and next run will retry the export.
         logger.error(

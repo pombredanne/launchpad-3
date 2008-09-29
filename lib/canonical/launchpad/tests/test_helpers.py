@@ -250,19 +250,18 @@ class TestEmailPeople(unittest.TestCase):
 
     def test_emailPeopleIndirect(self):
         """Ensure emailPeople uses indirect memberships."""
-        team_member = self.factory.makePerson(
+        owner = self.factory.makePerson(
             displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.factory.makeTeam(team_member)
+        team = self.factory.makeTeam(owner)
         super_team = self.factory.makeTeam(team)
         recipients = helpers.emailPeople(super_team)
-        self.assertEqual(set([team_member]), recipients)
+        self.assertEqual(set([owner]), recipients)
 
     def test_emailPeopleTeam(self):
         """Ensure emailPeople uses teams with preferredemail."""
-        team_member = self.factory.makePerson(
+        owner = self.factory.makePerson(
             displayname='Foo Bar', email='foo@bar.com', password='password')
-        team = self.factory.makeTeam(
-            team_member, email='team@bar.com', password='password')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
         super_team = self.factory.makeTeam(team)
         recipients = helpers.emailPeople(super_team)
         self.assertEqual(set([team]), recipients)

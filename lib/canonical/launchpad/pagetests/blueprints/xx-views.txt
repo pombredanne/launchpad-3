@@ -177,7 +177,7 @@ blueprints page:
 
     >>> browser.getLink('Blueprints').click()
     >>> browser.url
-    'http://blueprints.launchpad.dev/ubuntu/'
+    'http://blueprints.launchpad.dev/ubuntu'
     >>> browser.getLink('blueprint-1')
     <Link...
     >>> browser.getLink('blueprint-2')
@@ -202,7 +202,7 @@ second blueprint is no longer visible:
 
     >>> browser.getLink('Blueprints').click()
     >>> browser.url
-    'http://blueprints.launchpad.dev/ubuntu/'
+    'http://blueprints.launchpad.dev/ubuntu'
     >>> browser.getLink('blueprint-1')
     <Link...
     >>> browser.getLink('blueprint-2')

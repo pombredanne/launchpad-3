@@ -21,8 +21,8 @@ if __name__ == "__main__":
 
     log = logger(options, "publish-distro")
     log.debug("Initialising zopeless.")
-    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
+    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     try:
         publishdistro.run_publisher(options, txn)

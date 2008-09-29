@@ -54,9 +54,9 @@ def main():
 
     log.debug("Initialising connection.")
 
+    execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
                        isolation=ISOLATION_LEVEL_READ_COMMITTED)
-    execute_zcml_for_scripts()
 
     processed_queue_ids = []
     try:

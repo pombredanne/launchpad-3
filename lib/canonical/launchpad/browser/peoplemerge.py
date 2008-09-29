@@ -17,12 +17,12 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IAdminPeopleMergeSchema, IAdminTeamMergeSchema,
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
-    LoginTokenType)
-
-from canonical.launchpad import _
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
@@ -62,8 +62,12 @@ class RequestPeopleMergeView(AddView):
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(user, login, email.email,
-                                  LoginTokenType.ACCOUNTMERGE)
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        from zope.security.proxy import removeSecurityProxy
+        token = logintokenset.new(
+            user, login, removeSecurityProxy(email).email,
+            LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
         #      improves problems with merge people tests.
@@ -114,12 +118,15 @@ class AdminMergeBaseView(LaunchpadFormView):
 
     def doMerge(self, data):
         """Merge the two person/team entries specified in the form."""
+        from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
-            # XXX: Maybe this status change should be done only when merging
-            # people but not when merging teams.
-            # -- Guilherme Salgado, 2007-10-15
+            # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
+            # should be done only when merging people but not when merging
+            # teams.
             email.status = EmailAddressStatus.NEW
-            email.person = self.target_person
+            # EmailAddress.person is a readonly field, so we need to remove
+            # the security proxy here.
+            removeSecurityProxy(email).person = self.target_person
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
         self.request.response.addInfoNotification(_(
@@ -180,7 +187,10 @@ class AdminTeamMergeView(AdminMergeBaseView):
         super(AdminTeamMergeView, self).validate(data)
         mailing_list = getUtility(IMailingListSet).get(
             data['dupe_person'].name)
-        if mailing_list is not None:
+        # We cannot merge the teams if there is a mailing list on the
+        # duplicate person, unless that mailing list is purged.
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
                 "can't merge it.",
@@ -243,7 +253,10 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
             self.request.response.redirect(canonical_url(user))
             return
         assert result_count == 1
-        self.dupe_email = results[0].email
+        # Need to remove the security proxy because the dupe account may have
+        # hidden email addresses.
+        from zope.security.proxy import removeSecurityProxy
+        self.dupe_email = removeSecurityProxy(results[0]).email
 
     def render(self):
         if self.dupe_email:
@@ -296,9 +309,17 @@ class RequestPeopleMergeMultipleEmailsView:
                 emailaddress = emailaddrset.getByEmail(email)
                 assert emailaddress in self.dupeemails
                 token = logintokenset.new(
-                    user, login, emailaddress.email,
-                    LoginTokenType.ACCOUNTMERGE)
+                    user, login, email, LoginTokenType.ACCOUNTMERGE)
                 token.sendMergeRequestEmail()
-                self.notified_addresses.append(emailaddress.email)
+                self.notified_addresses.append(email)
 
-
+    # XXX: salgado, 2008-07-02: We need to somehow disclose the dupe person's
+    # email addresses so that the logged in user knows where to look for the
+    # message with instructions to finish the merge. Since people can choose
+    # to have their email addresses hidden, we need to remove the security
+    # proxy here to ensure they can be shown in this page.
+    @property
+    def naked_dupeemails(self):
+        """Non-security-proxied email addresses of the dupe person."""
+        from zope.security.proxy import removeSecurityProxy
+        return [removeSecurityProxy(email) for email in self.dupeemails]

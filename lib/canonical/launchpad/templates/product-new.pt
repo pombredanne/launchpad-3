@@ -6,31 +6,29 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/pillarindex"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-  <body>
-    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
+<body>
+  <metal:portlets fill-slot="portlets">
+  </metal:portlets>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+  <div metal:fill-slot="main">
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+    <div metal:use-macro="context/@@launchpad_form/form">
 
-<div metal:fill-slot="main">
+    <div metal:fill-slot="extra_info" class="documentDescription"
+         style="font-size: larger; background: #e0f0d0; padding: 0.3em">
+      Form filling fun! The more information you provide out here, the more
+      attention and collaboration your project will be able to attract.
+      And there's <strong>no wait</strong>: once registered, you can
+      immediately start using your project to track bugs, code,
+      translations (and more).
+    </div>
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this page to register a project, so that you can
-      track translations, bugs or specifications for it.
     </div>
 
   </div>
-
-</div>
 
 </body>
 </html>

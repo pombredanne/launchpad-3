@@ -69,7 +69,7 @@ appropriate. The user can modify the search query and hit the 'Search'
 button to update the list of available choices:
 
     >>> search_field.value = 'Where can I find a SVG plugin'
-    >>> user_browser.getControl('Search').click()
+    >>> user_browser.getControl('Search', index=0).click()
 
 The page is updated with a new list of FAQs:
 
@@ -354,7 +354,7 @@ information.
     >>> print user_browser.title
     Is question #9 a FAQ?
     >>> user_browser.getControl(name='field.faq-query').value = 'flash'
-    >>> user_browser.getControl('Search').click()
+    >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('6').selected = True
     >>> user_browser.getControl('Message').value = "The FAQ mentions this:"
     >>> user_browser.getControl('Link FAQ').click()

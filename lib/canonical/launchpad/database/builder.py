@@ -30,17 +30,17 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.database.publishing import makePoolPath
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
-    pocketsuffix)
+    ILibraryFileAliasSet, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 
 
@@ -96,27 +96,50 @@ class Builder(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
-    failnotes = StringCol(dbName='failnotes', default=None)
-    virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
-    speedindex = IntCol(dbName='speedindex', default=0)
+    failnotes = StringCol(dbName='failnotes')
+    virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
+    speedindex = IntCol(dbName='speedindex')
     manual = BoolCol(dbName='manual', default=False)
-    vm_host = StringCol(dbName='vm_host', default=None)
-    active = BoolCol(dbName='active', default=True)
+    vm_host = StringCol(dbName='vm_host')
+    active = BoolCol(dbName='active', notNull=True, default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
-        """See IBuilder."""
-        librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        """See `IBuilder`."""
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
+        self._sendFileToSlave(url, libraryfilealias.content.sha1)
+
+    def cachePrivateSourceOnSlave(self, logger, build_queue_item):
+        """See `IBuilder`."""
+        # The URL to the file in the archive consists of these parts:
+        # archive_url / makePoolPath() / filename
+        # Once this is constructed we add the http basic auth info.
+        build = build_queue_item.build
+        archive = build.archive
+        archive_url = archive.archive_url
+        component_name = build.current_component.name
+        for source_file in build_queue_item.files:
+            file_name = source_file.libraryfile.filename
+            sha1 = source_file.libraryfile.content.sha1
+            source_name = build.sourcepackagerelease.sourcepackagename.name
+            poolpath = makePoolPath(source_name, component_name)
+            url = urlappend(archive_url, poolpath)
+            url = urlappend(url, file_name)
+            logger.debug("Asking builder on %s to ensure it has file %s "
+                         "(%s, %s)" % (self.url, file_name, url, sha1))
+            self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
+
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
+        """Helper to send the file at 'url' with 'sha1' to this builder."""
         if not self.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
         present, info = self.slave.ensurepresent(
-            libraryfilealias.content.sha1, url)
+            sha1, url, username, password)
         if not present:
             message = """Slave '%s' (%s) was unable to fetch file.
             ****** URL ********
@@ -271,6 +294,17 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                # Skip archives with no binaries published for the
+                # target distroarchseries.
+                published_binaries = archive.getAllPublishedBinaries(
+                    distroarchseries=build_queue_item.archseries,
+                    status=PackagePublishingStatus.PUBLISHED)
+                if published_binaries.count() == 0:
+                    continue
+
+                # Encode the private PPA repository password in the
+                # sources_list line. Note that the buildlog will be
+                # sanitized to not expose it.
                 if archive.private:
                     uri = URI(archive.archive_url)
                     uri = uri.replace(
@@ -278,6 +312,7 @@ class Builder(SQLBase):
                     url = str(uri)
                 else:
                     url = archive.archive_url
+
                 source_line = (
                     'deb %s %s %s'
                     % (url, dist_name, ogre_components))
@@ -304,7 +339,7 @@ class Builder(SQLBase):
         """Assert some pre-build checks.
 
         The build request is checked:
-         * Virtualised builds can't build on a non-virtual builder
+         * Virtualized builds can't build on a non-virtual builder
          * Ensure that we have a chroot
          * Ensure that the build pocket allows builds for the current
            distroseries state.
@@ -316,8 +351,8 @@ class Builder(SQLBase):
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
         # correctly from EMBARGOED archive this assertion can be removed.
-        # XXX 2007-18-12 Julian. This is being addressed in the work on the
-        # blueprint:
+        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
+        # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
         target_pocket = build_queue_item.build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (
@@ -355,10 +390,18 @@ class Builder(SQLBase):
 
         # Build filemap structure with the files required in this build
         # and send them to the slave.
+        # If the build is private we tell the slave to get the files from the
+        # archive instead of the librarian because the slaves cannot
+        # access the restricted librarian.
+        private = build_queue_item.build.archive.private
+        if private:
+            self.cachePrivateSourceOnSlave(logger, build_queue_item)
         filemap = {}
-        for f in build_queue_item.files:
-            filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
-            self.cacheFileOnSlave(logger, f.libraryfile)
+        for source_file in build_queue_item.files:
+            lfa = source_file.libraryfile
+            filemap[lfa.filename] = lfa.content.sha1
+            if not private:
+                self.cacheFileOnSlave(logger, source_file.libraryfile)
 
         chroot_sha1 = chroot.content.sha1
         try:
@@ -372,12 +415,15 @@ class Builder(SQLBase):
             ******************
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
-        except (xmlrpclib.Fault, socket.error), info:
+        except xmlrpclib.Fault, info:
             # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self.url, exc_info=1)
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
+        except socket.error, info:
+            error_message = "Exception (%s) when setting up new job" % info
+            self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -411,8 +457,19 @@ class Builder(SQLBase):
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
         args['suite'] = suite
-        archive_purpose = build_queue_item.build.archive.purpose.name
-        args['archive_purpose'] = archive_purpose
+        archive_purpose = build_queue_item.build.archive.purpose
+        if (archive_purpose == ArchivePurpose.PPA and
+            not build_queue_item.build.archive.require_virtualized):
+            # If we're building a non-virtual PPA, override the purpose
+            # to PRIMARY.  This ensures that the package mangling tools
+            # will run over the built packages.
+            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
+        else:
+            args['archive_purpose'] = archive_purpose.name
+
+        # Let the build slave know whether this is a build in a private
+        # archive.
+        args['archive_private'] = build_queue_item.build.archive.private
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
@@ -427,22 +484,21 @@ class Builder(SQLBase):
     @property
     def status(self):
         """See IBuilder"""
-        if self.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
         if not self.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+            if self.failnotes is not None:
+                return self.failnotes
+            return 'Disabled'
+        # Cache the 'currentjob', so we don't have to hit the database
+        # more than once.
+        currentjob = self.currentjob
+        if currentjob is None:
+            return 'Idle'
 
-        if self.currentjob:
-            current_build = self.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if current_build.archive.purpose == ArchivePurpose.PPA:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-        return 'IDLE (%s)' % mode
+        msg = 'Building %s' % currentjob.build.title
+        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+            return msg
+
+        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -486,7 +542,7 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
-    def transferSlaveFileToLibrarian(self, file_sha1, filename):
+    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
@@ -510,13 +566,16 @@ class Builder(SQLBase):
             bytes_written = out_file.tell()
             out_file.seek(0)
 
-            return getUtility(ILibrarianClient).addFile(filename,
-                bytes_written, out_file,
-                contentType=filenameToContentType(filename))
+            library_file = getUtility(ILibraryFileAliasSet).create(
+                filename, bytes_written, out_file,
+                contentType=filenameToContentType(filename),
+                restricted=private)
         finally:
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
+
+        return library_file.id
 
     @property
     def is_available(self):
@@ -541,31 +600,50 @@ class Builder(SQLBase):
         processorfamily with the highest lastscore or None if there
         is no one available.
         """
+        # If a private build does not yet have its source published then
+        # we temporarily skip it because we want to wait for the publisher
+        # to place the source in the archive, which is where builders
+        # download the source from in the case of private builds (because
+        # it's a secure location).
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
         clauses = ["""
+            ((archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         Build.sourcepackagerelease AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status IN %s))
+              OR
+              archive.private IS FALSE) AND
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
+        """ % sqlvalues(private_statuses,
+                        BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualized:
-            clauses.append("""
-                archive.purpose IN %s
-            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
-        else:
-            clauses.append("""
-                archive.purpose = %s
-            """ % sqlvalues(ArchivePurpose.PPA))
+        clauses.append("""
+            archive.require_virtualized = %s
+        """ % sqlvalues(self.virtualized))
 
         query = " AND ".join(clauses)
 
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
-            orderBy=['-buildqueue.lastscore'])
+            orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
 
@@ -590,21 +668,31 @@ class Builder(SQLBase):
         # and the latter could not be built in DAK.
         while candidate is not None:
             if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+                # We never build anything in the security pocket.
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
-            elif candidate.is_last_version:
-                return candidate
-            else:
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
+
+            publication = candidate.build.getCurrentPublication()
+
+            if publication is None:
+                # The build should be superseded if it no longer has a
+                # current publishing record.
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.SUPERSEDED
-            candidate.destroySelf()
-            candidate = self._findBuildCandidate()
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
 
-        # No candidate was found
+            return candidate
+
+        # No candidate was found.
         return None
 
     def dispatchBuildCandidate(self, candidate):
@@ -614,6 +702,33 @@ class Builder(SQLBase):
             self.startBuild(candidate, logger)
         except (BuildSlaveFailure, CannotBuild), err:
             logger.warn('Could not build: %s' % err)
+
+    def handleTimeout(self, logger, error_message):
+        """See IBuilder."""
+        builder_should_be_failed = True
+
+        if self.virtualized:
+            # Virtualized/PPA builder: attempt a reset.
+            logger.warn(
+                "Resetting builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            try:
+                self.resumeSlaveHost()
+            except CannotResumeHost, err:
+                # Failed to reset builder.
+                logger.warn(
+                    "Failed to reset builder: %s -- %s" %
+                    (self.url, str(err)), exc_info=True)
+            else:
+                # Builder was reset, do *not* mark it as failed.
+                builder_should_be_failed = False
+
+        if builder_should_be_failed:
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message),
+                exc_info=True)
+            self.failbuilder(error_message)
 
 
 class BuilderSet(object):
@@ -633,12 +748,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, virtualized=True, vm_host=None):
+            active=True, virtualized=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
-                       description=description, owner=owner,
-                       virtualized=virtualized, builderok=builderok,
-                       failnotes=failnotes, vm_host=None)
+                       description=description, owner=owner, active=active,
+                       virtualized=virtualized, vm_host=vm_host,
+                       builderok=True, manual=True)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -661,12 +776,6 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        if virtualized:
-            archive_purposes = [ArchivePurpose.PPA]
-        else:
-            archive_purposes = [
-                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
-
         query = """
            BuildQueue.build = Build.id AND
            Build.archive = Archive.id AND
@@ -674,8 +783,8 @@ class BuilderSet(object):
            DistroArchSeries.processorfamily = Processor.family AND
            Processor.id = %s AND
            Build.buildstate = %s AND
-           Archive.purpose IN %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+           Archive.require_virtualized = %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
 
         clauseTables = [
             'Build', 'DistroArchSeries', 'Processor', 'Archive']

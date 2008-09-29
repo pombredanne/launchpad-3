@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImportMachine',
-    'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
@@ -85,47 +84,6 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
 class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
-    date_created = Datetime(
-        title=_("Date Created"), required=True, readonly=True)
-
-    heartbeat = Datetime(
-        title=_("Heartbeat"),
-        description=_("When the controller deamon last recorded it was"
-                      " running."))
-
-    def setOnline():
-        """Record that the machine is online, marking it ready to accept jobs.
-
-        Set state to ONLINE, and record the corresponding event.
-        """
-
-    def setOffline(reason):
-        """Record that the machine is offline.
-
-        Set state to OFFLINE, and record the corresponding event.
-
-        :param reason: `CodeImportMachineOfflineReason` enum value.
-        """
-
-    def setQuiescing(user, message):
-        """Initiate an orderly shut down without interrupting running jobs.
-
-        Set state to QUIESCING, and record the corresponding event.
-
-        :param user: `Person` that requested the machine to quiesce.
-        :param message: User-provided message.
-        """
-
-
-class ICodeImportMachinePublic(Interface):
-    """Parts of the CodeImportMachine interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
-
     id = Int(readonly=True, required=True)
 
     state = Choice(
@@ -140,6 +98,54 @@ class ICodeImportMachinePublic(Interface):
     current_jobs = Attribute(
         'The current jobs that the machine is processing.')
 
+    events = Attribute(
+        'The events associated with this machine.')
+
+    date_created = Datetime(
+        title=_("Date Created"), required=True, readonly=True)
+
+    heartbeat = Datetime(
+        title=_("Heartbeat"),
+        description=_("When the controller deamon last recorded it was"
+                      " running."))
+
+    def shouldLookForJob():
+        """Should we look for a job to run on this machine?
+
+        There are three reasons we might not look for a job:
+
+        a) The machine is OFFLINE
+        b) The machine is QUIESCING (in which case we might go OFFLINE)
+        c) There are already enough jobs running on this machine.
+        """
+
+    def setOnline(user=None, message=None):
+        """Record that the machine is online, marking it ready to accept jobs.
+
+        Set state to ONLINE, and record the corresponding event.
+        :param user: `Person` that requested going online if done by a user.
+        :param message: User-provided message.
+        """
+
+    def setOffline(reason, user=None, message=None):
+        """Record that the machine is offline.
+
+        Set state to OFFLINE, and record the corresponding event.
+
+        :param reason: `CodeImportMachineOfflineReason` enum value.
+        :param user: `Person` that requested going online if done by a user.
+        :param message: User-provided message.
+        """
+
+    def setQuiescing(user, message=None):
+        """Initiate an orderly shut down without interrupting running jobs.
+
+        Set state to QUIESCING, and record the corresponding event.
+
+        :param user: `Person` that requested the machine to quiesce.
+        :param message: User-provided message.
+        """
+
 
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""
@@ -147,10 +153,11 @@ class ICodeImportMachineSet(Interface):
     def getAll():
         """Return an iterable of all code machines."""
 
-    def new(hostname):
+    def new(hostname, state=CodeImportMachineState.OFFLINE):
         """Create a new CodeImportMachine.
 
-        The machine will initially be in the 'OFFLINE' state.
+        The machine will initially be in the given 'state', which defaults to
+        OFFLINE, but can also be ONLINE.
         """
 
     def getByHostname(hostname):

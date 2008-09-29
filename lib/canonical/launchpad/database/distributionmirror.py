@@ -14,18 +14,27 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import Func
 from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND, func
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
+
+from canonical.archivepublisher.diskpool import poolify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.archivepublisher.diskpool import poolify
-
+from canonical.launchpad.database.country import Country
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.helpers import (
+    get_email_template, contactEmailAddresses, shortlist)
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
@@ -34,17 +43,11 @@ from canonical.launchpad.interfaces import (
     MirrorFreshness, MirrorSpeed, MirrorStatus, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
     SourcePackageFileType)
-from canonical.launchpad.database.country import Country
-from canonical.launchpad.database.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.validators.person import public_person_validator
-from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses, shortlist)
-from canonical.launchpad.webapp import urlappend, canonical_url
 from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp import urlappend, canonical_url
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class DistributionMirror(SQLBase):
@@ -56,10 +59,10 @@ class DistributionMirror(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
@@ -400,7 +403,7 @@ class DistributionMirrorSet:
         if country is not None:
             country_id = country.id
         base_query = AND(
-            DistributionMirror.q.content == sqlvalues(mirror_type),
+            DistributionMirror.q.content == mirror_type,
             DistributionMirror.q.enabled == True,
             DistributionMirror.q.http_base_url != None,
             DistributionMirror.q.official_candidate == True,
@@ -409,7 +412,7 @@ class DistributionMirrorSet:
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to
         # balance the load on the mirrors.
-        order_by = [func.random()]
+        order_by = [Func('random')]
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=order_by),
             longest_expected=50)
@@ -465,9 +468,9 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        conn = DistributionMirror._connection
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         ids = ", ".join(str(id)
-                        for (id, date_created) in conn.queryAll(query))
+                        for (id, date_created) in store.execute(query))
         query = '1 = 2'
         if ids:
             query = 'id IN (%s)' % ids

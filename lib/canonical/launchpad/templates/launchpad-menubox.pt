@@ -6,7 +6,6 @@
   id="actions"
   class="portlet"
 >
-  <h2>Actions</h2>
   <ul>
     <tal:block repeat="link view/contextmenuitems">
       <li tal:content="structure link/@@+link">

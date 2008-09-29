@@ -6,150 +6,149 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
-import cElementTree
-import logging
-import os
 import re
-from email.Utils import parseaddr
-from StringIO import StringIO
-from xml.parsers.xmlproc import dtdparser, xmldtd, utils
-from zipfile import ZipFile
+from cStringIO import StringIO
+import textwrap
+
+from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationHeaderData, TranslationConstants,
-    TranslationFileFormat, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    ITranslationFormatImporter, TranslationConstants, TranslationFileFormat,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
+from canonical.launchpad.translationformat.mozilla_zip import (
+    MozillaZipTraversal)
+from canonical.launchpad.translationformat.xpi_header import XpiHeader
 from canonical.librarian.interfaces import ILibrarianClient
 
 
-class MozillaHeader:
-    implements(ITranslationHeaderData)
+def add_source_comment(message, comment):
+    """Add the given comment inside message.source_comment."""
+    if message.source_comment:
+        message.source_comment += comment
+    else:
+        message.source_comment = comment
 
-    def __init__(self, header_content):
-        self._raw_content = header_content
-        self.is_fuzzy = False
-        self.template_creation_date = None
-        self.translation_revision_date = None
-        self.language_team = None
-        self.has_plural_forms = False
-        self.number_plural_forms = 0
-        self.plural_form_expression = None
-        self.charset = 'UTF-8'
-        self.launchpad_export_date = None
-        self.comment = None
-
-    def getRawContent(self):
-        """See `ITranslationHeaderData`."""
-        return self._raw_content
-
-    def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeaderData`."""
-        # Nothing to do for this format.
-        return
-
-    def getLastTranslator(self):
-        """See `ITranslationHeaderData`."""
-        name = None
-        email = None
-        parse = cElementTree.iterparse(StringIO(self._raw_content))
-        for event, elem in parse:
-            if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
-                # This file would have more than one contributor, but
-                # we are only getting latest one.
-                name, email = parseaddr(elem.text)
-
-        return name, email
-
-    def setLastTranslator(self, email, name=None):
-        """Set last translator information.
-
-        :param email: A string with the email address for last translator.
-        :param name: The name for the last translator or None.
-        """
-        # Nothing to do for this format.
-        return
+    if not message.source_comment.endswith('\n'):
+        message.source_comment += '\n'
 
 
-class MozillaZipFile:
-    """Class for reading translatable messages from Mozilla XPI/JAR files.
+class MozillaZipImportParser(MozillaZipTraversal):
+    """XPI and jar parser for import purposes.
 
-    It handles embedded jar, dtd and properties files.
+    Looks for DTD and properties files, and parses them for messages.
+    All messages found are left in `self.messages`.
     """
 
-    def __init__(self, filename, content):
-        self.filename = filename
-        self.header = None
+    # List of ITranslationMessageData representing messages found.
+    messages = None
+
+    def _begin(self):
+        """Overridable hook for `MozillaZipTraversal`."""
         self.messages = []
-        self.last_translator = None
 
-        zip = ZipFile(StringIO(content), 'r')
-        for entry in sorted(zip.namelist()):
-            if entry.endswith('.properties'):
-                data = zip.read(entry)
-                pf = PropertyFile(filename=entry, content=data)
-                self.extend(pf.messages)
-            elif entry.endswith('.dtd'):
-                data = zip.read(entry)
-                dtdf = DtdFile(filename=entry, content=data)
-                self.extend(dtdf.messages)
-            elif entry.endswith('.jar'):
-                data = zip.read(entry)
-                jarf = MozillaZipFile(filename=entry, content=data)
-                self.extend(jarf.messages)
-            elif entry == 'install.rdf':
-                data = zip.read(entry)
-                self.header = MozillaHeader(data)
+    def _finish(self):
+        """Overridable hook for `MozillaZipTraversal`."""
+        # Eliminate duplicate messages.
+        seen_messages = set()
+        deletions = []
+        for index, message in enumerate(self.messages):
+            identifier = (message.msgid_singular, message.context)
+            if identifier in seen_messages:
+                # This message is a duplicate.  Mark it for removal.
+                deletions.append(index)
             else:
-                # Ignore this file, we don't need to do anything with it.
-                continue
+                seen_messages.add(identifier)
+        for index in reversed(deletions):
+            del self.messages[index]
 
-    def _updateMessageFileReferences(self, message):
-        """Update message's file_references with full path."""
-        if self.filename is not None:
-            # Include self.filename to this entry's file reference.
-            if self.filename.endswith('.jar'):
-                filename = '%s!' % self.filename
-            else:
-                filename = self.filename
-            message.file_references_list = [
-                os.path.join(filename, file_reference)
-                for file_reference in message.file_references_list]
-        # Fill file_references field based on the list of files we
-        # found.
-        message.file_references = ', '.join(
-            message.file_references_list)
+        for message in self.messages:
+            message.file_references = ', '.join(message.file_references_list)
 
-    def _isKeyShortcutMessage(self, message):
-        """Whether the message represents a key shortcut."""
+    def _processTranslatableFile(self, entry, locale_code, xpi_path,
+                                 chrome_path, filename_suffix):
+        """Overridable hook for `MozillaZipTraversal`.
+
+        This implementation is only interested in DTD and properties
+        files.
+        """
+        if filename_suffix == '.dtd':
+            parser = DtdFile
+        elif filename_suffix == '.properties':
+            parser = PropertyFile
+        else:
+            # We're not interested in other file types here.
+            return
+
+        # Parse file, subsume its messages.
+        content = self.archive.read(entry)
+        parsed_file = parser(
+            filename=xpi_path, chrome_path=chrome_path, content=content)
+        if parsed_file is not None:
+            self.extend(parsed_file.messages)
+
+    def _isTemplate(self):
+        """Is this a template?"""
+        name = self.filename
+        return name is not None and name.startswith('en-US.xpi')
+
+    def _processNestedJar(self, zip_instance):
+        """Overridable hook for `MozillaZipTraversal`.
+
+        This implementation complements `self.messages` with those found in
+        the jar file we just parsed.
+        """
+        self.extend(zip_instance.messages)
+
+    def _isCommandKeyMessage(self, message):
+        """Whether the message represents a command key shortcut."""
         return (
-            self.filename is not None and
-            self.filename.startswith('en-US.xpi') and
+            self._isTemplate() and
             message.translations and (
-                message.msgid_singular.endswith('.accesskey') or
                 message.msgid_singular.endswith('.commandkey') or
                 message.msgid_singular.endswith('.key')))
 
-    def extend(self, newdata):
-        """Append 'newdata' messages to self.messages."""
-        for message in newdata:
-            self._updateMessageFileReferences(message)
+    def _isAccessKeyMessage(self, message):
+        """Whether the message represents an access key shortcut."""
+        return (
+            self._isTemplate() and
+            message.translations and (
+                message.msgid_singular.endswith('.accesskey')))
 
+    def extend(self, newdata):
+        """Complement `self.messages` with messages found in contained file.
+
+        :param newdata: a sequence representing the messages found in a
+            contained file.
+        """
+        for message in newdata:
             # Special case accesskeys and commandkeys:
             # these are single letter messages, lets display
             # the value as a source comment.
-            if self._isKeyShortcutMessage(message):
-                comment = (
-                    u"Select the shortcut key that you want to use. Please,\n"
-                    u"don't change this translation if you are not really\n"
-                    u"sure about what you are doing.\n")
-                if message.source_comment:
-                    message.source_comment += comment
-                else:
-                    message.source_comment = comment
+            if self._isCommandKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"""Select the shortcut key that you want to use. It
+                    should be translated, but often shortcut keys (for
+                    example Ctrl + KEY) are not changed from the original. If
+                    a translation already exists, please don't change it if
+                    you are not sure about it. Please find the context of
+                    the key from the end of the 'Located in' text below."""))
+                add_source_comment(message, comment)
+            elif self._isAccessKeyMessage(message):
+                comment = u'\n'.join(textwrap.wrap(
+                    u"""Select the access key that you want to use. These have
+                    to be translated in a way that the selected character is
+                    present in the translated string of the label being
+                    referred to, for example 'i' in 'Edit' menu item in
+                    English. If a translation already exists, please don't
+                    change it if you are not sure about it. Please find the
+                    context of the key from the end of the 'Located in' text
+                    below."""))
+                add_source_comment(message, comment)
             self.messages.append(message)
 
 
@@ -159,9 +158,10 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
     msgids are stored as entities. This class extracts it along
     with translations, comments and source references.
     """
-    def __init__(self, parser, filename, messages):
+    def __init__(self, parser, filename, chrome_path, messages):
         self.started = False
         self.last_comment = None
+        self.chrome_path = chrome_path
         self.messages = messages
         self.filename = filename
         xmldtd.WFCDTD.__init__(self, parser)
@@ -201,6 +201,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
         message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
         message.singular_text = value
+        message.context = self.chrome_path
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -212,9 +213,10 @@ class DtdFile:
 
     It uses DTDParser which fills self.messages with parsed messages.
     """
-    def __init__(self, filename, content):
+    def __init__(self, filename, chrome_path, content):
         self.messages = []
         self.filename = filename
+        self.chrome_path = chrome_path
 
         # .dtd files are supposed to be using UTF-8 encoding, if the file is
         # using another encoding, it's against the standard so we reject it
@@ -226,7 +228,7 @@ class DtdFile:
 
         parser = dtdparser.DTDParser()
         parser.set_error_handler(utils.ErrorCounter())
-        dtd = MozillaDtdConsumer(parser, filename, self.messages)
+        dtd = MozillaDtdConsumer(parser, filename, chrome_path, self.messages)
         parser.set_dtd_consumer(dtd)
         parser.parse_string(content)
 
@@ -249,13 +251,14 @@ class PropertyFile:
 
     license_block_text = u'END LICENSE BLOCK'
 
-    def __init__(self, filename, content):
+    def __init__(self, filename, chrome_path, content):
         """Constructs a dictionary from a .properties file.
 
         :arg filename: The file name where the content came from.
         :arg content: The file content that we want to parse.
         """
         self.filename = filename
+        self.chrome_path = chrome_path
         self.messages = []
 
         # Parse the content.
@@ -302,7 +305,12 @@ class PropertyFile:
                 # Remove any white space before the useful data, like
                 # ' # foo'.
                 line = line.lstrip()
-                if line.startswith(u'#'):
+                if len(line) == 0:
+                    # It's an empty line. Reset any previous comment we have.
+                    last_comment = None
+                    last_comment_line_num = 0
+                    ignore_comment = False
+                elif line.startswith(u'#') or line.startswith(u'//'):
                     # It's a whole line comment.
                     ignore_comment = False
                     line = line[1:].strip()
@@ -317,11 +325,12 @@ class PropertyFile:
 
                     last_comment_line_num = line_num
                     continue
-                elif len(line) == 0:
-                    # It's an empty line. Reset any previous comment we have.
-                    last_comment = None
-                    last_comment_line_num = 0
-                    ignore_comment = False
+
+            # Unescaped URLs are a common mistake: the "//" starts an
+            # end-of-line comment.  To work around that, treat "://" as
+            # a special case.
+            just_saw_colon = False
+
             while line:
                 if is_multi_line_comment:
                     if line.startswith(u'*/'):
@@ -354,12 +363,6 @@ class PropertyFile:
                         # Jump the processed char.
                         line = line[1:]
                     continue
-                elif line.startswith(u'//'):
-                    # It's an 'end of the line comment'
-                    last_comment = '%s\n' % line[2:].strip()
-                    last_comment_line_num = line_num
-                    # Jump to next line
-                    break
                 elif line.startswith(u'/*'):
                     # It's a multi line comment
                     is_multi_line_comment = True
@@ -368,10 +371,18 @@ class PropertyFile:
                     # Jump the comment starting tag
                     line = line[2:]
                     continue
+                elif line.startswith(u'//') and not just_saw_colon:
+                    # End-of-line comment.
+                    last_comment = '%s\n' % line[2:].strip()
+                    last_comment_line_num = line_num
+                    # On to next line.
+                    break
                 elif is_message:
                     # Store the char and continue.
-                    translation += line[0]
+                    head_char = line[0]
+                    translation += head_char
                     line = line[1:]
+                    just_saw_colon = (head_char == ':')
                     continue
                 elif u'=' in line:
                     # Looks like a message string.
@@ -408,6 +419,7 @@ class PropertyFile:
 
                 message = TranslationMessageData()
                 message.msgid_singular = key
+                message.context = self.chrome_path
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
                 value = translation.strip()
@@ -424,116 +436,6 @@ class PropertyFile:
                 translation = u''
 
 
-def find_end_of_common_prefix(strings):
-    """Find index of first character (if any) where strings differ.
-
-    :param strings: a list of strings.
-    :return: index directly after that of last character that is identical
-        across all strings.
-    """
-    min_length = min([len(string) for string in strings])
-    if len(strings) <= 1:
-        return min_length
-
-    head = strings[0]
-    tail = strings[1:]
-    for index in xrange(min_length):
-        base_char = head[index]
-        for string in tail:
-            if string[index] != base_char:
-                return index
-
-    # Scan backwards for a slash, and break there.  Things are a bit prettier
-    # if we avoid breaking in the middle of a directory name.
-    while min_length > 0 and head[min_length-1] != '/':
-        min_length -= 1
-
-    return min_length
-
-
-def normalize_file_references(filename):
-    """Strip trailing crud off a file reference string.
-
-    A file reference string consists of comma-separated file paths, each
-    followed by an optional line number and a repetition of the msgid:
-    "foo/bar:123(splat)" or "foo/bar(splat)".  This function whittles
-    either example down to "foo/bar".
-    """
-    return re.sub('(:[0-9]+)?\([^)]+\)', '', filename)
-
-
-def disambiguate(messages):
-    """Resolve possible duplicate message ids in `messages`.
-
-    Where messages are identical and occur in the exact same file(s), one
-    copy is removed.  Context information is added to resolve clashes between
-    identical message identifiers in different files inside the XPI.
-
-    :param messages: a list of `TranslationMessageData` objects representing
-        the full set of messages in an XPI.
-    :return: a disambiguated list of `TranslationMessageData` objects.
-    """
-    result = []
-    # Messages we've already seen.  Maps msgid_singular to a dict that in turn
-    # maps file_references to a previously processed TranslationMessageData.
-    seen = {}
-
-    # Sets of message ids that occur in multiple files, that need
-    # disambiguation by context.
-    clashes = set()
-
-    for message in messages:
-        references = normalize_file_references(message.file_references)
-        if message.msgid_singular in seen:
-            similar_messages = seen[message.msgid_singular]
-            if references in similar_messages:
-                # This is a completely senseless duplication, within the same
-                # file.  Ignore it.
-                logging.info(
-                    "Duplicate message ID '%s' in %s."
-                    % (message.msgid_singular, message.file_references))
-            else:
-                # There is already a message with the same identifier in a
-                # different file.  Accept it as a separate message.
-                similar_messages[references] = message
-                clashes.add(message.msgid_singular)
-                result.append(message)
-        else:
-            # New message.  Store it.
-            seen[message.msgid_singular] = {references: message}
-            result.append(message)
-
-    # Go over messages with clashing identifiers, and provide context.
-    for msgid in clashes:
-        cousins = seen[msgid]
-        filenames = set()
-        for message in cousins.itervalues():
-            filenames.update(message.file_references_list)
-        # Context is based on the originating file's path.  We can't use the
-        # whole path, because it may contain language codes.
-        # Instead, eliminate common prefixes from the file_references strings
-        # for any set of clashing messages, and use the rest of those strings
-        # as context strings.
-        # XXX: JeroenVermeulen 2008-03-20 spec=xpi-manifest-parsing: Context
-        # should really be based on chrome path, and be set for every string.
-        # To figure out proper chrome paths we need to be able to parse
-        # manifest files first.
-        context_start = find_end_of_common_prefix(list(filenames))
-        for message in cousins.itervalues():
-            context_components = []
-
-            for filename in message.file_references_list:
-                component = normalize_file_references(
-                    filename[context_start:])
-                context_components.append(component)
-
-            context = ','.join(context_components)
-            if len(context) > 0:
-                message.context = context
-
-    return result
-
-
 class MozillaXpiImporter:
     """Support class to import Mozilla .xpi files."""
 
@@ -545,7 +447,6 @@ class MozillaXpiImporter:
         self.distroseries = None
         self.sourcepackagename = None
         self.is_published = False
-        self.content = None
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -574,17 +475,19 @@ class MozillaXpiImporter:
         self.is_published = translation_import_queue_entry.is_published
 
         librarian_client = getUtility(ILibrarianClient)
-        self.content = librarian_client.getFileByAlias(
-            translation_import_queue_entry.content.id)
+        content = librarian_client.getFileByAlias(
+            translation_import_queue_entry.content.id).read()
 
-        parser = MozillaZipFile(self.basepath, self.content.read())
+        parser = MozillaZipImportParser(self.basepath, StringIO(content))
+        if parser.header is None:
+            raise TranslationFormatInvalidInputError("No install.rdf found")
 
         self._translation_file.header = parser.header
-        self._translation_file.messages = disambiguate(parser.messages)
+        self._translation_file.messages = parser.messages
 
         return self._translation_file
 
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        return MozillaHeader(header_string)
+        return XpiHeader(header_string)
 

@@ -17,20 +17,26 @@
       1.0
     </a>
   </strong>
-  <em tal:condition="is_focus">Current development focus</em>
-  <div tal:condition="series/releases">
-    Releases:
-    <tal:release repeat="release series/releases">
-      <a tal:attributes="href release/fmt:url" tal:content="release/version"
-        >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-    </tal:release>
-  </div>
-  <div tal:condition="series/milestones">
-    Milestones:
-    <tal:milestone repeat="milestone series/milestones">
-      <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
-        >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
-    </tal:milestone>
+  <em tal:condition="is_focus">focus of development</em>
+  <em tal:condition="not: is_focus" tal:content="series/status/title">
+    This series' status
+  </em>
+  <div>
+    <tal:milestones condition="series/milestones">
+      Milestones
+      <tal:milestone repeat="milestone series/milestones">
+        <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
+          >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
+      </tal:milestone>
+    </tal:milestones>
+    <tal:releases condition="series/releases">
+      <tal:comma condition="series/milestones">, </tal:comma>
+        Releases
+      <tal:release repeat="release series/releases">
+        <a tal:attributes="href release/fmt:url" tal:content="release/version"
+          >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+      </tal:release>
+    </tal:releases>
   </div>
   <metal:extra define-slot="extra" />
 </metal:detailed_display>
@@ -62,7 +68,7 @@
               1.0
             </a>
           </strong>
-          <em tal:condition="is_focus">Current development focus</em>
+          <em tal:condition="is_focus">focus of development</em>
         </td>
       </tr>
 

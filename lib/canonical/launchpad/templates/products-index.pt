@@ -14,12 +14,9 @@
 
   <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-    <form class="central" method="get" action="#"
+    <form id="project-search" class="central" method="get"
           tal:attributes="action request/URL"
           accept-charset="UTF-8">
       <input size="30" name="text" tal:attributes="value view/search_string" />
@@ -46,7 +43,7 @@
         were found, so we're displaying only the ones that are most relevant
         to your search terms.
         If the project you are looking for is not on the list below, please
-        do another search with more relevant search terms.  
+        do another search with more relevant search terms.
       </p>
 
       <p>
@@ -66,7 +63,8 @@
         id="search-results"
         >
         <tbody>
-          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
+          <tr tal:repeat="pillarname results"
+              tal:replace="structure pillarname/@@+listing-simple">
           </tr>
         </tbody>
       </table>
@@ -87,7 +85,7 @@
 
       <ul class="rollover buttons">
         <li>
-          <a href="/projects/+new">
+          <a href="/projects/+new-guided">
             <img
               alt="Register a project"
               src="/+icing/but-lrg-registerproj.gif"
@@ -99,10 +97,9 @@
       <h2>Why register?</h2>
 
       <p id="application-summary">
-        Launchpad is designed to make it much easier to collaborate with
-        other free software projects. Registering a project here will mean
-        that you, and others, can collaborate efficiently on work related
-        to that project.
+        Launchpad helps people to work together by making it easy to share
+        code, bug reports, translations, and ideas. To get started, search here
+        for a project you want to know more about.
       </p>
 
     </tal:non-empty-search-string>
@@ -111,10 +108,9 @@
   <tal:no_search condition="not: view/searchrequested">
 
     <p id="application-summary">
-      Launchpad is designed to make it much easier to collaborate with
-      other free software projects. Registering a project here will mean
-      that you, and others, can collaborate efficiently on work related
-      to that project.
+      Launchpad helps people to work together by making it easy to share
+      code, bug reports, translations, and ideas. To get started, search here
+      for a project you want to know more about.
     </p>
 
     <div class="left">
@@ -138,7 +134,6 @@
             </tr>
           </tbody>
         </table>
-        <p><a href="/people/+teamlist">&raquo; Show all teams</a></p>
       </div>
 
     </div>
@@ -149,13 +144,10 @@
         <h2>Latest projects registered</h2>
         <table>
           <tr tal:repeat="product context/latest">
-            <td tal:content="structure product/image:icon" />
             <td>
-            <a
-              tal:attributes="href product/fmt:url"
-              tal:content="product/displayname"
-              /> registered
-            <tal:date replace="product/datecreated/fmt:displaydate" />
+              <tal:link replace="structure product/fmt:link" />
+              registered
+              <tal:date replace="product/datecreated/fmt:displaydate" />
             </td>
           </tr>
         </table>

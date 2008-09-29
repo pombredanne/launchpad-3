@@ -1,23 +1,36 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+"""Fixture for the librarians."""
 
 __metaclass__ = type
+__all__ = [
+    'cleanupLibrarianFiles',
+    'fillLibrarianFile',
+    'LibrarianTestSetup',
+    ]
 
 import os
 import shutil
+import tempfile
 
 import canonical
 from canonical.config import config
-from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.launchpad.daemons.tachandler import TacException, TacTestSetup
 from canonical.librarian.storage import _relFileLocation
 
 
-class LibrarianTestSetup(TacTestSetup):
-    r"""Set up a librarian for use by functional tests.
+class LibrarianTestSetup:
+    """Set up librarian servers for use by functional tests.
 
     >>> from urllib import urlopen
     >>> from canonical.config import config
-    >>> host = config.librarian.download_host
-    >>> port = config.librarian.download_port
+
+    >>> librarian_url = "http://%s:%d" % (
+    ...     config.librarian.download_host,
+    ...     config.librarian.download_port)
+    >>> restricted_librarian_url = "http://%s:%d" % (
+    ...     config.librarian.restricted_download_host,
+    ...     config.librarian.restricted_download_port)
 
     >>> LibrarianTestSetup().setUp()
 
@@ -28,42 +41,100 @@ class LibrarianTestSetup(TacTestSetup):
     None
     >>> socket.setdefaulttimeout(1)
 
-    Make sure the server is running.
+    After setUp() is called, two librarian instances are started. The
+    regular one:
 
-    >>> 'Copyright' in urlopen('http://%s:%d/' % (host, port)).read()
+    >>> 'Copyright' in urlopen(librarian_url).read()
     True
+
+    And the restricted one:
+
+    >>> 'Copyright' in urlopen(restricted_librarian_url).read()
+    True
+
+    The librarian root is also available.
+
+    >>> import os
+    >>> os.path.isdir(config.librarian_server.root)
+    True
+
+    After tearDown() is called, both instances are shut down:
 
     >>> LibrarianTestSetup().tearDown()
 
-    Make sure it is not running
-    >>> urlopen('http://%s:%d/' % (host, port))
+    >>> urlopen(librarian_url).read()
     Traceback (most recent call last):
     ...
     IOError: ...
 
-    And again for luck.
+    >>> urlopen(restricted_librarian_url).read()
+    Traceback (most recent call last):
+    ...
+    IOError: ...
+
+    The root directory was removed:
+
+    >>> os.path.exists(config.librarian_server.root)
+    False
+
+    That fixture can be started and stopped multiple time in succession:
 
     >>> LibrarianTestSetup().setUp()
-    >>> 'Copyright' in urlopen('http://%s:%d/' % (host, port)).read()
+    >>> 'Copyright' in urlopen(librarian_url).read()
     True
 
     Tidy up.
 
     >>> LibrarianTestSetup().tearDown()
     >>> socket.setdefaulttimeout(None)
-
     """
-    def setUpRoot(self):
-        self.tearDownRoot()
-        os.makedirs(self.root, 0700)
 
-    def tearDownRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
+    def setUp(self):
+        """Start both librarian instances."""
+        self.setUpRoot()
+        try:
+            TacLibrarianTestSetup().setUp()
+        except TacException:
+            # Remove the directory usually removed in tearDown.
+            self.tearDownRoot()
+            raise
+
+    def tearDown(self):
+        """Shut downs both librarian instances."""
+        TacLibrarianTestSetup().tearDown()
+        self.tearDownRoot()
 
     def clear(self):
         """Clear all files from the Librarian"""
         cleanupLibrarianFiles()
+
+    @property
+    def root(self):
+        """The root directory for the librarian file repository."""
+        return config.librarian_server.root
+
+    def setUpRoot(self):
+        """Create the librarian root archive."""
+        # This should not happen in normal usage, but might if someone
+        # interrupts the test suite.
+        if os.path.exists(self.root):
+            self.tearDownRoot()
+        os.makedirs(self.root, 0700)
+
+    def tearDownRoot(self):
+        """Remove the librarian root archive."""
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
+
+
+class TacLibrarianTestSetup(TacTestSetup):
+    """Start the regular librarian instance."""
+
+    def setUpRoot(self):
+        """Taken care by LibrarianTestSetup."""
+
+    def tearDownRoot(self):
+        """Taken care by LibrarianTestSetup."""
 
     @property
     def root(self):
@@ -81,8 +152,20 @@ class LibrarianTestSetup(TacTestSetup):
         return os.path.join(self.root, 'librarian.pid')
 
     @property
+    def _log_directory(self):
+        # Since the root gets deleted after the tests complete, and since we
+        # may still want to access the log file for post-mortem debugging, put
+        # the log file in the parent directory of root, or the temporary
+        # directory if that doesn't exist.
+        log_directory = os.path.dirname(self.root)
+        if os.path.isdir(log_directory):
+            return log_directory
+        else:
+            return tempfile.tempdir
+
+    @property
     def logfile(self):
-        return os.path.join(self.root, 'librarian.log')
+        return os.path.join(self._log_directory, 'librarian.log')
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):

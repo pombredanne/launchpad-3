@@ -26,7 +26,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class FAQ(SQLBase):
@@ -39,7 +39,7 @@ class FAQ(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     title = StringCol(notNull=True)
 
@@ -51,7 +51,7 @@ class FAQ(SQLBase):
 
     last_updated_by = ForeignKey(
         dbName='last_updated_by', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
 
     date_last_updated = UtcDateTimeCol(notNull=False, default=None)

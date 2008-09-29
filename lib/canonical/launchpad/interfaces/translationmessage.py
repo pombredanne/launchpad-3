@@ -2,11 +2,13 @@
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Object, Text
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -87,6 +89,18 @@ class ITranslationMessage(Interface):
     pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=True, required=True, schema=IPOFile)
+
+    potemplate = Object(
+        title=_("The template this translation is in"),
+        readonly=False, required=False, schema=IPOTemplate)
+
+    language = Choice(
+        title=_('Language of this translation message.'),
+        vocabulary='Language', required=False)
+
+    variant = TextLine(
+        title=_('The language variant for this translation message.'),
+        default=None)
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
@@ -171,10 +185,6 @@ class ITranslationMessage(Interface):
         title=_("Whether the translation has all needed plural forms or not"),
         readonly=True, required=True)
 
-    is_fuzzy = Bool(
-        title=_("Whether this translation must be checked before use it"),
-        readonly=False, default=False, required=True)
-
     is_imported = Bool(
         title=_(
             "Whether this translation is being used in latest imported file"),
@@ -184,11 +194,6 @@ class ITranslationMessage(Interface):
         title=_(
             "Whether this translation was obsolete in last imported file"),
         readonly=False, default=False, required=True)
-
-    was_fuzzy_in_last_import = Bool(
-        title=_(
-            "Whether this imported translation must be checked before use it"
-            ), readonly=False, default=False, required=True)
 
     is_empty = Bool(
         title=_("Whether this message has any translation"),

@@ -21,8 +21,7 @@ The POST data consists of the following fields:
     simply stored as a Librarian file, and parsed later by a cron job.
 
     >>> from StringIO import StringIO
-    >>> from zope.app.zapi import getView
-    >>> from zope.component import getUtility
+    >>> from zope.component import getUtility, getMultiAdapter
     >>> from canonical.launchpad.interfaces import IHWDBApplication
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> data = StringIO('some data.')
@@ -41,7 +40,7 @@ The POST data consists of the following fields:
     ...       'field.actions.upload':  u'Upload'}
     >>> request = LaunchpadTestRequest(method='POST', form=form)
     >>> app = getUtility(IHWDBApplication)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> submit_view.errors
     []
@@ -81,7 +80,7 @@ Each submission must have a distinct submission_key, hence an attempt to submit
 identical data a second time leads to an error.
 
     >>> request = LaunchpadTestRequest(method='POST', form=form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Submission key already exists.']
@@ -94,7 +93,7 @@ Launchpad database, the distroarchseries field is None.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.distribution'] = 'no distribution'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.distroarchseries
@@ -107,7 +106,7 @@ to Launchpad, we refuse the submissions.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.distroseries'] = 'no release'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> print submission_set.getBySubmissionKey(u'unique-id-3')
     None
@@ -116,7 +115,7 @@ to Launchpad, we refuse the submissions.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.architecture'] = 'no architecture'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> print submission_set.getBySubmissionKey(u'unique-id-4')
     None
@@ -127,7 +126,7 @@ The `date_created` field must contain a valid date.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.date_created'] = '2007-05-35'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid datetime data']
@@ -138,7 +137,7 @@ HWDBSubmissionFormat.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.format'] = u'VERSION_42'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     ['Invalid value']
@@ -148,7 +147,7 @@ The field `submission_key` may contain only ASCII data.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.submission_key'] = u'wrong id \x81'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid textual data']
@@ -158,7 +157,7 @@ The field `emailaddress` must contain a formally valid email address.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.emailaddress'] = u'beeblebrox'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid email address']
@@ -173,7 +172,7 @@ All fields are required.
     ...     invalid_form = form.copy()
     ...     del invalid_form[field]
     ...     request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    ...     submit_view = getView(app, '+submit', request)
+    ...     submit_view = getMultiAdapter((app, request), name='+submit')
     ...     submit_view.initialize()
     ...     submit_view.widget_errors
     {'date_created': u'Required field is missing'}
@@ -190,12 +189,135 @@ All fields are required.
 
 Teams can be owners of submissions.
 
+    >>> import os
+    >>> from canonical.config import config
     >>> team_form = form.copy()
     >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
     >>> team_form['field.submission_key'] = u'unique-id-68'
+    >>> valid_sample_data_path = os.path.join(
+    ...     config.root,
+    ...     'lib/canonical/launchpad/scripts/tests/'
+    ...     'simple_valid_hwdb_submission.xml')
+    >>> valid_sample_data = StringIO(open(valid_sample_data_path).read())
+    >>> valid_sample_data.filename = 'simple_valid_hwdb_submission.xml'
+    >>> team_form['field.submission_data'] = valid_sample_data
     >>> request = LaunchpadTestRequest(method='POST', form=team_form)
-    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view = getMultiAdapter((app, request), name='+submit')
     >>> submit_view.initialize()
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-68')
     >>> submission.owner.displayname
     u'Ubuntu Team'
+
+
+== Submission Processing ==
+
+Submissions are processed by the cronscript process-hwdb-submissions.py.
+This script processes all submissions with the status SUBMITTED, checks
+the validity of each submission, populates the HWDB tables with data
+from a submission and sets the submission state to VALID. If any error
+occurs when a submission is processed, its status is set to INVALID and
+according error is logged. For details, see
+lib/canonical/launchpad/scripts/tests/test_hwdb_submission_processing.py.
+
+We have currently three unprocessed submissions in the database, and no
+submissions with the staus PROCESSED or INVALID.
+
+    >>> from canonical.launchpad.interfaces.hwdb import (
+    ...     HWSubmissionProcessingStatus)
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Submitted
+    unique-id-1 Submitted
+    unique-id-68 Submitted
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> print processed_submissions.count()
+    0
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> print invalid_submissions.count()
+    0
+
+The script process-hwdb-submissions.py takes the optional parameter
+-m or --max-submissions, so let's process just the first these three
+submissions. This submission is invalid, because it has no Librarian
+file, which leads to an OOPS when it is being processed. The submission
+key is logged.
+
+    # Commit the current transaction so that the script sees the
+    # recently added data.
+    >>> import transaction
+    >>> transaction.commit()
+
+    # Run the script.
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/process-hwdb-submissions.py -m1', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    ERROR   Exception while processing HWDB submission test_submission_id_1
+    (OOPS-...)
+    INFO    Processed 0 valid and 1 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+
+Submission "test_submission_id_1" has now the state INVALID; the other
+submissions are unchanged.
+
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> for submission in new_submissions:
+    ...     print submission.submission_key, submission.status.title
+    unique-id-1 Submitted
+    unique-id-68 Submitted
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> print processed_submissions.count()
+    0
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> for submission in invalid_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Invalid submission
+
+From the remaining two not yet processed submissions, one has invalid
+data, the other submission is valid.
+
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/process-hwdb-submissions.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
+    INFO    Processed 1 valid and 1 invalid HWDB submissions
+    >>> print out
+    <BLANKLINE>
+
+Now we have one valid, two invalid and no unprocessed submissions.
+
+    >>> # We must start a new transaction in order to see the effects
+    >>> # the script had on the database.
+    >>> transaction.commit()
+    >>> new_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED)
+    >>> print new_submissions.count()
+    0
+    >>> processed_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED)
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    unique-id-68 Processed
+
+    >>> invalid_submissions = submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID)
+    >>> for submission in invalid_submissions:
+    ...     print submission.submission_key, submission.status.title
+    test_submission_id_1 Invalid submission
+    unique-id-1 Invalid submission

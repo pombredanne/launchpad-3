@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'MilestoneSetNavigation',
     'MilestoneNavigation',
-    'MilestoneFacets',
     'MilestoneContextMenu',
     'MilestoneAddView',
     'MilestoneEditView',
@@ -22,9 +21,9 @@ from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, StandardLaunchpadFacets,
-    ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
+    action, canonical_url, custom_widget, ContextMenu, Link,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    enabled_with_permission, GetitemNavigation, Navigation)
 
 from canonical.widgets import DateWidget
 
@@ -41,20 +40,6 @@ class MilestoneSetNavigation(GetitemNavigation):
 class MilestoneNavigation(Navigation):
 
     usedfor = IMilestone
-
-
-class MilestoneFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IMilestone."""
-
-    usedfor = IMilestone
-
-    enable_only = ['overview']
-
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        summary = 'General information about %s' % self.context.displayname
-        return Link(target, text, summary)
 
 
 class MilestoneContextMenu(ContextMenu):
@@ -101,9 +86,11 @@ class MilestoneView(LaunchpadView):
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
         # XXX kiko 2007-08-27: Doing this in the callsite is
-        # particularly annoying, but it's not easy to do the filtering
-        # in BugTaskSet.search() unfortunately. Can we find a good way
-        # of filtering conjoined in database queries?
+        # particularly annoying and causes us to issue one query per
+        # displayed bugtask, which means 600 queries on certain Ubuntu
+        # milestone pages. It's not trivial to do the filtering in
+        # BugTaskSet.search() unfortunately. Can we find a good way of
+        # filtering conjoined in database queries?
         return [task for task in tasks if task.conjoined_master is None]
 
     @property

@@ -51,7 +51,10 @@ After joining the launchpad developers team, sabdfl can now see the
 comments.
 
     >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> launchpad_developers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_developers
     >>> launchpad_developers.addMember(sabdfl, reviewer=foo_bar)
     >>> sabdfl.inTeam(launchpad_developers)
     True
@@ -105,14 +108,15 @@ Launchpad.
     ...     'boardCommentDetails')
     >>> for link in header.findAll('a'):
     ...     print "%s: %s" % (extract_text(link), link.get('href'))
-    josh: http://launchpad.dev/~jbuhl-nospam
     Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
+    josh: http://launchpad.dev/~jbuhl-nospam
     gnome-volume-manager... (permalink): /redfish/+bug/15/comments/1
 
 If sabdfl leaves the Launchpad Developers team the comment will no longer
 be visible to him:
 
     >>> login('foo.bar@canonical.com')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl.leave(launchpad_developers)
     >>> sabdfl.inTeam(launchpad_developers)
     False
@@ -122,3 +126,9 @@ be visible to him:
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(sabdfl_browser.contents)
+
+Anonymous users can't see the comment either.
+
+    >>> anon_browser.open('http://launchpad.dev/redfish/+bug/15/comments/1')
+    >>> print_comments(anon_browser.contents)
+

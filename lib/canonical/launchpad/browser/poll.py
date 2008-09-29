@@ -56,7 +56,8 @@ class PollNavigation(Navigation):
 
     @stepthrough('+option')
     def traverse_option(self, name):
-        return getUtility(IPollOptionSet).getByPollAndId(self.context, name)
+        return getUtility(IPollOptionSet).getByPollAndId(
+            self.context, int(name))
 
 
 class BasePollView:
@@ -186,7 +187,9 @@ class PollView(BasePollView):
         return getUtility(IVoteSet).getVotesByOption(option)
 
     def getPairwiseMatrixWithHeaders(self):
-        """Return the pairwise matrix with headers being the option's names."""
+        """Return the pairwise matrix, with headers being the option's
+        names.
+        """
         # XXX: kiko 2006-03-13:
         # The list() call here is necessary because, lo and behold,
         # it gives us a non-security-proxied list object! Someone come
@@ -259,7 +262,7 @@ class PollVoteView(BasePollView):
             newoption = None
         else:
             newoption = getUtility(IPollOptionSet).getByPollAndId(
-                context, newoption_id)
+                context, int(newoption_id))
 
         if self.userVoted():
             self.currentVote.option = newoption
@@ -376,4 +379,3 @@ class PollOptionAddView(AddView):
         polloption = self.context.newOption(data['name'], data['title'])
         self._nextURL = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
-

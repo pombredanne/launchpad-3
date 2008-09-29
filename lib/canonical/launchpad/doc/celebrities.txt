@@ -122,6 +122,17 @@ The Launchpad Administrators team is a member of that team.
     True
 
 
+== commercial_admin ==
+
+There is a 'Commercial Subscrpition Admins' team that has 
+administrative power over the license review process and
+has the ability to de-activate projects.
+
+    >>> commercial_admin = personset.getByName('commercial-admins')
+    >>> celebs.commercial_admin == commercial_admin
+    True
+
+
 == Savannah bug tracker ==
 
 There is a 'Savannah Bug Tracker' bugtracker which represents the

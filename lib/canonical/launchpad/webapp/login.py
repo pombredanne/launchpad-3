@@ -13,19 +13,21 @@ from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.config import config
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
-from canonical.launchpad.webapp.interfaces import LoggedOutEvent
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, LoginTokenType, ShipItConstants,
-    UBUNTU_WIKI_URL)
-from canonical.launchpad.interfaces.validation import valid_password
-from canonical.config import config
 
 
 class UnauthorizedView(SystemErrorView):
@@ -145,7 +147,7 @@ class LoginOrRegister:
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
         'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        'ubuntuwiki': UBUNTU_WIKI_URL}
+        }
 
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
@@ -182,12 +184,11 @@ class LoginOrRegister:
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user came
-        from either the ubuntu wiki or shipit, and thus we return the URL for
-        either shipit or the wiki. When there's no 'origin' query parameter, we
-        check the HTTP_REFERER header and if it's under any URL specified in
-        registered_origins we return it, otherwise we rerturn the current URL
-        without the "/+login" bit.
+        If the request has an 'origin' query parameter, that means the user
+        came from shipit, and thus we return the URL for it. When there's no
+        'origin' query parameter, we check the HTTP_REFERER header and if it's
+        under any URL specified in registered_origins we return it, otherwise
+        we return the current URL without the "/+login" bit.
         """
         request = self.request
         origin = request.get('origin')
@@ -249,6 +250,11 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
+        elif (principal is not None
+            and principal.person.account_status == AccountStatus.DEACTIVATED):
+            self.login_error = _(
+                'The email address belongs to a deactivated account. '
+                'Use the "Forgotten your password" link to reactivate it.')
         else:
             self.login_error = "The email address and password do not match."
 

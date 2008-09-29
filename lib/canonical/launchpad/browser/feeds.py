@@ -15,8 +15,11 @@ __all__ = [
     'FeedsRootUrlData',
     'PersonBranchesFeedLink',
     'PersonLatestBugsFeedLink',
+    'PersonRevisionsFeedLink',
     'ProductBranchesFeedLink',
+    'ProductRevisionsFeedLink',
     'ProjectBranchesFeedLink',
+    'ProjectRevisionsFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
@@ -30,8 +33,8 @@ from canonical.launchpad.interfaces import (
     IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
     IPersonSet, IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
-    IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
-    IProduct, IProject)
+    IBugTask, IHasAnnouncements, IHasBugs, ILaunchpadRoot, IPerson, IProduct,
+    IProject)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     Navigation, canonical_name, canonical_url, stepto)
@@ -168,7 +171,7 @@ class BugFeedLink(FeedLinkBase):
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
-    usedfor = IBugTarget
+    usedfor = IHasBugs
 
     @property
     def title(self):
@@ -247,6 +250,33 @@ class PersonBranchesFeedLink(BranchesFeedLinkBase):
     usedfor = IPerson
 
 
+class RevisionsFeedLinkBase(FeedLinkBase):
+    """Base class for objects with revisions."""
+
+    @property
+    def title(self):
+        return 'Latest Revisions for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        """The location of the feed.
+
+        E.g.  http://feeds.launchpad.net/firefox/revisions.atom
+        """
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'revisions.atom')
+
+
+class ProjectRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a project."""
+    usedfor = IProject
+
+
+class ProductRevisionsFeedLink(RevisionsFeedLinkBase):
+    """Feed links for revisions on a product."""
+    usedfor = IProduct
+
+
 class BranchFeedLink(FeedLinkBase):
     """Feed links for revisions on a branch."""
     usedfor = IBranch
@@ -260,6 +290,24 @@ class BranchFeedLink(FeedLinkBase):
                          'branch.atom')
 
 
+class PersonRevisionsFeedLink(FeedLinkBase):
+    """Feed links for revisions created by a person."""
+    usedfor = IPerson
+
+    @property
+    def title(self):
+        if self.context.is_team:
+            return 'Latest Revisions by members of %s' % (
+                self.context.displayname)
+        else:
+            return 'Latest Revisions by %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'revisions.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -270,14 +318,17 @@ class FeedsMixin:
     """
     feed_types = (
         AnnouncementsFeedLink,
-        RootAnnouncementsFeedLink,
+        BranchFeedLink,
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
-        ProjectBranchesFeedLink,
-        ProductBranchesFeedLink,
         PersonBranchesFeedLink,
-        BranchFeedLink,
+        PersonLatestBugsFeedLink,
+        PersonRevisionsFeedLink,
+        ProductBranchesFeedLink,
+        ProductRevisionsFeedLink,
+        ProjectBranchesFeedLink,
+        ProjectRevisionsFeedLink,
+        RootAnnouncementsFeedLink,
         )
 
     @property

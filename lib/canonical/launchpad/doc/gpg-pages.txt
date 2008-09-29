@@ -2,9 +2,8 @@
 This tests GPG-related pages of an IPerson.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPerson, IPersonSet)
-    >>> from zope.component import getView, getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getMultiAdapter, getUtility
 
 Set up the key server:
 
@@ -35,7 +34,7 @@ Set up some fingerprints for testing:
     ...         'action': 'claim_gpg',
     ...         'import': 'Import Key'})
     ...     request.method = "POST"
-    ...     view = getView(sample_user, "+editpgpkeys", request)
+    ...     view = getMultiAdapter((sample_user, request), name="+editpgpkeys")
     ...     view.form_action()
     ...     return view
 
@@ -105,10 +104,10 @@ an error message.
     >>> form = {'action': 'remove_gpgtoken'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> request.method = "POST"
-    >>> view = getView(sample_user, "+editpgpkeys", request)
+    >>> view = getMultiAdapter((sample_user, request), name="+editpgpkeys")
     >>> view.form_action()
-    >>> view.error_message
-    'No key(s) pending validation selected.'
+    >>> view.error_message.escapedtext
+    u'No key(s) pending validation selected.'
 
     >>> view.context.pendinggpgkeys
     [u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
@@ -121,10 +120,10 @@ validation.
     ...     'action': 'remove_gpgtoken'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> request.method = "POST"
-    >>> view = getView(sample_user, "+editpgpkeys", request)
+    >>> view = getMultiAdapter((sample_user, request), name="+editpgpkeys")
     >>> view.form_action()
-    >>> view.info_message
-    'Cancelled validation of key(s): A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> view.info_message.escapedtext
+    u'Cancelled validation of key(s): A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
     >>> view.context.pendinggpgkeys
     []

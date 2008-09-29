@@ -34,7 +34,7 @@
     </style>
   </div>
 
-    <metal:heading fill-slot="pageheading">    
+    <metal:heading fill-slot="pageheading">
       <h1 tal:content="string:${context/displayname}'s bug reports by package">
         Foo Bar's bug reports by package
       </h1>
@@ -56,7 +56,7 @@
         </small>
       </strong>
       <div tal:define="batch_navigator view/search">
-        <div tal:define="advanced_search_url view/getBugContactPackageAdvancedSearchURL">
+        <div tal:define="advanced_search_url view/getBugSubscriberPackageAdvancedSearchURL">
           <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form">
             <div metal:fill-slot="extra-search-widgets">
               <tal:widget content="structure view/widgets/distribution/hidden" />

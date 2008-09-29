@@ -1,18 +1,21 @@
 = Restricted OpenID Simple Registration Extension support =
 
 The Launchpad OpenID server has restricted support for the OpenID
-Simple Registration Extension.  It will only provide registration
-details to certain known trust roots.
+Simple Registration Extension.  It will only provide a full set of
+registration details to certain known trust roots.  The user's
+launchpad username is share with all roots.
 
 This is done in order to share the user details among the various
-Canonical/Ubuntu sites participating in single sign-on.
+Canonical/Ubuntu sites participating in single sign-on.  The user's
+nickname is published to every site, which is useful things like
+weblog comments.
 
 
 == Behaviour for unknown trust roots ==
 
 If a relying party attempts to request user details via the
 openid.sreg extension and Launchpad does not have a particular policy
-configured, then no details are disclosed in the response.
+configured, then only the user's nickname is returned in the response.
 
 We will perform an OpenID authentication request asking for a few user
 details:
@@ -55,11 +58,11 @@ We have authenticated successfully:
     >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
-But no user details are returned:
+But only the nickname is returned:
 
     >>> sreg_response = SRegResponse.fromSuccessResponse(info)
     >>> print sreg_response.items()
-    []
+    [('nickname', 'sabdfl')]
 
 
 == Behaviour for known trust roots ==

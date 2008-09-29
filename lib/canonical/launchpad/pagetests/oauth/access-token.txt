@@ -5,8 +5,9 @@ consumer, the request token is eligible for being exchanged for an
 access token.
 
     # First we create a new request token and review it.
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('salgado@ubuntu.com')
@@ -41,6 +42,25 @@ will fail because request tokens can be used only once.
     ...
     HTTPError: HTTP Error 401: Unauthorized
 
+The token's context, when not None, is sent to the consumer together
+with the token's key and secret.
+
+    # Create a new request token, with firefox as its context, and review it.
+    >>> login('salgado@ubuntu.com')
+    >>> token = consumer.newRequestToken()
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC, context=firefox)
+    >>> logout()
+
+    # Exchange the request token for an access token.
+    >>> data2 = data.copy()
+    >>> data2['oauth_token'] = token.key
+    >>> data2['oauth_signature'] = '&'.join([consumer.secret, token.secret])
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/+access-token', data=urlencode(data2))
+    >>> print anon_browser.contents
+    oauth_token=...&oauth_token_secret=...&lp.context=firefox
+
 The consumer shall not attempt to exchange any given request token
 before it's been reviewed, though, or it'll get a 401 response.
 
@@ -74,3 +94,4 @@ permission is UNAUTHORIZED.
     ... """ % urlencode(data2))
     HTTP/1.1 401 Unauthorized
     ...
+

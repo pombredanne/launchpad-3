@@ -1,5 +1,4 @@
-Bug Attachments
-===============
+= Bug Attachments =
 
 Files can be attached to bugs. There are two types of attachment, Patch
 and Unspecified. Patch means a proposed fix to the bug, Unspecified
@@ -11,15 +10,14 @@ Let's look at a bug that has no attachments:
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet,
-    ...     IMessageSet, IPersonSet)
+    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
     0
 
-Creating attachments
---------------------
+
+== Creating attachments ==
 
 To create an attachment, call IBug.addAttachment. It will emit an
 SQLObjectCreatedEvent in order to trigger email notifications:
@@ -35,7 +33,7 @@ SQLObjectCreatedEvent in order to trigger email notifications:
     ...     IBugAttachment, ISQLObjectCreatedEvent, attachment_added)
 
     >>> filecontent = "Some useful information."
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
 
     >>> foobar = getUtility(IPersonSet).getByName("name16")
 
@@ -46,7 +44,7 @@ SQLObjectCreatedEvent in order to trigger email notifications:
 
     >>> bug_one.addAttachment(
     ...     owner=foobar,
-    ...     file_=file_,
+    ...     data=data,
     ...     filename="foo.bar",
     ...     description="this fixes the bug",
     ...     comment=message,
@@ -63,25 +61,28 @@ SQLObjectCreatedEvent in order to trigger email notifications:
     >>> attachment.type.title
     'Unspecified'
 
-IBug.addAttachment's comment parameter can also be a string.
+IBug.addAttachment's comment parameter can also be a string. The data
+passed in is often a file-like object, but can be a string too.
 
-    >>> file_ = StringIO(filecontent)
-    >>> bug_one.addAttachment(
+    >>> data = filecontent
+    >>> attachment_from_strings = bug_one.addAttachment(
     ...     owner=foobar,
-    ...     file_=file_,
+    ...     data=data,
     ...     filename="foo.baz",
     ...     description="this fixes the bug",
     ...     comment="a string comment",
     ...     is_patch=False)
     Attachment added: u'foo.baz'
-    <BugAttachment ...>
+
+    >>> attachment_from_strings.message.text_contents
+    u'a string comment'
 
 If no description is given, the title is set to the filename.
 
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
     >>> screenshot = bug_one.addAttachment(
     ...     owner=foobar,
-    ...     file_=file_,
+    ...     data=data,
     ...     filename="screenshot.jpg",
     ...     comment="a string comment",
     ...     is_patch=False)
@@ -89,10 +90,30 @@ If no description is given, the title is set to the filename.
     >>> screenshot.title
     u'screenshot.jpg'
 
+The content type is guessed based on the information provided.
+
+    >>> screenshot.libraryfile.mimetype
+    u'image/jpeg'
+
+    >>> data = StringIO('</something-htmlish>')
+    >>> debdiff = bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     data=data,
+    ...     filename="something.debdiff",
+    ...     comment="something debdiffish",
+    ...     is_patch=False)
+    Attachment added: u'something.debdiff'
+    >>> debdiff.title
+    u'something.debdiff'
+    >>> debdiff.libraryfile.filename
+    u'something.debdiff'
+    >>> debdiff.libraryfile.mimetype
+    u'text/plain'
+
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
-    >>> from zope.app.zapi import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login('test@canonical.com')
@@ -111,9 +132,9 @@ context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
 and work with that:
 
     >>> bugtask = bug_one.bugtasks[0]
-    >>> from canonical.launchpad.browser import BugMessageAddFormView
 
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
@@ -138,7 +159,8 @@ upload it:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
@@ -149,8 +171,11 @@ If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
 
     >>> from canonical.config import config
-    >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
-    >>> config.launchpad.max_bug_attachment_size = 0
+    >>> max_bug_attachment_size = """
+    ...     [launchpad]
+    ...     max_bug_attachment_size: 0
+    ...     """
+    >>> config.push('max_bug_attachment_size', max_bug_attachment_size)
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={'field.subject': u'Title',
@@ -160,7 +185,8 @@ means no limit:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'foo.txt'
     >>> len(add_comment_view.errors)
@@ -174,15 +200,16 @@ must have at least one.
     ...     form={'field.subject': u'Title',
     ...           'field.patch': u'',
     ...           'field.actions.save': 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
     1
     >>> [error for error in add_comment_view.errors]
     [u'Either a comment or attachment must be provided.']
-    
+
 If the request contains no attachment description the filename should be used.
-    
+
     >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
@@ -192,7 +219,8 @@ If the request contains no attachment description the filename should be used.
     ...           'field.filecontent': filecontent,
     ...           'field.patch': u'',
     ...           'field.actions.save': 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'RA.txt'
     >>> len(add_comment_view.errors)
@@ -222,7 +250,8 @@ Let's try uploading a file with some weird characters in them:
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> len(add_comment_view.errors)
     0
     >>> add_comment_view.initialize()
@@ -248,7 +277,8 @@ from the librarian.
     ...           'field.attachment_description': 'blah',
     ...           'field.patch': u'',
     ...           'field.actions.save' : 'Save Changes'})
-    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view = getMultiAdapter(
+    ...     (bugtask, add_request), name='+addcomment-form')
     >>> add_comment_view.initialize()
     Attachment added: u'foo-bar-baz'
     >>> len(add_comment_view.errors)
@@ -258,11 +288,11 @@ from the librarian.
     >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
-    >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
+    >>> config_data = config.pop('max_bug_attachment_size')
     >>> event_listener.unregister()
 
-Security
---------
+
+== Security ==
 
 If a user can view/edit the bug the attachment is attached to, he can
 also view/edit the attachment. At the moment the bug_one is public, so
@@ -341,8 +371,7 @@ Let's make the bug public again:
     True
 
 
-Search for attachments
-----------------------
+== Search for attachments ==
 
 We can search for attachment of a specific types:
 
@@ -396,16 +425,16 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
-Deleting attachments
---------------------
+
+== Deleting attachments ==
 
 It's also possible to delete attachments.
 
-    >>> file_ = StringIO(filecontent)
+    >>> data = StringIO(filecontent)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> attachment = bug_two.addAttachment(
     ...     owner=foobar,
-    ...     file_=file_,
+    ...     data=data,
     ...     filename="foo.baz",
     ...     description="Attachment to be deleted",
     ...     comment="a string comment",
@@ -435,4 +464,4 @@ incorrect removal by downloading and re-attach the file.
 
 
 
-    
+

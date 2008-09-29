@@ -29,7 +29,7 @@
           <li tal:repeat="faq view/similar_faqs"
               tal:attributes="title faq/content/fmt:shorten/320"
               ><a href="#"
-                  tal:attributes="here faq/fmt:url"
+                  tal:attributes="href faq/fmt:url"
                   tal:content="faq/title">FAQ Title</a>
           </li>
         </ul>

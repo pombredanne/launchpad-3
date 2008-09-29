@@ -2,7 +2,7 @@
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
-    >>> import pytz 
+    >>> import pytz
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
@@ -13,7 +13,8 @@
 == register_branch ==
 
 register_branch(branch_url, branch_name, branch_title,
-                branch_description, author_email, product_name)
+                branch_description, author_email, product_name,
+                owner_name='')
 
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
@@ -92,7 +93,7 @@ well:
     >>> print new_branch.product.displayname
     Evolution
 
-If we try to register a branch with a unique name that is already used:
+If we try to register a branch with a branch name that is already used:
 
     >>> yet_another_branch_url = 'http://foo.com/yet_another_branch'
     >>> branchset_api.register_branch(
@@ -100,7 +101,17 @@ If we try to register a branch with a unique name that is already used:
     ...      'branch description', 'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/evolution/branch_name'>
+    Fault: <Fault 220: 'Branch name already in use:
+      A branch with the name "branch_name" already exists
+      for name16 in evolution.'>
+
+However a branch can be registered with a name used by a different user.
+
+    >>> evo_main_url = 'http://foo.example.com/evo/main'
+    >>> branchset_api.register_branch(
+    ...      evo_main_url, 'main', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    'http://code.launchpad.dev/~name16/evolution/main'
 
 This check must also detect branch name conflict for +junk branches:
 
@@ -108,8 +119,8 @@ This check must also detect branch name conflict for +junk branches:
     ...      yet_another_branch_url, 'branch', '', '', '', '')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Unique name already in use: ~name16/+junk/branch'>
-
+    Fault: <Fault 220: 'Branch name already in use:
+      A junk branch with the name "branch" already exists for name16.'>
 
 If we give a product name that doesn't exist, we get an error:
 
@@ -119,7 +130,7 @@ If we give a product name that doesn't exist, we get an error:
     ...      'branch description', 'test@canonical.com', 'non-existing')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 10: 'No such product: non-existing'>
+    Fault: <Fault 10: 'No such project: non-existing'>
 
 If we give an email address which isn't registered in Launchpad:
 
@@ -221,6 +232,56 @@ policy is forbidden will cause a fault result.
     ...
     Fault: <Fault 110: 'You are not allowed to create a branch for project:
     The Landscape Project'>
+
+We can register a branch as being owned by a team, rather than just an
+individual:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/unregistered-as-yet', 'team-branch',
+    ...     'new-title', 'new-description', 'test@canonical.com',
+    ...     'evolution', 'name18')
+    'http://code.launchpad.dev/~name18/evolution/team-branch'
+
+If the team doesn't exist, we raise a Fault that says so:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/team-dont-exist', 'team-dont-exist',
+    ...     'title', 'description', 'test@canonical.com', 'evolution',
+    ...     'no-existy-teamo')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 200: 'No such person or team: no-existy-teamo'>
+
+We can only register branches as belonging to a team that we are a
+member of. Doing otherwise raises a Fault:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-team', 'invalid-team', 'title',
+    ...     'description', 'test@canonical.com', 'evolution',
+    ...     'landscape-developers')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 250: 'name16 is not a member of landscape-developers.'>
+
+Trying to register a branch with an invalid name will fail with a fault that
+explains the problem:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-branch-name', '.bzr', 'title', 'desc',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 260: "Invalid branch name '.bzr'. Branch names must ...
+
+Crazy unicode characters are also invalid:
+
+    >>> branchset_api.register_branch(
+    ...     'http://example.com/invalid-branch-name',
+    ...      u'\N{latin small letter e with acute}', 'title', 'desc',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 260: u"Invalid branch name '\xe9'. Branch names must ...
 
 
 == link_branch_to_bug(branch_url, bug_id, whiteboard) ==
@@ -332,7 +393,7 @@ Launchpad also returns a fault if the project doesn't exist.
     >>> branchset_api.resolve_lp_path('doesntexist')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 10: 'No such product: doesntexist'>
+    Fault: <Fault 10: 'No such project: doesntexist'>
 
 
 === lp:project/series ===
@@ -360,7 +421,7 @@ Similarly if the project doesn't exist:
     >>> branchset_api.resolve_lp_path('doesntexist/trunk')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 10: 'No such product: doesntexist'>
+    Fault: <Fault 10: 'No such project: doesntexist'>
 
 
 === lp:~owner/product/branch ===
@@ -389,12 +450,12 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     >>> branchset_api.resolve_lp_path('~doesntexist/+junk/trunk')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 200: 'No such person: doesntexist'>
+    Fault: <Fault 200: 'No such person or team: doesntexist'>
 
     >>> branchset_api.resolve_lp_path('~sabdfl/doesntexist/trunk')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 10: 'No such product: doesntexist'>
+    Fault: <Fault 10: 'No such project: doesntexist'>
 
 
 === Remote branches ===
@@ -408,7 +469,7 @@ sites. For these branches, resolve_lp_path returns only a single URL.
     >>> getUtility(IBranchSet).new(
     ...     BranchType.REMOTE, 'remote', arbitrary_person, arbitrary_person,
     ...     None, 'http://example.com/remote_branch')
-    <Branch u'~name12/+junk/remote' (80)>
+    <Branch u'~name12/+junk/remote' (...)>
     >>> results = branchset_api.resolve_lp_path('~name12/+junk/remote')
     >>> results['urls']
     ['http://example.com/remote_branch']

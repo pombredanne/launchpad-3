@@ -48,7 +48,8 @@ class Cve(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug', intermediateTable='BugCve',
         joinColumn='cve', otherColumn='bug', orderBy='id')
     bug_links = SQLMultipleJoin('BugCve', joinColumn='cve', orderBy='id')
-    references = SQLMultipleJoin('CveReference', joinColumn='cve', orderBy='id')
+    references = SQLMultipleJoin(
+        'CveReference', joinColumn='cve', orderBy='id')
 
     @property
     def url(self):
@@ -142,7 +143,7 @@ class CveSet:
             cve = self[sequence]
             if cve is None:
                 cve = Cve(sequence=sequence, status=CveStatus.DEPRECATED,
-                    description="This CVEwas automatically created from "
+                    description="This CVE was automatically created from "
                     "a reference found in an email or other text. If you "
                     "are reading this, then this CVE entry is probably "
                     "erroneous, since this text should be replaced by "

@@ -141,8 +141,6 @@ We must use setPrivate:
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
@@ -379,26 +377,6 @@ sourcepackage. E.g.
     >>> private_bug.getIndirectSubscribers()
     []
 
-There are some IBugTargets that don't allow bugs to be directly filed on
-them, e.g. IDistroSeries and ISourcePackage.
-
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-
-    >>> ubuntu_warty = getUtility(IDistroSeriesSet).get(1)
-    >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams(
-    ...     owner=current_user(), title="test", comment="test")
-    >>> ubuntu_warty_firefox.createBug(params)
-    Traceback (most recent call last):
-      ...
-    NotImplementedError: A new bug cannot be filed directly...
-
 
 == Prevent reporter from being subscribed to filed bugs ==
 
@@ -499,7 +477,8 @@ Modifying a bugtask will update IBug.date_last_updated.
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_task, providing=IUpstreamBugTask)
 
-    >>> firefox_task.importance = BugTaskImportance.CRITICAL
+    >>> firefox_task.transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, current_user())
     >>> firefox_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, current_user())
 
@@ -592,8 +571,7 @@ Adding an attachment.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachmentSet, IMessageSet, IBugMessageSet,
-    ...     ILibraryFileAliasSet)
+    ...     IBugAttachmentSet, ILibraryFileAliasSet, IMessageSet)
 
     >>> firefox_bug.attachments.count()
     0
@@ -784,8 +762,8 @@ has been marked invalid or a fix has been released.
 
 Let's add a new task to b8 to see if that affects the completeness.
 
-    >>> from canonical.launchpad.database import BugTask
-    >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
+    >>> newtask = getUtility(IBugTaskSet).createTask(
+    ...     bug=b8, product=firefox, owner=b8.owner)
     >>> newtask.status.name
     'NEW'
     >>> b8.is_complete
@@ -814,7 +792,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Ubuntu
     Hoary
     mozilla-firefox in debian
-    Woody mozilla-firefox
+    Debian Woody mozilla-firefox
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
@@ -854,7 +832,7 @@ use getBugTask() to get it.
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
     >>> mozilla_in_woody_task.target.displayname
-    u'Woody mozilla-firefox'
+    u'Debian Woody mozilla-firefox'
 
 If the bug isn't targeted to the target, None is returned.
 
@@ -964,3 +942,45 @@ information, too:
     >>> len(CursorWrapper.last_executed_sql) - queries
     2
 
+Bugs have a special attribute, `indexed_messages` which returns the collection
+of messages, each decorated with the index of that message in its context
+(the bug) and the primary bug task. This is used for providing an efficient
+implementation of the canonical url resolution for messages when they are
+exported using the webservice API.
+
+    >>> for indexed_message in bug_two.indexed_messages:
+    ...     print '%s\t%s\t%s' % (
+    ...         indexed_message.index, indexed_message.subject,
+    ...         indexed_message.inside.title)
+    0 PEBCAK                                      Bug #2 in Tomcat: "Blackhole Trash folder"
+    1 Fantastic idea, I'd really like to see this Bug #2 in Tomcat: "Blackhole Trash folder"
+    2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"
+
+
+== Affected users ==
+
+Users can mark bugs as affecting them. For each bug we then keep a count
+of the number of users affected by it.
+
+   >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+   >>> factory = LaunchpadObjectFactory()
+   >>> test_bug = factory.makeBug()
+   >>> affected_user = factory.makePerson()
+
+When we mark a bug as affecting a new user, the affected_users_count
+increments.
+
+    >>> test_bug.isUserAffected(affected_user)
+    False
+    >>> test_bug.markUserAffected(affected_user)
+    >>> test_bug.isUserAffected(affected_user)
+    True
+    >>> test_bug.users_affected_count
+    1
+
+A bug can only affect a user once. Calling markUserAffect() with the
+same user more than once does not increment users_affect_count.
+
+    >>> test_bug.markUserAffected(affected_user)
+    >>> test_bug.users_affected_count
+    1

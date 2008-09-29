@@ -14,7 +14,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
         PackagingType, IPackaging, IPackagingUtil)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Packaging(SQLBase):
@@ -39,7 +39,7 @@ class Packaging(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=DEFAULT)
+        storm_validator=validate_public_person, notNull=False, default=DEFAULT)
 
     @property
     def sourcepackage(self):

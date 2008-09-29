@@ -1,0 +1,40 @@
+= IHasOwner =
+
+Objects which provide that interface can only be changed by the owner
+itself or a Launchpad admin.
+
+    # First we define a class which only provides IHasOwner.
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces.launchpad import IHasOwner
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> class FooObject:
+    ...     implements(IHasOwner)
+    ...     owner = salgado
+
+Salgado is the owner of any FooObject we create, so he can edit it.
+
+    >>> foo = FooObject()
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import queryAdapter
+    >>> authorization = queryAdapter(foo, IAuthorization, 'launchpad.Edit')
+    >>> authorization.checkAuthenticated(salgado)
+    True
+
+So can a member of the Launchpad admins team.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> sabdfl.inTeam(admins)
+    True
+    >>> authorization.checkAuthenticated(sabdfl)
+    True
+
+But someone who's not salgado nor a member of the admins team won't be
+able to.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.inTeam(admins)
+    False
+    >>> authorization.checkAuthenticated(sample_person)
+    False

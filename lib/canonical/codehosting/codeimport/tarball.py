@@ -55,6 +55,5 @@ def extract_tarball(tarball_name, directory):
     """
     if not os.path.isdir(directory):
         raise NotADirectory(directory)
-    retcode = subprocess.call(
-        ['tar', 'xzf', tarball_name, '-C', directory])
+    retcode = subprocess.call(['tar', 'xzf', tarball_name, '-C', directory])
     _check_tar_retcode(retcode)

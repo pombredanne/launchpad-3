@@ -1,0 +1,19 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope">
+
+  <class
+    class="canonical.launchpad.utilities.PageMatch">
+    <allow interface="canonical.launchpad.interfaces.ISearchResult" />
+  </class>
+
+  <class
+    class="canonical.launchpad.utilities.PageMatches">
+    <allow interface="canonical.launchpad.interfaces.ISearchResults" />
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.utilities.GoogleSearchService"
+    provides="canonical.launchpad.interfaces.ISearchService">
+    <allow interface="canonical.launchpad.interfaces.ISearchService" />
+  </securedutility>
+</configure>

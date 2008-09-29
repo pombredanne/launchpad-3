@@ -8,7 +8,8 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
+from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
@@ -26,6 +27,8 @@ class BugMessage(SQLBase):
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
+    remote_comment_id = StringCol(notNull=False, default=None)
+
 
 class BugMessageSet:
     """See canonical.launchpad.interfaces.IBugMessageSet."""
@@ -40,6 +43,10 @@ class BugMessageSet:
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         bugmsg = BugMessage(bug=bug, message=msg)
 
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(bugmsg).flush()
         return bugmsg
 
     def get(self, bugmessageid):

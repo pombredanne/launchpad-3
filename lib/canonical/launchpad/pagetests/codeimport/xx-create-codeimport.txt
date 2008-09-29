@@ -44,15 +44,25 @@ a name for the import branch, and a subversion branch location.
 When the user clicks continue, the import branch is created
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Status: Pending Review
+    Import Status: Pending Review
     This branch is an import of the Subversion branch
     from http://svn.example.com/firefox/trunk.
+    >>> browser.getLink("http://svn.example.com/firefox/trunk")
+    <Link text='http://svn.example.com/firefox/trunk'
+           url='http://svn.example.com/firefox/trunk'>
 
 The user is also subscribed to the branch to get notifications.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
-    Subscribers
+    >>> def print_subscribers(contents):
+    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
+    ...     if subscriptions == None:
+    ...         print subscriptions
+    ...         return
+    ...     for subscriber in subscriptions.fetch('dt'):
+    ...         print extract_text(subscriber.renderContents())
+    >>> print_subscribers(browser.contents)
     No Privileges Person
+    VCS imports
 
 
 == Requesting a CVS import ==
@@ -70,7 +80,7 @@ to identify the CVS branch.  A project and branch name are also required.
     >>> browser.getControl('Request Import').click()
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Status: Pending Review
+    Import Status: Pending Review
     This branch is an import of the CVS module firefox from
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.
 

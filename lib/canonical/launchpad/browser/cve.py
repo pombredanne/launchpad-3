@@ -5,19 +5,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'CveSetNavigation',
     'CveContextMenu',
-    'CveSetContextMenu',
     'CveLinkView',
-    'CveUnlinkView',
+    'CveSetContextMenu',
+    'CveSetNavigation',
     'CveSetView',
+    'CveUnlinkView',
     ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
+from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag
 from canonical.launchpad.validators.cve import valid_cve
 
 from canonical.launchpad.webapp import (
@@ -29,8 +29,6 @@ class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
 
-    def breadcrumb(self):
-        return "CVE reports"
 
 class CveContextMenu(ContextMenu):
 

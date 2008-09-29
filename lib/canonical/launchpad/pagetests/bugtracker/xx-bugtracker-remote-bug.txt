@@ -52,7 +52,7 @@ Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Set privacy/security').click()
+  >>> browser.getLink('This report is public').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('This bug report should be private').selected = True
@@ -104,7 +104,7 @@ remote bug, we don't perform the redirect ahead of time:
 Set the bug back to public:
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Set privacy/security').click()
+  >>> browser.getLink('This report is private').click()
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('This bug report should be private').selected = False

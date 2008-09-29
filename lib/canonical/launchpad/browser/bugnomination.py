@@ -15,18 +15,27 @@ import datetime
 import pytz
 
 from zope.component import getUtility
-from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces import implements, NotFound
 
 from canonical.launchpad import _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
     ICveSet, ILaunchBag, IBugNomination, IBugNominationForm, INullBugTask)
-
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
 from canonical.launchpad.webapp.authorization import check_permission
-
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+
+
+class BugNominationPrimaryContext:
+    """The primary context is the nearest `IBugTarget`."""
+    implements(IPrimaryContext)
+
+    def __init__(self, nomination):
+        launchbag = getUtility(ILaunchBag)
+        self.context = launchbag.bugtask.target
+
 
 class BugNominationView(LaunchpadFormView):
 
@@ -116,6 +125,10 @@ class BugNominationView(LaunchpadFormView):
 
 class BugNominationTableRowView(LaunchpadView):
     """Browser view class for rendering a nomination table row."""
+
+    # This method will be called to render the bug nomination.
+    renderNonConjoinedSlave = LaunchpadView.__call__
+
     def getNominationPerson(self):
         """Return the IPerson associated with this nomination.
 
@@ -185,7 +198,7 @@ class BugNominationEditView(LaunchpadView):
                 canonical_url(self.current_bugtask), self.context.id))
 
     def processNominationDecision(self):
-        """Process the decision, Approve or Decline, made on this nomination."""
+        """Process the decision made on this nomination."""
         form = self.request.form
         approve_nomination = form.get("approve")
         decline_nomination = form.get("decline")

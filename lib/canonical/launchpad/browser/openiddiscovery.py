@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIDPersistentIdentity',
     'XRDSContentNegotiationMixin',
     ]
 
@@ -14,11 +13,16 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IOpenIdApplication, IOpenIDPersistentIdentity,
-    IOpenIDRPConfigSet, IPersonSet, NotFoundError)
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.launchpad import (
+    IOpenIDApplication, NotFoundError)
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDRPConfigSet, IOpenIDPersistentIdentity)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
@@ -26,8 +30,8 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-class OpenIdApplicationURL:
-    """Canonical URL data for `IOpenIdApplication`"""
+class OpenIDApplicationURL:
+    """Canonical URL data for `IOpenIDApplication`"""
     implements(ICanonicalUrlData)
 
     path = ''
@@ -38,16 +42,19 @@ class OpenIdApplicationURL:
         self.context = context
 
 
-class OpenIdApplicationNavigation(Navigation):
-    """Navigation for `IOpenIdApplication`"""
-    usedfor = IOpenIdApplication
+class OpenIDApplicationNavigation(Navigation):
+    """Navigation for `IOpenIDApplication`"""
+    usedfor = IOpenIDApplication
 
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None:
-            return OpenIDPersistentIdentity(person)
+        account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
+        # XXX sinzui 2008-09-09 bug=237280:
+        # Account.status should be public.
+        if (account is not None
+            and removeSecurityProxy(account).status == AccountStatus.ACTIVE):
+            return IOpenIDPersistentIdentity(account)
         else:
             return None
 
@@ -67,21 +74,11 @@ class OpenIdApplicationNavigation(Navigation):
         """Redirect person names to equivalent persistent identity URLs."""
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
-            target = '%s+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
+            openid_identity = IOpenIDPersistentIdentity(person.account)
+            target = openid_identity.openid_identity_url
             return RedirectionView(target, self.request, 303)
         else:
             raise NotFoundError(name)
-
-
-class OpenIDPersistentIdentity:
-    """A persistent OpenID identifier for a user."""
-
-    implements(IOpenIDPersistentIdentity)
-
-    def __init__(self, person):
-        self.person = person
 
 
 class XRDSContentNegotiationMixin:
@@ -151,17 +148,12 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
     @cachedproperty
-    def person_url(self):
-        """The absolute URL for the person's Launchpad profile."""
-        return canonical_url(self.context.person, rootsite='mainsite')
-
-    @cachedproperty
     def openid_identity_url(self):
         """The person's persistent OpenID identity URL."""
         return canonical_url(self.context)
 
 
-class OpenIdApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
+class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID index page."""
 
     xrds_template = ViewPageTemplateFile(

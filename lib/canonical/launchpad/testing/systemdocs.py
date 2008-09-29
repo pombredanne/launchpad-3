@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'default_optionflags',
     'LayeredDocFileSuite',
     'SpecialOutputChecker',
     'setUp',
@@ -24,10 +25,13 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import reset_logging
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -113,6 +117,7 @@ def LayeredDocFileSuite(*args, **kw):
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
+            reset_logging()
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
@@ -145,7 +150,7 @@ class SpecialOutputChecker(doctest.OutputChecker):
 
 
 def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET'):
+                method='GET', principal=None):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -154,25 +159,62 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param layer: The layer where the page we are interested in is located.
     :param server_url: The URL from where this request was done.
     :param method: The method used in the request. Defaults to 'GET'.
+    :param principal: The principal for the request, if there is one.
     :return: The view class for the given context and the name.
     """
     request = LaunchpadTestRequest(
         form=form, SERVER_URL=server_url, method=method)
+    if principal is not None:
+        request.setPrincipal(principal)
     if layer is not None:
         setFirstLayer(request, layer)
     return getMultiAdapter((context, request), name=name)
+
+
+def create_initialized_view(context, name, form=None, layer=None,
+                            server_url=None, method='GET', principal=None):
+    """Return a view that has already been initialized."""
+    view = create_view(
+        context, name, form, layer, server_url, method, principal)
+    view.initialize()
+    return view
+
+
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
+
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
+    """
+    # XXX 2008-06-25 gmb:
+    #     Once we move to Python 2.5 we won't need this, since dict
+    #     ordering is guaranteed when __str__() is called.
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['create_initialized_view'] = create_initialized_view
+    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['ordered_dict_as_string'] = ordered_dict_as_string
+    test.globs['verifyObject'] = verifyObject
 
 
 def setUp(test):

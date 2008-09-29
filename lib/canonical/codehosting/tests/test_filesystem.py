@@ -8,16 +8,17 @@ import unittest
 import stat
 
 from bzrlib import errors
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.urlutils import escape
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, CodeHostingTestProviderAdapter,
-    ServerTestCase)
+    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing import TwistedAppServerLayer
+from canonical.twistedsupport import defer_to_thread
 
 
 def wait_for_disconnect(method):
@@ -52,9 +53,9 @@ class TestBranchIDToPath(unittest.TestCase):
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = TwistedAppServerLayer
 
-    @deferToThread
+    @defer_to_thread
     def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
@@ -72,7 +73,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('bar'))
         self.assertTrue(transport.has('foo'))
 
-    @deferToThread
+    @defer_to_thread
     def test_make_invalid_user_directory(self):
         # The top-level directory must always be of the form '~user'. However,
         # sometimes a transport will ask to look at files that aren't of that
@@ -81,7 +82,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTransportRaises(
             errors.PermissionDenied, transport.mkdir, 'apple')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
@@ -89,7 +90,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTransportRaises(
             errors.PermissionDenied, transport.mkdir, '~apple')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_existing_user_directory(self):
         # Making a user directory raises an error. We don't really care what
         # the error is, but it should be one of FileExists,
@@ -98,7 +99,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTransportRaises(
             errors.PermissionDenied, transport.mkdir, '~testuser')
 
-    @deferToThread
+    @defer_to_thread
     def test_mkdir_not_team_member_error(self):
         # You can't make a branch under the directory of a team that you don't
         # belong to.
@@ -110,7 +111,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             (errors.NoSuchFile, errors.PermissionDenied),
             transport.mkdir, '~not-my-team/firefox/new-branch')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_team_branch_directory(self):
         # You can make a branch directory under a team directory that you are
         # a member of (so long as it's a real product).
@@ -119,7 +120,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(
             transport.has('~testteam/firefox/shiny-new-thing'))
 
-    @deferToThread
+    @defer_to_thread
     def test_make_team_junk_branch_directory(self):
         # Teams do not have +junk products
         transport = self.getTransport()
@@ -130,7 +131,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             (errors.NoSuchFile, errors.PermissionDenied),
             transport.mkdir, '~testteam/+junk/new-branch')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
@@ -139,7 +140,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.PermissionDenied,
             transport.mkdir, '~testuser/no-such-product/new-branch')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_branch_directory(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
@@ -147,7 +148,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('~testuser/firefox/banana')
         self.assertTrue(transport.has('~testuser/firefox/banana'))
 
-    @deferToThread
+    @defer_to_thread
     def test_make_junk_branch(self):
         # Users can make branches beneath their '+junk' folder.
         transport = self.getTransport()
@@ -155,7 +156,30 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # See comment in test_make_branch_directory.
         self.assertTrue(transport.has('~testuser/+junk/banana'))
 
-    @deferToThread
+    @defer_to_thread
+    def test_get_stacking_policy(self):
+        # A stacking policy control file is served underneath product
+        # directories for products that have a default stacked-on branch.
+        transport = self.getTransport()
+        control_file = transport.get_bytes(
+            '~testuser/evolution/.bzr/control.conf')
+        self.assertEqual(
+            'default_stack_on = /~vcs-imports/evolution/main',
+            control_file.strip())
+
+    @defer_to_thread
+    def test_can_open_product_control_dir(self):
+        # The stacking policy lives in a bzrdir in the product directory.
+        # Bazaar needs to be able to open this bzrdir.
+        transport = self.getTransport().clone('~testuser/evolution')
+        found_bzrdir = BzrDir.open_from_transport(transport)
+        # We really just want to test that the above line doesn't raise an
+        # exception. However, we'll also check that we get the bzrdir that we
+        # expected.
+        expected_url = transport.clone('.bzr').base
+        self.assertEqual(expected_url, found_bzrdir.transport.base)
+
+    @defer_to_thread
     @wait_for_disconnect
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
@@ -166,7 +190,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/firefox/banana'))
         self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_bzr_backup_directory_inside_branch(self):
         # Bazaar sometimes needs to create .bzr.backup directories directly
@@ -180,7 +204,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(
             transport.has('~testuser/firefox/banana/.bzr.backup'))
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_backup_bzr_directory_inside_branch(self):
         # Bazaar sometimes needs to create backup.bzr directories directly
@@ -193,7 +217,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(
             transport.has('~testuser/firefox/banana/backup.bzr'))
 
-    @deferToThread
+    @defer_to_thread
     def test_non_bzr_directory_inside_branch(self):
         # Users can only create Bazaar control directories (e.g. '.bzr')
         # inside a branch. Other directories are strictly forbidden.
@@ -203,7 +227,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.PermissionDenied,
             transport.mkdir, '~testuser/+junk/banana/republic')
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
         # Users can only create Bazaar control directories (e.g. '.bzr')
@@ -214,7 +238,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.PermissionDenied,
             transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_rename_to_non_bzr_directory_fails(self):
         # Users cannot create an allowed directory (e.g. '.bzr' or
@@ -228,7 +252,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             transport.rename, '~testuser/firefox/banana/.bzr',
             '~testuser/firefox/banana/republic')
 
-    @deferToThread
+    @defer_to_thread
     def test_make_directory_without_prefix(self):
         # Because the user and product directories don't exist on the
         # filesystem, we can create a branch directory for a product even if
@@ -237,94 +261,72 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('~testuser/thunderbird/banana')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
 
-    @deferToThread
+    def _getBzrDirTransport(self):
+        """Make a .bzr directory in a branch and return a transport for it.
+
+        We use this to test filesystem behaviour beneath the .bzr directory of
+        a branch, which generally has fewer constraints and exercises
+        different code paths.
+        """
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        return transport.clone('branch/.bzr')
+
+    @defer_to_thread
     @wait_for_disconnect
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.mkdir('branch/.bzr/dir2')
-        transport.mkdir('branch/.bzr/dir2/bar')
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        transport.mkdir('dir1/foo')
+        transport.mkdir('dir2')
+        transport.mkdir('dir2/bar')
         self.assertRaises(
-            (errors.FileExists, IOError),
-            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
+            (errors.FileExists, IOError), transport.rename, 'dir1', 'dir2')
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        transport.mkdir('dir1/foo')
+        transport.rename('dir1', 'dir2')
+        self.assertEqual(['dir2'], transport.list_dir('.'))
 
-    @deferToThread
+    @defer_to_thread
     @wait_for_disconnect
     def test_make_directory_twice(self):
         # The transport raises a `FileExists` error if we try to make a
         # directory that already exists.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        self.assertRaises(
-            errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        self.assertRaises(errors.FileExists, transport.mkdir, 'dir1')
 
+    @defer_to_thread
+    @wait_for_disconnect
+    def test_url_escaping(self):
+        # Transports accept and return escaped URL segments. The literal path
+        # we use should be preserved, even if it can be unescaped itself.
+        transport = self._getBzrDirTransport()
 
-class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
+        # The bug we are checking only occurs if
+        # unescape(path).encode('utf-8') != path.
+        path = '%41%42%43'
+        escaped_path = escape(path)
+        content = 'content'
+        transport.put_bytes(escaped_path, content)
 
-    layer = TwistedLaunchpadZopelessLayer
+        # We can use the escaped path to reach the file.
+        self.assertEqual(content, transport.get_bytes(escaped_path))
 
-    def installServer(self, server):
-        self.server = server
-
-    def getDefaultServer(self):
-        return make_sftp_server()
-
-    @deferToThread
-    def test_make_toplevel_directory_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.mkdir, 'directory')
-        self.assertIn(
-            "Branches must be inside a person or team directory.", str(e))
-
-    @deferToThread
-    def test_remove_branch_error(self):
-        transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/foo')
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.rmdir, '~testuser/+junk/foo')
-        self.assertIn(
-            "removing branch directory 'foo' is not allowed.", str(e))
-
-    @deferToThread
-    def test_make_product_directory_for_nonexistent_product_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~testuser/no-such-product/new-branch')
-        self.assertIn(
-            "Directories directly under a user directory must be named after "
-            "a project name registered in Launchpad",
-            str(e))
-
-    @deferToThread
-    def test_mkdir_not_team_member_error(self):
-        # You can't make a branch under the directory of a team that you don't
-        # belong to.
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.NoSuchFile,
-            transport.mkdir, '~not-my-team/firefox/new-branch')
-        self.assertIn("~not-my-team", str(e))
+        # We can also use the value that list_dir returns, which may be
+        # different from our original escaped path. Note that in this case,
+        # returned_path is equivalent but not equal to escaped_path.
+        [returned_path] = list(transport.list_dir('.'))
+        self.assertEqual(content, transport.get_bytes(returned_path))
 
 
 def test_suite():
@@ -335,6 +337,4 @@ def test_suite():
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
     filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
-    error_suite = loader.loadTestsFromTestCase(TestErrorMessages)
-    return unittest.TestSuite(
-        [adapt_suite(adapter, filesystem_suite), error_suite])
+    return adapt_suite(adapter, filesystem_suite)

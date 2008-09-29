@@ -13,7 +13,7 @@ from openid.message import Message
 from zope.component import getUtility
 from zope.testing import doctest
 
-from canonical.launchpad.browser.openidserver import OpenIdMixin
+from canonical.launchpad.browser.openidserver import OpenIDMixin
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import IPersonSet, IOpenIDRPConfigSet
 from canonical.launchpad.testing.systemdocs import (
@@ -22,7 +22,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 
 class SimpleRegistrationTestCase(unittest.TestCase):
-    """Tests for Simple Registration helpers in OpenIdMixin"""
+    """Tests for Simple Registration helpers in OpenIDMixin"""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
@@ -36,7 +36,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             trust_root='fake-trust-root', displayname='Fake Trust Root',
             description='Description',
             allowed_sreg=['email', 'fullname', 'postcode'])
-        class FieldNameTest(OpenIdMixin):
+        class FieldNameTest(OpenIDMixin):
             class openid_request:
                 trust_root = 'fake-trust-root'
                 message = Message.fromPostArgs({
@@ -51,7 +51,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
 
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
-        class FieldValueTest(OpenIdMixin):
+        class FieldValueTest(OpenIDMixin):
             user = getUtility(IPersonSet).getByEmail('david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
@@ -62,6 +62,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('fullname', u'David Allouche'),
             ('nickname', u'ddaa'),
             ('email', u'david.allouche@canonical.com'),
+            ('timezone', u'UTC'),
             ('x_address1', u'Velvet Zephyr Woods'),
             ('x_address2', u'5423'),
             ('x_city', u'whatever'),
@@ -75,7 +76,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         # no previous successful shipit request.
         person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         self.assertEqual(person.lastShippedRequest(), None)
-        class FieldValueTest(OpenIdMixin):
+        class FieldValueTest(OpenIDMixin):
             user = person
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
@@ -85,7 +86,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         self.assertEqual(view.sreg_fields, [
             ('fullname', u'No Privileges Person'),
             ('nickname', u'no-priv'),
-            ('email', u'no-priv@canonical.com')])
+            ('email', u'no-priv@canonical.com'),
+            ('timezone', u'Europe/Paris')])
 
 
 def test_suite():

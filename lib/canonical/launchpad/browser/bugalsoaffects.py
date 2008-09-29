@@ -36,6 +36,8 @@ from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr import EnumeratedType, Item
 
+from canonical.widgets.bugtask import (
+    BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
@@ -212,9 +214,9 @@ class ChooseProductStep(AlsoAffectsStep):
         upstream = self._getUpstream(bugtask.target)
         if upstream is not None:
             if not upstream.active:
-                # XXX: This is only possible because of bug 140526, which
-                # allows packages to be linked to inactive products.
-                # -- Guilherme Salgado, 2007-09-18
+                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
+                # possible because of bug 140526, which allows packages to
+                # be linked to inactive products.
                 series = bugtask.distribution.currentseries
                 assert series is not None, (
                     "This package is linked to a product series so this "
@@ -349,27 +351,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         bug_url = data.get('bug_url', '')
         target = self.getTarget(data)
-        newcontext_escaped = cgi.escape(target.displayname)
-        if (not self.request.get('ignore_missing_remote_bug') and
-            not target.official_malone and not bug_url):
-            # We have no URL for the remote bug and the target does not use
-            # Launchpad for bug tracking, so we warn the user this is not
-            # optimal and ask for his confirmation.
-
-            # Add a hidden field to fool LaunchpadFormView into thinking we
-            # submitted the action it expected when in fact we're submiting
-            # something else to indicate the user has confirmed.
-            confirm_button = (
-                '<input type="hidden" name="%s" value="1" />'
-                '<input style="font-size: smaller" type="submit"'
-                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
-                % self.continue_action.__name__)
-            self.notifications.append(_(dedent("""
-                %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, the %s status will not update automatically.
-                %s""" % (newcontext_escaped, newcontext_escaped,
-                confirm_button))))
-            return None
 
         extracted_bug = None
         extracted_bugtracker = None
@@ -436,8 +417,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # Address bug trackers, and we expect the status and
             # importance to be updated manually, so we do not reset
             # the status and importance here.
-            task_added.transitionToStatus(BugTaskStatus.UNKNOWN, self.user)
-            task_added.importance = BugTaskImportance.UNKNOWN
+            bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+            task_added.transitionToStatus(
+                BugTaskStatus.UNKNOWN, bug_importer)
+            task_added.transitionToImportance(
+                BugTaskImportance.UNKNOWN, bug_importer)
 
         notify(SQLObjectCreatedEvent(task_added))
         self.next_url = canonical_url(task_added)
@@ -446,6 +430,9 @@ class BugTaskCreationStep(AlsoAffectsStep):
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
+
+    custom_widget(
+        'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
 
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 
@@ -462,6 +449,37 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             return data.get('distribution')
         else:
             return self.widgets['distribution'].getInputValue()
+
+    def main_action(self, data):
+        """Create the new bug task, confirming if necessary."""
+        bug_url = data.get('bug_url', '')
+        target = self.getTarget(data)
+
+        if (not bug_url and
+            not self.request.get('ignore_missing_remote_bug') and
+            not target.official_malone):
+            # We have no URL for the remote bug and the target does not use
+            # Launchpad for bug tracking, so we warn the user this is not
+            # optimal and ask for his confirmation.
+
+            # Add a hidden field to fool LaunchpadFormView into thinking we
+            # submitted the action it expected when in fact we're submiting
+            # something else to indicate the user has confirmed.
+            confirm_button = (
+                '<input type="hidden" name="%s" value="1" />'
+                '<input style="font-size: smaller" type="submit"'
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
+                % self.continue_action.__name__)
+            self.notifications.append(_(dedent("""
+                %s doesn't use Launchpad as its bug tracker. Without a bug
+                URL to watch, the %s status will not update automatically.
+                %s""" % (cgi.escape(target.displayname),
+                         cgi.escape(target.displayname),
+                         confirm_button))))
+            return None
+
+        # Create the task.
+        return super(DistroBugTaskCreationStep, self).main_action(data)
 
     def validateStep(self, data):
         """Check that
@@ -683,7 +701,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
             #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
             LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
-            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name        : items[3]}
+            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[3]}
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
@@ -741,9 +759,12 @@ class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 
 class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
 
+    schema = IAddBugTaskWithUpstreamLinkForm
     _next_view = ProductBugTaskCreationStep
-    _field_names = ['product', 'bug_url']
+    _field_names = ['product', 'bug_url', 'link_upstream_how']
     custom_widget('product', DropdownWidget, visible=False)
+    custom_widget('link_upstream_how',
+                  LaunchpadRadioWidget, visible=False)
     label = "Confirm project"
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
@@ -884,10 +905,11 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This method also sets self.next_url to the URL of the newly added
         bugtask.
         """
-        # XXX: This relies on the fact that these actions work using only the
-        # form data and the context. (They don't require any side-effects done
-        # during initialize().)  They should probably be extracted outside of
-        # the view to make that explicit. -- Guilherme Salgado, 2007-11-20
+        # XXX: Guilherme Salgado, 2007-11-20: This relies on the fact that
+        # these actions work using only the form data and the context.
+        # (They don't require any side-effects done  during initialize().)
+        # They should probably be extracted outside of the view to
+        # make that explicit.
         view = UpstreamBugTrackerCreationStep(self.context, self.request)
         view.main_action(data)
 

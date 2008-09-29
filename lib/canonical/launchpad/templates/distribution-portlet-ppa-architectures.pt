@@ -17,7 +17,7 @@
           </a>
           - <tal:status replace="series/status/name/fmt:lower" />
 
-          <ul class="architecture" tal:define="archs series/ppa_architectures"
+          <ul class="architecture" tal:define="archs series/virtualized_architectures"
               tal:condition="archs">
             <li tal:repeat="arch archs">
               <a tal:attributes="href arch/fmt:url">

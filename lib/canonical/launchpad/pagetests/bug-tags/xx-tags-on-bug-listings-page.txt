@@ -54,3 +54,15 @@ then press the tag link again, only open bugs will be shown
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
       &mdash; Medium New
+
+We update bug #2's status to Invalid to demonstrate that the portlet is
+hidden when no tags are relevant:
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
+    >>> admin_browser.getControl("Status", index=0).value = ["Invalid"]
+    >>> admin_browser.getControl("Save Changes", index=0).click()
+
+    >>> anon_browser.open('http://launchpad.dev/tomcat/+bugs')
+    >>> print find_tag_by_id(anon_browser.contents, 'portlet-tags')
+    None
+

@@ -21,7 +21,7 @@ Zope-derived Batching Support
 from zope.interface import implements
 from interfaces import IBatch
 
-from sqlos.interfaces import ISelectResults
+from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
 from canonical.cachedproperty import cachedproperty
 
@@ -41,7 +41,8 @@ class _Batch(object):
         # list is a SelectResults from SQLObject, list.count() hits
         # the database each time.
         if _listlength is None:
-            if ISelectResults.providedBy(results):
+            if (IResultSet.providedBy(results) or
+                ISQLObjectResultSet.providedBy(results)):
                 listlength = results.count()
             else:
                 listlength = len(results)

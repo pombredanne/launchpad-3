@@ -6,10 +6,10 @@ __metaclass__ = type
 __all__ = ['CVSWorkingTree', 'SubversionWorkingTree']
 
 import os
+import subprocess
 
 import CVS
 import pysvn
-import svn_oo
 
 
 class CVSWorkingTree:
@@ -64,5 +64,12 @@ class SubversionWorkingTree:
         client.checkin(self.local_path, 'Log message', recurse=True)
 
     def update(self):
-        tree = svn_oo.WorkingTree(self.local_path)
-        tree.update()
+        # XXX: David Allouche 2006-01-31 bug=82483: A bug in
+        # pysvn prevents us from ignoring svn:externals. We work
+        # around it by shelling out to svn. When cscvs no longer
+        # uses pysvn, we will use the cscvs API again.
+        arguments = ['svn', 'update', '--ignore-externals']
+        retcode = subprocess.call(
+            arguments, cwd=self.local_path, stdout=open('/dev/null', 'w'))
+        if retcode != 0:
+            raise RuntimeError("svn update failed with code %s" % retcode)

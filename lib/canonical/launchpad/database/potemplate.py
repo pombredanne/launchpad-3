@@ -29,7 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -89,7 +89,7 @@ class POTemplate(SQLBase, RosettaStats):
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
@@ -266,26 +266,37 @@ class POTemplate(SQLBase, RosettaStats):
         header.has_plural_forms = self.hasPluralMessage()
         return header
 
-    def getPOTMsgSetByMsgIDText(self, key, only_current=False, context=None):
+    def getPOTMsgSetByMsgIDText(self, singular_text, plural_text=None,
+                                only_current=False, context=None):
         """See `IPOTemplate`."""
-        query = 'potemplate = %s' % sqlvalues(self.id)
+        clauses = [ 'potemplate = %s' % sqlvalues(self.id) ]
         if only_current:
-            query += ' AND sequence > 0'
+            clauses.append('sequence > 0')
         if context is not None:
-            query += ' AND context=%s' % sqlvalues(context)
+            clauses.append('context = %s' % sqlvalues(context))
         else:
-            query += ' AND context IS NULL'
+            clauses.append('context IS NULL')
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(key)
+            singular_msgid = POMsgID.byMsgid(singular_text)
         except SQLObjectNotFound:
             return None
+        clauses.append('msgid_singular = %s' % sqlvalues(singular_msgid))
+
+        # Find a message ID for the plural string.
+        if plural_text is not None:
+            try:
+                plural_msgid = POMsgID.byMsgid(plural_text)
+                clauses.append('msgid_plural = %s' % sqlvalues(plural_msgid))
+            except SQLObjectNotFound:
+                return None
+        else:
+            # You have to be explicit now.
+            clauses.append('msgid_plural IS NULL')
 
         # Find a message set with the given message ID.
-
-        return POTMsgSet.selectOne(query +
-            (' AND msgid_singular = %s' % sqlvalues(pomsgid.id)))
+        return POTMsgSet.selectOne(' AND '.join(clauses))
 
     def getPOTMsgSetBySequence(self, sequence):
         """See `IPOTemplate`."""
@@ -296,24 +307,19 @@ class POTemplate(SQLBase, RosettaStats):
             POTMsgSet.sequence = %s
             """ % sqlvalues (self.id, sequence))
 
-    def getPOTMsgSets(self, current=True, slice=None):
+
+    def getPOTMsgSets(self, current=True):
         """See `IPOTemplate`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self)
+            ]
+
         if current:
             # Only count the number of POTMsgSet that are current.
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
-                    sqlvalues(self.id),
-                orderBy='sequence')
-        else:
-            results = POTMsgSet.select(
-                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
-                orderBy='sequence')
+            clauses.append('POTMsgSet.sequence > 0')
 
-        if slice is not None:
-            # Want only a subset specified by slice
-            results = results[slice]
-
-        return results
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""
@@ -423,10 +429,11 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.unreviewedCount()
 
-    def hasMessageID(self, messageID, context=None):
+    def hasMessageID(self, msgid_singular, msgid_plural, context=None):
         """See `IPOTemplate`."""
         results = POTMsgSet.selectBy(
-            potemplate=self, msgid_singular=messageID, context=context)
+            potemplate=self, msgid_singular=msgid_singular,
+            msgid_plural=msgid_plural, context=context)
         return bool(results)
 
     def hasPluralMessage(self):
@@ -481,7 +488,7 @@ class POTemplate(SQLBase, RosettaStats):
     def expireAllMessages(self):
         """See `IPOTemplate`."""
         for potmsgset in self:
-            potmsgset.sequence = 0
+            potmsgset.setSequence(self, 0)
 
     def _lookupLanguage(self, language_code):
         """Look up named `Language` object, or raise `LanguageNotFound`."""
@@ -614,27 +621,29 @@ class POTemplate(SQLBase, RosettaStats):
             sourcecomment=None,
             flagscomment=None)
 
-    def createMessageSetFromText(self, singular_text, plural_text,
-                                 context=None):
-        """See `IPOTemplate`."""
+    def getOrCreatePOMsgID(self, text):
+        """Creates or returns existing POMsgID for given `text`."""
         try:
-            msgid_singular = POMsgID.byMsgid(singular_text)
+            msgid = POMsgID.byMsgid(text)
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
             # with the given text in this template.
-            msgid_singular = POMsgID(msgid=singular_text)
-        else:
-            assert not self.hasMessageID(msgid_singular, context), (
-                "There is already a message set for this template, file and"
-                " primary msgid and context '%r'" % context)
+            msgid = POMsgID(msgid=text)
+        return msgid
 
-        msgid_plural = None
-        if plural_text is not None:
-            try:
-                msgid_plural = POMsgID.byMsgid(plural_text)
-            except SQLObjectNotFound:
-                msgid_plural = POMsgID(msgid=plural_text)
+    def createMessageSetFromText(self, singular_text, plural_text,
+                                 context=None):
+        """See `IPOTemplate`."""
+
+        msgid_singular = self.getOrCreatePOMsgID(singular_text)
+        if plural_text is None:
+            msgid_plural = None
+        else:
+            msgid_plural = self.getOrCreatePOMsgID(plural_text)
+        assert not self.hasMessageID(msgid_singular, msgid_plural, context), (
+            "There is already a message set for this template, file and"
+            " primary msgid and context '%r'" % context)
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
@@ -729,7 +738,7 @@ class POTemplateSubset:
         self.distroseries = distroseries
         self.productseries = productseries
         self.clausetables = []
-        self.orderby = []
+        self.orderby = ['id']
 
         assert productseries is None or distroseries is None, (
             'A product series must not be used with a distro series.')
@@ -926,6 +935,7 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         if productseries is not None:
             return POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.productseries = %s AND
                     POTemplate.path = %s''' % sqlvalues(
                         productseries.id,
@@ -936,6 +946,7 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
@@ -950,6 +961,7 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
+                    POTemplate.iscurrent IS TRUE AND
                     POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(

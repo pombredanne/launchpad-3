@@ -3,13 +3,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageSOP',
+    'DistributionSourcePackageBreadcrumbBuilder',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackageView'
     ]
+
+import itertools
+import operator
 
 from zope.component import getUtility
 from zope.formlib import form
@@ -18,30 +20,26 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IPackagingUtil, pocketsuffix)
+    IDistributionSourcePackage, IDistributionSourcePackageRelease,
+    IPackageDiffSet, IPackagingUtil, pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
         QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
     StandardLaunchpadFacets, action, canonical_url, redirection)
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+
+from canonical.lazr import decorates
+from canonical.lazr.utils import smartquote
 
 
-class DistributionSourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.title + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.name
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: package releases, most recent first
-        return self.context.releases
-
-    def listAltChildren(self, num):
-        return None
+class DistributionSourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (
+            self.context.sourcepackagename.name)
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
@@ -55,9 +53,9 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['managebugcontacts', 'publishinghistory']
+    links = ['subscribe', 'publishinghistory']
 
-    def managebugcontacts(self):
+    def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
@@ -69,7 +67,7 @@ class DistributionSourcePackageBugsMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['managebugcontacts']
+    links = ['subscribe']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
@@ -79,8 +77,30 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     redirection("+editbugcontact", "+subscribe")
 
-    def breadcrumb(self):
-        return self.context.sourcepackagename.name
+
+class DecoratedDistributionSourcePackageRelease:
+    """A decorated DistributionSourcePackageRelease.
+
+    The publishing history and package diffs for the release are
+    pre-cached.
+    """
+    decorates(IDistributionSourcePackageRelease, 'context')
+
+    def __init__(self, distributionsourcepackagerelease,
+                 publishing_history, package_diffs):
+        self.context = distributionsourcepackagerelease
+        self._publishing_history = publishing_history
+        self._package_diffs = package_diffs
+
+    @property
+    def publishing_history(self):
+        """ See `IDistributionSourcePackageRelease`."""
+        return self._publishing_history
+
+    @property
+    def package_diffs(self):
+        """ See `ISourcePackageRelease`."""
+        return self._package_diffs
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
@@ -214,3 +234,22 @@ class DistributionSourcePackageView(LaunchpadFormView):
             for row in series_result:
                 result.append(row)
         return result
+
+    def releases(self):
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+        # Return early as possible to avoid unnecessary processing.
+        if len(dspr_pubs) == 0:
+            return []
+
+        # Collate diffs for relevant SourcePackageReleases
+        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        spr_diffs = {}
+        for spr, diffs in itertools.groupby(pkg_diffs,
+                                            operator.attrgetter('to_source')):
+            spr_diffs[spr] = list(diffs)
+
+        return [
+            DecoratedDistributionSourcePackageRelease(
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
+            for (dspr, spphs) in dspr_pubs]

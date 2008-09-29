@@ -24,7 +24,7 @@
 <div metal:fill-slot="main">
 
   <h1>
-    <span tal:replace="context/name" /> in
+    &ldquo;<span tal:replace="context/name" />&rdquo; source package in
     <span tal:replace="context/distribution/displayname" />
   </h1>
 
@@ -100,7 +100,7 @@
   <h2>Version history</h2>
 
   <tal:block
-    repeat="dspr context/releases"
+    repeat="dspr view/releases"
     replace="structure dspr/@@+changes">
   </tal:block>
 

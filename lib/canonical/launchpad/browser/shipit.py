@@ -71,10 +71,9 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
-    series = ShipItConstants.current_distroseries
-
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
+        self.series = ShipItConstants.current_distroseries
 
     @property
     def prerelease_mode(self):
@@ -113,7 +112,6 @@ class ShipItLoginView(LoginOrRegister):
 
     standard_order_page = '/myrequest'
     custom_order_page = '/specialrequest'
-    series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
@@ -123,6 +121,7 @@ class ShipItLoginView(LoginOrRegister):
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
+        self.series = ShipItConstants.current_distroseries
         self.origin = self.possible_origins[self.flavour]
 
     def is_open(self):
@@ -208,10 +207,6 @@ class ShipItRequestView(GeneralFormView):
     standard_order_page = '/myrequest'
     custom_order_page = '/specialrequest'
     should_show_custom_request = False
-    # This only exists so that our tests can simulate the creation (through
-    # the web UI) of requests containing CDs of serieses other than the
-    # current one.
-    series = ShipItConstants.current_distroseries
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -222,11 +217,13 @@ class ShipItRequestView(GeneralFormView):
     process_status = None
     index = ViewPageTemplateFile('../templates/shipit-requestcds.pt')
 
+    # pylint: disable-msg=W0231
     def __init__(self, context, request):
         """Override GeneralFormView.__init__() not to set up widgets."""
         self.context = context
         self.request = request
         self.flavour = _get_flavour_from_layer(request)
+        self.series = ShipItConstants.current_distroseries
         self.fieldNames = [
             'recipientdisplayname', 'addressline1', 'addressline2', 'city',
             'province', 'country', 'postcode', 'phone', 'organization']
@@ -239,13 +236,11 @@ class ShipItRequestView(GeneralFormView):
         These fields include the 'reason' and quantity widgets for users to
         make custom orders.
         """
-        ubuntu_kubuntu_and_server = [
-            ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.SERVER]
-        if self.flavour in ubuntu_kubuntu_and_server:
+        if self.flavour == ShipItFlavour.SERVER:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86',
                 ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'}
-        elif self.flavour == ShipItFlavour.EDUBUNTU:
+        elif self.flavour in ShipItFlavour.items:
             self.quantity_fields_mapping = {
                 ShipItArchitecture.X86: 'ubuntu_quantityx86'}
         else:
@@ -261,22 +256,6 @@ class ShipItRequestView(GeneralFormView):
     @property
     def prerelease_mode(self):
         return config.shipit.prerelease_mode
-
-    @property
-    def dvds_section(self):
-        """Get the HTML containing links to DVD sales for this flavour."""
-        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
-        # amazon.com. -- Guilherme Salgado, 2007-09-24
-        return u''
-        if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-ubuntu-dvds.pt')(self)
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile(
-                '../templates/shipit-kubuntu-dvds.pt')(self)
-        else:
-            # We don't have DVDs for Edubuntu. :-(
-            return u''
 
     @property
     def _keyword_arguments(self):
@@ -331,14 +310,6 @@ class ShipItRequestView(GeneralFormView):
             return "http://www.kubuntu.org/download.php"
         else:
             raise AssertionError('Invalid self.flavour: %s' % self.flavour)
-
-    @property
-    def is_edubuntu(self):
-        return self.flavour == ShipItFlavour.EDUBUNTU
-
-    @property
-    def is_kubuntu(self):
-        return self.flavour == ShipItFlavour.KUBUNTU
 
     @property
     def initial_values(self):
@@ -478,8 +449,8 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
-                       'can take up to <strong>ten weeks<strong> to deliver. '
-                       'For quicker processing, choose a '
+                       'can take up to <strong>sixteen weeks<strong> to '
+                       'deliver. For quicker processing, choose a '
                        '<a href="%s">standard option</a> instead.'
                        % self.standard_order_page)
             else:
@@ -511,6 +482,7 @@ class ShipItRequestView(GeneralFormView):
             if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
+                self._abortAndSetStatus()
                 return ("The option you chose was not found. Please select "
                         "one from the list below.")
             quantities = request_type.quantities
@@ -733,7 +705,7 @@ class ShippingRequestsView:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
         # Sort as directed by form, but also by id as a tie-breaker
-        # XXX: JeroenVermeulen bug=136345 2007-08-31: Indeterministic sorting
+        # XXX: JeroenVermeulen 2007-08-31 bug=136345: Indeterministic sorting
         # was breaking the xx-shipit-search-for-requests.txt test most of the
         # time (and blocking PQM).  This is a quick fix, but it looks like we
         # could also use some extra input checking here.  SQL sorting
@@ -857,10 +829,10 @@ class ShippingRequestApproveOrDenyView(
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
              ShipItArchitecture.AMD64: None},
@@ -1006,10 +978,10 @@ class ShippingRequestAdminView(
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86',
-             ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
+             ShipItArchitecture.AMD64: None},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
              ShipItArchitecture.AMD64: None},
@@ -1188,13 +1160,12 @@ class ShipItSurveyView(LaunchpadFormView):
     """A survey that should be answered by people requesting server CDs."""
 
     schema = ShipItSurveySchema
-    label = 'About you'
     custom_widget('environment', LabeledMultiCheckBoxWidget)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)
 
-    @action(_("Continue to Request a Free CD"), name="continue")
+    @action(_("Continue to Complete CD Request"), name="continue")
     def continue_action(self, action, data):
         """Continue to the page where the user requests server CDs.
 

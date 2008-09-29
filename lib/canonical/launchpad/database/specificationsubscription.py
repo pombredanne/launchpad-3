@@ -10,7 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, BoolCol
 
 from canonical.launchpad.interfaces import ISpecificationSubscription
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 from canonical.database.sqlbase import SQLBase
 
@@ -25,7 +25,7 @@ class SpecificationSubscription(SQLBase):
         foreignKey='Specification', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
 

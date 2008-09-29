@@ -10,17 +10,57 @@ __all__ = [
     'BinaryPublishingRecordView',
     ]
 
+from operator import attrgetter
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory)
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from canonical.launchpad.webapp import (
     LaunchpadView, canonical_url)
 from canonical.launchpad.interfaces import (
     BuildStatus, PackagePublishingStatus)
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BasePublishingRecordView(LaunchpadView):
     """Base Publishing view class."""
+
+    @property
+    def is_source(self):
+        return ISourcePackagePublishingHistory.providedBy(self.context)
+
+    @property
+    def is_binary(self):
+        return IBinaryPackagePublishingHistory.providedBy(self.context)
+
+    # The reason we define the map below outside the only function that uses
+    # it (date_last_changed()) is that this allows us to test whether the map
+    # covers all PackagePublishingStatus enumeration values.
+    # The pertinent tests in doc/publishing-pages.txt will fail if we add a
+    # new value to the PackagePublishingStatus enumeration but do not update
+    # this map.
+    timestamp_map = {
+        PackagePublishingStatus.DELETED: 'dateremoved',
+        PackagePublishingStatus.OBSOLETE: 'scheduleddeletiondate',
+        PackagePublishingStatus.PENDING: 'datecreated',
+        PackagePublishingStatus.PUBLISHED: 'datepublished',
+        PackagePublishingStatus.SUPERSEDED: 'datesuperseded'
+    }
+
+    @property
+    def date_last_changed(self):
+        """Return the date of last change considering the publishing status.
+
+        The date returned is as follows:
+            * pending        -> datecreated
+            * published      -> datepublished
+            * superseded     -> datesuperseded
+            * deleted        -> dateremoved
+            * obsolete       -> scheduleddeletiondate
+        """
+        accessor = attrgetter(self.timestamp_map[self.context.status])
+        return accessor(self.context)
+
 
     def wasDeleted(self):
         """Whether or not a publishing record deletion was requested.
@@ -88,6 +128,28 @@ class BasePublishingRecordView(LaunchpadView):
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
+
+    def wasCopied(self):
+        """Whether or not a source is published in its original location.
+
+        A source is not in its original location when:
+
+         * The publishing `Archive` is not the same than where the source
+            was uploaded. (SSPPH -> SPR -> Archive != SSPPH -> Archive).
+        Or
+
+          * The publishing `DistroSeries` is not the same than where the
+            source was uploaded (SSPPH -> SPR -> DS != SSPPH -> DS).
+        """
+        source = self.context.sourcepackagerelease
+
+        if self.context.archive != source.upload_archive:
+            return True
+
+        if self.context.distroseries != source.upload_distroseries:
+            return True
+
+        return False
 
     @property
     def allow_selection(self):
@@ -200,6 +262,21 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         else:
             return content_template('Built successfully', '/@@/yes')
 
+    @property
+    def linkify_source_archive(self):
+        """Return True if the source's upload_archive should be linkified.
+
+        The source archive is the upload_archive for any source that was
+        copied.  It should be linkified only if it's a PPA and the user
+        has permission to view that PPA.
+        """
+        archive = self.context.sourcepackagerelease.upload_archive
+
+        if not archive.is_ppa:
+            return False
+
+        return check_permission('launchpad.View', archive)
+
 
 class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
     """View class for a selectable `ISourcePackagePublishingHistory`."""
@@ -213,3 +290,35 @@ class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""
     __used_for__ = IBinaryPackagePublishingHistory
+
+    def wasCopied(self):
+        """Whether or not a binary is published in its original location.
+
+        A binary is not in its original location when:
+
+         * The publishing `Archive` is not the same than where the binary
+           was built. (SBPPH -> BPR -> Build -> Archive != SBPPH -> Archive).
+        Or
+
+          * The publishing `DistroArchSeries` is not the same than where
+            the binary was built (SBPPH -> BPR -> B -> DAS != SBPPH -> DAS).
+
+        Or
+
+          * The publishing pocket is not the same than where the binary was
+            built (SBPPH -> BPR -> B -> Pocket != SBPPH -> Pocket).
+
+        """
+        build = self.context.binarypackagerelease.build
+
+        if self.context.archive != build.archive:
+            return True
+
+        if self.context.distroarchseries != build.distroarchseries:
+            return True
+
+        if self.context.pocket != build.pocket:
+            return True
+
+        return False
+

@@ -24,6 +24,12 @@
       <allow attributes="browserDefault __call__" />
     </content>
 
+    <adapter
+        for="zope.publisher.interfaces.http.IHTTPRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        />
+
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
@@ -33,6 +39,12 @@
         for="canonical.launchpad.webapp.interfaces.ILinkData"
         provides="canonical.launchpad.webapp.interfaces.ILink"
         factory="canonical.launchpad.webapp.menu.MenuLink"
+        />
+
+    <adapter
+        for="*"
+        provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
+        factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
         />
 
     <content class="canonical.launchpad.webapp.menu.MenuLink">
@@ -65,6 +77,12 @@
         provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
+        />
+
+    <adapter
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
     <!-- TALES namespaces. -->
@@ -147,6 +165,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.browser.BugTaskListingItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
@@ -164,13 +189,6 @@
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.browser.PillarSearchItem"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
         name="image"
         />
 
@@ -199,13 +217,6 @@
         for="int"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
-        name="lp"
-        />
-
-    <adapter
-        for="dict"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
         name="lp"
         />
 
@@ -341,6 +352,20 @@
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IProductSeries"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -365,6 +390,13 @@
         factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
         name="fmt"
         />
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -433,6 +465,12 @@
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
+    <!-- Storm Store selector. -->
+    <utility
+        component="canonical.launchpad.webapp.adapter.StoreSelector"
+        provides="canonical.launchpad.webapp.interfaces.IStoreSelector">
+    </utility>
+
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad.png" />
 
@@ -459,37 +497,20 @@
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
-        /@@/launchpad-icon-small to access resource and resourceDirectory -->
+        /@@/launchpad-icon-small to access the images directory -->
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+    <browser:page
+        name=""
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
         />
 
-    <!-- RDF page template macros -->
-    <browser:page
-        for="*"
-        name="rdf_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/rdf-macros.pt"
-        />
-<!--
-    <content
-        class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
-        <factory id="zope.da.LaunchpadDA" />
-        <require
-            permission="zope.app.rdb.Use"
-            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapter"
-            />
-        <require
-            permission="zope.ManageServices"
-            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
-            />
-    </content>
--->
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"
@@ -565,6 +586,12 @@
         handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -598,5 +625,24 @@
       factory="canonical.widgets.SinglePopupWidget"
       permission="zope.Public"
       />
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
+      permission="zope.Public"
+      />
+
+    <!-- A simple view used by the page tests. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+whichdb"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.dbpolicy.WhichDbView"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        />
 
 </configure>

@@ -5,6 +5,7 @@ __metaclass__ = type
 from datetime import datetime
 import pytz
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
@@ -15,7 +16,7 @@ from zope.schema import Choice, Datetime
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
-from canonical.launchpad.interfaces import IAnnouncement
+from canonical.launchpad.interfaces import IAnnouncement, ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.date import DateTimeWidget
@@ -52,7 +53,7 @@ class AnnouncementDateWidget(SimpleInputWidget):
             else:
                 data['action'] = 'specific'
         else:
-            data={'action': 'immediately'}
+            data = {'action': 'immediately'}
         widgets = form.setUpWidgets(
             fields, self.name, context, request, ignore_request=False,
             data=data)
@@ -60,9 +61,11 @@ class AnnouncementDateWidget(SimpleInputWidget):
         self.announcement_date_widget = widgets['announcement_date']
 
     def __call__(self):
+        time_zone = getUtility(ILaunchBag).time_zone
         html = '<div>Publish this announcement:</div>\n'
-        html += "<p>%s</p><p>%s</p>" % (
-            self.action_widget(), self.announcement_date_widget())
+        html += "<p>%s</p><p>%s in the %s time zone</p>" % (
+            self.action_widget(), self.announcement_date_widget(),
+            time_zone)
         return html
 
     def hasInput(self):
@@ -74,9 +77,11 @@ class AnnouncementDateWidget(SimpleInputWidget):
             ('sometime', 'At some time in the future when I come back to '
                          'authorize it'),
             ('specific', 'At this specific date and time:')]
-        terms = [SimpleTerm(name, name, label) for name, label in action_names]
+        terms = [
+            SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
+    # pylint: disable-msg=W0706
     def getInputValue(self):
         self._error = None
         action = self.action_widget.getInputValue()
@@ -88,7 +93,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
                 LaunchpadValidationError(
                     _('Please provide a valid date and time.')))
             raise self._error
-        form = self.request.form_ng
         if action == 'immediately' and announcement_date is not None:
             self._error = WidgetInputError(
                 self.name, self.label,

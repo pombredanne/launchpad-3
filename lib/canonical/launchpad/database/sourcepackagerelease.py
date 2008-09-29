@@ -26,22 +26,29 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
-    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
-    NotFoundError, SourcePackageFileType, SourcePackageFormat,
-    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.packagediff import (
+    PackageDiffAlreadyRequested)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.sourcepackage import (
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.packagediff import PackageDiff
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class SourcePackageRelease(SQLBase):
@@ -51,13 +58,13 @@ class SourcePackageRelease(SQLBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(
         dbName='maintainer', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
@@ -95,7 +102,7 @@ class SourcePackageRelease(SQLBase):
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
     package_diffs = SQLMultipleJoin(
-        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+        'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
 
     @property
@@ -154,7 +161,10 @@ class SourcePackageRelease(SQLBase):
     def sourcepackage(self):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
+        # we avoid doing an extra query doing getSourcepackage.
+        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
+        # useful as it looks once we start supporting derivation ... [It] is
+        # dangerous and should be renamed (or removed)".
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
@@ -218,18 +228,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
-    def countOpenBugsInUploadedDistro(self, user):
-        """See ISourcePackageRelease."""
-        upload_distro = self.upload_distroseries.distribution
-        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
-            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: kiko 2006-03-07:
-        # We need to omit duplicates here or else our bugcounts are
-        # inconsistent. This is a wart, and we need to stop spreading
-        # these things over the code.
-        params.omit_dupes = True
-        return upload_distro.searchTasks(params).count()
-
     @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
@@ -250,6 +248,21 @@ class SourcePackageRelease(SQLBase):
                 archives.add(pub.archive)
 
         return sorted(archives, key=operator.attrgetter('id'))
+
+    @cachedproperty
+    def _cached_published_archives(self):
+        """Return a cached list of published archives.
+
+        This is intended for the security adapter as it calls
+        published_archives a lot which makes private PPA index pages
+        unrenderable in the timeout allowed if they have more than a
+        handful of packages.
+
+        XXX Julian 2008-09-10
+        This code should be removed when security adapter caching is done.
+        See bug 268612.
+        """
+        return self.published_archives
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -301,13 +314,16 @@ class SourcePackageRelease(SQLBase):
             return 0.0
 
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchseries.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
+
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
 
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
@@ -372,21 +388,24 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-        # First we try to follow any possibly published architecture-specific
-        # binaries for this source in the given (distroarchseries, archive)
-        # location.
+        # First we try to follow any binaries built from the given source
+        # in a distroarchseries with the given architecturetag and published
+        # in the given (distroarchseries, archive) location.
         clauseTables = [
-            'BinaryPackagePublishingHistory', 'BinaryPackageRelease']
+            'BinaryPackagePublishingHistory', 'BinaryPackageRelease',
+            'DistroArchSeries']
 
         query = """
+            Build.sourcepackagerelease = %s AND
             BinaryPackageRelease.build = Build.id AND
+            DistroArchSeries.id = Build.distroarchseries AND
+            DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.architecturespecific = true AND
-            Build.sourcepackagerelease = %s AND
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive = %s
-        """ % sqlvalues(self, distroarchseries, archive)
+        """ % sqlvalues(self, distroarchseries.architecturetag,
+                        distroarchseries, archive)
 
         select_results = Build.select(
             query, clauseTables=clauseTables, distinct=True,
@@ -423,23 +442,26 @@ class SourcePackageRelease(SQLBase):
         parent_architectures = []
         archtag = distroarchseries.architecturetag
 
-        # XXX cprov 20070720: this code belongs to IDistroSeries content
-        # class as 'parent_series' property. Other parts of the system
-        # can benefit of this, like SP.packagings, for instance.
-        parent_series = []
-        candidate = distroarchseries.distroseries
-        while candidate is not None:
-            parent_series.append(candidate)
-            candidate = candidate.parent_series
+        if archive.purpose != ArchivePurpose.PPA:
+            # XXX cprov 20070720: this code belongs to IDistroSeries content
+            # class as 'parent_series' property. Other parts of the system
+            # can benefit of this, like SP.packagings, for instance.
+            parent_series = []
+            candidate = distroarchseries.distroseries
+            while candidate is not None:
+                parent_series.append(candidate)
+                candidate = candidate.parent_series
 
-        for series in parent_series:
-            try:
-                candidate = series[archtag]
-            except NotFoundError:
-                pass
-            else:
-                parent_architectures.append(candidate)
-        # end-of-XXX.
+            for series in parent_series:
+                try:
+                    candidate = series[archtag]
+                except NotFoundError:
+                    pass
+                else:
+                    parent_architectures.append(candidate)
+            # end-of-XXX.
+        else:
+            parent_architectures.append(distroarchseries)
 
         architectures = [
             architecture.id for architecture in parent_architectures]
@@ -451,7 +473,8 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in (ArchivePurpose.PARTNER,
+                               ArchivePurpose.PRIMARY):
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:
@@ -490,7 +513,18 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def upload_changesfile(self):
-        """See ISourcePackageRelease."""
+        """See `ISourcePackageRelease`."""
+        queue_record = self.getQueueRecord()
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
+
+    def getQueueRecord(self, distroseries=None):
+        """See `ISourcepackageRelease`."""
+        if distroseries is None:
+            distroseries = self.upload_distroseries
+
         clauseTables = [
             'PackageUpload',
             'PackageUploadSource',
@@ -501,15 +535,9 @@ class SourcePackageRelease(SQLBase):
         PackageUpload.distroseries = %s AND
         PackageUploadSource.sourcepackagerelease = %s AND
         PackageUpload.status = %s
-        """ % sqlvalues(self.upload_distroseries, self,
-                        PackageUploadStatus.DONE)
-        queue_record = PackageUpload.selectOne(
+        """ % sqlvalues(distroseries, self, PackageUploadStatus.DONE)
+        return PackageUpload.selectOne(
             query, clauseTables=clauseTables, prejoins=preJoins)
-
-        if not queue_record:
-            return None
-
-        return queue_record.changesfile
 
     @property
     def change_summary(self):
@@ -539,9 +567,9 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
-        # XXX CarlosPerelloMarin bug=213881: This should use generic
-        # translation file format infrastructure, so we don't need to keep
-        # this list of file extensions up to date here.
+        # XXX CarlosPerelloMarin 2008-04-08 bug=213881: This should use
+        # generic translation file format infrastructure, so we don't need to
+        # keep this list of file extensions up to date here.
         filenames = [
             name for name in tarball.getnames()
             if name.startswith('source/') or name.startswith('./source/')

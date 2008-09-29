@@ -1,463 +1,458 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Unit tests for worker.py."""
 
 __metaclass__ = type
 
-
-import httplib
-import os
-import re
-import shutil
-import socket
 from StringIO import StringIO
-import tempfile
 import unittest
-import urllib2
 
 import bzrlib.branch
-from bzrlib import bzrdir
-from bzrlib.branch import BranchReferenceFormat
+from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
+from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
+from bzrlib.errors import NotBranchError
+from bzrlib.remote import RemoteBranch
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseWithTransport
-from bzrlib.tests.repository_implementations.test_repository import (
-            TestCaseWithRepository)
+from bzrlib.smart import server
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
-from bzrlib.weave import Weave
-from bzrlib.errors import (
-    BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
-    NotBranchError)
 
-from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.worker import (
-    PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
-    BranchReferenceForbidden, BranchReferenceValueError,
-    get_canonical_url_for_branch_name, install_worker_ui_factory,
-    PullerWorkerProtocol)
-from canonical.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
-from canonical.launchpad.database import Branch
-from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import InvalidURIError
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
+    BranchPolicy, BranchReferenceForbidden, BranchReferenceLoopError,
+    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
+    PullerWorkerProtocol, StackingLoopError, get_vfs_format_classes,
+    install_worker_ui_factory, StackedOnBranchNotFound)
+from canonical.codehosting.puller.tests import (
+    BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
+from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from canonical.testing import reset_logging
 
 
-class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
+def get_netstrings(line):
+    """Parse `line` as a sequence of netstrings.
 
-    def __init__(self):
-        # We are deliberately not calling PullerWorkerProtocol.__init__:
-        # pylint: disable-msg=W0231
-        self.calls = []
-
-    def startMirroring(self, branch_to_mirror):
-        self.calls.append(('startMirroring', branch_to_mirror))
-
-    def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        self.calls.append(
-            ('mirrorSucceeded', branch_to_mirror, last_revision))
-
-    def mirrorFailed(self, branch_to_mirror, message, oops_id):
-        self.calls.append(
-            ('mirrorFailed', branch_to_mirror, message, oops_id))
+    :return: A list of strings.
+    """
+    strings = []
+    while len(line) > 0:
+        colon_index = line.find(':')
+        length = int(line[:colon_index])
+        strings.append(line[colon_index+1:colon_index+1+length])
+        assert ',' == line[colon_index+1+length], (
+            'Expected %r == %r' % (',', line[colon_index+1+length]))
+        line = line[colon_index+length+2:]
+    return strings
 
 
-class StubbedPullerWorker(PullerWorker):
-    """Partially stubbed subclass of PullerWorker, for unit tests."""
-
-    enable_checkBranchReference = False
-    enable_checkSourceUrl = True
-
-    def _checkSourceUrl(self):
-        if self.enable_checkSourceUrl:
-            PullerWorker._checkSourceUrl(self)
-
-    def _checkBranchReference(self):
-        if self.enable_checkBranchReference:
-            PullerWorker._checkBranchReference(self)
-
-    def _openSourceBranch(self):
-        self.testcase.open_call_count += 1
-
-    def _mirrorToDestBranch(self):
-        pass
-
-
-class PullerWorkerMixin:
-    """Mixin for tests that want to make PullerWorker objects."""
-
-    def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
-        # Change the HOME environment variable in order to ignore existing
-        # user config files.
-        self._home = os.environ.get('HOME', None)
-        os.environ.update({'HOME': self.test_dir})
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `canonical.codehosting.puller.worker.get_vfs_format_classes`.
+    """
 
     def tearDown(self):
-        if self._home is not None:
-            os.environ['HOME'] = self._home
-        shutil.rmtree(self.test_dir)
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        import gc
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
 
-    def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
-                         protocol=None, oops_prefix=None):
-        """Anonymous creation method for PullerWorker."""
-        if src_dir is None:
-            src_dir = os.path.join(self.test_dir, 'source_dir')
-        if dest_dir is None:
-            dest_dir = os.path.join(self.test_dir, 'dest_dir')
-        if protocol is None:
-            protocol = PullerWorkerProtocol(StringIO())
-        if oops_prefix is None:
-            oops_prefix = ''
-        return PullerWorker(
-            src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
-            branch_type=branch_type, protocol=protocol,
-            oops_prefix=oops_prefix)
-
-
-class ErrorHandlingTestCase(unittest.TestCase):
-    """Base class to test PullerWorker error reporting."""
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self._errorHandlingSetUp()
-
-    def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase.
-
-        This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling unittest.TestCase
-        twice.
-        """
-        self.protocol = StubbedPullerWorkerProtocol()
-        self.branch = StubbedPullerWorker(
-            src='foo', dest='bar', branch_id=1,
-            unique_name='owner/product/foo', branch_type=None,
-            protocol=self.protocol, oops_prefix='TOKEN')
-        self.open_call_count = 0
-        self.branch.testcase = self
-
-    def runMirrorAndGetError(self):
-        """Run mirror, check that we receive exactly one error, and return its
-        str().
-        """
-        self.branch.mirror()
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        self.transport_server = server.SmartTCPServer_for_testing
+        vfs_branch = self.make_branch('.')
+        remote_branch = bzrlib.branch.Branch.open(self.get_url('.'))
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
         self.assertEqual(
-            2, len(self.protocol.calls),
-            "Expected startMirroring and mirrorFailed, got: %r"
-            % (self.protocol.calls,))
-        startMirroring, mirrorFailed = self.protocol.calls
-        self.assertEqual(('startMirroring', self.branch), startMirroring)
-        self.assertEqual(('mirrorFailed', self.branch), mirrorFailed[:2])
-        self.assert_('TOKEN' in mirrorFailed[3])
-        self.protocol.calls = []
-        return str(mirrorFailed[2])
-
-    def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str()
-        of which starts with `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        if not error.startswith(expected_error):
-            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
-
-    def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str()
-        of which is equal to `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        self.assertEqual(error, expected_error)
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
 
 
-class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
+class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
-    test_dir = None
+    def test_mirror_opener_with_stacked_on_url(self):
+        # A PullerWorker for a mirrored branch gets a MirroredBranchPolicy as
+        # the policy of its branch_mirrorer. The default stacked-on URL is
+        # passed through.
+        url = '/~foo/bar/baz'
+        worker = self.makePullerWorker(
+            branch_type=BranchType.MIRRORED, default_stacked_on_url=url)
+        policy = worker.branch_mirrorer.policy
+        self.assertIsInstance(policy, MirroredBranchPolicy)
+        self.assertEqual(url, policy.stacked_on_url)
 
-    def setUp(self):
-        PullerWorkerMixin.setUp(self)
+    def test_mirror_opener_without_stacked_on_url(self):
+        # A PullerWorker for a mirrored branch get a MirroredBranchPolicy as
+        # the policy of its mirrorer. If a default stacked-on URL is not
+        # specified (indicated by an empty string), then the stacked_on_url is
+        # None.
+        worker = self.makePullerWorker(
+            branch_type=BranchType.MIRRORED, default_stacked_on_url='')
+        policy = worker.branch_mirrorer.policy
+        self.assertIsInstance(policy, MirroredBranchPolicy)
+        self.assertIs(None, policy.stacked_on_url)
 
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
+    def testHostedOpener(self):
+        # A PullerWorker for a hosted branch gets a HostedBranchPolicy as
+        # the policy of its branch_mirrorer.
+        worker = self.makePullerWorker(branch_type=BranchType.HOSTED)
+        self.assertIsInstance(
+            worker.branch_mirrorer.policy, HostedBranchPolicy)
+
+    def testImportedOpener(self):
+        # A PullerWorker for an imported branch gets a ImportedBranchPolicy as
+        # the policy of its branch_mirrorer.
+        worker = self.makePullerWorker(branch_type=BranchType.IMPORTED)
+        self.assertIsInstance(
+            worker.branch_mirrorer.policy, ImportedBranchPolicy)
 
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
-        to_mirror = self.makePullerWorker()
-        tree = create_branch_with_one_revision(to_mirror.source)
-        to_mirror.mirror()
+        source_tree = self.make_branch_and_tree('source-branch')
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('dest'))
+        source_tree.commit('commit message')
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
-            tree.last_revision(), mirrored_branch.last_revision())
+            source_tree.last_revision(), mirrored_branch.last_revision())
 
     def testMirrorEmptyBranch(self):
-        # Check that we can mirror an empty branch, and that the
-        # last_mirrored_id for an empty branch can be distinguished from an
-        # unmirrored branch.
-        to_mirror = self.makePullerWorker()
-
-        # Create an empty source branch.
-        os.makedirs(to_mirror.source)
-        tree = bzrdir.BzrDir.create_branch_and_repo(to_mirror.source)
-
-        to_mirror.mirror()
+        # We can mirror an empty branch.
+        source_branch = self.make_branch('source-branch')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('dest'))
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
-
-class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
-
-    def setUp(self):
-        TestCaseWithRepository.setUp(self)
-
-    def tearDown(self):
-        TestCaseWithRepository.tearDown(self)
-        reset_logging()
-
-    def testMirrorKnitAsKnit(self):
-        # Create a source branch in knit format, and check that the mirror is
-        # in knit format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = \
-            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._testMirrorFormat()
-
-    def testMirrorMetaweaveAsMetaweave(self):
-        # Create a source branch in metaweave format, and check that the
-        # mirror is in metaweave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._testMirrorFormat()
-
-    def testMirrorWeaveAsWeave(self):
-        # Create a source branch in weave format, and check that the mirror is
-        # in weave format.
-        self.bzrdir_format = bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
-        self._testMirrorFormat()
-
-    def testSourceFormatChange(self):
-        # Create and mirror a branch in weave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._createSourceBranch()
-        self._mirror()
-
-        # Change the branch to knit format.
-        shutil.rmtree('src-branch')
-        self.repository_format = \
-            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._createSourceBranch()
-
-        # Mirror again.  The mirrored branch should now be in knit format.
-        mirrored_branch = self._mirror()
-        self.assertEqual(
-            self.repository_format.get_format_description(),
-            mirrored_branch.repository._format.get_format_description())
-
-    def _createSourceBranch(self):
-        os.mkdir('src-branch')
-        tree = self.make_branch_and_tree('src-branch')
-        self.local_branch = tree.branch
-        self.build_tree(['foo'], transport=get_transport('./src-branch'))
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
-        return tree
-
-    def _mirror(self):
-        # Mirror src-branch to dest-branch
-        source_url = os.path.abspath('src-branch')
-        to_mirror = self.makePullerWorker(src_dir=source_url)
-        to_mirror.mirror()
+    def testCanMirrorWhenDestDirExists(self):
+        # We can mirror a branch even if the destination exists, and contains
+        # data but is not a branch.
+        source_tree = self.make_branch_and_tree('source-branch')
+        to_mirror = self.makePullerWorker(
+            source_tree.branch.base, self.get_url('destdir'))
+        source_tree.commit('commit message')
+        # Make the directory.
+        dest = get_transport(to_mirror.dest)
+        ensure_base(dest)
+        dest.mkdir('.bzr')
+        # 'dest' is not a branch.
+        self.assertRaises(
+            NotBranchError, bzrlib.branch.Branch.open, to_mirror.dest)
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        return mirrored_branch
-
-    def _testMirrorFormat(self):
-        tree = self._createSourceBranch()
-
-        mirrored_branch = self._mirror()
-        self.assertEqual(tree.last_revision(),
-                         mirrored_branch.last_revision())
-
-        # Assert that the mirrored branch is in source's format
-        # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
-        # See bug 45277.
         self.assertEqual(
-            self.repository_format.get_format_description(),
-            mirrored_branch.repository._format.get_format_description())
+            source_tree.last_revision(), mirrored_branch.last_revision())
+
+    def testHttpTransportStillThere(self):
+        # We tweak the http:// transport in the worker. Make sure that it's
+        # still available after mirroring.
+        http = get_transport('http://example.com')
+        source_branch = self.make_branch('source-branch')
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'))
+        to_mirror.mirrorWithoutChecks()
+        new_http = get_transport('http://example.com')
+        self.assertEqual(get_transport('http://example.com').base, http.base)
+        self.assertEqual(new_http.__class__, http.__class__)
+
+    def testRaisesStackedOnBranchNotFoundInitialMirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # initial mirror, then raise StackedOnBranchNotFound. This will ensure
+        # the puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
+
+    def testRaisesStackedOnBranchNotFoundRemirror(self):
+        # If the stacked-on branch cannot be found in the mirrored area on an
+        # update, then raise StackedOnBranchNotFound. This will ensure the
+        # puller will mirror the stacked branch as soon as the stacked-on
+        # branch has been mirrored.
+        stacked_branch = self.make_branch('source-branch', format='1.6')
+        # Make a sub-directory so that the relative URL cannot be found.
+        self.get_transport('mirrored-area').ensure_base()
+        # Make an empty directory with the same name as the stacked-on branch
+        # to show that we are checking for more than just directory existence.
+        # See bug 270757.
+        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('mirrored-area/destdir'))
+        to_mirror.mirrorWithoutChecks()
+        stacked_on_branch = self.make_branch(
+            'stacked-on-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../stacked-on-branch')
+        self.assertRaises(
+            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
+
+    def testDoesntSendStackedInfoUnstackableFormat(self):
+        # Mirroring an unstackable branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testDoesntSendStackedInfoNotStacked(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        source_branch = self.make_branch(
+            'source-branch', format='development')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+
+    def testSendsStackedInfo(self):
+        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # to the master.
+        base_branch = self.make_branch('base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        stacked_branch.set_stacked_on_url(base_branch.base)
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirrorWithoutChecks()
         self.assertEqual(
-            self.bzrdir_format.get_format_description(),
-            mirrored_branch.bzrdir._format.get_format_description())
+            ['setStackedOn', str(to_mirror.branch_id),
+             stacked_branch.get_stacked_on_url()],
+            get_netstrings(protocol_output.getvalue()))
 
 
-class TestPullerWorker_SourceProblems(TestCaseWithTransport,
-                                      PullerWorkerMixin):
+class TestBranchMirrorerCheckSource(TestCase):
+    """Unit tests for `BranchMirrorer.checkSource`."""
 
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        PullerWorkerMixin.setUp(self)
+    class StubbedBranchMirrorer(BranchMirrorer):
+        """BranchMirrorer that provides canned answers.
 
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
-        TestCaseWithTransport.tearDown(self)
-        reset_logging()
-
-    def assertMirrorFailed(self, puller_worker, message_substring):
-        """Assert that puller_worker failed, and that message_substring is in
-        the message.
-
-        'puller_worker' must use a StubbedPullerWorkerProtocol.
+        We implement the methods we need to to be able to control all the
+        inputs to the `BranchMirrorer.checkSource` method, which is what is
+        being tested in this class.
         """
-        protocol = puller_worker.protocol
-        self.assertEqual(
-            2, len(protocol.calls),
-            "Expected startMirroring and mirrorFailed, got: %r"
-            % (protocol.calls,))
-        startMirroring, mirrorFailed = protocol.calls
-        self.assertEqual(('startMirroring', puller_worker), startMirroring)
-        self.assertEqual(('mirrorFailed', puller_worker), mirrorFailed[:2])
-        self.assertContainsRe(
-            str(mirrorFailed[2]), re.escape(message_substring))
 
-    def testUnopenableSourceDoesNotCreateMirror(self):
-        non_existent_source = os.path.abspath('nonsensedir')
-        dest_dir = 'dest-dir'
-        my_branch = self.makePullerWorker(
-            src_dir=non_existent_source, dest_dir=dest_dir)
-        my_branch.mirror()
-        self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
+        def __init__(self, references, policy):
+            super(TestBranchMirrorerCheckSource.StubbedBranchMirrorer,
+                  self).__init__(policy)
+            self._reference_values = {}
+            for i in range(len(references) - 1):
+                self._reference_values[references[i]] = references[i+1]
+            self.follow_reference_calls = []
 
-    def testMissingSourceWhines(self):
-        non_existent_source = os.path.abspath('nonsensedir')
-        my_branch = self.makePullerWorker(
-            src_dir=non_existent_source, dest_dir="non-existent-destination",
-            protocol=StubbedPullerWorkerProtocol())
-        my_branch.mirror()
-        self.assertMirrorFailed(my_branch, 'Not a branch')
+        def followReference(self, url):
+            self.follow_reference_calls.append(url)
+            return self._reference_values[url]
 
-    def testMissingFileRevisionData(self):
-        self.build_tree(['missingrevision/',
-                         'missingrevision/afile'])
-        tree = self.make_branch_and_tree('missingrevision', format='dirstate')
-        tree.add(['afile'], ['myid'])
-        tree.commit('start')
-        # Now we have a good branch with a file called afile and id myid we
-        # need to figure out the actual path for the weave.. or deliberately
-        # corrupt it. like this.
+    def makeBranchMirrorer(self, should_follow_references, references,
+                         unsafe_urls=None):
+        policy = BlacklistPolicy(should_follow_references, unsafe_urls)
+        opener = self.StubbedBranchMirrorer(references, policy)
+        return opener
 
-        # XXX: JonathanLange 2007-10-11: _put_weave is an internal function
-        # that we probably shouldn't be using. TODO: Ask author of this test
-        # to better explain which particular repository corruption we are
-        # trying to reproduce here.
-        tree.branch.repository.weave_store._put_weave(
-            "myid", Weave(weave_name="myid"),
-            tree.branch.repository.get_transaction())
-        source_url = os.path.abspath('missingrevision')
-        my_branch = self.makePullerWorker(
-            src_dir=source_url, dest_dir="non-existent-destination",
-            protocol=StubbedPullerWorkerProtocol())
-        my_branch.mirror()
-        self.assertMirrorFailed(my_branch, 'No such file')
+    def testCheckInitialURL(self):
+        # checkSource rejects all URLs that are not allowed.
+        opener = self.makeBranchMirrorer(None, [], set(['a']))
+        self.assertRaises(BadUrl, opener.checkSource, 'a')
 
+    def testNotReference(self):
+        # When branch references are forbidden, checkSource does not raise on
+        # non-references.
+        opener = self.makeBranchMirrorer(False, ['a', None])
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
+        self.assertEquals(['a'], opener.follow_reference_calls)
 
-class TestBadUrl(ErrorHandlingTestCase):
-    """Test that PullerWorker does not try mirroring from bad URLs.
+    def testBranchReferenceForbidden(self):
+        # checkSource raises BranchReferenceForbidden if branch references are
+        # forbidden and the source URL points to a branch reference.
+        opener = self.makeBranchMirrorer(False, ['a', 'b'])
+        self.assertRaises(
+            BranchReferenceForbidden, opener.checkSource, 'a')
+        self.assertEquals(['a'], opener.follow_reference_calls)
 
-    Bad URLs use schemes like sftp or bzr+ssh that usually require
-    authentication, and hostnames in the launchpad.net domains.
+    def testAllowedReference(self):
+        # checkSource does not raise if following references is allowed and
+        # the source URL points to a branch reference to a permitted location.
+        opener = self.makeBranchMirrorer(True, ['a', 'b', None])
+        # This raises a NotBranchError since it passes the checks and tries to
+        # open 'a'.
+        self.assertRaises(NotBranchError, opener.checkSource, 'a')
+        self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
-    That prevents errorspam produced by ssh when it cannot connect and saves
-    timing out when trying to connect to chinstrap, sodium (always using a
-    ssh-based scheme) or launchpad.net.
+    def testCheckReferencedURLs(self):
+        # checkSource checks if the URL a reference points to is safe.
+        opener = self.makeBranchMirrorer(
+            True, ['a', 'b', None], unsafe_urls=set('b'))
+        self.assertRaises(BadUrl, opener.checkSource, 'a')
+        self.assertEquals(['a'], opener.follow_reference_calls)
 
-    That also allows us to display a more informative error message to the
-    user.
-    """
+    def testSelfReferencingBranch(self):
+        # checkSource raises BranchReferenceLoopError if following references
+        # is allowed and the source url points to a self-referencing branch
+        # reference.
+        opener = self.makeBranchMirrorer(True, ['a', 'a'])
+        self.assertRaises(
+            BranchReferenceLoopError, opener.checkSource, 'a')
+        self.assertEquals(['a'], opener.follow_reference_calls)
 
-    def testBadUrlSftp(self):
-        # If the scheme of the source url is sftp, _openSourceBranch raises
-        # BadUrlSsh.
-        self.branch.source = 'sftp://example.com/foo'
-        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
-
-    def testBadUrlBzrSsh(self):
-        # If the scheme of the source url is bzr+ssh, _openSourceBracnh raises
-        # BadUrlSsh.
-        self.branch.source = 'bzr+ssh://example.com/foo'
-        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
-
-    def testBadUrlBzrSshCaught(self):
-        # The exception raised if the scheme of the source url is sftp or
-        # bzr+ssh is caught and an informative error message is displayed to
-        # the user.
-        expected_msg = "Launchpad cannot mirror branches from SFTP "
-        self.branch.source = 'sftp://example.com/foo'
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-        self.branch.source = 'bzr+ssh://example.com/foo'
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-
-    def testBadUrlLaunchpadDomain(self):
-        # If the host of the source branch is in the launchpad.net domain,
-        # _openSourceBranch raises BadUrlLaunchpad.
-        self.branch.source = 'http://bazaar.launchpad.dev/foo'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-        self.branch.source = 'sftp://bazaar.launchpad.dev/bar'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-        self.branch.source = 'http://launchpad.dev/baz'
-        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-
-    def testBadUrlLaunchpadCaught(self):
-        # The exception raised if the host of the source url is launchpad.net
-        # or a host in this domain is caught, and an informative error message
-        # is displayed to the user.
-        expected_msg = "Launchpad does not mirror branches from Launchpad."
-        self.branch.source = 'http://bazaar.launchpad.dev/foo'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-        self.branch.source = 'http://launchpad.dev/foo'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
+    def testBranchReferenceLoop(self):
+        # checkSource raises BranchReferenceLoopError if following references
+        # is allowed and the source url points to a loop of branch references.
+        references = ['a', 'b', 'a']
+        opener = self.makeBranchMirrorer(True, references)
+        self.assertRaises(
+            BranchReferenceLoopError, opener.checkSource, 'a')
+        self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
 
-class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
+class TestBranchMirrorerStacking(TestCaseWithTransport):
+
+    def makeBranchMirrorer(self, allowed_urls):
+        policy = WhitelistPolicy(True, allowed_urls)
+        return BranchMirrorer(policy)
+
+    def makeBranch(self, path, branch_format, repository_format):
+        """Make a Bazaar branch at 'path' with the given formats."""
+        bzrdir_format = BzrDirMetaFormat1()
+        bzrdir_format.set_branch_format(branch_format)
+        bzrdir = self.make_bzrdir(path, format=bzrdir_format)
+        repository_format.initialize(bzrdir)
+        return bzrdir.create_branch()
+
+    def testAllowedURL(self):
+        # checkSource does not raise an exception for branches stacked on
+        # branches with allowed URLs.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchMirrorer(
+            [stacked_branch.base, stacked_on_branch.base])
+        # This doesn't raise an exception.
+        opener.checkSource(stacked_branch.base)
+
+    def testUnstackableRepository(self):
+        # checkSource treats branches with UnstackableRepositoryFormats as
+        # being not stacked.
+        branch = self.makeBranch(
+            'unstacked', BzrBranchFormat7(), RepositoryFormatKnitPack1())
+        opener = self.makeBranchMirrorer([branch.base])
+        # This doesn't raise an exception.
+        opener.checkSource(branch.base)
+
+    def testAllowedRelativeURL(self):
+        # checkSource passes on absolute urls to checkOneURL, even if the
+        # value of stacked_on_location in the config is set to a relative URL.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url('../base-branch')
+        opener = self.makeBranchMirrorer(
+            [stacked_branch.base, stacked_on_branch.base])
+        # Note that stacked_on_branch.base is not '../base-branch', it's an
+        # absolute URL.
+        self.assertNotEqual('../base-branch', stacked_on_branch.base)
+        # This doesn't raise an exception.
+        opener.checkSource(stacked_branch.base)
+
+    def testAllowedRelativeNested(self):
+        # Relative URLs are resolved relative to the stacked branch.
+        self.get_transport().mkdir('subdir')
+        a = self.make_branch('subdir/a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        b.set_stacked_on_url('../subdir/a')
+        c = self.make_branch('subdir/c', format='1.6')
+        c.set_stacked_on_url('../../b')
+        opener = self.makeBranchMirrorer([c.base, b.base, a.base])
+        # This doesn't raise an exception.
+        opener.checkSource(c.base)
+
+    def testForbiddenURL(self):
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch with a forbidden URL.
+        stacked_on_branch = self.make_branch('base-branch', format='1.6')
+        stacked_branch = self.make_branch('stacked-branch', format='1.6')
+        stacked_branch.set_stacked_on_url(stacked_on_branch.base)
+        opener = self.makeBranchMirrorer([stacked_branch.base])
+        self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
+
+    def testForbiddenURLNested(self):
+        # checkSource raises a BadUrl exception if a branch is stacked on a
+        # branch that is in turn stacked on a branch with a forbidden URL.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        b.set_stacked_on_url(a.base)
+        c = self.make_branch('c', format='1.6')
+        c.set_stacked_on_url(b.base)
+        opener = self.makeBranchMirrorer([c.base, b.base])
+        self.assertRaises(BadUrl, opener.checkSource, c.base)
+
+    def testSelfStackedBranch(self):
+        # checkSource raises StackingLoopError if a branch is stacked on
+        # itself. This avoids infinite recursion errors.
+        a = self.make_branch('a', format='1.6')
+        a.set_stacked_on_url(a.base)
+        opener = self.makeBranchMirrorer([a.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+
+    def testLoopStackedBranch(self):
+        # checkSource raises StackingLoopError if a branch is stacked in such
+        # a way so that it is ultimately stacked on itself. e.g. a stacked on
+        # b stacked on a.
+        a = self.make_branch('a', format='1.6')
+        b = self.make_branch('b', format='1.6')
+        a.set_stacked_on_url(b.base)
+        b.set_stacked_on_url(a.base)
+        opener = self.makeBranchMirrorer([a.base, b.base])
+        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+        self.assertRaises(StackingLoopError, opener.checkSource, b.base)
+
+
+class TestReferenceMirroring(TestCaseWithTransport):
     """Feature tests for mirroring of branch references."""
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        ErrorHandlingTestCase._errorHandlingSetUp(self)
-        self.branch.enable_checkBranchReference = True
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        reset_logging()
-
-    def testCreateBranchReference(self):
-        """Test that our createBranchReference helper works correctly."""
-        # First create a bzrdir with a branch and repository.
-        t = get_transport(self.get_url('.'))
-        t.mkdir('repo')
-        dir = bzrdir.BzrDir.create(self.get_url('repo'))
-        dir.create_repository()
-        target_branch = dir.create_branch()
-
-        # Then create a pure branch reference using our custom helper.
-        reference_url = self.createBranchReference(self.get_url('repo'))
-
-        # Open the branch reference and check that the result is indeed the
-        # branch we wanted it to point at.
-        opened_branch = bzrlib.branch.Branch.open(reference_url)
-        self.assertEqual(opened_branch.base, target_branch.base)
 
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
 
-        :param path: relative path to the branch reference.
         :param url: target of the branch reference.
         :return: file url to the created pure branch reference.
         """
-        # XXX DavidAllouche 2007-09-12
+        # XXX DavidAllouche 2007-09-12 bug=139109:
         # We do this manually because the bzrlib API does not support creating
-        # a branch reference without opening it. See bug 139109.
+        # a branch reference without opening it.
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
-        a_bzrdir = bzrdir.BzrDir.create(self.get_url('reference'))
+        a_bzrdir = BzrDir.create(self.get_url('reference'))
         branch_reference_format = BranchReferenceFormat()
         branch_transport = a_bzrdir.get_branch_transport(
             branch_reference_format)
@@ -466,407 +461,179 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
             'format', branch_reference_format.get_format_string())
         return a_bzrdir.root_transport.base
 
-    def testGetBranchReferenceValue(self):
-        """PullerWorker._getBranchReference gives the reference value for
-        a branch reference.
-        """
+    def testCreateBranchReference(self):
+        # createBranchReference creates a branch reference and returns a URL
+        # that points to that branch reference.
+
+        # First create a branch and a reference to that branch.
+        target_branch = self.make_branch('repo')
+        reference_url = self.createBranchReference(target_branch.base)
+
+        # References are transparent, so we can't test much about them. The
+        # least we can do is confirm that the reference URL isn't the branch
+        # URL.
+        self.assertNotEqual(reference_url, target_branch.base)
+
+        # Open the branch reference and check that the result is indeed the
+        # branch we wanted it to point at.
+        opened_branch = bzrlib.branch.Branch.open(reference_url)
+        self.assertEqual(opened_branch.base, target_branch.base)
+
+    def testFollowReferenceValue(self):
+        # BranchMirrorer.followReference gives the reference value for
+        # a branch reference.
+        opener = BranchMirrorer(BranchPolicy())
         reference_value = 'http://example.com/branch'
         reference_url = self.createBranchReference(reference_value)
-        self.branch.source = reference_url
         self.assertEqual(
-            self.branch._getBranchReference(reference_url), reference_value)
+            reference_value, opener.followReference(reference_url))
 
-    def testGetBranchReferenceNone(self):
-        """PullerWorker._getBranchReference gives None for a normal branch.
-        """
+    def testFollowReferenceNone(self):
+        # BranchMirrorer.followReference gives None for a normal branch.
         self.make_branch('repo')
         branch_url = self.get_url('repo')
+        opener = BranchMirrorer(BranchPolicy())
+        self.assertIs(None, opener.followReference(branch_url))
+
+
+class TestMirroredBranchPolicy(TestCase):
+    """Tests specific to `MirroredBranchPolicy`."""
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+
+    def testNoFileURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlScheme, policy.checkOneURL,
+            self.factory.getUniqueURL(scheme='file'))
+
+    def testNoUnknownSchemeURLs(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlScheme, policy.checkOneURL,
+            self.factory.getUniqueURL(scheme='decorator+scheme'))
+
+    def testNoSSHURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlSsh, policy.checkOneURL,
+            self.factory.getUniqueURL(scheme='bzr+ssh'))
+
+    def testNoSftpURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlSsh, policy.checkOneURL,
+            self.factory.getUniqueURL(scheme='sftp'))
+
+    def testNoLaunchpadURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlLaunchpad, policy.checkOneURL,
+            self.factory.getUniqueURL(host='bazaar.launchpad.dev'))
+
+    def testNoHTTPSLaunchpadURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlLaunchpad, policy.checkOneURL,
+            self.factory.getUniqueURL(
+                host='bazaar.launchpad.dev', scheme='https'))
+
+    def testNoOtherHostLaunchpadURL(self):
+        policy = MirroredBranchPolicy()
+        self.assertRaises(
+            BadUrlLaunchpad, policy.checkOneURL,
+            self.factory.getUniqueURL(host='code.launchpad.dev'))
+
+    def testLocalhost(self):
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
+        policy = MirroredBranchPolicy()
+        localhost_url = self.factory.getUniqueURL(host='localhost')
+        self.assertRaises(BadUrl, policy.checkOneURL, localhost_url)
+        localhost_url = self.factory.getUniqueURL(host='127.0.0.1')
+        self.assertRaises(BadUrl, policy.checkOneURL, localhost_url)
+
+    def test_no_stacked_on_url(self):
+        # By default, a MirroredBranchPolicy does not stack branches.
+        policy = MirroredBranchPolicy()
+        # This implementation of the method doesn't actually care about the
+        # arguments.
         self.assertIs(
-            self.branch._getBranchReference(branch_url), None)
+            None, policy.getStackedOnURLForDestinationBranch(None, None))
 
-    def testHostedBranchReference(self):
-        """A branch reference for a hosted branch must cause an error."""
-        reference_url = self.createBranchReference(
-            'http://example.com/branch')
-        self.branch.branch_type = BranchType.HOSTED
-        self.branch.source = reference_url
-        expected_msg = (
-            "Branch references are not allowed for branches of type Hosted.")
-        error = self.runMirrorAndAssertErrorEquals(expected_msg)
-        self.assertEqual(self.open_call_count, 0)
-
-    def testMirrorLocalBranchReference(self):
-        """A file:// branch reference for a mirror branch must cause an error.
-        """
-        reference_url = self.createBranchReference('file:///sauces/sikrit')
-        self.branch.branch_type = BranchType.MIRRORED
-        self.branch.source = reference_url
-        expected_msg = ("Bad branch reference value: file:///sauces/sikrit")
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-        self.assertEqual(self.open_call_count, 0)
+    def test_specified_stacked_on_url(self):
+        # If a default stacked-on URL is specified, then the
+        # MirroredBranchPolicy will tell branches to be stacked on that.
+        stacked_on_url = '/foo'
+        policy = MirroredBranchPolicy(stacked_on_url)
+        destination_url = 'http://example.com/bar'
+        self.assertEqual(
+            '/foo',
+            policy.getStackedOnURLForDestinationBranch(None, destination_url))
 
 
-class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
-    """Unit tests for PullerWorker._canTraverseReferences."""
-
-    def setUp(self):
-        PullerWorkerMixin.setUp(self)
-
-    def tearDown(self):
-        PullerWorkerMixin.setUp(self)
-
-    def makeBranch(self, branch_type):
-        """Helper to create a PullerWorker with a specified branch_type."""
-        return self.makePullerWorker(branch_type=branch_type)
-
-    def testTrueForMirrored(self):
-        """We can traverse branch references when pulling mirror branches."""
-        mirror_branch = self.makeBranch(BranchType.MIRRORED)
-        self.assertEqual(mirror_branch._canTraverseReferences(), True)
-
-    def testFalseForImported(self):
-        """We cannot traverse branch references when pulling import branches.
-        """
-        import_branch = self.makeBranch(BranchType.IMPORTED)
-        self.assertEqual(import_branch._canTraverseReferences(), False)
-
-    def testFalseForHosted(self):
-        """We cannot traverse branch references when pulling hosted branches.
-        """
-        hosted_branch = self.makeBranch(BranchType.HOSTED)
-        self.assertEqual(hosted_branch._canTraverseReferences(), False)
-
-    def testErrorForOtherRemote(self):
-        """We do not pull REMOTE branches. If the branch type is REMOTE, an
-        AssertionError is raised.
-        """
-        remote_branch = self.makeBranch(BranchType.REMOTE)
-        self.assertRaises(
-            AssertionError, remote_branch._canTraverseReferences)
-
-    def testErrorForBogusType(self):
-        """If the branch type is a bogus value, AssertionError is raised.
-        """
-        bogus_branch = self.makeBranch(None)
-        self.assertRaises(
-            AssertionError, bogus_branch._canTraverseReferences)
-
-
-class TestCheckBranchReference(unittest.TestCase):
-    """Unit tests for PullerWorker._checkBranchReference."""
-
-    class StubbedPullerWorker(PullerWorker):
-        """Partially stubbed PullerWorker for checkBranchReference unit tests.
-        """
-
-        def _getBranchReference(self, url):
-            self.testcase.get_branch_reference_calls.append(url)
-            return self.testcase.reference_values[url]
-
-        def _canTraverseReferences(self):
-            assert self.testcase.can_traverse_references is not None
-            return self.testcase.can_traverse_references
-
-    def setUp(self):
-        self.branch = TestCheckBranchReference.StubbedPullerWorker(
-            'foo', 'bar', 1, 'owner/product/foo', None, None)
-        self.branch.testcase = self
-        self.get_branch_reference_calls = []
-        self.reference_values = {}
-        self.can_traverse_references = None
-
-    def setUpReferences(self, locations):
-        """Set up the stubbed PullerWorker to model a chain of references.
-
-        Branch references can point to other branch references, forming a chain
-        of locations. If the chain ends in a real branch, then the last
-        location is None. If the final branch reference is a circular
-        reference, or a branch reference that cannot be opened, the last
-        location is not None.
-
-        :param locations: sequence of branch location URL strings.
-        """
-        self.branch.source = locations[0]
-        for i in range(len(locations) - 1):
-            self.reference_values[locations[i]] = locations[i+1]
-
-    def assertGetBranchReferenceCallsEqual(self, calls):
-        """Assert that _getBranchReference was called a given number of times
-        and for the given urls.
-        """
-        self.assertEqual(self.get_branch_reference_calls, calls)
-
-    def testNotReference(self):
-        """_checkBranchReference does not raise if the source url does not
-        point to a branch reference.
-        """
-        self.can_traverse_references = False
-        self.setUpReferences(['file:///local/branch', None])
-        self.branch._checkBranchReference() # This must not raise.
-        self.assertGetBranchReferenceCallsEqual(['file:///local/branch'])
-
-    def testBranchReferenceForbidden(self):
-        """_checkBranchReference raises BranchReferenceForbidden if
-        _canTraverseReferences is false and the source url points to a branch
-        reference.
-        """
-        self.can_traverse_references = False
-        self.setUpReferences(
-            ['file:///local/branch', 'http://example.com/branch'])
-        self.assertRaises(
-            BranchReferenceForbidden, self.branch._checkBranchReference)
-        self.assertGetBranchReferenceCallsEqual(['file:///local/branch'])
-
-    def testAllowedReference(self):
-        """_checkBranchReference does not raise if _canTraverseReferences is
-        true and the source URL points to a branch reference to a remote
-        location.
-        """
-        self.can_traverse_references = True
-        self.setUpReferences([
-            'http://example.com/reference',
-            'http://example.com/branch',
-            None])
-        self.branch._checkBranchReference() # This must not raise.
-        self.assertGetBranchReferenceCallsEqual([
-            'http://example.com/reference', 'http://example.com/branch'])
-
-    def testFileReference(self):
-        """_checkBranchReference raises BranchReferenceValueError if
-        _canTraverseReferences is true and the source url points to a 'file'
-        branch reference.
-        """
-        self.can_traverse_references = True
-        self.setUpReferences([
-            'http://example.com/reference',
-            'file://local/branch'])
-        self.assertRaises(
-            BranchReferenceValueError, self.branch._checkBranchReference)
-        self.assertGetBranchReferenceCallsEqual([
-            'http://example.com/reference'])
-
-    def testSelfReferencingBranch(self):
-        """_checkBranchReference raises BranchReferenceLoopError if
-        _canTraverseReferences is true and the source url points to a
-        self-referencing branch."""
-        self.can_traverse_references = True
-        self.setUpReferences([
-            'http://example.com/reference',
-            'http://example.com/reference'])
-        self.assertRaises(
-            BranchReferenceLoopError, self.branch._checkBranchReference)
-        self.assertGetBranchReferenceCallsEqual([
-            'http://example.com/reference'])
-
-    def testBranchReferenceLoop(self):
-        """_checkBranchReference raises BranchReferenceLoopError if
-        _canTraverseReferences is true and the source url points to a loop of
-        branch references."""
-        self.can_traverse_references = True
-        self.setUpReferences([
-            'http://example.com/reference-1',
-            'http://example.com/reference-2',
-            'http://example.com/reference-1'])
-        self.assertRaises(
-            BranchReferenceLoopError, self.branch._checkBranchReference)
-        self.assertGetBranchReferenceCallsEqual([
-            'http://example.com/reference-1',
-            'http://example.com/reference-2'])
-
-
-class TestErrorHandling(ErrorHandlingTestCase):
-
-    def setUp(self):
-        ErrorHandlingTestCase.setUp(self)
-        self.branch.enable_checkSourceUrl = False
-
-    def testHTTPError(self):
-        def stubOpenSourceBranch():
-            raise urllib2.HTTPError(
-                'http://something', httplib.UNAUTHORIZED,
-                'Authorization Required', 'some headers',
-                open(tempfile.mkstemp()[1]))
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        self.runMirrorAndAssertErrorEquals("Authentication required.")
-
-    def testSocketErrorHandling(self):
-        def stubOpenSourceBranch():
-            raise socket.error('foo')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'A socket error occurred:'
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-
-    def testUnsupportedFormatErrorHandling(self):
-        def stubOpenSourceBranch():
-            raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'Launchpad does not support branches '
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-
-    def testUnknownFormatError(self):
-        def stubOpenSourceBranch():
-            raise UnknownFormatError(format='Bad format')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        self.runMirrorAndAssertErrorStartsWith('Unknown branch format: ')
-
-    def testParamikoNotPresent(self):
-        def stubOpenSourceBranch():
-            raise ParamikoNotPresent('No module named paramiko')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'Launchpad cannot mirror branches from SFTP '
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
-
-    def testNotBranchErrorMirrored(self):
-        """Should receive a user-friendly message we are asked to mirror a
-        non-branch.
-        """
-        def stubOpenSourceBranch():
-            raise NotBranchError('http://example.com/not-branch')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        self.branch.branch_type = BranchType.MIRRORED
-        expected_msg = 'Not a branch: "http://example.com/not-branch".'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-
-    def testNotBranchErrorHosted(self):
-        """The not-a-branch error message should *not* include the Branch id
-        from the database. Instead, the path should be translated to a
-        user-visible location.
-        """
-        split_id = branch_id_to_path(self.branch.branch_id)
-        def stubOpenSourceBranch():
-            raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
-                                 % split_id)
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        self.branch.branch_type = BranchType.HOSTED
-        expected_msg = 'Not a branch: "sftp://bazaar.launchpad.net/~%s".' % (
-            self.branch.unique_name,)
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-
-    def testNotBranchErrorImported(self):
-        """The not-a-branch error message for import branch should not
-        disclose the internal URL. Since there is no user-visible URL to
-        blame, we do not display any URL at all.
-        """
-        def stubOpenSourceBranch():
-            raise NotBranchError('http://canonical.example.com/internal/url')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        self.branch.branch_type = BranchType.IMPORTED
-        self.runMirrorAndAssertErrorEquals('Not a branch.')
-
-    def testBranchReferenceLoopError(self):
-        """BranchReferenceLoopError exceptions are caught."""
-        def stubCheckBranchReference():
-            raise BranchReferenceLoopError()
-        self.branch._checkBranchReference = stubCheckBranchReference
-        self.runMirrorAndAssertErrorEquals("Circular branch reference.")
-
-    def testInvalidURIError(self):
-        """When a branch reference contains an invalid URL, an InvalidURIError
-        is raised. The worker catches this and reports it to the scheduler.
-        """
-        def stubCheckBranchReference():
-            raise InvalidURIError("This is not a URL")
-        self.branch._checkBranchReference = stubCheckBranchReference
-        self.runMirrorAndAssertErrorEquals("This is not a URL")
-
-    def testBzrErrorHandling(self):
-        def stubOpenSourceBranch():
-            raise BzrError('A generic bzr error')
-        self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'A generic bzr error'
-        self.runMirrorAndAssertErrorEquals(expected_msg)
-
-
-class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
+class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     """Tests for the client-side implementation of the protocol used to
     communicate to the master process.
     """
 
     def setUp(self):
-        PullerWorkerMixin.setUp(self)
-        self.test_dir = tempfile.mkdtemp()
+        TestCaseInTempDir.setUp(self)
         self.output = StringIO()
         self.protocol = PullerWorkerProtocol(self.output)
-        self.branch_to_mirror = self.makePullerWorker()
-
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
-        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        observed_netstrings = get_netstrings(self.output.getvalue())
         self.assertEqual(expected_netstrings, observed_netstrings)
 
-    def getNetstrings(self, line):
-        """Return the sequence of strings that are the netstrings that make up
-        'line'.
-        """
-        strings = []
-        while len(line) > 0:
-            colon_index = line.find(':')
-            length = int(line[:colon_index])
-            strings.append(line[colon_index+1:colon_index+1+length])
-            self.assertEqual(',', line[colon_index+1+length])
-            line = line[colon_index+length+2:]
-        return strings
-
     def resetBuffers(self):
-        """Empty the test output and error buffers."""
+        # Empty the test output and error buffers.
         self.output.truncate(0)
         self.assertEqual('', self.output.getvalue())
 
     def test_nothingSentOnConstruction(self):
-        """The protocol sends nothing until it receives an event."""
+        # The protocol sends nothing until it receives an event.
+        self.branch_to_mirror = self.makePullerWorker(protocol=self.protocol)
         self.assertSentNetstrings([])
 
     def test_startMirror(self):
-        """Calling startMirroring sends 'startMirroring' as a netstring."""
-        self.protocol.startMirroring(self.branch_to_mirror)
+        # Calling startMirroring sends 'startMirroring' as a netstring.
+        self.protocol.startMirroring()
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        """Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'."""
-        self.protocol.startMirroring(self.branch_to_mirror)
+        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
+        self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
+        self.protocol.mirrorSucceeded(1234)
         self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
 
     def test_mirrorFailed(self):
-        """Calling 'mirrorFailed' sends the error message."""
-        self.protocol.startMirroring(self.branch_to_mirror)
+        # Calling 'mirrorFailed' sends the error message.
+        self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorFailed(
-            self.branch_to_mirror, 'Error Message', 'OOPS')
+        self.protocol.mirrorFailed('Error Message', 'OOPS')
         self.assertSentNetstrings(
             ['mirrorFailed', '2', 'Error Message', 'OOPS'])
 
     def test_progressMade(self):
-        """Calling 'progressMade' sends an arbitrary string indicating
-        progress.
-        """
+        # Calling 'progressMade' sends an arbitrary string indicating
+        # progress.
         self.protocol.progressMade()
         self.assertSentNetstrings(['progressMade', '0'])
 
+    def test_setStackedOn(self):
+        # Calling 'setStackedOn' sends the location of the stacked-on branch,
+        # if any.
+        self.protocol.setStackedOn('/~foo/bar/baz')
+        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
-class TestCanonicalUrl(unittest.TestCase):
-    """Test cases for rendering the canonical url of a branch."""
-
-    layer = LaunchpadScriptLayer
-
-    def testCanonicalUrlConsistent(self):
-        # worker.get_canonical_url_for_branch_name is consistent with
-        # webapp.canonical_url, if the provided unique_name is correct.
-        branch = Branch.get(15)
-        # Check that the unique_name used in this test is consistent with the
-        # sample data. This is an invariant of the test, so use a plain
-        # assert.
-        unique_name = 'name12/gnome-terminal/main'
-        assert branch.unique_name == '~' + unique_name
-        # Now check that our implementation of canonical_url is consistent
-        # with the canonical one.
-        self.assertEqual(
-            canonical_url(branch),
-            get_canonical_url_for_branch_name(unique_name))
+    def test_mirrorDeferred(self):
+        # Calling 'mirrorDeferred' sends 'mirrorDeferred' as a netstring.
+        self.protocol.mirrorDeferred()
+        self.assertSentNetstrings(['mirrorDeferred', '0'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

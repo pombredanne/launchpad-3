@@ -19,10 +19,6 @@
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
       permission="zope.Public">
       <browser:page
-        name="+body-summary"
-        template="../templates/sourcepackagerelease-body-summary.pt"
-        />
-      <browser:page
         name="+portlet-builds"
         template="../templates/sourcepackagerelease-portlet-builds.pt"
         />
@@ -37,6 +33,10 @@
       <browser:page
         name="+portlet-details-content"
         template="../templates/sourcepackagerelease-portlet-details-content.pt"
+        />
+      <browser:page
+        name="+diffs"
+        template="../templates/sourcepackagerelease-diffs.pt"
         />
     </browser:pages>
 

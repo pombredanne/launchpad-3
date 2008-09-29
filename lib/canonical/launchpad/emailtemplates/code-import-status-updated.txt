@@ -1,7 +1,7 @@
 Hello,
 
-%(status)s
+%(body)s
 
---
+-- 
 %(branch)s
 %(rationale)s%(unsubscribe)s

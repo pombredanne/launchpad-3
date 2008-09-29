@@ -48,7 +48,7 @@ team.
     Subject: New Mailing List for Team One
     Hello Anne Person,
     <BLANKLINE>
-    Team One has a new team mailing list.
+    A new mailing list has been created for Team One (team-one).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.
@@ -66,7 +66,7 @@ team.
     Subject: New Mailing List for Team One
     Hello No Privileges Person,
     <BLANKLINE>
-    Team One has a new team mailing list.
+    A new mailing list has been created for Team One (team-one).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.
@@ -129,7 +129,7 @@ individual team members.
     Subject: New Mailing List for Super Team
     Hello Anne Person,
     <BLANKLINE>
-    Super Team has a new team mailing list.
+    A new mailing list has been created for Super Team (super-team).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.
@@ -147,7 +147,7 @@ individual team members.
     Subject: New Mailing List for Super Team
     Hello Cris Person,
     <BLANKLINE>
-    Super Team has a new team mailing list.
+    A new mailing list has been created for Super Team (super-team).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.
@@ -165,7 +165,7 @@ individual team members.
     Subject: New Mailing List for Super Team
     Hello Lars Person,
     <BLANKLINE>
-    Super Team has a new team mailing list.
+    A new mailing list has been created for Super Team (super-team).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.
@@ -183,7 +183,7 @@ individual team members.
     Subject: New Mailing List for Super Team
     Hello No Privileges Person,
     <BLANKLINE>
-    Super Team has a new team mailing list.
+    A new mailing list has been created for Super Team (super-team).
     <BLANKLINE>
     If you would like to subscribe to the list, please use the link below
     to update your Mailing List Subscription preferences.

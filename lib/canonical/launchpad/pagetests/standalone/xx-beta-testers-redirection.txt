@@ -159,7 +159,7 @@ page after authenticating successfully:
 
     >>> browser.mech_browser.set_handle_redirect(False)
     >>> browser.open('http://launchpad.dev/ubuntu')
-    >>> browser.getLink('Log In / Register').click()
+    >>> browser.getLink('Log in / Register').click()
     >>> print browser.url
     http://launchpad.dev/ubuntu/+login
     >>> browser.getControl('E-mail address',

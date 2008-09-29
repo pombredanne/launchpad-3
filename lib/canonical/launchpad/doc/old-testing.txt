@@ -100,7 +100,7 @@ PostgreSQL default user.
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'statistician'
+u'statistician'
 >>> pgsetup.tearDown()
 
 
@@ -125,7 +125,7 @@ By default, LaunchpadTestSetup connects as the 'launchpad' user:
 
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'launchpad'
+u'launchpad'
 
 >>> LaunchpadTestSetup().tearDown()
 
@@ -139,7 +139,7 @@ described above for PgTestSetup
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT current_user")
 >>> cursor.fetchone()[0]
-'statistician'
+u'statistician'
 >>> lpsetup.tearDown()
 
 
@@ -180,8 +180,8 @@ You can select the user you connect as:
 >>> SourcePackageName.get(1).name
 Traceback (most recent call last):
 ...
-ProgrammingError: ERROR:  permission denied for relation sourcepackagename
-...
+ProgrammingError: permission denied for relation sourcepackagename
+<BLANKLINE>
 >>> setup.tearDown()
 
 
@@ -212,18 +212,23 @@ True
 
 You can change the user that the tests connect as:
 
->>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
->>> setup.setUp()
->>> connection = setup.connect()
->>> cursor = connection.cursor()
->>> cursor.execute('SELECT current_user')
->>> cursor.fetchone()[0]
-'librarian'
->>> SourcePackageName.get(1).name
-Traceback (most recent call last):
-...
-ProgrammingError: ERROR:  permission denied ...
->>> setup.tearDown()
+  XXX 2008-05-29 jamesh:
+  Using LaunchpadFunctionalLayer for non-webapp db users is generally
+  a sign of a bug.  These bits of code should generally be using
+  LaunchpadZopelessLayer.
+
+##>>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
+##>>> setup.setUp()
+##>>> connection = setup.connect()
+##>>> cursor = connection.cursor()
+##>>> cursor.execute('SELECT current_user')
+##>>> cursor.fetchone()[0]
+##u'librarian'
+##>>> SourcePackageName.get(1).name
+##Traceback (most recent call last):
+##...
+##ProgrammingError: permission denied ...
+##>>> setup.tearDown()
 
 And the next test will be unaffected:
 
@@ -233,7 +238,7 @@ And the next test will be unaffected:
 >>> cursor = connection.cursor()
 >>> cursor.execute('SELECT current_user')
 >>> cursor.fetchone()[0]
-'launchpad'
+u'launchpad'
 >>> SourcePackageName.get(1).name
 u'mozilla-firefox'
 >>> setup.tearDown()

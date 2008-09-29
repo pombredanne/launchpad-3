@@ -27,8 +27,8 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 class IBugLink(IHasBug):
     """An entity representing a link between a bug and its target."""
 
-    bug = BugField(title=_("The bug that is linked to."), required=True,
-                   readonly=True)
+    bug = BugField(title=_("The bug that is linked to."),
+                   required=True, readonly=True)
 
     target = Object(title=_("The object to which the bug is linked."),
                     required=True, readonly=True, schema=Interface)

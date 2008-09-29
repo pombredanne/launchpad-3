@@ -12,8 +12,10 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.references import Reference
 from sqlobject import (
-    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLObjectNotFound)
+    ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
+    SQLObjectNotFound)
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -22,21 +24,21 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportReviewStatus,
-    CodeImportJobState, IBranchSet,
-    ICodeImport, ICodeImportEventSet, ICodeImportSet,
-    ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
-from canonical.launchpad.mailout.codeimport import code_import_status_updated
-from canonical.launchpad.validators.person import public_person_validator
+    BranchCreationException, BranchType, CodeImportJobState,
+    CodeImportReviewStatus, IBranchSet, ICodeImport, ICodeImportEventSet,
+    ICodeImportSet, ILaunchpadCelebrities, NotFoundError,
+    RevisionControlSystems)
+from canonical.launchpad.mailout.codeimport import code_import_updated
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class CodeImport(SQLBase):
-    """See ICodeImport."""
+    """See `ICodeImport`."""
 
     implements(ICodeImport)
     _table = 'CodeImport'
@@ -47,13 +49,13 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def product(self):
@@ -93,7 +95,20 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
-    import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
+    import_job = Reference("<primary key>", "CodeImportJob.code_importID",
+                           on_remote=True)
+
+    def getImportDetailsForDisplay(self):
+        """See `ICodeImport`."""
+        assert self.rcs_type is not None, (
+            "Only makes sense for series with import details set.")
+        if self.rcs_type == RevisionControlSystems.CVS:
+            return '%s %s' % (self.cvs_root, self.cvs_module)
+        elif self.rcs_type == RevisionControlSystems.SVN:
+            return self.svn_branch_url
+        else:
+            raise AssertionError(
+                'Unknown rcs type: %s'% self.rcs_type.title)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
@@ -110,40 +125,46 @@ class CodeImport(SQLBase):
             # No job, so nothing to do.
             pass
 
-    def approve(self, data, user):
-        """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.REVIEWED:
-            raise AssertionError('Review status is already reviewed.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
-        CodeImportJobWorkflow().newJob(self)
+    results = SQLMultipleJoin(
+        'CodeImportResult', joinColumn='code_import',
+        orderBy=['-date_job_started'])
 
-    def suspend(self, data, user):
+    def changeDetails(self, data, user):
         """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.SUSPENDED:
-            raise AssertionError('Review status is already suspended.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
-        self._removeJob()
-
-    def invalidate(self, data, user):
-        """See `ICodeImport`."""
-        if self.review_status == CodeImportReviewStatus.INVALID:
-            raise AssertionError('Review status is already invalid.')
-        self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
-        self._removeJob()
-
-    def _setStatusAndEmail(self, data, user, status):
-        """Update the review_status and email interested parties."""
-        data['review_status'] = status
-        self.updateFromData(data, user)
-        code_import_status_updated(self, user)
+        if 'review_status' in data:
+            raise AssertionError(
+                'changeDetails cannot be used to change review_status.')
+        modify_event = self.updateFromData(data, user)
+        if modify_event is not None:
+            code_import_updated(modify_event)
+            return True
+        else:
+            return False
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
         event_set = getUtility(ICodeImportEventSet)
+        new_whiteboard = None
+        if 'whiteboard' in data:
+            whiteboard = data.pop('whiteboard')
+            if whiteboard != self.branch.whiteboard:
+                if whiteboard is None:
+                    new_whiteboard = ''
+                else:
+                    new_whiteboard = whiteboard
+                self.branch.whiteboard = whiteboard
         token = event_set.beginModify(self)
         for name, value in data.items():
             setattr(self, name, value)
-        event_set.newModify(self, user, token)
+        if 'review_status' in data:
+            if data['review_status'] == CodeImportReviewStatus.REVIEWED:
+                CodeImportJobWorkflow().newJob(self)
+            else:
+                self._removeJob()
+        event = event_set.newModify(self, user, token)
+        if event is not None or new_whiteboard is not None:
+            code_import_updated(self, event, new_whiteboard, user)
+        return event
 
     def __repr__(self):
         return "<CodeImport for %s>" % self.branch.unique_name
@@ -179,7 +200,7 @@ class CodeImportSet:
                 "vcs-imports with the name %s" % (product.name, branch_name))
         import_branch = branch_set.new(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            creator=vcs_imports, owner=vcs_imports,
+            registrant=vcs_imports, owner=vcs_imports,
             product=product, url=None)
 
         code_import = CodeImport(
@@ -191,7 +212,7 @@ class CodeImportSet:
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(SQLObjectCreatedEvent(code_import))
 
-        # If created in the reviewd state, create a job.
+        # If created in the reviewed state, create a job.
         if review_status == CodeImportReviewStatus.REVIEWED:
             CodeImportJobWorkflow().newJob(code_import)
 
@@ -207,6 +228,51 @@ class CodeImportSet:
     def getAll(self):
         """See `ICodeImportSet`."""
         return CodeImport.select()
+
+    def getActiveImports(self, text=None):
+        """See `ICodeImportSet`."""
+        query = self.composeQueryString(text)
+        return CodeImport.select(
+            query, orderBy=['product.name', 'branch.name'],
+            clauseTables=['Product', 'Branch'])
+
+    def composeQueryString(self, text=None):
+        """Build SQL "where" clause for `CodeImport` search.
+
+        :param text: Text to search for in the product and project titles and
+            descriptions.
+        """
+        conditions = [
+            "date_last_successful IS NOT NULL",
+            "review_status=%s" % sqlvalues(CodeImportReviewStatus.REVIEWED),
+            "CodeImport.branch = Branch.id",
+            "Branch.product = Product.id",
+            ]
+        if text == u'':
+            text = None
+
+        # First filter on text, if supplied.
+        if text is not None:
+            conditions.append("""
+                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
+                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
+
+        # Exclude deactivated products.
+        conditions.append('Product.active IS TRUE')
+
+        # Exclude deactivated projects, too.
+        conditions.append(
+            "((Product.project = Project.id AND Project.active) OR"
+            " Product.project IS NULL)")
+
+        # And build the query.
+        query = " AND ".join(conditions)
+        return """
+            codeimport.id IN
+            (SELECT codeimport.id FROM codeimport, branch, product, project
+             WHERE %s)
+            AND codeimport.branch = branch.id
+            AND branch.product = product.id""" % query
 
     def get(self, id):
         """See `ICodeImportSet`."""
@@ -230,4 +296,4 @@ class CodeImportSet:
 
     def search(self, review_status):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status.value)
+        return CodeImport.selectBy(review_status=review_status)

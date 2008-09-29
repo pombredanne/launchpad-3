@@ -2,7 +2,7 @@
 
 == Displaying results of condorcet polls ==
 
-  >>> from zope.component import getUtility, getView
+  >>> from zope.component import getUtility, getMultiAdapter
   >>> from canonical.launchpad.interfaces import IPollSet, IPersonSet
   >>> from canonical.launchpad.ftests import login
   >>> from zope.publisher.browser import TestRequest
@@ -19,7 +19,7 @@ using a pairwise matrix to display the results. It's very trick to create this
 matrix on page templates, so the view provides a method wich return this
 matrix as a python list, with the necessary headers (the option's names).
 
-  >>> poll_results = getView(poll, "+index", TestRequest())
+  >>> poll_results = getMultiAdapter((poll, TestRequest()), name="+index")
   >>> for row in poll_results.getPairwiseMatrixWithHeaders():
   ...     print row
   [None, u'A', u'B', u'C', u'D']
@@ -36,7 +36,7 @@ level checks.
 
     >>> request = TestRequest(form={'changevote': 'Change Vote'})
     >>> request.method = 'POST'
-    >>> voting_page = getView(poll, "+vote-condorcet", request)
+    >>> voting_page = getMultiAdapter((poll, request), name="+vote-condorcet")
     >>> form_processed = False
     >>> def form_processing():
     ...     form_processed = True

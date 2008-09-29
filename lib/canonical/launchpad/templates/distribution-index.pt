@@ -6,21 +6,21 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-<body>
-  <metal:portlets fill-slot="portlets">
-    <tal:portlet replace="structure context/@@+portlet-lifecycle" />
-    <tal:portlet replace="structure context/@@+portlet-milestones" />
-    <tal:portlet tal:condition="context/currentseries"
-         replace="structure context/currentseries/@@+portlet-architectures" />
-  </metal:portlets>
+  <body>
+    <div metal:fill-slot="main" class="pillar">
+      <div class="section">
 
-<div metal:fill-slot="main">
-
-      <span tal:replace="structure context/image:mugshot" />
-      <h1 tal:content="context/title">Ubuntu Linux</h1>
+      <tal:mugshot replace="structure context/image:mugshot" />
+      <div
+        style="float:right"
+        tal:define="link context/menu:overview/edit"
+        tal:condition="link/enabled"
+        tal:content="structure link/render"
+      />
+      <h1 tal:content="context/title"/>
       <div
         class="description"
         tal:content="structure context/summary/fmt:text-to-html"
@@ -29,73 +29,96 @@
         class="description"
         tal:content="structure context/description/fmt:text-to-html"
       />
-      <ul class="buttons">
-        <li>
-          <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+
+        <div class="actions">
+          <a
+            tal:define="link context/menu:bugs/filebug"
+            tal:condition="context/official_malone"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-reportabug.gif"
+            />
           </a>
-        </li>
-        <li tal:content="structure context/@@+ask-a-question-button" />
-        <li tal:content="structure context/@@+help-translate-button" />
-        <li tal:define="has_mentoring context/mentoring_offers/count">
-          <a href="+mentoring" tal:condition="has_mentoring">
-            <img alt="Mentoring available"
-                 src="/+icing/but-sml-mentoring.gif"/>
+          <a
+            tal:define="link context/menu:translations/help_translate"
+            tal:condition="context/official_rosetta"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-helptranslate.gif"
+            />
           </a>
-          <a href="+mentoring" tal:condition="not: has_mentoring">
-            <img alt="No mentoring available"
-                 src="/+icing/but-sml-mentoring-off.gif" />
+          <a
+            tal:define="link context/menu:answers/new"
+            tal:condition="context/official_answers"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-askaquestion.gif"
+            />
           </a>
-        </li>
-      </ul>
+          <a
+            tal:define="link context/menu:overview/mentorship"
+            tal:condition="context/mentoring_offers/count"
+            tal:attributes="href link/url"
+          >
+            <img
+              tal:attributes="alt link/text"
+              src="/+icing/but-sml-mentoring.gif"
+            />
+          </a>
+        </div>
 
-  <form name="search" action="+search" method="get">
+      <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
+        <p id="uses">
+          <tal:uses_launchpad condition="uses_launchpad">
+            <tal:distro_name content="context/title" /> uses Launchpad for
+            <tal:uses content="structure uses_launchpad" />.
+          </tal:uses_launchpad>
+          <tal:no_launchpad condition="not: uses_launchpad">
+            <tal:distro_name content="context/title" /> does not use 
+              Launchpad for development.
+          </tal:no_launchpad>
+        </p>
+      </tal:launchpad_usage>
 
-    <input type="text"
-      name="text"
-      size="35"
-      tal:attributes="value request/name|nothing" />
+      </div>
+      <div class="section">
+        <h2>Packages</h2>
 
-        <input type="submit" value="Find a Package"/>
+      <form name="search" action="+search" method="get">
+        <input type="text"
+          name="text"
+          size="35"
+          tal:attributes="value request/name|nothing" />
+            <input type="submit" value="Find a Package"/>
+      </form>
 
-  </form>
-
-      <div class="left">
-        <div class="section"
-             tal:content="structure context/@@+portlet-coming-sprints" />
-        <div class="section"
-             tal:content="structure context/@@+portlet-latestannouncements"
-             />
-        <div class="section"
-             tal:content="structure context/@@+portlet-series" />
-        <div
-          class="section"
-          tal:condition="context/currentseries"
-          tal:content="structure context/currentseries/@@+portlet-latestuploads"
-          />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestbugs" />
+      </div>
+      <div tal:replace="structure context/@@+portlet-coming-sprints" />
+      <div tal:replace="structure context/@@+portlet-latestannouncements" />
+      <tal:series replace="structure context/@@+series-and-milestones" />
+      <div class="section">
+        <h2>Officers</h2>
+        <tal:officers content="structure context/@@+details" />
       </div>
 
-      <div class="right">
-        <div
-          class="two column section"
-          tal:content="structure context/@@+details"
-        />
-        <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-top-contributors"
-        />
-        <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-latestspecs"
-        />
-        <div
-          class="two column section"
-          tal:content="structure context/@@+portlet-latestquestions"
-        />
+      <tal:contrib content="structure context/@@+portlet-top-contributors" />
+
+      <div class="section">
+        <h2>Registered</h2>
+        <tal:created replace="context/date_created/fmt:approximatedate" />
       </div>
+
+      <tal:comment condition="nothing">
+        This div is necessary for correct layout in Safari (bug 250989):
+      </tal:comment>
+      <div />
+
     </div>
   </body>
 </html>

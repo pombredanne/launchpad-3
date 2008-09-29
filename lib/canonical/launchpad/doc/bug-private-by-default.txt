@@ -29,7 +29,7 @@ A product with private bugs by default must always have a bug supervisor
     >>> landscape_task.bug.security_related
     False
 
-    >>> landscape.bugcontact.name
+    >>> landscape.bug_supervisor.name
     u'landscape-developers'
 
     >>> landscape.owner.name

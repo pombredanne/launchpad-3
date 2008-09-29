@@ -41,7 +41,7 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bug_linker = BugBranchLinker(self.makeDatabaseBranch())
+        self.bug_linker = BugBranchLinker(self.db_branch)
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
@@ -216,6 +216,7 @@ class TestBugLinking(BzrSyncTestCase):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
         self.bug2 = self.factory.makeBug()
+        self.new_db_branch = self.factory.makeBranch()
         self.layer.txn.commit()
 
     def getBugURL(self, bug):
@@ -262,18 +263,19 @@ class TestBugLinking(BzrSyncTestCase):
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         # Create a new DB branch to sync with.
-        new_db_branch = self.makeDatabaseBranch()
-        self.syncBazaarBranchToDatabase(self.bzr_branch, new_db_branch)
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.new_db_branch)
         self.assertEqual(
-            getUtility(IBugBranchSet).getBugBranch(self.bug1, new_db_branch),
+            getUtility(IBugBranchSet).getBugBranch(
+                self.bug1, self.new_db_branch),
             None,
             "Should not create a BugBranch.")
 
     def test_nonMainlineRevisionsDontMakeBugBranches(self):
         """Don't add BugBranches based on non-mainline revisions."""
         # Make the base revision.
+        author = self.factory.getUniqueString()
         self.bzr_tree.commit(
-            u'common parent', committer=self.AUTHOR, rev_id='r1',
+            u'common parent', committer=author, rev_id='r1',
             allow_pointless=True)
 
         # Branch from the base revision.
@@ -282,17 +284,17 @@ class TestBugLinking(BzrSyncTestCase):
 
         # Commit to both branches
         self.bzr_tree.commit(
-            u'commit one', committer=self.AUTHOR, rev_id='r2',
+            u'commit one', committer=author, rev_id='r2',
             allow_pointless=True)
         new_tree.commit(
-            u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
+            u'commit two', committer=author, rev_id='r1.1.1',
             allow_pointless=True,
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
 
         # Merge and commit.
         self.bzr_tree.merge_from_branch(new_tree.branch)
         self.bzr_tree.commit(
-            u'merge', committer=self.AUTHOR, rev_id='r3',
+            u'merge', committer=author, rev_id='r3',
             allow_pointless=True)
 
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)

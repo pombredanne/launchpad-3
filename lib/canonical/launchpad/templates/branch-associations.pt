@@ -34,10 +34,7 @@
   <tal:not-junk condition="context/product">
     <h2>Project</h2>
     <div class="indented" id="branch-project">
-      <img src="/@@/project"
-           tal:replace="structure context/product/image:icon" />
-      <a tal:attributes="href context/product/fmt:url"
-         tal:content="context/product/displayname" />
+      <tal:link replace="structure context/product/fmt:link" />
     </div>
   </tal:not-junk>
 

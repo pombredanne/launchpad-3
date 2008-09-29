@@ -158,6 +158,14 @@
             </td>
           </tr>
 
+          <tr tal:condition="context/upload_log">
+            <th>Upload log:</th>
+            <td>
+              <a tal:attributes="href context/upload_log/http_url"
+                 tal:content="context/upload_log/filename">UPLOADLOG</a>
+            </td>
+          </tr>
+
           <tr>
             <th>Finished:</th>
             <td tal:condition="context/datebuilt">

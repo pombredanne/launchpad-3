@@ -42,3 +42,24 @@ Assemble our DARBPRs for fun and profit:
   >>> print mf_warty.status.title, pm_warty.status.title, pm_hoary.status.title
   Published Superseded Published
 
+
+Retrieving the parent object, a DistroArchSeriesBinaryPackage.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+
+    >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
+
+    >>> warty_i386_pmount = warty_i386.getBinaryPackage('pmount')
+    >>> print warty_i386_pmount.title
+    Binary Package "pmount" in The Warty Warthog Release for i386 (x86)
+
+    >>> pmount_release_in_warty = warty_i386_pmount['0.1-1']
+    >>> print pmount_release_in_warty.title
+    pmount 0.1-1 (i386 binary) in ubuntu warty
+
+    >>> parent = (
+    ...     pmount_release_in_warty.distroarchseriesbinarypackage)
+    >>> print parent.title
+    Binary Package "pmount" in The Warty Warthog Release for i386 (x86)
+

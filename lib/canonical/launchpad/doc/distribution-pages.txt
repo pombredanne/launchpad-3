@@ -8,15 +8,15 @@ There are several pages listing the mirrors of a distribution, and they all
 share a common base class which is responsible for ordering the mirrors by
 country.
 
-    >>> from zope.component import getView, getUtility
+    >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login("foo.bar@canonical.com")
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_cdmirrors = getView(
-    ...     ubuntu, "+cdmirrors", LaunchpadTestRequest())
+    >>> ubuntu_cdmirrors = getMultiAdapter(
+    ...     (ubuntu, LaunchpadTestRequest()), name="+cdmirrors")
 
     >>> country_and_mirrors = ubuntu_cdmirrors.getMirrorsGroupedByCountry()
     >>> for country_and_mirror in country_and_mirrors:

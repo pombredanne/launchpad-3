@@ -30,7 +30,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BugNominationStatus, IBugNomination, IBugTaskSet, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -38,10 +38,10 @@ class BugNomination(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     decider = ForeignKey(
         dbName='decider', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
     distroseries = ForeignKey(
@@ -136,7 +136,7 @@ class BugNomination(SQLBase):
                     for upload_component in distribution.uploaders)
             for upload_component in distribution.uploaders:
                 if (upload_component.component in bug_components and
-                    person.inTeam(upload_component.uploader)):
+                    person.inTeam(upload_component.person)):
                     return True
 
         return False

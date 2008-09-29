@@ -71,7 +71,6 @@ duplicates.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...   print message
     Bug #8 also links to the added bug watch (debbugs #42).
-    This bug has 1 duplicate
 
 The notification links to the bug in question.
 

@@ -8,6 +8,8 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
+    'CodeImportSetBreadcrumbBuilder',
+    'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
     ]
@@ -19,6 +21,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
@@ -29,14 +32,32 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, IBranchSet, ICodeImport,
     ICodeImportMachineSet,  ICodeImportSet, ILaunchpadCelebrities,
     RevisionControlSystems)
+from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
+    Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.interface import copy_field, use_template
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+
+
+class CodeImportSetNavigation(Navigation):
+    """Navigation methods for IBuilder."""
+    usedfor = ICodeImportSet
+
+    @stepto('+machines')
+    def bugs(self):
+        return getUtility(ICodeImportMachineSet)
+
+
+class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ICodeImportSet`."""
+    text = u'Code Import System'
 
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
@@ -266,7 +287,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
-            data['svn_repository'] = None
+            data['svn_branch_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None
@@ -296,20 +317,64 @@ class CodeImportNewView(CodeImportBaseView):
                     branch_name=existing_branch.name))
 
 
+class EditCodeImportForm(Interface):
+    """The fields presented on the form for editing a code import."""
+
+    use_template(
+        ICodeImport, ['svn_branch_url', 'cvs_root', 'cvs_module'])
+    whiteboard = copy_field(IBranch['whiteboard'])
+
+
+def _makeEditAction(label, status, text):
+    """Make an Action to call a particular code import method.
+
+    :param label: The label for the action, which will end up as the
+         button title.
+    :param status: If the code import has this as its review_status, don't
+        show the button (always show the button if it is None).
+    :param text: The text to go after 'The code import has been' in a
+        notifcation, if a change was made.
+    """
+    if status is not None:
+        def condition(self, ignored):
+            return self._showButtonForStatus(status)
+    else:
+        condition = None
+    def success(self, action, data):
+        """Make the requested status change."""
+        if status is not None:
+            data['review_status'] = status
+        event = self.code_import.updateFromData(data, self.user)
+        if event is not None:
+            self.request.response.addNotification(
+                'The code import has been ' + text + '.')
+        else:
+            self.request.response.addNotification('No changes made.')
+    name = label.lower().replace(' ', '_')
+    return form.Action(
+        label, name=name, success=success, condition=condition)
+
+
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
-    This view is registered against the branch, but edits the
-    code import for that branch.  If the branch has no associated
-    code import, then the result is a 404.  If the branch does have
-    a code import, then the adapters property allows the form
-    internals to do the associated mappings.
+    This view is registered against the branch, but mostly edits the code
+    import for that branch -- the exception being that it also allows the
+    editing of the branch whiteboard.  If the branch has no associated code
+    import, then the result is a 404.  If the branch does have a code import,
+    then the adapters property allows the form internals to do the associated
+    mappings.
     """
+
+    schema = EditCodeImportForm
 
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
-    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
+
+    @property
+    def initial_values(self):
+        return {'whiteboard': self.context.whiteboard}
 
     def initialize(self):
         """Show a 404 if the branch has no code import."""
@@ -323,7 +388,7 @@ class CodeImportEditView(CodeImportBaseView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`."""
-        return {ICodeImport: self.code_import}
+        return {EditCodeImportForm: self.code_import}
 
     def setUpFields(self):
         CodeImportBaseView.setUpFields(self)
@@ -341,43 +406,21 @@ class CodeImportEditView(CodeImportBaseView):
         """If the status is different, and the user is super, show button."""
         return self._super_user and self.code_import.review_status != status
 
-    def _showApprove(self, ignored):
-        """Show the Approve button if the import is not reviewed."""
-        return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
-
-    def _showInvalidate(self, ignored):
-        """Show the Approve button if the import is not invalid."""
-        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
-
-    def _showSuspend(self, ignored):
-        """Show the Suspend button if the import is not suspended."""
-        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        """Update the details."""
-        self.code_import.updateFromData(data, self.user)
-
-    @action(_('Approve'), name='approve', condition=_showApprove)
-    def approve_action(self, action, data):
-        """Approve the import."""
-        self.code_import.approve(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been approved.')
-
-    @action(_('Mark Invalid'), name='invalidate', condition=_showInvalidate)
-    def invalidate_action(self, action, data):
-        """Invalidate the import."""
-        self.code_import.invalidate(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been set as invalid.')
-
-    @action(_('Suspend'), name='suspend', condition=_showSuspend)
-    def suspend_action(self, action, data):
-        """Suspend the import."""
-        self.code_import.suspend(data, self.user)
-        self.request.response.addNotification(
-            'The code import has been suspended.')
+    actions = form.Actions(
+        _makeEditAction(_('Update'), None, 'updated'),
+        _makeEditAction(
+            _('Approve'), CodeImportReviewStatus.REVIEWED,
+            'approved'),
+        _makeEditAction(
+            _('Mark Invalid'), CodeImportReviewStatus.INVALID,
+            'set as invalid'),
+        _makeEditAction(
+            _('Suspend'), CodeImportReviewStatus.SUSPENDED,
+            'suspended'),
+        _makeEditAction(
+            _('Mark Failing'), CodeImportReviewStatus.FAILING,
+            'marked as failing'),
+        )
 
     def validate(self, data):
         """See `LaunchpadFormView`."""

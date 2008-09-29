@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
@@ -22,9 +21,11 @@ from zope.app.form.utility import setUpWidget
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
-    IBugWatchSet, ILaunchBag, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL)
+    IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -73,7 +74,8 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
+        option = self.request.form_ng.getOne(self.name + ".option")
+        if option == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -298,10 +300,7 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
         """Join the input tag with the label."""
-        here = os.path.dirname(__file__)
-        template_path = os.path.join(
-            here, 'templates', 'bugtask-bugwatch-widget.txt')
-        row_template = open(template_path).read()
+        row_template = get_widget_template('bugtask-bugwatch-widget.txt')
         return row_template % {
             'input_tag': option_tag,
             'input_id': input_id,
@@ -330,8 +329,8 @@ class BugTaskBugWatchWidget(RadioWidget):
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
             and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
         elif value != self.context.missing_value:
             values = [value]
         else:
@@ -419,10 +418,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
     It accepts both binary and source package names.
     """
 
-    def _toFieldValue(self, input):
-        if not input:
-            return self.context.missing_value
+    def getDistribution(self):
+        """Get the distribution used for package validation.
 
+        The package name has be to published in the returned distribution.
+        """
         field = self.context
         distribution = field.context.distribution
         if distribution is None and field.context.distroseries is not None:
@@ -430,6 +430,13 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
             " bugtasks on distributions or on distribution series.")
+        return distribution
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        distribution = self.getDistribution()
 
         try:
             source, binary = distribution.guessPackageNames(input)
@@ -441,6 +448,28 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
         return source
+
+
+class BugTaskAlsoAffectsSourcePackageNameWidget(
+    BugTaskSourcePackageNameWidget):
+    """Package widget for +distrotask.
+
+    This widgets works the same as `BugTaskSourcePackageNameWidget`,
+    except that it gets the distribution from the request.
+    """
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`"""
+        distribution_name = self.request.form.get('field.distribution')
+        if distribution_name is None:
+            raise UnexpectedFormData(
+                "field.distribution wasn't in the request")
+        distribution = getUtility(IDistributionSet).getByName(
+            distribution_name)
+        if distribution is None:
+            raise UnexpectedFormData(
+                "No such distribution: %s" % distribution_name)
+        return distribution
 
 
 class AssigneeDisplayWidget(BrowserWidget):

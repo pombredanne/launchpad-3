@@ -24,7 +24,7 @@ importance will still have an Unknown value.
     >>> admin_browser.open('http://launchpad.dev/debian/+edit')
     >>> admin_browser.getControl(
     ...     'Bugs in this project are tracked in Launchpad').selected = True
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
     >>> admin_browser.title
     'Debian GNU/Linux in Launchpad'
 

@@ -298,7 +298,7 @@ And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, fuzzy, published,
+    ...     pofile, no_priv, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
@@ -313,7 +313,7 @@ At this moment, karma is assigned and thus is printed here.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, fuzzy, published,
+    ...     pofile, no_priv, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -332,7 +332,7 @@ being approved.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, fuzzy, published,
+    ...     pofile, kurem, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -347,7 +347,7 @@ get karma for his autoapproved translation.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, fuzzy, published,
+    ...     pofile, kurem, new_translations, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()
@@ -364,9 +364,7 @@ We are going to use Sample Person for this test as he's the owner of the
 product from where the IPOTemplate is and he has rights to change the
 description.
 
-    >>> from zope.component import getView
     >>> from canonical.launchpad.layers import TranslationsLayer
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
     >>> form = {

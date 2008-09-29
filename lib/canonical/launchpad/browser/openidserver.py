@@ -4,10 +4,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin',
+    'OpenIDMixin',
     ]
 
 import cgi
+import logging
+import pytz
+from datetime import datetime, timedelta
 from time import time
 
 from BeautifulSoup import BeautifulSoup
@@ -25,17 +28,23 @@ from openid.extensions.sreg import (
 from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
-    UnexpectedFormData)
+from canonical.launchpad.components.openidserver import (
+    OpenIDPersistentIdentity)
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonVisibility)
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.openidserver import (
+    ILaunchpadOpenIDStoreFactory, ILoginServiceAuthorizeForm,
+    ILoginServiceLoginForm, IOpenIDAuthorizationSet, IOpenIDRPConfigSet,
+    IOpenIDRPSummarySet)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -71,21 +80,19 @@ sreg_data_fields_order = [
     ]
 
 
-class OpenIdMixin:
+class OpenIDMixin:
 
     openid_request = None
 
     def __init__(self, context, request):
-        super(OpenIdMixin, self).__init__(context, request)
-        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+        super(OpenIDMixin, self).__init__(context, request)
+        store_factory = getUtility(ILaunchpadOpenIDStoreFactory)
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.openid_server = Server(store_factory(), self.server_url)
-        self.identity_url_prefix = (
-            allvhosts.configs['openid'].rooturl + '+id/')
 
     @property
     def user_identity_url(self):
-        return self.identity_url_prefix + self.user.openid_identifier
+        return OpenIDPersistentIdentity(self.user.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -116,7 +123,7 @@ class OpenIdMixin:
           ...     'y': (11000, 'bar'),
           ...     'z': (100, 'baz')
           ...     }
-          >>> OpenIdMixin._sweep(now, session)
+          >>> OpenIDMixin._sweep(now, session)
           >>> for key in sorted(session):
           ...     print key, session[key]
           x (9999, 'foo')
@@ -158,7 +165,7 @@ class OpenIdMixin:
         session[key] = (now, query)
 
     def trashRequestInSession(self, key):
-        """Remove the OpenIdRequest from the session using the given key."""
+        """Remove the OpenIDRequest from the session using the given key."""
         session = self.getSession()
         try:
             del session[key]
@@ -176,7 +183,8 @@ class OpenIdMixin:
         rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
             self.openid_request.trust_root)
         if rpconfig is None:
-            field_names.clear()
+            # The nickname field is permitted by default.
+            field_names.intersection_update(['nickname'])
         else:
             field_names.intersection_update(rpconfig.allowed_sreg)
 
@@ -201,8 +209,8 @@ class OpenIdMixin:
         values['nickname'] = self.user.name
         values['fullname'] = self.user.displayname
         values['email'] = self.user.preferredemail.email
-        if self.user.timezone is not None:
-            values['timezone'] = self.user.timezone
+        if self.user.time_zone is not None:
+            values['timezone'] = self.user.time_zone
         shipment = self.user.lastShippedRequest()
         if shipment is not None:
             values['x_address1'] = shipment.addressline1
@@ -258,7 +266,7 @@ class OpenIdMixin:
         openid_response.fields.setArg(
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
 
-    def renderOpenIdResponse(self, openid_response):
+    def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
         response.setStatus(webresponse.code)
@@ -300,6 +308,10 @@ class OpenIdMixin:
 
         self.checkTeamMembership(response)
 
+        rp_summary_set = getUtility(IOpenIDRPSummarySet)
+        rp_summary_set.record(
+            self.user.account, self.openid_request.trust_root)
+
         return response
 
     def createFailedResponse(self):
@@ -314,7 +326,7 @@ class OpenIdMixin:
         return response
 
 
-class OpenIdView(OpenIdMixin, LaunchpadView):
+class OpenIDView(OpenIDMixin, LaunchpadView):
     """An OpenID Provider endpoint for Launchpad.
 
     This class implemnts an OpenID endpoint using the python-openid
@@ -327,7 +339,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         "../templates/openid-invalid-identity.pt")
 
     def render(self):
-        """Handle all OpenId requests and form submissions
+        """Handle all OpenID requests and form submissions
 
         Returns the page contents after setting all relevant headers in
         self.request.response
@@ -373,9 +385,9 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 
         # If the above code has not already returned or raised an exception,
         # openid_respose is filled out ready for the openid library to render.
-        return self.renderOpenIdResponse(openid_response)
+        return self.renderOpenIDResponse(openid_response)
 
-    def storeOpenIdRequestInSession(self):
+    def storeOpenIDRequestInSession(self):
         # To ensure that the user has seen this page and it was actually the
         # user that clicks the 'Accept' button, we generate a nonce and
         # use it to store the openid_request in the session. The nonce
@@ -393,7 +405,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         This should be done if the user has not yet authenticated to
         Launchpad.
         """
-        self.storeOpenIdRequestInSession()
+        self.storeOpenIDRequestInSession()
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()
 
@@ -404,7 +416,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         We need to explain what they are doing here and ask them if they
         want to allow Launchpad to authenticate them with the OpenID consumer.
         """
-        self.storeOpenIdRequestInSession()
+        self.storeOpenIDRequestInSession()
         return LoginServiceAuthorizeView(
             self.context, self.request, self.nonce)()
 
@@ -412,7 +424,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
         return (self.openid_request.idSelect() or
-                identity.startswith(self.identity_url_prefix))
+                OpenIDPersistentIdentity.supportsURL(identity))
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""
@@ -422,13 +434,13 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
             return False
 
         client_id = getUtility(IClientIdManager).getClientId(self.request)
-        auth_set = getUtility(IOpenIdAuthorizationSet)
+        auth_set = getUtility(IOpenIDAuthorizationSet)
 
         return auth_set.isAuthorized(
                 self.user, self.openid_request.trust_root, client_id)
 
 
-class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
+class LoginServiceBaseView(OpenIDMixin, LaunchpadFormView):
     """Common functionality for the OpenID login and authorize forms."""
 
     def __init__(self, context, request, nonce=None):
@@ -498,12 +510,12 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
             return LoginServiceLoginView(
                 self.context, self.request, self.nonce)()
         self.trashRequest()
-        return self.renderOpenIdResponse(self.createPositiveResponse())
+        return self.renderOpenIDResponse(self.createPositiveResponse())
 
     @action("Not Now", name='deny')
     def deny_action(self, action, data):
         self.trashRequest()
-        return self.renderOpenIdResponse(self.createFailedResponse())
+        return self.renderOpenIDResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
     # XXX mpt 2007-06-18: "I'm" should use a typographical apostrophe.
@@ -589,9 +601,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             if person.preferredemail is None:
                 self.addError(
                         _(
-                    "The email address '${email}' has not yet been confirmed. "
-                    "We sent an email to that address with instructions on "
-                    "how to confirm that it belongs to you.",
+                    "The email address '${email}' has not yet been "
+                    "confirmed. We sent an email to that address with "
+                    "instructions on how to confirm that it belongs to you.",
                     mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
@@ -620,7 +632,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
             loginsource = getUtility(IPlacelessLoginSource)
             principal = loginsource.getPrincipalByLogin(email)
             logInPerson(self.request, principal, email)
-            return self.renderOpenIdResponse(self.createPositiveResponse())
+            return self.renderOpenIDResponse(self.createPositiveResponse())
         elif action == 'resetpassword':
             return self.process_password_recovery(email)
         elif action == 'createaccount':
@@ -662,3 +674,53 @@ class ProtocolErrorView(LaunchpadView):
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
         return self.context.encodeToKVForm()
+
+
+class PreAuthorizeRPView(LaunchpadView):
+    """Pre-authorize an OpenID consumer.
+
+    This page expects to find a 'trust_root' and a 'callback' query parameters
+    and it raises an UnexpectedFormData if any of them is not found or empty.
+
+    The pre-authorization is only allowed if the HTTP referer and the given
+    trust_root are in config.launchpad.openid_preauthorization_acl
+    """
+
+    # Number of hours a pre-authorization is valid for.
+    PRE_AUTHORIZATION_VALIDITY = 2
+
+    def __call__(self):
+        form = self.request.form
+        trust_root = form.get('trust_root')
+        if not trust_root:
+            raise UnexpectedFormData("trust_root was not specified.")
+        callback = form.get('callback')
+        if not callback:
+            raise UnexpectedFormData("callback was not specified.")
+        http_referrer = self.request.getHeader('referer', '')
+        acl_lines = []
+        if config.launchpad.openid_preauthorization_acl is not None:
+            acl_lines = config.launchpad.openid_preauthorization_acl.split(
+                '\n')
+        for line in acl_lines:
+            referrer, acl_trust_root = line.strip().split(None, 1)
+            if (not http_referrer.startswith(referrer)
+                or trust_root != acl_trust_root):
+                continue
+
+            client_id = getUtility(IClientIdManager).getClientId(self.request)
+            expires = (datetime.now(pytz.timezone('UTC'))
+                       + timedelta(hours=self.PRE_AUTHORIZATION_VALIDITY))
+            getUtility(IOpenIDAuthorizationSet).authorize(
+                self.user, trust_root, expires, client_id)
+            # Need to commit the transaction because this will always be
+            # processing GET requests.
+            import transaction
+            transaction.commit()
+            break
+        else:
+            logging.info(
+                "Unauthorized trust root (%s) or referrer (%s).",
+                trust_root, http_referrer)
+        self.request.response.redirect(callback)
+        return u''

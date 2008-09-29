@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.4
-
-# Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>
+# Copyright (C) 2005-2008  Canonical Software Ltd.
 
 """Origins dictionary containing all mirrors used for sync-source.py."""
 
@@ -666,6 +665,14 @@ origins = {
     "default suite": "bora",
     "default component": "free",
     "dsc": "can be unsigned",
+    },
+
+"mirror.err.no-uqm": {
+    "name": "mirror.err.no-uqm",
+    "url": "http://mirror.err.no/uqm/",
+    "default suite": "unstable",
+    "default component": "",
+    "dsc": "can be unsigned"
     },
 
 }

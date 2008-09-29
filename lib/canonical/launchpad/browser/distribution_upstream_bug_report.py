@@ -8,9 +8,13 @@ __all__ = [
     'DistributionUpstreamBugReport'
 ]
 
+
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import (
+from canonical.launchpad.browser.bugtask import (
+    get_buglisting_search_filter_url)
+from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
+from canonical.launchpad.webapp.url import urlappend
 
 
 # TODO: fix column sorting to work for the different colspans, or
@@ -48,8 +52,10 @@ class BugReportData:
     bugs need upstream tasks.
     """
     TRIAGED_THRESHOLD = 75
-    UPSTREAM_THRESHOLD = 60
-    WATCH_THRESHOLD = 95
+    UPSTREAM_THRESHOLD = 90
+    WATCH_THRESHOLD = 90
+
+    BAD_THRESHOLD = 20
 
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
                  watched_bugs=0):
@@ -67,8 +73,8 @@ class BugReportData:
 
     @property
     def upstream_bugs_percentage(self):
-        if self.triaged_bugs:
-            return 100.0 * self.upstream_bugs / self.triaged_bugs
+        if self.open_bugs:
+            return 100.0 * self.upstream_bugs / self.open_bugs
         else:
             return 0.0
 
@@ -78,6 +84,21 @@ class BugReportData:
             return 100.0 * self.watched_bugs / self.upstream_bugs
         else:
             return 0.0
+
+    @property
+    def row_class(self):
+        """Return the class to be used for the current table row.
+
+        :returns: 'good' if watched_bugs_percentage > WATCH_THRESHOLD;
+            'bad' if watched_bugs_percentage < BAD_THRESHOLD;
+            '' otherwise.
+        """
+        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
+            return "good"
+        elif self.watched_bugs_percentage < self.BAD_THRESHOLD:
+            return "bad"
+        else:
+            return ''
 
     @property
     def triaged_bugs_class(self):
@@ -103,7 +124,7 @@ class BugReportData:
 
     @property
     def upstream_bugs_delta(self):
-        return self.triaged_bugs - self.upstream_bugs
+        return self.open_bugs - self.upstream_bugs
 
     @property
     def watched_bugs_delta(self):
@@ -133,7 +154,11 @@ class PackageBugReportData(BugReportData):
         self.product = product
 
         dsp_url = canonical_url(dsp)
-        self.open_bugs_url = dsp_url
+        dsp_bugs_url = canonical_url(dsp, rootsite='bugs')
+
+        self.open_bugs_url = urlappend(
+            dsp_bugs_url, get_buglisting_search_filter_url())
+
         self.official_malone = bool(product and product.official_malone)
         self.series_branch = (
             product and product.development_focus.series_branch)
@@ -145,28 +170,48 @@ class PackageBugReportData(BugReportData):
         if self.product:
             product_url = canonical_url(product)
             self.bugtracker = self.product.getExternalBugTracker()
-            self.bugcontact_url = product_url + "/+bugcontact"
+            self.bug_supervisor_url = product_url + "/+bugsupervisor"
             self.product_edit_url = product_url + "/+edit"
 
         # Note that the +edit-packaging page allows launchpad.AnyPerson
         # so no permissions check needs to be done in the template.
         self.packaging_url = canonical_url(self.dssp) + "/+edit-packaging"
-        self.triaged_bugs_url = (
-            dsp_url + "?field.status%3Alist=TRIAGED")
-        self.triaged_bugs_delta_url = (
-            dsp_url + "?field.status%3Alist=NEW"
-                      "&field.status%3Alist=INCOMPLETE_WITH_RESPONSE"
-                      "&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE"
-                      "&field.status%3Alist=CONFIRMED")
-        self.upstream_bugs_url = (
-            dsp_url + "?field.status_upstream=open_upstream"
-                      "&field.status%3Alist=TRIAGED")
-        self.upstream_bugs_delta_url = (
-            dsp_url + "?field.status_upstream=hide_upstream"
-                      "&field.status%3Alist=TRIAGED")
-        self.watched_bugs_delta_url = (
-            dsp_url + "?field.status_upstream=pending_bugwatch"
-                      "&field.status%3Alist=TRIAGED")
+        self.triaged_bugs_url = urlappend(
+            dsp_bugs_url, get_buglisting_search_filter_url(status='TRIAGED'))
+
+        # The triaged delta URL links to all bugs that are open but not
+        # triaged for the current DistributionSourcePackage.
+        untriaged_bug_statuses = [
+            'CONFIRMED',
+            'INCOMPLETE_WITHOUT_RESPONSE',
+            'INCOMPLETE_WITH_RESPONSE',
+            'NEW',
+            ]
+        untriaged_search_filter_url = get_buglisting_search_filter_url(
+            status=untriaged_bug_statuses)
+        self.triaged_bugs_delta_url = urlappend(
+            dsp_bugs_url, untriaged_search_filter_url)
+
+        # The upstream URL links to all bugs that are open and have an
+        # open upstream bug task or bug watch.
+        upstream_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='open_upstream')
+        self.upstream_bugs_url = urlappend(
+            dsp_bugs_url, upstream_search_filter_url)
+
+        # The upstream delta URL links to all bugs that are open without
+        # an upstream bug task or bug watch.
+        non_upstream_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='hide_upstream')
+        self.upstream_bugs_delta_url = urlappend(
+            dsp_bugs_url, non_upstream_search_filter_url)
+
+        # The watch delta URL links to all open upstream bugs that don't
+        # have a bugwatch.
+        unwatched_bugs_search_filter_url = get_buglisting_search_filter_url(
+            status_upstream='pending_bugwatch')
+        self.watched_bugs_delta_url = urlappend(
+            dsp_bugs_url, unwatched_bugs_search_filter_url)
 
 
 class DistributionUpstreamBugReport(LaunchpadView):

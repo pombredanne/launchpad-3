@@ -16,7 +16,7 @@ class BugSetBase:
         self.title = 'Malone: the Launchpad bug tracker'
 
     def __getitem__(self, id):
-        item = self.table.selectOne(self.table.q.id == id)
+        item = self.table.selectOne(self.table.q.id == int(id))
         if item is None:
             raise NotFoundError(id)
         return item

@@ -27,7 +27,7 @@ from canonical.launchpad.event.interfaces import (
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
     IPersonSet, IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
@@ -75,9 +75,9 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         the previous user.
         """
         old_user = getUtility(ILaunchBag).user
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         question.setStatus(self.admin, new_status, comment)
-        login(old_user.preferredemail.email)
+        login_person(old_user)
 
     def setUpEventListeners(self):
         """Install a listener for events emitted during the test."""
@@ -345,7 +345,7 @@ class RequestInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'requestInfo')
 
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         getattr(self.question, 'requestInfo')
 
 
@@ -383,12 +383,12 @@ class GiveInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
         """Test that only the owner can access giveInfo()."""
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         self.assertRaises(Unauthorized, getattr, self.question, 'giveInfo')
 
-        login(self.owner.preferredemail.email)
+        login_person(self.owner)
         getattr(self.question, 'giveInfo')
 
 
@@ -475,7 +475,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'giveAnswer')
 
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         getattr(self.question, 'giveAnswer')
 
 
@@ -487,12 +487,12 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         BaseAnswerTrackerWorkflowTestCase.setUp(self)
 
         # Only admin can create FAQ on ubuntu.
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         self.faq = self.ubuntu.newFAQ(
             self.admin, 'Generic HowTo', 'Describe how to do anything.')
 
         # Logs in as owner.
-        login(self.owner.preferredemail.email)
+        login_person(self.owner)
 
     def test_linkFAQ(self):
         """Test that linkFAQ can be called when the question status is
@@ -546,7 +546,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'linkFAQ')
 
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         getattr(self.question, 'linkFAQ')
 
 
@@ -677,12 +677,12 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         """Test that only the owner can access confirmAnswer()."""
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
 
-        login(self.owner.preferredemail.email)
+        login_person(self.owner)
         getattr(self.question, 'confirmAnswer')
 
 
@@ -775,12 +775,12 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
         """Test that only the owner can access reopen()."""
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         self.assertRaises(Unauthorized, getattr, self.question, 'reopen')
 
-        login(self.owner.preferredemail.email)
+        login_person(self.owner)
         getattr(self.question, 'reopen')
 
 
@@ -814,7 +814,7 @@ class ExpireQuestionTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'expireQuestion')
 
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         getattr(self.question, 'expireQuestion')
 
 
@@ -831,7 +831,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.ubuntu.addAnswerContact(self.answerer)
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         self._testInvalidTransition(
             valid_statuses, self.question.reject,
             self.answerer, "This is lame.", datecreated=self.nowPlus(1))
@@ -841,7 +841,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         # Reject user must be an answer contact, (or admin, or product owner).
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.ubuntu.addAnswerContact(self.answerer)
@@ -875,10 +875,10 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
-        login(self.owner.preferredemail.email)
+        login_person(self.owner)
         self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
-        login(self.answerer.preferredemail.email)
+        login_person(self.answerer)
         self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
         # Answer contacts must speak a language
@@ -886,7 +886,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.question.target.addAnswerContact(self.answerer)
         getattr(self.question, 'reject')
 
-        login(self.admin.preferredemail.email)
+        login_person(self.admin)
         getattr(self.question, 'reject')
 
 

@@ -177,6 +177,30 @@ class Publisher(object):
         # This is a set of tuples in the form (distroseries.name, pocket)
         self.dirty_pockets = set()
 
+    def isDirty(self, distroseries, pocket):
+        """True if a publication has happened in this release and pocket."""
+        if not (distroseries.name, pocket) in self.dirty_pockets:
+            return False
+        return True
+
+    def markPocketDirty(self, distroseries, pocket):
+        """Mark a pocket dirty only if it's allowed."""
+        if self.isAllowed(distroseries, pocket):
+            self.dirty_pockets.add((distroseries.name, pocket))
+
+    def isAllowed(self, distroseries, pocket):
+        """Whether or not the given suite should be considered.
+
+        Return True either if the self.allowed_suite is empty (was not
+        specified in command line) or if the given suite is included in it.
+
+        Otherwise, return False.
+        """
+        if (self.allowed_suites and
+            (distroseries.name, pocket) not in self.allowed_suites):
+            return False
+        return True
+
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 
@@ -235,7 +259,7 @@ class Publisher(object):
                 source_query = " AND ".join(clauses)
                 sources = SourcePackagePublishingHistory.select(source_query)
                 if sources.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    self.markPocketDirty(distroseries, pocket)
                     # No need to check binaries if the pocket is already
                     # dirtied from a source.
                     continue
@@ -250,7 +274,7 @@ class Publisher(object):
                 binaries = BinaryPackagePublishingHistory.select(binary_query,
                     clauseTables=['DistroArchSeries'])
                 if binaries.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
@@ -313,12 +337,6 @@ class Publisher(object):
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 self._writeDistroSeries(distroseries, pocket)
 
-    def isDirty(self, distroseries, pocket):
-        """True if a publication has happened in this release and pocket."""
-        if not (distroseries.name, pocket) in self.dirty_pockets:
-            return False
-        return True
-
     def _makeFileGroupWriteableAndWorldReadable(self, file_path):
         """Make the file group readable/writable and world readable."""
         mode = stat.S_IMODE(os.stat(file_path).st_mode)
@@ -348,10 +366,10 @@ class Publisher(object):
 
         fd_gz, temp_index_gz = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index-gz_')
-        source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
+        source_index_gz = gzip.GzipFile(fileobj=os.fdopen(fd_gz, "wb"))
         fd, temp_index = tempfile.mkstemp(
             dir=self._config.temproot, prefix='source-index_')
-        source_index = open(temp_index, 'wb')
+        source_index = os.fdopen(fd, "wb")
 
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
@@ -395,8 +413,8 @@ class Publisher(object):
             fd, temp_index = tempfile.mkstemp(
                 dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(
-                fileobj=open(temp_index_gz, "wb"))
-            package_index = open(temp_index, "wb")
+                fileobj=os.fdopen(fd_gz,"wb"))
+            package_index = os.fdopen(fd, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
@@ -431,19 +449,6 @@ class Publisher(object):
             arch_name = "binary-" + arch.architecturetag
             self.apt_handler.requestReleaseFile(
                 suite_name, component.name, arch_name)
-
-    def isAllowed(self, distroseries, pocket):
-        """Whether or not the given suite should be considered.
-
-        Return True either if the self.allowed_suite is empty (was not
-        specified in command line) or if the given suite is included in it.
-
-        Otherwise, return False.
-        """
-        if (self.allowed_suites and
-            (distroseries.name, pocket) not in self.allowed_suites):
-            return False
-        return True
 
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
@@ -604,9 +609,21 @@ class Publisher(object):
             # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
             return
-        in_file = open(full_name,"r")
-        contents = in_file.read()
-        in_file.close()
-        length = len(contents)
-        checksum = sum_form(contents).hexdigest()
+
+        in_file = open(full_name, 'r')
+        try:
+            # XXX cprov 20080704 bug=243630,269014: Workaround for hardy's
+            # python-apt. If it receives a file object as an argument instead
+            # of the file contents as a string, it will generate the correct
+            # SHA256.
+            if sum_form == sha256:
+                contents = in_file
+                length = os.stat(full_name).st_size
+            else:
+                contents = in_file.read()
+                length = len(contents)
+            checksum = sum_form(contents).hexdigest()
+        finally:
+            in_file.close()
+
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))

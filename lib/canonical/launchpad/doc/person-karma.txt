@@ -100,8 +100,8 @@ on that project.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
-    [[u'evolution', 175], [u'ubuntu', 26], [u'gnomebaker', 15],
-     [u'thunderbird', 15], [u'firefox', 8], [u'bazaar', 2]]
+    [(u'evolution', 175), (u'ubuntu', 26), (u'gnomebaker', 15),
+     (u'thunderbird', 15), (u'firefox', 8), (u'bazaar', 2)]
 
 == Karma Updater ==
 

@@ -1,6 +1,6 @@
 import unittest
 from canonical.ftests.pgsql import PgTestCase, PgTestSetup, ConnectionWrapper
-import psycopg
+
 
 class TestPgTestCase(PgTestCase):
 

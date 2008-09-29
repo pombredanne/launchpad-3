@@ -18,7 +18,7 @@ https://launchpad.net/malone/+bug/49891)
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> sample_person = getUtility(IPersonSet).getByName("name12")
-    >>> firefox.setBugContact(sample_person, sample_person)
+    >>> firefox.setBugSupervisor(sample_person, sample_person)
 
     >>> flush_database_updates()
 

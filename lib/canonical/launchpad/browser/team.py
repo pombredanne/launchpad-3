@@ -1,24 +1,30 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 __metaclass__ = type
-
 __all__ = [
     'HasRenewalPolicyMixin',
     'ProposedTeamMembersEditView',
     'TeamAddView',
+    'TeamBadges',
     'TeamBrandingView',
     'TeamContactAddressView',
-    'TeamMailingListConfigurationView',
     'TeamEditView',
+    'TeamMailingListConfigurationView',
+    'TeamMailingListModerationView',
+    'TeamMapView',
+    'TeamMapData',
     'TeamMemberAddView',
+    'TeamPrivacyAdapter',
     ]
 
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from urllib import quote
+from datetime import datetime
+import pytz
+
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -27,21 +33,54 @@ from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView)
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, LoginTokenType, MailingListStatus,
-    PersonVisibility, TeamContactMethod, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UnexpectedFormData)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingList, IMailingListSet, MailingListStatus, PURGE_STATES,
+    PostedMessageStatus)
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
+    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.lazr.interfaces import IObjectPrivacy
+
+
+class TeamPrivacyAdapter:
+    """Provides `IObjectPrivacy` for `ITeam`."""
+
+    implements(IObjectPrivacy)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def is_private(self):
+        """Return True if the bug is private, otherwise False."""
+        return self.context.visibility != PersonVisibility.PUBLIC
+
+
+class TeamBadges(HasBadgeBase):
+    """Provides `IHasBadges` for `ITeam`."""
+
+    def getPrivateBadgeTitle(self):
+        """Return private badge info useful for a tooltip."""
+        return "This is a %s team" % self.context.visibility.title.lower()
+
 
 class HasRenewalPolicyMixin:
     """Mixin to be used on forms which contain ITeam.renewal_policy.
@@ -118,11 +157,13 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
         When a team has a mailing list, renames are prohibited.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if mailing_list is not None:
+        writable = (mailing_list is None or
+                    mailing_list.status == MailingListStatus.PURGED)
+        if not writable:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(TeamEditView, self).setUpWidgets()
-        if mailing_list is not None:
+        if not writable:
             # We can't change the widget's .hint directly because that's a
             # read-only property.  But that property just delegates to the
             # context's underlying description, so change that instead.
@@ -173,10 +214,10 @@ class MailingListTeamBaseView(LaunchpadFormView):
         """Checks whether or not the list is usable; ie. accepting messages.
 
         The list must exist and must be in a state acceptable to
-        MailingList.isUsable.
+        MailingList.is_usable.
         """
         mailing_list = self._getList()
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     @property
     def mailinglist_address(self):
@@ -268,7 +309,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                                        structured(str(error)))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if mailing_list is None or not mailing_list.isUsable():
+            if mailing_list is None or not mailing_list.is_usable:
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -301,19 +342,16 @@ class TeamContactAddressView(MailingListTeamBaseView):
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
-            if context.preferredemail is not None:
-                # The user wants the mailing list to stop being the
-                # team's contact address, but not to be deactivated
-                # altogether. So we demote the list address from
-                # 'preferred' address to being just a regular address.
-                context.preferredemail.status = EmailAddressStatus.VALIDATED
+            context.setContactAddress(None)
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert mailing_list is not None and mailing_list.isUsable(), (
+            assert mailing_list is not None and mailing_list.is_usable, (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
-            context.setContactAddress(
-                email_set.getByEmail(mailing_list.address))
+            email = email_set.getByEmail(mailing_list.address)
+            assert email is not None, (
+                "Cannot find mailing list's posting address")
+            context.setContactAddress(email)
         elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
             contact_address = data['contact_address']
             email = email_set.getByEmail(contact_address)
@@ -367,7 +405,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None
-                and self.mailing_list.isUsable()), (
+                and self.mailing_list.is_usable), (
             "Only a usable mailing list can be configured.")
 
         if (welcome_message is not None
@@ -412,11 +450,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
         """Creates a new mailing list."""
-        list_set = getUtility(IMailingListSet)
-        mailing_list = list_set.get(self.context.name)
-        assert mailing_list is None, (
-            'Tried to create a mailing list for a team that already has one.')
-        list_set.new(self.context)
+        getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
             "Mailing list requested and queued for approval.")
         self.next_url = canonical_url(self.context)
@@ -454,6 +488,22 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "The mailing list will be reactivated within a few minutes.")
         self.next_url = canonical_url(self.context)
 
+    def purge_list_validator(self, action, data):
+        """Adds an error if the list is not safe to purge.
+
+        This can only happen through bypassing the UI.
+        """
+        if not self.list_can_be_purged:
+            self.addError('This list cannot be purged.')
+
+    @action('Purge this Mailing List', name='purge_list',
+            validator=purge_list_validator)
+    def purge_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).purge()
+        self.request.response.addInfoNotification(
+            'The mailing list has been purged.')
+        self.next_url = canonical_url(self.context)
+
     @property
     def list_is_usable_but_not_contact_method(self):
         """The list could be the contact method for its team, but isn't.
@@ -476,7 +526,9 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         failures and inconsistencies.
         """
 
-        if not self.mailing_list:
+        if (self.mailing_list is None or
+            self.mailing_list.status == MailingListStatus.PURGED):
+            # Purged lists act as if they don't exist.
             return None
         elif self.mailing_list.status == MailingListStatus.REGISTERED:
             return None
@@ -543,10 +595,11 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Can a mailing list be requested for this team?
 
         It can only be requested if there's no mailing list associated with
-        this team.
+        this team, or the mailing list has been purged.
         """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        return mailing_list is None
+        return (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED)
 
     @property
     def list_can_be_deactivated(self):
@@ -563,6 +616,92 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         The list must exist and be in the INACTIVE state.
         """
         return self.getListInState(MailingListStatus.INACTIVE) is not None
+
+    @property
+    def list_can_be_purged(self):
+        """Is this team's list in a state where it can be purged?
+
+        The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
+        or INACTIVE states.  Further, the user doing the purging, must be
+        a Launchpad administrator or mailing list expert.
+        """
+        requester = IPerson(self.request.principal, None)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (requester is None or
+            (not requester.inTeam(celebrities.admin) and
+             not requester.inTeam(celebrities.mailing_list_experts))):
+            return False
+        return self.getListInState(*PURGE_STATES) is not None
+
+
+class TeamMailingListModerationView(MailingListTeamBaseView):
+    """A view for moderating the held messages of a mailing list."""
+
+    schema = Interface
+    label = 'Mailing list moderation'
+
+    def __init__(self, context, request):
+        """Allow for review and moderation of held mailing list posts."""
+        super(TeamMailingListModerationView, self).__init__(context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
+        assert(self.mailing_list is not None), (
+            'No mailing list: %s' % self.context.name)
+
+    @property
+    def hold_count(self):
+        """The number of message being held for moderator approval.
+
+        :return: Number of message being held for moderator approval.
+        """
+        return self.mailing_list.getReviewableMessages().count()
+
+    @property
+    def held_messages(self):
+        """All the messages being held for moderator approval.
+
+        :return: Sequence of held messages.
+        """
+        return self.mailing_list.getReviewableMessages()
+
+    @action('Moderate', name='moderate')
+    def moderate_action(self, action, data):
+        """Commits the moderation actions."""
+        # We're somewhat abusing LaunchpadFormView, so the interesting bits
+        # won't be in data.  Instead, get it out of the request.
+        reviewable = self.hold_count
+        disposed_count = 0
+        for message in self.held_messages:
+            action_name = self.request.form_ng.getOne(
+                'field.' + quote(message.message_id))
+            # This essentially acts like a switch statement or if/elifs.  It
+            # looks the action up in a map of allowed actions, watching out
+            # for bogus input.
+            try:
+                action, status = dict(
+                    approve=(message.approve, PostedMessageStatus.APPROVED),
+                    reject=(message.reject, PostedMessageStatus.REJECTED),
+                    discard=(message.discard, PostedMessageStatus.DISCARDED),
+                    # hold is a no-op.  Using None here avoids the bogus input
+                    # trigger.
+                    hold=(None, None),
+                    )[action_name]
+            except KeyError:
+                raise UnexpectedFormData(
+                    'Invalid moderation action for held message %s: %s' %
+                    (message.message_id, action_name))
+            if action is not None:
+                disposed_count += 1
+                action(self.user)
+                self.request.response.addInfoNotification(
+                    'Held message %s; Message-ID: %s' % (
+                        status.title.lower(), message.message_id))
+        still_held = reviewable - disposed_count
+        if still_held > 0:
+            self.request.response.addInfoNotification(
+                'Messages still held for review: %d of %d' %
+                (still_held, reviewable))
+        self.next_url = canonical_url(self.context)
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
@@ -591,7 +730,6 @@ class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
-        notify(ObjectCreatedEvent(team))
 
         email = data.get('contactemail')
         if email is not None:
@@ -699,3 +837,94 @@ class TeamMemberAddView(LaunchpadFormView):
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
 
+
+class TeamMapView(LaunchpadView):
+    """Show all people with known locations on a map. 
+    
+    Also provides links to edit the locations of people in the team without
+    known locations.
+    """
+
+    def initialize(self):
+        # Tell our main-template to include Google's gmap2 javascript so that
+        # we can render the map.
+        self.request.needs_gmap2 = True
+
+    @cachedproperty
+    def mapped_participants(self):
+        """Participants with locations."""
+        return self.context.mapped_participants
+
+    @cachedproperty
+    def unmapped_participants(self):
+        """Participants (ordered by name) with no recorded locations."""
+        return sorted(list(self.context.unmapped_participants),
+                      key=lambda p: p.browsername)
+
+    @cachedproperty
+    def times(self):
+        """The current times in time zones with members."""
+        zones = set(participant.time_zone
+                    for participant in self.mapped_participants)
+        times = [datetime.now(pytz.timezone(zone))
+                 for zone in zones]
+        timeformat = '%H:%M'
+        return sorted(
+            set(time.strftime(timeformat) for time in times))
+
+    @cachedproperty
+    def bounds(self):
+        """A dictionary with the bounds and center of the map.
+
+        We look at the set of latitudes and longitudes for the people who
+        have coordinates, start out with a maximum minimum, and vice
+        versa, so each coordinate we examine should expand the area.
+        """
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        latitudes = sorted(
+            participant.latitude for participant in self.mapped_participants)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(
+            participant.longitude for participant in self.mapped_participants)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
+
+    @property
+    def map_html(self):
+        """HTML which shows the map with location of the team's members."""
+        return """
+            <script type="text/javascript">
+                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
+                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
+            </script>""" % self.bounds
+
+    @property
+    def map_portlet_html(self):
+        """The HTML which shows a small version of the team's map."""
+        return """
+            <script type="text/javascript">
+                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
+            </script>""" % self.bounds
+
+
+class TeamMapData(TeamMapView):
+    """An XML dump of the locations of all team members."""
+
+    def render(self):
+        self.request.response.setHeader(
+            'content-type', 'application/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')

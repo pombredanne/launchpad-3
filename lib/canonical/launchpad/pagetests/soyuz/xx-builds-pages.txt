@@ -121,7 +121,7 @@ initialised' one (fix bug #52704).
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started not available on an unknown build machine and finished
+    Build started at an unknown time on an unknown build machine and finished
     on 2007-08-09 taking
     ------------------------------
     Failed to upload
@@ -131,7 +131,7 @@ initialised' one (fix bug #52704).
     ------------------------------
     Failed to build
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    Build started not available on an unknown build machine
+    Build started at an unknown time on an unknown build machine
     ------------------------------
     Failed to build
     i386 build of foobar 1.0 in ubuntu warty RELEASE
@@ -178,11 +178,11 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started not available on an unknown build machine and finished
+    Build started at an unknown time on an unknown build machine and finished
     on 2007-08-09 taking
     ------------------------------
     Successfully built
-    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     Build started on 2005-03-24 on Bob The Builder and finished on 2005-03-25
     taking a minute &mdash; see the log
     ------------------------------
@@ -192,7 +192,7 @@ Then anonymous user checks the results of some searches on build state.
     taking a minute &mdash; see the log
     ------------------------------
     Successfully built
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
     Build started on 2005-03-24 on Bob The Builder and finished on 2005-03-25
     taking a minute &mdash; see the log
     ------------------------------
@@ -215,7 +215,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Failed to build
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    Build started not available on an unknown build machine
+    Build started at an unknown time on an unknown build machine
     ------------------------------
     Failed to build
     i386 build of foobar 1.0 in ubuntu warty RELEASE

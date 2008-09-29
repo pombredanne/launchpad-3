@@ -47,6 +47,7 @@ An empty project group needs to be set up first...
     >>> admin_browser.getControl('Title:').value = 'My Test Group'
     >>> admin_browser.getControl(name='field.summary').value = 'Summary'
     >>> admin_browser.getControl('Description:').value = 'Define me'
+    >>> admin_browser.getControl('Maintainer:').value = 'cprov'
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://launchpad.dev/a-test-group'
@@ -96,7 +97,7 @@ Also, the bugs, blueprints, translations and answers facets will be disabled:
       ..
     LinkNotFoundError...
 
-A warning message will be displayed at the top of the overview page when the 
+A warning message will be displayed at the top of the overview page when the
 owner of the project group views it:
 
     >>> admin_browser.open('http://launchpad.dev/a-test-group')
@@ -110,7 +111,7 @@ the new product form for the project group.
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
     >>> admin_browser.title
-    'Register a project in Launchpad'
+    'Register a project in your project group'
 
 == Products of a project ==
 
@@ -119,23 +120,23 @@ The home page of a project contains a list of all products which are part of tha
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Firefox
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Firefox'
+    u'&nbsp;Mozilla Thunderbird'
+
 Inactive products are not included in that list, though.
 
     >>> from canonical.launchpad.database import ProductSet
     >>> firefox = ProductSet().getByName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
- 
+
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'project')
     >>> for product in products:
-    ...     print product.find('a').renderContents()
-    Mozilla Thunderbird
- 
+    ...     print repr(product.find('a').find(text=True))
+    u'&nbsp;Mozilla Thunderbird'
+
     >>> firefox.active = True
     >>> firefox.syncUpdate()
 
@@ -149,13 +150,10 @@ It is possible to access the project's product through the project URL.
   >>> browser.open('http://launchpad.dev/mozilla/firefox')
   >>> browser.title
   'Mozilla Firefox in Launchpad'
-  >>> print find_main_content(browser.contents)
-  <...
-  ...The Mozilla Firefox web browser...
-  ...
-  ...Latest bugs...
-  ...
-
+  >>> print extract_text(find_main_content(browser.contents))
+  Details
+  ...Mozilla Firefox
+  ...Part of: the Mozilla Project...
 
 == Project bug subscriptions ==
 

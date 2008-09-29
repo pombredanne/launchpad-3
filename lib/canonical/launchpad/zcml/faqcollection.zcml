@@ -14,6 +14,13 @@
     template="../templates/faq-listing.pt"
     />
 
+  <browser:page
+    name="+createfaq"
+    for="canonical.launchpad.interfaces.IFAQTarget"
+    class="canonical.launchpad.browser.FAQCreateView"
+    permission="launchpad.Moderate"
+    template="../templates/questiontarget-createfaq.pt"
+    />
 </facet>
 
 </configure>

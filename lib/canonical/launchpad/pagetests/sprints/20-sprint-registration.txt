@@ -116,8 +116,8 @@ start and end of the conference.
     >>> browser.getControl('To').value
     '2006-02-12 17:00'
 
-We can set a specific start and end time for participation, and specify that
-it is Carlos we are registering.
+Sample Person can set a specific start and end time for participation,
+and specify that he is registering Carlos.
 
     >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
     >>> browser.getControl('From').value = '2006-01-10 18:30:00'
@@ -127,11 +127,20 @@ it is Carlos we are registering.
     >>> browser.url
     'http://launchpad.dev/sprints/ubz'
 
-And lets ensure Carlos is now listed:
+Sample Person registers Salgado as well.
 
-    >>> print_attendees(browser.contents)
-    Carlos Perell&#243; Mar&#237;n
-    Sample Person
+    >>> browser.getLink('Register someone else').click()
+    >>> browser.url
+    'http://launchpad.dev/sprints/ubz/+register'
+    >>> browser.getControl('Attendee').value = 'guilherme.salgado@canonical.com'
+    >>> browser.getControl('Register').click()
+
+And verifies that Carlos and Salgado are now listed:
+
+     >>> print_attendees(browser.contents)
+     Carlos Perell&#243; Mar&#237;n
+     Sample Person
+     Guilherme Salgado
 
 In order to make it easy to organize a meeting, we provide a facility
 for exporting the list of attendees in CSV format to registered users,
@@ -160,6 +169,7 @@ First, we add a couple of IRC nicknames for Carlos.
     Launchpad username,Display name,Email,IRC nickname,Phone,Organization,City,Country,Timezone,Arriving,Leaving
     carlos,Carlos Perelló Marín,carlos@canonical.com,"carlos, qarlos",,,,,,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
     name12,Sample Person,,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
+    salgado,Guilherme Salgado,guilherme.salgado@canonical.com,,+55 16 3374-2027,Something,whatever,France,,2006-01-09T23:00:00Z,2006-02-12T07:30:00Z
     <BLANKLINE>
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')

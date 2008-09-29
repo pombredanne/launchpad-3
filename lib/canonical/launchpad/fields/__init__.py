@@ -15,6 +15,7 @@ __all__ = [
     'IBaseImageUpload',
     'IBugField',
     'IDescription',
+    'ILocationField',
     'IPasswordField',
     'IShipItAddressline1',
     'IShipItAddressline2',
@@ -37,6 +38,7 @@ __all__ = [
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
+    'LocationField',
     'PasswordField',
     'PillarNameField',
     'ProductBugTracker',
@@ -67,10 +69,11 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
-    Tuple)
+    Bool, Bytes, Choice, Datetime, Field, Float, Int, Password, Text,
+    TextLine, Tuple)
 from zope.schema.interfaces import (
-    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IObject,
+    IPassword, IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -79,7 +82,9 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
-from canonical.foaf import nickname
+
+from canonical.lazr.fields import Reference
+from canonical.lazr.interfaces.fields import IReferenceChoice
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -105,12 +110,13 @@ class IWhiteboard(IText):
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
-class IBugField(IField):
-    """A Field that allows entry of a Bug number or nickname"""
+class IBugField(IObject):
+    """A field that allows entry of a Bug number or nickname"""
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
 
 class IAnnouncementDate(IDatetime):
     """Marker interface for AnnouncementDate fields.
@@ -120,6 +126,15 @@ class IAnnouncementDate(IDatetime):
     publication in advance. Essentially this amounts to a Datetime that can
     be None.
     """
+
+
+class ILocationField(IField):
+    """A location, consisting of geographic coordinates and a time zone."""
+
+    latitude = Float(title=_('Latitude'))
+    longitude = Float(title=_('Longitude'))
+    time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
+
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -270,8 +285,22 @@ class TimeInterval(TextLine):
         return 1
 
 
-class BugField(Field):
+class BugField(Reference):
     implements(IBugField)
+
+    def __init__(self, *args, **kwargs):
+        """The schema will always be `IBug`."""
+        super(BugField, self).__init__(Interface, *args, **kwargs)
+
+    def _get_schema(self):
+        """Get the schema here to avoid circular imports."""
+        from canonical.launchpad.interfaces import IBug
+        return IBug
+
+    def _set_schema(self, schema):
+        """Ignore attempts to set the schema by the superclass."""
+
+    schema = property(_get_schema, _set_schema)
 
 
 class DuplicateBug(BugField):
@@ -389,9 +418,16 @@ class ContentNameField(UniqueField):
 
     attribute = 'name'
 
-    def _getByAttribute(self, name):
-        """Return the content object with the given name."""
-        return self._getByName(name)
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute."""
+        return self._getByName(input)
+
+    def _getByName(self, input):
+        """Return the content object with the given name.
+
+        Override this in subclasses.
+        """
+        raise NotImplementedError
 
     def _validate(self, name):
         """Check that the given name is valid (and by delegation, unique)."""
@@ -400,13 +436,10 @@ class ContentNameField(UniqueField):
 
 
 class BlacklistableContentNameField(ContentNameField):
-    """ContentNameField that also need to check against the NameBlacklist
-       table in case the name has been blacklisted.
-    """
+    """ContentNameField that also checks that a name is not blacklisted"""
+
     def _validate(self, input):
-        """As per UniqueField._validate, except a LaunchpadValidationError
-           is also raised if the name has been blacklisted.
-        """
+        """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
 
         _marker = object()
@@ -415,11 +448,12 @@ class BlacklistableContentNameField(ContentNameField):
             # The attribute wasn't changed.
             return
 
-        if nickname.is_blacklisted(name=input):
+        # Need a local import because of circular dependencies.
+        from canonical.launchpad.interfaces.person import IPersonSet
+        if getUtility(IPersonSet).isNameBlacklisted(input):
             raise LaunchpadValidationError(
-                    "The name '%s' has been blocked by the "
-                    "Launchpad administrators" % input
-                    )
+                "The name '%s' has been blocked by the Launchpad "
+                "administrators" % input)
 
 
 class ShipItRecipientDisplayname(TextLine):
@@ -463,10 +497,17 @@ class ProductBugTracker(Choice):
 
     It accepts all the values in the vocabulary, as well as a special
     marker object, which represents the Malone bug tracker.
-    This field uses two attributes to model its state, 'official_malone'
-    and 'bugtracker'
+    This field uses two attributes on the Product to model its state:
+    'official_malone' and 'bugtracker'
     """
+    implements(IReferenceChoice)
     malone_marker = object()
+
+    @property
+    def schema(self):
+        # The IBugTracker needs to be imported here to avoid an import loop.
+        from canonical.launchpad.interfaces.bugtracker import IBugTracker
+        return IBugTracker
 
     def get(self, ob):
         if ob.official_malone:
@@ -565,7 +606,14 @@ class BaseImageUpload(Bytes):
     dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
+    def __init__(self, default_image_resource=None, **kw):
+        # 'default_image_resource' is a keyword argument so that the
+        # class constructor can be used in the same way as other
+        # Interface attribute specifiers.
+        if default_image_resource is None:
+            raise AssertionError(
+                "You must specify a default image resource.")
+
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
 
@@ -613,10 +661,13 @@ class BaseImageUpload(Bytes):
                              'height': required_height}))
         return True
 
-    def validate(self, value):
-        value.seek(0)
-        content = value.read()
-        Bytes.validate(self, content)
+    def _validate(self, value):
+        if hasattr(value, 'seek'):
+            value.seek(0)
+            content = value.read()
+        else:
+            content = value
+        super(BaseImageUpload, self)._validate(content)
         self._valid_image(content)
 
     def set(self, object, value):
@@ -628,21 +679,36 @@ class IconImageUpload(BaseImageUpload):
 
     dimensions = (14, 14)
     max_size = 5*1024
-    default_image_resource = '/@@/nyet-icon'
 
 
 class LogoImageUpload(BaseImageUpload):
 
     dimensions = (64, 64)
     max_size = 50*1024
-    default_image_resource = '/@@/nyet-logo'
 
 
 class MugshotImageUpload(BaseImageUpload):
 
     dimensions = (192, 192)
     max_size = 100*1024
-    default_image_resource = '/@@/nyet-mugshot'
+
+
+class LocationField(Field):
+    """A Location field."""
+
+    implements(ILocationField)
+
+    @property
+    def latitude(self):
+        return self.value.latitude
+
+    @property
+    def longitude(self):
+        return self.value.longitude
+
+    @property
+    def time_zone(self):
+        return self.value.time_zone
 
 
 class PillarNameField(BlacklistableContentNameField):
@@ -666,7 +732,8 @@ class ProductNameField(PillarNameField):
 
 def is_valid_public_person_link(person, other):
     from canonical.launchpad.interfaces import IPerson, PersonVisibility
-    assert IPerson.providedBy(person)
+    if not IPerson.providedBy(person):
+        raise ConstraintNotSatisfied("Expected a person.")
     if person.visibility == PersonVisibility.PUBLIC:
         return True
     else:
@@ -674,5 +741,8 @@ def is_valid_public_person_link(person, other):
 
 
 class PublicPersonChoice(Choice):
+    implements(IReferenceChoice)
+    schema = IObject    # Will be set to IPerson once IPerson is defined.
+
     def constraint(self, value):
         return is_valid_public_person_link(value, self.context)

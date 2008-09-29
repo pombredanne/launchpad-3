@@ -14,6 +14,7 @@ import pytz
 from datetime import datetime, timedelta
 
 from sqlobject import ForeignKey, BoolCol, StringCol
+from storm.store import Store
 
 from zope.interface import implements
 
@@ -47,7 +48,7 @@ class BugNotificationSet:
     def getNotificationsToSend(self):
         """See IBugNotificationSet."""
         notifications = BugNotification.select(
-            """date_emailed IS NULL""", orderBy=['bug', '-id']).distinct()
+            """date_emailed IS NULL""", orderBy=['bug', '-id'])
         pending_notifications = list(notifications)
         omitted_notifications = []
         interval = timedelta(
@@ -84,11 +85,16 @@ class BugNotificationSet:
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None)
+        store = Store.of(bug_notification)
+        # XXX jamesh 2008-05-21: these flushes are to fix ordering
+        # problems in the bugnotification-sending.txt tests.
+        store.flush()
         for recipient in recipients:
             reason_body, reason_header = recipients.getReason(recipient)
             BugNotificationRecipient(
                 bug_notification=bug_notification, person=recipient,
                 reason_header=reason_header, reason_body=reason_body)
+            store.flush()
         return bug_notification
 
 

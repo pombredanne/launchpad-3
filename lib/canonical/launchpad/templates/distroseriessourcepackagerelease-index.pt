@@ -10,9 +10,6 @@
   i18n:domain="launchpad"
 >
   <body>
-<metal:heading fill-slot="pageheading">
-  <h1>Source package overview</h1>
-</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -24,6 +21,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <h1 tal:content="context/title" />
 
   <h2>Publishing history</h2>
 

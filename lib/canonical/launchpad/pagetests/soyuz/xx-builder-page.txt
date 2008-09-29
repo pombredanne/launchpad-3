@@ -5,7 +5,7 @@ builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
-    >>> anon_browser.getLink("Bob The Builder").click()
+    >>> anon_browser.getLink("bob").click()
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
@@ -29,10 +29,16 @@ location and description.
     Description
       The default build-slave
     Status
-      NOT OK : None (AUTO)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
+The builder status is now displayed as normal text and not as as a
+notification alert.
+
+    >>> messages = get_feedback_messages(anon_browser.contents)
+    >>> print messages
+    []
 
 == Builder Actions ==
 
@@ -47,12 +53,11 @@ the builder actions.
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
 
 Celso sees the available actions in the 'Actions' portlet.
 
-    >>> print str(extract_text(find_portlet(cprov_browser.contents, "Actions")))
-    Actions
+    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'actions'))
     Show build history
     Change details
     Change mode
@@ -143,7 +148,7 @@ automatic (AUTO) mode.
     Description
       The default build-slave
     Status
-      NOT OK : None (AUTO)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
@@ -166,7 +171,7 @@ He can see now, in the details portlet that it say 'MANUAL' now.
     Description
       The default build-slave
     Status
-      NOT OK : None (MANUAL)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
@@ -195,7 +200,7 @@ case is to bring the builder back to work.
     Description
       The default build-slave
     Status
-      BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
+      Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     Owner
       Launchpad Buildd Admins
 
@@ -224,7 +229,7 @@ when they judge it convenient, for instance, when the builder present
 transient failures or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
     >>> print cprov_browser.title
     Build machine Bob The Builder
 
@@ -245,13 +250,14 @@ Farm list. Celso cannot see the link to it.
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                 0 waiting
-    The frog builder    NOT OK : None (AUTO)
-    Building other packages
+    Register a new build machine
+    PPA build machines
+    386    0 builds waiting in queue
+    frog   AUTO   Disabled
+    Official distribution build machines
     Generated at ...
 
-    >>> cprov_browser.getLink('Bob The Builder').click()
+    >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -269,8 +275,7 @@ Normal users, such as No Privileges Person are not shown links, nor
 can he access the pages by directly via URL.
 
     >>> user_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_portlet(user_browser.contents, "Actions"))
-    Actions
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'actions'))
     Show build history
     Change details (disabled)
     Change mode (disabled)
@@ -300,8 +305,7 @@ can he access the pages by directly via URL.
 The same is true for the anonymous user:
 
     >>> anon_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_portlet(anon_browser.contents, "Actions"))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     Show build history
     Change details (disabled)
     Change mode (disabled)

@@ -12,16 +12,19 @@ __all__ = [
     'IBugAttachmentEditForm',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Object, Choice, Int, TextLine, Bool
+from zope.interface import Interface
+from zope.schema import Bool, Bytes, Choice, Int, TextLine
 
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.launchpad import IHasBug
 
 from canonical.launchpad.fields import Title
 from canonical.launchpad import _
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -49,32 +52,38 @@ class BugAttachmentType(DBEnumeratedType):
 
 class IBugAttachment(IHasBug):
     """A file attachment to an IBug."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Attribute('The bug the attachment belongs to.')
-    type = Choice(
-        title=_('Attachment Type'),
-        description=_(
-            'The type of the attachment, for example Patch or Unspecified.'),
-        vocabulary=BugAttachmentType,
-        default=BugAttachmentType.UNSPECIFIED,
-        required=True)
-    title = Title(
-        title=_('Title'),
-        description=_(
-            'A short and descriptive description of the attachment'),
-        required=True)
-    libraryfile = Object(
-        schema=ILibraryFileAlias,
-        title=_("File"),
-        description=_("The attachment."),
-        required=True,
-        )
-    message = Attribute(
-        "The message that was created when we added this attachment.")
+    bug = exported(
+        Reference(Interface, title=_('The bug the attachment belongs to.')))
+    type = exported(
+        Choice(
+            title=_('Attachment Type'),
+            description=_('The type of the attachment, for example Patch or '
+                          'Unspecified.'),
+            vocabulary=BugAttachmentType,
+            default=BugAttachmentType.UNSPECIFIED,
+            required=True))
+    title = exported(
+        Title(title=_('Title'),
+              description=_(
+                'A short and descriptive description of the attachment'),
+              required=True))
+    libraryfile = exported(
+        Bytes(title=_("The attachment content."),
+              required=True),
+        exported_as='data')
+    message = exported(
+        Reference(IMessage, title=_("The message that was created when we "
+                                    "added this attachment.")))
 
     def removeFromBug():
         """Remove the attachment from the bug."""
+
+
+# Need to do this here because of circular imports.
+IMessage['bugattachments'].value_type.schema = IBugAttachment
 
 
 class IBugAttachmentSet(Interface):

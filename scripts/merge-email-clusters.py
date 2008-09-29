@@ -47,11 +47,11 @@ def main(argv):
     else:
         fp = sys.stdin
 
-    logger.info('Connecting to database')
-    ztm = initZopeless()
-
     logger.info('Setting up utilities')
     execute_zcml_for_scripts()
+
+    logger.info('Connecting to database')
+    ztm = initZopeless()
 
     mergeClusters(readClusters(fp), ztm, logger)
 

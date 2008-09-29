@@ -1,13 +1,13 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Browser views for sourcepackages."""
 
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageNavigation',
-    'SourcePackageSOP',
+    'SourcePackageBreadcrumbBuilder',
     'SourcePackageFacets',
+    'SourcePackageNavigation',
     'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
@@ -20,7 +20,6 @@ from zope.app import zapi
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
@@ -35,15 +34,16 @@ from canonical.launchpad.webapp import (
     redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.launchpad.webapp.menu import structured
+
+from canonical.lazr.utils import smartquote
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
-
-    def breadcrumb(self):
-        return self.context.name
 
     @stepto('+pots')
     def pots(self):
@@ -70,27 +70,11 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-class SourcePackageSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return self.context.distribution.displayname + ' ' + \
-               self.context.distroseries.version + ' source package:'
-
-    def getMainHeading(self):
-        return self.context.sourcepackagename
-
-    def listChildren(self, num):
-        # XXX mpt 2006-10-04: Versions published, earliest first.
-        return []
-
-    def countChildren(self):
-        return 0
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError
+class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+    """Builds a breadcrumb for an `ISourcePackage`."""
+    @property
+    def text(self):
+        return smartquote('"%s" package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -140,10 +124,10 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
-    @enabled_with_permission('launchpad.AnyPerson')
+    @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download translations'
-        enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)
+        enabled = bool(self.context.getCurrentTranslationTemplates())
         return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
@@ -203,7 +187,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.error_message = 'Invalid series given.'
+                self.error_message = structured('Invalid series given.')
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into

@@ -19,7 +19,6 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
-    'QuestionSOP',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -43,7 +42,6 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
@@ -59,14 +57,16 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, redirection, safe_action, smartquote)
+    custom_widget, redirection, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.widgets import LaunchpadRadioWidget
+from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+
+from canonical.lazr.utils import smartquote
 
 
 class QuestionSetNavigation(Navigation):
@@ -968,6 +968,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     field_names = ['title', 'keywords', 'content']
 
+    custom_widget('keywords', TokensTextWidget)
     custom_widget("message", TextAreaWidget, height=5)
 
     @property
@@ -1149,17 +1150,6 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
         self.context.linkFAQ(self.user, data['faq'], data['message'])
         self.next_url = canonical_url(self.context)
-
-
-class QuestionSOP(StructuralObjectPresentation):
-    """Provides the structural heading for `IQuestion`."""
-
-    def getMainHeading(self):
-        """See ```IStructuralHeaderPresentation`."""
-        question = self.context
-        return _('Question #${id} in ${target}',
-                 mapping=dict(
-                    id=question.id, target=question.target.displayname))
 
 
 class QuestionContextMenu(ContextMenu):

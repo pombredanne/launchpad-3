@@ -3,24 +3,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroArchSeriesBinaryPackageFacets',
     'DistroArchSeriesBinaryPackageNavigation',
     'DistroArchSeriesBinaryPackageView',
     ]
 
-from canonical.launchpad.interfaces import IDistroArchSeriesBinaryPackage
-
-from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    GetitemNavigation)
-
-
-class DistroArchSeriesBinaryPackageFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: a DistroArchSeriesBinaryPackage is not a structural
-    # object: it should inherit all navigation from its source package.
-
-    usedfor = IDistroArchSeriesBinaryPackage
-    enable_only = ['overview',]
+from canonical.launchpad.interfaces.distroarchseriesbinarypackage import (
+    IDistroArchSeriesBinaryPackage)
+from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
@@ -33,9 +22,6 @@ class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
 class DistroArchSeriesBinaryPackageNavigation(GetitemNavigation):
 
     usedfor = IDistroArchSeriesBinaryPackage
-
-    def breadcrumb(self):
-        return self.context.binarypackagename.name
 
 
 class DistroArchSeriesBinaryPackageView:

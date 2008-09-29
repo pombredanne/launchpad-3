@@ -4,7 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'IndexedMessage',
     'DuplicateMessageId',
+    'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
@@ -13,11 +15,21 @@ __all__ = [
     'UnknownSender',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.interface import Interface, Attribute, implements
+from zope.schema import Bool, Datetime, Int, Text, TextLine
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
+#from canonical.launchpad.interfaces.bug import IBug
+#from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.person import IPerson
 
+from canonical.lazr import decorates
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 class IMessage(Interface):
     """A message.
@@ -25,48 +37,71 @@ class IMessage(Interface):
     This is like an email (RFC822) message, though it could be created through
     the web as well.
     """
+    export_as_webservice_entry('message')
 
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    subject = TextLine(
-            title=_('Subject'), required=True, readonly=True,
-            )
+    id = Int(title=_('ID'), required=True, readonly=True)
+    datecreated = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    subject = exported(
+        TextLine(title=_('Subject'), required=True, readonly=True))
+
     # XXX flacoste 2006-09-08: This attribute is only used for the
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
-    owner = Int(
-            title=_('Person'), required=False, readonly=True,
-            )
-    parent = Int(
-            title=_('Parent'), required=False, readonly=True,
-            )
-    distribution = Int(
-            title=_('Distribution'), required=False, readonly=True,
-            )
+    owner = exported(
+        Reference(title=_('Person'), schema=IPerson,
+                  required=False, readonly=True))
+
+    # Schema is really IMessage, but this cannot be declared here. It's
+    # fixed below after the IMessage definition is complete.
+    parent = exported(
+        Reference(title=_('Parent'), schema=Interface,
+                  required=False, readonly=True))
+
+    distribution = Reference(
+        title=_('Distribution'),
+        schema=Interface, # Redefined in distribution.py
+        required=False, readonly=True)
     rfc822msgid = TextLine(
-            title=_('RFC822 Msg ID'), required=True, readonly=True,
-            )
-    raw = Int(
-            title=_('Original unmodified email'), required=False,
-            readonly=True
-            )
-    bugs = Attribute(_('Bug List'))
+        title=_('RFC822 Msg ID'), required=True, readonly=True)
+    raw = Reference(title=_('Original unmodified email'),
+                    schema=ILibraryFileAlias, required=False, readonly=True)
+    bugs = CollectionField(
+        title=_('Bug List'),
+        value_type=Reference(schema=Interface)) # Redefined in bug.py
+
     chunks = Attribute(_('Message pieces'))
-    text_contents = Attribute(
-        'All the text/plain chunks joined together as a unicode string.')
-    followup_title = Attribute(_('Candidate title for a followup message.'))
-    title = Attribute(_('The message title, usually just the subject.'))
-    bugattachments = Attribute("A list of BugAttachments connected to this "
-        "message.")
-    has_new_title = Attribute("Whether or not the title of this message "
-        "is different to that of its parent.")
+
+    text_contents = exported(
+        Text(title=_('All the text/plain chunks joined together as a '
+                     'unicode string.')),
+        exported_as='content')
+
+    followup_title = TextLine(
+        title=_('Candidate title for a followup message.'),
+        readonly=True)
+    title = TextLine(
+        title=_('The message title, usually just the subject.'),
+        readonly=True)
+    has_new_title = Bool(
+        title=_("Whether or not the title of this message "
+                "is different to that of its parent."),
+        readonly=True)
+
+    bugattachments = exported(
+        CollectionField(
+            title=_("A list of BugAttachments connected to this "
+                    "message."),
+            value_type=Reference(Interface)),
+        exported_as='bug_attachments')
 
     def __iter__():
         """Iterate over all the message chunks."""
+
+
+# Fix for self-referential schema.
+IMessage['parent'].schema = IMessage
 
 
 class IMessageSet(Interface):
@@ -83,7 +118,7 @@ class IMessageSet(Interface):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
-            parsed_message=None, fallback_parent=None):
+            parsed_message=None, fallback_parent=None, date_created=None):
         """Construct a Message from an email message and return it.
 
         `email_message` should be the original email as a string.
@@ -106,12 +141,59 @@ class IMessageSet(Interface):
         'fallback_parent' can be specified if you want a parent to be
         set, if no parent could be identified.
 
+        `date_created` may be a datetime, and can be specified if you
+        wish to force the created date for a message. This is
+        particularly useful when the email_message being passed might
+        not contain a Date field. Any Date field in the passed message
+        will be ignored in favour of the value of `date_created`.
+
         Callers may want to explicitly handle the following exceptions:
             * UnknownSender
             * MissingSubject
             * DuplicateMessageId
             * InvalidEmailMessage
         """
+
+    def threadMessages(messages):
+        """Return a threaded version of supplied message list.
+
+        Return value is a recursive list structure.
+        Each parent entry in the top-level list is a tuple of
+        (parent, children), where children is a list of parents.  (Parents
+        may be childless.)
+
+        Example:
+        [(parent, [(child1, [(grandchild1, [])]), (child2, [])])]
+        """
+
+    def flattenThreads(threaded_messages):
+        """Convert threaded messages into a flat, indented form.
+
+        Take a thread (in the form produced by threadMessages) and
+        iterate through a series of (depth, message) tuples.  The ordering
+        will match that implied by the input structure, with all replies
+        to a message appearing after that message.
+        """
+
+class IIndexedMessage(Interface):
+    """An `IMessage` decorated with its index and context."""
+    inside = Reference(title=_('Inside'), schema=IBugTask,
+                       description=_("The bug task which is "
+                                     "the context for this message."),
+                       required=True, readonly=True)
+    index = Int(title=_("Index"),
+                description=_("The index of this message in the list "
+                              "of messages in its context."))
+
+class IndexedMessage:
+    """Adds the `inside` and `index` attributes to an IMessage."""
+    decorates(IMessage)
+    implements(IIndexedMessage)
+
+    def __init__(self, context, inside, index):
+        self.context = context
+        self.inside = inside
+        self.index = index
 
 
 class IMessageChunk(Interface):

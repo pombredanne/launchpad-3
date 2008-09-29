@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-<tal:per_member repeat="member context/allmembers">
+<tal:per_member repeat="member view/allmembers">
   <a tal:condition="member/mugshot"
      tal:attributes="
        href member/fmt:url;

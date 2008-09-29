@@ -11,7 +11,6 @@ from unittest import TestCase, TestLoader
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -29,14 +28,17 @@ from canonical.launchpad.database.branchmergeproposal import (
     )
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch,
     )
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -59,6 +61,94 @@ class TestCodeImport(TestCase):
         self.assertEqual(None, branch.code_import)
 
 
+class TestBranchGetRevision(TestCaseWithFactory):
+    """Make sure that `Branch.getBranchRevision` works as expected."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch = self.factory.makeBranch()
+
+    def _makeRevision(self, revno):
+        # Make a revision and add it to the branch.
+        rev = self.factory.makeRevision()
+        br = self.branch.createBranchRevision(revno, rev)
+        return rev
+
+    def testGetBySequenceNumber(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(sequence=1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevision(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(revision=rev1)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testGetByRevisionId(self):
+        rev1 = self._makeRevision(1)
+        branch_revision = self.branch.getBranchRevision(
+            revision_id=rev1.revision_id)
+        self.assertEqual(rev1, branch_revision.revision)
+        self.assertEqual(1, branch_revision.sequence)
+
+    def testNonExistant(self):
+        rev1 = self._makeRevision(1)
+        self.assertTrue(self.branch.getBranchRevision(sequence=2) is None)
+        rev2 = self.factory.makeRevision()
+        self.assertTrue(self.branch.getBranchRevision(revision=rev2) is None)
+        self.assertTrue(
+            self.branch.getBranchRevision(revision_id='not found') is None)
+
+    def testInvalidParams(self):
+        self.assertRaises(AssertionError, self.branch.getBranchRevision)
+        rev1 = self._makeRevision(1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1,
+                          revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision=rev1)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          revision=rev1, revision_id=rev1.revision_id)
+        self.assertRaises(AssertionError, self.branch.getBranchRevision,
+                          sequence=1, revision_id=rev1.revision_id)
+
+
+class TestBranch(TestCaseWithFactory):
+    """Test basic properties about Launchpad database branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_pullURLHosted(self):
+        # Hosted branches are pulled from internal Launchpad URLs.
+        branch = self.factory.makeBranch(branch_type=BranchType.HOSTED)
+        self.assertEqual(
+            'lp-hosted:///%s' % branch.unique_name, branch.getPullURL())
+
+    def test_pullURLMirrored(self):
+        # Mirrored branches are pulled from their actual URLs -- that's the
+        # point.
+        branch = self.factory.makeBranch(branch_type=BranchType.MIRRORED)
+        self.assertEqual(branch.url, branch.getPullURL())
+
+    def test_pullURLImported(self):
+        # Imported branches are pulled from the import servers at locations
+        # corresponding to the hex id of the branch being mirrored.
+        import_server = config.launchpad.bzr_imports_root_url
+        branch = self.factory.makeBranch(branch_type=BranchType.IMPORTED)
+        self.assertEqual(
+            '%s/%08x' % (import_server, branch.id), branch.getPullURL())
+
+    def test_pullURLRemote(self):
+        # We cannot mirror remote branches. getPullURL raises an
+        # AssertionError.
+        branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
+        self.assertRaises(AssertionError, branch.getPullURL)
+
+
 class TestBranchDeletion(TestCase):
     """Test the different cases that makes a branch deletable or not."""
 
@@ -72,6 +162,10 @@ class TestBranchDeletion(TestCase):
         self.branch = BranchSet().new(
             BranchType.HOSTED, 'to-delete', self.user, self.user,
             self.product, None, 'A branch to delete')
+        # The owner of the branch is subscribed to the branch when it is
+        # created.  The tests here assume no initial connections, so
+        # unsubscribe the branch owner here.
+        self.branch.unsubscribe(self.branch.owner)
 
     def tearDown(self):
         logout()
@@ -153,6 +247,7 @@ class TestBranchDeletion(TestCase):
         # We want the changes done in the setup to stay around, and by
         # default the switchDBUser aborts the transaction.
         transaction.commit()
+        launchpad_dbuser = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
@@ -160,7 +255,7 @@ class TestBranchDeletion(TestCase):
             parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
@@ -213,6 +308,10 @@ class TestBranchDeletionConsequences(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.branch = self.factory.makeBranch()
         self.branch_set = getUtility(IBranchSet)
+        # The owner of the branch is subscribed to the branch when it is
+        # created.  The tests here assume no initial connections, so
+        # unsubscribe the branch owner here.
+        self.branch.unsubscribe(self.branch.owner)
 
     def test_plainBranch(self):
         """Ensure that a fresh branch has no deletion requirements."""
@@ -223,6 +322,9 @@ class TestBranchDeletionConsequences(TestCase):
         target_branch = self.factory.makeBranch(product=self.branch.product)
         dependent_branch = self.factory.makeBranch(
             product=self.branch.product)
+        # Remove the implicit subscriptions.
+        target_branch.unsubscribe(target_branch.owner)
+        dependent_branch.unsubscribe(dependent_branch.owner)
         merge_proposal1 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, dependent_branch)
         # Disable this merge proposal, to allow creating a new identical one
@@ -293,12 +395,32 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal1.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal1.dependent_branch)
 
+    def test_deleteSourceCodeReviewComment(self):
+        """Deletion of branches that have CodeReviewComments works."""
+        comment = self.factory.makeCodeReviewComment()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.source_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_deleteTargetCodeReviewComment(self):
+        """Deletion of branches that have CodeReviewComments works."""
+        comment = self.factory.makeCodeReviewComment()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.target_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
     def test_branchWithSubscriptionReqirements(self):
         """Deletion requirements for a branch with subscription are right."""
-        subscription = self.factory.makeBranchSubscription()
+        branch = self.factory.makeBranch()
+        subscription = branch.getSubscription(branch.owner)
+        self.assertTrue(subscription is not None)
         self.assertEqual({subscription:
             ('delete', _('This is a subscription to this branch.'))},
-                         subscription.branch.deletionRequirements())
+                         branch.deletionRequirements())
 
     def test_branchWithSubscriptionDeletion(self):
         """break_links allows deleting a branch with subscription."""
@@ -383,6 +505,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithCodeImportRequirements(self):
         """Deletion requirements for a code import branch are right"""
         code_import = self.factory.makeCodeImport()
+        # Remove the implicit branch subscription first.
+        code_import.branch.unsubscribe(code_import.branch.owner)
         self.assertEqual({code_import:
             ('delete', _('This is the import data for this branch.'))},
              code_import.branch.deletionRequirements())
@@ -395,6 +519,20 @@ class TestBranchDeletionConsequences(TestCase):
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+    def test_sourceBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference source branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.source_branch.destroySelf(break_references=True)
+
+    def test_targetBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference target branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.target_branch.destroySelf(break_references=True)
 
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the dependent branch."""
@@ -436,6 +574,108 @@ class TestBranchDeletionConsequences(TestCase):
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+
+class StackedBranches(TestCaseWithFactory):
+    """Tests for showing branches stacked on another."""
+
+    layer = DatabaseFunctionalLayer
+
+    def testNoBranchesStacked(self):
+        # getStackedBranches returns an empty collection if there are no
+        # branches stacked on it.
+        branch = self.factory.makeBranch()
+        self.assertEqual(set(), set(branch.getStackedBranches()))
+
+    def testSingleBranchStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_branch]), set(branch.getStackedBranches()))
+
+    def testMultipleBranchesStacked(self):
+        # some_branch.getStackedBranches returns a collection of branches
+        # stacked on some_branch.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_b = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set([stacked_a, stacked_b]), set(branch.getStackedBranches()))
+
+    def testStackedBranchesIncompleteMirrorsNoBranches(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # stacked branches that haven't been mirrored at all.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors returns branches
+        # stacked on some_branch that had their mirrors started but not
+        # finished.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesIncompleteMirrorsNotStacked(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches with incomplete mirrors that are not stacked on
+        # some_branch.
+        branch = self.factory.makeBranch()
+        not_stacked = self.factory.makeBranch()
+        not_stacked.startMirroring()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesCompleteMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have been successfully mirrored.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorComplete(self.factory.getUniqueString())
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that failed to mirror. This is not directly desired, but is
+        # a consequence of wanting to include branches that have started,
+        # failed, then started again.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesFailedThenStartedMirrors(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors includes
+        # branches that had a failed mirror but have since been started.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.startMirroring()
+        stacked_a.mirrorFailed(self.factory.getUniqueString())
+        stacked_a.startMirroring()
+        self.assertEqual(
+            set([stacked_a]),
+            set(branch.getStackedBranchesWithIncompleteMirrors()))
+
+    def testStackedBranchesMirrorRequested(self):
+        # some_branch.getStackedBranchesWithIncompleteMirrors does not include
+        # branches that have only had a mirror requested.
+        branch = self.factory.makeBranch()
+        stacked_a = self.factory.makeBranch(stacked_on=branch)
+        stacked_a.requestMirror()
+        self.assertEqual(
+            set(), set(branch.getStackedBranchesWithIncompleteMirrors()))
 
 
 class BranchAddLandingTarget(TestCase):
@@ -561,27 +801,24 @@ class BranchAddLandingTarget(TestCase):
         self.assertEqual(proposal.whiteboard, whiteboard)
 
 
-class BranchDateLastModified(BranchTestCase):
+class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        BranchTestCase.setUp(self)
+        super(BranchDateLastModified, self).setUp()
         login('test@canonical.com')
-
-    def tearDown(self):
-        logout()
-        BranchTestCase.tearDown(self)
+        self.addCleanup(logout)
 
     def test_initialValue(self):
         """Initially the date_last_modifed is the date_created."""
-        branch = self.makeBranch()
+        branch = self.factory.makeBranch()
         self.assertEqual(branch.date_last_modified, branch.date_created)
 
     def test_bugBranchLinkUpdates(self):
         """Linking a branch to a bug updates the last modified time."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         params = CreateBugParams(
@@ -596,7 +833,7 @@ class BranchDateLastModified(BranchTestCase):
     def test_specBranchLinkUpdates(self):
         """Linking a branch to a spec updates the last modified time."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         spec = getUtility(ISpecificationSet).new(
@@ -610,7 +847,7 @@ class BranchDateLastModified(BranchTestCase):
     def test_updateScannedDetailsUpdateModifedTime(self):
         """A branch that has been scanned is considered modified."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        branch = self.makeBranch(date_created=date_created)
+        branch = self.factory.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
         branch.updateScannedDetails("hello world", 42)
@@ -642,7 +879,7 @@ class BranchSorting(TestCase):
     def assertEqualByID(self, first, second):
         """Compare two lists of database objects by id."""
         # XXX: 2007-10-22 MichaelHudson bug=154016: This is only needed
-        # because getBranchesForPerson queries the BranchWithSortKeys table
+        # because getBranchesForContext queries the BranchWithSortKeys table
         # and we want to compare the results with objects from the Branch
         # table.  This method can be removed when we can get rid of
         # BranchWithSortKeys.
@@ -657,23 +894,20 @@ class BranchSorting(TestCase):
         new_person, modified_in_2005, modified_in_2006 = (
             self.createPersonWithTwoBranches())
 
-        # XXX 2007-10-22 MichaelHudson: Currently we (ab)use last_scanned as
-        # the date the branch was last changed.  1.1.11 will introduce a
-        # date_last_modified column, which this test will need to set instead.
-        modified_in_2005.last_scanned = self.xmas(2005)
-        modified_in_2006.last_scanned = self.xmas(2006)
+        modified_in_2005.date_last_modified = self.xmas(2005)
+        modified_in_2006.date_last_modified = self.xmas(2006)
 
         syncUpdate(modified_in_2005)
         syncUpdate(modified_in_2006)
 
-        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person,
                 sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST),
             [modified_in_2006, modified_in_2005])
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person,
                 sort_by=BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST),
             [modified_in_2005, modified_in_2006])
@@ -691,15 +925,70 @@ class BranchSorting(TestCase):
         syncUpdate(created_in_2005)
         syncUpdate(created_in_2006)
 
-        getBranchesForPerson = getUtility(IBranchSet).getBranchesForPerson
+        getBranchesForContext = getUtility(IBranchSet).getBranchesForContext
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person, sort_by=BranchListingSort.NEWEST_FIRST),
             [created_in_2006, created_in_2005])
         self.assertEqualByID(
-            getBranchesForPerson(
+            getBranchesForContext(
                 new_person, sort_by=BranchListingSort.OLDEST_FIRST),
             [created_in_2005, created_in_2006])
+
+
+class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
+    """Tests for `Branch.createBranchRevisionFromIDs`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_simple(self):
+        # createBranchRevisionFromIDs when passed a single revid, sequence
+        # pair, creates the appropriate BranchRevision object.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        branch_revision = branch.getBranchRevision(revision=rev)
+        self.assertEqual(revision_number, branch_revision.sequence)
+
+    def test_multiple(self):
+        # createBranchRevisionFromIDs when passed multiple revid, sequence
+        # pairs, creates the appropriate BranchRevision objects.
+        branch = self.factory.makeBranch()
+        revision_to_number = {}
+        revision_id_sequence_pairs = []
+        for i in range(10):
+            rev = self.factory.makeRevision()
+            revision_number = self.factory.getUniqueInteger()
+            revision_to_number[rev] = revision_number
+            revision_id_sequence_pairs.append(
+                (rev.revision_id, revision_number))
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        for rev in revision_to_number:
+            branch_revision = branch.getBranchRevision(revision=rev)
+            self.assertEqual(
+                revision_to_number[rev], branch_revision.sequence)
+
+    def test_empty(self):
+        # createBranchRevisionFromIDs does not fail when passed no pairs.
+        branch = self.factory.makeBranch()
+        branch.createBranchRevisionFromIDs([])
+
+    def test_call_twice_in_one_transaction(self):
+        # createBranchRevisionFromIDs creates temporary tables, but cleans
+        # after itself so that it can safely be called twice in one
+        # transaction.
+        branch = self.factory.makeBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        # This is just "assertNotRaises"
+        branch.createBranchRevisionFromIDs(
+            [(rev.revision_id, revision_number)])
 
 
 def test_suite():

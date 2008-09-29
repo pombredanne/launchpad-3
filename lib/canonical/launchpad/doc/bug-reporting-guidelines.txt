@@ -73,8 +73,9 @@ guidelines.
 
     >>> def check_access(user, context):
     ...     if IPerson.providedBy(user):
-    ...         user = user.preferredemail.email
-    ...     login(user)
+    ...         login_person(user)
+    ...     else:
+    ...         login(user)
     ...     context.bug_reporting_guidelines = (
     ...         "%s let %s have access." % (
     ...             context.displayname,

@@ -2,11 +2,17 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
+__all__ = [
+    'TeamMembership',
+    'TeamMembershipSet',
+    'TeamParticipation',
+    ]
 
 from datetime import datetime, timedelta
 import itertools
 import pytz
+
+from storm.locals import Store
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -14,7 +20,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.database.sqlbase import (
-    cursor, flush_database_updates, SQLBase, sqlvalues)
+    flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -25,13 +31,16 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ILaunchpadCelebrities, IPersonSet, ITeamMembership, ITeamMembershipSet,
+    ITeamParticipation, TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
+
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class TeamMembership(SQLBase):
@@ -45,19 +54,19 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     last_changed_by = ForeignKey(
         dbName='last_changed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     proposed_by = ForeignKey(
         dbName='proposed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     acknowledged_by = ForeignKey(
         dbName='acknowledged_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     reviewed_by = ForeignKey(
         dbName='reviewed_by', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to
@@ -212,7 +221,7 @@ class TeamMembership(SQLBase):
             if admins.count() == 1:
                 admin = admins[0]
                 how_to_renew = (
-                    "To prevent this membership from expiring, you should"
+                    "To prevent this membership from expiring, you should "
                     "contact the\nteam's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
             else:
@@ -272,11 +281,11 @@ class TeamMembership(SQLBase):
         state_transition = {
             admin: [approved, expired, deactivated],
             approved: [admin, expired, deactivated],
-            deactivated: [proposed, approved, invited],
-            expired: [proposed, approved, invited],
+            deactivated: [proposed, approved, admin, invited],
+            expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved],
-            invited: [approved, invitation_declined],
+            declined: [proposed, approved, admin],
+            invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
@@ -284,21 +293,27 @@ class TeamMembership(SQLBase):
             "Bad state transition from %s to %s"
             % (self.status.name, status.name))
 
+        if status in ACTIVE_STATES and self.team in self.person.allmembers:
+            raise CyclicalTeamMembershipError(
+                "Cannot make %(person)s a member of %(team)s because "
+                "%(team)s is a member of %(person)s."
+                % dict(person=self.person.name, team=self.team.name))
+
+
         old_status = self.status
         self.status = status
 
-        active_states = [approved, admin]
         now = datetime.now(pytz.timezone('UTC'))
         if status in [proposed, invited]:
             self.proposed_by = user
             self.proponent_comment = comment
             self.date_proposed = now
-        elif ((status in active_states and old_status not in active_states)
+        elif ((status in ACTIVE_STATES and old_status not in ACTIVE_STATES)
               or status == declined):
             self.reviewed_by = user
             self.reviewer_comment = comment
             self.date_reviewed = now
-            if self.datejoined is None and status in active_states:
+            if self.datejoined is None and status in ACTIVE_STATES:
                 # This is the first time this membership is made active.
                 self.datejoined = now
         else:
@@ -316,13 +331,14 @@ class TeamMembership(SQLBase):
         self.last_change_comment = comment
         self.date_last_changed = now
 
-        if status in active_states:
+        if status in ACTIVE_STATES:
             _fillTeamParticipation(self.person, self.team)
-        else:
-            # Need to flush db updates because _cleanTeamParticipation() will
-            # manipulate the database directly, bypassing the ORM.
-            flush_database_updates()
+        elif old_status in ACTIVE_STATES:
             _cleanTeamParticipation(self.person, self.team)
+        else:
+            # Changed from an inactive state to another inactive one, so no
+            # need to fill/clean the TeamParticipation table.
+            pass
 
         # Flush all updates to ensure any subsequent calls to this method on
         # the same transaction will operate on the correct data.  That is the
@@ -507,117 +523,166 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _cleanTeamParticipation(member, team):
-    """Remove TeamParticipation entries for the given person and team.
+def _cleanTeamParticipation(person, team):
+    """Remove relevant entries in TeamParticipation for <person> and <team>.
 
-    Removing a member from a team is basically a two-step process. First we
-    change the status of the TeamMembership entry and then call
-    _cleanTeamParticipation() to make sure the member is actually removed from
-    the given team and its superteams.
+    Remove all tuples "person, team" from TeamParticipation for the given
+    person and team (together with all its superteams), unless this person is
+    an indirect member of the given team. More information on how to use the
+    TeamParticipation table can be found in the TeamParticipationUsage spec or
+    the teammembership.txt system doctest.
     """
-    for subteam in team.getSubTeams():
-        if member.hasParticipationEntryFor(subteam) and member != subteam:
-            # This is an indirect member of the given team, so we must not
-            # remove his participation entry for that team or any of its
-            # superteams.
-            return
-
-    # First we'll remove our member (and all its members, in case it's a team)
-    # from the given team.
-    active_states = "%s,%s" % sqlvalues(
-        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
-    member_team_and_subteams = itertools.chain(
-        [member, team], member.getSubTeams())
-    member_team_and_subteams_ids = ",".join(
-        str(person.id) for person in member_team_and_subteams)
     query = """
-        DELETE FROM TeamParticipation
-        WHERE team = %(team_id)s AND person IN (
-            -- All the people that /may/ be kicked (participants of the
-            -- given member).
-            SELECT person
-            FROM TeamParticipation 
-            WHERE team = %(member_id)s
-
-            EXCEPT
-
-            (
-                SELECT person
-                FROM TeamParticipation
-                WHERE team IN (
-                    -- Other subteams of the given team. If the member is a
-                    -- participant in any of them, he shall not be kicked.
+        SELECT EXISTS(
+            SELECT 1 FROM TeamParticipation
+            WHERE person = %(person_id)s AND team IN (
                     SELECT person
                     FROM TeamParticipation JOIN Person ON (person = Person.id)
                     WHERE team = %(team_id)s
-                        AND person NOT IN (%(member_team_and_subteams_ids)s) 
-                        AND teamowner IS NOT NULL)
-
-                UNION
-
-                -- Direct members of our team.
-                SELECT person
-                FROM TeamMembership
-                WHERE status IN (%(active_states)s)
-                    AND team = %(team_id)s
-            )
-        )""" % dict(team_id=team.id, member_id=member.id,
-                    active_states=active_states,
-                    member_team_and_subteams_ids=member_team_and_subteams_ids)
-    cur = cursor()
-    cur.execute(query)
-
-    # Now we remove the member (and its members, if they exist) from each
-    # superteam of the given team, but only if there are no other paths from
-    # the member to the team and if he's not a direct member of the team.
-    superteams = list(team.getSuperTeams())
-    if len(superteams) == 0:
+                        AND person NOT IN (%(team_id)s, %(person_id)s)
+                        AND teamowner IS NOT NULL
+                 )
+        )
+        """ % dict(team_id=team.id, person_id=person.id)
+    store = Store.of(person)
+    (result, ) = store.execute(query).get_one()
+    if result:
+        # The person is a participant in this team by virtue of a membership
+        # in another one, so don't attempt to remove anything.
         return
 
-    superteams_ids = ",".join(str(team.id) for team in superteams)
-    team_and_member_and_superteams_ids = ",".join(
-        str(team.id) for team in [member, team] + superteams)
-    replacements = dict(
-        active_states=active_states, member_id=member.id,
-        team_and_member_and_superteams_ids=team_and_member_and_superteams_ids,
-        superteams_ids=superteams_ids)
+    # First of all, we remove <person> from <team> (and its superteams).
+    _removeParticipantFromTeamAndSuperTeams(person, team)
+    if not person.is_team:
+        # Nothing else to do.
+        return
+
+    store = Store.of(person)
+
+    # Clean the participation of all our participant subteams, that are
+    # not a direct members of the target team.
+    query = """
+        -- All of my participant subteams...
+        SELECT person
+        FROM TeamParticipation JOIN Person ON (person = Person.id)
+        WHERE team = %(person_id)s AND person != %(person_id)s
+            AND teamowner IS NOT NULL
+        EXCEPT
+        -- that aren't a direct member of the team.
+        SELECT person
+        FROM TeamMembership
+        WHERE team = %(team_id)s AND status IN %(active_states)s
+        """ % dict(
+            person_id=person.id, team_id=team.id,
+            active_states=sqlvalues(ACTIVE_STATES)[0])
+
+    # Avoid circular import.
+    from canonical.launchpad.database.person import Person
+    for subteam in store.find(Person, "id IN (%s)" % query):
+        _cleanTeamParticipation(subteam, team)
+
+    # Then clean-up all the non-team participants. We can remove those
+    # in a single query when the team graph is up to date.
+    _removeAllIndividualParticipantsFromTeamAndSuperTeams(person, team)
+
+
+def _removeParticipantFromTeamAndSuperTeams(person, team):
+    """Remove participation of person in team.
+
+    If <person> is a participant (that is, has a TeamParticipation entry)
+    of any team that is a subteam of <team>, then <person> should be kept as
+    a participant of <team> and (as a consequence) all its superteams.
+    Otherwise, <person> is removed from <team> and we repeat this process for
+    each superteam of <team>.
+    """
+    # Check if the person is a member of the given team through another team.
+    query = """
+        SELECT EXISTS(
+            SELECT 1
+            FROM TeamParticipation, TeamMembership
+            WHERE
+                TeamMembership.team = %(team_id)s AND
+                TeamMembership.person = TeamParticipation.team AND
+                TeamParticipation.person = %(person_id)s AND
+                TeamMembership.status IN %(active_states)s)
+        """ % dict(team_id=team.id, person_id=person.id,
+                   active_states=sqlvalues(ACTIVE_STATES)[0])
+    store = Store.of(person)
+    (result, ) = store.execute(query).get_one()
+    if result:
+        # The person is a participant by virtue of a membership on another
+        # team, so don't remove.
+        return
+    store.find(TeamParticipation, (
+        (TeamParticipation.team == team) &
+        (TeamParticipation.person == person))).remove()
+
+    for superteam in _getSuperTeamsExcludingDirectMembership(person, team):
+        _removeParticipantFromTeamAndSuperTeams(person, superteam)
+
+
+def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
+    """Remove all non-team participants in <team> from <target_team>.
+
+    All the non-team participants of <team> are removed from <target_team>
+    and its super teams, unless they participate in <target_team> also from
+    one of its sub team.
+    """
     query = """
         DELETE FROM TeamParticipation
-        WHERE team = %(superteam_id)s AND person IN (
-            -- All the people that /may/ be kicked (participants of the
-            -- given member).
+        WHERE team = %(target_team_id)s AND person IN (
+            -- All the individual participants.
+            SELECT person
+            FROM TeamParticipation JOIN Person ON (person = Person.id)
+            WHERE team = %(team_id)s AND teamowner IS NULL
+            EXCEPT
+            -- people participating through a subteam of target_team;
             SELECT person
             FROM TeamParticipation
-            WHERE team = %(member_id)s
-
+            WHERE team IN (
+                -- The subteams of target_team.
+                SELECT person
+                FROM TeamParticipation JOIN Person ON (person = Person.id)
+                WHERE team = %(target_team_id)s
+                    AND person NOT IN (%(target_team_id)s, %(team_id)s)
+                    AND teamowner IS NOT NULL
+                 )
+            -- or people directly a member of the target team.
             EXCEPT
+            SELECT person
+            FROM TeamMembership
+            WHERE team = %(target_team_id)s AND status IN %(active_states)s
+        )
+        """ % dict(
+            team_id=team.id, target_team_id=target_team.id,
+            active_states=sqlvalues(ACTIVE_STATES)[0])
+    store = Store.of(team)
+    store.execute(query)
 
-            (
-                SELECT person
-                FROM TeamParticipation
-                WHERE team IN (
-                    -- Teams in which our dear member must be a participant in
-                    -- order not to be kicked from this superteam.
-                    SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
-                    WHERE team = %(superteam_id)s
-                        AND person NOT IN (
-                            %(team_and_member_and_superteams_ids)s) 
-                        AND teamowner IS NOT NULL)
+    super_teams = _getSuperTeamsExcludingDirectMembership(team, target_team)
+    for superteam in super_teams:
+        _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, superteam)
 
-                UNION
 
-                -- We shouldn't attempt to kick any members that have an
-                -- active membership record for a given superteam.
-                SELECT person
-                FROM TeamMembership 
-                WHERE status IN (%(active_states)s)
-                    AND team = %(superteam_id)s
-            )
-        )"""
-    for superteam in superteams:
-        replacements.update(dict(superteam_id=superteam.id))
-        cur.execute(query % replacements)
+def _getSuperTeamsExcludingDirectMembership(person, team):
+    """Return all the super teams of <team> where person isn't a member."""
+    query = """
+        -- All the super teams...
+        SELECT team
+        FROM TeamParticipation
+        WHERE person = %(team_id)s AND team != %(team_id)s
+        EXCEPT
+        -- The one where person has an active membership.
+        SELECT team
+        FROM TeamMembership
+        WHERE person = %(person_id)s AND status IN %(active_states)s
+        """ % dict(
+            person_id=person.id, team_id=team.id,
+            active_states=sqlvalues(ACTIVE_STATES)[0])
+
+    # Avoid circular import.
+    from canonical.launchpad.database.person import Person
+    return Store.of(person).find(Person, "id IN (%s)" % query)
 
 
 def _fillTeamParticipation(member, team):
@@ -634,7 +699,6 @@ def _fillTeamParticipation(member, team):
         members.extend(member.allmembers)
 
     for m in members:
-        for t in itertools.chain(team.getSuperTeams(), [team]):
+        for t in itertools.chain(team.super_teams, [team]):
             if not m.hasParticipationEntryFor(t):
                 TeamParticipation(person=m, team=t)
-

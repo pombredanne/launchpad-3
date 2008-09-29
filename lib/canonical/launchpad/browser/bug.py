@@ -8,6 +8,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
     'BugSecrecyEditView',
@@ -20,33 +21,41 @@ __all__ = [
     'MaloneView',
     ]
 
+from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import operator
 import re
 
+import pytz
+
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import implements, providedBy, Interface
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
+from canonical.cachedproperty import cachedproperty
+
+from canonical.launchpad import _
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
     IBug,
     IBugSet,
-    IBugTaskSet,
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
     ILaunchBag,
     NotFoundError,
     )
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.interfaces.bugattachment import IBugAttachmentSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
+from canonical.launchpad.searchbuilder import any, greater_than
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
@@ -55,6 +64,9 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
 
+from canonical.lazr import EnumeratedType, Item
+
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -80,6 +92,24 @@ class BugNavigation(Navigation):
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
+
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, person_name):
+        """Retrieve a BugSubscription by person name."""
+        for subscription in self.context.subscriptions:
+            if subscription.person.name == person_name:
+                return subscription
+
+    @stepthrough('attachments')
+    def traverse_attachments(self, name):
+        """Retrieve a BugAttachment by ID.
+
+        Only return a attachment if it is related to this bug.
+        """
+        if name.isdigit():
+            attachment = getUtility(IBugAttachmentSet)[name]
+            if attachment is not None and attachment.bug == self.context:
+                return attachment
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -114,7 +144,7 @@ class BugContextMenu(ContextMenu):
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
              'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog']
+             'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -123,18 +153,18 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Edit description/tags'
+        text = 'Update description / tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
-        text = 'Set privacy/security'
-        return Link('+secrecy', text, icon='edit')
+        text = 'Change privacy/security'
+        return Link('+secrecy', text)
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
-        return Link('+duplicate', text, icon='edit')
+        return Link('+duplicate', text)
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -192,7 +222,10 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        text = 'Add branch'
+        if self.context.bug.bug_branches.count() > 0:
+            text = 'Link another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -221,27 +254,37 @@ class BugContextMenu(ContextMenu):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.bug.isMentor(user) and
-                   not self.context.bug.is_complete and
-                   user)
+        # We should really only allow people to retract mentoring if the
+        # bug's open and the user's already a mentor.
+        if user and not self.context.bug.is_complete:
+            enabled = self.context.bug.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Convert to question'
+        text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, icon='edit', enabled=enabled)
+        return Link('+create-question', text, enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'Convert back to bug'
+        text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, icon='edit', enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'View activity log'
-        return Link('+activity', text, icon='list')
+        text = 'Activity log'
+        return Link('+activity', text)
+
+    def affectsmetoo(self):
+        """Return the 'This bug affects me too' link."""
+        user = getUtility(ILaunchBag).user
+        enabled = user is not None
+        text = "Does this bug affect you?"
+        return Link('+affectsmetoo', text, icon='edit', enabled=enabled)
 
 
 class MaloneView(LaunchpadFormView):
@@ -289,26 +332,38 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5):
+    def getMostRecentlyFixedBugs(self, limit=5, when=None):
         """Return the ten most recently fixed bugs."""
-        fixed_bugs = []
-        search_params = BugTaskSearchParams(
-            self.user, status=BugTaskStatus.FIXRELEASED,
-            orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
-        # XXX: Bjorn Tillenius 2006-12-13:
-        #      We might end up returning less than :limit: bugs, but in
-        #      most cases we won't, and '4*limit' is here to prevent
-        #      this page from timing out in production. Later I'll fix
-        #      this properly by selecting bugs instead of bugtasks.
-        #      If fixed_bugtasks isn't sliced, it will take a long time
-        #      to iterate over it, even over just 10, because
-        #      Transaction.iterSelect() listifies the result.
-        for bugtask in fixed_bugtasks[:4*limit]:
-            if bugtask.bug not in fixed_bugs:
-                fixed_bugs.append(bugtask.bug)
-                if len(fixed_bugs) >= limit:
-                    break
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        date_closed_limits = [
+            timedelta(days=1),
+            timedelta(days=7),
+            timedelta(days=30),
+            None,
+        ]
+        for date_closed_limit in date_closed_limits:
+            fixed_bugs = []
+            search_params = BugTaskSearchParams(
+                self.user, status=BugTaskStatus.FIXRELEASED,
+                orderby='-date_closed')
+            if date_closed_limit is not None:
+                search_params.date_closed = greater_than(
+                    when - date_closed_limit)
+            fixed_bugtasks = self.context.searchTasks(search_params)
+            # XXX: Bjorn Tillenius 2006-12-13:
+            #      We might end up returning less than :limit: bugs, but in
+            #      most cases we won't, and '4*limit' is here to prevent
+            #      this page from timing out in production. Later I'll fix
+            #      this properly by selecting bugs instead of bugtasks.
+            #      If fixed_bugtasks isn't sliced, it will take a long time
+            #      to iterate over it, even over just 10, because
+            #      Transaction.iterSelect() listifies the result.
+            for bugtask in fixed_bugtasks[:4*limit]:
+                if bugtask.bug not in fixed_bugs:
+                    fixed_bugs.append(bugtask.bug)
+                    if len(fixed_bugs) >= limit:
+                        return fixed_bugs
         return fixed_bugs
 
     def getCveBugLinkCount(self):
@@ -323,12 +378,13 @@ class BugView(LaunchpadView):
     adapted to IBug in order to make the security declarations work
     properly. This has the effect that the context in the pagetemplate
     changes as well, so the bugtask (which is often used in the pages)
-    is available as currentBugTask(). This may not be all that pretty,
+    is available as `current_bugtask`. This may not be all that pretty,
     but it was the best solution we came up with when deciding to hang
     all the pages off IBugTask instead of IBug.
     """
 
-    def currentBugTask(self):
+    @property
+    def current_bugtask(self):
         """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
@@ -350,33 +406,29 @@ class BugView(LaunchpadView):
         object itself. This allows us to protect private bugs using a
         title like 'Private Bug'.
         """
+        duplicate_bugs = list(self.context.duplicates)
+        current_task = self.current_bugtask
+        dupes_in_current_context = dict(
+            (bugtask.bug, bugtask)
+            for bugtask in current_task.target.searchTasks(
+                BugTaskSearchParams(self.user, bug=any(*duplicate_bugs))))
         dupes = []
-        for bug in self.context.duplicates:
+        for bug in duplicate_bugs:
             dupe = {}
             try:
                 dupe['title'] = bug.title
             except Unauthorized:
                 dupe['title'] = 'Private Bug'
             dupe['id'] = bug.id
-            dupe['url'] = self.getDupeBugLink(bug)
+            # If the dupe has the same context as the one we're in, link
+            # to that bug task directly.
+            if bug in dupes_in_current_context:
+                dupe['url'] = canonical_url(dupes_in_current_context[bug])
+            else:
+                dupe['url'] = canonical_url(bug)
             dupes.append(dupe)
 
         return dupes
-
-    def getDupeBugLink(self, dupe):
-        """Return a URL for a duplicate of this bug.
-
-        The link will be in the current context if the dupe is also
-        reported in this context, otherwise a default /bugs/$bug.id
-        style URL will be returned.
-        """
-        current_task = self.currentBugTask()
-
-        for task in dupe.bugtasks:
-            if task.target == current_task.target:
-                return canonical_url(task)
-
-        return canonical_url(dupe)
 
 
 class BugWithoutContextView:
@@ -535,13 +587,20 @@ class DeprecatedAssignedBugsView:
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
 
+
 normalize_mime_type = re.compile(r'\s+')
 
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+    @cachedproperty
+    def bugtasks(self):
+        """Cache bugtasks and avoid hitting the DB twice."""
+        return list(self.context.bugtasks)
 
-    def bug_text(self, bug):
+    def bug_text(self):
         """Return the bug information for text display."""
+        bug = self.context
+
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
@@ -563,9 +622,8 @@ class BugTextView(LaunchpadView):
             text.append('duplicates: ')
 
         if bug.private:
-            # XXX this could include date_made_private and
+            # XXX kiko 2007-10-31: this could include date_made_private and
             # who_made_private but Bjorn doesn't let me.
-            #    -- kiko, 2007-10-31
             text.append('private: yes')
 
         if bug.security_related:
@@ -591,12 +649,13 @@ class BugTextView(LaunchpadView):
         text.append('date-created: %s' %
             format_rfc2822_date(task.datecreated))
 
-        for status in ["confirmed", "assigned", "inprogress",
-                       "closed", "incomplete"]:
+        for status in ["left_new", "confirmed", "triaged", "assigned",
+                       "inprogress", "closed", "incomplete",
+                       "fix_committed", "fix_released"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (
-                    status, format_rfc2822_date(date)))
+                    status.replace('_', '-'), format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 
@@ -642,9 +701,9 @@ class BugTextView(LaunchpadView):
         from canonical.launchpad.browser.bugtask import (
             get_visible_comments, get_comments_for_bugtask)
 
-        # XXX: for some reason, get_comments_for_bugtask takes a task,
-        # not a bug. For now live with it. -- kiko, 2007-10-31
-        first_task = self.context.bugtasks[0]
+        # XXX: kiko 2007-10-31: for some reason, get_comments_for_bugtask
+        # takes a task, not a bug. For now live with it.
+        first_task = self.bugtasks[0]
         all_comments = get_comments_for_bugtask(first_task)
         comments = get_visible_comments(all_comments[1:])
 
@@ -663,11 +722,10 @@ class BugTextView(LaunchpadView):
         return comment_mime.as_string().decode('utf-8')
 
     def render(self):
-        """Return a text representation of the Bug."""
+        """Return a text representation of the bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        texts = [self.bug_text(self.context)]
-        texts.extend(self.bugtask_text(task)
-                     for task in self.context.bugtasks)
+        texts = [self.bug_text()]
+        texts.extend(self.bugtask_text(task) for task in self.bugtasks)
         texts.append(self.comment_text())
         return "\n".join(texts)
 
@@ -687,3 +745,56 @@ class BugURL:
         """Return the path component of the URL."""
         return u"bugs/%d" % self.context.id
 
+
+class BugAffectingUserChoice(EnumeratedType):
+    """The choices for a bug affecting a user."""
+
+    YES = Item("""
+        Yes
+
+        This bug affects me.
+        """)
+
+    NO = Item("""
+        No
+
+        This bug doesn't affect me.
+        """)
+
+
+class BugMarkAsAffectingUserForm(Interface):
+    """Form schema for marking the bug as affecting the user."""
+    affects = Choice(
+        title=_('Does this bug affect you?'),
+        vocabulary=BugAffectingUserChoice)
+
+
+class BugMarkAsAffectingUserView(LaunchpadFormView):
+    """Page for marking a bug as affecting the user."""
+
+    schema = BugMarkAsAffectingUserForm
+
+    field_names = ['affects']
+    label = "Does this bug affect you?"
+
+    custom_widget('affects', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        if self.context.bug.isUserAffected(self.user):
+            affects = BugAffectingUserChoice.YES
+        else:
+            affects = BugAffectingUserChoice.NO
+
+        return {'affects': affects}
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Mark the bug according to the selection."""
+        bug = self.context.bug
+        if data['affects'] == BugAffectingUserChoice.YES:
+            bug.markUserAffected(self.user)
+        else:
+            bug.unmarkUserAffected(self.user)
+        self.request.response.redirect(canonical_url(bug))

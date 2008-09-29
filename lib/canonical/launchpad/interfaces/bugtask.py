@@ -1,12 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
-    'BUG_CONTACT_BUGTASK_STATUSES',
+    'BUG_SUPERVISOR_BUGTASK_STATUSES',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -28,36 +28,45 @@ __all__ = [
     'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
-    'ISelectResultsSlicable',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskImportance',
+    'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from sqlos.interfaces import ISelectResults
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, PublicPersonChoice,
-    StrippedTextLine, Summary, Tag)
+    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
+    Tag)
+from canonical.launchpad.interfaces.bugwatch import (
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.interface import copy_field
+from canonical.lazr.rest.declarations import (
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_write_operation, exported, operation_parameters,
+    rename_parameters_as, webservice_error)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -278,13 +287,14 @@ RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX)
 
-BUG_CONTACT_BUGTASK_STATUSES = (
+BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.NEW,
     BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
     BugTaskStatusSearch.CONFIRMED,
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
@@ -294,12 +304,33 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
+class UserCannotEditBugTaskStatus(Unauthorized):
+    """User not permitted to change status.
+
+    Raised when a user tries to transition to a new status who doesn't
+    have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
+class UserCannotEditBugTaskImportance(Unauthorized):
+    """User not permitted to change importance.
+
+    Raised when a user tries to transition to a new importance who
+    doesn't have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
+    export_as_webservice_entry()
 
     id = Int(title=_("Bug Task #"))
-    bug = Int(title=_("Bug #"))
-    product = Choice(title=_('Project'), required=False, vocabulary='Product')
+    bug = exported(
+        BugField(title=_("Bug"), readonly=True))
+    product = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
@@ -318,61 +349,113 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
-    status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus,
-        default=BugTaskStatus.NEW)
-    importance = Choice(
-        title=_('Importance'), vocabulary=BugTaskImportance,
-        default=BugTaskImportance.UNDECIDED)
+    status = exported(
+        Choice(title=_('Status'), vocabulary=BugTaskStatus,
+               default=BugTaskStatus.NEW, readonly=True))
+    importance = exported(
+        Choice(title=_('Importance'), vocabulary=BugTaskImportance,
+               default=BugTaskImportance.UNDECIDED, readonly=True))
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = PublicPersonChoice(
-        title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
-    bugtargetdisplayname = Text(
-        title=_("The short, descriptive name of the target"), readonly=True)
-    bugtargetname = Text(
-        title=_(
-            "The target as presented in mail notifications"), readonly=True)
-    bugwatch = Choice(title=_("Remote Bug Details"), required=False,
-        vocabulary='BugWatch', description=_("Select the bug watch that "
-        "represents this task in the relevant bug tracker. If none of the "
-        "bug watches represents this particular bug task, leave it as "
-        "(None). Linking the remote bug watch with the task in "
-        "this way means that a change in the remote bug status will change "
-        "the status of this bug task in Launchpad."))
-    date_assigned = Datetime(
-        title=_("Date Assigned"),
-        description=_("The date on which this task was assigned to someone."))
-    datecreated = Datetime(
-        title=_("Date Created"),
-        description=_("The date on which this task was created."))
-    date_confirmed = Datetime(
-        title=_("Date Confirmed"),
-        description=_("The date on which this task was marked Confirmed."))
-    date_inprogress = Datetime(
-        title=_("Date In Progress"),
-        description=_("The date on which this task was marked In Progress."))
-    date_closed = Datetime(
-        title=_("Date Closed"),
-        description=_(
-            "The date on which this task was marked either Fix Committed or "
-            "Fix Released."))
-    age = Datetime(
-        title=_("Age"),
-        description=_(
-            "The age of this task, expressed as the length of time between "
-            "datecreated and now."))
-    owner = Int()
-    target = Object(
-        title=_('Target'), required=False,
-        description=_("The software in which this bug should be fixed."),
-        schema=IBugTarget)
+    assignee = exported(
+        PublicPersonChoice(title=_('Assigned to'), required=False,
+                           vocabulary='ValidAssignee',
+                           readonly=True))
+    bugtargetdisplayname = exported(
+        Text(title=_("The short, descriptive name of the target"),
+             readonly=True),
+        exported_as='bug_target_display_name')
+    bugtargetname = exported(
+        Text(title=_("The target as presented in mail notifications"),
+             readonly=True),
+        exported_as='bug_target_name')
+    bugwatch = exported(
+        Choice(
+            title=_("Remote Bug Details"), required=False,
+            vocabulary='BugWatch', description=_(
+                "Select the bug watch that "
+                "represents this task in the relevant bug tracker. If none "
+                "of the bug watches represents this particular bug task, "
+                "leave it as (None). Linking the remote bug watch with the "
+                "task in this way means that a change in the remote bug "
+                "status will change the status of this bug task in "
+                "Launchpad.")),
+        exported_as='bug_watch')
+    date_assigned = exported(
+        Datetime(title=_("Date Assigned"),
+                 description=_("The date on which this task was assigned "
+                               "to someone."),
+                 readonly=True,
+                 required=False))
+    datecreated = exported(
+        Datetime(title=_("Date Created"),
+                 description=_("The date on which this task was created."),
+                 readonly=True),
+        exported_as='date_created')
+    date_confirmed = exported(
+        Datetime(title=_("Date Confirmed"),
+                 description=_("The date on which this task was marked "
+                               "Confirmed."),
+                 readonly=True,
+                 required=False))
+    date_inprogress = exported(
+        Datetime(title=_("Date In Progress"),
+                 description=_("The date on which this task was marked "
+                               "In Progress."),
+                 readonly=True,
+                 required=False),
+        exported_as='date_in_progress')
+    date_closed = exported(
+        Datetime(title=_("Date Closed"),
+                 description=_("The date on which this task was marked "
+                               "either Fix Committed or Fix Released."),
+                 readonly=True,
+                 required=False))
+    date_left_new = exported(
+        Datetime(title=_("Date left new"),
+                 description=_("The date on which this task was marked "
+                               "with a status higher than New."),
+                 readonly=True,
+                 required=False))
+    date_triaged = exported(
+        Datetime(title=_("Date Triaged"),
+                 description=_("The date on which this task was marked "
+                               "Triaged."),
+                 readonly=True,
+                 required=False))
+    date_fix_committed = exported(
+        Datetime(title=_("Date Fix Committed"),
+                 description=_("The date on which this task was marked "
+                               "Fix Committed."),
+                 readonly=True,
+                 required=False))
+    date_fix_released = exported(
+        Datetime(title=_("Date Fix Relesaed"),
+                 description=_("The date on which this task was marked "
+                               "Fix Released."),
+                 readonly=True,
+                 required=False))
+    age = Datetime(title=_("Age"),
+                   description=_("The age of this task, expressed as the "
+                                 "length of time between the creation date "
+                                 "and now."))
+    owner = exported(
+        Reference(title=_("The owner"), schema=IPerson))
+    target = Reference(
+        title=_('Target'), required=True, schema=Interface, # IBugTarget
+        description=_("The software in which this bug should be fixed."))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
-    title = Text(title=_("The title of the bug related to this bugtask"),
-                         readonly=True)
-    related_tasks = Attribute("IBugTasks related to this one, namely other "
-                              "IBugTasks on the same IBug.")
+    title = exported(
+        Text(title=_("The title of the bug related to this bugtask"),
+             readonly=True))
+    related_tasks = exported(
+        CollectionField(
+            description=_(
+                "IBugTasks related to this one, namely other "
+                "IBugTasks on the same IBug."),
+            value_type=Reference(schema=Interface), # Will be specified later.
+            readonly=True))
     pillar = Choice(
         title=_('Pillar'),
         description=_("The LP pillar (product or distribution) "
@@ -385,7 +468,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any
-    # new bugcontacts that should get an email containing full bug details
+    # new subscribers that should get an email containing full bug details
     # (rather than just the standard change mail.) It is a property on
     # IBugTask because we currently only ever need this value for events
     # handled on IBugTask.
@@ -398,9 +481,26 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
-    is_complete = Attribute(
-        "True or False depending on whether or not there is more work "
-        "required on this bug task.")
+    is_complete = exported(
+        Bool(description=_(
+                "True or False depending on whether or not there is more "
+                " work required on this bug task."),
+             readonly=True))
+
+    def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
+        """Return the conjoined master in the given bugtasks, if any.
+
+        :param bugtasks: The bugtasks to be considered when looking for
+            the conjoined master.
+        :param bugtasks_by_package: A cache, mapping a
+            `ISourcePackageName` to a list of bug tasks targeted to such
+            a package name. Both distribution and distro series tasks
+            should be included in this list.
+
+        This method exists mainly to allow calculating the conjoined
+        master from a cached list of bug tasks, reducing the number of
+        db queries needed.
+        """
 
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
@@ -421,6 +521,17 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @rename_parameters_as(new_importance='importance')
+    @operation_parameters(new_importance=copy_field(importance))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToImportance(new_importance, user):
+        """Set the BugTask importance.
+
+        Set the bugtask importance, making sure that the user is
+        authorised to do so.
+        """
+
     def setImportanceFromDebbugs(severity):
         """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
@@ -437,9 +548,14 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         :user: the user requesting the change
 
         Some status transitions, e.g. Triaged, require that the user
-        be a bug contact or the owner of the project.
+        be a bug supervisor or the owner of the project.
         """
 
+    @rename_parameters_as(new_status='status')
+    @operation_parameters(
+        new_status=copy_field(status))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
     def transitionToStatus(new_status, user):
         """Perform a workflow transition to the new_status.
 
@@ -454,6 +570,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @operation_parameters(
+        assignee=copy_field(assignee))
+    @export_write_operation()
     def transitionToAssignee(assignee):
         """Perform a workflow transition to the given assignee.
 
@@ -498,10 +617,24 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def getPackageComponent():
         """Return the task's package's component or None.
 
-        Returns the component associated to the latest package published
-        in that distribution. If the task is not a package task, returns
-        None.
+        Returns the component associated to the current published
+        package in that distribution's current series. If the task is
+        not a package task, returns None.
         """
+
+    def userCanEditMilestone(user):
+        """Can the user edit the Milestone field?"""
+
+    def userCanEditImportance(user):
+        """Can the user edit the Importance field?"""
+
+
+# Set schemas that were impossible to specify during the definition of
+# IBugTask itself.
+IBugTask['related_tasks'].value_type.schema = IBugTask
+
+# We are forced to define this now to avoid circular import problems.
+IBugWatch['bugtasks'].value_type.schema = IBugTask
 
 
 class INullBugTask(IBugTask):
@@ -586,7 +719,7 @@ class IBugTaskSearchBase(Interface):
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
-    bug_contact = Choice(
+    bug_supervisor = Choice(
         title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
         required=False)
     bug_commenter = Choice(
@@ -735,18 +868,6 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach 2005-02-03 bugs=121:
-# This interface should be removed when spiv pushes a fix upstream for
-# the bug that makes this hackery necessary.
-class ISelectResultsSlicable(ISelectResults):
-    """ISelectResults (from SQLOS) should be specifying __getslice__.
-
-    This interface defines the missing __getslice__ method.
-    """
-    def __getslice__(i, j):
-        """Called to implement evaluation of self[i:j]."""
-
-
 class BugTaskSearchParams:
     """Encapsulates search parameters for BugTask.search()
 
@@ -798,8 +919,9 @@ class BugTaskSearchParams:
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False):
+                 bug_supervisor=None, bug_reporter=None, nominated_for=None,
+                 bug_commenter=None, omit_targeted=False,
+                 date_closed=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -823,10 +945,11 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-        self.bug_contact = bug_contact
+        self.bug_supervisor = bug_supervisor
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
         self.bug_commenter = bug_commenter
+        self.date_closed = date_closed
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -850,6 +973,9 @@ class BugTaskSearchParams:
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
+        # Import this here to avoid circular dependencies
+        from canonical.launchpad.interfaces.sourcepackage import (
+            ISourcePackage)
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
@@ -857,6 +983,86 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    @classmethod
+    def _anyfy(cls, value):
+        """If value is a sequence, wrap its items with the `any` combinator.
+
+        Otherwise, return value as is, or None if it's a zero-length sequence.
+        """
+        if zope_isinstance(value, (list, tuple)):
+            if len(value) > 0:
+                return any(*value)
+            else:
+                return None
+        else:
+            return value
+
+
+    @classmethod
+    def fromSearchForm(cls, user,
+                       order_by=('-importance',), search_text=None,
+                       status=list(UNRESOLVED_BUGTASK_STATUSES),
+                       importance=None,
+                       assignee=None, bug_reporter=None, bug_supervisor=None,
+                       bug_commenter=None, bug_subscriber=None, owner=None,
+                       has_patch=None, has_cve=None, distribution=None,
+                       tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
+                       omit_duplicates=True, omit_targeted=None,
+                       status_upstream=None, milestone_assignment=None,
+                       milestone=None, component=None, nominated_for=None,
+                       sourcepackagename=None, has_no_package=None):
+        """Create and return a new instance using the parameter list."""
+        search_params = cls(user=user, orderby=order_by)
+
+        search_params.searchtext = search_text
+        search_params.status = cls._anyfy(status)
+        search_params.importance = cls._anyfy(importance)
+        search_params.assignee = assignee
+        search_params.bug_reporter = bug_reporter
+        search_params.bug_supervisor = bug_supervisor
+        search_params.bug_commenter = bug_commenter
+        search_params.subscriber = bug_subscriber
+        search_params.owner = owner
+        search_params.distribution = distribution
+        if has_patch:
+            # Import this here to avoid circular imports
+            from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
+            search_params.attachmenttype = BugAttachmentType.PATCH
+            search_params.has_patch = has_patch
+        search_params.has_cve = has_cve
+        if zope_isinstance(tags, (list, tuple)):
+            if len(tags) > 0:
+                if tags_combinator == BugTagsSearchCombinator.ALL:
+                    search_params.tag = all(*tags)
+                else:
+                    search_params.tag = any(*tags)
+        elif zope_isinstance(tags, str):
+            search_params.tag = tags
+        elif tags is None:
+            pass # tags not supplied
+        else:
+            raise AssertionError(
+                'Tags can only be supplied as a list or a string.')
+        search_params.omit_dupes = omit_duplicates
+        search_params.omit_targeted = omit_targeted
+        if status_upstream is not None:
+            if 'pending_bugwatch' in status_upstream:
+                search_params.pending_bugwatch_elsewhere = True
+            if 'resolved_upstream' in status_upstream:
+                search_params.resolved_upstream = True
+            if 'open_upstream' in status_upstream:
+                search_params.open_upstream = True
+            if 'hide_upstream' in status_upstream:
+                search_params.has_no_upstream_bugtask = True
+        search_params.milestone = cls._anyfy(milestone)
+        search_params.component = cls._anyfy(component)
+        search_params.sourcepackagename = sourcepackagename
+        if has_no_package:
+            search_params.sourcepackagename = NULL
+        search_params.nominated_for = nominated_for
+
+        return search_params
 
 
 class IBugTaskSet(Interface):
@@ -869,6 +1075,12 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getBugTaskBadgeProperties(bugtasks):
+        """Return whether the bugtasks should have badges.
+
+        Return a mapping from a bug task, to a dict of badge properties.
         """
 
     def getMultiple(task_ids):
@@ -918,7 +1130,7 @@ class IBugTaskSet(Interface):
                    milestone=None):
         """Create a bug task on a bug and return it.
 
-        If the bug is public, bug contacts will be automatically
+        If the bug is public, bug supervisors will be automatically
         subscribed.
 
         If the bug has any accepted series nominations for a supplied
@@ -991,11 +1203,25 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+    def getBugCountsForPackages(user, packages):
+        """Return open bug counts for the list of packages.
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the count.
+        :param packages: A list of `IDistributionSourcePackage`
+            instances.
+
+        :return: A list of dictionaries, where each dict contains:
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that are In Progress.
+        """
+
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
-    from canonical.launchpad.interfaces.bugwatch import (
-        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
         getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:

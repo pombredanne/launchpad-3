@@ -172,12 +172,7 @@ validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
 validate_shipit_province = ShipItAddressValidator('province', 30)
 
-# XXX Guilherme Salgado 2006-05-22:
-# For now we only check if the postcode is valid ascii, as we haven't
-# heard back from MediaMotion on the length constraint.
-def validate_shipit_postcode(value):
-    _validate_ascii_printable_text(value)
-    return True
+validate_shipit_postcode = ShipItAddressValidator('postcode', 15)
 
 
 # XXX matsubara 2006-03-15 bug=35077:
@@ -320,13 +315,14 @@ def validate_new_team_email(email):
     from canonical.launchpad.webapp import canonical_url
     from canonical.launchpad.interfaces import IEmailAddressSet
     _validate_email(email)
-    email = getUtility(IEmailAddressSet).getByEmail(email)
-    if email is not None:
+    email_address = getUtility(IEmailAddressSet).getByEmail(email)
+    if email_address is not None:
+        person = email_address.person
         message = _('${email} is already registered in Launchpad and is '
                     'associated with <a href="${url}">${team}</a>.',
-                    mapping={'email': escape(email.email),
-                             'url':   canonical_url(email.person),
-                             'team':  escape(email.person.browsername)})
+                    mapping={'email': escape(email),
+                             'url': canonical_url(person),
+                             'team': escape(person.browsername)})
         raise LaunchpadValidationError(structured(message))
     return True
 

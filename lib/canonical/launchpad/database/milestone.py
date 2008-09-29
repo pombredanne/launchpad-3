@@ -12,17 +12,21 @@ from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
     SQLMultipleJoin)
 
-from canonical.launchpad.interfaces import (
-    IMilestone, IMilestoneSet, IProjectMilestone,
-    IStructuralSubscriptionTarget, NotFoundError)
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.milestone import (
+    IMilestone, IMilestoneSet, IProjectMilestone)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
-class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
-    implements(IMilestone, IStructuralSubscriptionTarget)
+class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
+    implements(IHasBugs, IMilestone, IStructuralSubscriptionTarget)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -72,9 +76,11 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
     def title(self):
         """See IMilestone."""
         title = 'Milestone %s for %s' % (self.name, self.target.displayname)
-        if self.dateexpected:
-            title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
         return title
+
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this milestone."""
+        search_params.milestone = self
 
 
 class MilestoneSet:

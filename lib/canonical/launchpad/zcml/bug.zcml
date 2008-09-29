@@ -35,12 +35,13 @@
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
-                        getSubscriptionsFromDuplicates
+                        getSubscriptionsFromDuplicates indexed_messages
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
                         message_count getQuestionCreatedFromBug
-                        canBeAQuestion"
+                        canBeAQuestion getBugTasksByPackageName
+                        users_affected_count"
             />
         <require
             permission="launchpad.Edit"
@@ -49,7 +50,8 @@
                         linkMessage addBranch addAttachment unsubscribeFromDupes
                         subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
-                        convertToQuestion"
+                        convertToQuestion isUserAffected
+                        markUserAffected unmarkUserAffected"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
@@ -61,6 +63,12 @@
             attributes="offerMentoring retractMentoring"
             />
     </content>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+        factory="canonical.launchpad.components.launchpadcontainer.LaunchpadBugContainer"
+        />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -118,7 +126,9 @@
       for="canonical.launchpad.interfaces.IBug"
       class="canonical.launchpad.browser.BugView"
       permission="zope.Public">
-
+      <browser:page
+          name="+portlet-privacy"
+          template="../templates/bug-portlet-privacy.pt" />
       <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
@@ -140,6 +150,9 @@
       <browser:page
           name="+portlet-subscribers"
           template="../templates/bug-portlet-subscribers.pt" />
+      <browser:page
+          name="+portlet-notified"
+          template="../templates/bug-portlet-notified.pt" />
     </browser:pages>
 
 

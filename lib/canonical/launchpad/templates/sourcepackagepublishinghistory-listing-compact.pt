@@ -16,9 +16,16 @@
          in the <span tal:replace="context/component/name">main</span>
          component
        </tal:block>
+       <span tal:condition="context/status/enumvalue:PENDING">
+         since
+         <span
+           tal:attributes="title view/date_last_changed/fmt:datetime"
+           tal:content="view/date_last_changed/fmt:datetime" />
+       </span>
        <span
-         tal:attributes="title context/datepublished/fmt:datetime"
-         tal:content="context/datepublished/fmt:displaydate">
+         tal:condition="not: context/status/enumvalue:PENDING"
+         tal:attributes="title view/date_last_changed/fmt:datetime"
+         tal:content="view/date_last_changed/fmt:displaydate">
          2005-09-16
        </span>
      </td>

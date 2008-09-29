@@ -218,3 +218,50 @@ project returned:
     >>> for project in question_set.getMostActiveProjects(limit=1):
     ...     print project.displayname
     Ubuntu
+
+
+== getOpenQuestionCountByPackages() ==
+
+getOpenQuestionCountByPackages() allow you to get the count of open
+questions on a set of IDistributionSourcePackage packages.
+
+    >>> question_set.getOpenQuestionCountByPackages([])
+    {}
+
+It returns the number of open questions for each given package.
+
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian_evolution = debian.getSourcePackage('evolution')
+    >>> debian_pmount = debian.getSourcePackage('pmount')
+
+    >>> login('foo.bar@canonical.com')
+    >>> QuestionFactory.createManyByTarget(ubuntu_pmount, 4)
+    [...]
+    >>> QuestionFactory.createManyByTarget(debian_evolution, 3)
+    [...]
+    >>> open_question, closed_question = QuestionFactory.createManyByTarget(
+    ...     ubuntu_evolution, 2)
+    >>> closed_question.setStatus(
+    ...     closed_question.owner, QuestionStatus.SOLVED, 'no comment')
+    <QuestionMessage at ...>
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(closed_question)
+
+    >>> from operator import itemgetter
+    >>> packages = [
+    ...     ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount]
+    >>> package_counts = question_set.getOpenQuestionCountByPackages(packages)
+    >>> len(packages)
+    4
+    >>> for package in packages:
+    ...     print "%s: %s" % (
+    ...         package.bugtargetname,
+    ...         package_counts[package])
+    evolution (Ubuntu): 1
+    pmount (Ubuntu): 4
+    evolution (Debian): 3
+    pmount (Debian): 0
+
+

@@ -10,23 +10,16 @@ The tour pages.
 
   >>> browser.open('http://launchpad.dev/')
   >>> browser.getLink('Take a tour').click()
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2008 Canonical Ltd.
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'footer-navigation'))
+  Next...&copy; 2004-2008 Canonical Ltd...
 
 Shipit sites.
 
   >>> browser.open('http://shipit.ubuntu.dev')
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2008 Canonical Ltd.
-  ...
+  &copy; 2008 Canonical Ltd.
 
   >>> browser.open('http://shipit.kubuntu.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2008 Canonical Ltd.
-  ...
-
-  >>> browser.open('http://shipit.edubuntu.dev')
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
   &copy; 2004-2008 Canonical Ltd.
   ...
@@ -34,6 +27,6 @@ Shipit sites.
 The main template.
 
   >>> browser.open('http://launchpad.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'copyright'))
+  >>> print extract_text(find_tag_by_id(browser.contents, 'lp-arcana'))
   &copy; 2004-2008 Canonical Ltd.
   ...

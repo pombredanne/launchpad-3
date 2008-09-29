@@ -124,10 +124,6 @@
         </td>
       </tr>
       <tr>
-        <td>add-large</td>
-        <td><img alt="" src="/@@/add-large" /></td>
-      </tr>
-      <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
         <td>Inside the header for a column sorted ascending.</td>

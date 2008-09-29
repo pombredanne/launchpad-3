@@ -20,9 +20,9 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
+    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
+
 
 __all__ = [
     'IAging',
@@ -31,7 +31,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
     'IHWDBApplication',
@@ -40,6 +39,7 @@ __all__ = [
     'IHasBug',
     'IHasDateCreated',
     'IHasDrivers',
+    'IHasExternalBugTracker',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -50,10 +50,10 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadSearch',
     'ILaunchpadUsage',
-    'IMaloneApplication',
     'INotificationRecipientSet',
-    'IOpenIdApplication',
+    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -80,6 +80,21 @@ class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose isn't available."""
 
 
+class IHasExternalBugTracker(Interface):
+    """An object that can have an external bugtracker specified."""
+
+    def getExternalBugTracker():
+        """Return the external bug tracker used by this bug tracker.
+
+        If the product uses Launchpad, return None.
+
+        If the product doesn't have a bug tracker specified, return the
+        project bug tracker instead. If the product doesn't belong to a
+        superproject, or if the superproject doesn't have a bug tracker,
+        return None.
+        """
+
+
 class ILaunchpadCelebrities(Interface):
     """Well known things.
 
@@ -89,6 +104,7 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")
@@ -125,24 +141,6 @@ class ICrowd(Interface):
         The returned crowd contains the person or teams in
         both this crowd and the given crowd.
         """
-
-
-class IMaloneApplication(ILaunchpadApplication):
-    """Application root for malone."""
-
-    def searchTasks(search_params):
-        """Search IBugTasks with the given search parameters."""
-
-    bug_count = Attribute("The number of bugs recorded in Launchpad")
-    bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugtask_count = Attribute("The number of bug tasks in Launchpad")
-    projects_with_bugs_count = Attribute("The number of products and "
-        "distributions which have bugs in Launchpad.")
-    shared_bug_count = Attribute("The number of bugs that span multiple "
-        "products and distributions")
-    bugtracker_count = Attribute("The number of bug trackers in Launchpad")
-    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
 class IPrivateMaloneApplication(ILaunchpadApplication):
@@ -191,7 +189,7 @@ class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
 
-class IOpenIdApplication(ILaunchpadApplication):
+class IOpenIDApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
 
 
@@ -201,6 +199,10 @@ class IPrivateApplication(ILaunchpadApplication):
     authserver = Attribute("""Old Authserver API end point.""")
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
+    branch_puller = Attribute("""Branch puller end point.""")
+
+    branchfilesystem = Attribute("""The branch filesystem end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -405,9 +407,6 @@ class IHasDateCreated(Interface):
 class IStructuralHeaderPresentation(Interface):
     """Adapter for common aspects of a structural object's presentation."""
 
-    def isPrivate():
-        """Whether read access to the object is restricted."""
-
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
@@ -446,6 +445,13 @@ class IAppFrontPageSearchForm(Interface):
                    vocabulary='DistributionOrProductOrProject')
 
 
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
+
+
 class UnknownRecipientError(KeyError):
     """Error raised when an email or person isn't part of the recipient set.
     """
@@ -475,6 +481,12 @@ class INotificationRecipientSet(Interface):
         """Return the set of person who will be notified.
 
         :return: An iterator of `IPerson`, sorted by display name.
+        """
+
+    def getRecipientPersons():
+        """Return the set of individual Persons who will be notified.
+
+        :return: An iterator of (`email_address`, `IPerson`), unsorted.
         """
 
     def __iter__():

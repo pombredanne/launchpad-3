@@ -87,9 +87,9 @@ One is for the user with the error notification.
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
-  > Rosetta encountered problems exporting the files you
-  > requested. The Rosetta team has been notified of this
-  > problem. Please reply to this email for further assistance.
+  > Launchpad encountered problems exporting the files you requested.
+  > The Launchpad Translations team has been notified of this problem.
+  > Please reply to this email for further assistance.
   >
 
 And the other to the admins.  This one lists the files that were being
@@ -101,11 +101,12 @@ exported as context to help tracking down any bugs.
   > 
   > Hello admins,
   > 
-  > Rosetta encountered problems exporting some files requested by
-  > Carlos Perell=C3=B3 Mar=C3=ADn. This means we have a bug in
-  > Launchpad that needs to be fixed to be able to proceed with
-  > this export. You can see the list of failed files with the
-  > error we got:
+  > Launchpad encountered problems exporting translation files
+  > requested by Carlos Perell=C3=B3 Mar=C3=ADn.
+  >
+  > This means we have a bug in Launchpad that needs to be fixed
+  > before this export can proceed.  Here is the list of failed
+  > files and the error we got:
   > 
   > Traceback (most recent call last):
   ...
@@ -143,9 +144,9 @@ The user's notification looks no different from that for an ordinary error.
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
-  > Rosetta encountered problems exporting the files you
-  > requested. The Rosetta team has been notified of this
-  > problem. Please reply to this email for further assistance.
+  > Launchpad encountered problems exporting the files you requested.
+  > The Launchpad Translations team has been notified of this problem.
+  > Please reply to this email for further assistance.
   >
 
 The one for the administrators, however, does not include the unprintable
@@ -200,8 +201,8 @@ In this case, there are no errors, so we should get just a single email
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
-  > The files you requested from Rosetta are ready for download
-  > from the following location:
+  > The translation files you requested from Launchpad are ready for
+  > download from the following location:
   > 
   >     http://someplace.com/somefile.tar.gz
 
@@ -254,8 +255,8 @@ The confirmation email shows no errors at all.
     > 
     > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
     > 
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     > 
     >     http://localhost:58000/.../po_evolution-2.2.pot
 

@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT',
     'RequestedCDs',
     'ShipItReport',
     'ShipItReportSet',
@@ -24,6 +23,7 @@ import itertools
 import random
 import re
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -39,7 +39,7 @@ from canonical.config import config
 from canonical.uuid import generate_uuid
 
 from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote, quote_like, cursor)
+    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -61,9 +61,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.country import Country
 
 
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
-
-
 class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
@@ -75,9 +72,6 @@ class ShippingRequest(SQLBase):
                            notNull=True)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-    shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
-                             default=None)
 
     type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
@@ -447,7 +441,7 @@ class ShippingRequestSet:
 
     def new(self, recipient, recipientdisplayname, country, city,
             addressline1, phone, addressline2=None, province=None,
-            postcode=None, organization=None, reason=None, shockandawe=None):
+            postcode=None, organization=None, reason=None):
         """See IShippingRequestSet"""
         # Only the shipit-admins team can have more than one open request
         # at a time.
@@ -455,12 +449,16 @@ class ShippingRequestSet:
                 or recipient.currentShipItRequest() is None)
 
         request = ShippingRequest(
-            recipient=recipient, reason=reason, shockandawe=shockandawe,
-            city=city, country=country, addressline1=addressline1,
-            addressline2=addressline2, province=province, postcode=postcode,
+            recipient=recipient, reason=reason, city=city, country=country,
+            addressline1=addressline1, addressline2=addressline2,
+            province=province, postcode=postcode,
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
+        # The normalized_address field is maitained by a trigger, so
+        # the object needed to be refetched after creation.
+        Store.of(request).flush()
+        Store.of(request).invalidate()
         return request
 
     def getTotalsForRequests(self, requests):
@@ -555,6 +553,8 @@ class ShippingRequestSet:
             queries.append("ShippingRequest.status = %s" % sqlvalues(status))
 
         query = " AND ".join(queries)
+        if query == '':
+            query = None
         return ShippingRequest.select(
             query, orderBy=orderBy, prejoins=["recipient"])
 
@@ -587,6 +587,7 @@ class ShippingRequestSet:
             shippingrun.exportToCSVFile(filename)
             ztm.commit()
 
+    @block_implicit_flushes
     def _create_shipping_run(self, request_ids):
         """Create and return a ShippingRun containing all requests whose ids
         are in request_ids.
@@ -603,36 +604,6 @@ class ShippingRequestSet:
                 # can't export it.
                 continue
             assert not (request.isCancelled() or request.isShipped())
-
-            # Make sure we ship at least one Ubuntu CD for each Edubuntu CD
-            # that we approved in this request.
-            requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
-            requested_ubuntu = requested_cds[ShipItFlavour.UBUNTU]
-            requested_edubuntu = requested_cds[ShipItFlavour.EDUBUNTU]
-            edubuntu_total_approved = 0
-            for arch, requested_cds in requested_edubuntu.items():
-                if requested_cds is None:
-                    continue
-                edubuntu_total_approved += requested_cds.quantityapproved
-            if edubuntu_total_approved > 0:
-                all_requested_arches = set(
-                    requested_ubuntu.keys() + requested_edubuntu.keys())
-                new_ubuntu_quantities = {}
-                for arch in all_requested_arches:
-                    # Need to use getattr() here because
-                    # requested_edubuntu[arch] will be None if the request
-                    # doesn't contain any Edubuntu CDs of that architecture.
-                    edubuntu_qty = getattr(
-                        requested_edubuntu[arch], 'quantityapproved', 0)
-                    if edubuntu_qty == 0:
-                        continue
-                    ubuntu_qty = getattr(
-                        requested_ubuntu[arch], 'quantityapproved', 0)
-                    if edubuntu_qty > ubuntu_qty:
-                        ubuntu_qty = edubuntu_qty
-                    new_ubuntu_quantities[arch] = ubuntu_qty
-                request.setApprovedQuantities(
-                    {ShipItFlavour.UBUNTU: new_ubuntu_quantities})
 
             request.status = ShippingRequestStatus.SHIPPED
             shipment = ShipmentSet().new(
@@ -1429,9 +1400,14 @@ class ShipmentSet:
     def new(self, request, shippingservice, shippingrun, trackingcode=None,
             dateshipped=None):
         """See IShipmentSet"""
+        # Flushing the database at this point leads to problems with
+        # the database constraints.
+        store = Store.of(shippingrun)
+        store.block_implicit_flushes()
         token = self._generateToken()
         while self.getByToken(token):
             token = self._generateToken()
+        store.unblock_implicit_flushes()
 
         shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,

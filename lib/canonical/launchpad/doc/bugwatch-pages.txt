@@ -13,17 +13,17 @@ a bug task.
     ...     bugwatch for bugwatch in bug_one.watches
     ...     if not bugwatch.bugtasks]
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from zope.publisher.browser import TestRequest
-    >>> linked_bugwatch_view = getView(
-    ...     linked_bugwatches.pop(), '+edit', TestRequest())
+    >>> linked_bugwatch_view = getMultiAdapter(
+    ...     (linked_bugwatches.pop(), TestRequest()), name='+edit')
     >>> linked_bugwatch_view.initialize()
     >>> [action.label for action in linked_bugwatch_view.actions
     ...  if action.available()]
     ['Change']
 
-    >>> unlinked_bugwatch_view = getView(
-    ...     unlinked_bugwatches.pop(), '+edit', TestRequest())
+    >>> unlinked_bugwatch_view = getMultiAdapter(
+    ...     (unlinked_bugwatches.pop(), TestRequest()), name='+edit')
     >>> unlinked_bugwatch_view.initialize()
     >>> [action.label for action in unlinked_bugwatch_view.actions
     ...  if action.available()]

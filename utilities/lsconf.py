@@ -53,11 +53,15 @@ class Configuration:
         conf_path = os.path.abspath(conf_file_name)
         return conf_path[len(_root) + 1:]
 
-    def list_config(self, verbose=False):
+    def list_config(self, verbose=False, section_name=None):
         """Print all the sections and keys in a configuration.
 
         Print the final state of configuration after all the conf files
         are loaded.
+        
+        :param verbose: If True, each key has a comment stating where it
+            was defined.
+        :param section_name: Only print the named section.
         """
         print '# This configuration derives from:'
         for config_data in self.config.overlays:
@@ -65,6 +69,8 @@ class Configuration:
         print
         name_key = attrgetter('name')
         for count, section in enumerate(sorted(self.config, key=name_key)):
+            if section_name is not None and section_name != section.name:
+                continue
             if count > 0:
                 # Separate sections by a blank line, or two when verbose.
                 print
@@ -87,7 +93,8 @@ def get_option_parser():
 
     List all the sections and keys in an environment's lazr configuration.
     The configuration is assembled from the schema and conf files. Verbose
-    annotates each key with the location of the file that set its value.""")
+    annotates each key with the location of the file that set its value.
+    The 'section' option limits the list to just the named section.""")
     parser = OptionParser(usage=usage)
     parser.add_option(
         "-l", "--schema", dest="schema_path",
@@ -95,6 +102,9 @@ def get_option_parser():
     parser.add_option(
         "-v", "--verbose", action="store_true",
         help="explain where the section and keys are set")
+    parser.add_option(
+        "-s", "--section", dest="section_name",
+        help="restrict the listing to the section")
     return parser
 
 
@@ -112,7 +122,8 @@ def main(argv=None):
         # Does not return.
     conf_path = arguments[0]
     configuration = Configuration(conf_path, options.schema_path)
-    configuration.list_config(verbose=options.verbose)
+    configuration.list_config(
+        verbose=options.verbose, section_name=options.section_name)
 
 
 if __name__ == '__main__':

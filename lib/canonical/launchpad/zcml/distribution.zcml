@@ -6,17 +6,19 @@
 
   <!-- Distribution -->
   <content class="canonical.launchpad.database.Distribution">
-    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+    <allow interface="canonical.launchpad.interfaces.IDistributionPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.IDistributionEditRestricted"/>
+    <require
+      permission="launchpad.Edit"
       set_attributes="displayname title summary description
-                      translationgroup translationpermission
-                      driver members owner
-                      security_contact upload_admin upload_sender
-                      mirror_admin homepage_content icon logo
-                      mugshot bug_reporting_guidelines"
+                      translation_focus translationgroup translationpermission
+                      driver members owner security_contact mirror_admin
+                      homepage_content icon logo mugshot
+                      bug_reporting_guidelines"
       />
     <require
       permission="launchpad.Admin"
@@ -56,12 +58,32 @@
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription
                     removeBugSubscription" />
-    <!-- IHasBugcontact -->
-    <allow attributes="bugcontact" />
+    <!-- IHasBugSupervisor -->
+    <allow attributes="bug_supervisor" />
     <require
         permission="launchpad.Edit"
-        attributes="setBugContact" />
+        attributes="setBugSupervisor" />
   </content>
+
+  <adapter
+      for="canonical.launchpad.interfaces.IDistribution"
+      provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
+      factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
+      />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistribution"
+    factory="canonical.launchpad.browser.DistributionBreadcrumbBuilder"
+    permission="zope.Public"
+    />
+
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    factory="canonical.launchpad.browser.DistributionSetBreadcrumbBuilder"
+    permission="zope.Public"
+    />
 
   <browser:menus
     module="canonical.launchpad.browser.distribution"
@@ -69,7 +91,8 @@
       DistributionFacets DistributionOverviewMenu DistributionBugsMenu
       DistributionBountiesMenu DistributionSpecificationsMenu
       DistributionTranslationsMenu DistributionSetFacets
-      DistributionSetContextMenu
+      DistributionSetContextMenu DistributionNavigationMenu
+      DistributionMirrorsNavigationMenu
       "
     />
 
@@ -81,14 +104,6 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
   />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistribution"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionDynMenu"
-    attribute="__call__"
-    name="+menudata"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistribution"
@@ -117,13 +132,6 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistributionNavigation"
-    />
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistribution"
-    factory="canonical.launchpad.browser.DistributionSOP"
-    permission="zope.Public"
     />
 
   <browser:pages
@@ -301,6 +309,15 @@
     template="../templates/distribution-cvereport.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+series-and-milestones"
+    facet="overview"
+    template="../templates/distribution-series-and-milestones.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public" >
@@ -324,10 +341,6 @@
       name="+milestones"
       facet="overview"
       template="../templates/object-milestones.pt"
-      />
-    <browser:page
-      name="+portlet-uploaders"
-      template="../templates/distribution-portlet-uploaders.pt"
       />
     <browser:page
       name="+portlet-bounties"
@@ -377,27 +390,6 @@
     facet="overview"
     template="../templates/distribution-edit.pt"
     />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistribution"
-    permission="launchpad.Edit"
-    class="canonical.launchpad.browser.DistributionBrandingView"
-    name="+branding"
-    facet="overview"
-    template="../templates/object-branding.pt"
-    />
-
-  <browser:editform
-    name="+uploadadmin"
-    for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
-    fields="upload_admin upload_sender"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/distribution-uploadadmin.pt"
-    >
-  </browser:editform>
 
   <browser:editform
     name="+selectmemberteam"
@@ -513,13 +505,6 @@
     provides="canonical.launchpad.interfaces.IDistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
   </securedutility>
-
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistributionSet"
-    factory="canonical.launchpad.browser.DistributionSetSOP"
-    permission="zope.Public"
-    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSet"

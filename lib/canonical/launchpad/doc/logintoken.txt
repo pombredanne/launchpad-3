@@ -1,22 +1,22 @@
-LoginToken
-==========
+= LoginToken =
 
-This is the mechanism we use whenever we need to confirm a person has access
-to the emails sent to a given email address. The process works as follows:
-    
-    1) User tries to do something in Launchpad that requires the confirmation
-       of an email address.
+This is the mechanism we use whenever we need to confirm a person has
+access to the emails sent to a given email address. The process works as
+follows:
 
-    2) We send a message with a link containing a one-time randomly generated
-       token and instructions on how to finish the confirmation process.
+    1) User tries to do something in Launchpad that requires the
+       confirmation of an email address.
 
-    3) User follows the link sent by email and provide any extra information
-       needed, which varies according to the LoginToken's type and submits the
-       page form.
+    2) We send a message with a link containing a one-time randomly
+       generated token and instructions on how to finish the
+       confirmation process.
 
-    4) The token is now marked as consumed, together with any other tokens of
-       the same type and for the same email address.
+    3) User follows the link sent by email and provide any extra
+       information needed, which varies according to the LoginToken's
+       type and submits the page form.
 
+    4) The token is now marked as consumed, together with any other
+       tokens of the same type and for the same email address.
 
     >>> from canonical.launchpad.database.person import Person
     >>> from canonical.launchpad.database.logintoken import LoginTokenSet
@@ -44,8 +44,9 @@ unconfirmed email addresses.
     >>> foobar.unvalidatedemails
     [u'foo.bar2@canonical.com']
 
-It's possible to create another token for the same purpose, but this won't
-cause that email to show up twice on foobar's list of unconfirmed emails.
+It's possible to create another token for the same purpose, but this
+won't cause that email to show up twice on foobar's list of unconfirmed
+emails.
 
     >>> token2 = LoginTokenSet().new(
     ...     foobar, 'foo.bar@canonical.com', 'foo.bar2@canonical.com',
@@ -54,25 +55,27 @@ cause that email to show up twice on foobar's list of unconfirmed emails.
     >>> foobar.unvalidatedemails
     [u'foo.bar2@canonical.com']
 
-Once foobar finished the process, confirming his new email address, we mark
-the token as consumed.
+Once foobar finished the process, confirming his new email address, we
+mark the token as consumed.
 
     >>> token.date_consumed is not None
     False
+
     >>> token.consume()
     >>> token.date_consumed is not None
     True
 
-This will also mark the other token as consumed, as the process is already
-finished and thus it can't be used anymore.
-    
+This will also mark the other token as consumed, as the process is
+already finished and thus it can't be used anymore.
+
     >>> token2.date_consumed is not None
     True
 
-Now that the token was consumed, that new email won't show up on foobar's list
-of unconfirmed emails anymore.
+Now that the token was consumed, that new email won't show up on
+foobar's list of unconfirmed emails anymore.
 
     >>> flush_database_updates()
     >>> foobar.unvalidatedemails
     []
+
 

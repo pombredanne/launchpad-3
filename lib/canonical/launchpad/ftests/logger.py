@@ -21,7 +21,8 @@ class MockLogger:
         return self.loglevel
 
     def log(self, *args, **kwargs):
-        print "log>", ' '.join(args)
+        # The standard logger takes a template string as the first argument.
+        print "log>", args[0] % args[1:]
 
         if "exc_info" in kwargs:
             import sys

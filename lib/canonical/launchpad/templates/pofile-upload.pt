@@ -6,8 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/onecolumn"
 >
 
 <body>

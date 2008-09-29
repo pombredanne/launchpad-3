@@ -28,6 +28,10 @@
       template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
       />
     <browser:page
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
+    <browser:page
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />
@@ -62,6 +66,18 @@
       permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
   </content>
+
+  <!-- PublishingSet -->
+  <class class="canonical.launchpad.database.publishing.PublishingSet">
+    <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet"/>
+  </class>
+
+  <securedutility
+    class="canonical.launchpad.database.publishing.PublishingSet"
+    provides="canonical.launchpad.interfaces.publishing.IPublishingSet">
+    <allow interface="canonical.launchpad.interfaces.publishing.IPublishingSet" />
+  </securedutility>
+
 
 </facet>
 </configure>

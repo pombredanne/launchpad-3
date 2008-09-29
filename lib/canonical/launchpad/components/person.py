@@ -5,17 +5,14 @@
 __metaclass__ = type
 
 from zope.component.interfaces import ComponentLookupError
-from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-
-from canonical.launchpad.interfaces import IPersonSet
 
 
 def personFromPrincipal(principal):
     """Adapt ILaunchpadPrincipal to IPerson."""
     if ILaunchpadPrincipal.providedBy(principal):
-        return getUtility(IPersonSet).get(principal.id)
+        return principal.person
     else:
         # This is not actually necessary when this is used as an adapter
         # from ILaunchpadPrincipal, as we know we always have an

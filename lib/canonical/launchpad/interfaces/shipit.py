@@ -201,7 +201,7 @@ class ShipItDistroSeries(DBEnumeratedType):
     DAPPER = DBItem(2, """
         6.06 LTS (Dapper Drake)
 
-        The Dapper Drake lont-term-support release.
+        The Dapper Drake long-term-support release.
         """)
 
     EDGY = DBItem(3, """
@@ -220,6 +220,18 @@ class ShipItDistroSeries(DBEnumeratedType):
         7.10 (Gutsy Gibbon)
 
         The Gutsy Gibbon release.
+        """)
+
+    HARDY = DBItem(6, """
+        8.04 LTS (Hardy Heron)
+
+        The Hardy Heron long-term-support release.
+        """)
+
+    INTREPID = DBItem(7, """
+        8.10 (Intrepid Ibex)
+
+        The Intrepid Ibex release.
         """)
 
 
@@ -241,7 +253,8 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distroseries = ShipItDistroSeries.GUTSY
+    faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
+    current_distroseries = ShipItDistroSeries.INTREPID
     max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 

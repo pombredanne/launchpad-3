@@ -27,7 +27,6 @@ __all__ = [
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
     'SpecificationSetView',
-    'SpecificationSHP',
     ]
 
 from operator import attrgetter
@@ -72,8 +71,7 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
-from canonical.launchpad.browser.launchpad import (
-    AppFrontPageSearchView, StructuralHeaderPresentation)
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp.authorization import check_permission
 
 
@@ -296,7 +294,7 @@ class SpecificationContextMenu(ContextMenu):
     def givefeedback(self):
         text = 'Give feedback'
         enabled = (self.user is not None and
-                   self.context.getFeedbackRequests(self.user))
+                   bool(self.context.getFeedbackRequests(self.user)))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -346,9 +344,12 @@ class SpecificationContextMenu(ContextMenu):
     def retractmentoring(self):
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.isMentor(user) and
-                   not self.context.is_complete and
-                   user)
+        # We should really only allow people to retract mentoring if the
+        # spec's open and the user's already a mentor.
+        if user and not self.context.is_complete:
+            enabled = self.context.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
@@ -458,7 +459,7 @@ class SpecificationView(SpecificationSimpleView):
             sub = request.form.get('subscribe')
             upd = request.form.get('update')
             unsub = request.form.get('unsubscribe')
-            essential = request.form.get('essential', False)
+            essential = request.form.get('essential') == 'yes'
             if sub is not None:
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
@@ -661,8 +662,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if (self.context.definition_status == 
-                    SpecificationDefinitionStatus.SUPERSEDED):
+            if self.context.definition_status == SUPERSEDED:
                 self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
@@ -814,10 +814,10 @@ class SpecGraph:
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
             bgcolor='#ffffff',  # Same as Launchpad page background.
-            size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
-            ratio='auto',
+            size='9.2,9',  # Width fits of 2 col layout, 1024x768.
+            ratio='compress',
             ranksep=0.25,
-            nodesep=0.25
+            nodesep=0.01 # Separation between nodes
             )
 
         # Global node and edge attributes.
@@ -1141,13 +1141,3 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
-
-
-class SpecificationSHP(StructuralHeaderPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return self.context.target.title
-

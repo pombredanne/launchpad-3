@@ -36,7 +36,28 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
+<<<<<<< TREE
 class ILaunchpadRoot(IContainmentRoot):
+=======
+class InvalidBatchSizeError(AssertionError):
+    """Received a batch parameter that exceed our configured max size."""
+
+    # XXX flacoste 2008/05/09 bug=185958:
+    # Ideally, we would use webservice_error, to set this up and
+    # register the view, but cyclic imports prevents us from doing
+    # so. This should be fixed once we move webapp stuff into LAZR.
+    __lazr_webservice_error__ = 400
+
+
+class ILaunchpadContainer(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(scope):
+        """Return True if this context is within the given scope."""
+
+
+class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
+>>>>>>> MERGE-SOURCE
     """Marker interface for the root object of Launchpad."""
 
 
@@ -85,10 +106,10 @@ class UnsafeFormGetSubmissionError(Exception):
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def iterlinks(requesturl=None):
+    def iterlinks(request_url=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
+        request_url, if it is not None, is a Url object that is used to
         decide whether a menu link points to the page being requested,
         in which case it will not be linked.
         """
@@ -105,15 +126,15 @@ class IMenuBase(IMenu):
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
-    def iterlinks(requesturl=None, selectedfacetname=None):
+    def iterlinks(request_url=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        requesturl, if it is not None, is a Url object that is used to
-        decide whether a menu link points to the page being requested,
-        in which case it will not be linked.
+        :param request_url: A `URI` or None. It is used to decide whether a
+            menu link points to the page being requested, in which case it
+            will not be linked.
 
-        If selectedfacetname is provided, the link with that name will be
-        marked as 'selected'.
+        :param selectedfacetname: A str. The link with that name will be
+            marked as 'selected'.
         """
 
     defaultlink = Attribute(
@@ -128,6 +149,12 @@ class IApplicationMenu(IMenuBase):
 
 class IContextMenu(IMenuBase):
     """Context menu for an object."""
+
+
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
+
+    title = Attribute("The title of the menu as it appears on the page.")
 
 
 class ILinkData(Interface):
@@ -151,6 +178,9 @@ class ILinkData(Interface):
 
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
+
+    menu = Attribute(
+        "The `INavigationMenu` associated with the page this link points to.")
 
     # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
     # action menu is not used anymore and we move to use inline navigation.
@@ -208,13 +238,21 @@ class IStructuredString(Interface):
 
 
 class IBreadcrumb(Interface):
-    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+    """A breadcrumb link."""
 
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
 
-    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
+    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
+
+
+class IBreadcrumbBuilder(IBreadcrumb):
+    """An object that builds `IBreadcrumb` objects."""
+    # We subclass IBreadcrumb to minimize interface drift.
+
+    def make_breadcrumb():
+        """Return an object implementing the `IBreadcrumb` interface."""
 
 
 #
@@ -293,12 +331,11 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -316,7 +353,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -347,10 +384,6 @@ class IBasicLaunchpadRequest(Interface):
     stepstogo = Attribute(
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
-
-    breadcrumbs = Attribute(
-        'List of IBreadcrumb objects.  This is appended to during traversal'
-        ' so that a page can render appropriate breadcrumbs.')
 
     traversed_objects = Attribute(
         'List of traversed objects.  This is appended to during traversal.')
@@ -489,8 +522,11 @@ class IPlacelessAuthUtility(IAuthenticationUtility):
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -499,8 +535,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
@@ -566,31 +609,8 @@ class ILaunchpadPrincipal(IPrincipal):
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
+    person = Attribute("The IPerson the principal represents.")
 
-class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
-    """The Launchpad customized database adapter"""
-    def readonly():
-        """Set the connection to read only.
-
-        This should only be called at the start of the transaction to
-        avoid confusing code that defers making database changes until
-        transaction commit time.
-        """
-
-    def switchUser(self, dbuser=None):
-        """Change the PostgreSQL user we are connected as.
-
-        This involves closing the existing connection and reopening it;
-        uncommitted changes will be lost. The new connection will also open
-        in read/write mode so calls to readonly() will need to be made
-        after switchUser.
-        """
-
-    def getUser(self):
-        """Return the current PostgreSQL user we are connected as.
-
-        The default user comes from config.launchpad.dbuser.
-        """
 
 #
 # Browser notifications
@@ -600,7 +620,7 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # XXX mpt 2006-03-22 bugs=36287:
     # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
@@ -728,6 +748,12 @@ class IBatchNavigator(Interface):
 
     batch = Attribute("The IBatch for which navigation links are provided.")
 
+    heading = Attribute(
+        "The heading describing the kind of objects in the batch.")
+
+    def setHeadings(singular, plural):
+        """Set the heading for singular and plural results."""
+
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""
 
@@ -760,18 +786,86 @@ class IAlwaysSubmittedWidget(Interface):
     'Optional' marker for such widgets.
     """
 
+
 class ISingleLineWidgetLayout(Interface):
     """A widget that is displayed in a single table row next to its label."""
 
+
 class IMultiLineWidgetLayout(Interface):
     """A widget that is displayed on its own table row below its label."""
+
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
 
 
-class IBreadcrumbProvider(Interface):
-    """Object that provides breadcrumb text."""
+class IPrimaryContext(Interface):
+    """The primary context that used to determine the tabs for the web UI."""
+    context = Attribute('The primary context.')
 
-    def breadcrumb():
-        """Breadcrumb text."""
+
+#
+# Database policies
+#
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def startRequest():
+        """Install the database policy into the current thread."""
+
+    def afterCall():
+        """Perform any necessary cleanup of the database policy."""
+
+
+class MasterUnavailable(Exception):
+    """A master (writable replica) database was requested but not available.
+    """
+
+
+MAIN_STORE = 'main' # The main database.
+AUTH_STORE = 'auth' # The authentication database.
+
+DEFAULT_FLAVOR = 'default' # Default flavor for current state.
+MASTER_FLAVOR = 'master' # The master database.
+SLAVE_FLAVOR = 'slave' # A slave database.
+
+
+class IStoreSelector(Interface):
+    """Get a Storm store with a desired flavor.
+
+    Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
+ 
+    The master is writable and up to date, but we should not use it
+    whenever possible because there is only one master and we don't want
+    it to be overloaded.
+
+    The slave is read only replica of the master and may lag behind the
+    master. For many purposes such as serving unauthenticated web requests
+    and generating reports this is fine. We can also have as many slave
+    databases as we are prepared to pay for, so they will perform better
+    because they are less loaded.
+    """
+    def get(name, flavor):
+        """Retrieve a Storm Store.
+
+        Results should not be shared between threads, as which store is
+        returned for a given name or flavor can depend on thread state
+        (eg. the HTTP request currently being handled).
+
+        If a SLAVE_FLAVOR is requested, the MASTER_FLAVOR may be returned
+        anyway.
+
+        The DEFAULT_FLAVOR flavor may return either a master or slave
+        depending on process state. Application code using the
+        DEFAULT_FLAVOR flavor should assume they have a MASTER and that
+        a higher level will catch the exception raised if an attempt is
+        made to write changes to a read only store. DEFAULT_FLAVOR exists
+        for backwards compatibility, and new code should explicitly state
+        if they want a master or a slave.
+
+        :raises MasterUnavailable: A master database was requested but
+            it is not available.
+        """

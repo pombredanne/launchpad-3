@@ -32,8 +32,8 @@
       <tbody>
         <tal:machine repeat="machine view/machines">
           <tr>
-            <td><tal:hostname replace="machine/hostname"/></td>
-            <td><tal:hostname replace="machine/state/title"/></td>
+            <td><tal:hostname replace="structure machine/fmt:link"/></td>
+            <td><tal:status replace="machine/state/title"/></td>
           </tr>
           <tal:has-jobs define="jobs machine/current_jobs"
                         condition="jobs">

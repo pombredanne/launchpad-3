@@ -35,11 +35,12 @@ It will cause all the relationship contents to be rendered in this order.
 
 Let's get the view class:
 
-  >>> from zope.component import queryView
+  >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
 
   >>> request = TestRequest(form={})
-  >>> pkg_rel_view = queryView(relationship_set, "+render-list", request)
+  >>> pkg_rel_view = queryMultiAdapter(
+  ...     (relationship_set, request), name="+render-list")
 
 This view has no methods, so just demonstrate that it renders
 correctly like:

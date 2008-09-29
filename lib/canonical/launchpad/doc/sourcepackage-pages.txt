@@ -1,9 +1,8 @@
 = SourcePackage View Classes = 
 
-  >>> from zope.component import queryView
+  >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, PackagePublishingPocket)
+  >>> from canonical.launchpad.interfaces import IDistributionSet
 
 Empty request.
 
@@ -18,7 +17,7 @@ Retrieve an known Sourcepackage object:
 
 Retrieve its respective View class:
 
-  >>> pmount_view = queryView(pmount, "+index", request)
+  >>> pmount_view = queryMultiAdapter((pmount, request), name="+index")
 
 Check the consistence of a handy strcuture containing the organized
 published history of a sourcepackage. It should containg a list of
@@ -51,7 +50,7 @@ Let's retrieve a new view with useful dependency data:
 
   >>> warty = ubuntu['warty']
   >>> firefox = warty.getSourcePackage('mozilla-firefox')
-  >>> firefox_view = queryView(firefox, "+index", request)
+  >>> firefox_view = queryMultiAdapter((firefox, request), name="+index")
 
 XXX cprov 20060210: this method is very confusing because the
 architecturespecific attribute is hidden, i.e, this binary is
@@ -99,7 +98,7 @@ Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
 
   >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
-  >>> libc_view = queryView(libc, "+changelog", request)
+  >>> libc_view = queryMultiAdapter((libc, request), name="+changelog")
   >>> print libc_view.changelog_entry
   libstdc++ (9.9-1) hoary; urgency=high
   <BLANKLINE>

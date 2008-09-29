@@ -22,31 +22,38 @@ Let's use a few examples to demonstrate:
   >>> test_task = bugtaskset.get(4)
   >>> ORIGINAL_IMPORTANCE = test_task.importance
 
-  >>> test_task.importance = BugTaskImportance.CRITICAL
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(critical)" title="Critical importance" src="/@@/bug-critical" />'
 
-  >>> test_task.importance = BugTaskImportance.HIGH
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(high)" title="High importance" src="/@@/bug-high" />'
 
-  >>> test_task.importance = BugTaskImportance.MEDIUM
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.MEDIUM, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
 
-  >>> test_task.importance = BugTaskImportance.LOW
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.LOW, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(low)" title="Low importance" src="/@@/bug-low" />'
 
-  >>> test_task.importance = BugTaskImportance.WISHLIST
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.WISHLIST, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(wishlist)" title="Wishlist" src="/@@/bug-wishlist" />'
 
-  >>> test_task.importance = BugTaskImportance.UNDECIDED
+  >>> test_task.transitionToImportance(
+  ...   BugTaskImportance.UNDECIDED, getUtility(ILaunchBag).user)
   >>> test_tales("bugtask/image:icon", bugtask=test_task)
   '<img height="14" width="14" alt="(undecided)" title="Undecided" src="/@@/bug-undecided" />'
 
-  >>> test_task.importance = ORIGINAL_IMPORTANCE
+  >>> test_task.transitionToImportance(
+  ...   ORIGINAL_IMPORTANCE, getUtility(ILaunchBag).user)
 
 
 == Displaying Logos for Bug Tasks ==
@@ -89,11 +96,12 @@ We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
   >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
-  >>> from zope.component import getView
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def render_bugtask_status(task):
-  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   view = getMultiAdapter(
+  ...       (task, LaunchpadTestRequest()), name="+listing-view")
   ...   return view.status
 
 Let's see some examples of how this works:
@@ -160,7 +168,8 @@ other contexts. Again, the listing-view holds a method which provides us
 with this information; let's define a helper for it:
 
   >>> def render_bugtask_status_elsewhere(task):
-  ...   view = getView(task, "+listing-view", LaunchpadTestRequest())
+  ...   view = getMultiAdapter(
+  ...       (task, LaunchpadTestRequest()), name="+listing-view")
   ...   return view.status_elsewhere
 
 The main questions of interest, in order, are:

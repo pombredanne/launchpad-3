@@ -44,9 +44,11 @@ If we file a few bugs in each status, the counts will increase.
 
     >>> login('test@canonical.com')
     >>> old_counts = bugtarget.getBugCounts(None)
+    >>> from storm.store import Store
     >>> for status in sorted(BugTaskStatus.items):
     ...     for index in range(5):
     ...         bug = filebug(bugtarget, "Test Bug", status=status)
+    ...         Store.of(bug).flush()
     ...     new_bug_counts = bugtarget.getBugCounts(None)
     ...     print_count_difference(new_bug_counts, old_counts, status)
     NEW: 5 bug(s) more
@@ -65,6 +67,7 @@ former status' count will of course decrease, and the latter's increase.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> bug = filebug(bugtarget, "Test Bug", status=BugTaskStatus.CONFIRMED)
+    >>> Store.of(bug).flush()
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> for bugtask in bug.bugtasks:
     ...     if bugtask.target == bugtarget:
@@ -120,6 +123,7 @@ as a duplicate of another bug, the count will decrease.
 
     >>> another_bug =  filebug(
     ...     bugtarget, "Another Test Bug", status=BugTaskStatus.NEW)
+    >>> Store.of(another_bug).flush()
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> another_bug.duplicateof = bug
     >>> syncUpdate(another_bug)

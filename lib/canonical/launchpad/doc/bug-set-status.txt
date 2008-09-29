@@ -146,7 +146,11 @@ for product tasks.
     # Set a milestone to ensure that the current db user has enough
     # privileges to access it.
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+
+    # Only owners, experts, or admins can create a milestone.
+    >>> login('foo.bar@canonical.com')
     >>> feature_freeze = ubuntu_hoary.newMilestone('feature-freeze')
+    >>> login('no-priv@canonical.com')
     >>> bug = ubuntu.createBug(bug_params)
     >>> [ubuntu_bugtask] = bug.bugtasks
     >>> ubuntu_bugtask.milestone = feature_freeze
@@ -256,6 +260,6 @@ targeted to the non-current series of course.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'Warty mozilla-firefox'
+    u'Ubuntu Warty mozilla-firefox'
     >>> ubuntu_firefox_task.status.name
     'INCOMPLETE'

@@ -6,23 +6,29 @@ __all__ = [
     'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
     'RevisionSet']
 
+from datetime import datetime, timedelta
 import email
 
+import pytz
+from storm.expr import And, Asc, Desc, Exists, Not, Select
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
+    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
-from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet,
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
+    EmailAddressStatus, IEmailAddressSet, IRevision, IRevisionAuthor,
+    IRevisionParent, IRevisionProperty, IRevisionSet)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Revision(SQLBase):
@@ -39,6 +45,8 @@ class Revision(SQLBase):
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
+
+    karma_allocated = BoolCol(default=False, notNull=True)
 
     properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
 
@@ -58,8 +66,53 @@ class Revision(SQLBase):
         return [parent.parent_id for parent in self.parents]
 
     def getProperties(self):
-        """See IRevision."""
+        """See `IRevision`."""
         return dict((prop.name, prop.value) for prop in self.properties)
+
+    def allocateKarma(self, branch):
+        """See `IRevision`."""
+        # If we know who the revision author is, give them karma.
+        author = self.revision_author.person
+        if (author is not None and branch.product is not None):
+            # No karma for junk branches as we need a product to link
+            # against.
+            karma = author.assignKarma('revisionadded', branch.product)
+            # Backdate the karma to the time the revision was created.  If the
+            # revision_date on the revision is in future (for whatever weird
+            # reason) we will use the date_created from the revision (which
+            # will be now) as the karma date created.  Having future karma
+            # events is both wrong, as the revision has been created (and it
+            # is lying), and a problem with the way the Launchpad code
+            # currently does its karma degradation over time.
+            if karma is not None:
+                karma.datecreated = min(self.revision_date, self.date_created)
+                self.karma_allocated = True
+
+    def getBranch(self, allow_private=False, allow_junk=True):
+        """See `IRevision`."""
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        store = Store.of(self)
+
+        query = And(
+            self.id == BranchRevision.revisionID,
+            BranchRevision.branchID == Branch.id)
+        if not allow_private:
+            query = And(query, Not(Branch.private))
+        if not allow_junk:
+            # XXX: Tim Penhey 2008-08-20, bug 244768
+            # Using Not(column == None) rather than column != None.
+            query = And(query, Not(Branch.product == None))
+        result_set = store.find(Branch, query)
+        if self.revision_author.person is None:
+            result_set.order_by(Asc(BranchRevision.sequence))
+        else:
+            result_set.order_by(
+                Branch.ownerID != self.revision_author.personID,
+                Asc(BranchRevision.sequence))
+
+        return result_set.first()
 
 
 class RevisionAuthor(SQLBase):
@@ -82,7 +135,7 @@ class RevisionAuthor(SQLBase):
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
-                        validator=public_person_validator, default=None)
+                        storm_validator=validate_public_person, default=None)
 
     def linkToLaunchpadPerson(self):
         """See `IRevisionAuthor`."""
@@ -174,9 +227,72 @@ class RevisionSet:
 
         return revision
 
+    def _timestampToDatetime(self, timestamp):
+        """Convert the given timestamp to a datetime object.
+
+        This works around a bug in Python that causes datetime.fromtimestamp
+        to raise an exception if it is given a negative, fractional timestamp.
+
+        :param timestamp: A timestamp from a bzrlib.revision.Revision
+        :type timestamp: float
+
+        :return: A datetime corresponding to the given timestamp.
+        """
+        # Work around Python bug #1646728.
+        # See https://launchpad.net/bugs/81544.
+        UTC = pytz.timezone('UTC')
+        int_timestamp = int(timestamp)
+        revision_date = datetime.fromtimestamp(int_timestamp, tz=UTC)
+        revision_date += timedelta(seconds=timestamp - int_timestamp)
+        return revision_date
+
+    def newFromBazaarRevision(self, bzr_revision):
+        """See `IRevisionSet`."""
+        revision_id = bzr_revision.revision_id
+        revision_date = self._timestampToDatetime(bzr_revision.timestamp)
+        return self.new(
+            revision_id=revision_id,
+            log_body=bzr_revision.message,
+            revision_date=revision_date,
+            revision_author=bzr_revision.get_apparent_author(),
+            parent_ids=bzr_revision.parent_ids,
+            properties=bzr_revision.properties)
+
+    @staticmethod
+    def onlyPresent(revids):
+        """See `IRevisionSet`."""
+        if not revids:
+            return set()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE Revids
+            (revision_id text)
+            """)
+        data = []
+        for revid in revids:
+            data.append('(%s)' % sqlvalues(revid))
+        data = ', '.join(data)
+        store.execute(
+            "INSERT INTO Revids (revision_id) VALUES %s" % data)
+        result = store.execute(
+            """
+            SELECT Revids.revision_id
+            FROM Revids, Revision
+            WHERE Revids.revision_id = Revision.revision_id
+            """)
+        present = set()
+        for row in result.get_all():
+            present.add(row[0])
+        store.execute("DROP TABLE Revids")
+        return present
+
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
-        for author in RevisionAuthor.selectBy(email=email.email):
+        from zope.security.proxy import removeSecurityProxy
+        # Bypass zope's security because IEmailAddress.email is not public.
+        naked_email = removeSecurityProxy(email)
+        for author in RevisionAuthor.selectBy(email=naked_email.email):
             author.person = email.person
 
     def getTipRevisionsForBranches(self, branches):
@@ -190,3 +306,126 @@ class RevisionSet:
             Revision.revision_id = Branch.last_scanned_id
             """ % quote(branch_ids),
             clauseTables=['Branch'], prejoins=['revision_author'])
+
+    @staticmethod
+    def getRecentRevisionsForProduct(product, days):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        return Store.of(product).find(
+            (Revision, RevisionAuthor),
+            revision_time_limit(days),
+            Revision.revision_author == RevisionAuthor.id,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Branch.product == product),
+                       (Branch, BranchRevision))))
+
+    @staticmethod
+    def getRevisionsNeedingKarmaAllocated():
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+        from canonical.launchpad.database.person import ValidPersonCache
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # XXX: Tim Penhey 2008-08-12, bug 244768
+        # Using Not(column == None) rather than column != None.
+        return store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            RevisionAuthor.person == ValidPersonCache.id,
+            Not(Revision.karma_allocated),
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.product == None)),
+                       (Branch, BranchRevision))))
+
+    @staticmethod
+    def getPublicRevisionsForPerson(person, day_limit=30):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+        from canonical.launchpad.database.teammembership import (
+            TeamParticipation)
+
+        store = Store.of(person)
+
+        if person.is_team:
+            person_query = And(
+                RevisionAuthor.personID == TeamParticipation.personID,
+                TeamParticipation.team == person)
+        else:
+            person_query = RevisionAuthor.person == person
+
+        result_set = store.find(
+            Revision,
+            Revision.revision_author == RevisionAuthor.id,
+            revision_time_limit(day_limit),
+            person_query,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.private)),
+                       (Branch, BranchRevision))))
+        return result_set.order_by(Desc(Revision.revision_date))
+
+    @staticmethod
+    def getPublicRevisionsForProduct(product, day_limit=30):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        result_set = Store.of(product).find(
+            Revision,
+            revision_time_limit(day_limit),
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.private),
+                           Branch.product == product),
+                       (Branch, BranchRevision))))
+        return result_set.order_by(Desc(Revision.revision_date))
+
+    @staticmethod
+    def getPublicRevisionsForProject(project, day_limit=30):
+        """See `IRevisionSet`."""
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        result_set = Store.of(project).find(
+            Revision,
+            revision_time_limit(day_limit),
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Not(Branch.private),
+                           Product.project == project,
+                           Branch.product == Product.id),
+                       (Branch, BranchRevision, Product))))
+        return result_set.order_by(Desc(Revision.revision_date))
+
+
+def revision_time_limit(day_limit):
+    """The storm fragment to limit the revision_date field of the Revision."""
+    now = datetime.now(pytz.UTC)
+    earliest = now - timedelta(days=day_limit)
+
+    return And(
+        Revision.revision_date <= now,
+        Revision.revision_date > earliest)

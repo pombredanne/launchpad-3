@@ -12,15 +12,16 @@
   <permission
     id="launchpad.Edit" title="Editing something" access_level="write" />
 
-  <!-- XXX: David Allouche 2006-07-19
-  Needed to allow EditSeriesSourceByVCSImports to run, and enable
-  IProductSeriesSource, while the EditProductSeries adapter already owns
-  'launchpad.Edit' on ProductSeries and only enables IProductSeries. There
-  might be a cleaner way of fixing that issue, but it breaks my brain already
-  and I need this fix urgently. -->
   <permission
-    id="launchpad.EditSource" title="Edit source details"
+    id="launchpad.EditLocation" title="Editing an object's location"
     access_level="write" />
+
+  <!-- Request large downloads, or other heavyweight jobs that are not
+  semantically like "editing" and are not restricted to administrators.
+  -->
+  <permission
+    id="launchpad.ExpensiveRequest" title="Make expensive requests"
+    access_level="read" />
 
   <permission
     id="launchpad.Append" title="Adding something" access_level="write" />
@@ -30,6 +31,11 @@
 
   <permission
     id="launchpad.Admin" title="Administer something" access_level="write" />
+
+  <permission
+    id="launchpad.Commercial" 
+    title="Administer something related to commercial offering." 
+    access_level="write" />
 
   <!-- There are some translation-related fields that need to be set
   by Translation admins (aka Rosetta Admins) but we don't want to give
@@ -63,6 +69,11 @@
   <permission
     id="launchpad.Owner"
     title="The role of someone who created or otherwise owns an object."
+    access_level="write" />
+
+  <permission
+    id="launchpad.MailingListManager"
+    title="The role of someone who can manage and configure a mailing list."
     access_level="write" />
 
 </configure>

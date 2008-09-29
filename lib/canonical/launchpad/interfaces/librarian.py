@@ -51,6 +51,12 @@ class ILibraryFileAlias(Interface):
                 ''')
             )
 
+    restricted = Bool(
+        title=_('Is this file alias restricted.'),
+        required=True, readonly=True,
+        description=_('If the file is restricted, it can only be '
+                      'retrieved through the restricted librarian.'))
+
     # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
     # byte strings.
@@ -109,14 +115,18 @@ class ILibraryFileContent(Interface):
             )
 
 class ILibraryFileAliasSet(Interface):
-    def create(name, size, file, contentType, expires=None, debugID=None):
-        """Create a file in the Librarian, returning the new ILibraryFileAlias.
+    def create(name, size, file, contentType, expires=None, debugID=None,
+               restricted=False):
+        """Create a file in the Librarian, returning the new alias.
 
         An expiry time of None means the file will never expire until it
         is no longer referenced. An expiry of NEVER_EXPIRES means a
         file that will stay in the Librarian for ever. Setting it to another
         timestamp means that the file will expire and possibly be removed
         from the Librarian at this time. See LibrarianGarbageCollection.
+
+        If restricted is True, the file will be created through the
+        IRestricteLibrarianClient utility.
         """
 
     def __getitem__(key):

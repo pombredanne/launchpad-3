@@ -34,32 +34,31 @@ To display the icon for a milestone, use image:icon:
 
 The same image:icon, as well as a image:logo and a image:logo is also
 available for Person, Product, Project, Sprint and Distributions, since
-they all implement IHasLogo,.IHasMugshot and IHasIcon.
+they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> person = getUtility(IPersonSet).getByName('sabdfl')
-    >>> test_tales("person/image:icon", person=person)
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> test_tales("person/image:icon", person=sabdfl)
     '<img ... src="/@@/person" />'
-    >>> test_tales("person/image:logo", person=person)
+    >>> test_tales("person/image:logo", person=sabdfl)
     '<img ... src="/@@/person-logo" />'
 
-The Mugshot is presented in a div, floating right, with the mugshot inside
-it:
+The Mugshot is presented in an <img> tag.
 
-    >>> test_tales("person/image:mugshot", person=person)
-    '<div...<img...src="/@@/person-mugshot" />.../div>'
+    >>> test_tales("person/image:mugshot", person=sabdfl)
+    '<img...src="/@@/person-mugshot" />'
 
 For people we even have different images in case the person in question is not
 an actual launchpad user.
 
-    >>> spiv = getUtility(IPersonSet).getByName('spiv')
-    >>> spiv.is_valid_person
+    >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
+    >>> matsubara.is_valid_person
     False
-    >>> test_tales("person/image:icon", person=spiv)
+    >>> test_tales("person/image:icon", person=matsubara)
     '<img ... src="/@@/person-inactive" />'
-    >>> test_tales("person/image:logo", person=spiv)
+    >>> test_tales("person/image:logo", person=matsubara)
     '<img ... src="/@@/person-inactive-logo" />'
-    >>> test_tales("person/image:mugshot", person=spiv)
+    >>> test_tales("person/image:mugshot", person=matsubara)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
 We also have image:icon for KarmaCategory:
@@ -127,7 +126,27 @@ Add manual word breaks to long words in a string:
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
 
-== The fmt: namespace to get strings (links) ==
+== The fmt: namespace to get URLs ==
+
+The `fmt:url` is used when you want the canonical URL of a given object.
+
+    >>> print test_tales("bug/fmt:url", bug=bug)
+    http://bugs.launchpad.dev/bugs/1
+
+You can also specify an extra argument (a view's name), if you want the
+URL of a given page under that object. For that to work, though, we need
+to simulate a browser request -- that's why we login() here.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> login(ANONYMOUS, LaunchpadTestRequest())
+    >>> print test_tales("bug/fmt:url/+text", bug=bug)
+    http://bugs.launchpad.dev/bugs/1/+text
+
+    # Undo the custom setup we did above.
+    >>> login(ANONYMOUS)
+
+
+== The fmt: namespace to get links ==
 
 The `fmt:link` tales expression provides a way to define a standard link
 to a content object.  There are currently links defined for:
@@ -151,11 +170,11 @@ to a content object.  There are currently links defined for:
 For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
-    >>> test_tales("person/fmt:link", person=person)
+    >>> test_tales("person/fmt:link", person=sabdfl)
     u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
 
-    >>> test_tales("person/fmt:link", person=spiv)
-    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
+    >>> test_tales("person/fmt:link", person=matsubara)
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
@@ -176,16 +195,29 @@ Person's displayname will be escaped; averting a XSS vulnerability.
 The fmt:link formatter uses additional path components to extend the
 link:
 
-    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
-    u'<a href=".../~spiv/foo/bar">...'
+    >>> test_tales("person/fmt:link/foo/bar", person=matsubara)
+    u'<a href=".../~matsubara/foo/bar">...'
 
 If you are on feeds.launchpad.net, you need to specify the rootsite, so
 that the links and images are pointing at the right hostname.
 
-    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
-    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
-    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
-    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=matsubara)
+    u'<a href="http://launchpad.dev/~matsubara/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/foo/bar", person=matsubara)
+    u'<a href="http://bugs.launchpad.dev/~matsubara/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+
+The fmt:local_time formatter will return the local time for that person.
+If the person has no time_zone specified, we use UTC.
+
+    >>> sample_person.time_zone
+    u'Australia/Perth'
+    >>> test_tales("person/fmt:local_time", person=sample_person)
+    '... WST'
+
+    >>> print sabdfl.time_zone
+    None
+    >>> test_tales("person/fmt:local_time", person=sabdfl)
+    '... UTC'
 
 
 === Branches ===
@@ -232,6 +264,7 @@ title might be interpreted by the browser.
 
 
 === Branch subscriptions ===
+
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
@@ -261,6 +294,15 @@ Merge proposals also have a link formatter, which displays branch titles:
     u'<a href="...">Proposed merge of baz into qux</a>'
 
 
+=== Code review comments ===
+
+   >>> comment = factory.makeCodeReviewComment()
+   >>> print test_tales('comment/fmt:url', comment=comment)
+   http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../comments/...
+   >>> print test_tales('comment/fmt:link', comment=comment)
+   <a href="...">Comment by Person-name...</a>
+
+
 === Bug branches ===
 
     >>> login('test@canonical.com')
@@ -273,10 +315,14 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Code imports ===
 
+The fmt:link for a code import takes you to the branch that the code
+import is associated with.  The primary reason that this is here is
+to support the branch deletion code.
+
     >>> login('foo.bar@canonical.com')
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(branch_name="trunk")
     >>> test_tales("code_import/fmt:link", code_import=code_import)
-    u'<a href="...+code-import">Import of...</a>'
+    u'<a href=".../trunk">Import of...</a>'
 
 
 === Product series ===
@@ -326,6 +372,7 @@ Merge proposals also have a link formatter, which displays branch titles:
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> bugtracker.title = 'an@email.address bug tracker'
     >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',
     ...                       'http://bugs.vikingsrool.no/']
 
@@ -334,23 +381,43 @@ The "standard" 'url' name is supported:
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
     u'http://launchpad.dev/bugs/bugtrackers/email'
 
-As are 'external-link' and 'aliases', which help when hiding email
-addresses from users who are not logged in:
+As are 'link', 'external-link', 'external-title-link' and 'aliases',
+which help when hiding email addresses from users who are not logged
+in.
+
+    >>> def print_formatted_bugtrackers():
+    ...     expression = "bugtracker/fmt:%s"
+    ...     for format in ['link', 'external-link', 'external-title-link']:
+    ...         print '%s -->\n  %r' % (
+    ...             format, test_tales(expression % format,
+    ...                                bugtracker=bugtracker))
+    ...     print 'aliases -->\n  %r' % (
+    ...         list(test_tales(expression % 'aliases',
+    ...                         bugtracker=bugtracker)),)
 
     >>> login('test@canonical.com')
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href=".../bugs/bugtrackers/email">an@email.address bug tracker</a>'
+    external-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
+    external-title-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">an@email.address bug tracker</a>'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
 
-    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
-    u'<a class="link-external"
-         href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
-    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
-    [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
-
-    >>> logout()
-
-    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
-    u'mailto:&lt;email address hidden&gt;'
-    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
-    [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+    >>> login(ANONYMOUS)
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href="...ckers/email">&lt;email address hidden&gt; bug tracker</a>'
+    external-link -->
+      u'mailto:&lt;email address hidden&gt;'
+    external-title-link -->
+      u'&lt;email address hidden&gt; bug tracker'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
 
     >>> login('test@canonical.com')
 
@@ -391,7 +458,7 @@ hiding email addresses from users who are not logged in:
     >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
     u'<a class="link-external" href="mailto:bugs@example.com">&mdash;</a>'
 
-    >>> logout()
+    >>> login(ANONYMOUS)
 
     >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
     u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'
@@ -567,6 +634,16 @@ it must markup. We can format the three examples at the same time.
     </span></p>
 
 
+=== Escaping strings ===
+
+To escape a string you should use fmt:escape.
+
+    >>> test_tales('foo/fmt:escape', foo='some value')
+    'some value'
+    >>> test_tales('foo/fmt:escape', foo='some <br /> value')
+    'some &lt;br /&gt; value'
+
+
 == The fmt: namespace to get strings (obfuscation) ==
 
 Email addresses embedded in text can be obfuscated. In cases where
@@ -724,6 +801,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...     interaction = None
     ...     principal = None
     ...
+    ...     def __init__(self):
+    ...         self.annotations = {}
+    ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
     ...
@@ -763,8 +843,6 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:nice_pre', foo=None)
     ''
     >>> test_tales('foo/fmt:break-long-words', foo=None)
-    ''
-    >>> test_tales('foo/fmt:breadcrumbs', foo=None)
     ''
     >>> test_tales('foo/fmt:date', foo=None)
     ''
@@ -807,17 +885,17 @@ Test the 'lp:' namespace for presenting DBSchema items.
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
 and anonymous users can't edit any person:
 
-    >>> test_tales('person/required:launchpad.Edit', person=person)
+    >>> test_tales('person/required:launchpad.Edit', person=sabdfl)
     False
 
 Anonymous users can do anything with the zope.Public permission.
 
-    >>> test_tales('person/required:zope.Public', person=person)
+    >>> test_tales('person/required:zope.Public', person=sabdfl)
     True
 
 Queries about permissions that don't exist will raise an exception:
 
-    >>> test_tales('person/required:mushroom.Badger', person=person)
+    >>> test_tales('person/required:mushroom.Badger', person=sabdfl)
     Traceback (most recent call last):
     ...
     ValueError: ('Undefined permission id', 'mushroom.Badger')
