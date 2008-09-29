@@ -20,7 +20,7 @@ __all__ = [
     'VocabularyLookupFieldMarshaller',
     ]
 
-from datetime import datetime, date
+from datetime import datetime
 import pytz
 from StringIO import StringIO
 import urllib
@@ -307,7 +307,7 @@ class DateFieldMarshaller(DateTimeFieldMarshaller):
 
     def _marshall_from_json_data(self, value):
         """Parse the value as a datetime.date object."""
-        super_class= super(DateFieldMarshaller, self)
+        super_class = super(DateFieldMarshaller, self)
         date_time = super_class._marshall_from_json_data(value)
         return date_time.date()
 
