@@ -572,6 +572,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             structured(
                 self._getUnsubscribeNotification(self.user, unsubed_dupes)))
 
+        # Because the unsubscribe above may change what the security policy
+        # says about the bug, we need to clear its cache.
+        self.request.clearSecurityPolicyCache()
+
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.

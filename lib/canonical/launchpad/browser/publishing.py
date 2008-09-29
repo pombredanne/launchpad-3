@@ -10,6 +10,8 @@ __all__ = [
     'BinaryPublishingRecordView',
     ]
 
+from operator import attrgetter
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
@@ -30,6 +32,35 @@ class BasePublishingRecordView(LaunchpadView):
     @property
     def is_binary(self):
         return IBinaryPackagePublishingHistory.providedBy(self.context)
+
+    # The reason we define the map below outside the only function that uses
+    # it (date_last_changed()) is that this allows us to test whether the map
+    # covers all PackagePublishingStatus enumeration values.
+    # The pertinent tests in doc/publishing-pages.txt will fail if we add a
+    # new value to the PackagePublishingStatus enumeration but do not update
+    # this map.
+    timestamp_map = {
+        PackagePublishingStatus.DELETED: 'dateremoved',
+        PackagePublishingStatus.OBSOLETE: 'scheduleddeletiondate',
+        PackagePublishingStatus.PENDING: 'datecreated',
+        PackagePublishingStatus.PUBLISHED: 'datepublished',
+        PackagePublishingStatus.SUPERSEDED: 'datesuperseded'
+    }
+
+    @property
+    def date_last_changed(self):
+        """Return the date of last change considering the publishing status.
+
+        The date returned is as follows:
+            * pending        -> datecreated
+            * published      -> datepublished
+            * superseded     -> datesuperseded
+            * deleted        -> dateremoved
+            * obsolete       -> scheduleddeletiondate
+        """
+        accessor = attrgetter(self.timestamp_map[self.context.status])
+        return accessor(self.context)
+
 
     def wasDeleted(self):
         """Whether or not a publishing record deletion was requested.
