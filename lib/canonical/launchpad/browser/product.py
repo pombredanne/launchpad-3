@@ -1675,6 +1675,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
+    show_set_development_focus = True
+
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context

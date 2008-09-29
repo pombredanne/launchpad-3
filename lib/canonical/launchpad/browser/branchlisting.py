@@ -228,6 +228,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
     development_focus_branch = None
+    show_set_development_focus = False
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     # Showing the series links is only really useful on product listing
