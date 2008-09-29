@@ -376,8 +376,8 @@ section indicates to the user that it is still published.
     Built Packages
       foo-bin Foo app is great
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 Even if the source added is recorded as SUPERSEDED, it is still
 available for deletion because it contains a PUBLISHED binary.
@@ -400,8 +400,8 @@ available for deletion because it contains a PUBLISHED binary.
     Built Packages
       foo-bin Foo app is great
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
@@ -474,8 +474,8 @@ opposed to being truncated after the fisrt 20 characters.
     Builds
       i386
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 Once a deleted package gets removed from disk we render a message in
 the "Publishing Status" section pointing to the users that even if the
@@ -515,8 +515,8 @@ links at the end of the section.
     Builds
       i386
     Download files from Librarian
-      foo-bin_i386.deb (18 bytes)
-      foo.dsc (28 bytes)
+      foo-bin_1.0_i386.deb (18 bytes)
+      foo_1.0.dsc (28 bytes)
 
 The message for the file links does not appear for non-PPA publishings
 as it would refer to non-existent links.
