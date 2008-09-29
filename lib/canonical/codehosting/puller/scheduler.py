@@ -283,8 +283,8 @@ class PullerMaster:
         :param branch_type: The BranchType of the branch to be mirrored (e.g.
             BranchType.HOSTED).
         :param default_stacked_on_url: The default stacked-on URL for the
-            product that the branch is in. Either '' or None imply that there
-            is no such default.
+            product that the branch is in. '' implies that there is no such
+            default.
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
@@ -299,8 +299,6 @@ class PullerMaster:
         self.destination_url = 'lp-mirrored:///%s' % (unique_name,)
         self.unique_name = unique_name
         self.branch_type = branch_type
-        if default_stacked_on_url is None:
-            default_stacked_on_url = ''
         self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
         self.branch_puller_endpoint = client
