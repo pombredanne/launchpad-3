@@ -22,7 +22,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
-from canonical.codehosting.puller.worker import BranchOpener
+from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
@@ -343,7 +343,7 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
-class WarehouseBranchOpener(BranchOpener):
+class WarehouseBranchPolicy(BranchPolicy):
 
     def checkOneURL(self, url):
         """See `BranchOpener.checkOneURL`.
@@ -387,7 +387,7 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = WarehouseBranchOpener().open(
+            bzr_branch = BranchMirrorer(WarehouseBranchPolicy()).open(
                 self.db_branch.warehouse_url)
         bzr_branch.lock_read()
         try:
