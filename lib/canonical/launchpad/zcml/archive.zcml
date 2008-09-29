@@ -48,9 +48,16 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IArchive"
+    for="canonical.launchpad.interfaces.archive.IPPA"
     path_expression="string:+archive"
     attribute_to_parent="owner"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.archive.IDistributionArchive"
+    path_expression="string:+archive"
+    attribute_to_parent="distribution"
+    urldata="canonical.launchpad.browser.archive.ArchiveURL"
     />
 
   <browser:page
