@@ -10,6 +10,7 @@ import unittest
 
 from canonical.launchpad.browser.branch import RegisterBranchMergeProposalView
 from canonical.launchpad.browser.branchmergeproposal import (
+    BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
@@ -279,6 +280,106 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertOneComment(proposal, "This is the first comment.")
+
+
+class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
+    """Test the status vocabulary generated for then +edit-status view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+        self.proposal = self.factory.makeBranchMergeProposal(
+            registrant = self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalChangeStatusView(
+            self.proposal, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def assertStatusVocabTokens(self, tokens, user):
+        # Assert that the tokens specified are the only tokens in the
+        # generated vocabulary.
+        login_person(user)
+        vocabulary = self._createView()._createStatusVocabulary()
+        vocab_tokens = sorted([term.token for term in vocabulary])
+        self.assertEqual(
+            sorted(tokens), vocab_tokens)
+
+    def assertAllStatusesAvailable(self, user):
+        # All options should be available to the user.
+        self.assertStatusVocabTokens(
+            ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
+             'REJECTED', 'QUEUED', 'SUPERSEDED'], user)
+
+    def test_createStatusVocabulary_non_reviewer(self):
+        # Neither the source branch owner nor the registrant should not be
+        # able to approve or reject their own code (assuming they don't have
+        # rights on the target branch).
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer(self):
+        # The registrant should not be able to approve or reject
+        # their own code (assuming they don't have rights on the target
+        # branch).
+        self.assertAllStatusesAvailable(self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_non_reviewer_approved(self):
+        # Once the branch has been approved, the source owner or the
+        # registrant can queue the branch.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
+            'QUEUED', 'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer_approved(self):
+        # The target branch owner's options are not changed by whether or not
+        # the proposal is currently approved.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_rejected(self):
+        # Options for rejected proposals are the same irrespective or user.
+        self.proposal.rejectBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['REJECTED', 'SUPERSEDED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_queued(self):
+        # Queued proposals can either be marked as merged, or set back to code
+        # approved.
+        self.proposal.enqueue(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['CODE_APPROVED', 'QUEUED', 'MERGED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
 
 
 def test_suite():

@@ -147,7 +147,9 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def edit_status(self):
         text = 'Change status'
         status = self.context.queue_status
-        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        # Can't change the status if Merged or Superseded
+        enabled = status not in (BranchMergeProposalStatus.SUPERSEDED,
+                                 BranchMergeProposalStatus.MERGED)
         return Link('+edit-status', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -924,11 +926,9 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
     schema = IBranchMergeProposal
     field_names = []
 
-    def setUpFields(self):
-        MergeProposalEditView.setUpFields(self)
-        # Add the custom restricted queue status widget.
-        status_field = self.schema['queue_status']
-
+    def _createStatusVocabulary(self):
+        # Create the vocabulary that is used for the status widget.
+        curr_status = self.context.queue_status
         terms = [
             SimpleTerm(status, status.name, status.title)
             for status in (BranchMergeProposalStatus.WORK_IN_PROGRESS,
@@ -938,21 +938,27 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
                            BranchMergeProposalStatus.QUEUED,
                            BranchMergeProposalStatus.MERGED)
             if ((self.context.isValidTransition(status, self.user)
-                 or status == self.context.queue_status)
+                 or status == curr_status)
                 # Edge case here for removing a queued proposal, we do this by
                 # setting the next state to code approved.
                 or (status == BranchMergeProposalStatus.CODE_APPROVED and
-                    self.context.queue_status == BranchMergeProposalStatus.QUEUED))
+                    curr_status == BranchMergeProposalStatus.QUEUED))
             ]
         # Resubmit edge case.
-        terms.append(SimpleTerm(
-                BranchMergeProposalStatus.SUPERSEDED, 'SUPERSEDED',
-                'Resubmit'))
-        vocab = SimpleVocabulary(terms)
+        if curr_status != BranchMergeProposalStatus.QUEUED:
+            terms.append(SimpleTerm(
+                    BranchMergeProposalStatus.SUPERSEDED, 'SUPERSEDED',
+                    'Resubmit'))
+        return SimpleVocabulary(terms)
+
+    def setUpFields(self):
+        MergeProposalEditView.setUpFields(self)
+        # Add the custom restricted queue status widget.
+        status_field = self.schema['queue_status']
 
         status_choice = Choice(
                 __name__='queue_status', title=status_field.title,
-                required=True, vocabulary=vocab)
+                required=True, vocabulary=self._createStatusVocabulary())
         status_field = form.Fields(
             status_choice, render_context=self.render_context)
         self.form_fields = status_field + self.form_fields
@@ -963,9 +969,10 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         """Update the status."""
 
         curr_status = self.context.queue_status
-        # If the status has been updated elsewhere to something that is in a
-        # final state, then don't do anything.
-        if curr_status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+        # If the status has been updated elsewhere to set the proposal to
+        # merged or superseded, then return.
+        if curr_status in (BranchMergeProposalStatus.SUPERSEDED,
+                           BranchMergeProposalStatus.MERGED):
             return
         # Assume for now that the queue_status in the data is a valid
         # transition from where we are.

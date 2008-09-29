@@ -36,7 +36,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
     IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
     UserNotBranchReviewer, WrongBranchMergeProposal)
@@ -204,10 +204,13 @@ class BranchMergeProposal(SQLBase):
         # Transitioning to code approved, rejected or queued from
         # work in progress, needs review or merge failed needs the
         # user to be a valid reviewer, other states are fine.
-        if (next_state in (code_approved, rejected, queued) and
-            self.queue_status in (wip, needs_review, merge_failed)):
-            if not self.isPersonValidReviewer(user):
-                return False
+        valid_reviewer = self.isPersonValidReviewer(user)
+        if (next_state == rejected and not valid_reviewer):
+            return False
+        elif (next_state in (code_approved, queued) and
+              self.queue_status in (wip, needs_review, merge_failed)
+              and not valid_reviewer):
+            return False
 
         return next_state in VALID_TRANSITION_GRAPH[self.queue_status]
 
