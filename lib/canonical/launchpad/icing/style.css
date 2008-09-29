@@ -793,7 +793,7 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* All segments have a border, and padding around their text: */
 #context-navigation-tabs .navigation.menu * * {
   border-right: 1px solid #ccc;
-  border-bottom: 1px solid #808080;
+  border-bottom: 1px solid #353434;
   padding: 0.25em 0.5em;
 }
 /* For text browsers, there's a " / " separator, hidden from CSS browsers: */
