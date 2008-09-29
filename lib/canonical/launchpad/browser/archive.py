@@ -328,9 +328,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         `createSelectedSourcesField` methods.
         """
         LaunchpadFormView.setUpFields(self)
-        for field in self.form_fields:
-            if field.__name__ in self.custom_widgets:
-                field.custom_widget = self.custom_widgets[field.__name__]
 
         # Build and store 'status_filter' field.
         status_field = self.createSimplifiedStatusFilterField()
@@ -355,6 +352,10 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         Omitting the fields already processed in setUpFields ('name_filter'
         and 'status_filter').
         """
+        for field in self.form_fields:
+            if (field.custom_widget is None and
+                field.__name__ in self.custom_widgets):
+                field.custom_widget = self.custom_widgets[field.__name__]
         self.widgets += form.setUpWidgets(
             self.form_fields.omit('name_filter').omit('status_filter'),
             self.prefix, self.context, self.request,
@@ -822,6 +823,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             term = SimpleTerm(
                 dependency, dependency.owner.name, dependency_label)
             terms.append(term)
+        # this custom_widget is set explicitly, rather than relying on the
+        # usual behavior of setUpWidgets to honor the class custom_widgets,
+        # because refreshSelectedDependenciesWidget, below, relies on it.
         return form.Fields(
             List(__name__='selected_dependencies',
                  title=_('Recorded dependencies'),
@@ -829,7 +833,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_(
-                    'Select one or more dependencies to be removed.')))
+                    'Select one or more dependencies to be removed.')),
+            custom_widget=self.custom_widgets['selected_dependencies'])
 
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.
