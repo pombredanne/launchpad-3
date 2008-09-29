@@ -28,6 +28,10 @@
       template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
       />
     <browser:page
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
+    <browser:page
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />

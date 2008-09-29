@@ -61,6 +61,18 @@ exposing one pending build record. The 'other' is still present.
     386     1 builds waiting in queue
     386     1 builds waiting in queue
 
+If the archive for the build does not require virtual builders, then
+the job will appear in bob's queue (a non-virtual builder):
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.require_virtualized = False
+    >>> flush_database_updates()
+    >>> logout()
+    >>> anon_browser.reload()
+    >>> print_depth(anon_browser.contents)
+    386     0 builds waiting in queue
+    386     2 builds waiting in queue
+
 From this page, users with the appropriate permission can register new
 builders.
 

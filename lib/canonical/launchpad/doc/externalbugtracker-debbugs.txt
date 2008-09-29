@@ -8,10 +8,8 @@ test:
     >>> import os.path
     >>> from canonical.launchpad.components.ftests import __file__
     >>> from canonical.config import config
-    >>> OLD_DEBBUGS_LOCATION = config.malone.debbugs_db_location
     >>> test_db_location = os.path.join(
     ...     os.path.dirname(__file__), 'debbugs_db')
-    >>> config.malone.debbugs_db_location = test_db_location
 
 You can specify the db_location explicitly:
 
@@ -629,11 +627,4 @@ the script gets notified about it.
                 linked from LP bug(s) #1.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
-
-
-== Wrapping up ==
-
-Restore the database path:
-
-    >>> config.malone.debbugs_db_location = OLD_DEBBUGS_LOCATION
 

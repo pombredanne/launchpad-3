@@ -92,8 +92,9 @@ class ShipItKUbuntuLayer(ShipItLayer):
     """The `ShipIt` for KUbuntu layer."""
 
 
-class ShipItEdUbuntuLayer(ShipItLayer):
+class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
     """The `ShipIt` for EdUbuntu layer."""
+
 
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
