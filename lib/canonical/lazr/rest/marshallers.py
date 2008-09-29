@@ -308,10 +308,13 @@ class DateFieldMarshaller(SimpleFieldMarshaller):
 
     def _marshall_from_json_data(self, value):
         """Parse the value as a datetime.date object."""
-        value = DateTimeParser().parse(value)
-        (year, month, day, hours, minutes, secondsAndMicroseconds,
-            timezone) = value
-        return date(year, month, day)
+        try:
+            value = DateTimeParser().parse(value)
+            (year, month, day, hours, minutes, secondsAndMicroseconds,
+                timezone) = value
+            return date(year, month, day)
+        except (DateError, DateTimeError, SyntaxError):
+            raise ValueError("Value doesn't look like a date.")
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
