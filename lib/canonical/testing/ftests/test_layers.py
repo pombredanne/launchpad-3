@@ -13,19 +13,8 @@ import unittest
 
 from cStringIO import StringIO
 from urllib import urlopen
-<<<<<<< TREE
-import unittest
-
-import psycopg
-
-from sqlos.interfaces import IConnectionName
-
-from zope.rdb.interfaces import IZopeDatabaseAdapter
-=======
-
 import psycopg2
 
->>>>>>> MERGE-SOURCE
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig

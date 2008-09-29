@@ -3,6 +3,7 @@
 """Base classes for HTTP resources."""
 
 __metaclass__ = type
+
 __all__ = [
     'BatchingResourceMixin',
     'Collection',
@@ -20,6 +21,7 @@ __all__ = [
     'WADL_SCHEMA_FILE',
     ]
 
+
 import copy
 from cStringIO import StringIO
 from datetime import datetime
@@ -29,17 +31,11 @@ import sha
 import simplejson
 import zlib
 
-<<<<<<< TREE
-from zope.datetime import (
-    DateError, DateTimeError, DateTimeParser, SyntaxError)
-from zope.component import adapts, getAdapters, getMultiAdapter
-=======
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
     adapts, getAdapters, getAllUtilitiesRegisteredFor, getMultiAdapter,
     getUtility, queryAdapter)
->>>>>>> MERGE-SOURCE
 from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import implements, implementedBy, providedBy
@@ -1174,6 +1170,9 @@ class ServiceRootResource(HTTPResource):
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
+                # XXX sinzui 2008-09-29 bug=276079:
+                # Top-level collections need a marker interface
+                # so that so top-level utilities are explicit.
                 if (provided.isOrExtends(ICollection)
                      and ICollection.implementedBy(registration.value)):
                     try:
@@ -1181,8 +1180,12 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
+                    entry_schema = registration.value.entry_schema
+                    if isinstance(entry_schema, property):
+                        # It's not a top-level resource.
+                        continue
                     adapter = EntryAdapterUtility.forEntryInterface(
-                        registration.value.entry_schema)
+                        entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         # Now, collect the top-level entries.

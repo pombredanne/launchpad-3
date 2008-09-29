@@ -16,11 +16,8 @@ __all__ = [
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-<<<<<<< TREE
-=======
     'MaloneApplicationNavigation',
     'MaloneContextMenu',
->>>>>>> MERGE-SOURCE
     'MenuBox',
     'NavigationMenuTabs',
     'SoftTimeoutView',
@@ -28,6 +25,7 @@ __all__ = [
     'StructuralObjectPresentation',
     'UbuntuIcingFolder',
     ]
+
 
 import cgi
 import urllib
@@ -37,24 +35,13 @@ import time
 from datetime import timedelta, datetime
 from urlparse import urlunsplit
 
-<<<<<<< TREE
 from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility
-=======
-from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
->>>>>>> MERGE-SOURCE
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-<<<<<<< TREE
 from zope.traversing.interfaces import ITraversable
-
-from BeautifulSoup import BeautifulStoneSoup, Comment
-=======
-from zope.app.traversing.interfaces import ITraversable
->>>>>>> MERGE-SOURCE
 
 import canonical.launchpad.layers
 from canonical.config import config

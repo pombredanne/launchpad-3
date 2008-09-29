@@ -24,27 +24,14 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
-<<<<<<< TREE
-from zope.interface import implements
-from zope.rdb.interfaces import DatabaseException
-from zope.publisher.interfaces import Retry
-
-from psycopgda.adapter import PsycopgAdapter, PsycopgConnection
-import psycopg
-
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
-from canonical.config import config
-=======
 from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
->>>>>>> MERGE-SOURCE
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+
 
 __all__ = [
     'DisconnectionError',

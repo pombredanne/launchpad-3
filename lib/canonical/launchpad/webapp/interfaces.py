@@ -9,7 +9,6 @@ import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.rdb.interfaces import IZopeDatabaseAdapter
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
@@ -36,9 +35,6 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     """
 
 
-<<<<<<< TREE
-class ILaunchpadRoot(IContainmentRoot):
-=======
 class InvalidBatchSizeError(AssertionError):
     """Received a batch parameter that exceed our configured max size."""
 
@@ -56,8 +52,7 @@ class ILaunchpadContainer(Interface):
         """Return True if this context is within the given scope."""
 
 
-class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
->>>>>>> MERGE-SOURCE
+class ILaunchpadRoot(IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 

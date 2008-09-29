@@ -4,13 +4,11 @@ __metaclass__ = type
 
 import inspect
 
-<<<<<<< TREE
-=======
 import zope.app.form.browser.metaconfigure
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.component.servicenames
-from zope.app.component.contentdirective import ContentDirective
+import zope.configuration.config
 from zope.app.component.fields import LayerField
 from zope.app.component.metaconfigure import (
     adapter, handler, PublicPermission, utility, view)
@@ -18,13 +16,10 @@ from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import Engine
 from zope.app.publisher.browser.viewmeta import (
     page as original_page, pages as original_pages)
-from zope.app.security.metadirectives import IDefinePermissionDirective
 from zope.app.security.permission import Permission
 from zope.component import getUtility
-import zope.configuration.config
 from zope.configuration.fields import (
     GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
->>>>>>> MERGE-SOURCE
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
@@ -33,26 +28,10 @@ from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
-<<<<<<< TREE
-from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IBrowserRequest)
-from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission)
 
 from zope.app.component.contentdirective import ClassDirective
-from zope.app.pagetemplate.engine import Engine
-from zope.app.component.fields import LayerField
-from zope.app.file.image import Image
-import zope.app.publisher.browser.metadirectives
-import zope.app.form.browser.metaconfigure
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.app.publisher.browser.viewmeta import (
-    pages as original_pages, page as original_page)
-from zope.security.permission import Permission
+
 from zope.security.zcml import IPermissionDirective
-=======
->>>>>>> MERGE-SOURCE
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (

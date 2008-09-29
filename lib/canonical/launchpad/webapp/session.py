@@ -5,18 +5,13 @@ __metaclass__ = type
 
 from cookielib import domain_match
 from zope.component import getUtility
-<<<<<<< TREE
-from zope.session.interfaces import ISession
 from zope.session.http import CookieClientIdManager
-from zope.rdb.interfaces import IZopeDatabaseAdapter
-=======
-from zope.app.session.http import CookieClientIdManager
 
 from storm.zope.interfaces import IZStorm
->>>>>>> MERGE-SOURCE
 
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
+
 
 SECONDS = 1
 MINUTES = 60 * SECONDS

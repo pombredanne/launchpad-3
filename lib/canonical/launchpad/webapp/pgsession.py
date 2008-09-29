@@ -12,23 +12,17 @@ from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
-<<<<<<< TREE
-from zope.rdb.interfaces import IZopeDatabaseAdapter
 from zope.session.interfaces import (
-        ISessionDataContainer, ISessionData, ISessionPkgData
-        )
-from psycopgda.adapter import PG_ENCODING
-=======
-from zope.app.session.interfaces import (
     ISessionDataContainer, ISessionData, ISessionPkgData)
 
 from storm.zope.interfaces import IZStorm
->>>>>>> MERGE-SOURCE
+
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
+
 
 class PGSessionBase:
     store_name = 'session'

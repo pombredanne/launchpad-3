@@ -8,19 +8,8 @@ canonical.testing
 
 __metaclass__ = type
 
-<<<<<<< TREE
-import sqlos
-from sqlos.connection import connCache
-from sqlos.interfaces import IConnectionName
-from zope.rdb.interfaces import IZopeDatabaseAdapter
-=======
->>>>>>> MERGE-SOURCE
+
 from zope.app.testing.functional import FunctionalTestSetup
-<<<<<<< TREE
-from zope.component import getUtility
-from zope.component.interfaces import ComponentLookupError
-=======
->>>>>>> MERGE-SOURCE
 
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.ftests.pgsql import PgTestSetup

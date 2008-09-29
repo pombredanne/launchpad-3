@@ -11,6 +11,7 @@ __all__ = [
     'SSHADigestEncryptor',
     ]
 
+
 import binascii
 import random
 import sha
@@ -138,13 +139,8 @@ class PlacelessAuthUtility:
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipals(name)
 
-<<<<<<< TREE
-    def getPrincipalByLogin(self, login):
-        """See IAuthenticationUtility."""
-=======
     def getPrincipalByLogin(self, login, want_password=True):
         """See IAuthenticationService."""
->>>>>>> MERGE-SOURCE
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipalByLogin(login, want_password=want_password)
 

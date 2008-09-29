@@ -465,13 +465,8 @@ def escape(message):
     Zope internationalized message will cause the message to be
     translated, then santizied.
 
-<<<<<<< TREE
-    :param message: This may be a string, an instance of
-    	`zope.i18n.Message`, or an instance of `IStructuredString`.
-=======
     :param message: This may be a string, `zope.i18n.Message`,
         `zope.i18n.MessageID`, or an instance of `IStructuredString`.
->>>>>>> MERGE-SOURCE
     """
     if IStructuredString.providedBy(message):
         return message.escapedtext

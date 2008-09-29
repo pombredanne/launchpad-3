@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 
-from zope.app.traversing.interfaces import IPathAdapter
+from zope.traversing.interfaces import IPathAdapter
 from zope.component import queryAdapter
 from zope.interface import implements
 

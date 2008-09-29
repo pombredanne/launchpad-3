@@ -37,14 +37,10 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.mem import (
-<<<<<<< TREE
-    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
-=======
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
->>>>>>> MERGE-SOURCE
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)

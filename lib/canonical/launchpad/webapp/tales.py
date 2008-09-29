@@ -76,47 +76,19 @@ class MenuAPI:
     """
 
     def __init__(self, context):
-<<<<<<< TREE
-        if zope_isinstance(context, LaunchpadView):
-            view = context
-            self._context = view.context
-            self._request = view.request
-            self._selectedfacetname = getattr(
-                view, '__launchpad_facetname__', None)
-=======
         self._tales_context = context
-        if zope_isinstance(context, dict):
-            # We have what is probably a CONTEXTS dict.
-            # We get the context out of here, and use that for self.context.
-            # We also want to see if the view has a __launchpad_facetname__
-            # attribute.
-
-            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
-            # dict to a view object. Templates must switch to 'view'.
-            self._context = context['context']
-            self.view = context['view']
-            self._request = context['request']
-            self._selectedfacetname = getattr(
-                self.view, '__launchpad_facetname__', None)
-        elif zope_isinstance(context, LaunchpadView):
+        if zope_isinstance(context, LaunchpadView):
             self.view = context
             self._context = self.view.context
             self._request = self.view.request
             self._selectedfacetname = getattr(
                 self.view, '__launchpad_facetname__', None)
->>>>>>> MERGE-SOURCE
         else:
             self._context = context
             self._request = get_current_browser_request()
             self.view = None
             self._selectedfacetname = None
 
-<<<<<<< TREE
-    def __getattr__(self, attribute_name):
-        """Return a dictionary for retrieval of individual Links.
-
-        It's used with expressions like view/menu:bugs/subscribe.
-=======
     def __getattr__(self, facet):
         """Retrieve the links associated with a facet.
 
@@ -126,7 +98,6 @@ class MenuAPI:
             object.
         :raise AttributeError: when there is no application menu for the
             facet.
->>>>>>> MERGE-SOURCE
         """
         if not self._has_facet(facet):
             raise AttributeError(facet)

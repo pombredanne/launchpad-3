@@ -8,15 +8,11 @@ Also define utilities that manipulate layers.
 __metaclass__ = type
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
-<<<<<<< TREE
 from zope.publisher.interfaces.browser import (
     IBrowserRequest, IDefaultBrowserLayer)
-=======
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 from canonical.lazr.interfaces.rest import (
     WebServiceLayer as LazrWebServiceLayer)
->>>>>>> MERGE-SOURCE
 
 
 def setAdditionalLayer(request, layer):

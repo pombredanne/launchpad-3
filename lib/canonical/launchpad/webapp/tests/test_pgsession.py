@@ -6,16 +6,10 @@ __metaclass__ = type
 
 import unittest
 from datetime import timedelta
-<<<<<<< TREE
-from zope.component import getUtility
 from zope.session.interfaces import ISessionDataContainer, ISessionData
-=======
-from zope.app.session.interfaces import ISessionDataContainer, ISessionData
->>>>>>> MERGE-SOURCE
 
 from canonical.launchpad.webapp.pgsession import (
-        PGSessionDataContainer, PGSessionData
-        )
+        PGSessionDataContainer, PGSessionData)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
