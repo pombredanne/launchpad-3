@@ -190,7 +190,8 @@ class BranchPolicy:
     stacked.
     """
 
-    def getStackedOnURL(self, source_branch, destination_url):
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
         """Return the URL of the branch to stack the mirrored copy on.
 
         By default, we stacked the copy on the same URL as the source,
@@ -365,8 +366,9 @@ class BranchMirrorer(object):
         # stacked_on parameter relative to the source branch, but we want it
         # interpreted relative to the destination branch to allow
         # /~foo/bar/baz to work for mirrored branches.
-        literal_stacked_on_url = self.policy.getStackedOnURL(
-            source_branch, destination_url)
+        literal_stacked_on_url = (
+            self.policy.getStackedOnURLForDestinationBranch(
+                source_branch, destination_url))
         if literal_stacked_on_url is not None:
             stacked_on_url = urlutils.join(
                 destination_url, literal_stacked_on_url)
@@ -419,7 +421,7 @@ class BranchMirrorer(object):
         # source branch.  Note that we expect this to be fairly
         # common, as, as of r6889, it is possible for a branch to be
         # pulled before the stacking information is set at all.
-        stacked_on_url = self.policy.getStackedOnURL(
+        stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
@@ -491,8 +493,9 @@ class MirroredBranchPolicy(BranchPolicy):
     def __init__(self, stacked_on_url=None):
         self.stacked_on_url = stacked_on_url
 
-    def getStackedOnURL(self, source_branch, destination_url):
-        """See `BranchPolicy.getStackedOnURL`.
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
+        """See `BranchPolicy.getStackedOnURLForDestinationBranch`.
 
         Mirrored branches are stacked on the default stacked-on branch of
         their product.
