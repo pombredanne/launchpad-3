@@ -40,18 +40,22 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
-    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
-    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+    ArchivePermissionType, ArchivePurpose, IArchive,
+    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
+    IArchivePackageDeletionForm, IArchiveSet,
+    IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -179,6 +183,46 @@ class ArchiveNavigation(Navigation):
         try:
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
+            return None
+
+    @stepthrough('+upload')
+    def traverse_upload_permission(self, name):
+        """Traverse the data part of the URL for upload permissions."""
+        return self._traverse_permission(name, ArchivePermissionType.UPLOAD)
+
+    @stepthrough('+queue-admin')
+        def traverse_queue_admin_permission(self, name):
+        """Traverse the data part of the URL for queue admin permissions."""
+        return self._traverse_permission(
+            name, ArchivePermissionType.QUEUE_ADMIN)
+
+    def _traverse_permission(self, name, permission_type):
+        """Traversal helper function.
+
+        The data part ("name") is a compound value of the format:
+        user.item
+        where item is a component or a source package name,
+        """
+        username, item = name.split(".", 1)
+        user = getUtility(IPersonSet).getByName(username)
+        if user is None:
+            return None
+
+        # See if "item" is a component name.
+        try:
+            component = getUtility(IComponentSet)[item]
+        except NotFoundError:
+            pass
+        else:
+            return getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, component)
+
+        # See if "item" is a source package name.
+        package = getUtility(ISourcePackageNameSet).queryByName(item)
+        if package is not None:
+            return getUtility(IArchivePermissionsSet).checkAuthenticated(
+                user, self.context, permission_type, package)
+        else
             return None
 
 

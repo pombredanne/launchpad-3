@@ -65,6 +65,14 @@ class IArchivePermission(Interface):
         "The source package name that this permission is related to.")
 
 
+class IArchiveUploader(IArchivePermission):
+    """Marker interface for URL traversal of uploader permissions."""
+
+
+class IArchiveQueueAdmin(IArchivePermission):
+    """Marker interface for URL traversal of queue admin permissions."""
+
+
 class IArchivePermissionSet(Interface):
     """The interface for `ArchivePermissionSet`."""
 
