@@ -1763,6 +1763,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
+        if not check_permission('launchpad.View', dev_focus_branch):
+            dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
@@ -1770,6 +1772,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
+                check_permission('launchpad.View', branch) and
                 show_branch(branch)):
                 result.append(branch)
         return result
