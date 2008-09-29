@@ -76,7 +76,6 @@
     </div>
   </tal:commit-message>
 
-
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value" class="whiteboard"
@@ -135,6 +134,5 @@
   </div>
 
 </div>
-
 </body>
 </html>

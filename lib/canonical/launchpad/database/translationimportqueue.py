@@ -402,8 +402,13 @@ class TranslationImportQueueEntry(SQLBase):
         to link the .po and .pot files coming from different packages. The
         solution we take is to look for the translation domain across the
         whole distro series. In the concrete case of KDE language packs, they
-        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'.
+        have the sourcepackagename following the pattern 'kde-i18n-LANGCODE'
+        (KDE3) or kde-l10n-LANGCODE (KDE4).
         """
+        # Recognize "kde-i18n-LANGCODE" and "kde-l10n-LANGCODE" as
+        # special cases.
+        kde_prefix_pattern = '^kde-(i18n|l10n)-'
+
         importer = getUtility(ITranslationImporter)
 
         assert is_gettext_name(self.path), (
@@ -416,7 +421,7 @@ class TranslationImportQueueEntry(SQLBase):
             # it with productseries.
             return None
 
-        if self.sourcepackagename.name.startswith('kde-i18n-'):
+        if re.match(kde_prefix_pattern, self.sourcepackagename.name):
             # We need to extract the language information from the package
             # name
 
@@ -429,9 +434,9 @@ class TranslationImportQueueEntry(SQLBase):
                 'zhtw': 'zh_TW',
                 }
 
-            lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
-            if lang_code in lang_mapping:
-                lang_code = lang_mapping[lang_code]
+            lang_code = re.sub(
+                kde_prefix_pattern, '', self.sourcepackagename.name)
+            lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
@@ -489,12 +494,12 @@ class TranslationImportQueueEntry(SQLBase):
                 return None
             translation_domain = potemplate.translation_domain
         else:
-            # The guessed language from the directory doesn't math the
+            # The guessed language from the directory doesn't match the
             # language from the filename. Leave it for an admin.
             return None
 
         if (self.sourcepackagename.name in ('k3b-i18n', 'koffice-l10n') or
-            self.sourcepackagename.name.startswith('kde-i18n-')):
+            re.match(kde_prefix_pattern, self.sourcepackagename.name)):
             # K3b and official KDE packages store translations and code in
             # different packages, so we don't know the sourcepackagename that
             # use the translations.

@@ -36,7 +36,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
     IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
     UserNotBranchReviewer, WrongBranchMergeProposal)
@@ -204,10 +204,13 @@ class BranchMergeProposal(SQLBase):
         # Transitioning to code approved, rejected or queued from
         # work in progress, needs review or merge failed needs the
         # user to be a valid reviewer, other states are fine.
-        if (next_state in (code_approved, rejected, queued) and
-            self.queue_status in (wip, needs_review, merge_failed)):
-            if not self.isPersonValidReviewer(user):
-                return False
+        valid_reviewer = self.isPersonValidReviewer(user)
+        if (next_state == rejected and not valid_reviewer):
+            return False
+        elif (next_state in (code_approved, queued) and
+              self.queue_status in (wip, needs_review, merge_failed)
+              and not valid_reviewer):
+            return False
 
         return next_state in VALID_TRANSITION_GRAPH[self.queue_status]
 
@@ -234,11 +237,15 @@ class BranchMergeProposal(SQLBase):
         self.date_review_requested = None
         self.reviewer = None
         self.date_reviewed = None
+        self.reviewed_revision_id = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-        self.date_review_requested = UTC_NOW
+        # Don't reset the date_review_requested if we are already in the
+        # review state.
+        if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
+            self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
@@ -343,6 +350,8 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
+        # Remove from the queue.
+        self.queue_position = None
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -351,6 +360,8 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
+        # Remove from the queue.
+        self.queue_position = None
 
         if merged_revno is not None:
             branch_revision = BranchRevision.selectOneBy(

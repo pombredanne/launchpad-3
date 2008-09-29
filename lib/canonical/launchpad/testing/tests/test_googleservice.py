@@ -8,7 +8,7 @@ __metaclass__ = type
 
 
 from canonical.launchpad.testing import googletestservice
-from canonical.pidfile import pidfile_path
+from canonical.lazr.pidfile import pidfile_path
 import errno
 import os
 import unittest

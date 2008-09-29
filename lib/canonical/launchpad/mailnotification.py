@@ -1759,18 +1759,11 @@ def notify_mailinglist_activated(mailinglist, event):
     template = get_email_template('new-mailing-list.txt')
     editemails_url = '%s/+editemails'
 
-    def contacts_for(person):
-        # Recursively gather all of the active members of a team and
-        # of every sub-team.
-        members = set()
-        if person.isTeam():
-            for member in person.activemembers:
-                members.update(contacts_for(member))
-        elif person.preferredemail is not None:
-            members.add(person)
-        return members
-
-    for person in contacts_for(team):
+    for person in team.allmembers:
+        if person.is_team or person.preferredemail is None:
+            # This is either a team or a person without a preferred email, so
+            # don't send a notification.
+            continue
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,

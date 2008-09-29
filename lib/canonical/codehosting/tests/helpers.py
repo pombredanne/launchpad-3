@@ -28,7 +28,7 @@ from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
 from bzrlib.errors import SmartProtocolError
 
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.interfaces.codehosting import (

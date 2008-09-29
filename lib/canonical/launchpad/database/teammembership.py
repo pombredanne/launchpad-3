@@ -221,7 +221,7 @@ class TeamMembership(SQLBase):
             if admins.count() == 1:
                 admin = admins[0]
                 how_to_renew = (
-                    "To prevent this membership from expiring, you should"
+                    "To prevent this membership from expiring, you should "
                     "contact the\nteam's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
             else:

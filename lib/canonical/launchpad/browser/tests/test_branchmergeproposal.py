@@ -7,11 +7,17 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+
+from canonical.launchpad.browser.branch import RegisterBranchMergeProposalView
 from canonical.launchpad.browser.branchmergeproposal import (
+    BranchMergeProposalChangeStatusView,
     BranchMergeProposalMergedView, BranchMergeProposalVoteView)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
-from canonical.launchpad.testing import TestCaseWithFactory, time_counter
+from canonical.launchpad.testing import (
+    login_person, TestCaseWithFactory, time_counter)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
@@ -151,6 +157,229 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self.assertEqual(
             [albert, bob],
             [review.reviewer for review in view.current_reviews])
+
+
+class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+    """Test the merge proposal registration view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target_branch = self.factory.makeBranch()
+        self.source_branch = self.factory.makeBranch(
+            product=self.target_branch.product)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = RegisterBranchMergeProposalView(
+            self.source_branch, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def _getSourceProposal(self):
+        # There will only be one proposal and it will be in needs review
+        # state.
+        landing_targets = list(self.source_branch.landing_targets)
+        self.assertEqual(1, len(landing_targets))
+        proposal = landing_targets[0]
+        self.assertEqual(self.target_branch, proposal.target_branch)
+        self.assertEqual(BranchMergeProposalStatus.NEEDS_REVIEW,
+                         proposal.queue_status)
+        return proposal
+
+    def assertNoComments(self, proposal):
+        # There should be no comments.
+        self.assertEqual([], list(proposal.all_comments))
+
+    def assertOneComment(self, proposal, comment_text):
+        # There should be one and only one comment with the text specified.
+        self.assertEqual(
+            [comment_text],
+            [comment.message.text_contents
+             for comment in proposal.all_comments])
+
+    def assertNoPendingReviews(self, proposal):
+        # There should be no votes recorded for the proposal.
+        self.assertEqual([], list(proposal.votes))
+
+    def assertOnePendingReview(self, proposal, reviewer, review_type=None):
+        # There should be one pending vote for the reviewer with the specified
+        # review type.
+        votes = list(proposal.votes)
+        self.assertEqual(1, len(votes))
+        self.assertEqual(reviewer, votes[0].reviewer)
+        self.assertEqual(self.user, votes[0].registrant)
+        self.assertIs(None, votes[0].comment)
+        if review_type is None:
+            self.assertIs(None, votes[0].review_type)
+        else:
+            self.assertEqual(review_type, votes[0].review_type)
+
+    def test_register_simplest_case(self):
+        # This simplest case is where the user only specifies the target
+        # branch, and not an initial comment or reviewer.
+        view = self._createView()
+        view.register_action.success({'target_branch': self.target_branch})
+        proposal = self._getSourceProposal()
+        self.assertNoPendingReviews(proposal)
+        self.assertNoComments(proposal)
+
+    def test_register_initial_comment(self):
+        # If the user specifies an initial comment, this is added to the
+        # proposal.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'comment': "This is the first comment."})
+
+        proposal = self._getSourceProposal()
+        self.assertNoPendingReviews(proposal)
+        self.assertOneComment(proposal, "This is the first comment.")
+
+    def test_register_request_reviewer(self):
+        # If the user requests a reviewer, then a pending vote is added to the
+        # proposal.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer})
+
+        proposal = self._getSourceProposal()
+        self.assertOnePendingReview(proposal, reviewer)
+        self.assertNoComments(proposal)
+
+    def test_register_request_review_type(self):
+        # We can request a specific review type of the reviewer.  If we do, it
+        # is recorded along with the pending review.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer,
+             'review_type': 'god-like'})
+
+        proposal = self._getSourceProposal()
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertNoComments(proposal)
+
+    def test_register_comment_and_review(self):
+        # The user can give an initial comment and request a review from
+        # someone.
+        reviewer = self.factory.makePerson()
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'review_candidate': reviewer,
+             'review_type': 'god-like',
+             'comment': "This is the first comment."})
+
+        proposal = self._getSourceProposal()
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
+        self.assertOneComment(proposal, "This is the first comment.")
+
+
+class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
+    """Test the status vocabulary generated for then +edit-status view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+        self.proposal = self.factory.makeBranchMergeProposal(
+            registrant = self.user)
+
+    def _createView(self):
+        # Construct the view and initialize it.
+        view = BranchMergeProposalChangeStatusView(
+            self.proposal, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def assertStatusVocabTokens(self, tokens, user):
+        # Assert that the tokens specified are the only tokens in the
+        # generated vocabulary.
+        login_person(user)
+        vocabulary = self._createView()._createStatusVocabulary()
+        vocab_tokens = sorted([term.token for term in vocabulary])
+        self.assertEqual(
+            sorted(tokens), vocab_tokens)
+
+    def assertAllStatusesAvailable(self, user):
+        # All options should be available to the user.
+        self.assertStatusVocabTokens(
+            ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
+             'REJECTED', 'QUEUED', 'SUPERSEDED'], user)
+
+    def test_createStatusVocabulary_non_reviewer(self):
+        # Neither the source branch owner nor the registrant should not be
+        # able to approve or reject their own code (assuming they don't have
+        # rights on the target branch).
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer(self):
+        # The registrant should not be able to approve or reject
+        # their own code (assuming they don't have rights on the target
+        # branch).
+        self.assertAllStatusesAvailable(self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_non_reviewer_approved(self):
+        # Once the branch has been approved, the source owner or the
+        # registrant can queue the branch.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = [
+            'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
+            'QUEUED', 'SUPERSEDED']
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+
+    def test_createStatusVocabulary_reviewer_approved(self):
+        # The target branch owner's options are not changed by whether or not
+        # the proposal is currently approved.
+        self.proposal.approveBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_rejected(self):
+        # Options for rejected proposals are the same irrespective or user.
+        self.proposal.rejectBranch(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['REJECTED', 'SUPERSEDED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
+    def test_createStatusVocabulary_queued(self):
+        # Queued proposals can either be marked as merged, or set back to code
+        # approved.
+        self.proposal.enqueue(
+            self.proposal.target_branch.owner, 'some-revision')
+        status_options = ['CODE_APPROVED', 'QUEUED', 'MERGED']
+
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.source_branch.owner)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.registrant)
+        self.assertStatusVocabTokens(
+            status_options, user=self.proposal.target_branch.owner)
+
 
 
 def test_suite():
