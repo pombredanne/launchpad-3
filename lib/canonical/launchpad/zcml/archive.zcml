@@ -153,7 +153,6 @@
       />
   </browser:pages>
 
-
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
@@ -164,12 +163,5 @@
     provides="canonical.launchpad.interfaces.IArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
   </securedutility>
-
-
-  <!-- ArchiveFileView -->
-  <content class="canonical.launchpad.browser.archive.ArchiveFileView">
-    <allow attributes="browserDefault __call__" />
-  </content>
-
 
 </configure>

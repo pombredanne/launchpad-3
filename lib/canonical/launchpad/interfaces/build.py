@@ -307,6 +307,25 @@ class IBuild(Interface):
             the binaries created in this build.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Binary changesfile: '.changes';
+         * Build logs: '.buildlog.gz';
+         * Build upload logs: '.txt';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            format and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""

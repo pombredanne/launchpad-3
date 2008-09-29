@@ -12,7 +12,6 @@ __all__ = [
     'ArchiveContextMenu',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
-    'ArchiveFileView',
     'ArchiveNavigation',
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
@@ -22,19 +21,13 @@ __all__ = [
 
 
 import urllib
-import tempfile
 
 from zope.app.form.browser import TextAreaWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
-<<<<<<< TREE
 from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
-=======
-from zope.interface import implements
->>>>>>> MERGE-SOURCE
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -44,6 +37,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
+from canonical.launchpad.browser.librarian import (
+    StreamOrRedirectLibraryFileAliasView)
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -70,8 +65,6 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.librarian.utils import filechunks
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
@@ -200,48 +193,8 @@ class ArchiveNavigation(Navigation):
             raise AssertionError("GO AWAY!")
 
         library_file  = self.context.getFileByName(filename)
-        return ArchiveFileView(library_file, self.request)
-
-
-class ArchiveFileView(LaunchpadView):
-    """Single entry point for `ILibraryFileAlias`.
-
-    It streams the contents of restricted library files or redirects
-    to public ones.
-    """
-    implements(IBrowserPublisher)
-
-    def __call__(self):
-        """Streams the contents of the context `ILibraryFileAlias`.
-
-        The file content is downloaded in chunks directly to a
-        `tempfile.TemporaryFile` avoiding using large amount of memory.
-
-        The temporary file is returned to the zope published machine as
-        documented in lib/zope/publisher/httpresults.txt after adjusting
-        the response 'Content-Type' appropriately.
-        """
-        self.request.response.setHeader(
-            'Content-Type', self.context.mimetype)
-
-        self.context.open()
-        tmp_file = tempfile.TemporaryFile()
-        for chunk in filechunks(self.context):
-            tmp_file.write(chunk)
-
-        return tmp_file
-
-    def browserDefault(self, request):
-        """Decides whether to redirect or stream the file content.
-
-        Only restricted file contents are streamed, finishing the traversal
-        chain with this view. If the context file is public return the
-        appropriate `RedirectionView` for its HTTP url.
-        """
-        if self.context.restricted:
-            return self, ()
-
-        return RedirectionView(self.context.http_url, self.request), ()
+        return StreamOrRedirectLibraryFileAliasView(
+            library_file, self.request)
 
 
 class ArchiveContextMenu(ContextMenu):

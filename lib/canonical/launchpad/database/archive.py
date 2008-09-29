@@ -16,7 +16,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
-
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
@@ -26,9 +25,6 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
-from canonical.launchpad.database.binarypackagerelease import (
-    BinaryPackageRelease)
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distroseriespackagecache import (
@@ -42,7 +38,7 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.queue import (
-    PackageUpload, PackageUploadSource, PackageUploadBuild)
+    PackageUpload, PackageUploadSource)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
     IDistributionArchive, IPPA)
@@ -753,31 +749,6 @@ class Archive(SQLBase):
                     PackageUploadSource.sourcepackagereleaseID,
                 PackageUploadSource.packageuploadID == PackageUpload.id,
                 PackageUpload.changesfileID == LibraryFileAlias.id,
-                )
-        elif filename.endswith('.changes'):
-            clauses = (
-                BinaryPackagePublishingHistory.archive == self.id,
-                BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                    BinaryPackageRelease.id,
-                BinaryPackageRelease.buildID == PackageUploadBuild.buildID,
-                PackageUploadBuild.packageuploadID == PackageUpload.id,
-                PackageUpload.changesfileID == LibraryFileAlias.id,
-                )
-        elif filename.endswith('.txt.gz'):
-            clauses = (
-                SourcePackagePublishingHistory.archive == self.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    Build.sourcepackagereleaseID,
-                Build.archive == self.id,
-                Build.buildlogID == LibraryFileAlias.id,
-                )
-        elif filename.endswith('_log.txt'):
-            clauses = (
-                SourcePackagePublishingHistory.archive == self.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    Build.sourcepackagereleaseID,
-                Build.archive == self.id,
-                Build.upload_logID == LibraryFileAlias.id,
                 )
         else:
             raise AssertionError(

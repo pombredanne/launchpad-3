@@ -6,11 +6,21 @@ __metaclass__ = type
 
 __all__ = [
     'LibraryFileAliasView',
-    'LibraryFileAliasMD5View'
+    'LibraryFileAliasMD5View',
+    'StreamOrRedirectLibraryFileAliasView',
     ]
+
+
+import tempfile
+
+from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.librarian.utils import filechunks
+
 
 class LibraryFileAliasView(LaunchpadView):
     """View to handle redirection for downloading files by URL.
@@ -45,3 +55,46 @@ class LibraryFileAliasMD5View(LaunchpadView):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')
         return self.context.content.md5
+
+
+class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
+    """Stream or redirects to `ILibraryFileAlias`.
+
+    It streams the contents of restricted library files or redirects
+    to public ones.
+    """
+    implements(IBrowserPublisher)
+
+    __used_for__ = ILibraryFileAlias
+
+    def __call__(self):
+        """Streams the contents of the context `ILibraryFileAlias`.
+
+        The file content is downloaded in chunks directly to a
+        `tempfile.TemporaryFile` avoiding using large amount of memory.
+
+        The temporary file is returned to the zope published machine as
+        documented in lib/zope/publisher/httpresults.txt after adjusting
+        the response 'Content-Type' appropriately.
+        """
+        self.request.response.setHeader(
+            'Content-Type', self.context.mimetype)
+
+        self.context.open()
+        tmp_file = tempfile.TemporaryFile()
+        for chunk in filechunks(self.context):
+            tmp_file.write(chunk)
+
+        return tmp_file
+
+    def browserDefault(self, request):
+        """Decides whether to redirect or stream the file content.
+
+        Only restricted file contents are streamed, finishing the traversal
+        chain with this view. If the context file is public return the
+        appropriate `RedirectionView` for its HTTP url.
+        """
+        if self.context.restricted:
+            return self, ()
+
+        return RedirectionView(self.context.http_url, self.request), ()

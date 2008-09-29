@@ -344,9 +344,6 @@ class IArchive(IHasOwner):
          * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc';
          * Binary files: '.deb' and '.udeb';
          * Source changesfile: '_source.changes';
-         * Binary changesfile: '.changes';
-         * Build logs: '.buildlog.gz';
-         * Build upload logs: '.txt';
          * Package diffs: '.diff.gz';
 
         :param filename: exactly filename to be looked up.
