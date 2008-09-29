@@ -472,6 +472,83 @@ def fqn(namespace, name):
     return "%s.%s" % (namespace, name)
 
 
+class ConnectionString:
+    """A libpq connection string.
+
+    Some PostgreSQL tools take libpq connection strings. Other tools
+    need the components seperated out (such as pg_dump command line
+    arguments). This class allows you to switch easily between formats.
+    
+    >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
+    >>> cs.dbname
+    'launchpad_dev'
+    >>> cs.user
+    'foo'
+    >>> print str(cs)
+    'dbname=launchpad_dev user=foo'
+    >>> print repr(cs)
+    'dbname=launchpad_dev user=foo'
+    """
+    CONNECTION_KEYS = [
+        'dbname', 'user', 'host', 'port', 'connect_timeout', 'sslmode']
+
+    def __init__(self, conn_str):
+        for key in self.CONNECTION_KEYS:
+            match = re.search(r'%s=(\w+)' % key, conn_str)
+            if match is None:
+                setattr(self, key, None)
+            else:
+                setattr(self, key, match.group(1))
+
+    def __repr__(self):
+        params = []
+        for key in self.CONNECTION_KEYS:
+            val = getattr(self, key, None)
+            if val is not None:
+                params.append('%s=%s' % (key, val))
+        return ' '.join(params)
+
+    def asPGCommandLineArgs(self):
+        """Return a string suitable for the PostgreSQL standard tools
+        command line arguments.
+
+        >>> cs = ConnectionString('host=localhost user=slony dbname=test')
+        >>> cs.asPGCommandLineArgs()
+        '--host=localhost --username=slony test'
+
+        >>> cs = ConnectionString('port=5433 dbname=test')
+        >>> cs.asPgCommandLineArgs()
+        '--port=5433 test'
+        """
+        params = []
+        if self.host is not None:
+            params.append("--host=%s" % self.host)
+        if self.port is not None:
+            params.append("--port=%s" % self.port)
+        if self.user is not None:
+            params.append("--user=%s" % self.user)
+        if self.dbname is not None:
+            params.append(self.dbname)
+        return ' '.join(params)
+
+    def asLPCommandLineArgs(self):
+        """Return a string suitable for use by the LP tools using
+        db_options() to parse the command line.
+
+        >>> cs = ConnectionString('host=localhost user=slony dbname=test')
+        >>> cs.asLPCommandLineArgs()
+        '--host=localhost --user=slony --dbname=test'
+        """
+        params = []
+        if self.host is not None:
+            params.append("--host=%s" % self.host)
+        if self.user is not None:
+            params.append("--user=%s" % self.user)
+        if self.dbname is not None:
+            params.append("--dbname=%s" % self.dbname)
+        return ' '.join(params)
+
+
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')

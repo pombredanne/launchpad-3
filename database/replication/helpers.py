@@ -9,7 +9,9 @@ import os.path
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
+from textwrap import dedent
 
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.postgresql import (
     fqn, all_tables_in_schema, all_sequences_in_schema
@@ -17,8 +19,9 @@ from canonical.database.postgresql import (
 from canonical.launchpad.scripts.logger import log
 
 
-# The Slony-I clustername we use with Launchpad.
-CLUSTERNAME = 'lpsl'
+# The Slony-I clustername we use with Launchpad. Hardcoded because there
+# is no point changing this, ever.
+CLUSTERNAME = 'sl'
 
 # The namespace in the database used to contain all the Slony-I tables.
 CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
@@ -70,6 +73,29 @@ def slony_installed(con):
     return cur.fetchone() is not None
 
 
+class TableReplicationInfo:
+    """Internal table replication details."""
+    table_id = None
+    replication_set_id = None
+    master_node_id = None
+
+    def __init__(self, con, namespace, table_name):
+        cur = con.cursor()
+        cur.execute("""
+            SELECT tab_id, tab_set, set_origin
+            FROM %s.sl_table, %s.sl_set
+            WHERE tab_set = set_id
+                AND tab_nspname = %s
+                AND tab_relname = %s
+            """ % (
+                (CLUSTER_NAMESPACE, CLUSTER_NAMESPACE)
+                + sqlvalues(namespace, table_name)))
+        row = cur.fetchone()
+        if row is None:
+            raise LookupError(fqn(namespace, table_name))
+        self.table_id, self.replication_set_id, self.master_node_id = row
+
+
 def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
    
@@ -101,10 +127,10 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
     # Add the preamble and optional sync to the script.
     if sync is not None:
         script = preamble() + script + """
-            sync (id = 1);
+            sync (id = @master_node);
             wait for event (
                 origin = ALL, confirmed = ALL,
-                wait on = @master_id, timeout = %d);
+                wait on = @master_node, timeout = %d);
             """ % sync
     else:
         script = preamble() + script
@@ -130,12 +156,30 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
 
 def preamble():
     """Return the preable needed at the start of all slonik scripts."""
-    # This is just a place holder. We need to generate or select a
-    # preamble based on LPCONFIG. Or better yet, pull it from the master
-    # database if we are not initializing the cluster.
-    return "include <%s>;\n" % os.path.abspath(
-        os.path.join(os.path.dirname(__file__), 'preamble.sk'))
 
+    return dedent("""\
+        # Every slonik script must start with a clustername, which cannot
+        # be changed once the cluster is initialized.
+        cluster name = sl;
+
+        # Symbolic ids for nodes.
+        define master_node 1;
+        define slave1_node 2;
+
+        # Symbolic ids for replication sets.
+        define lpmain_set  1;
+        define authdb_set  2;
+        define holding_set 666;
+
+        # Connection strings.
+        define master_conninfo '%s';
+        define slave1_conninfo '%s';
+
+        # Connection strings so slonik knows where to go.
+        node @master_node admin conninfo = @master_conninfo;
+        node @slave1_node admin conninfo = @slave1_conninfo;
+        """ % (config.database.main_master, config.database.main_slave))
+        
 
 def calculate_replication_set(cur, seeds):
     """Return the minimal set of tables and sequences needed in a

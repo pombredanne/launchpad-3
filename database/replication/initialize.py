@@ -15,9 +15,10 @@ import sys
 
 import helpers
 
+from canonical.config import config
 from canonical.database.sqlbase import connect
 from canonical.database.postgresql import (
-        all_sequences_in_schema, all_tables_in_schema
+        all_sequences_in_schema, all_tables_in_schema, ConnectionString
         )
 from canonical.launchpad.scripts import (
         logger, logger_options, db_options
@@ -37,19 +38,27 @@ cur = None # Shared database cursor to the master, initialized in main()
 def duplicate_schema():
     """Duplicate the master schema into the slaves."""
     log.info('Duplicating database schema')
+
+    master_cs = ConnectionString(config.database.main_master)
+    master_cs.user = options.dbuser
+    slave1_cs = ConnectionString(config.database.main_slave)
+    slave1_cs.user = options.dbuser
+
     # We can't use pg_dump to replicate security as not all of the roles
     # may exist in the slave databases' clusters yet.
-    rv = subprocess.call(
-        "pg_dump -x -s -U slony lpmain_demo "
-        "| psql -q -U slony authdb_demo", shell=True)
+    cmd = "pg_dump -x -s %s | psql -q %s" % (
+        master_cs.asPGCommandLineArgs(), slave1_cs.asPGCommandLineArgs())
+    log.debug('Running %s' % cmd)
+    rv = subprocess.call(cmd, shell=True)
     if rv != 0:
         log.fatal("Schema duplication failed, pg_dump returned %d" % rv)
         sys.exit(rv)
 
     # Now setup security on the slaves and create any needed roles,
     log.info('Setting up security on slave')
-    rv = subprocess.call([
-        "../schema/security.py",  "-d", "authdb_demo"])
+    cmd = "../schema/security.py %s" % slave1_cs.asLPCommandLineArgs()
+    log.debug("Running %s" % cmd)
+    rv = subprocess.call(cmd.split())
     if rv != 0:
         print >> sys.stderr, "ERR: security setup failed, returning %d" % rv
         sys.exit(rv)
@@ -61,7 +70,7 @@ def initialize_cluster():
     helpers.execute_slonik("""
         try {
             echo 'Initializing cluster and Master node.';
-            init cluster (id=@master_id, comment='Master Node');
+            init cluster (id=@master_node, comment='Master Node');
             }
         on success { echo 'Cluster initialized.'; }
         on error { echo 'Cluster initialization failed.'; exit 1; }
@@ -69,16 +78,16 @@ def initialize_cluster():
     helpers.execute_slonik("""
         try {
             echo 'Initializing Slave#1 node.';
-            store node (id=@slave1_id, comment='Slave Node #1');
+            store node (id=@slave1_node, comment='Slave Node #1');
 
             echo 'Storing Master -> Slave#1 path.';
             store path (
-                server=@master_id, client=@slave1_id,
+                server=@master_node, client=@slave1_node,
                 conninfo=@master_conninfo);
 
             echo 'Storing Slave#1 -> Master path.';
             store path (
-                server=@slave1_id, client=@master_id,
+                server=@slave1_node, client=@master_node,
                 conninfo=@slave1_conninfo);
             }
         on success { echo 'Slave#1 initialized.'; }
@@ -97,19 +106,19 @@ def create_replication_sets(
     log.info('Creating Slony-I replication sets.')
     script = ["""
         try {
-        echo 'Creating AuthDB replication set (@authdb_set_id)';
+        echo 'Creating AuthDB replication set (@authdb_set)';
         create set (
-            id=@authdb_set_id, origin=@master_id,
+            id=@authdb_set, origin=@master_node,
             comment='AuthDB tables and sequences');
         """]
 
     entry_id = 1
     for table in sorted(authdb_tables):
         script.append("""
-            echo 'Adding %(table)s to replication set @authdb_set_id';
+            echo 'Adding %(table)s to replication set @authdb_set';
             set add table (
-                set id=@authdb_set_id,
-                origin=@master_id,
+                set id=@authdb_set,
+                origin=@master_node,
                 id=%(entry_id)d,
                 fully qualified name='%(table)s');
             """ % vars())
@@ -117,19 +126,19 @@ def create_replication_sets(
     entry_id = 1
     for sequence in sorted(authdb_sequences):
         script.append("""
-            echo 'Adding %(sequence)s to replication set @authdb_set_id';
+            echo 'Adding %(sequence)s to replication set @authdb_set';
             set add sequence (
-                set id=@authdb_set_id,
-                origin=@master_id,
+                set id=@authdb_set,
+                origin=@master_node,
                 id=%(entry_id)d,
                 fully qualified name='%(sequence)s');
             """ % vars())
         entry_id += 1
 
     script.append("""
-        echo 'Creating LPMain replication set (@lpmain_set_id)';
+        echo 'Creating LPMain replication set (@lpmain_set)';
         create set (
-            id=@lpmain_set_id, origin=@master_id,
+            id=@lpmain_set, origin=@master_node,
             comment='Launchpad tables and sequences');
         """)
 
@@ -137,10 +146,10 @@ def create_replication_sets(
     entry_id = 200
     for table in sorted(lpmain_tables):
         script.append("""
-            echo 'Adding %(table)s to replication set @lpmain_set_id';
+            echo 'Adding %(table)s to replication set @lpmain_set';
             set add table (
-                set id=@lpmain_set_id,
-                origin=@master_id,
+                set id=@lpmain_set,
+                origin=@master_node,
                 id=%(entry_id)d,
                 fully qualified name='%(table)s');
             """ % vars())
@@ -149,10 +158,10 @@ def create_replication_sets(
     entry_id = 200
     for sequence in sorted(lpmain_sequences):
         script.append("""
-            echo 'Adding %(sequence)s to replication set @lpmain_set_id';
+            echo 'Adding %(sequence)s to replication set @lpmain_set';
             set add sequence (
-                set id=@lpmain_set_id,
-                origin=@master_id,
+                set id=@lpmain_set,
+                origin=@master_node,
                 id=%(entry_id)d,
                 fully qualified name='%(sequence)s');
             """ % vars())
@@ -176,12 +185,12 @@ def subscribe_slaves():
     # always need forward=yes as per Slony-I docs.
     helpers.execute_slonik("""
         subscribe set (
-            id=@authdb_set_id,
-            provider=@master_id, receiver=@slave1_id,
+            id=@authdb_set,
+            provider=@master_node, receiver=@slave1_node,
             forward=yes);
         subscribe set (
-            id=@lpmain_set_id,
-            provider=@master_id, receiver=@slave1_id,
+            id=@lpmain_set,
+            provider=@master_node, receiver=@slave1_node,
             forward=yes);
         """)
     helpers.validate_replication(cur) # Explode now if we have messed up.

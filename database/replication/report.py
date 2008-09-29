@@ -23,6 +23,7 @@ import sys
 
 from canonical.database.sqlbase import connect, quote_identifier, sqlvalues
 from canonical.launchpad.scripts import db_options
+import replication.helpers
 
 
 class Table:
@@ -234,10 +235,6 @@ def sequences_report(cur, options):
 def main():
     parser = OptionParser()
 
-    # Default should be pulled from a config file.
-    parser.add_option(
-        "-c", "--cluster", dest="cluster", default="lpsl",
-        help="Report on cluster CLUSTER_NAME", metavar="CLUSTER_NAME")
     parser.add_option(
         "-f", "--format", dest="mode", default="text",
         choices=['text', 'html'],
@@ -253,26 +250,24 @@ def main():
     else:
         assert False, "Unknown mode %s" % options.mode
 
-    cluster_schema = "_%s" % options.cluster
-
     con = connect(options.dbuser)
     cur = con.cursor()
 
-    # Check if the Slony schema exists to validate the --cluster option.
     cur.execute(
             "SELECT TRUE FROM pg_namespace WHERE nspname=%s"
-            % sqlvalues(cluster_schema))
+            % sqlvalues(replication.helpers.CLUSTER_NAMESPACE))
 
     if cur.fetchone() is None:
         parser.error(
                 "No Slony-I cluster called %s in that database"
-                % options.cluster)
+                % replication.helpers.CLUSTERNAME)
         return 1
 
 
     # Set our search path to the schema of the cluster we care about.
     cur.execute(
-            "SET search_path TO %s, public" % quote_identifier(cluster_schema))
+            "SET search_path TO %s, public"
+            % quote_identifier(CLUSTER_NAMESPACE))
 
     print node_overview_report(cur, options)
     print paths_report(cur, options)
