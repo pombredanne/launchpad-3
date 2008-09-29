@@ -14,30 +14,35 @@ from canonical.launchpad.xmlrpc.codehosting import datetime_from_tuple
 from canonical.launchpad.xmlrpc import faults
 
 
-class FakeBranch:
+class FakeStore:
 
-    class FakeStore:
-        def __init__(self, branch_set):
-            self._branch_set = branch_set
+    def __init__(self, object_set):
+        self._object_set = object_set
 
-        def find(self, cls, **kwargs):
-            assert cls == FakeBranch, (
-                'Can only query %r, got %r' % (FakeBranch, cls))
-            branch_id = kwargs.pop('id')
-            assert len(kwargs) == 1, (
-                'Expected only id and one other. Got %r' % kwargs)
-            attribute = kwargs.keys()[0]
-            expected_value = kwargs[attribute]
-            branch = self._branch_set.get(branch_id)
-            if branch is None:
-                return None
-            if expected_value is getattr(branch, attribute):
-                return branch
+    def find(self, cls, **kwargs):
+        branch_id = kwargs.pop('id')
+        assert len(kwargs) == 1, (
+            'Expected only id and one other. Got %r' % kwargs)
+        attribute = kwargs.keys()[0]
+        expected_value = kwargs[attribute]
+        branch = self._object_set.get(branch_id)
+        if branch is None:
             return None
+        if expected_value is getattr(branch, attribute):
+            return branch
+        return None
 
-    def __init__(self, branch_id, branch_type, url=None, unique_name=None,
+
+class FakeDatabaseObject:
+
+    def _set_object_set(self, object_set):
+        self.__storm_object_info__ = {'store': FakeStore(object_set)}
+
+
+class FakeBranch(FakeDatabaseObject):
+
+    def __init__(self, branch_type, url=None, unique_name=None,
                  stacked_on=None, private=False):
-        self.id = branch_id
         self.branch_type = branch_type
         self.last_mirror_attempt = None
         self.last_mirrored = None
@@ -51,9 +56,6 @@ class FakeBranch:
         self.stacked_on = stacked_on
         self.private = private
 
-    def _set_branch_set(self, branch_set):
-        self.__storm_object_info__ = {'store': self.FakeStore(branch_set)}
-
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
@@ -61,18 +63,21 @@ class FakeBranch:
 class ObjectSet:
 
     def __init__(self):
-        self._objects = {}
+        self._objects = []
 
     def _add(self, db_object):
-        self._objects[db_object.id] = db_object
+        self._objects.append(db_object)
+        db_object.id = len(self._objects) - 1
+        db_object._set_object_set(self)
+        return db_object
 
     def __iter__(self):
-        return self._objects.itervalues()
+        return iter(self._objects)
 
     def get(self, id):
         try:
             return self._objects[id]
-        except KeyError:
+        except IndexError:
             return None
 
     def getByName(self, name):
@@ -81,7 +86,7 @@ class ObjectSet:
                 return obj
 
 
-class FakeScriptActivity:
+class FakeScriptActivity(FakeDatabaseObject):
 
     def __init__(self, name, hostname, date_started, date_completed):
         self.id = self.name = name
@@ -97,15 +102,13 @@ class FakeObjectFactory(ObjectFactory):
         self._branch_set = branch_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False):
-        branch_id = self.getUniqueInteger()
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
             url = None
         branch = FakeBranch(
-            branch_id, branch_type, url=url,
-            unique_name=self.getUniqueString(), stacked_on=stacked_on)
-        branch._set_branch_set(self._branch_set)
+            branch_type, url=url, unique_name=self.getUniqueString(),
+            stacked_on=stacked_on)
         self._branch_set._add(branch)
         return branch
 
