@@ -107,8 +107,9 @@ class FakeObjectFactory(ObjectFactory):
 
 class FakeBranchPuller:
 
-    def __init__(self, branch_source):
-        self._branch_source = branch_source
+    def __init__(self, branch_set, script_activity_set):
+        self._branch_set = branch_set
+        self._script_activity_set = script_activity_set
 
     def _getBranchPullInfo(self, branch):
         return branch
@@ -116,14 +117,14 @@ class FakeBranchPuller:
     def getBranchPullQueue(self, branch_type):
         queue = []
         branch_type = BranchType.items[branch_type]
-        for branch in self._branch_source.getBranches():
+        for branch in self._branch_set:
             if (branch.branch_type == branch_type
                 and branch.next_mirror_time < UTC_NOW):
                 queue.append(branch)
         return queue
 
     def startMirroring(self, branch_id):
-        branch = self._branch_source.getBranch(branch_id)
+        branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         branch.last_mirror_attempt = UTC_NOW
@@ -131,19 +132,19 @@ class FakeBranchPuller:
         return True
 
     def mirrorComplete(self, branch_id, last_revision_id):
-        branch = self._branch_source.getBranch(branch_id)
+        branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         branch.last_mirrored_id = last_revision_id
         branch.last_mirrored = UTC_NOW
         branch.mirror_failures = 0
-        for stacked_branch in self._branch_source.getBranches():
+        for stacked_branch in self._branch_set:
             if stacked_branch.stacked_on is branch:
                 stacked_branch.requestMirror()
         return True
 
     def mirrorFailed(self, branch_id, reason):
-        branch = self._branch_source.getBranch(branch_id)
+        branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         branch.mirror_failures += 1
@@ -151,16 +152,16 @@ class FakeBranchPuller:
         return True
 
     def recordSuccess(self, name, hostname, date_started, date_completed):
-        self._branch_source._script_activities._add(
+        self._script_activity_set._add(
             FakeScriptActivity(name, hostname, date_started, date_completed))
         return True
 
     def setStackedOn(self, branch_id, stacked_on_location):
-        branch = self._branch_source.getBranch(branch_id)
+        branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         stacked_on_location = stacked_on_location.rstrip('/')
-        for stacked_on_branch in self._branch_source.getBranches():
+        for stacked_on_branch in self._branch_set:
             if stacked_on_location == stacked_on_branch.url:
                 branch.stacked_on = stacked_on_branch
                 break
@@ -177,7 +178,8 @@ class FakeLaunchpadFrontend:
     def __init__(self):
         self._branches = ObjectSet()
         self._script_activities = ObjectSet()
-        self._puller = FakeBranchPuller(self)
+        self._puller = FakeBranchPuller(
+            self._branches, self._script_activities)
         self._factory = FakeObjectFactory(self)
 
     def getPullerEndpoint(self):
