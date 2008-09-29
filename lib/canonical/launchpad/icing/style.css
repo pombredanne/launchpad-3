@@ -107,10 +107,9 @@ exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
-:link                         {color: #03a;    text-decoration: none;}
+:link, :visited               {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
-:visited                      {color: #03a; text-decoration: none;}
 /* Links that don't open separate pages are green to denote their behavior: */
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
