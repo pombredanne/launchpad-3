@@ -122,8 +122,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
 
-    def test_mirrorAHostedBranch(self):
-        """Run the puller on a populated hosted branch pull queue."""
+    def test_mirror_hosted_branch(self):
+        # Run the puller on a populated hosted branch pull queue.
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
@@ -135,7 +135,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_reMirrorAHostedBranch(self):
+    def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
         # First we push up and mirror the branch in one format.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
@@ -162,8 +162,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertIsInstance(
             mirrored_branch.repository._format, RepositoryFormatKnitPack5)
 
-    def test_mirrorAHostedLoomBranch(self):
-        """Run the puller over a branch with looms enabled."""
+    def test_mirror_hosted_loom_branch(self):
+        # Run the puller over a branch with looms enabled.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushToBranch(db_branch, loom_tree)
@@ -173,8 +173,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_mirrorAPrivateBranch(self):
-        """Run the puller with a private branch in the queue."""
+    def test_mirror_private_branch(self):
+        # Run the puller with a private branch in the queue.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.pushToBranch(db_branch)
         db_branch.requestMirror()
@@ -184,8 +184,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_mirror_a_mirrored_branch(self):
-        """Run the puller on a populated mirrored branch pull queue."""
+    def test_mirror_mirrored_branch(self):
+        # Run the puller on a populated mirrored branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
         tree = self.make_branch_and_tree('.')
         tree.commit('rev1')
@@ -275,8 +275,8 @@ class TestBranchPuller(PullerBranchTestCase):
             % (config.launchpad.bzr_imports_root_url,))
         return int(port)
 
-    def test_mirrorAnImportedBranch(self):
-        """Run the puller on a populated imported branch pull queue."""
+    def test_mirror_imported_branch(self):
+        # Run the puller on a populated imported branch pull queue.
         # Create the branch in the database.
         db_branch = self.factory.makeBranch(BranchType.IMPORTED)
         db_branch.requestMirror()
@@ -299,13 +299,13 @@ class TestBranchPuller(PullerBranchTestCase):
         # closes.
         self.assertMirrored(branch_path, db_branch)
 
-    def test_mirrorEmpty(self):
-        """Run the puller on an empty pull queue."""
+    def test_mirror_empty(self):
+        # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller("upload")
         self.assertRanSuccessfully(command, retcode, output, error)
 
-    def test_recordsScriptActivity(self):
-        """A record gets created in the ScriptActivity table."""
+    def test_records_script_activity(self):
+        # A record gets created in the ScriptActivity table.
         script_activity_set = getUtility(IScriptActivitySet)
         self.assertIs(
             script_activity_set.getLastActivity("branch-puller-hosted"),
