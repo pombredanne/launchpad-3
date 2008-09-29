@@ -92,9 +92,9 @@ class FakeScriptActivity:
 
 class FakeObjectFactory(ObjectFactory):
 
-    def __init__(self, branch_source):
+    def __init__(self, branch_set):
         super(FakeObjectFactory, self).__init__()
-        self._branch_source = branch_source
+        self._branch_set = branch_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False):
         branch_id = self.getUniqueInteger()
@@ -102,12 +102,11 @@ class FakeObjectFactory(ObjectFactory):
             url = self.getUniqueURL()
         else:
             url = None
-        branch_set = self._branch_source.getBranchSet()
         branch = FakeBranch(
             branch_id, branch_type, url=url,
             unique_name=self.getUniqueString(), stacked_on=stacked_on)
-        branch._set_branch_set(branch_set)
-        branch_set._add(branch)
+        branch._set_branch_set(self._branch_set)
+        self._branch_set._add(branch)
         return branch
 
 
@@ -186,7 +185,7 @@ class FakeLaunchpadFrontend:
         self._script_activity_set = ObjectSet()
         self._puller = FakeBranchPuller(
             self._branch_set, self._script_activity_set)
-        self._factory = FakeObjectFactory(self)
+        self._factory = FakeObjectFactory(self._branch_set)
 
     def getPullerEndpoint(self):
         return self._puller
