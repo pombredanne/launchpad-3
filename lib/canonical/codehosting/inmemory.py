@@ -157,7 +157,7 @@ class FakeLaunchpadFrontend:
         self._puller = FakeBranchPuller(self)
         self._factory = FakeObjectFactory(self)
 
-    def getEndpoint(self):
+    def getPullerEndpoint(self):
         return self._puller
 
     def getLaunchpadObjectFactory(self):

@@ -106,13 +106,13 @@ class BranchPullerTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchPuller`.
 
     :ivar frontend: A nullary callable that returns an object that implements
-        getEndpoint, getLaunchpadObjectFactory and getBranch.
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranch.
     """
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         frontend = self.frontend()
-        self.storage = frontend.getEndpoint()
+        self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.branch_getter = frontend.getBranch
         self.getLastActivity = frontend.getLastActivity
@@ -374,7 +374,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
         frontend = self.frontend()
-        self.storage = frontend.getEndpoint()
+        self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
     def assertBranchQueues(self, hosted, mirrored, imported):
@@ -730,7 +730,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 class RealLaunchpadFrontend:
 
-    def getEndpoint(self):
+    def getPullerEndpoint(self):
         return BranchPuller(None, None)
 
     def getLaunchpadObjectFactory(self):
