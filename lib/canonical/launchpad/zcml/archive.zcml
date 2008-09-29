@@ -153,6 +153,7 @@
       />
   </browser:pages>
 
+
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>

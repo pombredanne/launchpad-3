@@ -314,8 +314,8 @@ class IBuild(Interface):
         archive context:
 
          * Binary changesfile: '.changes';
-         * Build logs: '.buildlog.gz';
-         * Build upload logs: '.txt';
+         * Build logs: '.txt.gz';
+         * Build upload logs: '_log.txt';
 
         :param filename: exactly filename to be looked up.
 
