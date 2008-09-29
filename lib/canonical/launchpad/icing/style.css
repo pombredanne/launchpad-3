@@ -1223,6 +1223,8 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
 
+.back-link { margin-top: 3em; }
+
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}

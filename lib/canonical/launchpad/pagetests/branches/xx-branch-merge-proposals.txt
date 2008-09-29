@@ -313,33 +313,23 @@ The edit icon at the end of the status allows the user to edit the status.
 
     >>> nopriv_browser.getLink('Change status').click()
 
-If either two users were trying to mark the branch as merged at the
-same time, or a resubmit occurs, the error is handled elegantly.
-We set up the page here before the proposal is merged.
-
-    >>> merge_url = nopriv_browser.url
-    >>> sample_browser.open(merge_url)
-
 When marking a proposal as merged there is an optional revision number.
 If this is set then the when setting the merge proposal as merged the
 system looks for the revision in the history of the target branch,
 and if found uses the revision date as the merged date.  If it cannot
 find one, then the current time is used as the date merged.
 
-    >>> nopriv_browser.getControl(id='queue_status').displayValue = ['Merged']
+    >>> nopriv_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Merged'])
     >>> nopriv_browser.getControl('Change Status').click()
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
-A notification is also added, as well as tekt being added to merge proposal
-about the proposal having been marked as merged.
+The proposal is now shown as have being merged.
 
-    >>> for message in get_feedback_messages(nopriv_browser.contents):
-    ...     print extract_text(message)
-    The proposal has now been marked as merged.
-    >>> tag = find_tag_by_id(nopriv_browser.contents, 'proposal-merged')
-    >>> print extract_text(tag)
-    The proposed merge was performed at revision 42
+    >>> print_summary(nopriv_browser)
+    Status: Merged
+    ...
 
 An email notification is also created.
 
@@ -359,12 +349,12 @@ An email notification is also created.
 
 The source branch is still shown on the branch's merges page.
 
-    >>> nopriv_browser.getLink(url='~name12/gnome-terminal/klingon').click()
+    >>> nopriv_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
       Merge proposed by No Privileges Person
-      Merged ... ago at revision 42
+      Merged ... ago
 
 Gone from the target branch.
 
@@ -374,15 +364,30 @@ Gone from the target branch.
     ~name12/gnome-terminal/scanned (New) - view proposal details
       Needs review
 
-Now if the other browser attempts to also mark as merged, it updates the merged
-proposal to the new revno.
+If the user subsequently wants to set the merged revision number,
+this can be updated by selecting the edit icon shown in the table
+next to the heading "Merged at revision".
 
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> sample_browser.getLink('Merged').click()
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    Merged at revision: not available
+    ...
+    >>> sample_browser.getLink(url='+merged').click()
     >>> sample_browser.getControl('Merged Revision Number').value = '42'
     >>> sample_browser.getControl('Mark as Merged').click()
 
     >>> for message in get_feedback_messages(sample_browser.contents):
     ...     print extract_text(message)
     The proposal's merged revision has been updated.
+    >>> print_summary(sample_browser)
+    Status: Merged
+    ...
+    Merged at revision: 42
+    ...
 
 No email notification is triggered.
 
@@ -401,7 +406,14 @@ branches but with the state set to work-in-progress.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> sample_browser.getLink('view proposal details').click()
-    >>> sample_browser.getLink('Resubmit proposal').click()
+    >>> sample_browser.getLink('Change status').click()
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Resubmit'])
+
+    >>> sample_browser.getControl('Change Status').click()
+
+This takes the user to the resubmission page.
+
     >>> print sample_browser.title
     Resubmit proposal to merge
 
@@ -429,8 +441,9 @@ The new merge proposal is created as work in progress, and there is
 a link back to the superseded proposal.
 
     >>> print_summary(sample_browser)
-    Proposed ...
-    Ready for review for merging into lp://dev/~name12/gnome-terminal/main
+    Status: Needs review
+    Proposed by: Sample Person ...
+    Target branch: lp://dev/~name12/gnome-terminal/main
 
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'superseded-proposal'))
@@ -440,9 +453,8 @@ a link back to the superseded proposal.
     >>> sample_browser.getLink(
     ...     re.compile('proposal from .*')).click()
     >>> print_summary(sample_browser)
-    Proposed ...
-    Superseded for merging into
-    lp://dev/~name12/gnome-terminal/main
+    Status: Superseded
+    ...
 
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))
@@ -463,7 +475,10 @@ new proposal that supersedes it.
 
 Resubmitting proposals without changing the whiteboard emits notifications.
 
-    >>> sample_browser.getLink('Resubmit proposal').click()
+    >>> sample_browser.getLink('Change status').click()
+    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
+    ...     ['Resubmit'])
+    >>> sample_browser.getControl('Change Status').click()
     >>> sample_browser.getControl('Resubmit').click()
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -652,34 +667,3 @@ they'll get a 404.
     Traceback (most recent call last):
     ...
     NotFound: ...
-
-
-== Approving proposals for remote branches ==
-
-Launchpad does not have any revision data for remote branches, so we
-cannot validate that the user has entered a valid revision number for
-the source branch when approving.  What we do instead is record the
-stringified revision number.
-
-    >>> # Create an interaction needed to create branches.
-    >>> login('test@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
-    >>> from canonical.launchpad.interfaces.branch import BranchType
-    >>> eric = factory.makePerson(email='eric@example.com', password='test')
-    >>> source_branch = factory.makeBranch(
-    ...     branch_type=BranchType.REMOTE, owner=eric)
-    >>> # In order to approve easily, make the owner of the branches the same.
-    >>> target_branch = factory.makeBranch(
-    ...     product=source_branch.product, owner=eric)
-    >>> proposal = source_branch.addLandingTarget(eric, target_branch)
-    >>> proposal_url = canonical_url(proposal)
-    >>> logout()
-
-Now use a browser with eric's credentials.
-
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
-    >>> browser.open(proposal_url)
-    >>> browser.getLink('Review proposal').click()
-    >>> browser.getControl('Reviewed Revision').value = '1234'
-    >>> browser.getControl('Approve').click()
