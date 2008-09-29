@@ -89,6 +89,8 @@ def doctest_custom_widget_with_setUpFields_override():
 
         >>> class CustomStubWidget:
         ...     implements(IInputWidget)
+        ...     # The methods below are the minimal necessary for widget
+        ...     # initialization.
         ...     def __init__(self, field, request):
         ...         self.field, self.request = field, request
         ...     def setPrefix(self, prefix):

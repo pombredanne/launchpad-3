@@ -519,15 +519,7 @@ class ProjectAddQuestionView(QuestionAddView):
         self.form_fields = self.createProductField() + self.form_fields
 
     def setUpWidgets(self):
-        for field in self.form_fields:
-            if field.__name__ in self.custom_widgets:
-                field.custom_widget = self.custom_widgets[field.__name__]
-        # Only setup the widgets that needs validation
-        if not self.add_action.submitted():
-            fields = self.form_fields.select(*self.search_field_names)
-        else:
-            fields = self.form_fields
-
+        fields = self._getFieldsForWidgets()
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
         # widget to find the final context.

@@ -147,16 +147,15 @@ class LaunchpadFormView(LaunchpadView):
         """Set up the widgets using the view's form fields and the context.
 
         If no context is given, the view's context is used."""
-        # the check for custom_widget is None means that we honor the value
-        # if previously set.  This is important for some existing forms.
         for field in self.form_fields:
             if (field.custom_widget is None and
                 field.__name__ in self.custom_widgets):
+                # The check for custom_widget is None means that we honor the
+                # value if previously set. This is important for some existing
+                # forms.
                 field.custom_widget = self.custom_widgets[field.__name__]
         if context is None:
             context = self.context
-        # XXX: jamesh 2006-08-02:
-        # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
             data=self.initial_values, adapters=self.adapters,

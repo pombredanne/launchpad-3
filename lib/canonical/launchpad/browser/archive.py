@@ -335,6 +335,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         # Setup widgets for 'name_filter' and 'status_filter' fields
         # because they are required to build 'selected_sources' field.
         initial_fields = status_field + self.form_fields.select('name_filter')
+        # XXX 2008-09-29 gary
+        # The setUpWidgets method should not be called here. The re-ordering
+        # of the widgets, if needed should be done in setUpWidgets.
         self.widgets = form.setUpWidgets(
             initial_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
@@ -352,6 +355,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         Omitting the fields already processed in setUpFields ('name_filter'
         and 'status_filter').
         """
+        # See above XXX for the source of this ugliness. This basically
+        # redoes, what the base implementation would do. It should be removed
+        # once the setUpFields is fixed.
         for field in self.form_fields:
             if (field.custom_widget is None and
                 field.__name__ in self.custom_widgets):
@@ -823,9 +829,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             term = SimpleTerm(
                 dependency, dependency.owner.name, dependency_label)
             terms.append(term)
-        # this custom_widget is set explicitly, rather than relying on the
-        # usual behavior of setUpWidgets to honor the class custom_widgets,
-        # because refreshSelectedDependenciesWidget, below, relies on it.
         return form.Fields(
             List(__name__='selected_dependencies',
                  title=_('Recorded dependencies'),
@@ -833,8 +836,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_(
-                    'Select one or more dependencies to be removed.')),
-            custom_widget=self.custom_widgets['selected_dependencies'])
+                    'Select one or more dependencies to be removed.')))
 
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.
@@ -845,9 +847,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.form_fields = self.form_fields.omit('selected_dependencies')
         self.form_fields = (
             self.createSelectedDependenciesField() + self.form_fields)
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
+        self.setUpWidgets()
 
     @cachedproperty
     def has_dependencies(self):
