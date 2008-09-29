@@ -54,10 +54,33 @@ class FakeBranch:
         self.next_mirror_time = UTC_NOW
 
 
+class ObjectSet:
+
+    def __init__(self):
+        self._objects = {}
+
+    def _add(self, db_object):
+        self._objects[db_object.id] = db_object
+
+    def __iter__(self):
+        return self._objects.itervalues()
+
+    def get(self, id):
+        try:
+            return self._objects[id]
+        except KeyError:
+            return None
+
+    def getByName(self, name):
+        for obj in self:
+            if obj.name == name:
+                return obj
+
+
 class FakeScriptActivity:
 
     def __init__(self, name, hostname, date_started, date_completed):
-        self.name = name
+        self.id = self.name = name
         self.hostname = hostname
         self.date_started = datetime_from_tuple(date_started)
         self.date_completed = datetime_from_tuple(date_completed)
@@ -78,7 +101,7 @@ class FakeObjectFactory(ObjectFactory):
         branch = FakeBranch(
             branch_id, branch_type, url=url,
             unique_name=self.getUniqueString(), stacked_on=stacked_on)
-        self._branch_source._branches[branch_id] = branch
+        self._branch_source._branches._add(branch)
         return branch
 
 
@@ -93,7 +116,7 @@ class FakeBranchPuller:
     def getBranchPullQueue(self, branch_type):
         queue = []
         branch_type = BranchType.items[branch_type]
-        for branch in self._branch_source._branches.itervalues():
+        for branch in self._branch_source.getBranches():
             if (branch.branch_type == branch_type
                 and branch.next_mirror_time < UTC_NOW):
                 queue.append(branch)
@@ -128,8 +151,8 @@ class FakeBranchPuller:
         return True
 
     def recordSuccess(self, name, hostname, date_started, date_completed):
-        self._branch_source._script_activities[name] = FakeScriptActivity(
-            name, hostname, date_started, date_completed)
+        self._branch_source._script_activities._add(
+            FakeScriptActivity(name, hostname, date_started, date_completed))
         return True
 
     def setStackedOn(self, branch_id, stacked_on_location):
@@ -137,7 +160,7 @@ class FakeBranchPuller:
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         stacked_on_location = stacked_on_location.rstrip('/')
-        for stacked_on_branch in self._branch_source._branches.itervalues():
+        for stacked_on_branch in self._branch_source.getBranches():
             if stacked_on_location == stacked_on_branch.url:
                 branch.stacked_on = stacked_on_branch
                 break
@@ -152,8 +175,8 @@ class FakeBranchPuller:
 class FakeLaunchpadFrontend:
 
     def __init__(self):
-        self._branches = {}
-        self._script_activities = {}
+        self._branches = ObjectSet()
+        self._script_activities = ObjectSet()
         self._puller = FakeBranchPuller(self)
         self._factory = FakeObjectFactory(self)
 
@@ -167,7 +190,7 @@ class FakeLaunchpadFrontend:
         return self._branches.get(branch_id)
 
     def getBranches(self):
-        return self._branches.itervalues()
+        return self._branches
 
     def getLastActivity(self, activity_name):
-        return self._script_activities.get(activity_name)
+        return self._script_activities.getByName(activity_name)
