@@ -187,6 +187,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             proposal, BranchMergeProposalStatus.MERGE_FAILED)
         self.assertIs(None, proposal.queue_position)
 
+    def test_transitions_to_wip_resets_reviewer(self):
+        # When a proposal was approved and is moved back into work in progress
+        # the reviewer, date reviewed, and reviewed revision are all reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.setAsWorkInProgress()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
+
     def test_transitions_from_superseded(self):
         """Superseded is a terminal state, so no transitions are valid."""
         self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)

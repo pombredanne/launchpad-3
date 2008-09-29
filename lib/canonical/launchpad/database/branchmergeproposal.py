@@ -237,6 +237,7 @@ class BranchMergeProposal(SQLBase):
         self.date_review_requested = None
         self.reviewer = None
         self.date_reviewed = None
+        self.reviewed_revision_id = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
