@@ -16,6 +16,25 @@ from canonical.launchpad.xmlrpc import faults
 
 class FakeBranch:
 
+    class FakeStore:
+        def __init__(self, branch_set):
+            self._branch_set = branch_set
+
+        def find(self, cls, **kwargs):
+            assert cls == FakeBranch, (
+                'Can only query %r, got %r' % (FakeBranch, cls))
+            branch_id = kwargs.pop('id')
+            assert len(kwargs) == 1, (
+                'Expected only id and one other. Got %r' % kwargs)
+            attribute = kwargs.keys()[0]
+            expected_value = kwargs[attribute]
+            branch = self._branch_set.get(branch_id)
+            if branch is None:
+                return None
+            if expected_value is getattr(branch, attribute):
+                return branch
+            return None
+
     def __init__(self, branch_id, branch_type, url=None, unique_name=None,
                  stacked_on=None, private=False):
         self.id = branch_id
@@ -32,23 +51,8 @@ class FakeBranch:
         self.stacked_on = stacked_on
         self.private = private
 
-    @classmethod
-    def _get_store(cls):
-        # ZOMG!
-        class FakeStore:
-            def find(store, cls, **kwargs):
-                branch_id = kwargs.pop('id')
-                assert len(kwargs) == 1, (
-                    'Expected only id and one other. Got %r' % kwargs)
-                attribute = kwargs.keys()[0]
-                expected_value = kwargs[attribute]
-                branch = cls._branch_source.getBranchSet().get(branch_id)
-                if branch is None:
-                    return None
-                if expected_value is getattr(branch, attribute):
-                    return branch
-                return None
-        return FakeStore()
+    def _set_branch_set(self, branch_set):
+        self.__storm_object_info__ = {'store': self.FakeStore(branch_set)}
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
@@ -90,7 +94,7 @@ class FakeObjectFactory(ObjectFactory):
 
     def __init__(self, branch_source):
         super(FakeObjectFactory, self).__init__()
-        self._branch_source = FakeBranch._branch_source = branch_source
+        self._branch_source = branch_source
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False):
         branch_id = self.getUniqueInteger()
@@ -98,10 +102,12 @@ class FakeObjectFactory(ObjectFactory):
             url = self.getUniqueURL()
         else:
             url = None
+        branch_set = self._branch_source.getBranchSet()
         branch = FakeBranch(
             branch_id, branch_type, url=url,
             unique_name=self.getUniqueString(), stacked_on=stacked_on)
-        self._branch_source.getBranchSet()._add(branch)
+        branch._set_branch_set(branch_set)
+        branch_set._add(branch)
         return branch
 
 

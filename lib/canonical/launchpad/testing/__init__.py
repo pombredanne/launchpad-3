@@ -3,6 +3,8 @@
 
 import unittest
 
+from storm.store import Store
+
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -105,7 +107,7 @@ class TestCase(unittest.TestCase):
         # which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
         sql_class = type(sql_object)
-        store = sql_class._get_store()
+        store = Store.of(sql_object)
         found_object = store.find(
             sql_class, **({'id': sql_object.id, attribute_name: date}))
         if found_object is None:
