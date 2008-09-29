@@ -14,6 +14,7 @@ __all__ = [
 import tempfile
 
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
@@ -84,6 +85,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         tmp_file = tempfile.TemporaryFile()
         for chunk in filechunks(self.context):
             tmp_file.write(chunk)
+        self.context.close()
 
         return tmp_file
 
@@ -98,3 +100,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
             return self, ()
 
         return RedirectionView(self.context.http_url, self.request), ()
+
+    def publishTraverse(self, request, name):
+        """See `IBrowserPublisher`."""
+        raise NotFound(name, self.context)
