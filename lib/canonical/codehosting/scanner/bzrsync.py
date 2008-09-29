@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
     ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
@@ -454,7 +456,33 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
+        self.autoMergeProposals(bzr_ancestry)
         self.trans_manager.commit()
+
+    def autoMergeProposals(self, bzr_ancestry):
+        """Detect merged proposals."""
+        # Check landing candidates in non-terminal states to see if their tip
+        # is in our ancestry. If it is, set the state of the proposal to
+        # 'merged'.
+
+        # At this stage we are not going to worry about the revno
+        # which introduced the change, that will either be set through the web
+        # ui by a person, of by PQM once it is integrated.
+        for proposal in self.db_branch.landing_candidates:
+            if proposal.source_branch.last_scanned_id in bzr_ancestry:
+                proposal.markAsMerged()
+
+        # Now check the landing targets.
+        final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        tip_rev_id = self.db_branch.last_scanned_id
+        for proposal in self.db_branch.landing_targets:
+            if proposal.queue_status not in final_states:
+                # If there is a branch revision record for target branch with
+                # the tip_rev_id of the source branch, then it is merged.
+                branch_revision = proposal.target_branch.getBranchRevision(
+                    revision_id=tip_rev_id)
+                if branch_revision is not None:
+                    proposal.markAsMerged()
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
