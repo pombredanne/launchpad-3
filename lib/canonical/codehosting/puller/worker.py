@@ -355,11 +355,21 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        policy_stacked_on_url = self.policy.getStackedOnURL(
+        # literal_stacked_on_url is the URL specified by the policy and
+        # stacked_on_url is that same URL resolved relative to the branch URL.
+        # literal_stacked_on_url is what we want in the branch configuration,
+        # stacked_on_url is an absolute URL that we use to make Bazaar do the
+        # right thing.
+        #
+        # We need both of them since clone_on_transport interprets the
+        # stacked_on parameter relative to the source branch, but we want it
+        # interpreted relative to the destination branch to allow
+        # /~foo/bar/baz to work for mirrored branches.
+        literal_stacked_on_url = self.policy.getStackedOnURL(
             source_branch, destination_url)
-        if policy_stacked_on_url is not None:
+        if literal_stacked_on_url is not None:
             stacked_on_url = urlutils.join(
-                destination_url, policy_stacked_on_url)
+                destination_url, literal_stacked_on_url)
             try:
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
@@ -368,8 +378,10 @@ class BranchMirrorer(object):
             stacked_on_url = None
         bzrdir.clone_on_transport(dest_transport, stacked_on=stacked_on_url)
         branch = Branch.open(destination_url)
-        if policy_stacked_on_url is not None:
-            branch.set_stacked_on_url(policy_stacked_on_url)
+        # Bazaar will have set the stacked-on location to an absolute URL. We
+        # want it to literally match the policy.
+        if literal_stacked_on_url is not None:
+            branch.set_stacked_on_url(literal_stacked_on_url)
         return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
