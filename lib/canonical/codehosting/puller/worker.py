@@ -182,7 +182,13 @@ def identical_formats(branch_one, branch_two):
 
 
 class BranchPolicy:
-    """Policy on how to mirror branches."""
+    """Policy on how to mirror branches.
+
+    In particular, a policy determines which branches are safe to mirror by
+    checking their URLs and deciding whether or not to follow branch
+    references. A policy also determines how the mirrors of branches should be
+    stacked.
+    """
 
     def getStackedOnURL(self, source_branch, destination_url):
         """Return the URL of the branch to stack the mirrored copy on.
@@ -222,7 +228,17 @@ class BranchPolicy:
 
 
 class BranchMirrorer(object):
-    """A `BranchMirrorer` opens branches with an eye to safety."""
+    """A `BranchMirrorer` safely makes mirrors of branches.
+
+    A `BranchMirrorer` has a `BranchPolicy` to tell it which URLs are safe to
+    accesss, whether or not to follow branch references and how to stack
+    branches when they are mirrored.
+
+    The mirrorer knows how to follow branch references, create new mirrors,
+    update existing mirrors, determine stacked-on branches and the like.
+
+    Public methods are `open` and `mirror`.
+    """
 
     def __init__(self, policy):
         """Construct a branch opener with 'policy'.
@@ -379,6 +395,14 @@ class BranchMirrorer(object):
         return branch, True
 
     def updateBranch(self, source_branch, dest_branch):
+        """Bring 'dest_branch' up-to-date with 'source_branch'.
+
+        This methdo pulls 'source_branch' into 'dest_branch' and sets the
+        stacked-on URL of 'dest_branch' to match 'source_branch'.
+
+        This method assumes that 'source_branch' and 'dest_branch' both have
+        the same format.
+        """
         # Make sure the mirrored branch is stacked the same way as the
         # source branch.  Note that we expect this to be fairly
         # common, as, as of r6889, it is possible for a branch to be
@@ -527,7 +551,12 @@ class PullerWorker:
     """
 
     def _checkerForBranchType(self, branch_type):
-        """Return an instance of an appropriate subclass of `URLChecker`."""
+        """Return a `BranchMirrorer` with an appropriate `BranchPolicy`.
+
+        :param branch_type: A `BranchType`. The policy of the mirrorer will
+            be based on this.
+        :return: A `BranchMirrorer`.
+        """
         if branch_type == BranchType.HOSTED:
             policy = HostedBranchPolicy()
         elif branch_type == BranchType.MIRRORED:

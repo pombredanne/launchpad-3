@@ -53,7 +53,8 @@ class BranchPuller(LaunchpadXMLRPCView):
             is the branch database ID, 'url' is the URL to pull from,
             'unique_name' is the `unique_name` property and
             'default_stacked_on_url' is the URL of the branch to stack on by
-            default (normally of the form '/~foo/bar/baz').
+            default (normally of the form '/~foo/bar/baz'). If there is no
+            default stacked-on branch, then it's ''.
         """
         branch = removeSecurityProxy(branch)
         if branch.branch_type == BranchType.REMOTE:
