@@ -159,7 +159,7 @@ start-gdb: inplace stop bzr_version_info
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
+		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -229,6 +229,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
+	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
@@ -262,6 +263,7 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 install: reload-apache
 
 copy-certificates:
+	mkdir -p /etc/apache2/ssl
 	cp configs/development/launchpad.crt /etc/apache2/ssl/
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 

@@ -1646,7 +1646,7 @@ class ProcessingLoop(object):
     def isDone(self):
         """See `ITunableLoop`."""
         if self.max_submissions is not None:
-            if self.max_submissions >= (
+            if self.max_submissions <= (
                 self.valid_submissions + self.invalid_submissions):
                 return True
         return self.last_batch

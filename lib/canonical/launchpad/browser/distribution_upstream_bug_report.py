@@ -55,6 +55,8 @@ class BugReportData:
     UPSTREAM_THRESHOLD = 90
     WATCH_THRESHOLD = 90
 
+    BAD_THRESHOLD = 20
+
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
                  watched_bugs=0):
         self.open_bugs = open_bugs
@@ -82,6 +84,21 @@ class BugReportData:
             return 100.0 * self.watched_bugs / self.upstream_bugs
         else:
             return 0.0
+
+    @property
+    def row_class(self):
+        """Return the class to be used for the current table row.
+
+        :returns: 'good' if watched_bugs_percentage > WATCH_THRESHOLD;
+            'bad' if watched_bugs_percentage < BAD_THRESHOLD;
+            '' otherwise.
+        """
+        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
+            return "good"
+        elif self.watched_bugs_percentage < self.BAD_THRESHOLD:
+            return "bad"
+        else:
+            return ''
 
     @property
     def triaged_bugs_class(self):

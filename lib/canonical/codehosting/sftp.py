@@ -29,7 +29,7 @@ from twisted.internet import defer
 from twisted.python import util
 from zope.interface import implements
 
-from canonical.codehosting.transport import (
+from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, LaunchpadServer)
 from canonical.config import config
 from canonical.twistedsupport import gatherResults

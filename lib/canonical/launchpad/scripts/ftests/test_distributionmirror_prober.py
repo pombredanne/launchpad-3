@@ -487,20 +487,30 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
     def test_connect_depends_on_localhost_only_config(self):
         # If localhost_only is True and the host to which we would connect is
         # not localhost, the connect() method is not called.
-        orig_config = config.distributionmirrorprober.localhost_only
-        config.distributionmirrorprober.localhost_only = True
+        localhost_only_conf = """
+            [distributionmirrorprober]
+            localhost_only: True
+            """
+        config.push('localhost_only_conf', localhost_only_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         self.failUnless(prober.connect_host != 'localhost')
         prober.probe()
         self.failIf(prober.connectCalled)
+        # Restore the config.
+        config.pop('localhost_only_conf')
 
         # If localhost_only is False, then it doesn't matter the host to which
         # we'll connect to --the connect() method will be called.
-        config.distributionmirrorprober.localhost_only = False
+        remote_conf = """
+            [distributionmirrorprober]
+            localhost_only: False
+            """
+        config.push('remote_conf', remote_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.probe()
         self.failUnless(prober.connectCalled)
-        config.distributionmirrorprober.localhost_only = orig_config
+        # Restore the config.
+        config.pop('remote_conf')
 
     def test_noconnection_is_made_when_infiniteloop_detected(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()

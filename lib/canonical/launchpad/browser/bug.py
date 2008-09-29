@@ -8,6 +8,7 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
     'BugSecrecyEditView',
@@ -31,10 +32,13 @@ import pytz
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import implements, providedBy, Interface
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
@@ -60,6 +64,9 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.snapshot import Snapshot
 
+from canonical.lazr import EnumeratedType, Item
+
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -137,7 +144,7 @@ class BugContextMenu(ContextMenu):
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
              'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog']
+             'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -271,6 +278,13 @@ class BugContextMenu(ContextMenu):
         """Return the 'Activity log' Link."""
         text = 'Activity log'
         return Link('+activity', text)
+
+    def affectsmetoo(self):
+        """Return the 'This bug affects me too' link."""
+        user = getUtility(ILaunchBag).user
+        enabled = user is not None
+        text = "Does this bug affect you?"
+        return Link('+affectsmetoo', text, icon='edit', enabled=enabled)
 
 
 class MaloneView(LaunchpadFormView):
@@ -731,3 +745,56 @@ class BugURL:
         """Return the path component of the URL."""
         return u"bugs/%d" % self.context.id
 
+
+class BugAffectingUserChoice(EnumeratedType):
+    """The choices for a bug affecting a user."""
+
+    YES = Item("""
+        Yes
+
+        This bug affects me.
+        """)
+
+    NO = Item("""
+        No
+
+        This bug doesn't affect me.
+        """)
+
+
+class BugMarkAsAffectingUserForm(Interface):
+    """Form schema for marking the bug as affecting the user."""
+    affects = Choice(
+        title=_('Does this bug affect you?'),
+        vocabulary=BugAffectingUserChoice)
+
+
+class BugMarkAsAffectingUserView(LaunchpadFormView):
+    """Page for marking a bug as affecting the user."""
+
+    schema = BugMarkAsAffectingUserForm
+
+    field_names = ['affects']
+    label = "Does this bug affect you?"
+
+    custom_widget('affects', LaunchpadRadioWidgetWithDescription)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        if self.context.bug.isUserAffected(self.user):
+            affects = BugAffectingUserChoice.YES
+        else:
+            affects = BugAffectingUserChoice.NO
+
+        return {'affects': affects}
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Mark the bug according to the selection."""
+        bug = self.context.bug
+        if data['affects'] == BugAffectingUserChoice.YES:
+            bug.markUserAffected(self.user)
+        else:
+            bug.unmarkUserAffected(self.user)
+        self.request.response.redirect(canonical_url(bug))
