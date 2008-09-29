@@ -70,14 +70,12 @@ Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import DistroSeriesSet
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
-  >>> drs = DistroSeriesSet()
-  >>> breezy = drs.new(
-  ...     ubuntutest, 'breezy', 'Breezy Badger', 'The Breezy Badger',
+  >>> breezy = ubuntutest.newSeries(
+  ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
   >>> breezy_i386 = breezy.newArch(

@@ -228,12 +228,10 @@ class EditPackaging(EditByRegistryExpertsOrOwnersOrAdmins):
 class EditProductReleaseFile(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductReleaseFile
+
     def checkAuthenticated(self, user):
-        if (user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
-            user.inTeam(self.obj.productrelease.productseries.owner) or
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
-            return True
-        return False
+        return EditProductRelease(self.obj.productrelease).checkAuthenticated(
+            user)
 
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
@@ -742,7 +740,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
-    please consult with SABDFL before modifying these permissions.
+    please consult with Kiko and MDZ on the mailing list before modifying
+    these permissions.
     """
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries

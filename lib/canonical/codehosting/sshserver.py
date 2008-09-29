@@ -1,9 +1,23 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
+__metaclass__ = type
+__all__ = [
+    'LaunchpadAvatar',
+    'Factory',
+    'PublicKeyFromLaunchpadChecker',
+    'Realm',
+    'set_up_logging',
+    'SSHUserAuthServer',
+    'SubsystemOnlySession',
+    'UserDisplayedUnauthorizedLogin',
+    ]
+
 import binascii
 import os
 import logging
+
+from bzrlib import trace
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -22,6 +36,7 @@ from twisted.python import components, failure
 from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.config import config
+from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from zope.interface import implements
 
@@ -248,3 +263,32 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
+
+
+class _NotFilter(logging.Filter):
+    """A Filter that only allows records that do *not* match.
+
+    A _NotFilter initialized with "A.B" will allow "C", "A.BB" but not allow
+    "A.B", "A.B.C" etc.
+    """
+
+    def filter(self, record):
+        return not logging.Filter.filter(self, record)
+
+
+def set_up_logging(configure_oops_reporting=False):
+    """Set up logging for the smart server.
+
+    This sets up a debugging handler on the 'codehosting' logger, makes sure
+    that things logged there won't go to stderr (necessary because of
+    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+
+    In addition, if configure_oops_reporting is True, install a
+    Twisted log observer that ensures unhandled exceptions get
+    reported as OOPSes.
+    """
+    log = logging.getLogger('codehosting')
+    log.setLevel(logging.CRITICAL)
+    if configure_oops_reporting:
+        set_up_oops_reporting('codehosting')
+    return log

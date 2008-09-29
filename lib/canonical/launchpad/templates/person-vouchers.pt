@@ -15,20 +15,8 @@
            commercial_projects view/owned_commercial_projects;
            config modules/canonical.config/config">
 
-      <h1>Redeem Vouchers for Commercial Subscriptions</h1>
+        <h1>Redeem Vouchers for Commercial Subscriptions</h1>
 
-      <tal:deactivate-feature
-        condition="not: config/commercial/is_subscription_feature_active">
-        <tal:comment condition="nothing">
-          XXX BradCrittenden 2008-06-20 bug=234070
-          Remove condition referencing is_subscription_feature_active after
-          this feature has launched.
-        </tal:comment>
-        Voucher redemption is not yet enabled in Launchpad.
-      </tal:deactivate-feature>
-
-      <tal:activate-feature
-        condition="config/commercial/is_subscription_feature_active">
         <tal:not_commercial condition="not: commercial_projects">
           <tal:name replace="string:${context/displayname} " />
           does not own any commercial projects. Only project owners can redeem
@@ -70,7 +58,6 @@
             </tal:has_voucher>
           </tal:define_vouchers>
         </tal:commercial>
-        </tal:activate-feature>
     </div>
   </body>
 </html>
