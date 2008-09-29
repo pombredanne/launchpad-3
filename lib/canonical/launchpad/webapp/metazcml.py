@@ -13,7 +13,7 @@ from zope.app.component.fields import LayerField
 from zope.app.component.metaconfigure import (
     adapter, handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
-from zope.app.pagetemplate.engine import Engine
+from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publisher.browser.viewmeta import (
     page as original_page, pages as original_pages)
 from zope.app.security.permission import Permission
@@ -361,7 +361,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             raise AttributeError('The name "%s" is not in %s.%s'
                 % (attribute_to_parent, for_.__module__, for_.__name__))
     if path_expression is not None:
-        compiled_path_expression = Engine.compile(path_expression)
+        compiled_path_expression = TrustedEngine.compile(path_expression)
 
     # Dead chicken for the namespace gods.
     rootsite_ = rootsite
