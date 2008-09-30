@@ -70,7 +70,7 @@ class ObjectSet:
 
 class FakeBranch(FakeDatabaseObject):
 
-    def __init__(self, branch_type, url=None, unique_name=None,
+    def __init__(self, branch_type, url=None, unique_name=None, product=None,
                  stacked_on=None, private=False):
         self.branch_type = branch_type
         self.last_mirror_attempt = None
@@ -84,9 +84,24 @@ class FakeBranch(FakeDatabaseObject):
         self.mirror_status_message = None
         self.stacked_on = stacked_on
         self.private = private
+        self.product = product
+
+    def getPullURL(self):
+        pass
 
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
+
+
+class FakeProduct(FakeDatabaseObject):
+
+    def __init__(self):
+        self.development_focus = FakeProductSeries()
+
+
+class FakeProductSeries(FakeDatabaseObject):
+
+    user_branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
@@ -104,16 +119,20 @@ class FakeObjectFactory(ObjectFactory):
         super(FakeObjectFactory, self).__init__()
         self._branch_set = branch_set
 
-    def makeBranch(self, branch_type=None, stacked_on=None, private=False):
+    def makeBranch(self, branch_type=None, stacked_on=None, private=False,
+                   product=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
             url = None
         branch = FakeBranch(
             branch_type, url=url, unique_name=self.getUniqueString(),
-            stacked_on=stacked_on)
+            stacked_on=stacked_on, product=product)
         self._branch_set._add(branch)
         return branch
+
+    def makeProduct(self):
+        return FakeProduct()
 
 
 class FakeBranchPuller:
@@ -123,7 +142,15 @@ class FakeBranchPuller:
         self._script_activity_set = script_activity_set
 
     def _getBranchPullInfo(self, branch):
-        return branch
+        default_branch = ''
+        if branch.product is not None:
+            series = branch.product.development_focus
+            user_branch = series.user_branch
+            if user_branch is not None:
+                default_branch = '/' + user_branch.unique_name
+        return (
+            branch.id, branch.getPullURL(), branch.unique_name,
+            default_branch)
 
     def getBranchPullQueue(self, branch_type):
         queue = []
@@ -131,7 +158,7 @@ class FakeBranchPuller:
         for branch in self._branch_set:
             if (branch.branch_type == branch_type
                 and branch.next_mirror_time < UTC_NOW):
-                queue.append(branch)
+                queue.append(self._getBranchPullInfo(branch))
         return queue
 
     def startMirroring(self, branch_id):
