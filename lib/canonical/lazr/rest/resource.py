@@ -323,6 +323,37 @@ class HTTPResource:
             return isinstance(field.vocabulary, SQLObjectVocabularyBase)
         return False
 
+    def _parseContentDispositionHeader(self, value):
+        """Parse a Content-Disposition header.
+
+        :return: a 2-tuple (disposition-type, disposition-params).
+        disposition-params is a dict mapping parameter names to values.
+        """
+        disposition = None
+        params = {}
+        if value is None:
+            return (disposition, params)
+        pieces = value.split(';')
+        if len(pieces) > 1:
+            disposition = pieces[0].strip()
+        for name_value in pieces[1:]:
+            name_and_value = name_value.split('=', 2)
+            if len(name_and_value) == 2:
+                name = name_and_value[0].strip()
+                value = name_and_value[1].strip()
+                # Strip quotation marks if present. RFC2183 gives
+                # guidelines for when to quote these values, but it's
+                # very likely that a client will quote even short
+                # filenames, and unlikely that a filename will
+                # actually begin and end with quotes.
+                if (value[0] == '"' and value[-1] == '"'):
+                    value = value[1:-1]
+            else:
+                name = name_and_value
+                value = None
+            params[name] = value
+        return (disposition, params)
+
     def _parseAcceptStyleHeader(self, value):
         """Parse an HTTP header from the Accept-* family.
 
@@ -1119,7 +1150,11 @@ class ServiceRootResource(HTTPResource):
         top-level entry resources (should there be any) are not
         represented.
         """
-        data_for_json = {}
+        type_url = "%s#%s" % (
+            canonical_url(
+                self.request.publication.getApplication(self.request)),
+            "service-root")
+        data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
             data_for_json[link_name] = canonical_url(publication)
@@ -1150,6 +1185,16 @@ class ServiceRootResource(HTTPResource):
             top_level_resources[link_name] = utility
 
         return top_level_resources
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            adapter.singular_type)
 
 
 class Entry:

@@ -24,6 +24,10 @@
       template="../templates/binarypackagepublishinghistory-listing-summary.pt"
       />
     <browser:page
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
+    <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
       />

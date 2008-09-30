@@ -9,7 +9,9 @@ __all__ = ['GoogleServiceTestSetup']
 
 
 import os
+import errno
 import signal
+
 from canonical.launchpad.testing import googletestservice
 
 
@@ -84,6 +86,13 @@ class GoogleServiceTestSetup:
     def stopService(cls):
         """Shut down the webservice instance."""
         if cls.service:
-            os.kill(cls.service.pid, signal.SIGTERM)
-            cls.service.wait()
+            try:
+                os.kill(cls.service.pid, signal.SIGTERM)
+            except OSError, error:
+                if error.errno != errno.ESRCH:
+                    raise
+                # The process with the given pid doesn't exist, so there's
+                # nothing to kill or wait for.
+            else:
+                cls.service.wait()
         cls.service = None

@@ -340,6 +340,72 @@ class TestTemplateGuess(unittest.TestCase):
         self.assertEqual(guessed_template, None)
 
 
+class TestKdePOFileGuess(unittest.TestCase):
+    """Test auto-approval's `POFile` guessing for KDE uploads.
+
+    KDE has an unusual setup that the approver recognizes as a special
+    case: translation uploads are done in a package that represents a
+    KDE language pack, following a naming convention that differs
+    between KDE3 and KDE4.  The approver then attaches entries to the
+    real software packages they belong to, which it finds by looking
+    for a matching translation domain.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        factory = LaunchpadObjectFactory()
+        self.queue = TranslationImportQueue()
+
+        self.distroseries = factory.makeDistroRelease()
+
+        # For each of KDE3 and KDE4, set up:
+        #  a translation package following that KDE's naming pattern,
+        #  another package that the translations really belong in,
+        #  a template for that other package, and
+        #  a translation file into a language we'll test in.
+        self.kde_i18n_ca = SourcePackageNameSet().new('kde-i18n-ca')
+        kde3_package = SourcePackageNameSet().new('kde3')
+        ca_template = factory.makePOTemplate(
+            distroseries=self.distroseries,
+            sourcepackagename=kde3_package, name='kde3',
+            translation_domain='kde3')
+        self.pofile_ca = ca_template.newPOFile('ca')
+
+        self.kde_l10n_nl = SourcePackageNameSet().new('kde-l10n-nl')
+        kde4_package = SourcePackageNameSet().new('kde4')
+        nl_template = factory.makePOTemplate(
+            distroseries=self.distroseries,
+            sourcepackagename=kde4_package, name='kde4',
+            translation_domain='kde4')
+        self.pofile_nl = nl_template.newPOFile('nl')
+
+        self.pocontents = """
+            msgid "foo"
+            msgstr ""
+            """
+
+    def test_kde3(self):
+        # KDE3 translations are in packages named kde-i10n-** (where **
+        # is the language code).
+        poname = self.pofile_ca.potemplate.name + '.po'
+        entry = self.queue.addOrUpdateEntry(
+            poname, self.pocontents, False, self.distroseries.owner,
+            sourcepackagename=self.kde_i18n_ca,
+            distroseries=self.distroseries)
+        pofile = entry.getGuessedPOFile()
+        self.assertEqual(pofile, self.pofile_ca)
+
+    def test_kde4(self):
+        # KDE4 translations are in packages named kde-l10n-** (where **
+        # is the language code).
+        poname = self.pofile_nl.potemplate.name + '.po'
+        entry = self.queue.addOrUpdateEntry(
+            poname, self.pocontents, False, self.distroseries.owner,
+            sourcepackagename=self.kde_l10n_nl,
+            distroseries=self.distroseries)
+        pofile = entry.getGuessedPOFile()
+        self.assertEqual(pofile, self.pofile_nl)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 

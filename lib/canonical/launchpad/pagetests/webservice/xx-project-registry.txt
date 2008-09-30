@@ -56,11 +56,8 @@ Project groups are available at their canonical URL on the API virtual host.
     >>> pprint_entry(mozilla)
     active: True
     active_milestones_collection_link: u'http://.../mozilla/active_milestones'
-    all_bugtasks_collection_link: u'http://.../mozilla/all_bugtasks'
     all_milestones_collection_link: u'http://.../mozilla/all_milestones'
     bug_tracker_link: None
-    closed_bugtasks_collection_link: u'http://.../mozilla/closed_bugtasks'
-    critical_bugtasks_collection_link: u'http://.../mozilla/critical_bugtasks'
     date_created: u'...'
     description: u'The Mozilla Project...'
     display_name: u'the Mozilla Project'
@@ -69,12 +66,9 @@ Project groups are available at their canonical URL on the API virtual host.
     homepage_content: None
     homepage_url: u'http://www.mozilla.org/'
     icon_link: u'http://.../mozilla/icon'
-    inprogress_bugtasks_collection_link: u'http://.../mozilla/inprogress_bugtasks'
     logo_link: u'http://.../mozilla/logo'
     mugshot_link: u'http://.../mozilla/mugshot'
     name: u'mozilla'
-    new_bugtasks_collection_link: u'http://.../mozilla/new_bugtasks'
-    open_bugtasks_collection_link: u'http://.../mozilla/open_bugtasks'
     owner_link: u'http://.../~name12'
     projects_collection_link: u'http://.../mozilla/projects'
     registrant_link: u'http://.../~name12'
@@ -84,7 +78,6 @@ Project groups are available at their canonical URL on the API virtual host.
     sourceforge_project: None
     summary: u'The Mozilla Project...'
     title: u'The Mozilla Project'
-    unassigned_bugtasks_collection_link: u'http://.../mozilla/unassigned_bugtasks'
     wiki_url: None
 
 The milestones can be accessed through the active_milestones_collection_link
@@ -109,13 +102,10 @@ Projects are available at their canonical URL on the API virtual host.
     >>> pprint_entry(firefox)
     active: True
     active_milestones_collection_link: u'http://.../firefox/active_milestones'
-    all_bugtasks_collection_link: u'http://.../firefox/all_bugtasks'
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     branches_collection_link: u'http://.../firefox/branches'
     brand_link: u'http://.../firefox/brand'
     bug_tracker_link: None
-    closed_bugtasks_collection_link: u'http://.../firefox/closed_bugtasks'
-    critical_bugtasks_collection_link: u'http://.../firefox/critical_bugtasks'
     date_created: u'2004-09-24T20:58:02.185708+00:00'
     description: u'The Mozilla Firefox web browser'
     development_focus_link: u'http://.../firefox/trunk'
@@ -125,13 +115,10 @@ Projects are available at their canonical URL on the API virtual host.
     freshmeat_project: None
     homepage_url: None
     icon_link: u'http://.../firefox/icon'
-    inprogress_bugtasks_collection_link: u'http://.../firefox/inprogress_bugtasks'
     license_info: None
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
-    new_bugtasks_collection_link: u'http://.../firefox/new_bugtasks'
-    open_bugtasks_collection_link: u'http://.../firefox/open_bugtasks'
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
@@ -144,7 +131,6 @@ Projects are available at their canonical URL on the API virtual host.
     sourceforge_project: None
     summary: u'The Mozilla Firefox web browser'
     title: u'Mozilla Firefox'
-    unassigned_bugtasks_collection_link: u'http://.../firefox/unassigned_bugtasks'
     wiki_url: None
 
 Branches can be accessed through the branches_collection_link.
@@ -440,18 +426,12 @@ virtual host.
     >>> firefox_1_0 = webservice.get('/firefox/1.0').jsonBody()
     >>> pprint_entry(firefox_1_0)
     active_milestones_collection_link: u'http://.../firefox/1.0/active_milestones'
-    all_bugtasks_collection_link: u'http://.../firefox/1.0/all_bugtasks'
     all_milestones_collection_link: u'http://.../firefox/1.0/all_milestones'
-    closed_bugtasks_collection_link: u'http://.../firefox/1.0/closed_bugtasks'
-    critical_bugtasks_collection_link: u'http://.../firefox/1.0/critical_bugtasks'
     date_created: u'2005-06-06T08:59:51.898385+00:00'
     display_name: u'1.0'
     driver_link: None
     drivers_collection_link: u'http://.../firefox/1.0/drivers'
-    inprogress_bugtasks_collection_link: u'http://.../firefox/1.0/inprogress_bugtasks'
     name: u'1.0'
-    new_bugtasks_collection_link: u'http://.../firefox/1.0/new_bugtasks'
-    open_bugtasks_collection_link: u'http://.../firefox/1.0/open_bugtasks'
     owner_link: u'http://.../~name12'
     project_link: u'http://.../firefox'
     releases_collection_link: u'http://.../firefox/1.0/releases'
@@ -460,7 +440,6 @@ virtual host.
     status: u'Active Development'
     summary: u'The 1.0 branch of the Mozilla web browser...'
     title: u'Mozilla Firefox Series: 1.0'
-    unassigned_bugtasks_collection_link: u'http://.../firefox/1.0/unassigned_bugtasks'
 
 = Creating a milestone on the product series =
 
@@ -504,6 +483,16 @@ The milestone name can only contain letters, numbers, "-", "+", and ".".
     ...
     Invalid name...
 
+Invalid data will return a Bad Request error.
+
+    >>> response = webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='buggy', date_targeted=u'2005-10-36',
+    ...     description='Very buggy.')
+    >>> print response
+    HTTP/1.1 400 Bad Request
+    ...
+    date_targeted: Value doesn't look like a date.
 
 = Project release =
 
@@ -578,22 +567,15 @@ host.
     >>> firefox_milestone_1_0 = webservice.get(
     ...     '/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
-    all_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/all_bugtasks'
-    closed_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/closed_bugtasks'
-    critical_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/critical_bugtasks'
     date_targeted: u'2056-10-16T18:31:44.293448'
     description: None
-    inprogress_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/inprogress_bugtasks'
     is_visible: True
     name: u'1.0'
-    new_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/new_bugtasks'
-    open_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/open_bugtasks'
     resource_type_link: u'...'
     self_link: u'http://.../firefox/+milestone/1.0'
     series_target_link: u'http://.../firefox/trunk'
     target_link: u'http://.../firefox'
     title: u'Milestone 1.0 for Mozilla Firefox'
-    unassigned_bugtasks_collection_link: u'http://.../firefox/+milestone/1.0/unassigned_bugtasks'
 
 
 == Project release entries ==
