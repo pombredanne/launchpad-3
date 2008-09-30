@@ -11,7 +11,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag

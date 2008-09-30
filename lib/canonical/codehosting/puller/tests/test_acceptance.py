@@ -28,8 +28,7 @@ from canonical.codehosting.branchfs import get_puller_server
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, IProductSet, IScriptActivitySet)
+from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 
