@@ -25,14 +25,14 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestCaseWithTransport, TestSkipped
+from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
 from bzrlib.errors import SmartProtocolError
 
-from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.codehosting import (
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
@@ -412,7 +412,7 @@ class TestResultWrapper:
         self.result = result
 
     def addError(self, test_case, exc_info):
-        if not isinstance(exc_info[1], TestSkipped):
+        if not isinstance(exc_info[1], (TestSkipped, TestNotApplicable)):
             self.result.addError(test_case, exc_info)
 
     def addFailure(self, test_case, exc_info):

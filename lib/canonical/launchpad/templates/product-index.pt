@@ -196,30 +196,19 @@
         </a>
       </div>
 
-      <tal:activate-feature
-         tal:define="config modules/canonical.config/config"
-         condition="config/commercial/is_subscription_feature_active">
-        <tal:comment condition="nothing">
-          XXX EdwinGrubbs 2008-05-22 bug=234070
-          Remove condition referencing is_subscription_feature_active after
-          this feature has launched.
-        </tal:comment>
-
-        <tal:warning-for-owner
-           condition="view/show_commercial_subscription_info"
-        >
-          <div
-             class="section"
+      <tal:warning-for-owner
+        condition="view/show_commercial_subscription_info"
+      >
+        <div class="section"
              tal:content="structure context/@@+portlet-requires-subscription"
              tal:condition="view/requires_commercial_subscription"
-          />
-          <div
-             class="section"
+        />
+        <div class="section"
              tal:content="structure context/@@+portlet-license-missing"
              tal:condition="not: context/licenses"
-          />
-        </tal:warning-for-owner>
-      </tal:activate-feature>
+        />
+      </tal:warning-for-owner>
+
       <div
          tal:condition="context/coming_sprints"
          tal:content="structure context/@@+portlet-coming-sprints"
@@ -256,8 +245,8 @@
 
       <div class="section">
         <h2>Registered</h2>
-        <tal:link replace="structure context/registrant/fmt:link" /> on
-        <tal:created replace="context/datecreated/fmt:approximatedate" />
+        <tal:created replace="context/datecreated/fmt:approximatedate" /> by
+        <tal:registrant replace="structure context/registrant/fmt:link" />
         <p />
         <div tal:define="link context/menu:overview/rdf"
              tal:condition="link/enabled"

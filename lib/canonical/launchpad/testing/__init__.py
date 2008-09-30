@@ -7,8 +7,11 @@ import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+# Import the login and logout functions here as it is a much better
+# place to import them from in tests.
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import *
 
 
@@ -123,6 +126,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(expected is observed,
                         "%r is not %r" % (expected, observed))
 
+    def assertIsNot(self, expected, observed):
+        """Assert that `expected` is not the same object as `observed`."""
+        self.assertTrue(expected is not observed,
+                        "%r is %r" % (expected, observed))
+
     def assertIn(self, needle, haystack):
         """Assert that 'needle' is in 'haystack'."""
         self.assertTrue(
@@ -132,6 +140,16 @@ class TestCase(unittest.TestCase):
         """Assert that 'needle' is not in 'haystack'."""
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
+
+    def pushConfig(self, section, **kwargs):
+        """Push some key-value pairs into a section of the config.
+
+        The config values will be restored during test tearDown.
+        """
+        name = self.factory.getUniqueString()
+        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        config.push(name, "\n[%s]\n%s\n" % (section, body))
+        self.addCleanup(config.pop, name)
 
     def run(self, result=None):
         if result is None:
@@ -172,15 +190,21 @@ class TestCase(unittest.TestCase):
         finally:
             result.stopTest(self)
 
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.factory = ObjectFactory()
+
 
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
+        TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
 
     def tearDown(self):
         logout()
+        TestCase.tearDown(self)
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.

@@ -4,7 +4,7 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
-PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
@@ -39,12 +39,9 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-# XXX flacoste 2008/07/31 This is not automatically run and the
-# generated file is stored in the revision control, until IS installs
-# xsltproc on all required machine.
-apidoc:
+apidoc: compile
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
-		$(XSLTPROC) ./lib/canonical/lazr/rest/wadl-to-refhtml.xsl - \
+		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
 		> ./lib/canonical/launchpad/apidoc/index.html
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
@@ -105,6 +102,9 @@ lint:
 lint-verbose:
 	@bash ./utilities/lint.sh -v
 
+xxxreport:
+	${PYTHON} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
+
 check-configs:
 	${PYTHON} utilities/check-configs.py
 
@@ -113,7 +113,9 @@ pagetests: build
 
 inplace: build
 
-build: bzr_version_info
+build: bzr_version_info compile apidoc
+
+compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
@@ -146,18 +148,18 @@ ftest_inplace: inplace
 run: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
+		 -r librarian,google-webservice -C $(CONFFILE)
 
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
 	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
-		-r librarian,restricted-librarian,google-webservice -C $(CONFFILE) \
+		-r librarian,google-webservice -C $(CONFFILE) \
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
+		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -227,6 +229,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
+	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 
@@ -259,13 +262,18 @@ sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 
 install: reload-apache
 
-/etc/apache2/sites-available/local-launchpad: configs/development/local-launchpad-apache
-	cp configs/development/local-launchpad-apache $@
+copy-certificates:
+	mkdir -p /etc/apache2/ssl
+	cp configs/development/launchpad.crt /etc/apache2/ssl/
+	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-/etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
+copy-apache-config:
+	cp configs/development/local-launchpad-apache /etc/apache2/sites-available/local-launchpad
+
+enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
-reload-apache: /etc/apache2/sites-enabled/local-launchpad
+reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 reload
 
 static:

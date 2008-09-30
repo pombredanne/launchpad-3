@@ -13,13 +13,13 @@ __all__ = [
 import gc
 from operator import itemgetter
 
-from storm.zope.interfaces import IZStorm
-
 from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.mem import resident
 
 
@@ -98,7 +98,8 @@ class PublishingTunableLoop(object):
 
         # Invalidate the whole cache for the main store, this we we will also
         # get rid of all the foreign keys referred by the publishing records.
-        main_store = getUtility(IZStorm).get("main")
+        main_store = getUtility(IStoreSelector).get(
+                MAIN_STORE, DEFAULT_FLAVOR)
         main_store.invalidate()
         gc.collect()
 

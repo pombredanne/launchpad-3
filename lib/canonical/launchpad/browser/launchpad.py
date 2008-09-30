@@ -222,7 +222,7 @@ class LinkView(LaunchpadView):
     def render(self):
         """Render the menu link if it's enabled or we're in dev mode."""
         if self.context.enabled or config.devmode:
-            # XXX: TomBerger 2008-04-16 bug=218706:
+            # XXX: Tom Berger 2008-04-16 bug=218706:
             # We strip the result of the template rendering
             # since ZPT seems to always insert a line break
             # at the end of an embedded template.
@@ -253,7 +253,14 @@ class Hierarchy(LaunchpadView):
         # the URL path segments.  Note that there may be more segments than
         # there are objects.
         object_urls = zip(self.request.traversed_objects, pathurls)
+        return self._breadcrumbs(object_urls)
 
+    def _breadcrumbs(self, object_urls):
+        """Generate the breadcrumb list.
+
+        :param object_urls: A sequence of (object, url) pairs.
+        :return: A list of 'IBreadcrumb' objects.
+        """
         breadcrumbs = []
         for obj, url in object_urls:
             crumb = self.breadcrumb_for(obj, url)
@@ -586,6 +593,7 @@ class LaunchpadRootNavigation(Navigation):
         '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
+        'pillars': IPillarNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'sourcepackagenames': ISourcePackageNameSet,

@@ -11,7 +11,6 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -244,6 +243,58 @@ class BranchPullerTest(TestCaseWithFactory):
 
         self.assertIs(None, branch.next_mirror_time)
 
+    def test_mirrorComplete_requests_mirror_for_incomplete_stacked(self):
+        # After successfully mirroring a branch on which others are stacked,
+        # any stacked branches with incomplete mirrors should have a mirror
+        # requested. This prevents them from being trapped in a failed state.
+        # See bug 261334.
+        branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=branch)
+
+        # Note that no mirror is requested.
+        self.assertIs(None, stacked_branch.next_mirror_time)
+
+        self.storage.startMirroring(stacked_branch.id)
+        self.storage.startMirroring(branch.id)
+        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
+        self.assertSqlAttributeEqualsDate(
+            stacked_branch, 'next_mirror_time', UTC_NOW)
+
+    def test_mirrorCompleteRequestsMirrorForIncompleteStackedOnPrivate(self):
+        # After successfully mirroring a *private* branch on which others are
+        # stacked, any stacked branches with incomplete mirrors have a mirror
+        # requested. See bug 261334.
+        branch = removeSecurityProxy(
+            self.factory.makeBranch(private=True))
+        stacked_branch = removeSecurityProxy(
+            self.factory.makeBranch(stacked_on=branch, private=True))
+
+        # Note that no mirror is requested.
+        self.assertIs(None, stacked_branch.next_mirror_time)
+
+        self.storage.startMirroring(stacked_branch.id)
+        self.storage.startMirroring(branch.id)
+        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
+        self.assertSqlAttributeEqualsDate(
+            stacked_branch, 'next_mirror_time', UTC_NOW)
+
+    def test_mirrorCompletePrivateStackedOnPublic(self):
+        # After successfully mirroring a *public* branch on which *private*
+        # branche are stacked, any stacked branches with incomplete mirrors
+        # have a mirror requested. See bug 261334.
+        branch = self.factory.makeBranch()
+        stacked_branch = removeSecurityProxy(
+            self.factory.makeBranch(stacked_on=branch, private=True))
+
+        # Note that no mirror is requested.
+        self.assertIs(None, stacked_branch.next_mirror_time)
+
+        self.storage.startMirroring(stacked_branch.id)
+        self.storage.startMirroring(branch.id)
+        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
+        self.assertSqlAttributeEqualsDate(
+            stacked_branch, 'next_mirror_time', UTC_NOW)
+
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
@@ -346,6 +397,36 @@ class BranchPullQueueTest(TestCaseWithFactory):
         naked_branch = removeSecurityProxy(branch)
         naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
         return branch
+
+    def test_getBranchPullInfo_no_default_stacked_branch(self):
+        # If there's no default stacked branch for the project that a branch
+        # is on, then _getBranchPullInfo returns (id, url, unique_name, '').
+        branch = self.factory.makeBranch()
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
+
+    def test_getBranchPullInfo_default_stacked_branch(self):
+        # If there's a default stacked branch for the project that a branch is
+        # on, then _getBranchPullInfo returns (id, url, unique_name,
+        # default_branch_unique_name).
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        default_branch = self.factory.makeBranch(product=product)
+        series.user_branch = default_branch
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name,
+             '/' + default_branch.unique_name), info)
+
+    def test_getBranchPullInfo_junk(self):
+        # _getBranchPullInfo returns (id, url, unique_name, '') for junk
+        # branches.
+        branch = self.factory.makeBranch(product=None)
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
@@ -557,24 +638,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
-    def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        section = (
-            "[codehosting]\n"
-            "allow_default_stacking: %s,%s"
-            % (config.codehosting.allow_default_stacking, product.name))
-        handle = self.factory.getUniqueString()
-        config.push(handle, section)
-        self.addCleanup(lambda: config.pop(handle))
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
-
     def _makeProductWithDevFocus(self, private=False):
         """Make a stacking-enabled product with a development focus.
 
@@ -582,7 +645,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             private.
         :return: The new Product and the new Branch.
         """
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch

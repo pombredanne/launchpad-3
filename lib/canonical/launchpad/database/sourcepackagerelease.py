@@ -162,9 +162,9 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage.
-        # XXX 20080616 mpt: cprov says this property "won't be as useful as it
-        # looks once we start supporting derivation ... [It] is dangerous and
-        # should be renamed (or removed)". <http://launchpad.net/bugs/241298>
+        # XXX 2008-06-16 mpt bug=241298: cprov says this property "won't be as
+        # useful as it looks once we start supporting derivation ... [It] is
+        # dangerous and should be renamed (or removed)".
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
@@ -248,6 +248,21 @@ class SourcePackageRelease(SQLBase):
                 archives.add(pub.archive)
 
         return sorted(archives, key=operator.attrgetter('id'))
+
+    @cachedproperty
+    def _cached_published_archives(self):
+        """Return a cached list of published archives.
+
+        This is intended for the security adapter as it calls
+        published_archives a lot which makes private PPA index pages
+        unrenderable in the timeout allowed if they have more than a
+        handful of packages.
+
+        XXX Julian 2008-09-10
+        This code should be removed when security adapter caching is done.
+        See bug 268612.
+        """
+        return self.published_archives
 
     def addFile(self, file):
         """See ISourcePackageRelease."""

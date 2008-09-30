@@ -54,23 +54,11 @@ Logged in users can.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/gnome-terminal/main')
-    >>> nopriv_browser.getControl('Whiteboard').value = (
-    ...     'This is the whiteboard')
-
-The user is asked whether the code is ready for review or not.
-
-    >>> print_radio_button_field(nopriv_browser.contents, 'status')
-    (*) Needs review
-    ( ) Work in progress
-
-Here we create the proposal as work in progress.
-
-    >>> nopriv_browser.getControl('Work in progress').click()
 
 There is a cancel link shown with the buttons.
 
     >>> cancel = nopriv_browser.getLink('Cancel')
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
 
 Registering the merge proposal takes the user to the new merge proposal.
 
@@ -106,9 +94,8 @@ merge proposal is considered a "landing target" with an optional
     >>> nopriv_browser.getLink('Merging').click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
-    This is the whiteboard
     Merge proposed by No Privileges Person
-    Work in progress
+    Needs review
 
 Since the user who registered the merge proposal is different
 to the owner of the source branch, they are shown explicitly.
@@ -122,16 +109,13 @@ shown.
     >>> sample_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/gnome-terminal/main')
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'This is the whiteboard')
     >>> cancel = sample_browser.getLink('Cancel')
-    >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.getControl('Propose Merge').click()
 
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges')
     >>> printMergeProposals(sample_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
-    This is the whiteboard
     Needs review
 
 Consume notification.
@@ -150,12 +134,10 @@ shown first.
     >>> browser.getLink('Merging').click()
     >>> printMergeProposals(browser, 'landing-candidates')
     ~name12/gnome-terminal/scanned (New) - view proposal details
-      This is the whiteboard
       Needs review
     ~name12/gnome-terminal/klingon (Experimental) - view proposal details
-      This is the whiteboard
       Merge proposed by No Privileges Person
-      Work in progress
+      Needs review
 
 
 == Viewing a proposal for merging ==
@@ -175,22 +157,14 @@ and merging, so we have to settle for the sample data.
     >>> sample_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/firefox/main')
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'This is the whiteboard')
     >>> cancel = sample_browser.getLink('Cancel')
-    >>> sample_browser.getControl('Register').click()
+    >>> sample_browser.getControl('Propose Merge').click()
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merges')
 
     >>> sample_browser.getLink('view proposal details').click()
     >>> print sample_browser.title
     Proposal to merge branch
-
-The whiteboard is shown:
-
-    >>> print extract_text(find_tag_by_id(
-    ...      sample_browser.contents, 'branch-whiteboard-value'))
-    This is the whiteboard
 
 The details of the proposal shows initially the source and target
 branches, and the current status.
@@ -289,45 +263,6 @@ for the source_branch.
     None
 
 
-== Dependent Branches ==
-
-When registering merge proposals, there is an optional dependent branch.
-This is used when the source branch has branched of a branch other than
-the target branch.
-
-    >>> sample_browser.getLink('Propose for merging').click()
-    >>> sample_browser.getControl(
-    ...     name='field.target_branch.target_branch').value = (
-    ...         '~name12/firefox/main')
-    >>> sample_browser.getControl('Dependent Branch').value = (
-    ...     '~sabdfl/firefox/release-0.8')
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'This is the whiteboard')
-    >>> cancel = sample_browser.getLink('Cancel')
-    >>> sample_browser.getControl('Register').click()
-    >>> sample_browser.getLink(url="+merges").click()
-    >>> printMergeProposals(sample_browser, 'landing-targets')
-    ~name12/firefox/main - view proposal details
-    This is the whiteboard
-    Merge proposed by Sample Person
-    Dependent on ~sabdfl/firefox/release-0.8
-    Needs review
-
-This association is also shown on the branch's merges page that is depended
-upon.
-
-    >>> sample_browser.open(
-    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.8/+merges')
-    >>> printMergeProposals(sample_browser, 'dependent-branches')
-    ~sabdfl/firefox/release-0.9 - view proposal details
-    This is the whiteboard
-    Needs review
-
-Consume notification.
-
-    >>> [_unused] = pop_notifications()
-
-
 == Requesting reviews ==
 
 You can request a review of a merge proposal.
@@ -340,25 +275,13 @@ You can request a review of a merge proposal.
     >>> sample_browser.getControl('Review type').value = 'first'
     >>> sample_browser.getControl('Request review').click()
 
-This causes a two notifications to be sent.
+This causes a notification to be sent.
 
-    >>> [notification, notification2] = pop_notifications()
+    >>> [notification] = pop_notifications()
 
-The first indicates a status change to branch subscribers.
+The message notifies the requested reviewer.
 
     >>> print notification.get_payload(decode=True)
-    The proposal to merge Klingon support in GNOME Terminal into GNOME
-    Terminal Mainline has been updated.
-    <BLANKLINE>
-        Status: Work in progress => Needs review
-    -- 
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch GNOME Terminal Mainline.
-    <BLANKLINE>
-
-The second notifies the requested reviewer.
-
-    >>> print notification2.get_payload(decode=True)
     You have been requested to review the proposed merge of Klingon support
     in GNOME Terminal into GNOME Terminal Mainline.
     <BLANKLINE>
@@ -367,17 +290,6 @@ The second notifies the requested reviewer.
     You are requested to review the proposed merge of Klingon support in
     GNOME Terminal into GNOME Terminal Mainline.
     <BLANKLINE>
-
-The status of the merge proposal is updated to "Needs review".
-
-    >>> print_summary(sample_browser)
-    Proposed ...
-    Ready for review for merging into
-    lp://dev/~name12/gnome-terminal/main
-
-    Source branch: ~name12/gnome-terminal/klingon
-    Target branch: ~name12/gnome-terminal/main
-           Status: Needs review
 
 Additional reviews can be requested.
 
@@ -467,11 +379,15 @@ find one, then the current time is used as the date merged.
     >>> print nopriv_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
-A notification is also added.
+A notification is also added, as well as tekt being added to merge proposal
+about the proposal having been marked as merged.
 
     >>> for message in get_feedback_messages(nopriv_browser.contents):
     ...     print extract_text(message)
     The proposal has now been marked as merged.
+    >>> tag = find_tag_by_id(nopriv_browser.contents, 'proposal-merged')
+    >>> print extract_text(tag)
+    The proposed merge was performed at revision 42
 
 An email notification is also created.
 
@@ -495,7 +411,6 @@ The source branch is still shown on the branch's merges page.
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
-      This is the whiteboard
       Merge proposed by No Privileges Person
       Merged ... ago at revision 42
 
@@ -505,7 +420,6 @@ Gone from the target branch.
     >>> nopriv_browser.getLink(url="+merges").click()
     >>> printMergeProposals(nopriv_browser, 'landing-candidates')
     ~name12/gnome-terminal/scanned (New) - view proposal details
-      This is the whiteboard
       Needs review
 
 Now if the other browser attempts to also mark as merged, it updates the merged
@@ -643,7 +557,7 @@ Test validation of errors...
 The target branch is a required field, so attempting to register without
 setting it gives an appropriate error.
 
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
     >>> for message in get_feedback_messages(nopriv_browser.contents):
     ...     print extract_text(message)
     There is 1 error.
@@ -654,7 +568,7 @@ Invalid errors are also shown.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         'fooix')
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
     >>> for message in get_feedback_messages(nopriv_browser.contents):
     ...     print extract_text(message)
     There is 1 error.
@@ -697,7 +611,7 @@ focus before, then that is also shown as a radio option.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~sabdfl/firefox/release-0.9')
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
@@ -727,7 +641,7 @@ in the source branch.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~sabdfl/firefox/main')
-    >>> nopriv_browser.getControl('Register').click()
+    >>> nopriv_browser.getControl('Propose Merge').click()
     >>> print_bugs_and_specs(nopriv_browser)
     Linked bug reports and blueprints
     Bug #4: Reflow problems with complex page layouts
@@ -817,4 +731,3 @@ Now use a browser with eric's credentials.
     >>> browser.getLink('Review proposal').click()
     >>> browser.getControl('Reviewed Revision').value = '1234'
     >>> browser.getControl('Approve').click()
-

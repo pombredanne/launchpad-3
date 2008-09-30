@@ -66,10 +66,9 @@ class ServersToStart(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.configs = [config.librarian_server,
                         config.buildsequencer,
-                        config.authserver,
                         config.codehosting]
         self.old_launch_values = [conf.launch for conf in self.configs]
-        new_launch_values = [True, False, False, False]
+        new_launch_values = [True, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):
             conf.launch = launch_value
 
@@ -83,7 +82,7 @@ class ServersToStart(unittest.TestCase):
         """Implicitly start services based on the config.launch property.
         """
         services = sorted(get_services_to_run([]))
-        expected = [SERVICES['restricted-librarian'], SERVICES['librarian']]
+        expected = [SERVICES['librarian']]
 
         # Mailman may or may not be asked to run.
         if config.mailman.launch:

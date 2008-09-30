@@ -12,6 +12,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from storm.store import Store
+from zope.app.event.objectevent import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -36,7 +37,8 @@ from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposalGetter, IBranchMergeProposal,
+    IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
+    IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
     UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -151,6 +153,8 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    root_message_id = StringCol(default=None)
+
     @property
     def title(self):
         """See `IBranchMergeProposal`."""
@@ -231,8 +235,11 @@ class BranchMergeProposal(SQLBase):
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-        self.date_review_requested = UTC_NOW
+        # Don't reset the date_review_requested if we are already in the
+        # review state.
+        if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
+            self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
@@ -267,11 +274,13 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
+        notify(BranchMergeProposalApprovedEvent(self, reviewer))
 
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+        notify(BranchMergeProposalRejectedEvent(self, reviewer))
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
@@ -335,6 +344,8 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
+        # Remove from the queue.
+        self.queue_position = None
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -343,6 +354,8 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
+        # Remove from the queue.
+        self.queue_position = None
 
         if merged_revno is not None:
             branch_revision = BranchRevision.selectOneBy(
@@ -413,17 +426,14 @@ class BranchMergeProposal(SQLBase):
               SELECT revision FROM BranchRevision
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
-            prejoins=['revision'], orderBy='-sequence')
+            prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
-        if parent is None:
-            if self.root_comment is not None:
-                parent_message = self.root_comment.message
-        else:
+        if parent is not None:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
@@ -614,3 +624,21 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
+
+
+class BranchMergeProposalReviewedEvent(ObjectEvent):
+    """A reviewer has approved or rejected the proposed merge."""
+
+    def __init__(self, proposal, reviewer):
+        ObjectEvent.__init__(self, proposal)
+        self.reviewer = reviewer
+
+
+class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
+    """See `IBranchMergeProposalApprovedEvent`."""
+    implements(IBranchMergeProposalApprovedEvent)
+
+
+class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
+    """See `IBranchMergeProposalRejectedEvent`."""
+    implements(IBranchMergeProposalRejectedEvent)

@@ -319,9 +319,9 @@ def get_bugmail_from_address(person, bug):
     email_addresses = shortlist(
         getUtility(IEmailAddressSet).getByPerson(person))
     if not email_addresses:
-        # XXX: Bjorn Tillenius 2006-05-21:
+        # XXX: Bjorn Tillenius 2006-05-21 bug=33427:
         # A user should always have at least one email address,
-        # but due to bug 33427, this isn't always the case.
+        # but due to bug #33427, this isn't always the case.
         return format_address(person.displayname,
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 
@@ -1759,18 +1759,11 @@ def notify_mailinglist_activated(mailinglist, event):
     template = get_email_template('new-mailing-list.txt')
     editemails_url = '%s/+editemails'
 
-    def contacts_for(person):
-        # Recursively gather all of the active members of a team and
-        # of every sub-team.
-        members = set()
-        if person.isTeam():
-            for member in person.activemembers:
-                members.update(contacts_for(member))
-        elif person.preferredemail is not None:
-            members.add(person)
-        return members
-
-    for person in contacts_for(team):
+    for person in team.allmembers:
+        if person.is_team or person.preferredemail is None:
+            # This is either a team or a person without a preferred email, so
+            # don't send a notification.
+            continue
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,

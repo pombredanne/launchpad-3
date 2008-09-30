@@ -57,6 +57,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://feeds.launchpad.dev/
     althosts:
     ----
+    id @ id.launchpad.dev
+    rooturl: http://id.launchpad.dev/
+    althosts:
+    ----
     mainsite @ launchpad.dev
     rooturl: http://launchpad.dev/
     althosts: localhost
@@ -102,6 +106,7 @@ request is headed to one of the officialy-used Launchpad host names:
     bugs.launchpad.dev
     code.launchpad.dev
     feeds.launchpad.dev
+    id.launchpad.dev
     launchpad.dev
     localhost
     openid.launchpad.dev
@@ -353,12 +358,16 @@ the registered factories.)
     ...     publication = publication_factory(None)
     ...     return request, publication
 
-    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     ProtocolErrorPublication)
     >>> def print_request_and_publication(host='localhost', port=None,
-    ...                                   method='GET', mime_type='text/html'):
+    ...                                   method='GET',
+    ...                                   mime_type='text/html',
+    ...                                   extra_environment=None):
     ...     """Helper giving short names for the request and publication."""
     ...     request, publication = get_request_and_publication(
-    ...         host, port, method, mime_type)
+    ...         host, port, method, mime_type,
+    ...         extra_environment=extra_environment)
     ...     print type(request).__name__.split('.')[-1]
     ...     publication_classname = type(publication).__name__.split('.')[-1]
     ...     if isinstance(publication, ProtocolErrorPublication):
@@ -406,8 +415,8 @@ the registered factories.)
     FeedsPublication
 
     >>> print_request_and_publication('openid.launchpad.dev')
-    OpenIdBrowserRequest
-    OpenIdPublication
+    OpenIDBrowserRequest
+    OpenIDPublication
 
     >>> print_request_and_publication('translations.launchpad.dev')
     TranslationsBrowserRequest
@@ -448,6 +457,41 @@ application/json.
     WebServicePublication
     WebServiceClientRequest
     WebServicePublication
+
+When a request for '/api' is made to one of the application virtualhost,
+it is also handled by the web service request and publication:
+
+    >>> print_request_and_publication(
+    ...     'launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    >>> for subdomain in [
+    ...     'answers', 'blueprints', 'bugs', 'code', 'translations']:
+    ...     print_request_and_publication(
+    ...         '%s.launchpad.dev' % subdomain, method='GET',
+    ...         extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+
+Requests for '/api' on other hosts like feeds or xmlrpc are handled like
+other requests on these hosts:
+
+    >>> for host in ['feeds.launchpad.dev', 'shipit.ubuntu.dev']:
+    ...     print_request_and_publication(
+    ...         host, method='GET', extra_environment={'PATH_INFO': '/api'})
+    FeedsBrowserRequest
+    FeedsPublication
+    UbuntuShipItBrowserRequest
+    ShipItPublication
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.

@@ -520,7 +520,7 @@ is only run in one environment, so links to that site will be preserved.
     ['help.launchpad.net']
 
     >>> page_match = PageMatch(
-    ...     u'OpenId',
+    ...     u'OpenID',
     ...     'http://help.launchpad.net/OpenID',
     ...     u'Launchpad uses OpenID.')
     >>> page_match.url

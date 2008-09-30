@@ -15,11 +15,13 @@ messaging settings -- stub 2004-10-21
 
 __all__ = [
     'format_address',
+    'get_msgid',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
     'raw_sendmail']
 
+import sha
 import sets
 from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -36,6 +38,7 @@ from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 from canonical.launchpad.mail.stub import TestMailer
+from canonical.launchpad import versioninfo
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -185,7 +188,7 @@ def sendmail(message, to_addrs=None):
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
-        message['Message-Id'] = make_msgid('launchpad@canonical')
+        message['Message-Id'] = get_msgid()
 
     # Add a Date: header if it isn't already there
     if 'date' not in message:
@@ -218,6 +221,16 @@ def sendmail(message, to_addrs=None):
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
+    message.set_param('Revision', str(versioninfo.revno), 'X-Generated-By')
+    message.set_param('Instance', config.name, 'X-Generated-By')
+
+    # Add a shared secret header for pre-approval with Mailman. This approach
+    # helps security, but still exposes us to a replay attack; we consider the
+    # risk low.
+    del message['X-Launchpad-Hash']
+    hash = sha.new(config.mailman.shared_secret)
+    hash.update(str(message['message-id']))
+    message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
     if isZopeless():
@@ -252,6 +265,10 @@ def sendmail(message, to_addrs=None):
             config.canonical.bounce_address, to_addrs, raw_message)
 
 
+def get_msgid():
+    return make_msgid('launchpad')
+
+
 def raw_sendmail(from_addr, to_addrs, raw_message):
     """Send a raw RFC8222 email message.
 
@@ -278,4 +295,3 @@ if __name__ == '__main__':
             'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
             'Testing Zopeless', 'This is the body')
     tm.uninstall()
-

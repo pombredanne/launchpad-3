@@ -4,7 +4,7 @@
   define-macro="master"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.1.8 (r${revno});
+    version string:Launchpad 2.1.9 (r${revno});
   "
 ><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
@@ -134,7 +134,7 @@
       class="clearfix"
     >
       <tal:XXX replace="nothing">
-        # XXX mpt 20080702: The HTML comment works around bug 229931.
+        # XXX mpt 2008-07-02 bug=229931: The HTML comment works.
       </tal:XXX>
       <!-- :-) --><tal:facet repeat="link facetmenu">
         <span
@@ -172,7 +172,7 @@
         <div id="container">
           <!--[if IE 7]>&nbsp;<![endif]-->
           <tal:XXX condition="nothing">
-            # XXX mpt 20080716 bug=249032: This conditional comment should
+            # XXX mpt 2008-07-16 bug=249032: This conditional comment should
             # not be necessary.
           </tal:XXX>
 

@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_allowed_default_stacking_names',
     'Product',
     'ProductSet',
     'ProductWithLicenses',
@@ -16,6 +15,7 @@ import operator
 import datetime
 import calendar
 import pytz
+import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -23,7 +23,6 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.lazr import decorates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
@@ -36,7 +35,7 @@ from canonical.launchpad.database.branchvisibilitypolicy import (
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
@@ -279,9 +278,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        if self.name in get_allowed_default_stacking_names():
-            return self.development_focus.series_branch
-        return None
+        return self.development_focus.series_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -480,10 +477,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return None
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this product.."""
         search_params.setProduct(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
@@ -491,8 +487,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.product = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.product == self, user)
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
@@ -930,10 +925,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
 
-def get_allowed_default_stacking_names():
-    """Return a list of names of `Product`s that allow default stacking."""
-    return config.codehosting.allow_default_stacking.split(',')
-
 
 class ProductSet:
     implements(IProductSet)
@@ -957,13 +948,16 @@ class ProductSet:
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self.all_active[:quantity]
+        if quantity is None:
+            return self.all_active
+        else:
+            return self.all_active[:quantity]
 
     @property
     def all_active(self):
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it in
+        # The main product listings include owner, so we prejoin it.
         return results.prejoin(["owner"])
 
     def get(self, productid):
@@ -1013,11 +1007,13 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       license_reviewed=False, mugshot=None, logo=None,
-                      icon=None, licenses=(), license_info=None,
+                      icon=None, licenses=None, license_info=None,
                       registrant=None):
         """See `IProductSet`."""
         if registrant is None:
             registrant = owner
+        if licenses is None:
+            licenses = sets.Set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,

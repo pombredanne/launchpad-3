@@ -14,11 +14,12 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
@@ -36,18 +37,22 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet)
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
+    IDistributionArchive, IPPA)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
-from storm.zope.interfaces import IZStorm
 
 
 class Archive(SQLBase):
@@ -60,13 +65,13 @@ class Archive(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
-        """Only allow renaming of REBUILD archives.
+        """Only allow renaming of COPY archives.
 
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.purpose == ArchivePurpose.REBUILD, (
-                "Only REBUILD archives can be renamed.")
+            assert self.purpose == ArchivePurpose.COPY, (
+                "Only COPY archives can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -115,6 +120,20 @@ class Archive(SQLBase):
         dbName='building_count', notNull=True, default=0)
 
     failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
+
+    date_created = UtcDateTimeCol(dbName='date_created')
+
+    def _init(self, *args, **kw):
+        """Provide the right interface for URL traversal."""
+        SQLBase._init(self, *args, **kw)
+
+        # Provide the additional marker interface depending on what type
+        # of archive this is.  See also the browser:url declarations in
+        # zcml/archive.zcml.
+        if self.is_ppa:
+            alsoProvides(self, IPPA)
+        else:
+            alsoProvides(self, IDistributionArchive)
 
     @property
     def is_ppa(self):
@@ -378,7 +397,7 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             SourcePackagePublishingHistory.archive == self.id,
@@ -539,7 +558,7 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.find(
             (LibraryFileContent),
             BinaryPackagePublishingHistory.archive == self.id,
@@ -585,9 +604,9 @@ class Archive(SQLBase):
         # Compiled regexp to remove puntication.
         clean_text = re.compile('(,|;|:|\.|\?|!)')
 
-        # XXX cprov 20080402: The set() is only used because we have
-        # a limitation in our FTI setup, it only indexes the first 2500
-        # chars of the target columns. See bug 207969. When such limitation
+        # XXX cprov 20080402 bug=207969: The set() is only used because we
+        # have a limitation in our FTI setup, it only indexes the first 2500
+        # chars of the target columns. When such limitation
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
@@ -639,19 +658,20 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency):
+    def getArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency)
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
 
-    def removeArchiveDependency(self, dependency):
+    def removeArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency)
+        dependency = self.getArchiveDependency(dependency, pocket, component)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency):
+    def addArchiveDependency(self, dependency, pocket, component):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
@@ -660,12 +680,21 @@ class Archive(SQLBase):
         if not dependency.is_ppa:
             raise ArchiveDependencyError(
                 "Archive dependencies only applies to PPAs.")
+        else:
+            if pocket is not PackagePublishingPocket.RELEASE:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to RELEASE pocket.")
+            if component.id is not getUtility(IComponentSet)['main'].id:
+                raise ArchiveDependencyError(
+                    "PPA dependencies only applies to 'main' component.")
 
-        if self.getArchiveDependency(dependency):
+        if self.getArchiveDependency(dependency, pocket, component):
             raise ArchiveDependencyError(
                 "This dependency is already recorded.")
 
-        return ArchiveDependency(archive=self, dependency=dependency)
+        return ArchiveDependency(
+            archive=self, dependency=dependency, pocket=pocket,
+            component=component)
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
@@ -747,6 +776,14 @@ class ArchiveSet:
 
         return Archive.selectOneBy(
             distribution=distribution, purpose=purpose, name=name)
+
+    def getByDistroAndName(self, distribution, name):
+        """See `IArchiveSet`."""
+        return Archive.selectOne("""
+            Archive.distribution = %s AND
+            Archive.name = %s AND
+            Archive.purpose != %s
+            """ % sqlvalues(distribution, name, ArchivePurpose.PPA))
 
     def new(self, purpose, owner, name=None, distribution=None,
             description=None):

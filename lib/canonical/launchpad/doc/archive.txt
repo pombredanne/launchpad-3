@@ -74,7 +74,7 @@ Inquire what Distribution Series this archive has published sources to:
 once a IArchive is created. Changing those values would affect the way
 archives are published on disk.
 
-    >>> cprov_archive.purpose = ArchivePurpose.REBUILD
+    >>> cprov_archive.purpose = ArchivePurpose.COPY
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
@@ -91,20 +91,20 @@ using default names.
     Unauthorized: (..., 'name', 'launchpad.Admin')
 
 When editable, the 'name' field is protected by a constraint that
-asserts the archive is indeed a REBUILD and if the name is valid.
+asserts the archive is indeed a COPY and if the name is valid.
 
     >>> login("foo.bar@canonical.com")
 
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only REBUILD archives can be renamed.
+    AssertionError: Only COPY archives can be renamed.
 
-We will create a REBUILD archive and modify its name.
+We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
 Only 'valid' (traversable) names can be set.
@@ -832,11 +832,18 @@ Celso's PPA has no dependencies stored in the sampledata.
     >>> print_dependencies(cprov.archive)
     No dependencies recorded.
 
-We will make Celso's PPA to depend on Mark's PPA.
+We will make Celso's PPA to depend on Mark's PPA, specifically on its
+RELEASE pocket and 'main' component.
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
+
+    >>> release_pocket = PackagePublishingPocket.RELEASE
+
     >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     sabdfl.archive)
+    ...     sabdfl.archive, release_pocket, main_component)
 
 The `IArchiveDependency` object simply maps the desired relationship.
 
@@ -852,14 +859,17 @@ The archive dependency is immediately recorded on Celso's PPA.
     PPA for Mark Shuttleworth
 
 'getArchiveDependency' returns the corresponding `IArchiveDependency`
-for a given 'dependency' if it exists, otherwise it returns None.
+for a given 'dependency', 'pocket' and 'component' if it exists,
+otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
-    ...     sabdfl.archive).dependency.title
+    ...     sabdfl.archive, release_pocket, main_component
+    ...     ).dependency.title
     PPA for Mark Shuttleworth
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> print cprov.archive.getArchiveDependency(no_priv.archive)
+    >>> print cprov.archive.getArchiveDependency(
+    ...     no_priv.archive, release_pocket, main_component)
     None
 
 As mentioned above, the archive dependency engine doesn't follow
@@ -871,7 +881,7 @@ dependency is published in Mark's PPA.
     No dependencies recorded.
 
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
-    ...     cprov.archive)
+    ...     cprov.archive, release_pocket, main_component)
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
@@ -881,37 +891,68 @@ dependency is published in Mark's PPA.
 
 'dependency' is already recorded (duplicated).
 
-    >>> no_priv.archive.addArchiveDependency(cprov.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: This dependency is already recorded.
 
 'dependency' and target archive are the same.
 
-    >>> no_priv.archive.addArchiveDependency(no_priv.archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     no_priv.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: An archive should not depend on itself.
 
 A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
-EMBARGOED) are explicitly forbidden until we can analyse the impact of
+COPY) are explicitly forbidden until we can analyse the impact of
 allowing them.
 
     >>> ubuntu = no_priv.archive.distribution
-    >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
+    >>> no_priv.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
     ArchiveDependencyError: Archive dependencies only applies to PPAs.
 
-'removeArchiveDependency' allow us to purge a recorded 'dependency'.
+Dependencies for other pockets than RELEASE or other components than
+'main' currently result in an error.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, PackagePublishingPocket.UPDATES,
+    ...     main_component)
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: PPA dependencies only applies to RELEASE pocket.
+
+    >>> no_priv.archive.addArchiveDependency(
+    ...     sabdfl.archive, release_pocket,
+    ...     getUtility(IComponentSet)['universe'])
+    Traceback (most recent call last):
+    ...
+    ArchiveDependencyError: PPA dependencies only applies to 'main' component.
+
+'removeArchiveDependency' allow us to purge a recorded
+`ArchiveDependency` corresponding to the given 'dependency', 'pocket'
+and 'component'.
 
     >>> print_dependencies(no_priv.archive)
     PPA for Celso Providelo
 
-    >>> no_priv.archive.removeArchiveDependency(cprov.archive)
+    >>> no_priv.archive.removeArchiveDependency(
+    ...     cprov.archive, release_pocket, main_component)
 
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
+
+Attempts to remove a non-existent dependency results in a AssertionError.
+
+    >>> no_priv.archive.removeArchiveDependency(
+    ...     sabdfl.archive, release_pocket, main_component)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This dependency does not exist.
 
 Since the 'dependency' property only returns explicitly recorded
 archive dependencies and we usually need the expanded list when
@@ -1050,6 +1091,25 @@ restricted by archive owner.
 As mentioned in the error message, getPPAByDistributionAndOwnerName()
 should be used instead. See below.
 
+Similarly, IArchiveSet.getByDistroAndName() retrieves an IArchive given a
+distribution and the archive name.  Returned archives are always distribution
+archives; that is PPAs are not considered.
+
+XXX Julian 2008-09-24 We need to add a getByOwnerAndName() to fetch PPAs
+at some point, but it's not needed right now.
+
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'partner')
+    >>> print partner_archive.title
+    Partner Archive for Ubuntu Test
+
+Passing an invalid name will cause an empty result set.
+
+    >>> bogus = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'bogus')
+    >>> print bogus
+    None
+
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
@@ -1115,14 +1175,14 @@ distribution and a person name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, PRIMARY, PARTNER and REBUILDS:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
     14
 
     >>> print sorted(set(archive_purposes))
-    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
 ArchiveSet utility also offers counters for:
 
@@ -1430,8 +1490,6 @@ that check a user's permission to upload and/or administer a
 distroseries upload queue respectively.  See archivepermission.txt
 for more details.
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
@@ -1467,35 +1525,35 @@ Cprov does not have permission, however.
 
 For further information about how ArchiveRebuild works see
 archive-rebuilds.txt. Here we will just document why the creation and
-lookup of REBUILD archives are a little different than the rest of the
+lookup of COPY archives are a little different than the rest of the
 archives.
 
-When creating archives with REBUILD purpose, the 'name' field is
+When creating archives with COPY purpose, the 'name' field is
 mandatory, since it's user defined. There is no default name for
 them.
 
-Creating new REBUILD archive without passing a name results in an
+Creating new COPY archive without passing a name results in an
 AssertionError.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the 'name', in addition to the owner, purpose and
 distribution, does the trick.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='test-rebuild-one')
 
 As mentioned before, the rebuild archive name should be traversable
 otherwise an error is raised.
 
     >>> getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntutest, name='Very@Wrong!Name')
     Traceback (most recent call last):
     ...
@@ -1511,23 +1569,23 @@ Another difference is the lookup, we can use getByDistroPurpose(),
 however we have to pass 'name', otherwise a error is raised.
 
     >>> getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD)
+    ...     ubuntutest, ArchivePurpose.COPY)
     Traceback (most recent call last):
     ...
-    AssertionError: 'REBUILD' purpose has no default name.
+    AssertionError: 'COPY' purpose has no default name.
 
 Passing the name it behaves exactly it does for primary archive
 purposes (PRIMARY and PARTNER). When no matching archive is found,
 None is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exist")
+    ...     ubuntutest, ArchivePurpose.COPY, name="does-not-exist")
     >>> print candidate
     None
 
 If there is a matching archive it is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="test-rebuild-one")
+    ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one

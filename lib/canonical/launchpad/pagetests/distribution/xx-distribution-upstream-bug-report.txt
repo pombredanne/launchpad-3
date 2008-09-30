@@ -40,13 +40,19 @@ So let's check out the actual table:
 
     >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
-    >>> print extract_text(table)
-    linux-source-2.6.15  Missing corresponding product.  (find) (link)
+    >>> print extract_text(table, True)
+    linux-source-2.6.15  Missing corresponding project.  (find) (link)
         2    2   100.00  0  2    100.00    0    1   50.00  1
     mozilla-firefox     Mozilla Firefox        Launchpad    Unspecified
         1    1   100.00  0  1    100.00    0
-    thunderbird          Missing corresponding product.  (find) (link)
+    thunderbird          Missing corresponding project.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0
+
+The table is sortable using sorttables.js.
+
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> print table['class']
+    listing sortable
 
 XXX kiko 2008-02-01 bug=188020: One thing to note from the counts above
 is that while the linux-source/tomcat task is counted as pending a
@@ -72,6 +78,13 @@ we'd solve this by separating the watched column into natively watched
 and remote watched, but I don't know how to fix this right now.  See
 https://bugs.edge.launchpad.net/malone/+bug/188020 
     -- kiko, 2008-02-01
+
+The Totals row will remain at the bottom of the table when it's sorted
+using JavaScript.
+
+    >>> footer_row = table.findChild('tr')
+    >>> print footer_row['class']
+    sortbottom
 
 
 == Useful links ==
@@ -247,12 +260,12 @@ change to account for the fact that firefox no longer uses_malone.
 
     >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
-    >>> print extract_text(table)
-    linux-source-2.6.15  Missing corresponding product.  (find) (link)
+    >>> print extract_text(table, True)
+    linux-source-2.6.15  Missing corresponding project.  (find) (link)
         2    2   100.00  0  2    100.00    0    0    0.00  2
     mozilla-firefox  Mozilla Firefox  The Mozilla.org Bug Tracker  Unspecified
         1    1   100.00  0  1    100.00    0    0    0.00  1
-    thunderbird          Missing corresponding product.  (find) (link)
+    thunderbird          Missing corresponding project.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0
 
 Finally, you can associate default branches to products. This is done by
@@ -282,8 +295,8 @@ them, though:
 
     >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
-    >>> print extract_text(table)
-    mozilla-firefox  Missing corresponding product.  (find)  (link)
+    >>> print extract_text(table, True)
+    mozilla-firefox  Missing corresponding project.  (find)  (link)
         3    0     0.00  3  2      66.67    1    0    0.00  2
 
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')

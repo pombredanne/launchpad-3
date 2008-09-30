@@ -48,9 +48,7 @@ __all__ = [
     'PersonRelatedBugsView',
     'PersonRelatedSoftwareView',
     'PersonSearchQuestionsView',
-    'PersonSetBreadcrumbBuilder',
     'PersonSetContextMenu',
-    'PersonSetFacets',
     'PersonSetNavigation',
     'PersonSpecFeedbackView',
     'PersonSpecsMenu',
@@ -541,19 +539,6 @@ class PersonSetNavigation(Navigation):
         if me is None:
             raise Unauthorized("You need to be logged in to view this URL.")
         return self.redirectSubTree(canonical_url(me), status=303)
-
-
-class PersonSetBreadcrumbBuilder(BreadcrumbBuilder):
-    """Return a breadcrumb for an `IPersonSet`."""
-    text = "People"
-
-
-class PersonSetFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for the IPersonSet."""
-
-    usedfor = IPersonSet
-
-    enable_only = ['overview']
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -1284,7 +1269,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.MailingListManager')
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
@@ -2115,7 +2100,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Commercial projects you administer'),
                    vocabulary='CommercialProjects',
                    required=True),
-            custom_widget=self.custom_widgets['project'],
             render_context=self.render_context)
         return field
 
@@ -2136,7 +2120,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=True),
-            custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
 
@@ -3540,7 +3523,6 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                  title=_(''),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False),
-            custom_widget=self.custom_widgets['teams'],
             render_context=self.render_context)
 
     def setUpWidgets(self, context=None):
@@ -3774,9 +3756,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='mailing_list_auto_subscribe_policy',
                    title=_('When should launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy),
-            custom_widget=self.custom_widgets[
-                    'mailing_list_auto_subscribe_policy'])
+                   source=MailingListAutoSubscribePolicy))
 
     @property
     def mailing_list_widgets(self):
@@ -4070,10 +4050,10 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     def validate_action_update_autosubscribe_policy(self, action, data):
         """Ensure that the requested auto-subscribe setting is valid."""
-        # XXX mars 2008-04-27:
+        # XXX mars 2008-04-27 bug=223303:
         # This validator appears pointless and untestable, but it is
         # required for LaunchpadFormView to tell apart the three <form>
-        # elements on the page.  See bug #223303.
+        # elements on the page.
 
         widget = self.widgets['mailing_list_auto_subscribe_policy']
         self.validate_widgets(data, widget.name)
@@ -4701,8 +4681,12 @@ class PersonTeamBranchesView(LaunchpadView):
 
     @cachedproperty
     def teams_with_branches(self):
+        def team_has_branches(team):
+            branches = getUtility(IBranchSet).getBranchesForContext(
+                team, visible_by_user=self.user)
+            return branches.count() > 0
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0 and team != self.context]
+                if team_has_branches(team) and team != self.context]
 
 
 class PersonOAuthTokensView(LaunchpadView):

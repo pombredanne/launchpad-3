@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.teammembership import (
-    ITeamMembership, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
@@ -183,21 +183,21 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_LAUNCHPAD = DBItem(8, """
-        Created by the owner himself, coming from Launchpad.
+        Created by the owner, coming from Launchpad.
 
         Somebody was navigating through Launchpad and at some point decided to
         create an account.
         """)
 
     OWNER_CREATED_SHIPIT = DBItem(9, """
-        Created by the owner himself, coming from Shipit.
+        Created by the owner, coming from Shipit.
 
         Somebody went to one of the shipit sites to request Ubuntu CDs and was
         directed to Launchpad to create an account.
         """)
 
     OWNER_CREATED_UBUNTU_WIKI = DBItem(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
+        Created by the owner, coming from the Ubuntu wiki.
 
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
@@ -211,14 +211,14 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_UBUNTU_SHOP = DBItem(12, """
-        Created by the owner himself, coming from the Ubuntu Shop.
+        Created by the owner, coming from the Ubuntu Shop.
 
         Somebody went to the Ubuntu Shop and was directed to Launchpad to
         create an account.
         """)
 
     OWNER_CREATED_UNKNOWN_TRUSTROOT = DBItem(13, """
-        Created by the owner himself, coming from unknown OpenID consumer.
+        Created by the owner, coming from unknown OpenID consumer.
 
         Somebody went to an OpenID consumer we don't know about and was
         directed to Launchpad to create an account.
@@ -570,15 +570,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    branches = Attribute(
-        "All branches related to this person. They might be registered, "
-        "authored or subscribed by this person.")
-    authored_branches = Attribute("The branches whose author is this person.")
-    registered_branches = Attribute(
-        "The branches whose owner is this person and which either have no"
-        "author or an author different from this person.")
-    subscribed_branches = Attribute(
-        "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
             title=_("All TeamMemberships for Teams this Person is an "
@@ -712,7 +703,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     title = Attribute('Person Page Title')
 
     is_trusted_on_shipit = Bool(
-        title=_('Is this a trusted person on shipit?'))
+        title=_('Is this a trusted person on shipit?'),
+        description=_("A person is considered trusted on shipit if she's a "
+                      "member of the 'ubuntumembers' team or she has more "
+                      "than MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT karma "
+                      "entries."))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
@@ -1580,6 +1575,9 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
+    def isNameBlacklisted(self, name):
+        """Is the given name blacklisted by Launchpad Administrators?"""
+
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
             password=None, passwordEncrypted=False,
@@ -2013,6 +2011,11 @@ IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
 # circular dependencies.
 for name in ['team', 'person', 'last_changed_by']:
     ITeamMembership[name].schema = IPerson
+
+# Fix schema of ITeamParticipation fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person']:
+    ITeamParticipation[name].schema = IPerson
 
 # Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson

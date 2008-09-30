@@ -141,7 +141,7 @@ class POTMsgSet(SQLBase):
     def _getExternalTranslationMessages(self, language, used):
         """Return external suggestions for this message.
 
-        External suggestions are all non-fuzzy TranslationMessages for the
+        External suggestions are all TranslationMessages for the
         same english string which are used or suggested in other templates.
 
         A message is used if it's either imported or current, and unused
@@ -159,7 +159,6 @@ class POTMsgSet(SQLBase):
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
-        query.append('is_fuzzy IS NOT TRUE')
         query.append('POFile.language = %s' % sqlvalues(language))
         query.append('POFile.id = TranslationMessage.pofile')
 
@@ -278,7 +277,7 @@ class POTMsgSet(SQLBase):
 
         return sanitized_translations
 
-    def _validate_translations(self, translations, fuzzy, ignore_errors):
+    def _validate_translations(self, translations, ignore_errors):
         """Validate all the `translations` and return a validation_status."""
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
@@ -292,7 +291,7 @@ class POTMsgSet(SQLBase):
             helpers.validate_translation(
                 original_texts, translations, self.flags())
         except gettextpo.error:
-            if fuzzy or ignore_errors:
+            if ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.
                 validation_status = TranslationValidationStatus.UNKNOWNERROR
@@ -305,9 +304,9 @@ class POTMsgSet(SQLBase):
                         break
 
                 if has_translations:
-                    # Partial translations cannot be stored unless the fuzzy
-                    # flag is set, the exception is raised again and handled
-                    # outside this method.
+                    # Partial translations cannot be stored, the
+                    # exception is raised again and handled outside
+                    # this method.
                     raise
 
         return validation_status
@@ -355,11 +354,10 @@ class POTMsgSet(SQLBase):
             # only if there is no existing current message
             # or if the current message came from import
             # or if current message is empty (deactivated translation).
-            # Fuzzy/empty imported translations should not replace
-            # non-fuzzy/non-empty imported translations.
+            # Empty imported translations should not replace
+            # non-empty imported translations.
             if (current_message is None or
                 (current_message.is_imported and
-                 (current_message.is_fuzzy or not new_message.is_fuzzy) and
                  (current_message.is_empty or not new_message.is_empty)) or
                 current_message.is_empty):
                 new_message.is_current = True
@@ -401,14 +399,17 @@ class POTMsgSet(SQLBase):
                 pofile.date_changed = UTC_NOW
                 pofile.lasttranslator = submitter
 
+    def _isTranslationMessageASuggestion(self, force_suggestion,
+                                         pofile, submitter,
+                                         force_edition_rights, is_imported,
+                                         lock_timestamp):
+        # Whether a message should be saved as a suggestion and
+        # whether a we should display a warning when an older translation is
+        # submitted.
+        # Returns a pair of (just_a_suggestion, warn_about_lock_timestamp).
 
-    def updateTranslation(self, pofile, submitter, new_translations, is_fuzzy,
-                          is_imported, lock_timestamp, ignore_errors=False,
-                          force_edition_rights=False):
-        """See `IPOTMsgSet`."""
-        assert self.potemplate == pofile.potemplate, (
-            "The template for the translation file and this message doesn't"
-            " match.")
+        if force_suggestion:
+            return True, False
 
         # Is the submitter allowed to edit translations?
         is_editor = (force_edition_rights or
@@ -423,6 +424,35 @@ class POTMsgSet(SQLBase):
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
+        # If not an editor, default to submitting a suggestion only.
+        just_a_suggestion = not is_editor
+        warn_about_lock_timestamp = False
+
+        # Our current submission is newer than 'lock_timestamp'
+        # and we try to change it, so just add a suggestion.
+        if (not just_a_suggestion and not is_imported and
+            self.isTranslationNewerThan(pofile, lock_timestamp)):
+            just_a_suggestion = True
+            warn_about_lock_timestamp = True
+
+        return just_a_suggestion, warn_about_lock_timestamp
+
+
+    def updateTranslation(self, pofile, submitter, new_translations,
+                          is_imported, lock_timestamp, force_suggestion=False,
+                          ignore_errors=False, force_edition_rights=False):
+        """See `IPOTMsgSet`."""
+        assert self.potemplate == pofile.potemplate, (
+            "The template for the translation file and this message doesn't"
+            " match.")
+
+        just_a_suggestion, warn_about_lock_timestamp = (
+            self._isTranslationMessageASuggestion(force_suggestion,
+                                                  pofile, submitter,
+                                                  force_edition_rights,
+                                                  is_imported,
+                                                  lock_timestamp))
+
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
         if self.is_translation_credit and not is_imported:
@@ -433,18 +463,7 @@ class POTMsgSet(SQLBase):
             new_translations, pofile.plural_forms)
         # Check that the translations are correct.
         validation_status = self._validate_translations(
-            sanitized_translations, is_fuzzy, ignore_errors)
-
-        # If not an editor, default to submitting a suggestion only.
-        just_a_suggestion = not is_editor
-        warn_about_lock_timestamp = False
-
-        # Our current submission is newer than 'lock_timestamp'
-        # and we try to change it, so just add a suggestion.
-        if (not just_a_suggestion and not is_imported and not is_fuzzy and
-            self.isTranslationNewerThan(pofile, lock_timestamp)):
-            just_a_suggestion = True
-            warn_about_lock_timestamp = True
+            sanitized_translations, ignore_errors)
 
         # Find all POTranslation records for strings we need.
         potranslations = self._findPOTranslations(sanitized_translations)
@@ -466,7 +485,8 @@ class POTMsgSet(SQLBase):
             assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
-            new_message = TranslationMessage(
+
+            matching_message = TranslationMessage(
                 potmsgset=self,
                 potemplate=pofile.potemplate,
                 pofile=pofile,
@@ -482,9 +502,6 @@ class POTMsgSet(SQLBase):
                 msgstr5=potranslations[5],
                 validation_status=validation_status)
 
-            # It's a fuzzy one.
-            new_message.is_fuzzy = is_fuzzy
-
             if just_a_suggestion:
                 # Adds suggestion karma: editors get their translations
                 # automatically approved, so they get 'reviewer' karma
@@ -494,42 +511,26 @@ class POTMsgSet(SQLBase):
                     product=self.potemplate.product,
                     distribution=self.potemplate.distribution,
                     sourcepackagename=self.potemplate.sourcepackagename)
-                if warn_about_lock_timestamp:
-                    raise TranslationConflict(
-                        'The new translations were saved as suggestions to '
-                        'avoid possible conflicts. Please review them.')
-            else:
-                # Set the new current message if it validates ok.
-                if (new_message.validation_status ==
-                    TranslationValidationStatus.OK):
-                    # Makes the new_message current if needed and also
-                    # assignes karma for translation approval
-                    self._makeTranslationMessageCurrent(
-                        pofile, new_message, is_imported, submitter)
-
-            matching_message = new_message
         else:
             # There is an existing matching message. Update it as needed.
             # Also update validation status if needed
             matching_message.validation_status = validation_status
-            if just_a_suggestion:
-                # An existing message is just a suggestion, warn if needed.
-                if warn_about_lock_timestamp:
-                    raise TranslationConflict(
-                        'The new translations were saved as suggestions to '
-                        'avoid possible conflicts. Please review them.')
 
-            else:
-                # Set the new current message if it validates ok.
-                if (matching_message.validation_status ==
-                    TranslationValidationStatus.OK):
-                    # Makes the new_message current if needed and also
-                    # assignes karma for translation approval
-                    self._makeTranslationMessageCurrent(
-                        pofile, matching_message, is_imported, submitter)
+        if just_a_suggestion:
+            # An existing message is just a suggestion, warn if needed.
+            if warn_about_lock_timestamp:
+                raise TranslationConflict(
+                    'The new translations were saved as suggestions to '
+                    'avoid possible conflicts. Please review them.')
 
-                if not is_fuzzy:
-                    matching_message.is_fuzzy = is_fuzzy
+        else:
+            # Set the new current message if it validates ok.
+            if (matching_message.validation_status ==
+                TranslationValidationStatus.OK):
+                # Makes the new_message current if needed and also
+                # assignes karma for translation approval
+                self._makeTranslationMessageCurrent(
+                    pofile, matching_message, is_imported, submitter)
 
         if is_imported:
             # Note that the message is imported.

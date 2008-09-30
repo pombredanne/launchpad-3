@@ -8,6 +8,7 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'ObjectFactory',
     'time_counter',
     ]
 
@@ -15,6 +16,7 @@ from datetime import datetime, timedelta
 from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate
 from email.Message import Message as EmailMessage
+from itertools import count
 from StringIO import StringIO
 
 import pytz
@@ -29,27 +31,32 @@ from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportEventSet,
-    ICodeImportResultSet, ICodeImportSet, ICountrySet, IDistributionSet,
-    IDistroSeriesSet, IEmailAddressSet, ILibraryFileAliasSet, IPersonSet,
-    IPOTemplateSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError,
-    )
-from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
+    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
+    IStandardShipItRequestSet, ITranslationGroupSet, License,
+    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugtracker import (
+    BugTrackerType, IBugTrackerSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
+
+SPACE = ' '
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -74,30 +81,25 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-# This is the default for the 'product' parameter of makeBranch. We don't use
+# We use this for default paramters where None has a specific meaning.  For
+# example, makeBranch(product=None) means "make a junk branch".
 # None, because None means "junk branch".
-_DEFAULT_BRANCH_PRODUCT = object()
+_DEFAULT = object()
 
 
-class LaunchpadObjectFactory:
-    """Factory methods for creating Launchpad objects.
-
-    All the factory methods should be callable with no parameters.
-    When this is done, the returned object should have unique references
-    for any other required objects.
-    """
+class ObjectFactory:
+    """Factory methods for creating basic Python objects."""
 
     def __init__(self):
         # Initialise the unique identifier.
-        self._integer = 0
+        self._integer = count(1)
 
     def getUniqueEmailAddress(self):
         return "%s@example.com" % self.getUniqueString('email')
 
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
-        self._integer += 1
-        return self._integer
+        return self._integer.next()
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -120,6 +122,15 @@ class LaunchpadObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+
+class LaunchpadObjectFactory(ObjectFactory):
+    """Factory methods for creating Launchpad objects.
+
+    All the factory methods should be callable with no parameters.
+    When this is done, the returned object should have unique references
+    for any other required objects.
+    """
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -253,7 +264,11 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         if summary is None:
             summary = self.getUniqueString()
-        return product.newSeries(owner=owner, name=name, summary=summary)
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        return naked_product.newSeries(owner=owner, name=name,
+                                       summary=summary)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -281,7 +296,7 @@ class LaunchpadObjectFactory:
             owner=owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=_DEFAULT_BRANCH_PRODUCT, url=None, registrant=None,
+                   product=_DEFAULT, url=_DEFAULT, registrant=None,
                    private=False, stacked_on=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -296,13 +311,13 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is _DEFAULT_BRANCH_PRODUCT:
+        if product is _DEFAULT:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
         elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
-            if url is None:
+            if url is _DEFAULT:
                 url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
@@ -319,7 +334,7 @@ class LaunchpadObjectFactory:
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = _DEFAULT_BRANCH_PRODUCT
+        product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -428,7 +443,7 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False):
+                private=False, date_closed=None, title=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -444,7 +459,8 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
-        title = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString(), private=private)
         create_bug_params.setBugTarget(product=product)
@@ -452,6 +468,10 @@ class LaunchpadObjectFactory:
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        if date_closed is not None:
+            [bugtask] = bug.bugtasks
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, owner, when=date_closed)
         return bug
 
     def makeBugTask(self, bug=None, target=None):
@@ -505,6 +525,26 @@ class LaunchpadObjectFactory:
 
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
+
+    def makeBugTracker(self):
+        """Make a new bug tracker."""
+        base_url = 'http://%s.example.com/' % self.getUniqueString()
+        owner = self.makePerson()
+        return getUtility(IBugTrackerSet).ensureBugTracker(
+            base_url, owner, BugTrackerType.BUGZILLA)
+
+    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+        """Make a new bug watch."""
+        if remote_bug is None:
+            remote_bug = self.getUniqueInteger()
+
+        if bugtracker is None:
+            bugtracker = self.makeBugTracker()
+
+        bug = self.makeBug()
+        owner = self.makePerson()
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug, owner, bugtracker, str(remote_bug))
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None):
@@ -634,8 +674,7 @@ class LaunchpadObjectFactory:
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return code_import.import_job
 
     def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
@@ -680,12 +719,7 @@ class LaunchpadObjectFactory:
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None,
-                                    source_product_series_id=0):
-        # XXX: MichaelHudson 2008-05-19 bug=231819: The
-        # source_product_series_id attribute is to do with the new system
-        # looking in legacy locations for foreign trees and can be deleted
-        # when the new system has been running for a while.
+                                    cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -703,21 +737,23 @@ class LaunchpadObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            source_product_series_id)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
-                              vote=None, vote_tag=None, parent=None):
+                              vote=None, vote_tag=None, parent=None,
+                              merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
             body = self.getUniqueString('content')
-        if parent:
-            merge_proposal = parent.branch_merge_proposal
-        else:
-            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        if merge_proposal is None:
+            if parent:
+                merge_proposal = parent.branch_merge_proposal
+            else:
+                merge_proposal = self.makeBranchMergeProposal(
+                    registrant=sender)
         return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
@@ -751,7 +787,10 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if name is None:
             name = self.getUniqueString()
-        series = product.newSeries(
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        series = naked_product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
         if import_branch is not None:
             series.import_branch = import_branch
@@ -814,8 +853,10 @@ class LaunchpadObjectFactory:
         if name is None:
             name = self.getUniqueString()
 
-        return getUtility(IDistroSeriesSet).new(
-            distribution=distribution,
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_distribution = removeSecurityProxy(distribution)
+        return naked_distribution.newSeries(
             version="%s.0" % self.getUniqueInteger(),
             name=name,
             displayname=self.getUniqueString(),
@@ -824,11 +865,12 @@ class LaunchpadObjectFactory:
             parent_series=parent_series, owner=distribution.owner)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
-                       sourcepackagename=None, owner=None):
+                       sourcepackagename=None, owner=None, name=None,
+                       translation_domain=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
-            productseries = self.makeProductSeries()
+            productseries = self.makeProductSeries(owner=owner)
             # Make it use Translations, otherwise there's little point
             # to us creating a template for it.
             productseries.product.official_rosetta = True
@@ -836,8 +878,10 @@ class LaunchpadObjectFactory:
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
 
-        name = self.getUniqueString()
-        translation_domain = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if translation_domain is None:
+            translation_domain = self.getUniqueString()
 
         if owner is None:
             if productseries is None:
@@ -851,9 +895,7 @@ class LaunchpadObjectFactory:
         """Make a new translation file."""
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        if owner is None:
-            owner = potemplate.owner
-        return potemplate.newPOFile(language_code, requester=owner)
+        return potemplate.newPOFile(language_code, requester=potemplate.owner)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       sequence=None):
@@ -864,3 +906,26 @@ class LaunchpadObjectFactory:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeTeamAndMailingList(self, team_name, owner_name):
+        """Make a new active mailing list for the named team.
+
+        :param team_name: The new team's name.
+        :type team_name: string
+        :param owner_name: The name of the team's owner.
+        :type owner: string
+        :return: The new team and mailing list.
+        :rtype: (`ITeam`, `IMailingList`)
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        display_name = SPACE.join(
+            word.capitalize() for word in team_name.split('-'))
+        team = self.makeTeam(owner, displayname=display_name, name=team_name)
+        # Any member of the mailing-list-experts team can review a list
+        # registration.  It doesn't matter which one.
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        reviewer = list(experts.allmembers)[0]
+        team_list = getUtility(IMailingListSet).new(team, owner)
+        team_list.review(reviewer, MailingListStatus.APPROVED)
+        team_list.startConstructing()
+        team_list.transitionToStatus(MailingListStatus.ACTIVE)
+        return team, team_list

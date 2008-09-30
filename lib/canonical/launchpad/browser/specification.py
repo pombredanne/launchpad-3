@@ -646,8 +646,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                     "that selecting a specification here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['superseded_by'])
+            render_context=self.render_context)
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
@@ -814,10 +813,10 @@ class SpecGraph:
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
             bgcolor='#ffffff',  # Same as Launchpad page background.
-            size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
-            ratio='auto',
+            size='9.2,9',  # Width fits of 2 col layout, 1024x768.
+            ratio='compress',
             ranksep=0.25,
-            nodesep=0.25
+            nodesep=0.01 # Separation between nodes
             )
 
         # Global node and edge attributes.

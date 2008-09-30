@@ -10,8 +10,10 @@
   i18n:domain="launchpad"
 >
   <body>
+    <script metal:fill-slot="head_epilogue" type="text/javascript">
+        registerLaunchpadFunction(insertAllExpansionButtons);
+    </script>
     <div metal:fill-slot="main">
-
       <div>
         <a tal:attributes="href context/potemplate/fmt:url"
            tal:content="context/potemplate/title">
@@ -95,12 +97,6 @@
                   request/htmlform:show/selected/untranslated"
                   >
                   untranslated items
-                </option>
-                <option value="need_review"
-                  tal:attributes="selected
-                  request/htmlform:show/selected/need_review"
-                  >
-                  items that need review
                 </option>
                 <option value="translated"
                   tal:attributes="selected
@@ -195,6 +191,5 @@
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
     </div>
-
   </body>
 </html>

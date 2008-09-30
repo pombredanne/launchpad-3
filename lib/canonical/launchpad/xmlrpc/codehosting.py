@@ -49,15 +49,28 @@ class BranchPuller(LaunchpadXMLRPCView):
         This is outside of the IBranch interface so that the authserver can
         access the information without logging in as a particular user.
 
-        :return: (id, url, unique_name), where `id` is the branch database ID,
-            `url` is the URL to pull from and `unique_name` is the
-            `unique_name` property without the initial '~'.
+        :return: (id, url, unique_name, default_stacked_on_url), where 'id'
+            is the branch database ID, 'url' is the URL to pull from,
+            'unique_name' is the `unique_name` property and
+            'default_stacked_on_url' is the URL of the branch to stack on by
+            default (normally of the form '/~foo/bar/baz'). If there is no
+            default stacked-on branch, then it's ''.
         """
         branch = removeSecurityProxy(branch)
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        return (branch.id, branch.getPullURL(), branch.unique_name)
+        if branch.product is None:
+            default_branch = None
+        else:
+            default_branch = branch.product.default_stacked_on_branch
+        if default_branch is None:
+            default_branch = ''
+        else:
+            default_branch = '/' + default_branch.unique_name
+        return (
+            branch.id, branch.getPullURL(), branch.unique_name,
+            default_branch)
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchPuller`."""
@@ -75,7 +88,11 @@ class BranchPuller(LaunchpadXMLRPCView):
         if branch is None:
             return faults.NoBranchWithID(branch_id)
         # See comment in startMirroring.
-        removeSecurityProxy(branch).mirrorComplete(last_revision_id)
+        branch = removeSecurityProxy(branch)
+        branch.mirrorComplete(last_revision_id)
+        branches = branch.getStackedBranchesWithIncompleteMirrors()
+        for stacked_branch in branches:
+            stacked_branch.requestMirror()
         return True
 
     def mirrorFailed(self, branch_id, reason):

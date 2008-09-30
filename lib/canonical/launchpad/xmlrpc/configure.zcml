@@ -18,7 +18,7 @@
 
   <xmlrpc:view
     for="canonical.launchpad.interfaces.IAuthServerApplication"
-    interface="canonical.authserver.interfaces.IUserDetailsStorageV2"
+    interface="canonical.launchpad.interfaces.IAuthServer"
     class="canonical.launchpad.xmlrpc.AuthServerAPIView"
     permission="zope.Public"
     />
@@ -178,6 +178,10 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.NoBranchWithID">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoUrlForBranch">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

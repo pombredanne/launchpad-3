@@ -17,10 +17,9 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.expr import And, Join, LeftJoin
+from storm.expr import And, Join, LeftJoin, Or
 from storm.info import ClassAlias
 from storm.store import Store
-from storm.zope.interfaces import IZStorm
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -58,6 +57,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class Branch(SQLBase):
@@ -106,7 +107,6 @@ class Branch(SQLBase):
     last_mirrored_id = StringCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
-    pull_disabled = BoolCol(default=False, notNull=True)
     next_mirror_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
@@ -207,23 +207,39 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
-        # Update the last_modified_date of the source and target branches to
-        # be the date_created for the merge proposal.
-        self.date_last_modified = date_created
-        target_branch.date_last_modified = date_created
 
         if needs_review:
             queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+            date_review_requested = date_created
         else:
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+            date_review_requested = None
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
+            date_review_requested=date_review_requested,
             queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
+
+    def getStackedBranches(self):
+        """See `IBranch`."""
+        store = Store.of(self)
+        return store.find(Branch, Branch.stacked_on == self)
+
+    def getStackedBranchesWithIncompleteMirrors(self):
+        """See `IBranch`."""
+        store = Store.of(self)
+        return store.find(
+            Branch, Branch.stacked_on == self,
+            # Have been started.
+            Branch.last_mirror_attempt != None,
+            # Either never successfully mirrored or started since the last
+            # successful mirror.
+            Or(Branch.last_mirrored == None,
+               Branch.last_mirror_attempt > Branch.last_mirrored))
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -238,14 +254,6 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return ((self.revision_count > 0  or self.last_mirrored != None)
             and not self.private)
-
-    def _getNameDict(self, person):
-        """Return a simple dict with the person name or placeholder."""
-        if person is not None:
-            name = person.name
-        else:
-            name = "<name>"
-        return {'user': name}
 
     @property
     def bzr_identity(self):
@@ -294,18 +302,6 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
-    def related_bug_tasks(self):
-        """See `IBranch`."""
-        tasks = []
-        for bug in self.related_bugs:
-            task = bug.getBugTask(self.product)
-            if task is None:
-                # Just choose the first task for the bug.
-                task = bug.bugtasks[0]
-            tasks.append(task)
-        return tasks
-
-    @property
     def warehouse_url(self):
         """See `IBranch`."""
         return 'lp-mirrored:///%s' % self.unique_name
@@ -337,22 +333,6 @@ class Branch(SQLBase):
             return self.reviewer
         else:
             return self.owner
-
-    @property
-    def sort_key(self):
-        """See `IBranch`."""
-        if self.product is None:
-            product = None
-        else:
-            product = self.product.name
-        if self.author is None:
-            author = None
-        else:
-            author = self.author.browsername
-        status = self.lifecycle_status.sortkey
-        name = self.name
-        owner = self.owner.name
-        return (product, status, author, name, owner)
 
     def latest_revisions(self, quantity=10):
         """See `IBranch`."""
@@ -551,6 +531,32 @@ class Branch(SQLBase):
             revision.allocateKarma(self)
         return branch_revision
 
+    def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
+        """See `IBranch`."""
+        if not revision_id_sequence_pairs:
+            return
+        store = Store.of(self)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE RevidSequence
+            (revision_id text, sequence integer)
+            """)
+        data = []
+        for revid, sequence in revision_id_sequence_pairs:
+            data.append('(%s, %s)' % sqlvalues(revid, sequence))
+        data = ', '.join(data)
+        store.execute(
+            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
+            % data)
+        store.execute(
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, Revision.id, RevidSequence.sequence
+            FROM RevidSequence, Revision
+            WHERE Revision.revision_id = RevidSequence.revision_id
+            """ % sqlvalues(self))
+        store.execute("DROP TABLE RevidSequence")
+
     def getTipRevision(self):
         """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
@@ -627,7 +633,7 @@ class Branch(SQLBase):
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
-        self.syncUpdate()
+        self.next_mirror_time = None
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
@@ -638,17 +644,12 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if (self.next_mirror_time != None
-            and self.last_mirror_attempt >= self.next_mirror_time):
+        if (self.next_mirror_time is None
+            and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
-            if self.branch_type == BranchType.MIRRORED:
-                self.next_mirror_time = (
-                    datetime.now(pytz.timezone('UTC')) +
-                    MIRROR_TIME_INCREMENT)
-            else:
-                self.next_mirror_time = None
+            self.next_mirror_time = (
+                datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
         self.last_mirrored_id = last_revision_id
-        self.syncUpdate()
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -661,9 +662,6 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
-        else:
-            self.next_mirror_time = None
-        self.syncUpdate()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
@@ -691,7 +689,7 @@ LISTING_SORT_TO_COLUMN = {
 
 
 DEFAULT_BRANCH_LISTING_SORT = [
-    'product.name', '-lifecycle_status', 'author.name', 'branch.name']
+    'product.name', '-lifecycle_status', 'owner.name', 'branch.name']
 
 
 class DeletionOperation:
@@ -1029,7 +1027,7 @@ class BranchSet:
         """See `IBranchSet`."""
         # Avoid circular imports.
         from canonical.launchpad.database import Person, Product
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # Left-join Product so that we still publish +junk branches.
         prejoin = store.using(
             LeftJoin(Branch, Product, Branch.product == Product.id), Person)
@@ -1053,17 +1051,6 @@ class BranchSet:
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''' % quote(BranchType.REMOTE))
-
-    def getProductDevelopmentBranches(self, products):
-        """See `IBranchSet`."""
-        product_ids = [product.id for product in products]
-        query = Branch.select('''
-            (Branch.id = ProductSeries.import_branch OR
-            Branch.id = ProductSeries.user_branch) AND
-            ProductSeries.id = Product.development_focus AND
-            Branch.product IN %s''' % sqlvalues(product_ids),
-            clauseTables = ['Product', 'ProductSeries'])
-        return query.prejoin(['author'])
 
     def getActiveUserBranchSummaryForProducts(self, products):
         """See `IBranchSet`."""
@@ -1236,10 +1223,9 @@ class BranchSet:
         # Local import to avoid cycles
         from canonical.launchpad.database import Person, Product
         Owner = ClassAlias(Person, "owner")
-        Author = ClassAlias(Person, "author")
-        clauseTables = [LeftJoin(
-                LeftJoin(Join(Branch, Owner, Branch.owner == Owner.id),
-                         Author, Branch.author == Author.id),
+        clauseTables = [
+            LeftJoin(
+                Join(Branch, Owner, Branch.owner == Owner.id),
                 Product, Branch.product == Product.id)]
         return Branch.select(clause, clauseTables=clauseTables,
                              orderBy=self._listingSortToOrderBy(sort_by))
@@ -1267,49 +1253,6 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
-    def getBranchesWithRecentRevisionsForProduct(self, product, quantity,
-                                                 visible_by_user=None):
-        """See `IBranchSet`."""
-        assert product is not None, "Must have a valid product."
-        # XXX thumper 2008-01-07
-        # This is a slight bastardisation due to a SQLObject limitation.
-        # Here we have the same problem as the generalised sorting problem
-        # where we want to order the results based on a field that is not
-        # visible.  When we get stormified we can fix this, but I don't
-        # think it is worthwile blocking this feature on storm.
-
-        select_query = """
-            select branch.id
-            from branch, revision, branchrevision
-            where branch.id = branchrevision.branch
-            and branchrevision.revision = revision.id
-            and branchrevision.sequence = branch.revision_count
-            and branch.product = %s
-            """ % product.id
-        query = """
-            %s order by revision.revision_date desc
-            limit %s
-            """ % (self._generateBranchClause(select_query, visible_by_user),
-                   quantity)
-        cur = cursor()
-        cur.execute(query)
-
-        branch_ids = [id for (id,) in cur.fetchall()]
-        cur.close()
-        # Now get the branches for these id's and sort them so they
-        # are in the same order.
-
-        # If there are no branch_ids, then return an empty list.
-        if len(branch_ids) == 0:
-            return []
-
-        # Use a dictionary as a hash search for our insertion sort.
-        branches = {}
-        for branch in Branch.select('id in %s' % quote(branch_ids)):
-            branches[branch.id] = branch
-
-        return [branches[id] for id in branch_ids]
-
     def getByProductAndName(self, product, name):
         """See `IBranchSet`."""
         return Branch.selectBy(name=name, product=product.id)
@@ -1323,7 +1266,7 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
-                Branch.q.next_mirror_time < UTC_NOW),
+                Branch.q.next_mirror_time <= UTC_NOW),
             prejoins=['owner', 'product'], orderBy='next_mirror_time')
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):

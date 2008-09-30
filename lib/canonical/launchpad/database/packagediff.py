@@ -14,7 +14,6 @@ import tempfile
 from sqlobject import ForeignKey
 from storm.expr import Desc, In
 from storm.store import EmptyResultSet
-from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -27,6 +26,8 @@ from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.packagediff import (
     IPackageDiff, IPackageDiffSet)
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
@@ -233,7 +234,7 @@ class PackageDiffSet:
         """See `IPackageDiffSet`."""
         if len(sprs) == 0:
             return EmptyResultSet()
-        store = getUtility(IZStorm).get('main')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
         result = store.find(PackageDiff, In(PackageDiff.to_sourceID, spr_ids))
         result.order_by(PackageDiff.to_sourceID,

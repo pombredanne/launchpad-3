@@ -9,24 +9,38 @@ Pillars are currently Product, Project and Distribution.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int
+from zope.schema import Bool, Int, TextLine
 
 from canonical.launchpad import _
-from canonical.lazr.rest.declarations import exported
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 
 __all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
+    """An object that might be a project, a project group, or a distribution.
+
+    This is a polymorphic object served by the pillar set. Check the
+    individual object to see what type it is.
+    """
+    export_as_webservice_entry()
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
 
 
 class IPillarName(Interface):
+    """A data structure for identifying a pillar.
+
+    This includes the pillar object, as well as information about whether
+    it's a project, project group, or distribution.
+    """
     id = Int(title=_('The PillarName ID'))
-    name = Attribute('The name')
+    name = TextLine(title=u"The name.")
     product = Attribute('The project that has this name, or None')
     project = Attribute('The project that has this name, or None')
     distribution = Attribute('The distribution that has this name, or None')
@@ -35,6 +49,15 @@ class IPillarName(Interface):
 
 
 class IPillarNameSet(Interface):
+    """An object for searching across projects, project groups, and distros.
+
+    Projects, project groups, and distributions are collectively known as
+    "pillars". This object lets you do a combined search across all
+    types of pillars. It also gives you access to pillars that have
+    been flagged by administrators as "featured" pillars.
+    """
+    export_as_webservice_entry('pillars')
+
     def __contains__(name):
         """Return True if the given name is an active Pillar."""
 
@@ -56,15 +79,19 @@ class IPillarNameSet(Interface):
     def count_search_matches(text):
         """Return the total number of Pillars matching :text:"""
 
+
+    @operation_parameters(text=TextLine(title=u"Search text"),
+                          limit=Int(title=u"Maximum number of items to "
+                                    "return. This is a hard limit: any "
+                                    "pagination you request will happen "
+                                    "within this limit.",
+                                    required=False))
+    @operation_returns_collection_of(IPillar)
+    @export_read_operation()
     def search(text, limit):
-        """Return at most limit Products/Projects/Distros matching :text:.
+        """Return Projects/Project groups/Distros matching :text:.
 
-        The return value is a sequence of dicts, where each dict contain
-        the name of the object it represents (one of 'product', 'project'
-        or 'distribution'), that object's id, name, title, description and
-        the rank of that object on this specific search.
-
-        If limit is None, config.launchpad.default_batch_size will be used.
+        If :limit: is None, the default batch size will be used.
 
         The results are ordered descending by rank.
         """
@@ -75,5 +102,11 @@ class IPillarNameSet(Interface):
     def remove_featured_project(project):
         """Remove a project from the featured project list."""
 
-    featured_projects = Attribute("Return the set of featured projects.")
+    featured_projects = exported(
+        CollectionField(
+            title=_('Projects, project groups, and distributions that are '
+                    'featured on the site.'),
+            value_type=Reference(schema=IPillar)),
+        exported_as="featured_pillars"
+        )
 

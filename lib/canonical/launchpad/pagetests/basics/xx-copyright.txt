@@ -24,11 +24,6 @@ Shipit sites.
   &copy; 2004-2008 Canonical Ltd.
   ...
 
-  >>> browser.open('http://shipit.edubuntu.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2008 Canonical Ltd.
-  ...
-
 The main template.
 
   >>> browser.open('http://launchpad.dev')

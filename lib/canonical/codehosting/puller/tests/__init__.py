@@ -13,21 +13,50 @@ from bzrlib.urlutils import local_path_from_url
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
-    BranchOpener, PullerWorker, PullerWorkerProtocol)
+    BadUrl, BranchMirrorer, BranchPolicy, PullerWorker, PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
 from canonical.launchpad.testing import TestCaseWithFactory
 
 
-class AcceptAnythingOpener(BranchOpener):
-    """A specialization of `BranchOpener` that opens any branch."""
+class BlacklistPolicy(BranchPolicy):
+    """Branch policy that forbids certain URLs."""
+
+    def __init__(self, should_follow_references, unsafe_urls=None):
+        if unsafe_urls is None:
+            unsafe_urls = set()
+        self._unsafe_urls = unsafe_urls
+        self._should_follow_references = should_follow_references
+
+    def shouldFollowReferences(self):
+        return self._should_follow_references
 
     def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
+        if url in self._unsafe_urls:
+            raise BadUrl(url)
 
-        Accept anything, to make testing easier.
-        """
-        pass
+
+class AcceptAnythingPolicy(BlacklistPolicy):
+    """Accept anything, to make testing easier."""
+
+    def __init__(self):
+        super(AcceptAnythingPolicy, self).__init__(True, set())
+
+
+class WhitelistPolicy(BranchPolicy):
+    """Branch policy that only allows certain URLs."""
+
+    def __init__(self, should_follow_references, allowed_urls=None):
+        if allowed_urls is None:
+            allowed_urls = []
+        self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
+
+    def shouldFollowReferences(self):
+        return self._should_follow_references
+
+    def checkOneURL(self, url):
+        if url.rstrip('/') not in self.allowed_urls:
+            raise BadUrl(url)
 
 
 class PullerWorkerMixin:
@@ -39,20 +68,22 @@ class PullerWorkerMixin:
     """
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
-                         protocol=None, oops_prefix=None):
+                         default_stacked_on_url=None, protocol=None,
+                         oops_prefix=None):
         """Anonymous creation method for PullerWorker."""
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
         if oops_prefix is None:
             oops_prefix = ''
         if branch_type is None:
-            opener = AcceptAnythingOpener()
+            opener = BranchMirrorer(AcceptAnythingPolicy())
         else:
             opener = None
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
-            branch_type=branch_type, protocol=protocol, branch_opener=opener,
-            oops_prefix=oops_prefix)
+            branch_type=branch_type,
+            default_stacked_on_url=default_stacked_on_url, protocol=protocol,
+            branch_mirrorer=opener, oops_prefix=oops_prefix)
 
 
 class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
@@ -79,7 +110,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def pushToBranch(self, branch, tree=None):
+    def pushToBranch(self, branch, tree=None, format=None):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.
 
         Use this to test mirroring a hosted branch.
@@ -88,7 +119,8 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         """
         hosted_path = self.getHostedPath(branch)
         if tree is None:
-            tree = self.make_branch_and_tree('branch-path')
+            tree = self.make_branch_and_tree(
+                self.factory.getUniqueString(), format=format)
             tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',

@@ -23,7 +23,10 @@
 
     <!-- This is class ProductRelease -->
     <content class="canonical.launchpad.database.ProductRelease">
-        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
+        <allow interface="canonical.launchpad.interfaces.IProductReleasePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseEditRestricted" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
@@ -43,6 +46,13 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         path_expression="version"
         attribute_to_parent="productseries"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductReleaseFile"
+        path_expression="string:+file/${libraryfile/filename}"
+        rootsite="api"
+        attribute_to_parent="productrelease"
         />
 
     <browser:defaultView
@@ -71,7 +81,7 @@
         name="+index"
         class="canonical.launchpad.browser.ProductReleaseView"
         template="../templates/productrelease-index.pt"
-	/>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductRelease"
@@ -127,7 +137,10 @@
 
     <!-- This is class ProductReleaseFile -->
     <content class="canonical.launchpad.database.ProductReleaseFile">
-        <allow interface="canonical.launchpad.interfaces.IProductReleaseFile" />
+        <allow interface="canonical.launchpad.interfaces.IProductReleaseFilePublic" />
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.IProductReleaseFileEditRestricted" />
     </content>
 
 </configure>

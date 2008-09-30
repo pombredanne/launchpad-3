@@ -14,7 +14,8 @@
 ##############################################################################
 """Start script for Launchpad: loads configuration and starts the server.
 
-Usage: runlaunchpad.py [-r librarian,sftp,authserver,buildsequencer] [<zope args>]
+Usage: runlaunchpad.py [-r librarian,sftp,buildsequencer]
+          [<zope args>]
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $
 """
@@ -24,7 +25,7 @@ import sys
 
 if sys.version_info < (2, 4, 0):
     print ("ERROR: Your python version is not supported by Launchpad."
-            "Launchpad needs Python 2.4 or greater. You are running: " 
+            "Launchpad needs Python 2.4 or greater. You are running: "
             + sys.version)
     sys.exit(1)
 
@@ -32,6 +33,8 @@ from configs import generate_overrides
 
 
 def set_up_sys_path(program):
+    # Get rid of any empty strings that may appear in sys.path and cause
+    # random grief.
     basepath = filter(None, sys.path)
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))

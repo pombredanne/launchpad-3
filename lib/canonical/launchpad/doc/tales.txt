@@ -51,14 +51,14 @@ The Mugshot is presented in an <img> tag.
 For people we even have different images in case the person in question is not
 an actual launchpad user.
 
-    >>> spiv = getUtility(IPersonSet).getByName('spiv')
-    >>> spiv.is_valid_person
+    >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
+    >>> matsubara.is_valid_person
     False
-    >>> test_tales("person/image:icon", person=spiv)
+    >>> test_tales("person/image:icon", person=matsubara)
     '<img ... src="/@@/person-inactive" />'
-    >>> test_tales("person/image:logo", person=spiv)
+    >>> test_tales("person/image:logo", person=matsubara)
     '<img ... src="/@@/person-inactive-logo" />'
-    >>> test_tales("person/image:mugshot", person=spiv)
+    >>> test_tales("person/image:mugshot", person=matsubara)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
 We also have image:icon for KarmaCategory:
@@ -126,7 +126,27 @@ Add manual word breaks to long words in a string:
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
 
-== The fmt: namespace to get strings (links) ==
+== The fmt: namespace to get URLs ==
+
+The `fmt:url` is used when you want the canonical URL of a given object.
+
+    >>> print test_tales("bug/fmt:url", bug=bug)
+    http://bugs.launchpad.dev/bugs/1
+
+You can also specify an extra argument (a view's name), if you want the
+URL of a given page under that object. For that to work, though, we need
+to simulate a browser request -- that's why we login() here.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> login(ANONYMOUS, LaunchpadTestRequest())
+    >>> print test_tales("bug/fmt:url/+text", bug=bug)
+    http://bugs.launchpad.dev/bugs/1/+text
+
+    # Undo the custom setup we did above.
+    >>> login(ANONYMOUS)
+
+
+== The fmt: namespace to get links ==
 
 The `fmt:link` tales expression provides a way to define a standard link
 to a content object.  There are currently links defined for:
@@ -153,8 +173,8 @@ containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=sabdfl)
     u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
 
-    >>> test_tales("person/fmt:link", person=spiv)
-    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
+    >>> test_tales("person/fmt:link", person=matsubara)
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Diogo Matsubara</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
@@ -175,16 +195,16 @@ Person's displayname will be escaped; averting a XSS vulnerability.
 The fmt:link formatter uses additional path components to extend the
 link:
 
-    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
-    u'<a href=".../~spiv/foo/bar">...'
+    >>> test_tales("person/fmt:link/foo/bar", person=matsubara)
+    u'<a href=".../~matsubara/foo/bar">...'
 
 If you are on feeds.launchpad.net, you need to specify the rootsite, so
 that the links and images are pointing at the right hostname.
 
-    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
-    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
-    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
-    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=matsubara)
+    u'<a href="http://launchpad.dev/~matsubara/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/foo/bar", person=matsubara)
+    u'<a href="http://bugs.launchpad.dev/~matsubara/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
 The fmt:local_time formatter will return the local time for that person.
 If the person has no time_zone specified, we use UTC.
@@ -614,6 +634,16 @@ it must markup. We can format the three examples at the same time.
     </span></p>
 
 
+=== Escaping strings ===
+
+To escape a string you should use fmt:escape.
+
+    >>> test_tales('foo/fmt:escape', foo='some value')
+    'some value'
+    >>> test_tales('foo/fmt:escape', foo='some <br /> value')
+    'some &lt;br /&gt; value'
+
+
 == The fmt: namespace to get strings (obfuscation) ==
 
 Email addresses embedded in text can be obfuscated. In cases where
@@ -770,6 +800,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...
     ...     interaction = None
     ...     principal = None
+    ...
+    ...     def __init__(self):
+    ...         self.annotations = {}
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'

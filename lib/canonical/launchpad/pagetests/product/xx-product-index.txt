@@ -211,7 +211,7 @@ is displayed to direct the owner to purchase a subscription.
     >>> owner_browser.getLink('Canonical Shop')
     <Link...url='http://ubuntu.recycledmania.com...'>
     >>> owner_browser.getLink('voucher management page')
-    <Link...url='http://launchpad.dev/people/+me/+vouchers'...>
+    <Link...url='http://launchpad.dev/~name12/+vouchers'...>
 
 Any user can see that the project's license is proprietary.
 
@@ -258,30 +258,6 @@ on the index page, since most projects fall into this category.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     None
-
-
-= Configurable Display of Subscription Information =
-
-If the is_subscription_feature_active config variable is false,
-then the owner will not get a warning that the subscription is due.
-# XXX EdwinGrubbs 2008-05-22 bug=234070
-# Remove this config when the feature is launched.
-
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [commercial]
-    ...     is_subscription_feature_active: False
-    ...     """)
-    >>> config.push('test_data', test_data)
-    >>> firefox.licenses = [License.OTHER_PROPRIETARY]
-    >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> owner_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-requires-subscription')
-    None
-    >>> test_config_data = config.pop('test_data')
 
 
 = Commercial Subscription Expiration =

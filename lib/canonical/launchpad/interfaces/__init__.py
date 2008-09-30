@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
-from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pillar import *
 
@@ -23,6 +22,7 @@ from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
+from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
@@ -185,3 +185,6 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.packagediff import *
+
+import canonical.launchpad.interfaces._schema_circular_imports
+

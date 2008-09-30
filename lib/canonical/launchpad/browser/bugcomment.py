@@ -171,10 +171,3 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
         self.expand_reply_box = True
-
-    @property
-    def display_comment(self):
-        """Return True if the comment can be shown, False otherwise."""
-        return self.comment.can_be_shown or self.user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_developers)
-
