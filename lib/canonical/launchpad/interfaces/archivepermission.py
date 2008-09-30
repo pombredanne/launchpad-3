@@ -78,15 +78,15 @@ class IArchivePermission(Interface):
             required=True, vocabulary="ValidPersonOrTeam"))
 
     component = Reference(
-            IComponent,
-            title=_("Component"),
-            description=_("The component that this permission is related to."))
+        IComponent,
+        title=_("Component"),
+        description=_("The component that this permission is related to."))
 
     sourcepackagename = Reference(
-            ISourcePackageName,
-            title=_("Source Package Name"),
-            description=_("The source package name that this permission is "
-                          "related to."))
+        ISourcePackageName,
+        title=_("Source Package Name"),
+        description=_("The source package name that this permission is "
+                      "related to."))
 
     component_name = exported(
         TextLine(
