@@ -249,7 +249,9 @@ class BranchMirrorer(object):
 
         :param policy: A `BranchPolicy` that tells us what URLs are valid and
             similar things.
-        :param log: XXX
+        :param log: A callable which can be called with a format string and
+            arguments to log messages in the scheduler, or None, in which case
+            log messages are discarded.
         """
         self.policy = policy
         if log is not None:
