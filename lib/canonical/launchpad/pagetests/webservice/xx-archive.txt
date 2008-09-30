@@ -71,3 +71,74 @@ Attempting to grab a non-existent archive will result in a 404 error:
     ...
     ValueError: HTTP/1.1 404 Not Found
     ...
+
+
+= Archive Permissions =
+
+Archives have associated permissions.  These are currently either upload
+rights or queue administration rights.  The URL to the permissions
+takes two forms:
+ * <archive>/+upload/username.item
+ * <archive>/+queue-admin/username.item
+where item is a component or a source package name.
+
+Here we see upload rights for a team to a component:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+upload/ubuntu-team.main").jsonBody()
+    >>> for key, value in sorted(ubuntu_main_permission.items()):
+    ...     print "%s: %s" % (key, value)
+    archive_link: http://.../ubuntu/+archive/primary
+    component_name: main
+    date_created: ...
+    permission: Archive Upload Rights
+    person_link: http://.../~ubuntu-team
+    resource_type_link: ...
+    self_link: http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main
+    source_package_name: None
+
+Here we see upload rights for an individual to a source package:
+
+    >>> carlos_mozilla_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/"
+    ...     "+upload/carlos.mozilla-firefox").jsonBody()
+    >>> for key, value in sorted(carlos_mozilla_permission.items()):
+    ...     print "%s: %s" % (key, value)
+    archive_link: http://.../ubuntu/+archive/primary
+    component_name: None
+    date_created: ...
+    permission: Archive Upload Rights
+    person_link: http://.../~carlos
+    resource_type_link: ...
+    self_link: http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox
+    source_package_name: mozilla-firefox
+
+Here is a queue admin right for ubuntu-team:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/ubuntu-team.main").jsonBody()
+    >>> for key, value in sorted(ubuntu_main_permission.items()):
+    ...     print "%s: %s" % (key, value)
+    archive_link: http://.../ubuntu/+archive/primary
+    component_name: main
+    date_created: ...
+    permission: Queue Administration Rights
+    person_link: http://.../~ubuntu-team
+    resource_type_link: ...
+    self_link: http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main
+    source_package_name: None
+
+And one for an individual:
+
+    >>> name16_admin_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/name12.universe").jsonBody()
+    >>> for key, value in sorted(ubuntu_main_permission.items()):
+    ...     print "%s: %s" % (key, value)
+    archive_link: http://.../ubuntu/+archive/primary
+    component_name: main
+    date_created: ...
+    permission: Queue Administration Rights
+    person_link: http://.../~ubuntu-team
+    resource_type_link: ...
+    self_link: http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main
+    source_package_name: None

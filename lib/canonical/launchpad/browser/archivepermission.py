@@ -10,6 +10,8 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 class ArchivePermissionURL:
@@ -26,9 +28,9 @@ class ArchivePermissionURL:
 
     @property
     def path(self):
-        if self.context.permission == ArchivePermission.UPLOAD:
+        if self.context.permission == ArchivePermissionType.UPLOAD:
             type = "+upload"
-        elif self.context.permission == ArchivePermission.QUEUE_ADMIN:
+        elif self.context.permission == ArchivePermissionType.QUEUE_ADMIN:
             type = "+queue-admin"
         else:
             raise AssertionError, (
@@ -36,11 +38,10 @@ class ArchivePermissionURL:
 
         username = self.context.person.name
 
-        if self.component is not None:
-            item = self.component.name
-        elif self.sourcepackagename is not None:
-            item = self.sourcepackagename.name
-        else:
+        item = self.context.component_name
+        if item is None:
+            item = self.context.source_package_name
+        if item is None:
             raise AssertionError, (
                 "One of component or sourcepackagename should be set")
 

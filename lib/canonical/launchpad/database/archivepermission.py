@@ -58,12 +58,28 @@ class ArchivePermission(SQLBase):
         # of archive this is.  See also the browser:url declarations in
         # zcml/archivepermission.zcml.
         if self.permission == ArchivePermissionType.UPLOAD:
-            self.alsoProvides(self, IArchveUploader)
+            alsoProvides(self, IArchiveUploader)
         elif self.permission == ArchivePermissionType.QUEUE_ADMIN:
-            self.alsoProvides(self, IArchveQueueAdmin)
+            alsoProvides(self, IArchiveQueueAdmin)
         else:
             raise AssertionError, (
                 "Unknown permission type %s" % self.permission)
+
+    @property
+    def component_name(self):
+        """See `IArchivePermission`"""
+        if self.component:
+            return self.component.name 
+        else:
+            return None
+
+    @property
+    def source_package_name(self):
+        """See `IArchivePermission`"""
+        if self.sourcepackagename:
+            return self.sourcepackagename.name
+        else:
+            return None
 
 
 class ArchivePermissionSet:

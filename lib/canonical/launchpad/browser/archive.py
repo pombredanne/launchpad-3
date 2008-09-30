@@ -40,10 +40,11 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePermissionType, ArchivePurpose, IArchive,
-    IArchiveEditDependenciesForm, IArchivePackageCopyingForm,
-    IArchivePackageDeletionForm, IArchiveSet,
-    IArchiveSourceSelectionForm, IPPAActivateForm)
+    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    IArchivePackageCopyingForm, IArchivePackageDeletionForm,
+    IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.component import IComponentSet
@@ -191,7 +192,7 @@ class ArchiveNavigation(Navigation):
         return self._traverse_permission(name, ArchivePermissionType.UPLOAD)
 
     @stepthrough('+queue-admin')
-        def traverse_queue_admin_permission(self, name):
+    def traverse_queue_admin_permission(self, name):
         """Traverse the data part of the URL for queue admin permissions."""
         return self._traverse_permission(
             name, ArchivePermissionType.QUEUE_ADMIN)
@@ -215,14 +216,14 @@ class ArchiveNavigation(Navigation):
             pass
         else:
             return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, component)
+                user, self.context, permission_type, component)[0]
 
         # See if "item" is a source package name.
         package = getUtility(ISourcePackageNameSet).queryByName(item)
         if package is not None:
-            return getUtility(IArchivePermissionsSet).checkAuthenticated(
-                user, self.context, permission_type, package)
-        else
+            return getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, package)[0]
+        else:
             return None
 
 

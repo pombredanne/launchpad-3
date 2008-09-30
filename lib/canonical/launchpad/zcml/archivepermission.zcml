@@ -21,14 +21,14 @@
   </securedutility>
 
   <browser:url
-    for="canonical.launchpad.interfaces.IArchiveUploader"
+    for="canonical.launchpad.interfaces.archivepermission.IArchiveUploader"
     path_expression="string:+upload"
     attribute_to_parent="archive"
     urldata="canonical.launchpad.browser.archivepermission.ArchivePermissionURL"
   />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IArchiveQueueAdmin"
+    for="canonical.launchpad.interfaces.archivepermission.IArchiveQueueAdmin"
     path_expression="string:+queue-admin"
     attribute_to_parent="archive"
     urldata="canonical.launchpad.browser.archivepermission.ArchivePermissionURL"
