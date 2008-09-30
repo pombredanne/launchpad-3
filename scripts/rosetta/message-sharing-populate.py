@@ -23,7 +23,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import cursor, quote
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
@@ -51,12 +51,15 @@ class PopulateTranslationMessage:
         cur.execute("ANALYZE temp_todo(id)")
 
         cur.execute("SELECT max(id) FROM temp_todo")
-        highest_id, = cur.fetchall()
-        self.finish_id = highest_id + 1
+        max_id, = cur.fetchone()
+        if max_id is None:
+            self.finish_id = 0
+        else:
+            self.finish_id = max_id + 1
 
     def isDone(self):
         """See `ITunableLoop`."""
-        done = (self.last_id < self.finish_id)
+        done = (self.last_id >= self.finish_id)
         if done:
             drop_tables(cursor(), 'temp_todo')
         return done
@@ -74,7 +77,11 @@ class PopulateTranslationMessage:
             OFFSET %s
             LIMIT 1
             """ % sqlvalues(self.last_id, chunk_size))
-        end_id, = cur.fetchall()
+        batch_limit = cur.fetchone()
+        if batch_limit is None:
+            end_id = self.finish_id
+        else:
+            end_id, = batch_limit
 
         cur.execute("""
             UPDATE TranslationMessage AS Msg
@@ -93,7 +100,8 @@ class PopulateTranslationMessage:
                 )
             """ % sqlvalues(self.last_id, end_id))
         self.logger.info(
-            "Updated %d rows: %d - %d." % (chunk_size, self.last_id, end_id))
+            "Updated %d rows: %d - %d." % (
+                cur.rowcount, self.last_id, end_id))
         self.txn.commit()
         self.txn.begin()
         self.last_id = end_id
@@ -111,12 +119,14 @@ class PopulateTranslationTemplateItem:
 
         cur = cursor()
         cur.execute("""
-            SELECT id
+            SELECT POTMsgSet.id
             INTO TEMP TABLE temp_todo
             FROM POTMsgSet
             LEFT JOIN TranslationTemplateItem AS ExistingEntry ON
                 ExistingEntry.potmsgset = potmsgset.id
-            WHERE sequence > 0
+            WHERE
+                POTMsgSet.sequence > 0 AND
+                ExistingEntry.id IS NULL
             ORDER BY id
             """)
         cur.execute(
@@ -124,14 +134,18 @@ class PopulateTranslationTemplateItem:
         cur.execute("ANALYZE temp_todo(id)")
 
         cur.execute("SELECT max(id) FROM temp_todo")
-        highest_id, = cur.fetchall()
-        self.finish_id = highest_id + 1
+        max_id, = cur.fetchone()
+        if max_id is None:
+            self.finish_id = 0
+        else:
+            self.finish_id = max_id + 1
 
     def isDone(self):
         """See `ITunableLoop`."""
-        if self.done:
+        done = (self.last_id >= self.finish_id)
+        if done:
             drop_tables(cursor(), 'temp_todo')
-        return self.done
+        return done
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
@@ -146,24 +160,26 @@ class PopulateTranslationTemplateItem:
             OFFSET %s
             LIMIT 1
             """ % sqlvalues(self.last_id, chunk_size))
-        end_id, = cur.fetchall()
+        batch_limit = cur.fetchone()
+        if batch_limit is None:
+            end_id = self.finish_id
+        else:
+            end_id, = batch_limit
 
         cur.execute("""
             INSERT INTO TranslationTemplateItem(
                 potemplate, sequence, potmsgset)
-            SELECT potemplate, sequence, id
+            SELECT POTMsgSet.potemplate, POTMsgSet.sequence, POTMsgSet.id
             FROM POTMsgSet
             LEFT JOIN TranslationTemplateItem AS ExistingEntry ON
                 ExistingEntry.potmsgset = potmsgset.id
             WHERE
-                id >= %s AND
-                id < %s AND
-                sequence > 0 AND
+                POTMsgSet.id >= %s AND
+                POTMsgSet.id < %s AND
+                POTMsgSet.sequence > 0 AND
                 ExistingEntry.id IS NULL
-            LIMIT %s
             """ % sqlvalues(self.last_id, end_id))
-        self.done = (cur.rowcount == 0)
-        self.logger.info("Inserted %d rows." % chunk_size)
+        self.logger.info("Inserted %d rows." % cur.rowcount)
         self.txn.commit()
         self.txn.begin()
         self.last_id = end_id
