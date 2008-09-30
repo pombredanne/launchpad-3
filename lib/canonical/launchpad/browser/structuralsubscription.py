@@ -64,9 +64,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                           'which you are an administrator.'),
             value_type=Choice(vocabulary=team_vocabulary),
             required=False)
-        return form.FormField(
-            team_subscriptions_field,
-            custom_widget=self.custom_widgets['subscriptions_team'])
+        return form.FormField(team_subscriptions_field)
 
     def _createRemoveOtherSubscriptionsField(self):
         """Create a field with a list of subscribers.
@@ -101,9 +99,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
             title=u'Unsubscribe',
             value_type=Choice(vocabulary=subscriptions_vocabulary),
             required=False)
-        return form.FormField(
-            other_subscriptions_field,
-            custom_widget=self.custom_widgets['remove_other_subscriptions'])
+        return form.FormField(other_subscriptions_field)
 
     def _createAddOtherSubscriptionsField(self):
         """Create a field for a new subscription."""

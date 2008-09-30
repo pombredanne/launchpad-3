@@ -5,9 +5,6 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.database.product import (
-    ...     get_allowed_default_stacking_names)
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
     ...     NotFoundError)
@@ -608,35 +605,6 @@ branch is 'stacked' on to a default base branch, called the 'default
 stacked-on branch' in Bazaar terminology. This default stacked-on branch
 is the development focus branch of a product.
 
-For the initial rollout of default stacking, only certain projects will
-have default stacked on branches. These projects are:
-
-    >>> for name in get_allowed_default_stacking_names():
-    ...     print name
-    evolution
-    firefox
-
-This is determined by the allow_default_stacking configuration variable:
-
-    >>> print config.codehosting.allow_default_stacking
-    evolution,firefox
-
-Bazaar is not yet allowed to have default stacking enabled, so it cannot
-have a default stacked-on branch, whether or not it has a development
-focus set.
-
-    >>> bazaar = getUtility(IProductSet).getByName('bzr')
-    >>> print bazaar.development_focus.series_branch
-    None
-    >>> print bazaar.default_stacked_on_branch
-    None
-    >>> branch = getUtility(IBranchSet).get(1)
-    >>> bazaar.development_focus.user_branch = branch
-    >>> print bazaar.development_focus.series_branch is not None
-    True
-    >>> print bazaar.default_stacked_on_branch
-    None
-
 In the sample data, Firefox has no development focus branch set, so it
 has no default stacked-on branch:
 
@@ -646,8 +614,7 @@ has no default stacked-on branch:
     None
 
 However, Evolution has a branch for its development focus in the sample
-data and it is explicitly whitelisted in the allow_default_stacking
-configuration variable so it has a default stacked-on branch.
+data so it has a default stacked-on branch.
 
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> print evolution.development_focus.series_branch.unique_name
