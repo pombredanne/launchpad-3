@@ -1,16 +1,33 @@
 HERE=`pwd`
 
+DEVCONFIG=replicated-development
+
 default:
 	echo Usage: make [start|stop|restart]
 
 start:
-	./slon_ctl.py start
+	LPCONFIG=${DEVCONFIG} ./slon_ctl.py start
 
 stop:
-	./slon_ctl.py stop
+	LPCONFIG=${DEVCONFIG} ./slon_ctl.py stop
 
 restart: stop start
 
-initialize:
-	LPCONFIG=demo1 python2.4 ./initialize.py -d lpmain_demo -H localhost -U slony 2>&1 | tee initialize.out
+devsetup:
+	# Create the slony PostgreSQL superuser if necessary.
+	createuser --superuser slony || true
+	# Stop the slon daemons and wait a bit for connections to drop.
+	LPCONFIG=${DEVCONFIG} make stop
+	sleep 5
+	# Drop any existing databases if they exist
+	dropdb launchpad_dev || true
+	dropdb launchpad_dev_slave1 || true
+	# Build the master database
+	LPCONFIG=${DEVCONFIG} make -C ../schema
+	# Create the slave database, empty at this point.
+	createdb --encoding=UTF8 launchpad_dev_slave1
+	# Start the slon daemons
+	LPCONFIG=${DEVCONFIG} make start
+	# Turn the slave into a replica
+	LPCONFIG=${DEVCONFIG} ./initialize.py
 

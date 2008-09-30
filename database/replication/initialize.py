@@ -198,7 +198,7 @@ def subscribe_slaves():
 
     log.info('Waiting for synchronization.')
     helpers.sync(0)
-    log.info('Synchronized. Slave now usable.')
+    log.info('Synchronized. Both master & slave usable.')
 
     helpers.validate_replication(cur) # Explode now if we have messed up.
 
