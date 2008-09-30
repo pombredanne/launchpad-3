@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.inmemory import FakeLaunchpadFrontend
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -409,6 +408,36 @@ class BranchPullQueueTest(TestCaseWithFactory):
         naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
         return branch
 
+    def test_getBranchPullInfo_no_default_stacked_branch(self):
+        # If there's no default stacked branch for the project that a branch
+        # is on, then _getBranchPullInfo returns (id, url, unique_name, '').
+        branch = self.factory.makeBranch()
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
+
+    def test_getBranchPullInfo_default_stacked_branch(self):
+        # If there's a default stacked branch for the project that a branch is
+        # on, then _getBranchPullInfo returns (id, url, unique_name,
+        # default_branch_unique_name).
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        default_branch = self.factory.makeBranch(product=product)
+        series.user_branch = default_branch
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name,
+             '/' + default_branch.unique_name), info)
+
+    def test_getBranchPullInfo_junk(self):
+        # _getBranchPullInfo returns (id, url, unique_name, '') for junk
+        # branches.
+        branch = self.factory.makeBranch(product=None)
+        info = self.storage._getBranchPullInfo(branch)
+        self.assertEqual(
+            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
+
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
         self.assertBranchQueues([branch], [], [])
@@ -619,20 +648,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
-    def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
-
     def _makeProductWithDevFocus(self, private=False):
         """Make a stacking-enabled product with a development focus.
 
@@ -640,7 +655,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             private.
         :return: The new Product and the new Branch.
         """
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch

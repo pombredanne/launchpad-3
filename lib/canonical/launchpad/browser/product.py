@@ -1214,8 +1214,7 @@ class ProductAdminView(ProductEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
     def validate(self, data):
@@ -1674,6 +1673,8 @@ class ProductBranchListingView(BranchListingView):
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
 
     def initialize(self):
         ProductBranchListingView.initialize(self)

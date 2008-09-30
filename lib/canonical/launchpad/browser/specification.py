@@ -646,8 +646,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                     "that selecting a specification here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['superseded_by'])
+            render_context=self.render_context)
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
