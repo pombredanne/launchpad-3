@@ -458,7 +458,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
-        self.branchfs = BranchFileSystem(None, None)
+        frontend = self.frontend()
+        self.branchfs = frontend.getFilesystemEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branch_set = frontend.getBranchSet()
 
     def assertFaultEqual(self, faultCode, faultString, fault):
         """Assert that `fault` has the passed-in attributes."""
@@ -474,7 +477,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, owner.name, product.name, name)
         login(ANONYMOUS)
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
@@ -487,7 +490,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, owner.name, '+junk', name)
         login(ANONYMOUS)
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
@@ -745,6 +748,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
 class RealLaunchpadFrontend:
 
+    def getFilesystemEndpoint(self):
+        return BranchFileSystem(None, None)
+
     def getPullerEndpoint(self):
         return BranchPuller(None, None)
 
@@ -773,11 +779,10 @@ def test_suite():
     suite = unittest.TestSuite()
     puller_tests = unittest.TestSuite(
         [loader.loadTestsFromTestCase(BranchPullerTest),
-         loader.loadTestsFromTestCase(BranchPullQueueTest)])
+         loader.loadTestsFromTestCase(BranchPullQueueTest),
+         loader.loadTestsFromTestCase(BranchFileSystemTest),
+         ])
     adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
     suite.addTests(
-        map(loader.loadTestsFromTestCase,
-            [TestRunWithLogin,
-             BranchFileSystemTest,
-             ]))
+        map(loader.loadTestsFromTestCase, [TestRunWithLogin]))
     return suite

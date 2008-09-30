@@ -93,6 +93,11 @@ class FakeBranch(FakeDatabaseObject):
         self.next_mirror_time = UTC_NOW
 
 
+class FakePerson(FakeDatabaseObject):
+
+    displayname = None
+
+
 class FakeProduct(FakeDatabaseObject):
 
     def __init__(self):
@@ -115,12 +120,13 @@ class FakeScriptActivity(FakeDatabaseObject):
 
 class FakeObjectFactory(ObjectFactory):
 
-    def __init__(self, branch_set):
+    def __init__(self, branch_set, person_set):
         super(FakeObjectFactory, self).__init__()
         self._branch_set = branch_set
+        self._person_set = person_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
-                   product=None):
+                   product=None, owner=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -130,6 +136,11 @@ class FakeObjectFactory(ObjectFactory):
             stacked_on=stacked_on, product=product)
         self._branch_set._add(branch)
         return branch
+
+    def makePerson(self):
+        person = FakePerson()
+        self._person_set._add(person)
+        return person
 
     def makeProduct(self):
         return FakeProduct()
@@ -211,14 +222,37 @@ class FakeBranchPuller:
         return True
 
 
+class FakeBranchFilesystem:
+
+    def __init__(self, branch_set):
+        self._branch_set = branch_set
+
+    def createBranch(self, *args):
+        pass
+
+    def requestMirror(self, requester_id, branch_id):
+        self._branch_set.get(branch_id).requestMirror()
+
+    def getBranchInformation(self, *args):
+        pass
+
+    def getDefaultStackedOnBranch(self, *args):
+        pass
+
+
 class FakeLaunchpadFrontend:
 
     def __init__(self):
         self._branch_set = ObjectSet()
         self._script_activity_set = ObjectSet()
+        self._person_set = ObjectSet()
         self._puller = FakeBranchPuller(
             self._branch_set, self._script_activity_set)
-        self._factory = FakeObjectFactory(self._branch_set)
+        self._branchfs = FakeBranchFilesystem(self._branch_set)
+        self._factory = FakeObjectFactory(self._branch_set, self._person_set)
+
+    def getFilesystemEndpoint(self):
+        return self._branchfs
 
     def getPullerEndpoint(self):
         return self._puller
