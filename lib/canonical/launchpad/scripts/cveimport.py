@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from zope.app.event.objectevent import ObjectModifiedEvent
+from zope.lifecycleevent import ObjectModifiedEvent
 
 from canonical.config import config
 from canonical.launchpad.interfaces.cve import CveStatus, ICveSet
