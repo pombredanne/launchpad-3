@@ -149,6 +149,9 @@ class PullerWorkerProtocol:
     def progressMade(self):
         self.sendEvent('progressMade')
 
+    def log(self, fmt, *args):
+        self.sendEvent('log', fmt % args)
+
 
 def get_vfs_format_classes(branch):
     """Return the vfs classes of the branch, repo and bzrdir formats.
@@ -241,13 +244,18 @@ class BranchMirrorer(object):
     Public methods are `open` and `mirror`.
     """
 
-    def __init__(self, policy):
+    def __init__(self, policy, log=None):
         """Construct a branch opener with 'policy'.
 
         :param policy: A `BranchPolicy` that tells us what URLs are valid and
             similar things.
+        :param log: XXX
         """
         self.policy = policy
+        if log is not None:
+            self.log = log
+        else:
+            self.log = lambda *args: None
 
     def open(self, url):
         """Open the Bazaar branch at url, first checking for safety.
@@ -405,6 +413,7 @@ class BranchMirrorer(object):
         # Check that destination branch is in the same format as the source.
         if identical_formats(source_branch, branch):
             return branch, False
+        self.log('Formats differ.')
         branch = self.createDestinationBranch(source_branch, destination_url)
         return branch, True
 
@@ -581,7 +590,11 @@ class PullerWorker:
         else:
             raise AssertionError(
                 "Unexpected branch type: %r" % branch_type)
-        return BranchMirrorer(policy)
+        if self.protocol is not None:
+            log = self.protocol.log
+        else:
+            log = None
+        return BranchMirrorer(policy, log)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  default_stacked_on_url, protocol, branch_mirrorer=None,
@@ -612,12 +625,12 @@ class PullerWorker:
         if default_stacked_on_url == '':
             default_stacked_on_url = None
         self.default_stacked_on_url = default_stacked_on_url
-        if branch_mirrorer is None:
-            branch_mirrorer = self._checkerForBranchType(branch_type)
-        self.branch_mirrorer = branch_mirrorer
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
+        if branch_mirrorer is None:
+            branch_mirrorer = self._checkerForBranchType(branch_type)
+        self.branch_mirrorer = branch_mirrorer
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
