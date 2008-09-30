@@ -250,6 +250,8 @@ class TestPullerMonitorProtocol(
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
 
+        def log(self, message):
+            self.calls.append(('log', message))
 
     def makeProtocol(self):
         return scheduler.PullerMonitorProtocol(
@@ -302,6 +304,11 @@ class TestPullerMonitorProtocol(
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
         self.assertProtocolSuccess()
+
+    def test_log(self):
+        self.protocol.do_log('message')
+        self.assertEqual(
+            [('log', 'message')], self.listener.calls)
 
     def assertMessageResetsTimeout(self, callable, *args):
         """Assert that sending the message resets the protocol timeout."""
