@@ -136,10 +136,10 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff=None):
+                 delta=None, contents=None, diff=None, message_id=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta)
-        self.message = message
+                            from_address, delta, message_id)
+        self.contents = contents
         self.diff = diff
 
     @classmethod
@@ -149,7 +149,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, message, diff_job,
+    def forRevision(klass, db_branch, from_address, contents, diff_job,
                     subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
@@ -174,7 +174,7 @@ class BranchMailer(BaseMailer):
             revision_diff = lfa.read().decode('utf8', 'replace')
             static_diff.destroySelf()
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, message=message, diff=revision_diff)
+            from_address, contents=contents, diff=revision_diff)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -191,17 +191,17 @@ class BranchMailer(BaseMailer):
         diff_size = self.diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = self.message
+                contents = self.contents
             elif diff_size > max_diff.value:
                 diff_msg = (
                     'The size of the diff (%d lines) is larger than your '
                     'specified limit of %d lines' % (
                     diff_size, max_diff.value))
-                contents = "%s\n%s" % (self.message, diff_msg)
+                contents = "%s\n%s" % (self.contents, diff_msg)
             else:
-                contents = "%s\n%s" % (self.message, self.diff)
+                contents = "%s\n%s" % (self.contents, self.diff)
         else:
-            contents = "%s\n%s" % (self.message, self.diff)
+            contents = "%s\n%s" % (self.contents, self.diff)
         return contents
 
     def _getTemplateParams(self, email):
