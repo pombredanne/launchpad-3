@@ -584,7 +584,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
         if msgid is None:
-            msgid = make_msgid('launchpad')
+            msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
@@ -747,7 +747,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        rfc822msgid = make_msgid("launchpad")
+        rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)
         MessageChunk(message=message, sequence=1, content=content)
@@ -918,7 +918,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         The created message id is guaranteed not to exist in the
         `Message` table already.
         """
-        msg_id = make_msgid()
+        msg_id = make_msgid('launchpad')
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
             msg_id = email.Utils.make_msgid()
         return msg_id
