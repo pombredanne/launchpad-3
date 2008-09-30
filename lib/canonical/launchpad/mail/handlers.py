@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import re
-from urlparse import urlunparse, urlparse
+from urlparse import urlunparse
 
 from bzrlib.errors import NotAMergeDirective
 from bzrlib.merge_directive import MergeDirective
