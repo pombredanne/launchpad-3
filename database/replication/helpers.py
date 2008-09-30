@@ -14,7 +14,7 @@ from textwrap import dedent
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.postgresql import (
-    fqn, all_tables_in_schema, all_sequences_in_schema
+    fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
     )
 from canonical.launchpad.scripts.logger import log
 
@@ -157,6 +157,11 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
 def preamble():
     """Return the preable needed at the start of all slonik scripts."""
 
+    master_connection_string = ConnectionString(config.database.main_master)
+    slave_connection_string = ConnectionString(config.database.main_slave)
+    master_connection_string.user = 'slony'
+    slave_connection_string.user = 'slony'
+
     return dedent("""\
         # Every slonik script must start with a clustername, which cannot
         # be changed once the cluster is initialized.
@@ -178,7 +183,7 @@ def preamble():
         # Connection strings so slonik knows where to go.
         node @master_node admin conninfo = @master_conninfo;
         node @slave1_node admin conninfo = @slave1_conninfo;
-        """ % (config.database.main_master, config.database.main_slave))
+        """ % (master_connection_string, slave_connection_string))
         
 
 def calculate_replication_set(cur, seeds):
