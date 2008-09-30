@@ -437,6 +437,22 @@ One rejection email is generated:
   >>> rejection['Subject']
   'netapplet-1.0.0.tar.gz rejected'
 
+Please note that in this case the rejection reason is not available
+and how that's stated in the notification email body.
+
+  >>> body = rejection.get_payload()[0]
+  >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
+  Content-Type: text/plain; charset="utf-8"
+  MIME-Version: 1.0
+  Content-Transfer-Encoding: quoted-printable
+  <BLANKLINE>
+  Rejected:
+  Rejected by archive administrator.
+  ...
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
+
 The override controls are now available for rejected packages.
 
 Navigate to the rejected items queue.

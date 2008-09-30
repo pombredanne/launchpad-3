@@ -56,6 +56,10 @@
           define="link context_menu/nominate"
           condition="link/enabled"
           replace="structure link/render" />
+      <tal:affectsmetoo
+          define="link context_menu/affectsmetoo"
+          condition="link/enabled"
+          replace="structure link/render" />
     </tal:also-affects-links>
 
 </div>
