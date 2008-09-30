@@ -47,6 +47,7 @@ class PopulateTranslationMessage:
             """)
         cur.execute(
             "CREATE UNIQUE INDEX temp_todo__pkey ON temp_todo(id)")
+        cur.execute("ANALYZE temp_todo(id)")
 
         cur.execute("SELECT max(id) FROM temp_todo")
         highest_id, = cur.fetchall()
@@ -86,7 +87,7 @@ class PopulateTranslationMessage:
                     FROM temp_todo
                     WHERE id >= %s AND id < %s
                 )
-            """ % quote(int(chunk_size)))
+            """ % sqlvalues(self.last_id, end_id))
         self.logger.info(
             "Updated %d rows: %d - %d." % (chunk_size, self.last_id, end_id))
         self.txn.commit()
