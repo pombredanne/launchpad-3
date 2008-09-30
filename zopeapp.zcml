@@ -11,6 +11,7 @@
   <!-- Note that we need to do this early, as later startup
        subscribers may break without fixups -->
 
+  <include package="zope.component" />
   <include package="zope.app.component" />
   <!-- We don't need generations, as they are zodb specific.
   <include package="zope.app.generations" file="subscriber.zcml" />
@@ -18,10 +19,7 @@
   <!-- Ordinary Application (non-view) configuration) -->
   <include package="zope.app.interface" />
   <include package="zope.app.security" />
-  <!-- XXX sinzui 2008-04-14:
-       The package moved and does not have zcml.
-  <include package="zope.app.event" />
-  -->
+
   <!--
   <include package="zope.app.observable" />
   <include package="zope.app.annotation" />
