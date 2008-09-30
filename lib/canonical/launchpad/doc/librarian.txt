@@ -463,7 +463,7 @@ contents directly from launchpad instances.
     ...     filename, len(content), StringIO(content), 'text/plain',
     ...     NEVER_EXPIRES, restricted=True)
 
-Commit the just-created files and create an empty test request.
+Commit the just-created files.
 
     >>> from canonical.database.sqlbase import commit
     >>> commit()
@@ -504,7 +504,7 @@ usage when streaming huge files.
 
 When the context given to `StreamOrRedirectLibraryFileAliasView` is a
 public `LibraryFileAlias` the traversal chain is extended with a
-`RedirectionView` pointing to the public its librarian url.
+`RedirectionView` pointing to its public librarian url.
 
     >>> public_view = StreamOrRedirectLibraryFileAliasView(
     ...     public_file, empty_request)

@@ -54,7 +54,7 @@ Create a corresponding upload changesfile.
     >>> unused = source_upload.addSource(test_source.sourcepackagerelease)
     >>> source_upload.setDone()
 
-Create a corresponging binary publication and its changesfile.
+Create a corresponding binary publication and its changesfile.
 
     >>> binary_pubs = test_publisher.getPubBinaries(
     ...     binaryname='test-bin', pub_source=test_source)

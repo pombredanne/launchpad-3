@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'LibraryFileAliasView',
     'LibraryFileAliasMD5View',
+    'FileNavigationMixin',
     'StreamOrRedirectLibraryFileAliasView',
     ]
 
@@ -16,11 +17,14 @@ import tempfile
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.publisher import (
+    LaunchpadView, RedirectionView, stepthrough)
 from canonical.librarian.utils import filechunks
+
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -74,8 +78,8 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         The file content is downloaded in chunks directly to a
         `tempfile.TemporaryFile` avoiding using large amount of memory.
 
-        The temporary file is returned to the zope published machine as
-        documented in lib/zope/publisher/httpresults.txt after adjusting
+        The temporary file is returned to the zope published machinery as
+        documented in lib/zope/publisher/httpresults.txt, after adjusting
         the response 'Content-Type' appropriately.
         """
         self.request.response.setHeader(
@@ -90,10 +94,10 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         self.context.close()
 
         # XXX cprov 20080930: according to lib/zope/publisher/httpresults.txt
-        # reseting the file and returning its content shouldn't be necessary
-        # at all. It worlks perfectly fine in development and dogfood.
+        # resetting the file and returning its content shouldn't be necessary
+        # at all. It works perfectly fine in development and dogfood.
         # However it fails horribly in the test environment, warning about
-        # the lack of 'content-length' hearder. See the complete test
+        # the lack of 'content-length' header. See the complete test
         # traceback int https://pastebin.canonical.com/9687/.
         # The code cannot land before solving this issue!
         #return tmp_file
@@ -116,3 +120,24 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher`."""
         raise NotFound(name, self.context)
+
+
+class FileNavigationMixin:
+    """Navigate to `LibraryFileAlias` hosted in a context.
+
+
+    The navigation goes through +files/<filename> where file reference is
+    provided by context `getFileByName(filename)`.
+
+    The requested file is proxied via `StreamOrRedirectLibraryFileAliasView`,
+    making it possible to serve both, public and restricted, files.
+    """
+
+    @stepthrough('+files')
+    def traverse_files(self, filename):
+        """Traverse on filename in the archive domain."""
+        if not check_permission('launchpad.View', self.context):
+            raise Unauthorized()
+        library_file  = self.context.getFileByName(filename)
+        return StreamOrRedirectLibraryFileAliasView(
+            library_file, self.request)

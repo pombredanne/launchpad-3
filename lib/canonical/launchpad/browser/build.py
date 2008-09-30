@@ -15,19 +15,17 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView)
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, stepthrough,
-    ContextMenu, GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
+    action, canonical_url, enabled_with_permission, ContextMenu,
+    GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -64,20 +62,8 @@ class BuildUrl:
         return u"+build/%d" % self.context.id
 
 
-class BuildNavigation(GetitemNavigation):
+class BuildNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IBuild
-
-    @stepthrough('+files')
-    def traverse_files(self, filename):
-        """Traverse on filename in the archive domain."""
-        # XXX cprov 20080925: AssertionError is obviously the wrong
-        # exception to raise.
-        if not check_permission('launchpad.View', self.context):
-            raise Unauthorized()
-
-        library_file  = self.context.getFileByName(filename)
-        return StreamOrRedirectLibraryFileAliasView(
-            library_file, self.request)
 
 
 class BuildFacets(StandardLaunchpadFacets):

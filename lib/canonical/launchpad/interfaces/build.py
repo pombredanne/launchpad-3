@@ -323,7 +323,7 @@ class IBuild(Interface):
             format and/or extension, see the list above.
         :raises NotFoundError if no file could not be found.
 
-        :return the corresponding `ILibraryFileAlias` is the file was found.
+        :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
 

@@ -30,7 +30,6 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_caches
@@ -38,8 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
-from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView)
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -61,7 +59,6 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -169,7 +166,7 @@ class ArchiveURL:
         return u"+archive/%s" % self.context.name.lower()
 
 
-class ArchiveNavigation(Navigation):
+class ArchiveNavigation(Navigation, FileNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
@@ -184,18 +181,6 @@ class ArchiveNavigation(Navigation):
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
-
-    @stepthrough('+files')
-    def traverse_files(self, filename):
-        """Traverse on filename in the archive domain."""
-        # XXX cprov 20080925: AssertionError is obviously the wrong
-        # exception to raise.
-        if not check_permission('launchpad.View', self.context):
-            raise Unauthorized()
-
-        library_file  = self.context.getFileByName(filename)
-        return StreamOrRedirectLibraryFileAliasView(
-            library_file, self.request)
 
 
 class ArchiveContextMenu(ContextMenu):
