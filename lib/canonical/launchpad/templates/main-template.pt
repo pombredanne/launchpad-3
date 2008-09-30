@@ -129,7 +129,7 @@
 
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
-      tal:define="facetmenu CONTEXTS/menu:facet"
+      tal:define="facetmenu view/menu:facet"
       id="lp-apps"
       class="clearfix"
     >
