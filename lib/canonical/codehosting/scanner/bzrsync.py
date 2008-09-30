@@ -22,12 +22,16 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 import transaction
 
-from canonical.codehosting.puller.worker import BranchOpener
+from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet,
-    IStaticDiffJobSource, IRevisionSet, NotFoundError, RepositoryFormat,)
+    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    IStaticDiffJobSource, NotFoundError, RepositoryFormat,)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES)
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
     BranchMailer as MailoutMailer)
 from canonical.launchpad.webapp.uri import URI
@@ -227,6 +231,7 @@ class BranchMailer:
         self.db_branch = db_branch
         self.queued_mail_jobs = []
         self.subscribers_want_notification = False
+        self.generate_diffs = False
         self.initial_scan = None
         self.email_from = config.canonical.noreply_from_address
 
@@ -246,7 +251,12 @@ class BranchMailer:
                        BranchSubscriptionNotificationLevel.FULL)
 
         subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
-        self.subscribers_want_notification = (subscriptions.count() > 0)
+        for subscription in subscriptions:
+            self.subscribers_want_notification = True
+            if (subscription.max_diff_lines !=
+                BranchSubscriptionDiffSize.NODIFF):
+                self.generate_diffs = True
+                break
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
@@ -287,8 +297,11 @@ class BranchMailer:
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
-            diff_job = _get_static_diff_job(self.db_branch, bzr_branch,
-                                           bzr_revision)
+            if self.generate_diffs:
+                diff_job = _get_static_diff_job(
+                    self.db_branch, bzr_branch, bzr_revision)
+            else:
+                diff_job = None
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
@@ -350,7 +363,7 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
-class WarehouseBranchOpener(BranchOpener):
+class WarehouseBranchPolicy(BranchPolicy):
 
     def checkOneURL(self, url):
         """See `BranchOpener.checkOneURL`.
@@ -394,7 +407,7 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = WarehouseBranchOpener().open(
+            bzr_branch = BranchMirrorer(WarehouseBranchPolicy()).open(
                 self.db_branch.warehouse_url)
         bzr_branch.lock_read()
         try:
@@ -463,7 +476,33 @@ class BzrSync:
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
+        self.autoMergeProposals(bzr_ancestry)
         self.trans_manager.commit()
+
+    def autoMergeProposals(self, bzr_ancestry):
+        """Detect merged proposals."""
+        # Check landing candidates in non-terminal states to see if their tip
+        # is in our ancestry. If it is, set the state of the proposal to
+        # 'merged'.
+
+        # At this stage we are not going to worry about the revno
+        # which introduced the change, that will either be set through the web
+        # ui by a person, of by PQM once it is integrated.
+        for proposal in self.db_branch.landing_candidates:
+            if proposal.source_branch.last_scanned_id in bzr_ancestry:
+                proposal.markAsMerged()
+
+        # Now check the landing targets.
+        final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        tip_rev_id = self.db_branch.last_scanned_id
+        for proposal in self.db_branch.landing_targets:
+            if proposal.queue_status not in final_states:
+                # If there is a branch revision record for target branch with
+                # the tip_rev_id of the source branch, then it is merged.
+                branch_revision = proposal.target_branch.getBranchRevision(
+                    revision_id=tip_rev_id)
+                if branch_revision is not None:
+                    proposal.markAsMerged()
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""

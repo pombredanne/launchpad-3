@@ -875,7 +875,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_series=parent_series, owner=distribution.owner)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
-                       sourcepackagename=None, owner=None):
+                       sourcepackagename=None, owner=None, name=None,
+                       translation_domain=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -887,8 +888,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
 
-        name = self.getUniqueString()
-        translation_domain = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if translation_domain is None:
+            translation_domain = self.getUniqueString()
 
         if owner is None:
             if productseries is None:

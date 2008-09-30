@@ -1041,7 +1041,7 @@ makes it write out the emails it sends.
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
-    X-Generated-By: Launchpad (canonical.com)
+    ...
     <BLANKLINE>
     another comment.
     <BLANKLINE>
@@ -1618,8 +1618,11 @@ notification level greater or equal to METADATA.
     ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
     ...     added_bugtasks=bug_five.bugtasks[-2])
     >>> add_bug_change_notifications(bug_delta)
-    >>> default_notification_interval = config.malone.bugnotification_interval
-    >>> config.malone.bugnotification_interval = 0
+    >>> bugnotification_interval = """
+    ...     [malone]
+    ...     bugnotification_interval: 0
+    ...     """
+    >>> config.push('bugnotification_interval', bugnotification_interval)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> bug_five_notifications = [
@@ -1644,12 +1647,18 @@ If No Privileges Person sets his notification level to LIFECYCLE, he
 will not receive notifications sent by add_bug_change_notification().
 
     >>> commit()
+
+    # XXX sinzui 2008-09-19 bug=272323:
+    # LaunchpadZopelessLayer.switchDbUser() restores the config using pop().
+    # Remove the test overlay to be clear about what config state is.
+    >>> config_data = config.pop('bugnotification_interval')
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> subscription_no_priv.bug_notification_level = (
     ...     BugNotificationLevel.LIFECYCLE)
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(
     ...     config.malone.bugnotification_dbuser)
+    >>> config.push('bugnotification_interval', bugnotification_interval)
     >>> bugtask_bug_5_firefox = bug_five.getBugTask(firefox)
     >>> old_bugtask_bug_5_firefox = Snapshot(
     ...     bugtask_bug_5_firefox, providing=IUpstreamBugTask)
@@ -1657,8 +1666,6 @@ will not receive notifications sent by add_bug_change_notification().
     ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
     ...     added_bugtasks=bug_five.bugtasks[-1])
     >>> add_bug_change_notifications(bug_delta, old_bugtask_bug_5_firefox)
-    >>> default_notification_interval = config.malone.bugnotification_interval
-    >>> config.malone.bugnotification_interval = 0
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> bug_five_notifications = [
@@ -1676,4 +1683,4 @@ will not receive notifications sent by add_bug_change_notification().
     You received this bug notification because you are a member of
     Ubuntu Team, which is the registrant for Ubuntu.
 
-    >>> config.malone.bugnotification_interval = default_notification_interval
+    >>> config_data = config.pop('bugnotification_interval')

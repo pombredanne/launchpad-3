@@ -260,30 +260,6 @@ on the index page, since most projects fall into this category.
     None
 
 
-= Configurable Display of Subscription Information =
-
-If the is_subscription_feature_active config variable is false,
-then the owner will not get a warning that the subscription is due.
-# XXX EdwinGrubbs 2008-05-22 bug=234070
-# Remove this config when the feature is launched.
-
-    >>> from canonical.config import config
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [commercial]
-    ...     is_subscription_feature_active: False
-    ...     """)
-    >>> config.push('test_data', test_data)
-    >>> firefox.licenses = [License.OTHER_PROPRIETARY]
-    >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> owner_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-requires-subscription')
-    None
-    >>> test_config_data = config.pop('test_data')
-
-
 = Commercial Subscription Expiration =
 
 If the project has redeemed a voucher for a commercial subscription
