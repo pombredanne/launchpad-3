@@ -64,6 +64,7 @@ class CodeMailJob(SQLBase):
         SQLBase.__init__(self, **kwargs)
 
     static_diff = ForeignKey(foreignKey='StaticDiff')
+    max_diff_lines = IntCol()
 
     def toMessage(self):
         mail = Message()
@@ -82,8 +83,27 @@ class CodeMailJob(SQLBase):
                 'iso-8859-1')
         mail['Subject'] = Header(self.subject, 'iso-8859-1')
         mail['Date'] = formatdate(timegm(self.date_created.utctimetuple()))
-        mail.set_payload(append_footer(self.body, self.footer), 'utf-8')
+        mail.set_payload(self.get_body(), 'utf-8')
         return mail
+
+    def get_body(self):
+        body = self.body % {'diff': self._diffText()}
+        return append_footer(body, self.footer)
+
+    def _diffText(self):
+        if self.max_diff_lines == 0 or self.static_diff is None:
+            return ''
+        lfa = static_diff.diff.diff_text
+        lfa.open()
+        diff = lfa.read().decode('utf8', 'replace')
+        diff_size = diff.count('\n') + 1
+        if diff_size > self.max_diff_lines:
+            return (
+                '\nThe size of the diff (%d lines) is larger than your '
+                'specified limit of %d lines' % (
+                diff_size, self.max_diff_lines))
+        else:
+            return '\n' + diff
 
     def run(self):
         self.job.start()
@@ -97,11 +117,11 @@ class CodeMailJobSource:
 
     def create(self, from_address, reply_to_address, to_address, rationale,
                branch_url, branch_project_name, subject, body, footer,
-               message_id, in_reply_to):
+               message_id, in_reply_to, max_diff_lines):
         """See `ICodeMailJobSource`"""
         return CodeMailJob(from_address=from_address,
             reply_to_address=reply_to_address, to_address=to_address,
             rationale=rationale, branch_url=branch_url,
             branch_project_name=branch_project_name, subject=subject,
             body=body, footer=footer, rfc822msgid=message_id,
-            in_reply_to=in_reply_to)
+            in_reply_to=in_reply_to, max_diff_lines=max_diff_lines)

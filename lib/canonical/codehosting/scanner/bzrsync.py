@@ -321,6 +321,8 @@ class BranchMailer:
                 self.db_branch, self.email_from, message, diff_job,
                 subject).queue()
             )
+            if diff_job is not None:
+                diff_job.run()
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.

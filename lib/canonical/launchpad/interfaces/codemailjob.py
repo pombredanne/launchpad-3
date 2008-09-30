@@ -34,6 +34,8 @@ class ICodeMailJob(Interface):
     branch_url = TextLine(title=_('URL of a related branch'))
     branch_project_name = TextLine(title=_("Branch's project's name"))
     static_diff = Object(schema=IStaticDiff)
+    max_diff_lines = Int(title=_(
+        'Maximum number of lines permitted in a diff'))
 
 
 class ICodeMailJobSource(Interface):

@@ -136,11 +136,11 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff=None):
+                 delta=None, message=None, diff_job=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta)
         self.message = message
-        self.diff = diff
+        self.diff_job = diff_job
 
     @classmethod
     def forBranchModified(klass, branch, recipients, from_address, delta):
@@ -163,18 +163,8 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
-        if diff_job is None:
-            revision_diff = ''
-        else:
-            static_diff = diff_job.run()
-            diff_job.destroySelf()
-            transaction.commit()
-            lfa = static_diff.diff.diff_text
-            lfa.open()
-            revision_diff = lfa.read().decode('utf8', 'replace')
-            static_diff.destroySelf()
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, message=message, diff=revision_diff)
+            from_address, message=message, diff_job=diff_job)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -185,24 +175,10 @@ class BranchMailer(BaseMailer):
             branch_title = ''
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
-    def _diffText(self, max_diff):
-        if self.diff is None:
+    def _diffTemplate(self):
+        if self.diff_job is None:
             return ''
-        diff_size = self.diff.count('\n') + 1
-        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
-            if max_diff == BranchSubscriptionDiffSize.NODIFF:
-                contents = self.message
-            elif diff_size > max_diff.value:
-                diff_msg = (
-                    'The size of the diff (%d lines) is larger than your '
-                    'specified limit of %d lines' % (
-                    diff_size, max_diff.value))
-                contents = "%s\n%s" % (self.message, diff_msg)
-            else:
-                contents = "%s\n%s" % (self.message, self.diff)
-        else:
-            contents = "%s\n%s" % (self.message, self.diff)
-        return contents
+        return "%s%s" % (self.message, '%(diff)s')
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
@@ -219,7 +195,7 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params ['delta'] = self._diffText(reason.max_diff_lines)
+        params ['delta'] = self._diffTemplate()
         return params
 
     def sendAll(self):
@@ -258,6 +234,10 @@ class BranchMailer(BaseMailer):
                 branch_project_name = reason.branch.product.name
             else:
                 branch_project_name = None
+            if reason.max_diff_lines is None:
+                max_diff_lines_value = None
+            else:
+                max_diff_lines_value = reason.max_diff_lines.value
             mail = source.create(
                 from_address=self.from_address,
                 to_address=to_address,
@@ -270,6 +250,9 @@ class BranchMailer(BaseMailer):
                 in_reply_to=self._getInReplyTo(),
                 reply_to_address = self._getReplyToAddress(),
                 branch_project_name = branch_project_name,
+                max_diff_lines=max_diff_lines_value
                 )
+            if self.diff_job is not None:
+                mail.job.prerequisites.append(self.diff_job)
             jobs.append(mail)
         return jobs
