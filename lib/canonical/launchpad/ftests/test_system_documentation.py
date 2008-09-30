@@ -122,6 +122,11 @@ def bugNotificationSendingSetUp(test):
 def bugNotificationSendingTearDown(test):
     tearDown(test)
 
+def cveSetUp(test):
+    lobotomize_stevea()
+    LaunchpadZopelessLayer.switchDbUser(config.cveupdater.dbuser)
+    setUp(test)
+
 def statisticianSetUp(test):
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
@@ -351,7 +356,7 @@ special = {
             ),
     'cve-update.txt': LayeredDocFileSuite(
             '../doc/cve-update.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+            setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
             ),
     'nascentupload.txt': LayeredDocFileSuite(
             '../doc/nascentupload.txt',

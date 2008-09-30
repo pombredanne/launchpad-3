@@ -1218,6 +1218,13 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.branch-no-dev-focus {
+  background: #FFF59C;
+  vertical-align: middle;
+  text-align: center;
+  height: 2.5em;
+}
+
 .mergeproposal p {margin: 0.5em 0 }
 
 .vcsimportSUCCESS {} /* inherited text color */
