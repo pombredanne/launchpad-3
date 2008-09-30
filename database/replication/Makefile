@@ -28,6 +28,8 @@ devsetup:
 	createdb --encoding=UTF8 launchpad_dev_slave1
 	# Start the slon daemons
 	LPCONFIG=${DEVCONFIG} make start
+	# Generate a preamble for manual slonik(1) usage.
+	LPCONFIG=${DEVCONFIG} ./preamble.py > preamble.sk
 	# Turn the slave into a replica
 	LPCONFIG=${DEVCONFIG} ./initialize.py
 
