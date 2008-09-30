@@ -382,13 +382,8 @@ class BranchPullQueueTest(TestCaseWithFactory):
             expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
 
     def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
+        # XXXSTACKING
+        pass
 
     def _makeProductWithStacking(self):
         product = self.factory.makeProduct()
@@ -654,13 +649,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
     def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
+        # XXXSTACKING
+        pass
 
     def _makeProductWithStacking(self):
         product = self.factory.makeProduct()
