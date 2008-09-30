@@ -136,7 +136,7 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff_job=None, message_id=None):
+                 delta=None, contents=None, diff_job=None, message_id=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.contents = contents
