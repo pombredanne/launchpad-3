@@ -136,10 +136,10 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message=None, diff_job=None):
+                 delta=None, message=None, diff_job=None, message_id=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
-                            from_address, delta)
-        self.message = message
+                            from_address, delta, message_id)
+        self.contents = contents
         self.diff_job = diff_job
 
     @classmethod
@@ -149,7 +149,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, message, diff_job,
+    def forRevision(klass, db_branch, from_address, contents, diff_job,
                     subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
@@ -164,7 +164,7 @@ class BranchMailer(BaseMailer):
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, message=message, diff_job=diff_job)
+            from_address, contents=contents, diff_job=diff_job)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -178,7 +178,7 @@ class BranchMailer(BaseMailer):
     def _diffTemplate(self):
         if self.diff_job is None:
             return ''
-        return "%s%s" % (self.message, '%(diff)s')
+        return "%s%s" % (self.contents, '%(diff)s')
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
@@ -195,7 +195,7 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params ['delta'] = self._diffTemplate()
+        params ['diff'] = self._diffTemplate()
         return params
 
     def sendAll(self):
@@ -216,6 +216,9 @@ class BranchMailer(BaseMailer):
         del headers['MIME-Version']
         del headers['Content-Transfer-Encoding']
         del headers['Content-Type']
+        for key in headers:
+            if not isinstance(headers[key], basestring):
+                headers[key] = str(headers[key])
         return (headers, message['Subject'], message.get_payload(decode=True))
 
     @staticmethod

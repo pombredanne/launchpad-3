@@ -37,13 +37,14 @@ class BMPMailer(BranchMailer):
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None):
         BranchMailer.__init__(self, subject, template_name, recipients,
-            from_address, delta, message_id)
+            from_address, delta, message_id=message_id)
         self.merge_proposal = merge_proposal
 
-    def sendAll(self):
-        BranchMailer.sendAll(self)
+    def queue(self, recipient_people=None):
+        result = BranchMailer.queue(self, recipient_people)
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
+        return result
 
     @classmethod
     def forCreation(klass, merge_proposal, from_user):
