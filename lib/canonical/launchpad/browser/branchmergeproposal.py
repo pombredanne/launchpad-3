@@ -935,7 +935,7 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
                            BranchMergeProposalStatus.NEEDS_REVIEW,
                            BranchMergeProposalStatus.CODE_APPROVED,
                            BranchMergeProposalStatus.REJECTED,
-                           BranchMergeProposalStatus.QUEUED,
+                           # BranchMergeProposalStatus.QUEUED,
                            BranchMergeProposalStatus.MERGED)
             if ((self.context.isValidTransition(status, self.user)
                  or status == curr_status)
