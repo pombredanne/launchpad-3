@@ -15,6 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
@@ -72,7 +73,7 @@ class BuildNavigation(GetitemNavigation):
         # XXX cprov 20080925: AssertionError is obviously the wrong
         # exception to raise.
         if not check_permission('launchpad.View', self.context):
-            raise AssertionError("GO AWAY!")
+            raise Unauthorized()
 
         library_file  = self.context.getFileByName(filename)
         return StreamOrRedirectLibraryFileAliasView(

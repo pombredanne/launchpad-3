@@ -82,12 +82,24 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
             'Content-Type', self.context.mimetype)
 
         self.context.open()
+
         tmp_file = tempfile.TemporaryFile()
         for chunk in filechunks(self.context):
             tmp_file.write(chunk)
+
         self.context.close()
 
-        return tmp_file
+        # XXX cprov 20080930: according to lib/zope/publisher/httpresults.txt
+        # reseting the file and returning its content shouldn't be necessary
+        # at all. It worlks perfectly fine in development and dogfood.
+        # However it fails horribly in the test environment, warning about
+        # the lack of 'content-length' hearder. See the complete test
+        # traceback int https://pastebin.canonical.com/9687/.
+        # The code cannot land before solving this issue!
+        #return tmp_file
+
+        tmp_file.seek(0)
+        return tmp_file.read()
 
     def browserDefault(self, request):
         """Decides whether to redirect or stream the file content.

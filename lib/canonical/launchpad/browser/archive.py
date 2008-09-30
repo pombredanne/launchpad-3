@@ -30,6 +30,7 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_caches
@@ -190,7 +191,7 @@ class ArchiveNavigation(Navigation):
         # XXX cprov 20080925: AssertionError is obviously the wrong
         # exception to raise.
         if not check_permission('launchpad.View', self.context):
-            raise AssertionError("GO AWAY!")
+            raise Unauthorized()
 
         library_file  = self.context.getFileByName(filename)
         return StreamOrRedirectLibraryFileAliasView(
