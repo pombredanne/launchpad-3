@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -910,3 +911,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeUniqueRFC822MsgId(self):
+        """Make a unique RFC 822 message id.
+
+        The created message id is guaranteed not to exist in the
+        `Message` table already.
+        """
+        msg_id = make_msgid()
+        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+            msg_id = email.Utils.make_msgid()
+        return msg_id
+
