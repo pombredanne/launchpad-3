@@ -380,15 +380,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
         self.assertEqual(
             expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
 
-    def _enableDefaultStacking(self, product):
-        # XXXSTACKING
-        pass
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
-
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches
         to pull.
@@ -419,7 +410,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # If there's a default stacked branch for the project that a branch is
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         default_branch = self.factory.makeBranch(product=product)
@@ -647,15 +638,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
-    def _enableDefaultStacking(self, product):
-        # XXXSTACKING
-        pass
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
-
     def _makeProductWithDevFocus(self, private=False):
         """Make a stacking-enabled product with a development focus.
 
@@ -663,7 +645,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             private.
         :return: The new Product and the new Branch.
         """
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch

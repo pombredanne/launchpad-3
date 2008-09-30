@@ -200,10 +200,6 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
-    def _getProductWithStacking(self):
-        # XXXSTACKING
-        return self.factory.makeProduct()
-
     def _makeDefaultStackedOnBranch(self):
         """Make a default stacked-on branch.
 
@@ -215,7 +211,7 @@ class TestBranchPuller(PullerBranchTestCase):
         :return: `IBranch`.
         """
         # Make the branch.
-        product = self._getProductWithStacking()
+        product = self.factory.makeProduct()
         default_branch = self.factory.makeBranch(product=product)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
