@@ -56,6 +56,8 @@ def main():
             log.info("Starting %s slon daemon." % instance)
             log.debug("Logging to %s" % logfile)
             log.debug("PID file %s" % pidfile)
+            # Hard code suitable command line arguments for development.
+            slon_args = "-d 2 -s 10000 -t 30000 -l '10 seconds'"
             cmd = [
                 "start-stop-daemon",
                 "--start",
@@ -64,8 +66,8 @@ def main():
                 "--exec", "/usr/bin/slon",
                 "--startas", "/bin/sh",
                 "--", "-c",
-                "slon -d 2 -p %s %s '%s' > %s" % (
-                    pidfile, replication.helpers.CLUSTERNAME,
+                "slon -p %s %s %s '%s' > %s" % (
+                    pidfile, slon_args, replication.helpers.CLUSTERNAME,
                     connection_string, logfile)]
         else:
             if not os.path.exists(pidfile):
