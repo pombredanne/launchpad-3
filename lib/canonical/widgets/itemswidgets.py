@@ -49,8 +49,24 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
 class LaunchpadRadioWidget(RadioWidget):
     """A widget to work around a bug in RadioWidget."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        # This is an almost-complete copy of the method in Zope.  We need it
+        # to inject the style in the label, and we omit the "for" in the label
+        # because it is redundant (and not used in legacy tests).
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio',
+                             **kw)
+        return renderElement(u'label',
+                             contents='%s&nbsp;%s' % (elem, text),
+                             **{'style': 'font-weight: normal'})
 
     def _div(self, cssClass, contents, **kw):
         return contents
@@ -207,4 +223,3 @@ class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
 
         html.append('</table>')
         return '\n'.join(html)
-
