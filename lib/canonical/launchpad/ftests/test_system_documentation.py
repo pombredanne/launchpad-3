@@ -891,8 +891,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     doctests_without_logging = [
         'answer-tracker-emailinterface.txt',
-        #XXX: Commenting out spurious failing test
-        #'bugs-emailinterface.txt',
+        'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
         ]
