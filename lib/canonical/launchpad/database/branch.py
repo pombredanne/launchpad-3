@@ -210,13 +210,16 @@ class Branch(SQLBase):
 
         if needs_review:
             queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+            date_review_requested = date_created
         else:
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+            date_review_requested = None
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
+            date_review_requested=date_review_requested,
             queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp

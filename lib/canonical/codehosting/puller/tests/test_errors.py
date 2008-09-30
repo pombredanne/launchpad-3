@@ -15,7 +15,7 @@ from bzrlib.errors import (
     NotBranchError)
 
 from canonical.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchOpener,
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
     BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
 from canonical.launchpad.interfaces import BranchType
@@ -43,8 +43,9 @@ class TestErrorCatching(unittest.TestCase):
     `PullerWorker.mirror`.
     """
 
-    class CustomErrorOpener(BranchOpener):
+    class CustomErrorOpener(BranchMirrorer):
         def __init__(self, exc):
+            super(TestErrorCatching.CustomErrorOpener, self).__init__(None)
             self.exc = exc
         def open(self, url):
             raise self.exc
@@ -54,7 +55,8 @@ class TestErrorCatching(unittest.TestCase):
         worker = PullerWorker(
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=branch_type,
-            protocol=StubbedPullerWorkerProtocol(), branch_opener=opener,
+            default_stacked_on_url=None,
+            protocol=StubbedPullerWorkerProtocol(), branch_mirrorer=opener,
             oops_prefix='TOKEN')
         return worker
 
@@ -193,8 +195,7 @@ class TestErrorCatching(unittest.TestCase):
             NotBranchError('lp-hosted:///~user/project/branch'),
             branch_type=BranchType.HOSTED)
         msg = self.getMirrorFailureForException(worker=worker)
-        expected_msg = 'Not a branch: "lp:~%s".' % (
-            worker.unique_name,)
+        expected_msg = 'Not a branch: "lp:%s".' % (worker.unique_name,)
         self.assertEqual(expected_msg, msg)
 
     def testNotBranchErrorImported(self):
