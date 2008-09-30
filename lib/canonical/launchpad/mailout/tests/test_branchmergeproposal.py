@@ -74,7 +74,7 @@ I think this would be good.
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
-            headers)
+             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
 

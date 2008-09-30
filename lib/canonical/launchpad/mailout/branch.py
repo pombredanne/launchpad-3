@@ -219,7 +219,7 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params ['delta'] = self._diffText(reason.max_diff_lines)
+        params ['diff'] = self._diffText(reason.max_diff_lines)
         return params
 
     def sendAll(self):
@@ -240,6 +240,9 @@ class BranchMailer(BaseMailer):
         del headers['MIME-Version']
         del headers['Content-Transfer-Encoding']
         del headers['Content-Type']
+        for key in headers:
+            if not isinstance(headers[key], basestring):
+                headers[key] = str(headers[key])
         return (headers, message['Subject'], message.get_payload(decode=True))
 
     @staticmethod
