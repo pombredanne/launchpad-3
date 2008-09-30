@@ -635,6 +635,12 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.protocol.mirrorDeferred()
         self.assertSentNetstrings(['mirrorDeferred', '0'])
 
+    def test_log(self):
+        # Calling 'log' sends 'log' as a netstring and its arguments, after
+        # formatting as a string.
+        self.protocol.log('logged %s', 'message')
+        self.assertSentNetstrings(['log', '1', 'logged message'])
+
 
 class TestWorkerProgressReporting(TestCaseWithTransport):
     """Tests for the WorkerProgressBar progress reporting mechanism."""

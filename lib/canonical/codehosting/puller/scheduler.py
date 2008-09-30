@@ -257,6 +257,9 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         """Any progress resets the timout counter."""
         self.resetTimeout()
 
+    def do_log(self, message):
+        self.listener.log(message)
+
 
 class PullerMaster:
     """Controller for a single puller worker.
@@ -373,6 +376,9 @@ class PullerMaster:
         self.logger.info('Successfully mirrored to rev %s', revision_id)
         return self.branch_puller_endpoint.callRemote(
             'mirrorComplete', self.branch_id, revision_id)
+
+    def log(self, message):
+        self.logger.info('From worker: %s', message)
 
     def unexpectedError(self, failure, now=None):
         request = errorlog.ScriptRequest([
