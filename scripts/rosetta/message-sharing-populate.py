@@ -22,6 +22,7 @@ import _pythonpath
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, quote
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadScript
@@ -51,11 +52,14 @@ class PopulateTranslationMessage:
 
         cur.execute("SELECT max(id) FROM temp_todo")
         highest_id, = cur.fetchall()
-        self.finish_id = highest_id = 1
+        self.finish_id = highest_id + 1
 
     def isDone(self):
         """See `ITunableLoop`."""
-        return self.last_id < self.finish_id
+        done = (self.last_id < self.finish_id)
+        if done:
+            drop_tables(cursor(), 'temp_todo')
+        return done
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
@@ -103,32 +107,66 @@ class PopulateTranslationTemplateItem:
         self.txn = txn
         self.done = False
         self.logger = logger
+        self.last_id = 0
+
+        cur = cursor()
+        cur.execute("""
+            SELECT id
+            INTO TEMP TABLE temp_todo
+            FROM POTMsgSet
+            LEFT JOIN TranslationTemplateItem AS ExistingEntry ON
+                ExistingEntry.potmsgset = potmsgset.id
+            WHERE sequence > 0
+            ORDER BY id
+            """)
+        cur.execute(
+            "CREATE UNIQUE INDEX temp_todo__pkey ON temp_todo(id)")
+        cur.execute("ANALYZE temp_todo(id)")
+
+        cur.execute("SELECT max(id) FROM temp_todo")
+        highest_id, = cur.fetchall()
+        self.finish_id = highest_id + 1
 
     def isDone(self):
         """See `ITunableLoop`."""
+        if self.done:
+            drop_tables(cursor(), 'temp_todo')
         return self.done
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         chunk_size = int(chunk_size)
         cur = cursor()
+
+        cur.execute("""
+            SELECT id
+            FROM temp_todo
+            WHERE id >= %s
+            ORDER BY id
+            OFFSET %s
+            LIMIT 1
+            """ % sqlvalues(self.last_id, chunk_size))
+        end_id, = cur.fetchall()
+
         cur.execute("""
             INSERT INTO TranslationTemplateItem(
                 potemplate, sequence, potmsgset)
             SELECT potemplate, sequence, id
             FROM POTMsgSet
+            LEFT JOIN TranslationTemplateItem AS ExistingEntry ON
+                ExistingEntry.potmsgset = potmsgset.id
             WHERE
+                id >= %s AND
+                id < %s AND
                 sequence > 0 AND
-                POTMsgSet.id NOT IN (
-                    SELECT potmsgset
-                    FROM TranslationTemplateItem
-                    )
+                ExistingEntry.id IS NULL
             LIMIT %s
-            """ % quote(int(chunk_size)))
+            """ % sqlvalues(self.last_id, end_id))
         self.done = (cur.rowcount == 0)
         self.logger.info("Inserted %d rows." % chunk_size)
         self.txn.commit()
         self.txn.begin()
+        self.last_id = end_id
 
 
 class PopulateMessageSharingSchema(LaunchpadScript):
