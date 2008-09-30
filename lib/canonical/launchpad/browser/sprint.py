@@ -519,6 +519,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
+            time_zone = ''
+            location = attendance.attendee.location
+            if location is not None and location.visible:
+                time_zone = attendance.attendee.time_zone
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
@@ -535,7 +539,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.organization,
                  attendance.attendee.city,
                  country,
-                 attendance.attendee.time_zone,
+                 time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
         # CSV can't handle unicode, so we force encoding

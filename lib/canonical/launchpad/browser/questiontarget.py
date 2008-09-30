@@ -190,7 +190,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                  default=self.user_support_languages,
                  description=_(
                      'The languages to filter the search results by.')),
-            custom_widget=self.custom_widgets['language'],
             render_context=self.render_context)
 
     def validate(self, data):
@@ -617,8 +616,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                         "$context",
                         mapping=dict(context=self.context.displayname)),
                 value_type=public_person_choice,
-                required=False),
-            custom_widget=self.custom_widgets['answer_contact_teams'])
+                required=False))
 
     @property
     def initial_values(self):
