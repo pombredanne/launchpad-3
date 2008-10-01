@@ -1145,7 +1145,7 @@ class MockHTTPTask:
         self.status = response.getStatus()
         # When streaming files (see lib/zope/publisher/httpresults.txt)
         # the 'Content-Length' header is missing. When it happens we set
-        # 'bytes_written' to a obvious invalid value. This variable is
+        # 'bytes_written' to an obvious invalid value. This variable is
         # used for logging purposes, see webapp/servers.py.
         content_length = response.getHeader('Content-Length')
         if content_length is not None:

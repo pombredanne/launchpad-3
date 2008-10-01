@@ -115,19 +115,17 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 class FileNavigationMixin:
     """Navigate to `LibraryFileAlias` hosted in a context.
 
-
     The navigation goes through +files/<filename> where file reference is
     provided by context `getFileByName(filename)`.
 
     The requested file is proxied via `StreamOrRedirectLibraryFileAliasView`,
     making it possible to serve both, public and restricted, files.
 
-    This navigation approach only support domain with unique filename, which
-    is the case for IArchive and IBuild. It will probably have to be extended
-    in order to allow traversing to multiple files with the same filename
-    (product files or bug attachements).
+    This navigation approach only supports domains with unique filenames,
+    which is the case of IArchive and IBuild. It will probably have to be
+    extended in order to allow traversing to multiple files potentially
+    with the same filename (product files or bug attachments).
     """
-
     @stepthrough('+files')
     def traverse_files(self, filename):
         """Traverse on filename in the archive domain."""
