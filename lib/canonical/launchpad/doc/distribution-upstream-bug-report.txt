@@ -55,6 +55,21 @@ returns.
     mozilla-firefox     firefox 1 0 1 1
     thunderbird         None    1 0 1 1
 
+To get the list of excluded packages for a distribution we can look at
+its `upstream_report_excluded_packages` property. For Kubuntu and
+Debian, this returns an empty list.
+
+    >>> debian.upstream_report_excluded_packages
+    []
+
+    >>> kubuntu.upstream_report_excluded_packages
+    []
+
+For Ubuntu, however, there is a list of excluded packages.
+
+    >>> ubuntu.upstream_report_excluded_packages
+    ['apport'...]
+
 If we triage a bugtask on firefox and thunderbird we'll see the count
 for triaged bugs updated:
 
