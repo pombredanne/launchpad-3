@@ -2115,8 +2115,8 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 COMMENT ON TABLE Job IS 'Common info about a job.';
 COMMENT ON COLUMN Job.attempt_count IS 'The number of times this job has been attempted.';
 COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
-COMMENT ON COLUMN Job.date_created IS 'If the job has started, the time when the job started.';
-COMMENT ON COLUMN Job.date_created IS 'If the job has ended, the time when the job ended.';
+COMMENT ON COLUMN Job.date_ended IS 'If the job has ended, the time when the job ended.';
+COMMENT ON COLUMN Job.date_started IS 'If the job has started, the time when the job started.';
 COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
 COMMENT ON COLUMN Job.log IS 'If provided, a log of the last attempt to run the job.';
 COMMENT ON COLUMN Job.scheduled_start IS 'The time when the job should start';
