@@ -237,37 +237,35 @@ threshold and make watched_bugs_class 'good'.
     'good'
 
 There is also a row_class property, which is used to colour the entire
-table row.
+table row. Its return value is based on the watched_bugs_percentage just
+like watched_bugs_class is above. However, it is kept separate since the
+behaviour for colouring the row differs from the behaviour for colouring
+the watched bugs cell.
 
-If any of the *_percentage properties is < 20%, the row is marked as
+If the watched_bugs_percentage property is < 20%, the row is marked as
 'bad'.
 
     >>> bug_data.open_bugs = 100
-    >>> bug_data.triaged_bugs = 19
-    >>> bug_data.upstream_bugs = 19
-    >>> bug_data.watched_bugs = 19
+    >>> bug_data.triaged_bugs = 100
+    >>> bug_data.upstream_bugs = 50
+    >>> bug_data.watched_bugs = 5
     >>> print bug_data.row_class
     bad
 
-If all of the *_percentage properties are > 90%, the row is marked as
+If the watched_bugs_percentage property is > 90%, the row is marked as
 'good'.
 
-    >>> bug_data.open_bugs = 19
+    >>> bug_data.watched_bugs = 46
     >>> print bug_data.row_class
     good
 
 Otherwise, row_class returns an empty string.
 
-    >>> bug_data.open_bugs = 100
-    >>> bug_data.triaged_bugs = 89
-    >>> bug_data.upstream_bugs = 89
-    >>> bug_data.watched_bugs = 89
+    >>> bug_data.watched_bugs = 40
     >>> bug_data.row_class
     ''
 
-    >>> bug_data.triaged_bugs = 21
-    >>> bug_data.upstream_bugs = 21
-    >>> bug_data.watched_bugs = 21
+    >>> bug_data.watched_bugs = 11
     >>> bug_data.row_class
     ''
 

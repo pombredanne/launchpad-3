@@ -64,12 +64,14 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
+    >>> factory = LaunchpadObjectFactory()
     >>> def process_email(raw_mail):
     ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):
-    ...         msg['Message-Id'] = email.Utils.make_msgid()
+    ...         msg['Message-Id'] = factory.makeUniqueRFC822MsgId()
     ...     handler.process(msg, msg['To'])
 
     >>> process_email(submit_mail)
@@ -2089,7 +2091,7 @@ email too. Just send an email to `help@bugs.launchpad.net`.
     From: help@bugs.launchpad.net
     Subject: Launchpad Bug Tracker Email Interface Help
     ...
-    You can use Launchpad Bugs via its email interface...
+    Launchpad's bug tracker sends you email...
     ...
 
 Only mail coming from verified Launchpad users is answered.

@@ -28,6 +28,7 @@ from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
+from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
@@ -277,6 +278,8 @@ class LaunchpadSessionDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
+        if safe_hasattr(raw_connection, 'auto_close'):
+            raw_connection.auto_close = False
         raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         _reset_dirty_commit_flags(*flags)
         return raw_connection

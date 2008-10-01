@@ -251,6 +251,9 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
+bug_mark_as_affecting_user = ContextBugId(
+    'Bug #%d - does this bug affect you?')
+
 bug_nominate_for_series = ViewLabel()
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
@@ -1214,6 +1217,8 @@ shipit_exports = 'ShipIt exports'
 shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
+
+shipit_index_edubuntu = 'Getting Edubuntu'
 
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 

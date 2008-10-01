@@ -44,13 +44,6 @@
     <browser:page
         for="*"
         permission="zope.Public"
-        name="main_template"
-        template="../templates/shipit-edubuntu-main-template.pt"
-        layer="canonical.launchpad.layers.ShipItEdUbuntuLayer" />
-
-    <browser:page
-        for="*"
-        permission="zope.Public"
         name="+maintenancemessage"
         class="canonical.launchpad.browser.MaintenanceMessage"
         template="../templates/shipit-maintenance.pt"
@@ -120,6 +113,14 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipitFrontPageView"
+        layer="canonical.launchpad.layers.ShipItEdUbuntuLayer"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/shipit-index-edubuntu.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipitFrontPageView"
         layer="canonical.launchpad.layers.ShipItUbuntuLayer"
         permission="zope.Public"
         name="+index"
@@ -145,6 +146,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
+        layer="canonical.launchpad.layers.ShipItLayer"
         permission="launchpad.AnyPerson"
         attribute="renderStandardrequestForm"
         name="myrequest">
@@ -162,6 +164,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
+        layer="canonical.launchpad.layers.ShipItLayer"
         permission="launchpad.AnyPerson"
         attribute="renderCustomrequestForm"
         name="specialrequest">
