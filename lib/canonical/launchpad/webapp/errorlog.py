@@ -17,6 +17,7 @@ import types
 import urllib
 
 from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
 from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
@@ -93,8 +94,8 @@ def _is_sensitive(request, name):
     if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
         return True
 
-    # Block HTTP_COOKIE
-    if name == 'HTTP_COOKIE':
+    # Block HTTP_COOKIE and oauth_signature.
+    if name in ('HTTP_COOKIE', 'oauth_signature'):
         return True
 
     # Allow remaining UPPERCASE names and remaining form variables.  Note that
@@ -444,6 +445,9 @@ class ErrorReportingUtility:
                         req_vars.append((_safestr(key), '<hidden>'))
                     else:
                         req_vars.append((_safestr(key), _safestr(value)))
+                if IXMLRPCRequest.providedBy(request):
+                    args = request.getPositionalArguments()
+                    req_vars.append(('xmlrpc args', _safestr(args)))
                 req_vars.sort()
             strv = _safestr(info[1])
 

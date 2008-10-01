@@ -16,6 +16,7 @@ __all__ = [
     'ArchivePackageCopyingView',
     'ArchivePackageDeletionView',
     'ArchiveView',
+    'traverse_archive',
     ]
 
 
@@ -26,6 +27,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -41,15 +43,20 @@ from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, active_publishing_status,
     inactive_publishing_status, IPublishingSet)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -58,6 +65,7 @@ from canonical.launchpad.scripts.packagecopier import (
     CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import (
@@ -125,6 +133,43 @@ class ArchiveBadges(HasBadgeBase):
         return "This archive is private."
 
 
+def traverse_archive(distribution, name):
+    """For distribution archives, traverse to the right place.
+
+    This traversal only applies to distribution archives, not PPAs.
+
+    :param name: The name of the archive, e.g. 'partner'
+    """
+    archive = getUtility(
+        IArchiveSet).getByDistroAndName(distribution, name)
+    if archive is None:
+        return NotFoundError(name)
+    else:
+        return archive
+
+
+class ArchiveURL:
+    """Dynamic URL declaration for `IDistributionArchive`.
+
+    When dealing with distribution archives we want to present them under
+    IDistribution as /<distro>/+archive/<name>, for example:
+    /ubuntu/+archive/partner
+    """
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        return self.context.distribution
+
+    @property
+    def path(self):
+        return u"+archive/%s" % self.context.name.lower()
+
+
 class ArchiveNavigation(Navigation):
     """Navigation methods for IArchive."""
 
@@ -139,6 +184,46 @@ class ArchiveNavigation(Navigation):
         try:
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
+            return None
+
+    @stepthrough('+upload')
+    def traverse_upload_permission(self, name):
+        """Traverse the data part of the URL for upload permissions."""
+        return self._traverse_permission(name, ArchivePermissionType.UPLOAD)
+
+    @stepthrough('+queue-admin')
+    def traverse_queue_admin_permission(self, name):
+        """Traverse the data part of the URL for queue admin permissions."""
+        return self._traverse_permission(
+            name, ArchivePermissionType.QUEUE_ADMIN)
+
+    def _traverse_permission(self, name, permission_type):
+        """Traversal helper function.
+
+        The data part ("name") is a compound value of the format:
+        user.item
+        where item is a component or a source package name,
+        """
+        username, item = name.split(".", 1)
+        user = getUtility(IPersonSet).getByName(username)
+        if user is None:
+            return None
+
+        # See if "item" is a component name.
+        try:
+            component = getUtility(IComponentSet)[item]
+        except NotFoundError:
+            pass
+        else:
+            return getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, component)[0]
+
+        # See if "item" is a source package name.
+        package = getUtility(ISourcePackageNameSet).queryByName(item)
+        if package is not None:
+            return getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, package)[0]
+        else:
             return None
 
 
@@ -335,6 +420,9 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         # Setup widgets for 'name_filter' and 'status_filter' fields
         # because they are required to build 'selected_sources' field.
         initial_fields = status_field + self.form_fields.select('name_filter')
+        # XXX 2008-09-29 gary
+        # The setUpWidgets method should not be called here. The re-ordering
+        # of the widgets, if needed should be done in setUpWidgets.
         self.widgets = form.setUpWidgets(
             initial_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
@@ -352,6 +440,13 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         Omitting the fields already processed in setUpFields ('name_filter'
         and 'status_filter').
         """
+        # See above XXX for the source of this ugliness. This basically
+        # redoes, what the base implementation would do. It should be removed
+        # once the setUpFields is fixed.
+        for field in self.form_fields:
+            if (field.custom_widget is None and
+                field.__name__ in self.custom_widgets):
+                field.custom_widget = self.custom_widgets[field.__name__]
         self.widgets += form.setUpWidgets(
             self.form_fields.omit('name_filter').omit('status_filter'),
             self.prefix, self.context, self.request,
@@ -374,8 +469,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         return form.Fields(
             Choice(__name__='status_filter', title=_("Status Filter"),
                    vocabulary=self.simplified_status_vocabulary,
-                   required=True, default=self.default_status_filter.value),
-            custom_widget=self.custom_widgets['status_filter'])
+                   required=True, default=self.default_status_filter.value))
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -396,8 +490,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_('Select one or more sources to be submitted '
-                               'to an action.')),
-            custom_widget=self.custom_widgets['selected_sources'])
+                               'to an action.')))
 
     def refreshSelectedSourcesWidget(self):
         """Refresh 'selected_sources' widget.
@@ -629,8 +722,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    vocabulary=SimpleVocabulary(terms),
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
-                   required=required),
-            custom_widget=self.custom_widgets['destination_archive'])
+                   required=required))
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
@@ -650,8 +742,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    title=_('Destination series'),
                    vocabulary=SimpleVocabulary(terms),
                    description=_("Select the destination series."),
-                   required=False),
-            custom_widget=self.custom_widgets['destination_series'])
+                   required=False))
 
     def createIncludeBinariesField(self):
         """Create the 'include_binaries' field.
@@ -680,8 +771,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                                  "to the destination archive."),
                    missing_value=rebuild_sources,
                    default=False,
-                   required=True),
-            custom_widget=self.custom_widgets['include_binaries'])
+                   required=True))
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -831,8 +921,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  required=False,
                  default=[],
                  description=_(
-                    'Select one or more dependencies to be removed.')),
-            custom_widget=self.custom_widgets['selected_dependencies'])
+                    'Select one or more dependencies to be removed.')))
 
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.
@@ -843,9 +932,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.form_fields = self.form_fields.omit('selected_dependencies')
         self.form_fields = (
             self.createSelectedDependenciesField() + self.form_fields)
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
+        self.setUpWidgets()
 
     @cachedproperty
     def has_dependencies(self):

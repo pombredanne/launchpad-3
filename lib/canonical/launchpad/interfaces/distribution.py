@@ -13,7 +13,7 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.schema import Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -214,12 +215,17 @@ class IDistributionPublic(
         description=_("The distribution language pack administrator."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    main_archive = Object(
-        title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
-        )
+    main_archive = exported(
+        Reference(
+            title=_('Distribution Main Archive.'), readonly=True,
+            schema=IArchive))
 
-    all_distro_archives = Attribute(
-        "A sequence of the distribution's non-PPA IArchives.")
+    all_distro_archives = exported(
+        CollectionField(
+            title=_("A sequence of the distribution's non-PPA Archives."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IArchive)),
+        exported_as='archives')
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
