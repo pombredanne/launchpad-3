@@ -15,7 +15,8 @@ from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.xmlrpc.codehosting import datetime_from_tuple
+from canonical.launchpad.xmlrpc.codehosting import (
+    datetime_from_tuple, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -107,6 +108,22 @@ class FakeBranch(FakeDatabaseObject):
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
+    def _canWrite(self, person_id):
+        """Can 'person' write to this branch?"""
+        # XXX: This is terrible, but it works.
+        return (self.branch_type == BranchType.HOSTED
+                and self.owner.id == person_id)
+
+    def _canRead(self, person_id):
+        """Can 'person' see this branch?"""
+        # XXX: This is a terrible replacement for the privacy check, but it
+        # makes the tests pass.
+        if person_id == LAUNCHPAD_SERVICES:
+            return True
+        if not self.private:
+            return True
+        return self.owner.id == person_id
+
 
 class FakePerson(FakeDatabaseObject):
 
@@ -135,6 +152,9 @@ class FakeScriptActivity(FakeDatabaseObject):
         self.date_completed = datetime_from_tuple(date_completed)
 
 
+DEFAULT_PRODUCT = object()
+
+
 class FakeObjectFactory(ObjectFactory):
 
     def __init__(self, branch_set, person_set, product_set):
@@ -144,7 +164,8 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set = product_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
-                   product=None, owner=None, name=None, registrant=None):
+                   product=DEFAULT_PRODUCT, owner=None, name=None,
+                   registrant=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
@@ -153,6 +174,8 @@ class FakeObjectFactory(ObjectFactory):
             name = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if product is DEFAULT_PRODUCT:
+            product = self.makeProduct()
         if registrant is None:
             registrant = self.makePerson()
         IBranch['name'].validate(unicode(name))
@@ -292,8 +315,24 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
-    def getBranchInformation(self, *args):
-        pass
+    def getBranchInformation(self, requester_id, user_name, product_name,
+                             branch_name):
+        unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
+        branch = None
+        for possible_match in self._branch_set:
+            if possible_match.unique_name == unique_name:
+                branch = possible_match
+        if branch is None:
+            return '', ''
+        if not branch._canRead(requester_id):
+            return '', ''
+        if branch.branch_type == BranchType.REMOTE:
+            return '', ''
+        if branch._canWrite(requester_id):
+            permission = 'w'
+        else:
+            permission = 'r'
+        return branch.id, permission
 
     def getDefaultStackedOnBranch(self, requester_id, product_name):
         if product_name == '+junk':
@@ -306,9 +345,7 @@ class FakeBranchFilesystem:
         branch = product.development_focus.user_branch
         if branch is None:
             return ''
-        # XXX: This is a terrible replacement for the privacy check, but it
-        # makes the tests pass.
-        if branch.private and branch.owner.id != requester_id:
+        if not branch._canRead(requester_id):
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 

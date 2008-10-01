@@ -7,6 +7,7 @@ __all__ = [
     'BranchFileSystem',
     'BranchPuller',
     'datetime_from_tuple',
+    'LAUNCHPAD_SERVICES',
     ]
 
 
