@@ -70,3 +70,5 @@ class IJob(Interface):
     prerequisites = Attribute(_('Jobs that should run before this job.'))
     dependants = Attribute(_('Jobs that should run after this job.'))
 
+    def addPrerequisite(prerequisite):
+        """Add a prerequisite to a Job."""

@@ -93,7 +93,7 @@ class CodeMailJob(SQLBase):
     def _diffText(self):
         if self.max_diff_lines == 0 or self.static_diff is None:
             return ''
-        lfa = static_diff.diff.diff_text
+        lfa = self.static_diff.diff.diff_text
         lfa.open()
         diff = lfa.read().decode('utf8', 'replace')
         diff_size = diff.count('\n') + 1
