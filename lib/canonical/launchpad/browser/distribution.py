@@ -42,6 +42,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.browser.archive import traverse_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
@@ -140,6 +141,10 @@ class DistributionNavigation(
     @stepthrough('+spec')
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
+
+    @stepthrough('+archive')
+    def traverse_archive(self, name):
+        return traverse_archive(self.context, name)
 
 
 class DistributionSetNavigation(Navigation):

@@ -39,8 +39,7 @@ class SpecificationDependencyAddView(LaunchpadFormView):
                     "before this feature can be started, then specify that "
                     "dependency here so Launchpad knows about it and can "
                     "give you an accurate project plan.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['dependency'])
+            render_context=self.render_context)
 
     def validate(self, data):
         is_valid = True
@@ -70,4 +69,3 @@ class SpecificationDependencyRemoveView(GeneralFormView):
     def process(self, dependency):
         self._nextURL = canonical_url(self.context)
         return self.context.removeDependency(dependency)
-
