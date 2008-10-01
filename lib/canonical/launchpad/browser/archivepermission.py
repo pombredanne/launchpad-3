@@ -29,9 +29,9 @@ class ArchivePermissionURL:
     @property
     def path(self):
         if self.context.permission == ArchivePermissionType.UPLOAD:
-            type = "+upload"
+            perm_type = "+upload"
         elif self.context.permission == ArchivePermissionType.QUEUE_ADMIN:
-            type = "+queue-admin"
+            perm_type = "+queue-admin"
         else:
             raise AssertionError, (
                 "Unknown permission type %s" % self.context.permission)
@@ -45,4 +45,4 @@ class ArchivePermissionURL:
             raise AssertionError, (
                 "One of component or sourcepackagename should be set")
 
-        return u"%s/%s.%s" % (type, username, item)
+        return u"%s/%s.%s" % (perm_type, username, item)

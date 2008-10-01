@@ -7,15 +7,15 @@ This works for PPAs:
     >>> print archive['self_link']
     http://.../~cprov/+archive
 
-    >>> for key, value in sorted(archive.items()):
-    ...     print "%s: %s" % (key, value)
-    description: packages to help my friends.
-    distribution_link: http://.../ubuntu
-    name: default
-    owner_link: http://.../~cprov
-    resource_type_link: http://.../#archive
-    self_link: http://.../~cprov/+archive
-    title: PPA for Celso Providelo
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> pprint_entry(archive)
+    description: u'packages to help my friends.'
+    distribution_link: u'http://.../ubuntu'
+    name: u'default'
+    owner_link: u'http://.../~cprov'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive'
+    title: u'PPA for Celso Providelo'
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
     >>> print main['self_link']
@@ -43,15 +43,14 @@ at "ubuntutest":
 The archive has the following attributes:
 
     >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
-    >>> for key, value in sorted(main_archive.items()):
-    ...     print "%s: %s" % (key, value)
+    >>> pprint_entry(main_archive)
     description: None
-    distribution_link: http://.../ubuntutest
-    name: primary
-    owner_link: http://.../~ubuntu-team
-    resource_type_link: http://.../#archive
-    self_link: http://.../ubuntutest/+archive/primary
-    title: Primary Archive for Ubuntu Test
+    distribution_link: u'http://.../ubuntutest'
+    name: u'primary'
+    owner_link: u'http://.../~ubuntu-team'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../ubuntutest/+archive/primary'
+    title: u'Primary Archive for Ubuntu Test'
 
 A distribution can also provide a list of all its archives:
 
@@ -80,65 +79,64 @@ rights or queue administration rights.  The URL to the permissions
 takes two forms:
  * <archive>/+upload/username.item
  * <archive>/+queue-admin/username.item
-where item is a component or a source package name.
+where `item` is a component or a source package name.
 
-Here we see upload rights for a team to a component:
+This is a permission that allows a team to upload to a component:
 
     >>> ubuntu_main_permission = webservice.get(
     ...     "/ubuntu/+archive/primary/+upload/ubuntu-team.main").jsonBody()
-    >>> for key, value in sorted(ubuntu_main_permission.items()):
-    ...     print "%s: %s" % (key, value)
-    archive_link: http://.../ubuntu/+archive/primary
-    component_name: main
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
     date_created: ...
-    permission: Archive Upload Rights
-    person_link: http://.../~ubuntu-team
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~ubuntu-team'
     resource_type_link: ...
-    self_link: http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main
+    self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main'
     source_package_name: None
 
-Here we see upload rights for an individual to a source package:
+This is a permission that allows an individual to upload a source package.
 
     >>> carlos_mozilla_permission = webservice.get(
     ...     "/ubuntu/+archive/primary/"
     ...     "+upload/carlos.mozilla-firefox").jsonBody()
-    >>> for key, value in sorted(carlos_mozilla_permission.items()):
-    ...     print "%s: %s" % (key, value)
-    archive_link: http://.../ubuntu/+archive/primary
+    >>> pprint_entry(carlos_mozilla_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
     component_name: None
     date_created: ...
-    permission: Archive Upload Rights
-    person_link: http://.../~carlos
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~carlos'
     resource_type_link: ...
-    self_link: http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox
-    source_package_name: mozilla-firefox
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox'
+    source_package_name: u'mozilla-firefox'
 
-Here is a queue admin right for ubuntu-team:
+This is a queue admin right for ubuntu-team:
 
     >>> ubuntu_main_permission = webservice.get(
     ...     "/ubuntu/+archive/primary/+queue-admin/ubuntu-team.main").jsonBody()
-    >>> for key, value in sorted(ubuntu_main_permission.items()):
-    ...     print "%s: %s" % (key, value)
-    archive_link: http://.../ubuntu/+archive/primary
-    component_name: main
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
     date_created: ...
-    permission: Queue Administration Rights
-    person_link: http://.../~ubuntu-team
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~ubuntu-team'
     resource_type_link: ...
-    self_link: http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main'
     source_package_name: None
 
 And one for an individual:
 
     >>> name16_admin_permission = webservice.get(
     ...     "/ubuntu/+archive/primary/+queue-admin/name12.universe").jsonBody()
-    >>> for key, value in sorted(ubuntu_main_permission.items()):
-    ...     print "%s: %s" % (key, value)
-    archive_link: http://.../ubuntu/+archive/primary
-    component_name: main
+    >>> pprint_entry(name16_admin_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'universe'
     date_created: ...
-    permission: Queue Administration Rights
-    person_link: http://.../~ubuntu-team
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~name12'
     resource_type_link: ...
-    self_link: http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
     source_package_name: None

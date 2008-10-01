@@ -88,11 +88,16 @@ class IArchivePermission(Interface):
         description=_("The source package name that this permission is "
                       "related to."))
 
+    # This is the *text* component name, as opposed to `component` above
+    # which is the `IComponent` and we don't want to export that.
     component_name = exported(
         TextLine(
             title=_("Component Name"),
             required=True))
 
+    # This is the *text* package name, as opposed to `sourcepackagename`
+    # which is the `ISourcePackageName` and we don't want to export
+    # that.
     source_package_name = exported(
         TextLine(
             title=_("Source Package Name"),
