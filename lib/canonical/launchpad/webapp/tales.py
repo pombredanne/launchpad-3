@@ -403,10 +403,13 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.
+    """Adapter for any object to a formatted string."""
 
-    Used for fmt:url.
-    """
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
 
     def __init__(self, context):
         self._context = context
@@ -415,19 +418,6 @@ class ObjectFormatterAPI:
         url = canonical_url(
             self._context, path_only_if_possible=True, view_name=view_name)
         return url
-
-
-class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
-    """Adapter for any object to a formatted string.
-
-    Adds fmt:link which shows the icon and formatted string in an anchor.
-    """
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
 
     def traverse(self, name, furtherPath):
         if name in ('link', 'url'):
@@ -861,10 +851,8 @@ class BadgeDisplayAPI:
         return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
-class PersonFormatterAPI(ObjectFormatterExtendedAPI):
+class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
-
-    implements(ITraversable)
 
     allowed_names = set([
         'url', 'local_time'
@@ -872,22 +860,15 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
-        extra_path = '/'.join(reversed(furtherPath))
-        if name == 'link':
+        if name.startswith('link:'):
             # Remove remaining entries in furtherPath so that traversal
             # stops here.
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name.startswith('link:'):
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
+            extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
             rootsite = name.split(':')[1]
             return self.link(extra_path, rootsite=rootsite)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
         else:
-            raise TraversalError(name)
+            return super(PersonFormatterAPI, self).traverse(name, furtherPath)
 
     def local_time(self):
         """Return the local time for this person."""
@@ -909,8 +890,8 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
-class CustomizableFormatter(ObjectFormatterExtendedAPI):
-    """A ObjectFormatterExtendedAPI that is easy to customize.
+class CustomizableFormatter(ObjectFormatterAPI):
+    """A ObjectFormatterAPI that is easy to customize.
 
     This provides fmt:url and fmt:link support for the object it
     adapts.
@@ -1010,7 +991,7 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
-class BranchFormatterAPI(ObjectFormatterExtendedAPI):
+class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
     def traverse(self, name, furtherPath):
@@ -1019,11 +1000,12 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
             return self.projectLink(extra_path)
-        if name == 'title-link':
+        elif name == 'title-link':
             extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
             return self.titleLink(extra_path)
-        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+        else:
+            return super(BranchFormatterAPI, self).traverse(name, furtherPath)
 
     def _args(self, extra_path):
         """Generate a dict of attributes for string template expansion."""
@@ -1236,8 +1218,6 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugTracker` objects to a formatted string."""
 
-    implements(ITraversable)
-
     def link(self):
         """Return an HTML link to the bugtracker page.
 
@@ -1318,8 +1298,6 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
 
 class BugWatchFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugWatch` objects to a formatted string."""
-
-    implements(ITraversable)
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
