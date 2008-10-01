@@ -12,6 +12,7 @@ __all__ = [
     'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'SetFieldMarshaller',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
     'TextFieldMarshaller',
@@ -315,7 +316,7 @@ class DateFieldMarshaller(SimpleFieldMarshaller):
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
-    """A marshaller for List, Tuple, Set and other AbstractCollections.
+    """A marshaller for AbstractCollections.
 
     It looks up the marshaller for its value-type, to handle its contained
     elements.
@@ -346,7 +347,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
 
         # In AbstractCollection subclasses, _type contains the type object,
         # which can be used as a factory.
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_json_data(item)
             for item in value)
 
@@ -362,9 +363,16 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if not isinstance(value, list):
             value = [value]
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_request(item)
             for item in value)
+
+    @property
+    def _python_collection_factory(self):
+        """Create the appropriate python collection from a list."""
+        # In AbstractCollection subclasses, _type contains the type object,
+        # which can be used as a factory.
+        return self.field._type
 
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.
@@ -374,6 +382,14 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         return [self.value_marshaller.unmarshall(entry, item)
                for item in value]
+
+
+class SetFieldMarshaller(AbstractCollectionFieldMarshaller):
+    """Marshaller for sets."""
+
+    @property
+    def _python_collection_factory(self):
+        return set
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):

@@ -256,8 +256,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        adapters = getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)
+        adapters = list(
+            getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
     def toWADL(self, template_name="wadl-resource.pt"):

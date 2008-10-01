@@ -217,6 +217,13 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.ISet
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.SetFieldMarshaller"
+        />
+
+    <adapter
         for="canonical.lazr.interfaces.fields.ICollectionField
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
