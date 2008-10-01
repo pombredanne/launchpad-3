@@ -219,7 +219,8 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params ['diff'] = self._diffText(reason.max_diff_lines)
+        params['diff'] = self._diffText(reason.max_diff_lines)
+        params.setdefault('delta', '')
         return params
 
     def sendAll(self):

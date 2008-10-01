@@ -849,8 +849,10 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.commitRevision()
         sync = self.makeBzrSync(self.db_branch)
         sync.syncBranchAndClose()
-        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
-        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
+        self.assertEqual(1, len(sync._branch_mailer.queued_mail_jobs))
+        mail_job = sync._branch_mailer.queued_mail_jobs[0]
+        self.assertEqual(0, mail_job.job.prerequisites.count())
+        self.assertTrue(mail_job.static_diff is None)
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
