@@ -929,16 +929,17 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
     def _createStatusVocabulary(self):
         # Create the vocabulary that is used for the status widget.
         curr_status = self.context.queue_status
+        possible_next_states = (
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED,
+            # BranchMergeProposalStatus.QUEUED,
+            BranchMergeProposalStatus.MERGED)
         terms = [
             SimpleTerm(status, status.name, status.title)
-            for status in (BranchMergeProposalStatus.WORK_IN_PROGRESS,
-                           BranchMergeProposalStatus.NEEDS_REVIEW,
-                           BranchMergeProposalStatus.CODE_APPROVED,
-                           BranchMergeProposalStatus.REJECTED,
-                           # BranchMergeProposalStatus.QUEUED,
-                           BranchMergeProposalStatus.MERGED)
-            if ((self.context.isValidTransition(status, self.user)
-                 or status == curr_status)
+            for status in possible_next_states
+            if (self.context.isValidTransition(status, self.user)
                 # Edge case here for removing a queued proposal, we do this by
                 # setting the next state to code approved.
                 or (status == BranchMergeProposalStatus.CODE_APPROVED and

@@ -81,6 +81,10 @@ VALID_TRANSITION_GRAPH = {
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
     """Is it valid for the proposal to move to next_state from from_state?"""
+    # Trivial acceptance case.
+    if from_state == next_state:
+        return True
+
     [wip, needs_review, code_approved, rejected,
      merged, merge_failed, queued, superseded
      ] = BranchMergeProposalStatus.items
@@ -91,12 +95,11 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     if (next_state == rejected and not valid_reviewer):
         return False
     elif (next_state in (code_approved, queued) and
-          proposal.queue_status in (wip, needs_review, merge_failed)
+          from_state in (wip, needs_review, merge_failed)
           and not valid_reviewer):
         return False
 
-    return (from_state == next_state or
-            next_state in VALID_TRANSITION_GRAPH[from_state])
+    return next_state in VALID_TRANSITION_GRAPH[from_state]
 
 
 class BranchMergeProposal(SQLBase):

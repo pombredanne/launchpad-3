@@ -155,8 +155,10 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def test_transition_to_rejected_by_non_reviewer(self):
         # A non-reviewer should not be able to set a proposal as rejected.
         proposal = self.factory.makeBranchMergeProposal()
+        # It is always valid to go to the same state.
         self.assertValidTransitions(
-            set([]), proposal, BranchMergeProposalStatus.REJECTED,
+            set([BranchMergeProposalStatus.REJECTED]),
+            proposal, BranchMergeProposalStatus.REJECTED,
             proposal.source_branch.owner)
 
     def test_transitions_from_merged(self):
