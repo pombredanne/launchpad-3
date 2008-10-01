@@ -439,6 +439,27 @@ is used as the From address.
     u'bug-watch-updater'
 
     >>> print notifications[0].message.text_contents
+    Launchpad has imported 2 comments from the remote bug at
+    http://generic-string39.example.com/show_bug.cgi?id=42.
+    <BLANKLINE>
+    If you reply to an imported comment from within Launchpad, your comment
+    will be sent to the remote bug automatically. Read more about
+    Launchpad's inter-bugtracker facilities at
+    https://help.launchpad.net/InterBugTracking.
+    <BLANKLINE>
+    ------------------------------------------------------------------------
+    On ... Foo Bar wrote:
+    <BLANKLINE>
+    First imported comment (initial import)
+    <BLANKLINE>
+    Reply at: https://launchpad.net/XXX/+bug/32312/+comment/12
+    <BLANKLINE>
+    ------------------------------------------------------------------------
+    On ... Foo Bar wrote:
+    <BLANKLINE>
+    Second imported comment (initial import)
+    <BLANKLINE>
+    Reply at: https://launchpad.net/XXX/+bug/32312/+comment/12
 
 If we already have comments imported for a bug watch, one notification
 will be sent for each imported comment, even if there are more than one.

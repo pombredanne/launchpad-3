@@ -46,6 +46,7 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -659,16 +660,24 @@ class BugWatchUpdater(object):
             bug_message = bug_watch.addComment(comment_id, comment_message)
             imported_comments.append(bug_message)
 
-        notification_text_base = """
-5 comments have been imported from %(bug_watch_url)s.
-If you reply to an imported comment from within Launchpad, your comment
-will be sent to the remote bug automatically.
-""" % dict(bug_watch_url=bug_watch.url)
+        notification_text_base = """\
+Launchpad has imported %(num_of_comments)s comments from the remote bug at
+%(bug_watch_url)s.
 
-        comment_text_template = '-'*72 + """
+If you reply to an imported comment from within Launchpad, your comment
+will be sent to the remote bug automatically. Read more about
+Launchpad's inter-bugtracker facilities at
+https://help.launchpad.net/InterBugTracking.
+""" % dict(
+    num_of_comments=len(imported_comments),
+    bug_watch_url=bug_watch.url)
+
+        comment_text_template = '\n' + '-'*72 + """
 On %(comment_date)s %(commenter)s wrote:
 
 %(comment_text)s
+
+Reply at: %(comment_reply_url)s
 """
 
         if len(imported_comments) > 0:
@@ -681,7 +690,8 @@ On %(comment_date)s %(commenter)s wrote:
                     notification_text += comment_text_template % dict(
                         comment_date=comment.datecreated.isoformat(),
                         commenter=comment.owner.displayname,
-                        comment_text=comment.text_contents)
+                        comment_text=comment.text_contents,
+                        comment_reply_url=canonical_url(bug_message))
                 notification_message = getUtility(IMessageSet).fromText(
                     subject=bug_watch.bug.followup_subject(),
                     content=notification_text,
