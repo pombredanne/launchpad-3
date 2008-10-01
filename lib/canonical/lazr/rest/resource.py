@@ -467,9 +467,13 @@ class CustomOperationResourceMixin:
         :return: The result of the operation: either a string or an
         object that needs to be serialized to JSON.
         """
-        operation = getMultiAdapter((self.context, self.request),
-                                    IResourceGETOperation,
-                                    name=operation_name)
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
         return operation()
 
     def handleCustomPOST(self, operation_name):
