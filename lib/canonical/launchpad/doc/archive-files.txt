@@ -19,7 +19,7 @@ Any other extension will result in a `AssertionError`.
     >>> cprov.archive.getFileByName('biscuit.cookie')
     Traceback (most recent call last):
     ...
-    AssertionError: 'biscuit.cookie' format and/or extension is not
+    AssertionError: 'biscuit.cookie' filename and/or extension is not
     supported.
 
 Create a test source publication.
@@ -161,12 +161,12 @@ of the following file type in its context.
     >>> print build.title
     i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
 
-Unsupported format lookups also result in an `AssertionError`.
+Unsupported filename lookups also result in an `AssertionError`.
 
     >>> build.getFileByName('biscuit.cookie')
     Traceback (most recent call last):
     ...
-    AssertionError: 'biscuit.cookie' format and/or extension is not
+    AssertionError: 'biscuit.cookie' filename and/or extension is not
     supported.
 
 And unreachable files in `NotFoundError`.

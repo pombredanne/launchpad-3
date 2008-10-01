@@ -78,7 +78,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         The file content is downloaded in chunks directly to a
         `tempfile.TemporaryFile` avoiding using large amount of memory.
 
-        The temporary file is returned to the zope published machinery as
+        The temporary file is returned to the zope publishing machinery as
         documented in lib/zope/publisher/httpresults.txt, after adjusting
         the response 'Content-Type' appropriately.
         """
@@ -93,17 +93,7 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
 
         self.context.close()
 
-        # XXX cprov 20080930: according to lib/zope/publisher/httpresults.txt
-        # resetting the file and returning its content shouldn't be necessary
-        # at all. It works perfectly fine in development and dogfood.
-        # However it fails horribly in the test environment, warning about
-        # the lack of 'content-length' header. See the complete test
-        # traceback int https://pastebin.canonical.com/9687/.
-        # The code cannot land before solving this issue!
-        #return tmp_file
-
-        tmp_file.seek(0)
-        return tmp_file.read()
+        return tmp_file
 
     def browserDefault(self, request):
         """Decides whether to redirect or stream the file content.

@@ -754,7 +754,7 @@ class Archive(SQLBase):
                 )
         else:
             raise AssertionError(
-                "'%s' format and/or extension is not supported." % filename)
+                "'%s' filename and/or extension is not supported." % filename)
 
         def do_query():
             result = store.find((LibraryFileAlias), *(base_clauses + clauses))

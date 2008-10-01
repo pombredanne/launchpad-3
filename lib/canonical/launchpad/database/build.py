@@ -696,7 +696,7 @@ class Build(SQLBase):
             file_object = self.upload_log
         else:
             raise AssertionError(
-                "'%s' format and/or extension is not supported." % filename)
+                "'%s' filename and/or extension is not supported." % filename)
 
         if file_object is not None and file_object.filename == filename:
             return file_object

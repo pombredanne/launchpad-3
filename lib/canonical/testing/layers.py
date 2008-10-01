@@ -1143,7 +1143,18 @@ class MockHTTPTask:
         # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
-        self.bytes_written = int(response.getHeader('Content-length'))
+        # XXX cprov 20081001: When the last traversal view call returns
+        # an open file (see lib/zope/publisher/httpresults.txt) instead
+        # of a string the 'Content-Length' is missing on the testbrowser.
+        # Such behaviour does not happen on the actual server, i.e. the
+        # mentioned header is present and correct. Since 'bytes_written'
+        # is not essential for the testing environment, when this problem
+        # happens it is set to 1 and we carry on.
+        content_length = response.getHeader('Content-Length')
+        if content_length is not None:
+            self.bytes_written = int(content_length)
+        else:
+            self.bytes_written = 1
         self.request_data.headers = self.request.headers
         self.request_data.first_line = first_line
 

@@ -349,7 +349,7 @@ class IArchive(IHasOwner):
         :param filename: exactly filename to be looked up.
 
         :raises AssertionError if the given filename contains a unsupported
-            format and/or extension, see the list above.
+            filename and/or extension, see the list above.
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
