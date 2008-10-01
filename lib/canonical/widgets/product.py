@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -69,6 +70,22 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
             ' onkeypress="selectWidget(\'%s.3\', event);"' % self.name)
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        # This form has a custom need to render their labels separately,
+        # because of a Firefox problem: see comment in renderItems.
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio',
+                             **kw)
+        return elem + text
 
     def _toFieldValue(self, form_value):
         if form_value == "malone":

@@ -35,7 +35,7 @@ selected, since that's what the custom field's missing value represent.
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
     ...     for label in labels:
-    ...         if label.previous.previous.get('checked'):
+    ...         if label.previous.get('checked'):
     ...             print '(*)', extract_text(label)
     ...         else:
     ...             print '( )', extract_text(label)
@@ -270,5 +270,5 @@ output should have one checked input.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<...checked="checked"...value="GNU_GPL_V2" />, 
+    [<...checked="checked"...value="GNU_GPL_V2" />,
     <...checked="checked"...value="GNU_LGPL_V2_1" />]
