@@ -91,7 +91,7 @@ merge proposal is considered a "landing target" with an optional
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> nopriv_browser.getLink('Merging').click()
+    >>> nopriv_browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
     Merge proposed by No Privileges Person
@@ -131,7 +131,7 @@ shown first.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Merging').click()
+    >>> browser.getLink('Merge Proposals').click()
     >>> printMergeProposals(browser, 'landing-candidates')
     ~name12/gnome-terminal/scanned (New) - view proposal details
       Needs review
@@ -285,10 +285,9 @@ Only the last request is listed, showing the last review type.
     >>> pending = find_tag_by_id(
     ...     sample_browser.contents, 'code-review-votes')
     >>> print extract_text(pending)
-    Pending reviews
-    Reviewer          Review type Requested by  Date
-    Sample Person                 Sample Person ... ago
-    Mark Shuttleworth second      Sample Person ... ago
+    Reviewer          Review Type    Date Requested    Status
+    Sample Person                                      Pending [Vote]
+    Mark Shuttleworth second         ... ago           Pending
 
 
 == Marking as merged ==
