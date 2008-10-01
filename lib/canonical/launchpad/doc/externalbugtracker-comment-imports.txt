@@ -52,6 +52,7 @@ ExternalBugTracker class which implements these three methods.
     ...         '1': "Example comment the first",
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
+    ...     comment_datecreated = None
     ...
     ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
     ...
@@ -72,6 +73,7 @@ ExternalBugTracker class which implements these three methods.
     ...         message = getUtility(IMessageSet).fromText(
     ...             "Some subject or other",
     ...             self.comment_dict[comment_id], owner=poster,
+    ...             datecreated=self.comment_datecreated,
     ...             rfc822msgid=comment_id)
     ...         return message
 
@@ -409,7 +411,11 @@ notifications to be sent, only one notification is sent for all the
 comments.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_watch = factory.makeBugWatch('42')
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> now = datetime(2008, 9, 12, 15, 30, 45, tzinfo=pytz.timezone('UTC'))
+    >>> test_bug = factory.makeBug(date_created=now)
+    >>> bug_watch = factory.makeBugWatch('42', bug=test_bug)
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
@@ -417,11 +423,8 @@ comments.
     ...     '1': 'First imported comment (initial import)',
     ...     '2': 'Second imported comment (initial import)',
     ...     }
-    >>> import pytz
-    >>> from datetime import datetime
-    >>> now = datetime(2008, 9, 12, 15, 30, 45, tzinfo=pytz.timezone('UTC'))
-    >>> bugwatch_updater.importBugComments(
-    ...     external_bugtracker, bug_watch, when=now)
+    >>> external_bugtracker.comment_datecreated = now + timedelta(hours=1)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 2 comments for remote bug 42 ...
 
     >>> from canonical.launchpad.database.bugnotification import (
@@ -440,7 +443,7 @@ is used as the From address.
 
     >>> print notifications[0].message.text_contents
     Launchpad has imported 2 comments from the remote bug at
-    http://generic-string39.example.com/show_bug.cgi?id=42.
+    http://.../show_bug.cgi?id=42.
     <BLANKLINE>
     If you reply to an imported comment from within Launchpad, your comment
     will be sent to the remote bug automatically. Read more about
@@ -448,7 +451,7 @@ is used as the From address.
     https://help.launchpad.net/InterBugTracking.
     <BLANKLINE>
     ------------------------------------------------------------------------
-    On ... Foo Bar wrote:
+    On 2008-09-12T16:30:45+00:00 Foo Bar wrote:
     <BLANKLINE>
     First imported comment (initial import)
     <BLANKLINE>

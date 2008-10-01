@@ -1262,6 +1262,9 @@ class BugSet:
             raise AssertionError(
                 'Method createBug requires a comment, msg, or description.')
 
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
+
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
@@ -1282,7 +1285,8 @@ class BugSet:
             rfc822msgid = make_msgid('malonedeb')
             params.msg = Message(
                 subject=params.title, distribution=params.distribution,
-                rfc822msgid=rfc822msgid, owner=params.owner)
+                rfc822msgid=rfc822msgid, owner=params.owner,
+                datecreated=params.datecreated)
             MessageChunk(
                 message=params.msg, sequence=1, content=params.comment,
                 blob=None)
@@ -1290,9 +1294,6 @@ class BugSet:
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
             params.description = params.msg.text_contents
-
-        if not params.datecreated:
-            params.datecreated = UTC_NOW
 
         extra_params = {}
         if params.private:

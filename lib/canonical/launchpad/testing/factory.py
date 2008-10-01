@@ -444,7 +444,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -463,7 +464,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -534,7 +536,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -542,7 +544,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
