@@ -20,12 +20,10 @@ __all__ = [
     'BranchMergeProposalPrimaryContext',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
-    'BranchMergeProposalReviewView',
     'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteLinkView',
     'BranchMergeProposalVoteView',
-    'BranchMergeProposalWorkInProgressView',
     ]
 
 import operator
@@ -133,8 +131,8 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
+    links = ['edit', 'delete', 'request_review',
+             'add_comment', 'merge', 'enqueue', 'dequeue',
              'resubmit', 'update_merge_revno', 'edit_status']
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -176,13 +174,6 @@ class BranchMergeProposalContextMenu(ContextMenu):
             return self.context.isValidTransition(next_state, self.user)
 
     @enabled_with_permission('launchpad.Edit')
-    def set_work_in_progress(self):
-        text = 'Work in progress'
-        enabled = self._enabledForStatus(
-            BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        return Link('+work-in-progress', text, enabled=enabled)
-
-    @enabled_with_permission('launchpad.Edit')
     def request_review(self):
         text = 'Request a review'
         enabled = self._enabledForStatus(
@@ -193,13 +184,6 @@ class BranchMergeProposalContextMenu(ContextMenu):
             if (self.context.votes.count()) > 0:
                 text = 'Request another review'
         return Link('+request-review', text, icon='add', enabled=enabled)
-
-    @enabled_with_permission('launchpad.Edit')
-    def review(self):
-        text = 'Review proposal'
-        enabled = self._enabledForStatus(
-            BranchMergeProposalStatus.CODE_APPROVED)
-        return Link('+review', text, enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
@@ -474,33 +458,6 @@ class BranchMergeProposalVoteLinkView(BranchMergeProposalVoteView):
     show_comment_links = True
 
 
-class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
-    """The view used to set a proposal back to 'work in progress'."""
-
-    schema = IBranchMergeProposal
-    field_names = ["whiteboard"]
-    label = "Set proposal as work in progress"
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
-
-    @action('Set as work in progress', name='wip')
-    @notify
-    def wip_action(self, action, data):
-        """Set the status to 'Needs review'."""
-        self.context.setAsWorkInProgress()
-        self.updateContextFromData(data)
-
-    def validate(self, data):
-        """Ensure that the proposal is in an appropriate state."""
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.addError("The merge proposal is not an a valid state to "
-                          "mark as 'Work in progress'.")
-
-
 class IReviewRequest(Interface):
     """Schema for requesting a review."""
 
@@ -646,43 +603,6 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
         """Resubmit this proposal."""
         proposal = self.context.resubmit(self.user)
         self.next_url = canonical_url(proposal)
-
-
-class BranchMergeProposalReviewView(MergeProposalEditView,
-                                    UnmergedRevisionsMixin):
-    """The view to approve or reject a merge proposal."""
-
-    schema = ReviewForm
-    label = "Review proposal to merge"
-
-    @property
-    def adapters(self):
-        """See `LaunchpadFormView`"""
-        return {ReviewForm: self.context}
-
-    @property
-    def initial_values(self):
-        # Default to reviewing the tip of the source branch.
-        return {'revision_number': self.context.source_branch.revision_count}
-
-    @action('Approve', name='approve')
-    @update_and_notify
-    def approve_action(self, action, data):
-        """Set the status to approved."""
-        self.context.approveBranch(self.user, self._getRevisionId(data))
-
-    @action('Reject', name='reject')
-    @update_and_notify
-    def reject_action(self, action, data):
-        """Set the status to rejected."""
-        self.context.rejectBranch(self.user, self._getRevisionId(data))
-
-    def validate(self, data):
-        """Ensure that the proposal is in an appropriate state."""
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.addError("The merge proposal is not an a valid state to "
-                          "review.")
-        self._validateRevisionNumber(data, 'reviewed')
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):

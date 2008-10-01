@@ -160,14 +160,6 @@
       template="../templates/branchmergeproposal-editstatus.pt" />
 
   <browser:page
-      name="+work-in-progress"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/branchmergeproposal-work-in-progress.pt" />
-
-  <browser:page
       name="+request-review"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalRequestReviewView"
@@ -182,14 +174,6 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-resubmit.pt" />
-
-  <browser:page
-      name="+review"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalReviewView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/branchmergeproposal-review.pt" />
 
   <browser:page
       name="+enqueue"
