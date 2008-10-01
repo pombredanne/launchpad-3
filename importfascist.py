@@ -157,14 +157,21 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
     global naughty_imports
 
     try:
-        # XXX sinzui 2008-04-17:
-        # import_fascist screws zope configuration module;
-        # Zope used to catch these errors, but now lets them raise.
-        if 'zope.app.layers.canonical.launchpad.layers' in name:
-            name = name[16:]
         module = original_import(name, globals, locals, fromlist)
-    except:
-        raise
+    except ImportError:
+        # XXX sinzui 2008-04-17:
+        # import_fascist screws zope configuration module which introspects
+        # the stack to determine if an ImportError means a module
+        # initialization error or a genuine error. The browser:page always
+        # tries to load a layer from zope.app.layers first, which most of the
+        # time doesn't exist and dies a horrible death because of the import
+        # fascist. That's the long explanation for why we special case this
+        # module.
+        if name.startswith('zope.app.layers.'):
+            name = name[16:]
+            module = original_import(name, globals, locals, fromlist)
+        else:
+            raise
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
     # Also, 'dedent' is not in textwrap.__all__.
