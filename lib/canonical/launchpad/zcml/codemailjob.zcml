@@ -11,7 +11,7 @@
   </securedutility>
 
   <content class="canonical.launchpad.database.CodeMailJob">
-    <allow attributes="destroySelf run toMessage job"/>
+    <allow attributes="destroySelf run toMessage job static_diff"/>
   </content>
 
 </configure>
