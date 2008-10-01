@@ -121,6 +121,11 @@ class FileNavigationMixin:
 
     The requested file is proxied via `StreamOrRedirectLibraryFileAliasView`,
     making it possible to serve both, public and restricted, files.
+
+    This navigation approach only support domain with unique filename, which
+    is the case for IArchive and IBuild. It will probably have to be extended
+    in order to allow traversing to multiple files with the same filename
+    (product files or bug attachements).
     """
 
     @stepthrough('+files')
