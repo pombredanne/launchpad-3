@@ -51,7 +51,7 @@
       <td>
         <span class="votePENDING">Pending</span>
         <tal:vote-link condition="review/show_vote_link">
-          <a href="+comment">[Vote]</a>
+          <a href="+comment">[Review]</a>
         </tal:vote-link>
       </td>
     </tr>
@@ -61,7 +61,7 @@
       </td>
       <td colspan="2"></td>
       <td>
-        <a href="+comment">[Vote]</a>
+        <a href="+comment">[Review]</a>
       </td>
     </tr>
 

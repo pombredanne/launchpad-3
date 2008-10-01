@@ -98,4 +98,4 @@ in a table at the top of the page.
     >>> print extract_text(find_tag_by_id(
     ...     nopriv_browser.contents, 'code-review-votes'))
     Reviewer     Review Type    Date Requested    Status
-    No Privileges Person                          Abstain ...second...ago
+    No Privileges Person                          Abstained ...second...ago
