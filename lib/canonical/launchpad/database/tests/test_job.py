@@ -6,6 +6,7 @@ from unittest import TestLoader
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
+from storm.locals import Store
 
 from canonical.launchpad.database import Job, JobDependency, InvalidTransition
 from canonical.launchpad.interfaces import IJob, JobStatus
@@ -144,6 +145,38 @@ class TestJobDependency(TestCase):
         self.assertTrue(job1 not in job2.dependants)
         self.assertTrue(job2 in job1.dependants)
         self.assertTrue(job2 not in job1.prerequisites)
+
+    def test_ready_jobs(self):
+        job = Job()
+        self.assertEqual(
+            [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_started(self):
+        job = Job(status=JobStatus.RUNNING)
+        self.assertEqual(
+            [], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_waiting_prereqisite(self):
+        job = Job()
+        prerequisite = Job()
+        job.addPrerequisite(prerequisite)
+        self.assertEqual(
+            [(prerequisite.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_blocked_jobs(self):
+        job = Job()
+        prerequisite_1 = Job()
+        job.addPrerequisite(prerequisite_1)
+        prerequisite_2 = Job()
+        job.addPrerequisite(prerequisite_2)
+        self.assertEqual(
+            [(job.id,)], list(Store.of(job).execute(Job.blocked_jobs)))
+        prerequisite_1.status = JobStatus.COMPLETED
+        self.assertEqual(
+            [(job.id,)], list(Store.of(job).execute(Job.blocked_jobs)))
+        prerequisite_2.status = JobStatus.COMPLETED
+        self.assertEqual(
+            [], list(Store.of(job).execute(Job.blocked_jobs)))
 
 
 def test_suite():

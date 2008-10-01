@@ -13,6 +13,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 import pytz
 from sqlobject import IntCol, StringCol
+from storm.expr import Select, And, Not
+from storm.info import ClassAlias
 from storm.references import ReferenceSet
 from zope.interface import implements
 
@@ -102,3 +104,12 @@ Job.prerequisites = ReferenceSet(
 
 Job.dependants = ReferenceSet(
     Job.id, JobDependency.prerequisite, JobDependency.dependant, Job.id)
+
+PrerequisiteJob = ClassAlias(Job)
+Job.blocked_jobs = Select(
+    Job.id, And(Job.id == JobDependency.dependant,
+    PrerequisiteJob.id == JobDependency.prerequisite,
+    PrerequisiteJob.status != JobStatus.COMPLETED), distinct=True)
+
+Job.ready_jobs = Select(Job.id, And(Job.status == JobStatus.WAITING,
+    Not(Job.id.is_in(Job.blocked_jobs))))
