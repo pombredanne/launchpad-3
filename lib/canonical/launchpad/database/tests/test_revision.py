@@ -558,5 +558,52 @@ class TestTipRevisionsForBranches(TestCase):
         self.assertEqual(date, revision_set._timestampToDatetime(timestamp))
 
 
+class TestOnlyPresent(TestCaseWithFactory):
+    """Tests for `RevisionSet.onlyPresent`.
+
+    Note that although onlyPresent returns a set, it is a security proxied
+    set, so we have to convert it to a real set before doing any comparisons.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def test_empty(self):
+        # onlyPresent returns no results when passed no revids.
+        self.assertEqual(
+            set(),
+            set(getUtility(IRevisionSet).onlyPresent([])))
+
+    def test_none_present(self):
+        # onlyPresent returns no results when passed a revid not present in
+        # the database.
+        not_present = self.factory.getUniqueString()
+        self.assertEqual(
+            set(),
+            set(getUtility(IRevisionSet).onlyPresent([not_present])))
+
+    def test_one_present(self):
+        # onlyPresent returns a revid that is present in the database.
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present])))
+
+    def test_some_present(self):
+        # onlyPresent returns only the revid that is present in the database.
+        not_present = self.factory.getUniqueString()
+        present = self.factory.makeRevision().revision_id
+        self.assertEqual(
+            set([present]),
+            set(getUtility(IRevisionSet).onlyPresent([present, not_present])))
+
+    def test_call_twice_in_one_transaction(self):
+        # onlyPresent creates temporary tables, but cleans after itself so
+        # that it can safely be called twice in one transaction.
+        not_present = self.factory.getUniqueString()
+        getUtility(IRevisionSet).onlyPresent([not_present])
+        # This is just "assertNotRaises"
+        getUtility(IRevisionSet).onlyPresent([not_present])
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

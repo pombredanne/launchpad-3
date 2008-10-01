@@ -125,9 +125,6 @@ Comments can be searched when specifying a search text in the bugtask
 search. Whether comments are searched is controlled by the
 search_comments config option.
 
-    >>> from canonical.config import config
-    >>> OLD_SEARCH_COMMENTS = config.malone.search_comments
-
 For example, no Firefox bugs are found when searching for
 'wordincomment'.
 
@@ -138,7 +135,7 @@ For example, no Firefox bugs are found when searching for
     0
 
 If we add a comment containg the the search string to bug one, that bug
-will be returned by the search if search_comments is True.
+will be returned by the search only if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -150,20 +147,28 @@ will be returned by the search if search_comments is True.
     >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
     <Message at ...>
 
-    >>> config.malone.search_comments = True
-    >>> found_bugtasks = firefox.searchTasks(comment_search)
-    >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
-    #1
+When the search_comments config option is False, the bug is not found.
 
-If the search_comments config option is False, no bugs are found.
-
-    >>> config.malone.search_comments = False
+    >>> from canonical.config import config
+    >>> search_comments = """
+    ...     [malone]
+    ...     search_comments: %s
+    ...     """
+    >>> config.push('search_comments', search_comments % False)
     >>> found_bugtasks = firefox.searchTasks(comment_search)
     >>> [bugtask.bug.id for bugtask in found_bugtasks]
     []
 
-    >>> config.malone.search_comments = True
+    >>> config_data = config.pop('search_comments')
+
+If the search_comments config option is True, the bug is found.
+
+    >>> config.push('search_comments', search_comments % True)
+
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #1
 
     # Of course, searching in a project not containing bug #1 doesn't
     # return any matches.
@@ -172,7 +177,7 @@ If the search_comments config option is False, no bugs are found.
     >>> found_bugtasks.count()
     0
 
-    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS
+    >>> config_data = config.pop('search_comments')
 
 == Searching using bug full-text index ==
 

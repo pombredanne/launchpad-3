@@ -32,7 +32,7 @@ from canonical.launchpad.components.externalbugtracker.xmlrpc import (
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
-    ISupportsCommentImport, ISupportsCommentPushing)
+    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
@@ -353,7 +353,9 @@ def needs_authentication(func):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
 
-    implements(ISupportsCommentImport, ISupportsCommentPushing)
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport,
+        ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -625,3 +627,40 @@ class BugzillaLPPlugin(Bugzilla):
         # We cast the return value to string, since that's what
         # BugWatchUpdater will expect (see bug 248938).
         return str(return_dict['comment_id'])
+
+    def getLaunchpadBugId(self, remote_bug):
+        """Return the current Launchpad bug ID for a given remote bug.
+
+        See `ISupportsBackLinking`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        # Grab the internals dict from the bug, if there is one. If
+        # there isn't, return None, since there's no Launchpad bug ID to
+        # be had.
+        internals = self._bugs[actual_bug_id].get('internals', None)
+        if internals is None:
+            return None
+
+        # Extract the Launchpad bug ID and return it. Return None if
+        # there isn't one or it's set to an empty string.
+        launchpad_bug_id = internals.get('launchpad_id', None)
+        if launchpad_bug_id == '':
+            launchpad_bug_id = None
+
+        return launchpad_bug_id
+
+    @needs_authentication
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug for a given remote bug.
+
+        See `ISupportsBackLinking`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'launchpad_id': launchpad_bug_id,
+            }
+
+        self.xmlrpc_proxy.Launchpad.set_link(request_params)

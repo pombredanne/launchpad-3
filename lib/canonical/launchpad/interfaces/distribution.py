@@ -7,11 +7,13 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
+    'IDistributionPublic',
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.schema import Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
@@ -41,6 +43,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -54,14 +57,21 @@ class DistributionNameField(PillarNameField):
         """Return the interface of this pillar object."""
         return IDistribution
 
-class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
-                    IHasAppointedDriver, IHasDrivers, IHasMentoringOffers,
-                    IHasMilestones, IMakesAnnouncements, IHasOwner,
-                    IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-                    IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
-                    IPillar):
-    """An operating system distribution."""
-    export_as_webservice_entry()
+
+class IDistributionEditRestricted(Interface):
+    """IDistribution properties requiring launchpad.Edit permission."""
+
+    def newSeries(name, displayname, title, summary, description,
+                  version, parent_series, owner):
+        """Creates a new distroseries."""
+
+
+class IDistributionPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
+    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
+    IMakesAnnouncements, IPillar, ISpecificationTarget):
+    """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
     name = exported(
@@ -205,12 +215,17 @@ class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
         description=_("The distribution language pack administrator."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    main_archive = Object(
-        title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
-        )
+    main_archive = exported(
+        Reference(
+            title=_('Distribution Main Archive.'), readonly=True,
+            schema=IArchive))
 
-    all_distro_archives = Attribute(
-        "A sequence of the distribution's non-PPA IArchives.")
+    all_distro_archives = exported(
+        CollectionField(
+            title=_("A sequence of the distribution's non-PPA Archives."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IArchive)),
+        exported_as='archives')
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
@@ -401,6 +416,10 @@ class IDistribution(IBugTarget, ICanGetMilestonesDirectly,
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 
+
+class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+    """An operating system distribution."""
+    export_as_webservice_entry()
 
 # We are forced to define this now to avoid circular import problems.
 IMessage['distribution'].schema = IDistribution

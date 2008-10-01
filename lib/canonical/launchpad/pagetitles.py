@@ -255,6 +255,9 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
+bug_mark_as_affecting_user = ContextBugId(
+    'Bug #%d - does this bug affect you?')
+
 bug_nominate_for_series = ViewLabel()
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
@@ -1219,6 +1222,8 @@ shipit_forbidden = 'Forbidden'
 
 shipit_index = 'ShipIt'
 
+shipit_index_edubuntu = 'Getting Edubuntu'
+
 shipit_index_ubuntu = 'Request an Ubuntu CD'
 
 shipit_login = 'ShipIt'
@@ -1417,7 +1422,7 @@ team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
 
-team_map = ContextBrowsername('Map of %s Participants')
+team_map = ContextBrowsername('Map of %s participants')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 

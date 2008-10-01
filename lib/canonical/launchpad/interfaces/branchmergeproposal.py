@@ -21,7 +21,7 @@ __all__ = [
 
 from zope.app.event.interfaces import IObjectEvent
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Int, List, Text
+from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard

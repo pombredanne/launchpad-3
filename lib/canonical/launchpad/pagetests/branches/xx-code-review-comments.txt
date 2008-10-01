@@ -30,11 +30,11 @@ to the main merge proposal page.
     ...             print extract_text(tag)
 
     >>> print_comments('boardCommentDetails')
-    my subject
+    No Privileges Person wrote ...
     >>> print_comments('boardCommentBody')
     my body
     >>> print_comments('commentSuffix')
-    No Privileges Person ...
+    Reply
 
 The person's name links back to the main site for that person.
 
@@ -63,16 +63,18 @@ We can reply to a comment.
 After this, we are taken to the main page for the merge proposal
 
     >>> print_comments('boardCommentDetails', nopriv_browser, index=1)
-    Abstain &mdash; timeless: Subjects are nice.
+    Voted: Abstain No Privileges Person wrote ... ago
 
 The comment is shown in full, but hidden, and is shown with javascipt.
 The shorter comment is shown with a hyperlink to show the full comment.
 If javascript is not available, the link takes the user to a view that
 shows the entire message.
 
+If the summary is over three lines, then it ends with an ellipse.
+
     >>> print_comments('boardCommentBody', nopriv_browser, index=2)
     I like this.
-    I wish I had time to review it properly
+    I wish I had time to review it properly ...
     (show full message)
 
     >>> nopriv_browser.getLink('show full message').click()
@@ -95,6 +97,5 @@ in a table at the top of the page.
 
     >>> print extract_text(find_tag_by_id(
     ...     nopriv_browser.contents, 'code-review-votes'))
-    Completed reviews
-    Status    Reviewed by            Date
-    Abstain   No Privileges Person   ...second...ago
+    Reviewer     Review Type    Date Requested    Status
+    No Privileges Person                          Abstained ...second...ago

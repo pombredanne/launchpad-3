@@ -20,7 +20,8 @@
             tal:content="context/datesuperseded/fmt:displaydate" />
       by <a tal:attributes="href context/removed_by/fmt:url"
             tal:content="context/removed_by/displayname"/>
-      (<span tal:replace="context/removal_comment/fmt:shorten/20" />)
+      <div tal:condition="context/removal_comment"
+           tal:content="context/removal_comment" />
     </li>
     <li tal:condition="view/wasSuperseded">
       <strong>Superseded</strong>

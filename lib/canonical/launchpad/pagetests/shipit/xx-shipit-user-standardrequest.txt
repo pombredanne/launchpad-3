@@ -66,8 +66,8 @@ only choose the number of CDs from a list of predefined options.
   >>> logout()
 
 
-If now we go to one of shipit.kubuntu or shipit.edubuntu, we'll be able to
-add more CDs to our existing request...
+If now we go to shipit.kubuntu, we'll be able to add more CDs to our
+existing request...
 
   >>> browser.open('http://shipit.kubuntu.dev/myrequest')
   >>> browser.url
@@ -102,16 +102,16 @@ given distroseries.
   >>> logout()
 
 name16's shipped request contained Ubuntu and Kubuntu CDs. This means that if
-he makes another request containing /only/ Edubuntu CDs it'll be auto
+he makes another request containing /only/ Server CDs it'll be auto
 approved, otherwise it'll have to be manually approved.
 
   >>> sorted(flavour.title 
   ...        for flavour in shippingrun.requests[0].getContainedFlavours())
   ['Kubuntu', 'Ubuntu']
 
-  >>> browser.open('http://shipit.edubuntu.dev/myrequest')
+  >>> browser.open('http://shipit.ubuntu.dev/myrequest-server')
   >>> browser.url
-  'http://shipit.edubuntu.dev/myrequest'
+  'http://shipit.ubuntu.dev/myrequest-server'
 
 As name16 already has a request, the address fields will be pre-filled for
 him.
@@ -121,16 +121,16 @@ him.
   >>> browser.getControl(name='field.organization').value
   'Baz'
 
-  >>> browser.getControl(name='ordertype').value = ['14']
+  >>> browser.getControl(name='ordertype').value = ['16']
   >>> browser.getControl('Submit Request').click()
   >>> browser.url
-  'http://shipit.edubuntu.dev/myrequest'
+  'http://shipit.ubuntu.dev/myrequest-server'
 
   >>> login(ANONYMOUS)
   >>> Person.byName('name16').currentShipItRequest().isApproved()
   True
   >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
-  1
+  2
   >>> logout()
 
 If he adds any Ubuntu or Kubuntu CDs to his request, it'll then be marked as

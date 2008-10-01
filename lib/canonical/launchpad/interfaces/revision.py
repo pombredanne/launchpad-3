@@ -105,6 +105,9 @@ class IRevisionSet(Interface):
         None if the revision is not known.
         """
 
+    def onlyPresent(revids):
+        """Return the revision ids from `revids` that are present."""
+
     def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""

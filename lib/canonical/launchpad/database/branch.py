@@ -210,13 +210,16 @@ class Branch(SQLBase):
 
         if needs_review:
             queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+            date_review_requested = date_created
         else:
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+            date_review_requested = None
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
+            date_review_requested=date_review_requested,
             queue_status=queue_status)
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
@@ -527,6 +530,32 @@ class Branch(SQLBase):
         if not revision.karma_allocated:
             revision.allocateKarma(self)
         return branch_revision
+
+    def createBranchRevisionFromIDs(self, revision_id_sequence_pairs):
+        """See `IBranch`."""
+        if not revision_id_sequence_pairs:
+            return
+        store = Store.of(self)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE RevidSequence
+            (revision_id text, sequence integer)
+            """)
+        data = []
+        for revid, sequence in revision_id_sequence_pairs:
+            data.append('(%s, %s)' % sqlvalues(revid, sequence))
+        data = ', '.join(data)
+        store.execute(
+            "INSERT INTO RevidSequence (revision_id, sequence) VALUES %s"
+            % data)
+        store.execute(
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, Revision.id, RevidSequence.sequence
+            FROM RevidSequence, Revision
+            WHERE Revision.revision_id = RevidSequence.revision_id
+            """ % sqlvalues(self))
+        store.execute("DROP TABLE RevidSequence")
 
     def getTipRevision(self):
         """See `IBranch`."""
