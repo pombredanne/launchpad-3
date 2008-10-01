@@ -170,7 +170,7 @@ class MenuBox(LaunchpadView):
         facet = menuapi.selectedfacetname()
         if facet not in ('unknown', 'bounties'):
             # XXX sinzui 2008-06-23 bug=242453:
-            # Why are we getting unknown? Bouties are borked. We need
+            # Why are we getting unknown? Bounties are borked. We need
             # to end the facet hacks to get a clear state for the menus.
             application_links = getattr(menuapi, facet).values()
         else:
