@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
 from zope.app import zapi
+from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.traversing.interfaces import ITraversable, IPathAdapter
@@ -77,7 +78,9 @@ class MenuAPI:
 
     def __init__(self, context):
         self._tales_context = context
-        if zope_isinstance(context, LaunchpadView):
+        if zope_isinstance(context, (LaunchpadView, BrowserView)):
+            # The view is a LaunchpadView or a SimpleViewClass from a
+            # template. The facet is added to the call by the ZCML.
             self.view = context
             self._context = self.view.context
             self._request = self.view.request
