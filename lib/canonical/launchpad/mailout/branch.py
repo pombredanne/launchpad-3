@@ -175,9 +175,6 @@ class BranchMailer(BaseMailer):
             branch_title = ''
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
-    def _diffTemplate(self):
-        return "%s%s" % (self.contents, '%(diff)s')
-
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
         reason, rationale = self._recipients.getReason(email)
@@ -193,7 +190,8 @@ class BranchMailer(BaseMailer):
                 "%s/+edit-subscription." % canonical_url(reason.branch))
         else:
             params['unsubscribe'] = ''
-        params['diff'] = self._diffTemplate()
+        params['contents'] = self.contents
+        params['diff'] = '%s'
         params.setdefault('delta', '')
         return params
 
