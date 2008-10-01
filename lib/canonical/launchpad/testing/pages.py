@@ -697,15 +697,14 @@ def stop():
 
 
 def setUpGlobs(test):
-    # Our tests report being on a different port.
     test.globs['transaction'] = transaction
-    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['http'] = UnstickyCookieHTTPCaller()
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'salgado-change-anything', port=9000)
+        'launchpad-library', 'salgado-change-anything')
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
