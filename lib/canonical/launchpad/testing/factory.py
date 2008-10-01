@@ -189,7 +189,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(email)
         return person
 
-    def makeTeam(self, owner=None, displayname=None, email=None, name=None,
+    def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
 
@@ -199,8 +199,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param email: The email address to use as the team's contact address.
         :param subscription_policy: The subscription policy of the team.
         """
-        if owner is None:
-            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('team-name')
         if displayname is None:
