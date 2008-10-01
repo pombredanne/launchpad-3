@@ -916,15 +916,43 @@ LANGUAGE plpgsql AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        UPDATE Bug
-        SET users_affected_count = users_affected_count + 1
-        WHERE Bug.id = NEW.bug;
+        IF NEW.affected = TRUE THEN
+            UPDATE Bug
+            SET users_affected_count = users_affected_count + 1
+            WHERE Bug.id = NEW.bug;
+        ELSE
+            UPDATE Bug
+            SET users_unaffected_count = users_unaffected_count + 1
+            WHERE Bug.id = NEW.bug;
+        END IF;
     END IF;
 
     IF TG_OP = 'DELETE' THEN
-        UPDATE Bug
-        SET users_affected_count = users_affected_count - 1
-        WHERE Bug.id = OLD.bug;
+        IF OLD.affected = TRUE THEN
+            UPDATE Bug
+            SET users_affected_count = users_affected_count - 1
+            WHERE Bug.id = OLD.bug;
+        ELSE
+            UPDATE Bug
+            SET users_unaffected_count = users_unaffected_count - 1
+            WHERE Bug.id = OLD.bug;
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.affected <> NEW.affected THEN
+            IF NEW.affected THEN
+                UPDATE Bug
+                SET users_affected_count = users_affected_count + 1,
+                    users_unaffected_count = users_unaffected_count - 1
+                WHERE Bug.id = OLD.bug;
+            ELSE
+                UPDATE Bug
+                SET users_affected_count = users_affected_count - 1,
+                    users_unaffected_count = users_unaffected_count + 1
+                WHERE Bug.id = OLD.bug;
+            END IF;
+        END IF;
     END IF;
 
     RETURN NULL;
