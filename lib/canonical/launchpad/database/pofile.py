@@ -145,6 +145,13 @@ def _can_add_suggestions(pofile, person):
     """
     if person is None:
         return False
+
+    # If a person has decided not to license their translations under BSD
+    # license, they can't edit translations.
+    if (person.translations_relicensing_agreement is not None and
+        person.translations_relicensing_agreement is False):
+        return False
+
     if _can_edit_translations(pofile, person):
         return True
 
