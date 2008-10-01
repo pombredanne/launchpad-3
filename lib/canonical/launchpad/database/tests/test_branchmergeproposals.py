@@ -99,7 +99,8 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def assertTerminatingState(self, from_state):
         """Assert that the proposal cannot go to any other state."""
         for status in BranchMergeProposalStatus.items:
-            self.assertBadTransition(from_state, status)
+            if status != from_state:
+                self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
         """We can go from work in progress to any other state."""
@@ -123,10 +124,12 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
 
-        for status in (wip, needs_review, code_approved, rejected,
+        for status in (wip, needs_review, code_approved,
                        merged, queued, merge_failed):
             # All bad, rejected is a final state.
             self.assertBadTransition(rejected, status)
+        # Rejected -> Rejected is valid.
+        self.assertGoodTransition(rejected, rejected)
         # Can resubmit (supersede) a rejected proposal.
         self.assertGoodTransition(rejected, superseded)
 

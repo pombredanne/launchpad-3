@@ -314,7 +314,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # All options should be available to the user.
         self.assertStatusVocabTokens(
             ['WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'MERGED', 'CODE_APPROVED',
-             'REJECTED', 'QUEUED', 'SUPERSEDED'], user)
+             'REJECTED', 'SUPERSEDED'], user)
 
     def test_createStatusVocabulary_non_reviewer(self):
         # Neither the source branch owner nor the registrant should not be
@@ -340,7 +340,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
             self.proposal.target_branch.owner, 'some-revision')
         status_options = [
             'WORK_IN_PROGRESS', 'NEEDS_REVIEW', 'CODE_APPROVED', 'MERGED',
-            'QUEUED', 'SUPERSEDED']
+            'SUPERSEDED']
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
         self.assertStatusVocabTokens(
@@ -371,7 +371,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         # approved.
         self.proposal.enqueue(
             self.proposal.target_branch.owner, 'some-revision')
-        status_options = ['CODE_APPROVED', 'QUEUED', 'MERGED']
+        status_options = ['CODE_APPROVED', 'MERGED']
 
         self.assertStatusVocabTokens(
             status_options, user=self.proposal.source_branch.owner)
