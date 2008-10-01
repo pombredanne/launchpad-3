@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -291,6 +291,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
     facet = 'translations'
     links = ['changetranslators']
 
+    @enabled_with_permission('launchpad.Edit')
     def changetranslators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -361,8 +362,7 @@ class ProjectReviewView(ProjectEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
 
@@ -519,12 +519,7 @@ class ProjectAddQuestionView(QuestionAddView):
         self.form_fields = self.createProductField() + self.form_fields
 
     def setUpWidgets(self):
-        # Only setup the widgets that needs validation
-        if not self.add_action.submitted():
-            fields = self.form_fields.select(*self.search_field_names)
-        else:
-            fields = self.form_fields
-
+        fields = self._getFieldsForWidgets()
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
         # widget to find the final context.

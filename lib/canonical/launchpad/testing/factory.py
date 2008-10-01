@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -585,7 +586,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
         if msgid is None:
-            msgid = make_msgid('launchpad')
+            msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
@@ -748,7 +749,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        rfc822msgid = make_msgid("launchpad")
+        rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)
         MessageChunk(message=message, sequence=1, content=content)
@@ -848,7 +849,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_series=parent_series, owner=distribution.owner)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
-                       sourcepackagename=None, owner=None):
+                       sourcepackagename=None, owner=None, name=None,
+                       translation_domain=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -860,8 +862,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
 
-        name = self.getUniqueString()
-        translation_domain = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if translation_domain is None:
+            translation_domain = self.getUniqueString()
 
         if owner is None:
             if productseries is None:
@@ -909,3 +913,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeUniqueRFC822MsgId(self):
+        """Make a unique RFC 822 message id.
+
+        The created message id is guaranteed not to exist in the
+        `Message` table already.
+        """
+        msg_id = make_msgid('launchpad')
+        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+            msg_id = email.Utils.make_msgid()
+        return msg_id
+

@@ -9,7 +9,7 @@ when given certain user-configurable URLs.
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.pidfile import make_pidfile, get_pid, pidfile_path
+from canonical.lazr.pidfile import make_pidfile, get_pid, pidfile_path
 import errno
 import logging
 import os
