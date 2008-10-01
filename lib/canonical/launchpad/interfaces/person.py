@@ -520,6 +520,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
+    oauth_request_tokens = Attribute(_("Non-expired request tokens"))
+
     sshkeys = Attribute(_('List of SSH keys'))
 
     openid_identifier = TextLine(

@@ -1,18 +1,38 @@
 = Managing OAuth access tokens =
 
-All access tokens for a given user can be seen and/or revoked from that
-user's +oauth-tokens page.
+All access tokens and request tokens for a given user can be seen
+and/or revoked from that user's +oauth-tokens page.
 
+    # Create a request token, but don't convert it to an access token.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
+    >>> login('salgado@ubuntu.com')
+    >>> token = getUtility(IOAuthConsumerSet).getByKey(
+    ...     'foobar123451432').newRequestToken()
+    >>> token.review(getUtility(IPersonSet).getByName('salgado'),
+    ...              OAuthPermission.READ_PRIVATE)
+    >>> logout()
+
+    # View the tokens.
     >>> my_browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')
     >>> main_content = find_tag_by_id(my_browser.contents, 'maincontent')
     >>> print extract_text(main_content)
     Authorized applications
     ...
-    foobar123451432
+    Application name:
+        foobar123451432
         Authorized...to read non-private data
-    launchpad-library
+    Application name:
+        launchpad-library
         Authorized...to change anything
+    Application name:
+        foobar123451432
+        Authorized...to read anything
+        The requesting application has until ...
+        to convert this request token into an access token...
 
 For each token we have a separate <form> with the token and consumer
 keys stored in hidden <input>s as well as the button to revoke the
@@ -22,13 +42,21 @@ authorization.
     >>> for input in li.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key foobar123451432
-    token_key ...
+    access_token_key ...
     revoke Revoke Authorization
 
-    >>> for input in li.findNextSibling('li').find('form').findAll('input'):
+    >>> li2 = li.findNextSibling('li')
+    >>> for input in li2.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key launchpad-library
-    token_key ...
+    access_token_key ...
+    revoke Revoke Authorization
+
+    >>> li3 = li2.findNextSibling('li')
+    >>> for input in li3.find('form').findAll('input'):
+    ...     print input['name'], input['value']
+    consumer_key foobar123451432
+    request_token_key ...
     revoke Revoke Authorization
 
 If a token is revoked the application will not be able to access
@@ -46,17 +74,19 @@ shown as one of the authorized ones.
     >>> print extract_text(find_tag_by_id(my_browser.contents, 'maincontent'))
     Authorized applications
     ...
-    foobar123451432
+    Application name:
+        foobar123451432
         Authorized...to read non-private data
+    Application name:
+        foobar123451432
+        Authorized...to read anything
+        The requesting application has until...
+        to convert this request token into an access token.
 
 Some tokens grant access only to a certain context in Launchpad.  If
 that's the case, the description of the authorization granted will
 include that.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
     >>> login('salgado@ubuntu.com')
     >>> token = getUtility(IOAuthConsumerSet).getByKey(
     ...     'launchpad-library').newRequestToken()
@@ -72,6 +102,7 @@ include that.
     launchpad-library
     ...
     to change non-private data related to Mozilla Firefox
+    ...
 
 That page is protected with the launchpad.Edit permission, for obvious
 reasons, so users can only access their own.

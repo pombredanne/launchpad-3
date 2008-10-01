@@ -52,7 +52,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
-from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -190,6 +191,11 @@ class EditOAuthAccessToken(AuthorizationBase):
     def checkAuthenticated(self, user):
         return (self.obj.person == user
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class EditOAuthRequestToken(EditOAuthAccessToken):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthRequestToken
 
 
 class EditBugNominationStatus(AuthorizationBase):

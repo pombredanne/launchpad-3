@@ -19,11 +19,12 @@
     allowed to do anything in Launchpad on your behalf.
     </p>
     <ul>
-      <li tal:repeat="token view/tokens">
+      <li tal:repeat="token view/access_tokens">
         <form method="post">
+          Application name:
           <label tal:content="token/consumer/key">Consumer</label>
           <p>Authorized,
-            <tal:date-reviewed 
+            <tal:date-reviewed
                 content="token/date_created/fmt:approximatedate" />,
             to
             <tal:permission content="token/permission/title/lower" />
@@ -37,7 +38,38 @@
           <input tal:attributes="value token/consumer/key" type="hidden"
                  name="consumer_key" />
           <input tal:attributes="value token/key" type="hidden"
-                 name="token_key" />
+                 name="access_token_key" />
+          <input type="submit" name="revoke" value="Revoke Authorization" />
+          <br />
+          <br />
+        </form>
+      </li>
+      <li tal:repeat="token view/request_tokens">
+        <form method="post">
+          Application name:
+          <label tal:content="token/consumer/key">Consumer</label>
+          <p>Authorized,
+            <tal:date-reviewed
+                content="token/date_created/fmt:approximatedate" />,
+            to
+            <tal:permission content="token/permission/title/lower" />
+            <tal:has-context condition="token/context">
+              related to <strong tal:content="token/context/title" />
+            </tal:has-context>
+          </p>
+          <p>
+            <strong>
+              The requesting application has
+              <tal:expires condition="token/date_expires">
+                until <tal:date content="token/date_expires/fmt:date" />
+              </tal:expires>
+              to convert this request token into an access token.
+            </strong>
+          </p>
+          <input tal:attributes="value token/consumer/key" type="hidden"
+                 name="consumer_key" />
+          <input tal:attributes="value token/key" type="hidden"
+                 name="request_token_key" />
           <input type="submit" name="revoke" value="Revoke Authorization" />
           <br />
           <br />

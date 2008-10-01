@@ -4700,18 +4700,30 @@ class PersonOAuthTokensView(LaunchpadView):
     def initialize(self):
         # Store the (sorted) list of access tokens that are going to be
         # used in the template.
-        self.tokens = sorted(
-            self.context.oauth_access_tokens,
-            key=lambda token: token.consumer.key)
         if self.request.method == 'POST':
             self.expireToken()
+
+    @property
+    def access_tokens(self):
+        return sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+
+    @property
+    def request_tokens(self):
+        return sorted(
+            self.context.oauth_request_tokens,
+            key=lambda token: token.consumer.key)
 
     def expireToken(self):
         """Expire the token with the key contained in the request's form."""
         form = self.request.form
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('consumer_key'))
-        token = consumer.getAccessToken(form.get('token_key'))
+        if 'access_token_key' in form:
+            token = consumer.getAccessToken(form.get('access_token_key'))
+        else:
+            token = consumer.getRequestToken(form.get('request_token_key'))
         if token is not None:
             token.date_expires = datetime.now(pytz.timezone('UTC'))
             self.request.response.addInfoNotification(
