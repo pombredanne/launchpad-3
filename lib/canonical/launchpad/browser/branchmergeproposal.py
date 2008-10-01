@@ -419,7 +419,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         """
         # Can request a review if the user has edit permissions, and the
         # branch is not in a final state.
-        # import pdb; pdb.set_trace()
         can_request_review = (
             check_permission('launchpad.Edit', self.context) and
             self.context.isMergable())
