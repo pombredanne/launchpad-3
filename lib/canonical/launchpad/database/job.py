@@ -86,6 +86,10 @@ class Job(SQLBase):
         self.prerequisites.clear()
         SQLBase.destroySelf(self)
 
+    def addPrerequisite(self, prerequisite):
+        """See IJob."""
+        self.prerequisites.add(prerequisite)
+
 
 class JobDependency(SQLBase):
 

@@ -253,6 +253,6 @@ class BranchMailer(BaseMailer):
                 max_diff_lines=max_diff_lines_value
                 )
             if self.diff_job is not None:
-                mail.job.prerequisites.append(self.diff_job)
+                mail.job.addPrerequisite(self.diff_job.job)
             jobs.append(mail)
         return jobs
