@@ -176,8 +176,6 @@ class BranchMailer(BaseMailer):
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
 
     def _diffTemplate(self):
-        if self.diff_job is None:
-            return ''
         return "%s%s" % (self.contents, '%(diff)s')
 
     def _getTemplateParams(self, email):
