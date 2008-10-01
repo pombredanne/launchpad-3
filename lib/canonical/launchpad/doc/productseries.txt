@@ -110,8 +110,8 @@ or None.
 
 == Release series ==
 
-A product series can have any number of releases associated with. These
-are created with the addRelease() method of IProductSeries.
+A product series can have any number of releases associated with it.
+These are created with the addRelease() method of IProductSeries.
 
     >>> login_person(firefox_1_0.owner)
     >>> firefox_109 = firefox_1_0.addRelease('1.0.9', owner)
