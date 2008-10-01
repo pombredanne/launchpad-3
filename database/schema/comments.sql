@@ -43,6 +43,8 @@ COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
+COMMENT ON COLUMN Branch.distribution IS 'The distribution that the branch belongs to';
+COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of';
 
 -- BranchMergeProposal
 
@@ -83,6 +85,13 @@ COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to 
 COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
 COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
 COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
+
+COMMENT ON TABLE BranchSourcePackageSeries IS 'Link between branches and distribution suite.';
+COMMENT ON COLUMN BranchSourcePackageSeries.date_created IS 'The date this link was created.';
+COMMENT ON COLUMN BranchSourcePackageSeries.registrant IS 'The person who registered this link.';
+COMMENT ON COLUMN BranchSourcePackageSeries.branch IS 'The branch being linked to a distribution suite.';
+COMMENT ON COLUMN BranchSourcePackageSeries.distroseries IS 'The distroseries the branch is linked to.';
+COMMENT ON COLUMN BranchSourcePackageSeries.pocket IS 'The pocket the branch is linked to.';
 
 -- BranchSubscription
 

@@ -22,9 +22,9 @@ ALTER TABLE Branch
 -- ~jml/ubuntu/testtools/trunk
 
 ALTER TABLE Branch
-    ADD CONSTRAINT one_container CHECK
+    ADD CONSTRAINT one_container CHECK (
         ((distribution IS NULL) = (sourcepackagename IS NULL))
-         AND (distribution IS NULL) OR (product IS NULL);
+         AND ((distribution IS NULL) OR (product IS NULL)));
 
 
 -- I guess we need to index:
@@ -62,10 +62,9 @@ CREATE TABLE BranchSourcePackageSeries (
     registrant integer NOT NULL REFERENCES Person(id),
     branch integer NOT NULL REFERENCES Branch(id),
     distroseries integer NOT NULL REFERENCES DistroSeries(id),
-    sourcepackagename integer NOT NULL REFERENCES SourcePackageName(id),
     pocket integer,
-    CONSTRAINT branchsourcepackageseries__branch__distroseries__sourcepackagename__pocket__key
-        UNIQUE (branch, distroseries, sourcepackagename, pocket)
+    CONSTRAINT branchsourcepackageseries__branch__distroseries__pocket__key
+        UNIQUE (branch, distroseries, pocket)
 );
 
 
