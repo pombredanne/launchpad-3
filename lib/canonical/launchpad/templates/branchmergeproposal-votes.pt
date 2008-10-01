@@ -34,7 +34,7 @@
           Approved
         </span>
         <tal:date replace="review/date_of_comment/fmt:displaydate" />
-        <a tal:condition="review/show_edit" href="+vote">
+        <a tal:condition="review/show_edit" href="+review">
           <img src="/@@/edit" title="Vote again" alt="vote"/>
         </a>
       </td>
@@ -51,7 +51,7 @@
       <td>
         <span class="votePENDING">Pending</span>
         <tal:vote-link condition="review/show_vote_link">
-          <a tal:attributes="href string:+vote?claim=${review/reviewer/name}&review_type=${review/review_type}">[Review]</a>
+          <a tal:attributes="href string:+review?claim=${review/reviewer/name}&review_type=${review/review_type}">[Review]</a>
         </tal:vote-link>
       </td>
     </tr>
@@ -61,7 +61,7 @@
       </td>
       <td colspan="2"></td>
       <td>
-        <a href="+vote">[Review]</a>
+        <a href="+review">[Review]</a>
       </td>
     </tr>
 

@@ -240,7 +240,7 @@
       template="../templates/codereviewcomment-reply.pt" />
 
   <browser:page
-      name="+vote"
+      name="+review"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalAddVoteView"
       facet="branches"
