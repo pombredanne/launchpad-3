@@ -218,7 +218,7 @@ You can request a review of a merge proposal.
     >>> sample_browser.getLink('Request a review').click()
     >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
     >>> sample_browser.getControl('Review type').value = 'first'
-    >>> sample_browser.getControl('Request review').click()
+    >>> sample_browser.getControl('Request Review').click()
 
 This causes a notification to be sent.
 
@@ -247,7 +247,7 @@ Additional reviews can be requested.
 
     >>> sample_browser.getLink('Request another review').click()
     >>> sample_browser.getControl('Reviewer').value = 'name12'
-    >>> sample_browser.getControl('Request review').click()
+    >>> sample_browser.getControl('Request Review').click()
 
 This sends a notification only to the requested reviewer.
 
@@ -268,7 +268,7 @@ sent.
     >>> sample_browser.getLink('Request another review').click()
     >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
     >>> sample_browser.getControl('Review type').value = 'second'
-    >>> sample_browser.getControl('Request review').click()
+    >>> sample_browser.getControl('Request Review').click()
     >>> [notification] = pop_notifications()
     >>> print notification.get_payload(decode=True)
     You have been requested to review the proposed merge of Klingon support
@@ -311,6 +311,7 @@ The edit link is shown after the branch link.
 
 The edit icon at the end of the status allows the user to edit the status.
 
+    >>> first_proposal_url = nopriv_browser.url
     >>> nopriv_browser.getLink('Change status').click()
 
 When marking a proposal as merged there is an optional revision number.
@@ -417,27 +418,25 @@ This takes the user to the resubmission page.
     >>> print sample_browser.title
     Resubmit proposal to merge
 
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'Resubmitting due to extensive changes.')
     >>> sample_browser.getControl('Resubmit').click()
 
-Consume notifications.
+Emails are sent out to say the the old proposal was superseded, and that the
+new proposal has been created.
 
-    >>> [_unused, _unused] = pop_notifications()
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+    >>> subjects = [notification['Subject'] for notification in notifications]
+    >>> # The order of notifications appears to be non-deterministic
+    >>> subjects.sort()
+    >>> print subjects[0]
+    Proposed merge of ~name12/gnome-terminal/scanned into
+      GNOME Terminal Mainline
+    >>> print subjects[1]
+    Proposed merge of ~name12/gnome-terminal/scanned into
+       GNOME Terminal Mainline updated
 
-    >>> for message in get_feedback_messages(sample_browser.contents):
-    ...     print extract_text(message)
-    Please update the whiteboard for the new proposal.
-
-    >>> sample_browser.getControl('Whiteboard').value = (
-    ...     'Updated work')
-    >>> sample_browser.getControl('Update').click()
-
-Consume notification.
-
-    >>> [_unused] = pop_notifications()
-
-The new merge proposal is created as work in progress, and there is
+The new merge proposal is created as needs review, and there is
 a link back to the superseded proposal.
 
     >>> print_summary(sample_browser)
@@ -456,10 +455,6 @@ a link back to the superseded proposal.
     Status: Superseded
     ...
 
-    >>> print extract_text(find_tag_by_id(
-    ...      sample_browser.contents, 'branch-whiteboard-value'))
-    Resubmitting due to extensive changes.
-
 The earlier superseded proposal also has a link back to the
 new proposal that supersedes it.
 
@@ -468,30 +463,6 @@ new proposal that supersedes it.
     This proposal has been superseded by a proposal from ...
     >>> sample_browser.getLink(
     ...     re.compile('proposal from .*')).click()
-
-    >>> print extract_text(find_tag_by_id(
-    ...      sample_browser.contents, 'branch-whiteboard-value'))
-    Updated work
-
-Resubmitting proposals without changing the whiteboard emits notifications.
-
-    >>> sample_browser.getLink('Change status').click()
-    >>> sample_browser.getControl(name='field.queue_status').displayValue = (
-    ...     ['Resubmit'])
-    >>> sample_browser.getControl('Change Status').click()
-    >>> sample_browser.getControl('Resubmit').click()
-    >>> notifications = pop_notifications()
-    >>> len(notifications)
-    2
-    >>> subjects = [notification['Subject'] for notification in notifications]
-    >>> # The order of notifications appears to be non-deterministic
-    >>> subjects.sort()
-    >>> print subjects[0]
-    Proposed merge of ~name12/gnome-terminal/scanned into
-      GNOME Terminal Mainline
-    >>> print subjects[1]
-    Proposed merge of ~name12/gnome-terminal/scanned into
-       GNOME Terminal Mainline updated
 
 
 == Default target branches ==
@@ -617,8 +588,7 @@ in the source branch.
 There shouldn't be a 'Linked bug reports and blueprints' section if there are
 none
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merge/5')
+    >>> nopriv_browser.open(first_proposal_url)
     >>> print_bugs_and_specs(nopriv_browser)
     None
 
