@@ -139,13 +139,15 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        return Link('+comment', 'Add a comment', icon='add')
+        # Can't add a comment to Merged, Superseded or Rejected.
+        status = self.context.queue_status
+        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        return Link('+comment', 'Add a comment', icon='add', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit details'
-        status = self.context.queue_status
-        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        enabled = self.context.isMergable()
         return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -369,7 +371,8 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        self.show_edit = (user == context.reviewer)
+        is_mergable = self.context.branch_merge_proposal.isMergable()
+        self.show_edit = (user == context.reviewer) and is_mergable
         # Don't show the vote link if the link is for a team and the user has
         # already voted, or if the user is the source branch owner.
         branch = context.branch_merge_proposal.source_branch
@@ -377,9 +380,8 @@ class DecoratedCodeReviewVoteReference:
             self.show_vote_link = False
         else:
             self.show_vote_link = (
-                (self.show_edit or
-                 (user.inTeam(context.reviewer) and (users_vote is None))) and
-                (self.context.branch_merge_proposal.isMergable()))
+                is_mergable and (self.show_edit or
+                 (user.inTeam(context.reviewer) and (users_vote is None))))
 
     @property
     def date_requested(self):
@@ -636,16 +638,14 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
 
     schema = IBranchMergeProposal
     label = "Resubmit proposal to merge"
-    field_names = ["whiteboard"]
+    field_names = []
 
     @action('Resubmit', name='resubmit')
     @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
         proposal = self.context.resubmit(self.user)
-        self.request.response.addInfoNotification(_(
-            "Please update the whiteboard for the new proposal."))
-        self.next_url = canonical_url(proposal) + "/+edit"
+        self.next_url = canonical_url(proposal)
 
 
 class BranchMergeProposalReviewView(MergeProposalEditView,

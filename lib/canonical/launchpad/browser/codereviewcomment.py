@@ -9,14 +9,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface, implements
-from zope.schema import Choice, Text, TextLine
+from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title
-from canonical.launchpad.interfaces import (
-    CodeReviewVote, ICodeReviewComment)
+from canonical.launchpad.interfaces import ICodeReviewComment
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
     Link)
@@ -40,7 +38,8 @@ class CodeReviewCommentContextMenu(ContextMenu):
     links = ['reply']
 
     def reply(self):
-        return Link('+reply', 'Reply', icon='add')
+        enabled = self.context.branch_merge_proposal.isMergable()
+        return Link('+reply', 'Reply', icon='add', enabled=enabled)
 
 
 class CodeReviewCommentView(LaunchpadView):
