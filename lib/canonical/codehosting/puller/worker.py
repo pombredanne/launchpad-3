@@ -388,7 +388,7 @@ class BranchMirrorer(object):
                 raise StackedOnBranchNotFound()
         else:
             stacked_on_url = None
-        bzrdir.clone_on_transport(dest_transport, stacked_on=stacked_on_url)
+        bzrdir.clone_on_transport(dest_transport, revision_id="null:")
         branch = Branch.open(destination_url)
         # Bazaar will have set the stacked-on location to an absolute URL. We
         # want it to literally match the policy.
@@ -411,13 +411,13 @@ class BranchMirrorer(object):
         except errors.NotBranchError:
             # Make a new branch in the same format as the source branch.
             return self.createDestinationBranch(
-                source_branch, destination_url), True
+                source_branch, destination_url), False
         # Check that destination branch is in the same format as the source.
         if identical_formats(source_branch, branch):
             return branch, False
         self.log('Formats differ.')
         branch = self.createDestinationBranch(source_branch, destination_url)
-        return branch, True
+        return branch, False
 
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
