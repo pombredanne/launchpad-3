@@ -83,6 +83,7 @@
                         content="view/queued_revision_number">
             1234
           </tal:revision>
+        </td>
       </tr>
     </tal:queued>
     <tal:merged condition="context/queue_status/enumvalue:MERGED">
