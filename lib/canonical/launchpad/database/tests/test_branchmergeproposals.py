@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter)
+    BranchMergeProposalGetter, is_valid_transition)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -129,6 +129,35 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
             self.assertBadTransition(rejected, status)
         # Can resubmit (supersede) a rejected proposal.
         self.assertGoodTransition(rejected, superseded)
+
+    def assertValidTransitions(self, expected, proposal, to_state, by_user):
+        # Check the valid transitions for the merge proposal by the specified
+        # user.
+        valid = set()
+        for state in BranchMergeProposalStatus.items:
+            if is_valid_transition(proposal, state, to_state, by_user):
+                valid.add(state)
+        self.assertEqual(expected, valid)
+
+    def test_transition_to_rejected_by_reviewer(self):
+        # A proposal should be able to go from any states to rejected if the
+        # user is a reviewer, except for superseded, merged or queued.
+        valid_transitions = set(BranchMergeProposalStatus.items)
+        valid_transitions -= set(
+            [BranchMergeProposalStatus.MERGED,
+             BranchMergeProposalStatus.QUEUED,
+             BranchMergeProposalStatus.SUPERSEDED])
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertValidTransitions(
+            valid_transitions, proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.target_branch.owner)
+
+    def test_transition_to_rejected_by_non_reviewer(self):
+        # A non-reviewer should not be able to set a proposal as rejected.
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertValidTransitions(
+            set([]), proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.source_branch.owner)
 
     def test_transitions_from_merged(self):
         """Merged is a terminal state, so no transitions are valid."""
