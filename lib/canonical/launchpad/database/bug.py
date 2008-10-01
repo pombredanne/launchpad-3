@@ -222,6 +222,7 @@ class Bug(SQLBase):
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
+    users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
     def indexed_messages(self):
@@ -1136,7 +1137,11 @@ class Bug(SQLBase):
 
     def isUserAffected(self, user):
         """See `IBug`."""
-        return bool(self._getAffectedUser(user))
+        bap = self._getAffectedUser(user)
+        if bap is not None:
+            return bap.affected
+        else:
+            return None
 
     def _flushAndInvalidate(self):
         """Flush all changes to the store and re-read `self` from the DB."""
@@ -1144,30 +1149,16 @@ class Bug(SQLBase):
         store.flush()
         store.invalidate(self)
 
-    def markUserAffected(self, user):
+    def markUserAffected(self, user, affected=True):
         """See `IBug`."""
-        if not self.isUserAffected(user):
-            # Mark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            BugAffectsPerson(bug=self, person=user)
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
+        bap = self._getAffectedUser(user)
+        if bap is None:
+            BugAffectsPerson(bug=self, person=user, affected=affected)
             self._flushAndInvalidate()
-
-    def unmarkUserAffected(self, user):
-        """See `IBug`."""
-        bugAffectsPerson = self._getAffectedUser(user)
-        if bugAffectsPerson is not None:
-            # Unmark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            bugAffectsPerson.destroySelf()
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
-            self._flushAndInvalidate()
+        else:
+            if bap.affected != affected:
+                bap.affected = affected
+                self._flushAndInvalidate()
 
 
 class BugSet:
@@ -1368,3 +1359,4 @@ class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    affected = BoolCol(notNull=True, default=True)
