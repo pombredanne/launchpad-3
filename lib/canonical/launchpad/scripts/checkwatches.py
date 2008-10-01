@@ -691,7 +691,7 @@ Reply at: %(comment_reply_url)s
                         comment_date=comment.datecreated.isoformat(),
                         commenter=comment.owner.displayname,
                         comment_text=comment.text_contents,
-                        comment_reply_url=canonical_url(bug_message))
+                        comment_reply_url=canonical_url(comment))
                 notification_message = getUtility(IMessageSet).fromText(
                     subject=bug_watch.bug.followup_subject(),
                     content=notification_text,

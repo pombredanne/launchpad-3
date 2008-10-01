@@ -452,14 +452,14 @@ is used as the From address.
     <BLANKLINE>
     First imported comment (initial import)
     <BLANKLINE>
-    Reply at: https://launchpad.net/XXX/+bug/32312/+comment/12
+    Reply at: http://.../.../+bug/.../comments/1
     <BLANKLINE>
     ------------------------------------------------------------------------
     On ... Foo Bar wrote:
     <BLANKLINE>
     Second imported comment (initial import)
     <BLANKLINE>
-    Reply at: https://launchpad.net/XXX/+bug/32312/+comment/12
+    Reply at: http://.../.../+bug/.../comments/2
 
 If we already have comments imported for a bug watch, one notification
 will be sent for each imported comment, even if there are more than one.
