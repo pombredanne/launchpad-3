@@ -16,7 +16,8 @@
          tal:define="expand view/is_long_message|nothing">
       <div class="boardCommentDetails">
         <div tal:condition="comment/vote" style="float:right">
-          Voted:
+          <tal:vote-tags condition="comment/vote_tag"
+                         replace="comment/vote_tag"/>
           <span tal:attributes="class string:vote${comment/vote/name}"
                 tal:content="comment/vote/title">
             Approve

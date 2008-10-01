@@ -34,7 +34,7 @@ from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface, implements
-from zope.schema import Choice, Int, Text, TextLine
+from zope.schema import Choice, Int, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
@@ -44,7 +44,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branchsubscription import (
     CodeReviewNotificationLevel)
 from canonical.launchpad.interfaces.codereviewcomment import (
-    CodeReviewVote)
+    CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -69,6 +69,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from canonical.lazr import decorates
+from canonical.lazr.interface import copy_field
 
 
 class BranchMergeProposalPrimaryContext:
@@ -138,7 +139,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        return Link('+comment', 'Add a comment/review', icon='add')
+        return Link('+comment', 'Add a comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -501,13 +502,9 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
 class IReviewRequest(Interface):
     """Schema for requesting a review."""
 
-    review_candidate = PublicPersonChoice(
-        title=_('Reviewer'), required=False,
-        description=_('A person who you want to review this.'),
-        vocabulary='ValidPersonOrTeam')
+    reviewer = copy_field(ICodeReviewVoteReference['reviewer'])
 
-    review_type = TextLine(
-        title=_('Review type'), required=False)
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
 
 
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
@@ -519,7 +516,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     @property
     def initial_values(self):
         """Force the non-BMP values to None."""
-        return {'review_candidate': None, 'review_type': None}
+        return {'reviewer': None, 'review_type': None}
 
     @property
     def adapters(self):
@@ -549,12 +546,12 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
                 reason, self.context, self.user)
             mailer.sendAll()
 
-    @action('Request review', name='review')
+    @action('Request Review', name='review')
     @notify
     def review_action(self, action, data):
         """Set 'Needs review' status, nominate reviewers, send emails."""
         self.context.requestReview()
-        candidate = data.pop('review_candidate', None)
+        candidate = data.pop('reviewer', None)
         review_type = data.pop('review_type', None)
         if candidate is not None:
             self.requestReview(candidate, review_type)
@@ -1057,10 +1054,9 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
 class IAddVote(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    vote = Choice(
-        title=_('Vote'), required=True, vocabulary=CodeReviewVote)
+    vote = copy_field(ICodeReviewComment['vote'], required=True)
 
-    review_type = ICodeReviewVoteReference['review_type']
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
 
     comment = Text(title=_('Comment'), required=False)
 
@@ -1127,10 +1123,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     @property
     def label(self):
         """The pagetitle and heading."""
-        return "Vote on merge proposal for %s" % (
+        return "Review merge proposal for %s" % (
             self.context.source_branch.bzr_identity)
 
-    @action('Vote', name='vote')
+    @action('Save Review', name='vote')
     def vote_action(self, action, data):
         """Create the comment..."""
         # Get the review type from the data dict.  If the review type was read

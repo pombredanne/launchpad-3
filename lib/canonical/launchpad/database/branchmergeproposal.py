@@ -410,6 +410,9 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
         if vote_reference is None:
             vote_reference = CodeReviewVoteReference(
@@ -473,6 +476,9 @@ class BranchMergeProposal(SQLBase):
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
         if user is None:
             return None
         if user.is_team:
@@ -517,8 +523,12 @@ class BranchMergeProposal(SQLBase):
 
     def createCommentFromMessage(self, message, vote, review_type):
         """See `IBranchMergeProposal`."""
+        # Lower case the review type.
+        if review_type is not None:
+            review_type = review_type.lower()
         code_review_message = CodeReviewComment(
-            branch_merge_proposal=self, message=message, vote=vote)
+            branch_merge_proposal=self, message=message, vote=vote,
+            vote_tag=review_type)
         notify(SQLObjectCreatedEvent(code_review_message))
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
