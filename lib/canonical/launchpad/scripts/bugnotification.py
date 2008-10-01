@@ -94,7 +94,8 @@ def construct_email_notifications(bug_notifications):
     if comment is not None and config.malone.comment_syncing_team:
         # The first time we import comments from a bug watch, a comment
         # notification is added, originating from the Bug Watch Updater.
-        bug_watch_updater = getUtility(ILaunchpadCelebrities).bug_watch_updater
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
         is_initial_import_notification = (comment.owner == bug_watch_updater)
         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
             bug, comment)

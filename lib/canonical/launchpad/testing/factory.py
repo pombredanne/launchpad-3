@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.database.message import Message
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -52,7 +52,6 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -923,6 +922,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         msg_id = make_msgid('launchpad')
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
-            msg_id = email.Utils.make_msgid()
+            msg_id = make_msgid('launchpad')
         return msg_id
 

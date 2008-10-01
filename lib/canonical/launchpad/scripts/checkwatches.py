@@ -14,7 +14,6 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
@@ -35,11 +34,6 @@ from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.interfaces.structuralsubscription import (
-    BugNotificationLevel)
-from canonical.launchpad.mail import sendmail
-from canonical.launchpad.mailnotification import (
-    construct_bug_notification, get_bugmail_from_address)
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
