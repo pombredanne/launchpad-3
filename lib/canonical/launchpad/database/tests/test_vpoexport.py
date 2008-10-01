@@ -21,7 +21,7 @@ TEST_MESSAGES = [
     {'msgid':'Good morning', 'string':'Bonan matenon', 'sequence':2},
     {'msgid':'Thank you', 'string':'Dankon', 'sequence':1},
     ]
-EXPECTED_SEQUENCE = [1,2 ,0, 0]
+EXPECTED_SEQUENCE = [1, 2 ,0, 0]
 
 class VPOExportSetTestCase(unittest.TestCase):
     """Test the PO file export view."""
