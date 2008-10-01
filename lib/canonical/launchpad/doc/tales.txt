@@ -192,19 +192,20 @@ Person's displayname will be escaped; averting a XSS vulnerability.
     u'<a ...><img ... />&nbsp;Sample
       Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
-The fmt:link formatter uses additional path components to extend the
-link:
+The fmt:link formatter takes an additional view_name component to extend
+the link:
 
-    >>> test_tales("person/fmt:link/foo/bar", person=matsubara)
-    u'<a href=".../~matsubara/foo/bar">...'
+    >>> login(ANONYMOUS, LaunchpadTestRequest())
+    >>> test_tales("person/fmt:link/+edit", person=matsubara)
+    u'<a href=".../~matsubara/+edit">...'
 
 If you are on feeds.launchpad.net, you need to specify the rootsite, so
 that the links and images are pointing at the right hostname.
 
-    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=matsubara)
-    u'<a href="http://launchpad.dev/~matsubara/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
-    >>> test_tales("person/fmt:link:bugs/foo/bar", person=matsubara)
-    u'<a href="http://bugs.launchpad.dev/~matsubara/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:mainsite/+edit", person=matsubara)
+    u'<a href="http://launchpad.dev/~matsubara/+edit"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/+edit", person=matsubara)
+    u'<a href="http://bugs.launchpad.dev/~matsubara/+edit"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
 The fmt:local-time formatter will return the local time for that person.
 If the person has no time_zone specified, we use UTC.
@@ -253,6 +254,7 @@ Their titles are escaped so that they display correctly. This also
 prevents a XSS vulnerability where malicious code injected into the
 title might be interpreted by the browser.
 
+    >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
     u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1:
