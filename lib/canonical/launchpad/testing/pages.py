@@ -380,6 +380,11 @@ def print_radio_button_field(content, name):
         print radio, label
 
 
+def strip_label(label):
+    """Strip surrounding whitespace and non-breaking spaces."""
+    return label.replace('\xC2', '').replace('\xA0', '').strip()
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',

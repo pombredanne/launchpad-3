@@ -34,7 +34,7 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
     """
 
     _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+        u'<label for="%s" style="font-weight: normal">%s&nbsp;%s</label> ')
 
     def __init__(self, field, vocabulary, request):
         # XXX flacoste 2006-07-23 Workaround Zope3 bug #545:
@@ -42,6 +42,22 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text in a label with a style attribute."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='checkbox',
+                             **kw)
+        option_id = '%s.%s' % (self.name, index)
+        return self._joinButtonToMessageTemplate % (option_id, elem, text)
 
 
 # XXX Brad Bollenbach 2006-08-10 bugs=56062: This is a hack to
