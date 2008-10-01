@@ -10,9 +10,11 @@ __all__ = [
 from xmlrpclib import Fault
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.interfaces.codehosting import NOT_FOUND_FAULT_CODE
+from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.interfaces.codehosting import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import datetime_from_tuple
 from canonical.launchpad.xmlrpc import faults
 
@@ -74,7 +76,7 @@ class ObjectSet:
 class FakeBranch(FakeDatabaseObject):
 
     def __init__(self, branch_type, name, owner, url=None, product=None,
-                 stacked_on=None, private=False):
+                 stacked_on=None, private=False, registrant=None):
         self.branch_type = branch_type
         self.last_mirror_attempt = None
         self.last_mirrored = None
@@ -89,6 +91,7 @@ class FakeBranch(FakeDatabaseObject):
         self.stacked_on = stacked_on
         self.private = private
         self.product = product
+        self.registrant = registrant
 
     @property
     def unique_name(self):
@@ -141,16 +144,22 @@ class FakeObjectFactory(ObjectFactory):
         self._product_set = product_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
-                   product=None, owner=None):
+                   product=None, owner=None, name=None, registrant=None):
         if branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
             url = None
+        if name is None:
+            name = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
+        IBranch['name'].validate(unicode(name))
         branch = FakeBranch(
-            branch_type, name=self.getUniqueString(), owner=owner, url=url,
-            stacked_on=stacked_on, product=product, private=private)
+            branch_type, name=name, owner=owner, url=url,
+            stacked_on=stacked_on, product=product, private=private,
+            registrant=registrant)
         self._branch_set._add(branch)
         return branch
 
@@ -243,12 +252,42 @@ class FakeBranchPuller:
 
 class FakeBranchFilesystem:
 
-    def __init__(self, branch_set, product_set):
+    def __init__(self, branch_set, person_set, product_set, factory):
         self._branch_set = branch_set
+        self._person_set = person_set
         self._product_set = product_set
+        self._factory = factory
 
-    def createBranch(self, *args):
-        pass
+    def createBranch(self, requester_id, owner_name, product_name,
+                     branch_name):
+        owner = self._person_set.getByName(owner_name)
+        if owner is None:
+            return Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % (owner_name,))
+        registrant = self._person_set.get(requester_id)
+        # XXX: Really terrible check for whether the registrant has permission
+        # to create the branch, but it passes the tests.
+        if registrant is not owner:
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                ('%s cannot create branches owned by %s'
+                 % (registrant.displayname, owner.displayname)))
+        if product_name == '+junk':
+            product = None
+        else:
+            product = self._product_set.getByName(product_name)
+            if product is None:
+                return Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project %r does not exist." % (product_name,))
+        try:
+            # XXX: BranchType is not tested.
+            return self._factory.makeBranch(
+                owner=owner, name=branch_name, product=product,
+                registrant=registrant).id
+        except LaunchpadValidationError, e:
+            return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
@@ -281,12 +320,13 @@ class FakeLaunchpadFrontend:
         self._script_activity_set = ObjectSet()
         self._person_set = ObjectSet()
         self._product_set = ObjectSet()
+        self._factory = FakeObjectFactory(
+            self._branch_set, self._person_set, self._product_set)
         self._puller = FakeBranchPuller(
             self._branch_set, self._script_activity_set)
         self._branchfs = FakeBranchFilesystem(
-            self._branch_set, self._product_set)
-        self._factory = FakeObjectFactory(
-            self._branch_set, self._person_set, self._product_set)
+            self._branch_set, self._person_set, self._product_set,
+            self._factory)
 
     def getFilesystemEndpoint(self):
         return self._branchfs
