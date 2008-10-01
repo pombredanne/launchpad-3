@@ -613,7 +613,7 @@ class BugWatchUpdater(object):
 
         return bug
 
-    def importBugComments(self, external_bugtracker, bug_watch, when=None):
+    def importBugComments(self, external_bugtracker, bug_watch):
         """Import all the comments from a remote bug.
 
         :param external_bugtracker: An external bugtracker which
@@ -621,8 +621,6 @@ class BugWatchUpdater(object):
         :param bug_watch: The bug watch for which the comments should be
             imported.
         """
-        if when is None:
-            when = datetime.now(pytz.timezone('UTC'))
         # Construct a list of the comment IDs we want to import; i.e.
         # those which we haven't already imported.
         all_comment_ids = external_bugtracker.getCommentIds(bug_watch)
