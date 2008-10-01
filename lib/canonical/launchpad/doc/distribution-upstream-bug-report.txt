@@ -45,6 +45,16 @@ triaged bugs, but there are some upstream ones with watches:
 
     >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
 
+getPackagesAndPublicUpstreamBugCounts() accepts an `exclude_packages`
+parameter. This is a list of the source packages that shouldn't be
+included in the report that getPackagesAndPublicUpstreamBugCounts()
+returns.
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(
+    ...     exclude_packages=['linux-source-2.6.15']))
+    mozilla-firefox     firefox 1 0 1 1
+    thunderbird         None    1 0 1 1
+
 If we triage a bugtask on firefox and thunderbird we'll see the count
 for triaged bugs updated:
 
