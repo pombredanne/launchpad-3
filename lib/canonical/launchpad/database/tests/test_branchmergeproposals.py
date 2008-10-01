@@ -801,7 +801,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_nominate_creates_reference(self):
         """A new vote reference is created when a reviewer is nominated."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
@@ -818,7 +818,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         reference = merge_proposal.nominateReviewer(
             reviewer=reviewer,
@@ -881,10 +881,10 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
-            review_type='General')
+            review_type='general')
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
-            vote=CodeReviewVote.APPROVE)
+            vote=CodeReviewVote.APPROVE, review_type='general')
 
         votes = list(merge_proposal.votes)
         self.assertEqual(1, len(votes))
@@ -892,7 +892,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
 
 

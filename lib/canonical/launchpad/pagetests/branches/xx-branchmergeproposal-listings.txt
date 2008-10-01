@@ -61,14 +61,13 @@ who requested the merge, the date the review was requested, and the vote
 summary.
 
     >>> print_tag_with_id(browser.contents, 'proposal-listing')
-    Branch Merge Proposal
-            Requested By  Date Review Requested   Vote Summary
+    Branch Merge Proposal   Requested By          Activity
     lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
-            Albert        ...                     no votes (no comments)
+            Albert        ...                     None
     lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
-            Bob           ...                     no votes (no comments)
+            Bob           ...                     None
 
-We go back to the proposals listing , and check the approved merges has 
+We go back to the proposals listing , and check the approved merges has
 the date the merge was approved.
 
     >>> browser.open('http://code.launchpad.dev/fooix')

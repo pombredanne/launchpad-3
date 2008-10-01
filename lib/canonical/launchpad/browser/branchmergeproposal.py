@@ -372,7 +372,7 @@ class DecoratedCodeReviewVoteReference:
         # Don't show the vote link if the link is for a team and the user has
         # already voted, or if the user is the source branch owner.
         branch = context.branch_merge_proposal.source_branch
-        if user is None or user == branch.owner:
+        if user is None:
             self.show_vote_link = False
         else:
             self.show_vote_link = (

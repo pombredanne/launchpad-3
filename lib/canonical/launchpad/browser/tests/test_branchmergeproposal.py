@@ -119,7 +119,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
             [review.reviewer for review in requested_reviews])
 
     def testCurrentReviewOrdering(self):
-        # Disapprove first, then Approve, lastly Abstain.
+        # Most recent first.
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -134,14 +134,11 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
         self.assertEqual(
-            [charles, albert, bob],
+            [charles, bob, albert],
             [review.reviewer for review in view.current_reviews])
 
     def testChangeOfVoteBringsToTop(self):
-        # If albert changes his abstention to an approve, it comes before
-        # other votes that occurred between the abstention and the approval.
-
-        # Disapprove first, then Approve, lastly Abstain.
+        # Changing the vote changes the vote date, so it comes to the top.
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')

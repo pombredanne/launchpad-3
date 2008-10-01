@@ -17,7 +17,7 @@
     <!-- Current reviews -->
     <tr tal:repeat="review view/current_reviews">
       <td>
-        <tal:reviewer replace="structure review/reviewer/fmt:link">
+        <tal:reviewer replace="structure review/reviewer/fmt:link:mainsite">
         Eric the Reviewer</tal:reviewer>
       </td>
       <td tal:content="review/review_type" />
@@ -41,7 +41,7 @@
     </tr>
     <!-- Pending reviews -->
     <tr tal:repeat="review view/requested_reviews">
-      <td tal:content="structure review/reviewer/fmt:link" />
+      <td tal:content="structure review/reviewer/fmt:link:mainsite" />
       <td tal:content="review/review_type" />
       <td>
         <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
@@ -57,7 +57,7 @@
     </tr>
     <tr tal:condition="view/show_user_review_link">
       <td class="greylink">
-        <tal:user replace="structure view/user/fmt:link"/>
+        <tal:user replace="structure view/user/fmt:link:mainsite"/>
       </td>
       <td colspan="2"></td>
       <td>
