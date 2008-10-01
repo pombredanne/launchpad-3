@@ -35,7 +35,7 @@ selected, since that's what the custom field's missing value represent.
     ...     soup = BeautifulSoup(html)
     ...     labels = soup('label')
     ...     for label in labels:
-    ...         if label.previous.get('checked'):
+    ...         if label.previous.previous.get('checked'):
     ...             print '(*)', extract_text(label)
     ...         else:
     ...             print '( )', extract_text(label)

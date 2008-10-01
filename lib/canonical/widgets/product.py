@@ -85,7 +85,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
                              cssClass=cssClass,
                              type='radio',
                              **kw)
-        return elem + text
+        return '%s&nbsp;%s' % (elem, text)
 
     def _toFieldValue(self, form_value):
         if form_value == "malone":
