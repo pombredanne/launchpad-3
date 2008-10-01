@@ -7,8 +7,11 @@ __all__ = [
     'FakeLaunchpadFrontend',
     ]
 
+from xmlrpclib import Fault
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.codehosting import NOT_FOUND_FAULT_CODE
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.xmlrpc.codehosting import datetime_from_tuple
 from canonical.launchpad.xmlrpc import faults
@@ -70,7 +73,7 @@ class ObjectSet:
 
 class FakeBranch(FakeDatabaseObject):
 
-    def __init__(self, branch_type, url=None, unique_name=None, product=None,
+    def __init__(self, branch_type, name, owner, url=None, product=None,
                  stacked_on=None, private=False):
         self.branch_type = branch_type
         self.last_mirror_attempt = None
@@ -78,13 +81,22 @@ class FakeBranch(FakeDatabaseObject):
         self.last_mirrored_id = None
         self.next_mirror_time = None
         self.url = url
-        self.unique_name = unique_name
         self.mirror_failures = 0
+        self.name = name
+        self.owner = owner
         self.stacked_on = None
         self.mirror_status_message = None
         self.stacked_on = stacked_on
         self.private = private
         self.product = product
+
+    @property
+    def unique_name(self):
+        if self.product is None:
+            product = '+junk'
+        else:
+            product = self.product.name
+        return '~%s/%s/%s' % (self.owner.name, product, self.name)
 
     def getPullURL(self):
         pass
@@ -95,12 +107,14 @@ class FakeBranch(FakeDatabaseObject):
 
 class FakePerson(FakeDatabaseObject):
 
-    displayname = None
+    def __init__(self, name):
+        self.name = self.displayname = name
 
 
 class FakeProduct(FakeDatabaseObject):
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.development_focus = FakeProductSeries()
 
 
@@ -120,10 +134,11 @@ class FakeScriptActivity(FakeDatabaseObject):
 
 class FakeObjectFactory(ObjectFactory):
 
-    def __init__(self, branch_set, person_set):
+    def __init__(self, branch_set, person_set, product_set):
         super(FakeObjectFactory, self).__init__()
         self._branch_set = branch_set
         self._person_set = person_set
+        self._product_set = product_set
 
     def makeBranch(self, branch_type=None, stacked_on=None, private=False,
                    product=None, owner=None):
@@ -131,19 +146,23 @@ class FakeObjectFactory(ObjectFactory):
             url = self.getUniqueURL()
         else:
             url = None
+        if owner is None:
+            owner = self.makePerson()
         branch = FakeBranch(
-            branch_type, url=url, unique_name=self.getUniqueString(),
-            stacked_on=stacked_on, product=product)
+            branch_type, name=self.getUniqueString(), owner=owner, url=url,
+            stacked_on=stacked_on, product=product, private=private)
         self._branch_set._add(branch)
         return branch
 
     def makePerson(self):
-        person = FakePerson()
+        person = FakePerson(name=self.getUniqueString())
         self._person_set._add(person)
         return person
 
     def makeProduct(self):
-        return FakeProduct()
+        product = FakeProduct(self.getUniqueString())
+        self._product_set._add(product)
+        return product
 
 
 class FakeBranchPuller:
@@ -224,8 +243,9 @@ class FakeBranchPuller:
 
 class FakeBranchFilesystem:
 
-    def __init__(self, branch_set):
+    def __init__(self, branch_set, product_set):
         self._branch_set = branch_set
+        self._product_set = product_set
 
     def createBranch(self, *args):
         pass
@@ -236,8 +256,22 @@ class FakeBranchFilesystem:
     def getBranchInformation(self, *args):
         pass
 
-    def getDefaultStackedOnBranch(self, *args):
-        pass
+    def getDefaultStackedOnBranch(self, requester_id, product_name):
+        if product_name == '+junk':
+            return ''
+        product = self._product_set.getByName(product_name)
+        if product is None:
+            return Fault(
+                NOT_FOUND_FAULT_CODE,
+                'Project %r does not exist.' % (product_name,))
+        branch = product.development_focus.user_branch
+        if branch is None:
+            return ''
+        # XXX: This is a terrible replacement for the privacy check, but it
+        # makes the tests pass.
+        if branch.private and branch.owner.id != requester_id:
+            return ''
+        return '/' + product.development_focus.user_branch.unique_name
 
 
 class FakeLaunchpadFrontend:
@@ -246,10 +280,13 @@ class FakeLaunchpadFrontend:
         self._branch_set = ObjectSet()
         self._script_activity_set = ObjectSet()
         self._person_set = ObjectSet()
+        self._product_set = ObjectSet()
         self._puller = FakeBranchPuller(
             self._branch_set, self._script_activity_set)
-        self._branchfs = FakeBranchFilesystem(self._branch_set)
-        self._factory = FakeObjectFactory(self._branch_set, self._person_set)
+        self._branchfs = FakeBranchFilesystem(
+            self._branch_set, self._product_set)
+        self._factory = FakeObjectFactory(
+            self._branch_set, self._person_set, self._product_set)
 
     def getFilesystemEndpoint(self):
         return self._branchfs

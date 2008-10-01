@@ -697,8 +697,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
         requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
         branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, 'firefox')
+            requester.id, product.name)
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_no_product(self):
