@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
+    'is_valid_transition',
     ]
 
 from email.Utils import make_msgid
@@ -76,6 +77,29 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
+
+
+def is_valid_transition(proposal, from_state, next_state, user=None):
+    """Is it valid for the proposal to move to next_state from from_state?"""
+    # Trivial acceptance case.
+    if from_state == next_state:
+        return True
+
+    [wip, needs_review, code_approved, rejected,
+     merged, merge_failed, queued, superseded
+     ] = BranchMergeProposalStatus.items
+    # Transitioning to code approved, rejected or queued from
+    # work in progress, needs review or merge failed needs the
+    # user to be a valid reviewer, other states are fine.
+    valid_reviewer = proposal.isPersonValidReviewer(user)
+    if (next_state == rejected and not valid_reviewer):
+        return False
+    elif (next_state in (code_approved, queued) and
+          from_state in (wip, needs_review, merge_failed)
+          and not valid_reviewer):
+        return False
+
+    return next_state in VALID_TRANSITION_GRAPH[from_state]
 
 
 class BranchMergeProposal(SQLBase):
@@ -198,21 +222,7 @@ class BranchMergeProposal(SQLBase):
 
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
-        [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superseded
-         ] = BranchMergeProposalStatus.items
-        # Transitioning to code approved, rejected or queued from
-        # work in progress, needs review or merge failed needs the
-        # user to be a valid reviewer, other states are fine.
-        valid_reviewer = self.isPersonValidReviewer(user)
-        if (next_state == rejected and not valid_reviewer):
-            return False
-        elif (next_state in (code_approved, queued) and
-              self.queue_status in (wip, needs_review, merge_failed)
-              and not valid_reviewer):
-            return False
-
-        return next_state in VALID_TRANSITION_GRAPH[self.queue_status]
+        return is_valid_transition(self, self.queue_status, next_state, user)
 
     def _transitionToState(self, next_state, user=None):
         """Update the queue_status of the proposal.
