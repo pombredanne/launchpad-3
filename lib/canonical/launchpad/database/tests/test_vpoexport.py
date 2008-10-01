@@ -52,10 +52,10 @@ class VPOExportSetTestCase(unittest.TestCase):
     def test_get_pofile_rows_sequence(self):
         # Test for correct sorting of obsolete messages (where sequence=0).
         vpoexportset = getUtility(IVPOExportSet)
-        rows = [row for row in vpoexportset.get_pofile_rows(self.pofile)]
-        for msgnum in xrange(len(TEST_MESSAGES)):
+        for rownum, row in enumerate(
+            vpoexportset.get_pofile_rows(self.pofile)):
             self.failUnlessEqual(
-                rows[msgnum].sequence, EXPECTED_SEQUENCE[msgnum],
+                row.sequence, EXPECTED_SEQUENCE[rownum],
                 "VPOExportSet does not sort obsolete messages (sequence=0) "
                 "to the end of the file.")
 

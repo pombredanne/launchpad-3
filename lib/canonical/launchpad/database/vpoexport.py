@@ -58,8 +58,8 @@ class VPOExportSet:
     # would get sorted to the front of the file during export. To avoid that,
     # sequence numbers of 0 are translated to NULL and ordered to the end
     # with NULLS LAST so that they appear at the end of the file.
-    # TODO: jtv 2008-10-01: This will change when message sharing is
-    # implemented.
+    # TODO: henninge 2008-10-01 spec=message-sharing-switchover: This will
+    # change when message sharing is implemented, according to jtv.
     sort_column_names = [
         VIEW_NAME_PREFIX+'potemplate',
         VIEW_NAME_PREFIX+'language',
