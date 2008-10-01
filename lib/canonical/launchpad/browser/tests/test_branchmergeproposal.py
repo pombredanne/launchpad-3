@@ -292,7 +292,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         login_person(self.user)
         self.proposal = self.factory.makeBranchMergeProposal(
-            registrant = self.user)
+            registrant=self.user)
 
     def _createView(self):
         # Construct the view and initialize it.

@@ -147,7 +147,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def edit_status(self):
         text = 'Change status'
         status = self.context.queue_status
-        # Can't change the status if Merged or Superseded
+        # Can't change the status if Merged or Superseded.
         enabled = status not in (BranchMergeProposalStatus.SUPERSEDED,
                                  BranchMergeProposalStatus.MERGED)
         return Link('+edit-status', text, icon='edit', enabled=enabled)
