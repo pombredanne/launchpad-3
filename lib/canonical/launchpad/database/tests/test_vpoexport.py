@@ -17,15 +17,18 @@ from canonical.testing import LaunchpadZopelessLayer
 # it really gets sorted to the end.
 TEST_MESSAGES = [
     {'msgid':'computer', 'string':'komputilo', 'sequence':0},
-    {'msgid':'Thank You', 'string':'Dankon', 'sequence':1},
-]
+    {'msgid':'mouse', 'string':'muso', 'sequence':0},
+    {'msgid':'Good morning', 'string':'Bonan matenon', 'sequence':2},
+    {'msgid':'Thank you', 'string':'Dankon', 'sequence':1},
+    ]
+EXPECTED_SEQUENCE = [1,2 ,0, 0]
 
 class VPOExportSetTestCase(unittest.TestCase):
-    """Class test for PO file export view"""
+    """Test the PO file export view."""
     layer = LaunchpadZopelessLayer
 
     def _createMessageSet(self, testmsg):
-        # Create a message set from the test data
+        # Create a message set from the test data.
         msgset = self.potemplate.createMessageSetFromText(
             testmsg['msgid'], None)
         msgset.setSequence(self.potemplate, testmsg['sequence'])
@@ -37,22 +40,24 @@ class VPOExportSetTestCase(unittest.TestCase):
     def setUp(self):
         factory = LaunchpadObjectFactory()
 
-        # Create a PO file and fill with test data
+        # Create a PO file and fill with test data.
         self.potemplate = factory.makePOTemplate()
         self.pofile = factory.makePOFile('eo', self.potemplate)
         self.submitter_person = factory.makePerson()
         self.msgsets = [
-            self._createMessageSet(msg) for msg in TEST_MESSAGES ]
+            self._createMessageSet(msg) for msg in TEST_MESSAGES]
 
         transaction.commit()
 
     def test_get_pofile_rows_sequence(self):
-        # Test for correct sorting of obsolete messages (where sequence=0)
+        # Test for correct sorting of obsolete messages (where sequence=0).
         vpoexportset = getUtility(IVPOExportSet)
-        rows = [ row for row in vpoexportset.get_pofile_rows(self.pofile) ]
-        self.failUnlessEqual(rows[-1].sequence, 0,
-            "VPOExportSet does not sort obsolete messages (sequence=0) "
-            "to the end of the file.")
+        rows = [row for row in vpoexportset.get_pofile_rows(self.pofile)]
+        for msgnum in xrange(len(TEST_MESSAGES)):
+            self.failUnlessEqual(
+                rows[msgnum].sequence, EXPECTED_SEQUENCE[msgnum],
+                "VPOExportSet does not sort obsolete messages (sequence=0) "
+                "to the end of the file.")
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -56,16 +56,18 @@ class VPOExportSet:
 
     # Obsolete translations are marked with a sequence number of 0, so they
     # would get sorted to the front of the file during export. To avoid that,
-    # sequence numbers of 0 are sorted as if they where the maximum integer
-    # value so that they appear at the end of the file.
+    # sequence numbers of 0 are translated to NULL and ordered to the end
+    # with NULLS LAST so that they appear at the end of the file.
+    # TODO: jtv 2008-10-01: This will change when message sharing is
+    # implemented.
     sort_column_names = [
         VIEW_NAME_PREFIX+'potemplate',
         VIEW_NAME_PREFIX+'language',
         VIEW_NAME_PREFIX+'variant',
         'CASE '
-            'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN 2147483647 '
+            'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN NULL '
             'ELSE '+VIEW_NAME_PREFIX+'sequence '
-        'END',
+        'END NULLS LAST',
         VIEW_NAME_PREFIX+'id',
     ]
     sort_columns = ', '.join(sort_column_names)
