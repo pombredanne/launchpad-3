@@ -558,9 +558,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
-        # branches (i.e. owned by us or by a team we are on), we get the
-        # database id of the branch, and a flag saying that we can write to
-        # that branch.
+        # branches, we get the database id of the branch, and a flag saying
+        # that we can write to that branch.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
@@ -568,6 +567,42 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual(branch.id, branch_id)
         self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_team_owned(self):
+        # When we get the branch information for a hosted branch owned by one
+        # of our teams, we get the database id of the branch, and a flag
+        # saying that we can write to that branch.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_unowned(self):
+        # We only have read-only access to hosted branches owned by other
+        # people.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_team_unowned(self):
+        # We only have read-only access to hosted branches owned by other
+        # teams.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get

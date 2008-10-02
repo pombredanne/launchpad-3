@@ -110,12 +110,6 @@ class FakeBranch(FakeDatabaseObject):
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
-    def _canWrite(self, person_id):
-        """Can 'person' write to this branch?"""
-        # XXX: This is terrible, but it works.
-        return (self.branch_type == BranchType.HOSTED
-                and self.owner.id == person_id)
-
     def _canRead(self, person_id):
         """Can 'person' see this branch?"""
         # XXX: This is a terrible replacement for the privacy check, but it
@@ -131,6 +125,29 @@ class FakePerson(FakeDatabaseObject):
 
     def __init__(self, name):
         self.name = self.displayname = name
+
+    def isTeam(self):
+        return False
+
+    def inTeam(self, person_or_team):
+        if self is person_or_team:
+            return True
+        if not person_or_team.isTeam():
+            return False
+        return self in person_or_team._members
+
+
+class FakeTeam(FakePerson):
+
+    def __init__(self, name, members=None):
+        super(FakeTeam, self).__init__(name)
+        if members is None:
+            self._members = []
+        else:
+            self._members = list(members)
+
+    def isTeam(self):
+        return True
 
 
 class FakeProduct(FakeDatabaseObject):
@@ -187,6 +204,11 @@ class FakeObjectFactory(ObjectFactory):
             registrant=registrant)
         self._branch_set._add(branch)
         return branch
+
+    def makeTeam(self, owner):
+        team = FakeTeam(name=self.getUniqueString(), members=[owner])
+        self._person_set._add(team)
+        return team
 
     def makePerson(self):
         person = FakePerson(name=self.getUniqueString())
@@ -316,6 +338,15 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
+    def _canWrite(self, person_id, branch):
+        """Can the person 'person_id' write to 'branch'?"""
+        if person_id == LAUNCHPAD_SERVICES:
+            return False
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        person = self._person_set.get(person_id)
+        return person.inTeam(branch.owner)
+
     def getBranchInformation(self, requester_id, user_name, product_name,
                              branch_name):
         unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
@@ -329,7 +360,7 @@ class FakeBranchFilesystem:
             return '', ''
         if branch.branch_type == BranchType.REMOTE:
             return '', ''
-        if branch._canWrite(requester_id):
+        if self._canWrite(requester_id, branch):
             permission = 'w'
         else:
             permission = 'r'
