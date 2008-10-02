@@ -26,7 +26,6 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
 from storm.store import Store
-from storm.expr import And
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
@@ -1125,15 +1124,15 @@ class Bug(SQLBase):
         return bugtasks_by_package
 
     def _getAffectedUser(self, user):
-       """Return the `IBugAffectsPerson` for a user, or None
+        """Return the `IBugAffectsPerson` for a user, or None
 
-       :param user: An `IPerson` that may be affected by the bug.
-       :return: An `IBugAffectsPerson` or None.
-       """
-       return Store.of(self).find(
-           BugAffectsPerson,
-           And(BugAffectsPerson.bug == self,
-               BugAffectsPerson.person == user)).one()
+        :param user: An `IPerson` that may be affected by the bug.
+        :return: An `IBugAffectsPerson` or None.
+        """
+        return Store.of(self).find(
+            BugAffectsPerson,
+            And(BugAffectsPerson.bug == self,
+                BugAffectsPerson.person == user)).one()
 
     def isUserAffected(self, user):
         """See `IBug`."""
