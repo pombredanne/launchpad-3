@@ -740,15 +740,20 @@ class TestRequestMirror(TestCaseWithTransport):
 
     def setUp(self):
         self._server = None
-        self.authserver = FakeLaunchpad()
-        self.user_id = 1
+        self._request_mirror_log = []
+        frontend = FakeLaunchpadFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.authserver = frontend.getFilesystemEndpoint()
+        self.authserver.requestMirror = (
+            lambda *args: self._request_mirror_log.append(args))
+        self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
 
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
-                BlockingProxy(self.authserver), self.user_id,
+                BlockingProxy(self.authserver), self.requester.id,
                 self.backing_transport, self.mirror_transport)
             self._server.setUp()
             self.addCleanup(self._server.tearDown)
@@ -756,18 +761,22 @@ class TestRequestMirror(TestCaseWithTransport):
 
     def test_creating_branch_requests_mirror(self):
         # Creating a branch requests a mirror.
-        branch = self.make_branch('~testuser/firefox/baz')
+        db_branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
         self.assertEqual(
-            [(self.user_id, 1)], self.authserver._request_mirror_log)
+            [(self.requester.id, db_branch.id)], self._request_mirror_log)
 
     def test_branch_unlock_requests_mirror(self):
         # Unlocking a branch requests a mirror.
-        branch = self.make_branch('~testuser/firefox/baz')
-        self.authserver._request_mirror_log = []
+        db_branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        self._request_mirror_log = []
         branch.lock_write()
         branch.unlock()
         self.assertEqual(
-            [(self.user_id, 1)], self.authserver._request_mirror_log)
+            [(self.requester.id, db_branch.id)], self._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
@@ -860,8 +869,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         # able to create directories within that branch.
         self.assertRaises(
             errors.TransportNotPossible,
-            self.lp_transport.mkdir,
-            '%s/.bzr' % self.read_only_branch.unique_name)
+            self.lp_transport.mkdir, '%s/.bzr' % self.read_only_branch)
 
     def test_rename_target_readonly(self):
         # Even if we can write to a file, we can't rename it to location which
@@ -869,7 +877,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.assertRaises(
             errors.TransportNotPossible,
             self.lp_transport.rename, self.writable_file,
-            '/%s/.bzr/goodbye.txt' % self.read_only_branch.unique_name)
+            '/%s/.bzr/goodbye.txt' % self.read_only_branch)
 
     def test_readonly_refers_to_mirror(self):
         # Read-only operations should get their data from the mirror, not the
