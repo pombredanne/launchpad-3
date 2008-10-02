@@ -107,10 +107,9 @@ exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment {font: 120% monospace;}
 
 /* Links are blue, brighter when clicked, and greyer once visited: */
-:link                         {color: #03a;    text-decoration: none;}
+:link, :visited               {color: #03a;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
-:visited                      {color: #5b73b0; text-decoration: none;}
 /* Links that don't open separate pages are green to denote their behavior: */
 a[onclick], .collapsible legend a               {color: #063;}
 a[onclick]:active, .collapsible legend a:active {color: #093;}
@@ -708,7 +707,7 @@ hierarchy, and the application tabs. */
   font-weight: normal;
   color: #a7a7a7;
 }
-.navigation.menu > :first-child {
+#view-navigation-tabs .navigation.menu > :first-child {
   background: url(navigation-nw-w-normal.png) top left no-repeat;
 }
 .navigation.menu > strong:first-child {
@@ -778,64 +777,125 @@ These may be <div>s or <p>s, but should have the same spacing regardless: */
 /* A "navigation menu" categorizes the information about an object. */
 /* For example, a distribution has "Details / Announcements / Mentoring..." */
 /* Navigation menus appear as a segmented pill overlaid on a groove: */
-.navigation.menu {
-  background: url(navigation-menu-groove.png) repeat-x center left;
-  margin: 1em 0 2em;
+/* First row of options */
+#context-navigation-tabs .navigation.menu {
+  margin: 0.5em 0 1em;
   text-align: center;
 }
 /* Segments have slight padding, and are normally light grey: */
-.navigation.menu * {
-  background: #eee url(navigation-n.png) top left repeat-x;
+#context-navigation-tabs .navigation.menu * {
+  background: #808080 url(navigation-n.png) top left repeat-x;
   padding: 0.25em 0;
+  color: #fff;
 }
 /* But the selected element is slightly darker: */
-.navigation.menu strong * {background-color: #ddd;}
+#context-navigation-tabs .navigation.menu strong * {background-color: #353434;}
 /* All segments have a border, and padding around their text: */
-.navigation.menu * * {
+#context-navigation-tabs .navigation.menu * * {
   border-right: 1px solid #ccc;
-  border-bottom: 1px solid #bbb;
+  border-bottom: 1px solid #353434;
   padding: 0.25em 0.5em;
 }
 /* For text browsers, there's a " / " separator, hidden from CSS browsers: */
-.navigation.menu small {display: none;}
+#context-navigation-tabs .navigation.menu small {display: none;}
 /* All text in the navigation menu is near-black, even the links: */
-.navigation.menu, .navigation.menu a {color: #333;}
-.navigation.menu a:hover {text-decoration: none;}
+#context-navigation-tabs .navigation.menu, .navigation.menu a {color: #333;}
+#context-navigation-tabs .navigation.menu a:hover {text-decoration: none;}
 /* The first segment has a rounded cap, matching its color: */
-.navigation.menu > :first-child {
-  background: url(navigation-nw-w-normal.png) top left no-repeat;
+#context-navigation-tabs .navigation.menu > :first-child {
+  background: url(navigation-parent-nw-w-normal.png) top left no-repeat;
 }
-.navigation.menu > strong:first-child {
+#context-navigation-tabs .navigation.menu > strong:first-child {
   background-image: url(navigation-nw-w-selected.png);
 }
 /* The bottom right corner is placed over top of the bottom border: */
-.navigation.menu > :first-child::before {
+#context-navigation-tabs .navigation.menu > :first-child::before {
+  content: '';
+  background: url(navigation-parent-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+#context-navigation-tabs .navigation.menu > strong:first-child::before {
+  background-image: url(navigation-sw-selected.png);
+}
+/* The last segment has a rounded cap, matching its color: */
+#context-navigation-tabs .navigation.menu > :last-child {
+  background: url(navigation-parent-ne-e-normal.png) top right no-repeat;
+}
+#context-navigation-tabs .navigation.menu > strong:last-child {
+  background-image: url(navigation-ne-e-selected.png);
+}
+#context-navigation-tabs .navigation.menu > :last-child * {border-right: none;}
+/* The bottom right corner is placed over top of the bottom border: */
+#context-navigation-tabs .navigation.menu > :last-child::after {
+  content: '';
+  background: url(navigation-parent-se-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+  vertical-align: -1px;
+}
+#context-navigation-tabs .navigation.menu > strong:last-child::after {
+  background-image: url(navigation-se-selected.png);
+}
+/* Second row of options */
+#view-navigation-tabs .navigation.menu {
+  margin: 0.5em 0 1em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally light grey: */
+#view-navigation-tabs .navigation.menu * {
+  background: #4c4c4c url(navigation-n.png) top left repeat-x;
+  padding: 0.25em 0;
+  color: #fff;
+}
+/* But the selected element is slightly darker: */
+#view-navigation-tabs .navigation.menu strong * {background-color: #000;}
+/* All segments have a border, and padding around their text: */
+#view-navigation-tabs .navigation.menu * * {
+  border-right: 1px solid #ccc;
+  border-bottom: 1px solid #0d0d0d;
+  padding: 0.25em 0.5em;
+}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+#view-navigation-tabs .navigation.menu small {display: none;}
+/* All text in the navigation menu is near-black, even the links: */
+#view-navigation-tabs .navigation.menu, .navigation.menu a {color: #333;}
+#view-navigation-tabs .navigation.menu a:hover {text-decoration: none;}
+/* The first segment has a rounded cap, matching its color: */
+#view-navigation-tabs .navigation.menu > :first-child {
+  background: url(navigation-nw-w-normal.png) top left no-repeat;
+}
+#view-navigation-tabs .navigation.menu > strong:first-child {
+  background-image: url(navigation-nw-w-selected.png);
+}
+/* The bottom right corner is placed over top of the bottom border: */
+#view-navigation-tabs .navigation.menu > :first-child::before {
   content: '';
   background: url(navigation-sw-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
-.navigation.menu > strong:first-child::before {
+#view-navigation-tabs .navigation.menu > strong:first-child::before {
   background-image: url(navigation-sw-selected.png);
 }
 /* The last segment has a rounded cap, matching its color: */
-.navigation.menu > :last-child {
+#view-navigation-tabs .navigation.menu > :last-child {
   background: url(navigation-ne-e-normal.png) top right no-repeat;
 }
-.navigation.menu > strong:last-child {
-  background-image: url(/+icing/navigation-ne-e-selected.png);
+#view-navigation-tabs .navigation.menu > strong:last-child {
+  background-image: url(navigation-ne-e-selected.png);
 }
-.navigation.menu > :last-child * {border-right: none;}
+#view-navigation-tabs .navigation.menu > :last-child * {border-right: none;}
 /* The bottom right corner is placed over top of the bottom border: */
-.navigation.menu > :last-child::after {
+#view-navigation-tabs .navigation.menu > :last-child::after {
   content: '';
-  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  background: url(navigation-se-normal.png) no-repeat bottom left;
   padding: 0.25em 2px;
   vertical-align: -1px;
 }
-.navigation.menu > strong:last-child::after {
-  background-image: url(/+icing/navigation-se-selected.png);
+#view-navigation-tabs .navigation.menu > strong:last-child::after {
+  background-image: url(navigation-se-selected.png);
 }
+
 
 #globalsearch {
   float: right;
