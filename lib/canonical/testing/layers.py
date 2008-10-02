@@ -154,7 +154,8 @@ def is_ca_available():
 def disconnect_stores():
     """Disconnect Storm stores."""
     zstorm = getUtility(IZStorm)
-    stores = [store for name, store in zstorm.iterstores()]
+    stores = [
+        store for name, store in zstorm.iterstores() if name != 'session']
 
     # If we have any stores, abort the transaction and close them.
     if stores:
@@ -711,6 +712,29 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
                 "Test didn't reset default timeout function.")
         set_default_timeout_function(None)
 
+    # A database connection to the session database, created by the first
+    # call to resetSessionDb.
+    _raw_sessiondb_connection = None
+
+    @classmethod
+    @profiled
+    def resetSessionDb(cls):
+        """Reset the session database.
+
+        Layers that need session database isolation call this explicitly
+        in the testSetUp().
+        """
+        if LaunchpadLayer._raw_sessiondb_connection is None:
+            from storm.uri import URI
+            from canonical.launchpad.webapp.adapter import (
+                LaunchpadSessionDatabase)
+            launchpad_session_database = LaunchpadSessionDatabase(
+                URI('launchpad-session:'))
+            LaunchpadLayer._raw_sessiondb_connection = (
+                launchpad_session_database.raw_connect())
+        LaunchpadLayer._raw_sessiondb_connection.cursor().execute(
+            "DELETE FROM SessionData")
+
 
 class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
@@ -1208,6 +1232,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def startStory(cls):
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
+        LaunchpadLayer.resetSessionDb()
         PageTestLayer.resetBetweenTests(False)
 
     @classmethod
@@ -1473,7 +1498,7 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
@@ -1500,7 +1525,7 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
@@ -1527,7 +1552,7 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
