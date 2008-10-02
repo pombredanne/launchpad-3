@@ -10,6 +10,7 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
@@ -367,33 +368,34 @@ class BranchMirrorer(object):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
         # literal_stacked_on_url is the URL specified by the policy and
-        # stacked_on_url is that same URL resolved relative to the branch URL.
-        # literal_stacked_on_url is what we want in the branch configuration,
-        # stacked_on_url is an absolute URL that we use to make Bazaar do the
-        # right thing.
-        #
-        # We need both of them since clone_on_transport interprets the
-        # stacked_on parameter relative to the source branch, but we want it
-        # interpreted relative to the destination branch to allow
-        # /~foo/bar/baz to work for mirrored branches.
+        # dest_stacked_on_url is that same URL resolved relative to the branch
+        # URL.  literal_stacked_on_url is what we want in the branch
+        # configuration, stacked_on_url is an absolute URL that we use to
+        # check that the branch the destination branch will be stacked on
+        # exists.
         literal_stacked_on_url = (
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
         if literal_stacked_on_url is not None:
-            stacked_on_url = urlutils.join(
+            dest_stacked_on_url = urlutils.join(
                 destination_url, literal_stacked_on_url)
             try:
-                Branch.open(stacked_on_url)
+                Branch.open(dest_stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
         else:
-            stacked_on_url = None
-        bzrdir.clone_on_transport(dest_transport, revision_id="null:")
+            revision_id = 'null:'
+        bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
         branch = Branch.open(destination_url)
-        # Bazaar will have set the stacked-on location to an absolute URL. We
-        # want it to literally match the policy.
         if literal_stacked_on_url is not None:
-            branch.set_stacked_on_url(literal_stacked_on_url)
+            try:
+                branch.set_stacked_on_url(literal_stacked_on_url)
+            except (errors.UnstackableBranchFormat,
+                    errors.UnstackableRepositoryFormat):
+                pass
         return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
