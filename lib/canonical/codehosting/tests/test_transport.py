@@ -8,7 +8,8 @@ import unittest
 
 from bzrlib.tests import test_transport_implementations
 from bzrlib.transport import chroot, get_transport, Transport
-from bzrlib.transport.memory import MemoryTransport
+from bzrlib.transport.local import LocalTransport
+from bzrlib.urlutils import local_path_to_url
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
 from canonical.codehosting.branchfsclient import BlockingProxy
@@ -36,7 +37,7 @@ class TestingServer(LaunchpadInternalServer):
         self._branch_path = branch.unique_name
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(branchfs), MemoryTransport())
+            BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
         self._chroot_servers = []
 
     def _transportFactory(self, url):
