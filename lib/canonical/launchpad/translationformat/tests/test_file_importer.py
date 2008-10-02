@@ -29,9 +29,9 @@ msgstr ""
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
-msgid "'''+TEST_MSGID+'''"
+msgid "%s"
 msgstr ""
-'''
+''' % (TEST_MSGID)
 
 TEST_TRANSLATION_FILE = r'''
 msgid ""
@@ -40,9 +40,9 @@ msgstr ""
 "Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
-msgid "'''+TEST_MSGID+'''"
-msgstr "'''+TEST_TRANSLATION+'''"
-'''
+msgid "%s"
+msgstr "%s"
+''' % (TEST_MSGID, TEST_TRANSLATION)
 
 class FileImporterTestCase(unittest.TestCase):
     """Class test for translation importer component"""
@@ -155,28 +155,35 @@ class FileImporterTestCase(unittest.TestCase):
             (len(self.file_importer.errors) == 0),
             "FileImporter.storeTranslationsInDatabase fails when storing "
             "a message without errors.")
-        transaction.commit()
-        
-        # Move lock a minute ahead.
-        self.file_importer.lock_timestamp = (
-             retval.date_created - datetime.timedelta(0,60) )
-        # Test for conflict detection by submitting same message again
-        retval = self.file_importer.storeTranslationsInDatabase(
-            message, potmsgset)
-        # XXX Not working
-        # 
+ 
+# TODO: henninge 2008-10-02 Make this test work as in making 
+#  storeTranslationsInDatabase reject a translation because of a conflict.       
+#        transaction.commit()
+#        # Move lock a minute ahead.
+#        self.file_importer.lock_timestamp = (
+#             retval.date_created - datetime.timedelta(0,60) )
+#        # Test for conflict detection by submitting same message again
+#        retval = self.file_importer.storeTranslationsInDatabase(
+#            message, potmsgset)
+# 
 #        self.failUnless(
 #            (retval is None) and
 #            (len(self.file_importer.errors) == 1),
 #            "FileImporter.storeTranslationsInDatabase fails when storing "
 #            "a message with conflict.")
         
-        # XXX Untested: gettextpo.error
+# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase accept a
+#  translation with error.
+#        self.failUnless(
+#            (retval is not None) and
+#            (len(self.file_importer.errors) == 2),
+#            "FileImporter.storeTranslationsInDatabase fails when storing "
+#            "a message with an error.")
         
     def test_fileImporter_format_exporter(self):
         # Test if format_exporter behaves like a singleton
         self.failUnless(self.file_importer._cached_format_exporter is None,
-            "FileImporter._cached_format_exporter is not NOone, "
+            "FileImporter._cached_format_exporter is not None, "
             "although it has not been used yet.")
         
         format_exporter1 = self.file_importer.format_exporter
@@ -197,6 +204,8 @@ class FileImporterTestCase(unittest.TestCase):
             "POTFileImporter references an IPOFile which is not English." )
 
     def test_POTFileImporter_importMessage_implemented(self):
+        # The class must implement importMessage and not throw
+        # NotImplementedError like the base class does.
         try:
             self.pot_importer.importMessage(None)
         except NotImplementedError:
@@ -223,6 +232,8 @@ class FileImporterTestCase(unittest.TestCase):
             "POFileImporter has no reference to an IPOFile.")
 
     def test_POFileImporter_importMessage(self):
+        # The class must implement importMessage and not throw
+        # NotImplementedError like the base class does.
         try:
             self.po_importer.importMessage(None)
         except NotImplementedError:
@@ -231,11 +242,9 @@ class FileImporterTestCase(unittest.TestCase):
             pass
 
     def test_POFileImporter_getPersonByEmail(self):
-        """Check whether we create new persons with the correct explanation.
-
-        When importing a POFile, it may be necessary to create new Person
-        entries, to represent the last translators of that POFile.
-        """
+        # Check whether we create new persons with the correct explanation.
+        # When importing a POFile, it may be necessary to create new Person
+        # entries, to represent the last translators of that POFile.
         test_email = 'danilo@canonical.com'
         personset = getUtility(IPersonSet)
 
