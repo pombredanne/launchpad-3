@@ -871,11 +871,13 @@ class PersonFormatterAPI(ObjectFormatterAPI):
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
         if name.startswith('link:'):
+            rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
             # Remove remaining entries in furtherPath so that traversal
             # stops here.
-            extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
-            rootsite = name.split(':')[1]
             return self.link(extra_path, rootsite=rootsite)
         else:
             return super(PersonFormatterAPI, self).traverse(name, furtherPath)
