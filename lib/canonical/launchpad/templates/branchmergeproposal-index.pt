@@ -37,17 +37,6 @@
 
   <tal:summary replace="structure context/@@+pagelet-summary" />
 
-  <p id="proposal-merged" tal:condition="context/merged_revno">
-    The proposed merge was performed at revision
-    <tal:revno replace="context/merged_revno" />
-
-    <a tal:define="link context_menu/update_merge_revno"
-       tal:condition="link/enabled"
-       tal:attributes="href link/url"
-       ><img src="/@@/edit" tal:attributes="title link/text; alt link/text" />
-    </a>
-  </p>
-
   <tal:superseded-proposal condition="context/supersedes">
     <p id="superseded-proposal">
       This proposal supersedes a
@@ -84,7 +73,7 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes replace="structure context/@@+votes-with-links"/>
+  <tal:votes replace="structure context/@@+votes"/>
 
   <tal:comments repeat="row view/comments" >
     <div tal:content="structure row/comment/@@+fragment-summary"
