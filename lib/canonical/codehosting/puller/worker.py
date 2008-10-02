@@ -390,12 +390,6 @@ class BranchMirrorer(object):
             revision_id = 'null:'
         bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
         branch = Branch.open(destination_url)
-        if literal_stacked_on_url is not None:
-            try:
-                branch.set_stacked_on_url(literal_stacked_on_url)
-            except (errors.UnstackableBranchFormat,
-                    errors.UnstackableRepositoryFormat):
-                pass
         return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
@@ -413,13 +407,12 @@ class BranchMirrorer(object):
         except errors.NotBranchError:
             # Make a new branch in the same format as the source branch.
             return self.createDestinationBranch(
-                source_branch, destination_url), False
+                source_branch, destination_url)
         # Check that destination branch is in the same format as the source.
         if identical_formats(source_branch, branch):
-            return branch, False
+            return branch
         self.log('Formats differ.')
-        branch = self.createDestinationBranch(source_branch, destination_url)
-        return branch, False
+        return self.createDestinationBranch(source_branch, destination_url)
 
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
@@ -431,35 +424,29 @@ class BranchMirrorer(object):
         the same format.
         """
         # Make sure the mirrored branch is stacked the same way as the
-        # source branch.  Note that we expect this to be fairly
-        # common, as, as of r6889, it is possible for a branch to be
-        # pulled before the stacking information is set at all.
+        # source branch.
         stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
                 errors.UnstackableBranchFormat):
-            if stacked_on_url is not None:
-                raise AssertionError(
-                    "Couldn't set stacked_on_url %r" % stacked_on_url)
+            pass
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
         dest_branch.pull(source_branch, overwrite=True)
 
     def mirror(self, source_branch, destination_url):
         """Mirror 'source_branch' to 'destination_url'."""
-        branch, up_to_date = self.openDestinationBranch(
-            source_branch, destination_url)
-        if not up_to_date:
-            # If the branch is locked, try to break it. Our special UI factory
-            # will allow the breaking of locks that look like they were left
-            # over from previous puller worker runs. We will block on other
-            # locks and fail if they are not broken before the timeout expires
-            # (currently 5 minutes).
-            if branch.get_physical_lock_status():
-                branch.break_lock()
-            self.updateBranch(source_branch, branch)
+        branch = self.openDestinationBranch(source_branch, destination_url)
+        # If the branch is locked, try to break it. Our special UI factory
+        # will allow the breaking of locks that look like they were left
+        # over from previous puller worker runs. We will block on other
+        # locks and fail if they are not broken before the timeout expires
+        # (currently 5 minutes).
+        if branch.get_physical_lock_status():
+            branch.break_lock()
+        self.updateBranch(source_branch, branch)
         return branch
 
 

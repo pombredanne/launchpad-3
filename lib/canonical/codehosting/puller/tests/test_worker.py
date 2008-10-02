@@ -11,7 +11,7 @@ import unittest
 import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import NotBranchError
+from bzrlib.errors import NotBranchError, UnstackableBranchFormat
 from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
@@ -27,7 +27,7 @@ from canonical.codehosting.puller.worker import (
     PullerWorkerProtocol, StackingLoopError, get_vfs_format_classes,
     install_worker_ui_factory, StackedOnBranchNotFound)
 from canonical.codehosting.puller.tests import (
-    BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
+    AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import reset_logging
@@ -168,6 +168,19 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
+
+    def test_defaultStackedOnBranchDoesNotForceStacking(self):
+        stack_on = self.make_branch('default-stack-on')
+        class Foo(AcceptAnythingPolicy):
+            def getStackedOnURLForDestinationBranch(self, foo, branch):
+                return stack_on.base
+        source_branch = self.make_branch('source-branch', format='pack-0.92')
+        self.assertFalse(source_branch._format.supports_stacking())
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'), policy=Foo())
+        to_mirror.mirrorWithoutChecks()
+        dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
+        self.assertFalse(dest._format.supports_stacking())
 
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
