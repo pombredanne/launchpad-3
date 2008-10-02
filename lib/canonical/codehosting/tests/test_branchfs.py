@@ -29,11 +29,8 @@ from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
-from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import AsyncVirtualTransport
 from canonical.launchpad.interfaces.branch import BranchType
-from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.testing import TwistedLayer
 
 
@@ -526,18 +523,36 @@ class LaunchpadTransportTests:
                 branch.owner.name, branch.product.name),
             'hello nurse!')
 
+    def _makeOnBackingTransport(self, branch):
+        """Make directories for 'branch' on the backing transport.
+
+        :return: a transport for the .bzr directory of 'branch'.
+        """
+        backing_transport = self.backing_transport.clone(
+            '%s/.bzr/' % branch_to_path(branch, add_slash=False))
+        ensure_base(backing_transport)
+        return backing_transport
+
     def test_get_mapped_file(self):
         # Getting a file from a public branch URL gets the file as stored on
         # the base transport.
         transport = self.getTransport()
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        backing_transport.put_bytes('hello.txt', 'Hello World!')
         deferred = self._ensureDeferred(
-            transport.get_bytes, '~testuser/firefox/baz/.bzr/hello.txt')
+            transport.get_bytes, '%s/.bzr/hello.txt' % branch.unique_name)
         return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_get_mapped_file_escaped_url(self):
         # Getting a file from a public branch URL gets the file as stored on
         # the base transport, even when the URL is escaped.
-        url = escape('~testuser/firefox/baz/.bzr/hello.txt')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        backing_transport.put_bytes('hello.txt', 'Hello World!')
+        url = escape('%s/.bzr/hello.txt' % branch.unique_name)
         transport = self.getTransport()
         deferred = self._ensureDeferred(transport.get_bytes, url)
         return deferred.addCallback(self.assertEqual, 'Hello World!')
@@ -545,27 +560,33 @@ class LaunchpadTransportTests:
     def test_readv_mapped_file(self):
         # Using readv on a public branch URL gets chunks of the file as stored
         # on the base transport.
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        data = 'Hello World!'
+        backing_transport.put_bytes('hello.txt', data)
         transport = self.getTransport()
         deferred = self._ensureDeferred(
-            transport.readv, '~testuser/firefox/baz/.bzr/hello.txt',
+            transport.readv, '%s/.bzr/hello.txt' % branch.unique_name,
             [(3, 2)])
         def get_chunk(generator):
             return generator.next()[1]
         deferred.addCallback(get_chunk)
-        return deferred.addCallback(self.assertEqual, 'lo')
+        return deferred.addCallback(self.assertEqual, data[3:5])
 
     def test_put_mapped_file(self):
         # Putting a file from a public branch URL stores the file in the
         # mapped URL on the base transport.
         transport = self.getTransport()
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
         deferred = self._ensureDeferred(
             transport.put_bytes,
-            '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
+            '%s/.bzr/goodbye.txt' % branch.unique_name, "Goodbye")
         def check_bytes_written(ignored):
             self.assertEqual(
-                "Goodbye",
-                self.backing_transport.get_bytes(
-                    '00/00/00/01/.bzr/goodbye.txt'))
+                "Goodbye", backing_transport.get_bytes('goodbye.txt'))
         return deferred.addCallback(check_bytes_written)
 
     def test_cloning_updates_base(self):
@@ -595,9 +616,14 @@ class LaunchpadTransportTests:
         # The public branch URL -> filesystem mapping uses the base URL to do
         # its mapping, thus ensuring that clones map correctly.
         transport = self.getTransport()
-        transport = transport.clone('~testuser')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        backing_transport.put_bytes('hello.txt', 'Hello World!')
+        transport = transport.clone('~%s' % branch.owner.name)
         deferred = self._ensureDeferred(
-            transport.get_bytes, 'firefox/baz/.bzr/hello.txt')
+            transport.get_bytes,
+            '%s/%s/.bzr/hello.txt' % (branch.product.name, branch.name))
         return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_abspath(self):
@@ -627,17 +653,20 @@ class LaunchpadTransportTests:
     def test_rename(self):
         # We can use the transport to rename files where both the source and
         # target are virtual paths.
-        transport = self.getTransport()
-        deferred = self._ensureDeferred(
-            transport.list_dir, '~testuser/firefox/baz/.bzr')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        backing_transport.put_bytes('hello.txt', 'Hello World!')
+
+        transport = self.getTransport().clone(branch.unique_name)
+
+        deferred = self._ensureDeferred(transport.list_dir, '.bzr')
         deferred.addCallback(set)
 
         def rename_file(dir_contents):
             """Rename a file and return the original directory contents."""
             deferred = self._ensureDeferred(
-                transport.rename,
-                '~testuser/firefox/baz/.bzr/hello.txt',
-                '~testuser/firefox/baz/.bzr/goodbye.txt')
+                transport.rename, '.bzr/hello.txt', '.bzr/goodbye.txt')
             deferred.addCallback(lambda ignored: dir_contents)
             return deferred
 
@@ -646,8 +675,7 @@ class LaunchpadTransportTests:
             # Replace the old name with the new name.
             dir_contents.remove('hello.txt')
             dir_contents.add('goodbye.txt')
-            deferred = self._ensureDeferred(
-                transport.list_dir, '~testuser/firefox/baz/.bzr')
+            deferred = self._ensureDeferred(transport.list_dir, '.bzr')
             deferred.addCallback(set)
             # Check against the virtual transport.
             deferred.addCallback(self.assertEqual, dir_contents)
@@ -655,8 +683,7 @@ class LaunchpadTransportTests:
             deferred.addCallback(
                 lambda ignored:
                 self.assertEqual(
-                    set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
-                    dir_contents))
+                    set(backing_transport.list_dir('.')), dir_contents))
             return deferred
         deferred.addCallback(rename_file)
         return deferred.addCallback(check_file_was_renamed)
@@ -665,8 +692,13 @@ class LaunchpadTransportTests:
         # iter_files_recursive doesn't take a relative path but still needs to
         # do a path-based operation on the backing transport, so the
         # implementation can't just be a shim to the backing transport.
-        transport = self.getTransport().clone('~testuser/firefox/baz')
-        backing_transport = self.backing_transport.clone('00/00/00/01')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        backing_transport = self._makeOnBackingTransport(branch)
+        backing_transport.put_bytes('hello.txt', 'Hello World!')
+        transport = self.getTransport().clone(branch.unique_name)
+        backing_transport = self.backing_transport.clone(
+            branch_to_path(branch))
         deferred = self._ensureDeferred(transport.iter_files_recursive)
 
         def check_iter_result(iter_files, expected_files):
