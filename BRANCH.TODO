@@ -2,9 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-- new API for deleting releases.  only those with no associated files can be
-deleted
-
-- maybe an extra button at the bottom of +edit when the release has no files
-associated with.  if the release has files associated with, the button is
-hidden (or disabled?) and some text explains it can't be deleted.
