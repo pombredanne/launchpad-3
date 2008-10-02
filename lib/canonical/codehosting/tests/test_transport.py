@@ -12,8 +12,8 @@ from bzrlib.transport.memory import MemoryTransport
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
 from canonical.codehosting.branchfsclient import BlockingProxy
-from canonical.codehosting.tests.helpers import (
-    FakeLaunchpad, TestResultWrapper)
+from canonical.codehosting.inmemory import FakeLaunchpadFrontend
+from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
 class TestingServer(LaunchpadInternalServer):
@@ -30,9 +30,13 @@ class TestingServer(LaunchpadInternalServer):
         using the `FakeLaunchpad` authserver client and backed onto a
         MemoryTransport.
         """
+        frontend = FakeLaunchpadFrontend()
+        branchfs = frontend.getFilesystemEndpoint()
+        branch = frontend.getLaunchpadObjectFactory().makeBranch()
+        self._branch_path = branch.unique_name
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(FakeLaunchpad()), MemoryTransport())
+            BlockingProxy(branchfs), MemoryTransport())
         self._chroot_servers = []
 
     def _transportFactory(self, url):
@@ -51,7 +55,8 @@ class TestingServer(LaunchpadInternalServer):
         # We clone to this particular URL because FakeLaunchpad's constructor
         # creates a branch with this URL.  This is an instance of the Mystery
         # Guest test anti-pattern.
-        bzrdir_transport = root_transport.clone('~testuser/firefox/qux/.bzr')
+        bzrdir_transport = root_transport.clone(
+            self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
         chroot_server.setUp()
