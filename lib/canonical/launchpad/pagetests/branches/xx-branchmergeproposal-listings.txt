@@ -67,7 +67,7 @@ summary.
     lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
             Bob           ...                     None
 
-We go back to the proposals listing , and check the approved merges has
+We go back to the proposals listing, and check the approved merges has
 the date the merge was approved.
 
     >>> browser.open('http://code.launchpad.dev/fooix')

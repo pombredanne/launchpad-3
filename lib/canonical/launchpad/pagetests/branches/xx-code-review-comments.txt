@@ -67,9 +67,10 @@ The shorter comment is shown with a hyperlink to show the full comment.
 If javascript is not available, the link takes the user to a view that
 shows the entire message.
 
-If the summary is over three lines, then it ends with an ellipse.
+If the summary is over three lines, then it ends with an ellipsis.
 
-    >>> print_comments('boardCommentBody', eric_browser, index=2)
+    >>> print_comments(
+    ...     'boardCommentBody', nopriv_browser, index=2) #doctest: -ELLIPSIS
     I like this.
     I wish I had time to review it properly ...
     (show full message)

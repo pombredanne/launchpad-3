@@ -78,6 +78,7 @@ class CodeReviewCommentSummary(LaunchpadView):
 
     @property
     def message_summary(self):
+        """Return an elided message with the first X lines of the comment."""
         short_message = (
             '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH]))
         short_message += "..."
