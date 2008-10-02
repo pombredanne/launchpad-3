@@ -843,8 +843,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         existing_product = form.FormField(
             Choice(__name__='existing_product',
                    title=_("Existing project"), required=True,
-                   vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['existing_product'])
+                   vocabulary=SimpleVocabulary(terms)))
         self.form_fields += form.Fields(existing_product)
         if 'field.existing_product' not in self.request.form:
             # This is the first time the form is being submitted, so the

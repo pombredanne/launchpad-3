@@ -483,6 +483,16 @@ The milestone name can only contain letters, numbers, "-", "+", and ".".
     ...
     Invalid name...
 
+Invalid data will return a Bad Request error.
+
+    >>> response = webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='buggy', date_targeted=u'2005-10-36',
+    ...     description='Very buggy.')
+    >>> print response
+    HTTP/1.1 400 Bad Request
+    ...
+    date_targeted: Value doesn't look like a date.
 
 = Project release =
 

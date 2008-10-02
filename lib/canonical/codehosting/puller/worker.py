@@ -10,6 +10,7 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.progress import DummyProgress
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
@@ -149,6 +150,9 @@ class PullerWorkerProtocol:
     def progressMade(self):
         self.sendEvent('progressMade')
 
+    def log(self, fmt, *args):
+        self.sendEvent('log', fmt % args)
+
 
 def get_vfs_format_classes(branch):
     """Return the vfs classes of the branch, repo and bzrdir formats.
@@ -241,13 +245,20 @@ class BranchMirrorer(object):
     Public methods are `open` and `mirror`.
     """
 
-    def __init__(self, policy):
+    def __init__(self, policy, log=None):
         """Construct a branch opener with 'policy'.
 
         :param policy: A `BranchPolicy` that tells us what URLs are valid and
             similar things.
+        :param log: A callable which can be called with a format string and
+            arguments to log messages in the scheduler, or None, in which case
+            log messages are discarded.
         """
         self.policy = policy
+        if log is not None:
+            self.log = log
+        else:
+            self.log = lambda *args: None
 
     def open(self, url):
         """Open the Bazaar branch at url, first checking for safety.
@@ -356,34 +367,26 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        # literal_stacked_on_url is the URL specified by the policy and
-        # stacked_on_url is that same URL resolved relative to the branch URL.
-        # literal_stacked_on_url is what we want in the branch configuration,
-        # stacked_on_url is an absolute URL that we use to make Bazaar do the
-        # right thing.
-        #
-        # We need both of them since clone_on_transport interprets the
-        # stacked_on parameter relative to the source branch, but we want it
-        # interpreted relative to the destination branch to allow
-        # /~foo/bar/baz to work for mirrored branches.
-        literal_stacked_on_url = (
+        stacked_on_url = (
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
-        if literal_stacked_on_url is not None:
-            stacked_on_url = urlutils.join(
-                destination_url, literal_stacked_on_url)
+        if stacked_on_url is not None:
+            # We resolve the stacked_on_url relative to the destination_url
+            # because a common case for stacked_on_url will be
+            # /~user/project/branch and we want to check the branch already
+            # exists in the mirrored area.
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
             try:
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
         else:
-            stacked_on_url = None
-        bzrdir.clone_on_transport(dest_transport, stacked_on=stacked_on_url)
+            revision_id = 'null:'
+        bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
         branch = Branch.open(destination_url)
-        # Bazaar will have set the stacked-on location to an absolute URL. We
-        # want it to literally match the policy.
-        if literal_stacked_on_url is not None:
-            branch.set_stacked_on_url(literal_stacked_on_url)
         return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
@@ -401,12 +404,12 @@ class BranchMirrorer(object):
         except errors.NotBranchError:
             # Make a new branch in the same format as the source branch.
             return self.createDestinationBranch(
-                source_branch, destination_url), True
+                source_branch, destination_url)
         # Check that destination branch is in the same format as the source.
         if identical_formats(source_branch, branch):
-            return branch, False
-        branch = self.createDestinationBranch(source_branch, destination_url)
-        return branch, True
+            return branch
+        self.log('Formats differ.')
+        return self.createDestinationBranch(source_branch, destination_url)
 
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
@@ -418,35 +421,29 @@ class BranchMirrorer(object):
         the same format.
         """
         # Make sure the mirrored branch is stacked the same way as the
-        # source branch.  Note that we expect this to be fairly
-        # common, as, as of r6889, it is possible for a branch to be
-        # pulled before the stacking information is set at all.
+        # source branch.
         stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
                 errors.UnstackableBranchFormat):
-            if stacked_on_url is not None:
-                raise AssertionError(
-                    "Couldn't set stacked_on_url %r" % stacked_on_url)
+            pass
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
         dest_branch.pull(source_branch, overwrite=True)
 
     def mirror(self, source_branch, destination_url):
         """Mirror 'source_branch' to 'destination_url'."""
-        branch, up_to_date = self.openDestinationBranch(
-            source_branch, destination_url)
-        if not up_to_date:
-            # If the branch is locked, try to break it. Our special UI factory
-            # will allow the breaking of locks that look like they were left
-            # over from previous puller worker runs. We will block on other
-            # locks and fail if they are not broken before the timeout expires
-            # (currently 5 minutes).
-            if branch.get_physical_lock_status():
-                branch.break_lock()
-            self.updateBranch(source_branch, branch)
+        branch = self.openDestinationBranch(source_branch, destination_url)
+        # If the branch is locked, try to break it. Our special UI factory
+        # will allow the breaking of locks that look like they were left
+        # over from previous puller worker runs. We will block on other
+        # locks and fail if they are not broken before the timeout expires
+        # (currently 5 minutes).
+        if branch.get_physical_lock_status():
+            branch.break_lock()
+        self.updateBranch(source_branch, branch)
         return branch
 
 
@@ -581,7 +578,11 @@ class PullerWorker:
         else:
             raise AssertionError(
                 "Unexpected branch type: %r" % branch_type)
-        return BranchMirrorer(policy)
+        if self.protocol is not None:
+            log = self.protocol.log
+        else:
+            log = None
+        return BranchMirrorer(policy, log)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  default_stacked_on_url, protocol, branch_mirrorer=None,
@@ -612,12 +613,12 @@ class PullerWorker:
         if default_stacked_on_url == '':
             default_stacked_on_url = None
         self.default_stacked_on_url = default_stacked_on_url
-        if branch_mirrorer is None:
-            branch_mirrorer = self._checkerForBranchType(branch_type)
-        self.branch_mirrorer = branch_mirrorer
         self.protocol = protocol
         if protocol is not None:
             self.protocol.branch_id = branch_id
+        if branch_mirrorer is None:
+            branch_mirrorer = self._checkerForBranchType(branch_type)
+        self.branch_mirrorer = branch_mirrorer
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
 
