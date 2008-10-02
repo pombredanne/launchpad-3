@@ -9,14 +9,14 @@ __all__ = []
 
 import _pythonpath
 
-import os
 import time
 
+from canonical.config import config
 import replication.helpers
 
 if __name__ == '__main__':
     print '# slonik(1) preamble generated %s' % time.ctime()
-    print '# LPCONFIG=%s' % (os.environ.get('LPCONFIG', None),)
+    print '# LPCONFIG=%s' % config.instance_name
     print
     print replication.helpers.preamble()
 

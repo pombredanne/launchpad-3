@@ -194,7 +194,8 @@ def subscribe_slaves():
             forward=yes);
         """)
     helpers.validate_replication(cur) # Explode now if we have messed up.
-    log.info('Sets subscribed. Master usable but slaves still being setup.')
+    log.info(
+        'Sets subscribed. Master usable but slaves still being populated.')
 
     log.info('Waiting for synchronization.')
     helpers.sync(0)
@@ -215,13 +216,6 @@ def main():
 
     global log
     log = logger(options)
-
-    # Confirm each database exists and is connectable.
-
-    # Confirm the slave databases are empty.
-
-    # Create the 'slony' superuser in each database if it does not already
-    # exist.
 
     # Prepare the empty tables in the destination database.
     duplicate_schema()
