@@ -813,7 +813,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
 
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
@@ -824,13 +824,13 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='General')
-        self.assertEqual('General', reference.review_type)
+        self.assertEqual('general', reference.review_type)
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='Specific')
         # Note we're using the reference from the first call
-        self.assertEqual('Specific', reference.review_type)
+        self.assertEqual('specific', reference.review_type)
 
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""

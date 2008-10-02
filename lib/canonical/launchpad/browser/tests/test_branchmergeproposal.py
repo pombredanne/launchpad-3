@@ -243,7 +243,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer})
+             'reviewer': reviewer})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
@@ -256,7 +256,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer,
+             'reviewer': reviewer,
              'review_type': 'god-like'})
 
         proposal = self._getSourceProposal()
@@ -270,7 +270,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'review_candidate': reviewer,
+             'reviewer': reviewer,
              'review_type': 'god-like',
              'comment': "This is the first comment."})
 
