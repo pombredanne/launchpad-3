@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Update stacked_on_location for all Bazaar branches.
 
