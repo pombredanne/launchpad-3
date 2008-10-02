@@ -54,7 +54,6 @@ class MixinBaseLaunchpadServerTests:
         self.authserver = frontend.getFilesystemEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.requester = self.factory.makePerson()
-        self.user_id = self.requester.id
         self.server = self.getLaunchpadServer(
             self.authserver, self.requester.id)
 
