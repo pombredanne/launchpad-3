@@ -452,12 +452,12 @@ class LaunchpadTransportTests:
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.authserver = frontend.getFilesystemEndpoint()
+        authserver = frontend.getFilesystemEndpoint()
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
         self.server = self.getServer(
-            self.authserver, self.requester.id, self.backing_transport,
+            authserver, self.requester.id, self.backing_transport,
             self.mirror_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -681,22 +681,14 @@ class LaunchpadTransportTests:
         # Bazaar doesn't have a makedirs() facility for transports, so we need
         # to make sure that we can make a directory on the backing transport
         # if its parents exist and if they don't exist.
+        product = self.factory.makeProduct()
+        banana = '~%s/%s/banana' % (self.requester.name, product.name)
+        orange = '~%s/%s/orange' % (self.requester.name, product.name)
         transport = self.getTransport()
-        transport.mkdir('~testuser/thunderbird/banana')
-        transport.mkdir('~testuser/thunderbird/orange')
-        self.assertTrue(transport.has('~testuser/thunderbird/banana'))
-        self.assertTrue(transport.has('~testuser/thunderbird/orange'))
-
-    def setFailingBranchDetails(self, name, code, message):
-        """Arrange that calling createBranch with a given branch name fails.
-
-        After calling this, calling self.authserver.createBranch with a
-        branch_name of 'name' with raise a fault with 'code' and 'message' as
-        faultCode and faultString respectively.
-        """
-        self.authserver.failing_branch_name = name
-        self.authserver.failing_branch_code = code
-        self.authserver.failing_branch_string = message
+        transport.mkdir(banana)
+        transport.mkdir(orange)
+        self.assertTrue(transport.has(banana))
+        self.assertTrue(transport.has(orange))
 
     def test_createBranch_not_found_error(self):
         # When createBranch raises an exception with faultCode
