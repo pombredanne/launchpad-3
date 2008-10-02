@@ -599,7 +599,7 @@ class POFileImporter(FileImporter):
 
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation file."""
-        
+
         assert(translation_import_queue_entry.pofile is not None,
             "Pofile must not be None when importing a translation.")
 
@@ -737,4 +737,3 @@ class POFileImporter(FileImporter):
                 # The message was not imported this time, it therefore looses
                 # its imported status.
                 previous_imported_message.is_imported = False
-

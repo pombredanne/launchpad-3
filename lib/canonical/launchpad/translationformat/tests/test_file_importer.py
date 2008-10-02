@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import unittest
 import transaction
-import datetime
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -71,7 +70,7 @@ class FileImporterTestCase(unittest.TestCase):
             pofile=self.pofile)
 
         transaction.commit()
-        
+
         # Create objects to test
         self.file_importer = FileImporter(
             self.template_entry, GettextPOImporter(), None )
@@ -87,7 +86,7 @@ class FileImporterTestCase(unittest.TestCase):
             NUMBER_OF_TEST_MESSAGES,
             "FileImporter.__init__ did not parse the template file "
             "correctly.")
-    
+
     def test_fileImporter_importMessage(self):
         self.failUnlessRaises( NotImplementedError,
             self.file_importer.importMessage, None)
@@ -121,7 +120,7 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessEqual(potmsgset1.id, potmsgset2.id,
             "FileImporter.getOrCreatePOTMessageSet did not get an existing "
             "IPOTMsgSet object from the database.")
-        
+
     def test_fileImporter_storeTranslationsInDatabase(self):
         # Set the potemplate instance, usually done by subclass
         self.file_importer.potemplate = self.potemplate
@@ -130,13 +129,13 @@ class FileImporterTestCase(unittest.TestCase):
         # There is another test (getOrCreatePOTMsgSet) to make sure this
         # works.
         potmsgset = self.file_importer.getOrCreatePOTMsgSet(message)
-        
+
         retval = self.file_importer.storeTranslationsInDatabase(
             message, potmsgset)
         self.failUnless( retval is None,
             "FileImporter.storeTranslationsInDatabase tries to store data "
             "without refrence to an IPOFile.")
-        
+
         # Perform a sanity check for empty errors list
         self.failUnlessEqual(len(self.file_importer.errors), 0,
             "FileImporter.errors list is not empty, although freshly "
@@ -147,7 +146,7 @@ class FileImporterTestCase(unittest.TestCase):
         self.file_importer.is_editor = True
         self.file_importer.last_translator = self.template_entry.importer
 
-        # Test for normal operation 
+        # Test for normal operation
         retval = self.file_importer.storeTranslationsInDatabase(
             message, potmsgset)
         self.failUnless(
@@ -155,46 +154,27 @@ class FileImporterTestCase(unittest.TestCase):
             (len(self.file_importer.errors) == 0),
             "FileImporter.storeTranslationsInDatabase fails when storing "
             "a message without errors.")
- 
-# TODO: henninge 2008-10-02 Make this test work as in making 
-#  storeTranslationsInDatabase reject a translation because of a conflict.       
-#        transaction.commit()
-#        # Move lock a minute ahead.
-#        self.file_importer.lock_timestamp = (
-#             retval.date_created - datetime.timedelta(0,60) )
-#        # Test for conflict detection by submitting same message again
-#        retval = self.file_importer.storeTranslationsInDatabase(
-#            message, potmsgset)
-# 
-#        self.failUnless(
-#            (retval is None) and
-#            (len(self.file_importer.errors) == 1),
-#            "FileImporter.storeTranslationsInDatabase fails when storing "
-#            "a message with conflict.")
-        
+
+# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase reject a
+#  translation because of a conflict.
 # TODO: henninge 2008-10-02 Make storeTranslationsInDatabase accept a
 #  translation with error.
-#        self.failUnless(
-#            (retval is not None) and
-#            (len(self.file_importer.errors) == 2),
-#            "FileImporter.storeTranslationsInDatabase fails when storing "
-#            "a message with an error.")
-        
+
     def test_fileImporter_format_exporter(self):
         # Test if format_exporter behaves like a singleton
         self.failUnless(self.file_importer._cached_format_exporter is None,
             "FileImporter._cached_format_exporter is not None, "
             "although it has not been used yet.")
-        
+
         format_exporter1 = self.file_importer.format_exporter
         self.failUnless(format_exporter1 is not None,
             "FileImporter.format_exporter is not instantiated on demand.")
-        
+
         format_exporter2 = self.file_importer.format_exporter
         self.failUnless(format_exporter1 is format_exporter2,
             "FileImporter.format_exporter is instantiated multiple time, "
             "but should be cached.")
-        
+
     def test_POTFileImporter_init(self):
         # Test if POTFileImporter gets initialised correctly.
         self.failUnless(self.pot_importer.potemplate is not None,
