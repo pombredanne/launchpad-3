@@ -37,15 +37,26 @@ from canonical.launchpad.interfaces.codehosting import (
 from canonical.testing import TwistedLayer
 
 
+def branch_to_path(branch, add_slash=True):
+    path = branch_id_to_path(branch.id)
+    if add_slash:
+        path += '/'
+    return path
+
+
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
 
     layer = TwistedLayer
 
     def setUp(self):
-        self.authserver = FakeLaunchpad()
-        self.user_id = 1
-        self.server = self.getLaunchpadServer(self.authserver, self.user_id)
+        frontend = InMemoryFrontend()
+        self.authserver = frontend.getFilesystemEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.requester = self.factory.makePerson()
+        self.user_id = self.requester.id
+        self.server = self.getLaunchpadServer(
+            self.authserver, self.requester.id)
 
     def getLaunchpadServer(self, authserver, user_id):
         raise NotImplementedError(
@@ -77,36 +88,44 @@ class MixinBaseLaunchpadServerTests:
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
-        # ~testuser/firefox/baz is branch 1.
+        branch = self.factory.makeBranch(owner=self.requester)
+
         deferred = self.server.translateVirtualPath(
-            '~testuser/firefox/baz/.bzr')
+            '%s/.bzr' % branch.unique_name)
 
         def assert_path_starts_with(branch_info, expected_path):
             transport, path = branch_info
             self.assertStartsWith(path, expected_path)
 
-        def futz_with_authserver(ignored):
-            # Delete the branch on the authserver.
-            del self.authserver._branch_set[1]
+        def futz_with_branchfs_endpoint(ignored):
+            # Delete the branch on the fake filesystem endpoint, breaking
+            # encapsulation.
+            self.authserver._branch_set._delete(branch)
             branch_info = self.authserver.getBranchInformation(
-                1, 'testuser', 'firefox', 'baz')
-            # The authserver says there is no ~testuser/firefox/baz branch.
+                self.requester.id, branch.owner.name, branch.product.name,
+                branch.name)
+            # The branchfs endpoint says there is no such branch.
             self.assertEqual(('', ''), branch_info)
 
-        deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
-        deferred.addCallback(futz_with_authserver)
+        deferred.addCallback(
+            assert_path_starts_with, branch_id_to_path(branch.id))
+        deferred.addCallback(futz_with_branchfs_endpoint)
         deferred.addCallback(
             lambda ignored: self.server.translateVirtualPath(
-                    '~testuser/firefox/baz/.bzr'))
-        deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
+                    '%s/.bzr' % branch.unique_name))
+        deferred.addCallback(
+            assert_path_starts_with, branch_id_to_path(branch.id))
         return deferred
 
     def test_translateControlPath(self):
+        branch = self.factory.makeBranch(owner=self.requester)
+        branch.product.development_focus.user_branch = branch
         deferred = self.server.translateVirtualPath(
-            '~testuser/evolution/.bzr/control.conf')
+            '~%s/%s/.bzr/control.conf'
+            % (branch.owner.name, branch.product.name))
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on = /~vcs-imports/evolution/main\n',
+                'default_stack_on = /%s\n' % branch.unique_name,
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -178,13 +197,6 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
             BlockingProxy(authserver), user_id, MemoryTransport(),
             MemoryTransport())
 
-    def test_noMirrorsRequestedIfNoBranchesChanged(self):
-        # Starting up and shutting down the server will send no mirror
-        # requests.
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([], self.authserver._request_mirror_log)
-
     def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
         # users to rename and re-assign branches without causing unnecessary
@@ -197,44 +209,53 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         # name to the branch's path on the filesystem.
 
         # We can map a branch owned by the user to its path.
-        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._hosted_transport, '00/00/00/01/'))
+            (self.server._hosted_transport, branch_to_path(branch)))
         return deferred
 
     def test_base_path_translation_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
-        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester, product=None)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._hosted_transport, '00/00/00/03/'))
+            (self.server._hosted_transport, branch_to_path(branch)))
         return deferred
 
     def test_base_path_translation_team_branch(self):
         # We can map a branch owned by a team that the user is in to its path.
-        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
+        team = self.factory.makeTeam(self.requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._hosted_transport, '00/00/00/04/'))
+            (self.server._hosted_transport, branch_to_path(branch)))
         return deferred
 
-    def test_base_path_translation_team_junk_branch(self):
+    def test_base_path_translation_other_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
-        deferred = self.server.translateVirtualPath('/~name12/+junk/junk.dev')
+        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._mirror_transport, '00/00/00/05/'))
+            (self.server._mirror_transport, branch_to_path(branch)))
         return deferred
 
     def test_extend_path_translation_on_mirror(self):
+        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
         deferred = self.server.translateVirtualPath(
-            '/~name12/+junk/junk.dev/.bzr')
+            '/%s/.bzr' % branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._mirror_transport, '00/00/00/05/.bzr'))
+            (self.server._mirror_transport,
+             '%s/.bzr' % branch_id_to_path(branch.id)))
         return deferred
 
     def test_extend_path_translation_on_hosted(self):
@@ -243,11 +264,14 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         # unique name of the branch (i.e. the ~user/product/branch-name part)
         # to the four-byte hexadecimal split ID described in
         # test_base_path_translation and appends the remainder of the path.
+        branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
         deferred = self.server.translateVirtualPath(
-            '/~testuser/firefox/baz/.bzr')
+            '/%s/.bzr' % branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._hosted_transport, '00/00/00/01/.bzr'))
+            (self.server._hosted_transport,
+             '%s/.bzr' % branch_id_to_path(branch.id)))
         return deferred
 
     def test_get_url(self):
@@ -283,28 +307,32 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         # ~person/product/branch-name. The server knows how to map this unique
         # name to the branch's path on the filesystem.
 
+        branch = self.factory.makeBranch(owner=self.requester)
         # We can map a branch owned by the user to its path.
-        deferred = self.server.translateVirtualPath('/~testuser/firefox/baz')
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._branch_transport, '00/00/00/01/'))
+            (self.server._branch_transport, branch_to_path(branch)))
         return deferred
 
     def test_base_path_translation_junk_branch(self):
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
-        deferred = self.server.translateVirtualPath('/~testuser/+junk/random')
+        branch = self.factory.makeBranch(owner=self.requester, product=None)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._branch_transport, '00/00/00/03/'))
+            (self.server._branch_transport, branch_to_path(branch)))
         return deferred
 
     def test_base_path_translation_team_branch(self):
         # We can map a branch owned by a team that the user is in to its path.
-        deferred = self.server.translateVirtualPath('/~testteam/firefox/qux')
+        team = self.factory.makeTeam(self.requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (self.server._branch_transport, '00/00/00/04/'))
+            (self.server._branch_transport, branch_to_path(branch)))
         return deferred
 
     def test_open_containing_raises_branch_not_found(self):
@@ -312,8 +340,9 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         # branch at that URL.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
+        branch = self.factory.makeBranch(owner=self.requester)
         transport = get_transport(self.server.get_url())
-        transport = transport.clone('~testuser/firefox/qux')
+        transport = transport.clone(branch.unique_name)
         self.assertRaises(
             errors.NotBranchError,
             BzrDir.open_containing_from_transport, transport)
@@ -758,6 +787,9 @@ class TestRequestMirror(TestCaseWithTransport):
             self._server.setUp()
             self.addCleanup(self._server.tearDown)
         return self._server
+
+    def test_no_mirrors_requested_if_no_branches_changed(self):
+        self.assertEqual([], self._request_mirror_log)
 
     def test_creating_branch_requests_mirror(self):
         # Creating a branch requests a mirror.
