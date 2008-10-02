@@ -9,8 +9,9 @@ from datetime import timedelta
 from zope.session.interfaces import ISessionDataContainer, ISessionData
 
 from canonical.launchpad.webapp.pgsession import (
-        PGSessionDataContainer, PGSessionData)
-from canonical.testing import LaunchpadFunctionalLayer
+        PGSessionDataContainer, PGSessionData
+        )
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadLayer
 
 
 class PicklingTest:
@@ -28,6 +29,7 @@ class TestPgSession(unittest.TestCase):
 
     def setUp(self):
         self.sdc = PGSessionDataContainer()
+        LaunchpadLayer.resetSessionDb()
 
     def tearDown(self):
         del self.sdc
@@ -43,7 +45,7 @@ class TestPgSession(unittest.TestCase):
         # __getitem__ does not raise a keyerror for an unknown client id.
         # This is not correct, but needed to workaround a design flaw in
         # the session machinery.
-        self.sdc['Unknown client id']
+        ignored_result = self.sdc['Unknown client id']
 
         # __setitem__ calls are ignored.
         self.sdc[client_id] = 'ignored'
@@ -59,7 +61,6 @@ class TestPgSession(unittest.TestCase):
         client_id2 = 'Client Id #2'
 
         store = self.sdc.store
-        store.execute("DELETE FROM SessionData", noresult=True)
 
         # Create a session
         session1 = self.sdc[client_id1]
@@ -96,7 +97,7 @@ class TestPgSession(unittest.TestCase):
         self.sdc._last_sweep = self.sdc._last_sweep - timedelta(days=365)
 
         # Sweep happens automatically in __getitem__
-        self.sdc[client_id2][product_id]
+        ignored_result = self.sdc[client_id2][product_id]
 
         # So the client_id1 session should now have been removed.
         result = store.execute(
@@ -184,6 +185,8 @@ class TestPgSession(unittest.TestCase):
         pkgdata = session[product_id]
         self.assertRaises(KeyError, pkgdata.__getitem__, 'key')
 
+        # Test results depend on the session being empty. This is
+        # taken care of by setUp().
         store = self.sdc.store
         result = store.execute("SELECT COUNT(*) FROM SessionData")
         self.assertEqual(result.get_one()[0], 0)

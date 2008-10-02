@@ -15,7 +15,9 @@ import traceback
 
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal)
+from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -410,6 +412,22 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
+
+    def test_raising_with_xmlrpc_request(self):
+        # Test ErrorReportingUtility.raising() with an XML-RPC request.
+        request = TestRequest()
+        directlyProvides(request, IXMLRPCRequest)
+        request.getPositionalArguments = lambda : (1,2)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+        self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
