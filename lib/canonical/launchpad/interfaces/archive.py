@@ -354,6 +354,17 @@ class IArchive(IHasOwner):
             component.
         """
 
+    @operation_parameters(
+        component_name=TextLine(title=_("Component Name"), required=True))
+    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    @export_read_operation()
+    def getQueueAdminsForComponent(component_name=None):
+        """Return `IArchivePermission` records for authorised queue admins.
+
+        :param component_name: An `IComponent` or textual name for the
+            component.
+        """
+
     def canUpload(user, component_or_package=None):
         """Check to see if user is allowed to upload to component.
 
@@ -592,5 +603,8 @@ IArchive['getUploadersForPackage'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission
 IArchive['getUploadersForComponent'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getQueueAdminsForComponent'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission

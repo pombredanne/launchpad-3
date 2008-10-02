@@ -190,10 +190,22 @@ all components.
     >>> permissions = webservice.named_get(
     ...     ubuntutest['main_archive_link'],
     ...     'getUploadersForComponent').jsonBody()
-    >>> for entry in permissions['entries']:
+    >>> for entry in sorted(permissions['entries']):
     ...     print entry['permission']
     ...     print entry['component_name']
     ...     print entry['person_link']
-    Archive Upload Rights universe http://.../~ubuntu-team
     Archive Upload Rights main http://.../~ubuntu-team
+    Archive Upload Rights universe http://.../~ubuntu-team
+
+getQueueAdminsForComponent returns all the permissions where someone
+can administer distroseries queues in a particular component.
+
+    >>> permissions = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getQueueAdminsForComponent',
+    ...     component_name='main').jsonBody()
+    >>> for entry in sorted(permissions['entries']):
+    ...     print entry['permission']
+    ...     print entry['person_link']
+    Queue Administration Rights  http://.../~name12
+    Queue Administration Rights  http://.../~ubuntu-team
 
