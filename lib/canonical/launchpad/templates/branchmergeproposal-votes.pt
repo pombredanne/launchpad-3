@@ -22,7 +22,7 @@
       </td>
       <td tal:content="review/review_type" />
       <td>
-        <tal:date-requested condition="review/date_requested">
+        <tal:date-requested condition="review/show_date_requested">
           <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
             <tal:date replace="review/date_requested/fmt:approximatedate"/>
           </span>
@@ -44,13 +44,15 @@
       <td tal:content="structure review/reviewer/fmt:link:mainsite" />
       <td tal:content="review/review_type" />
       <td>
-        <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
-          <tal:date replace="review/date_requested/fmt:approximatedate"/>
-        </span>
+        <tal:date-requested condition="review/show_date_requested">
+          <span tal:attributes="title string:Requested by ${review/registrant/displayname}">
+            <tal:date replace="review/date_requested/fmt:approximatedate"/>
+          </span>
+        </tal:date-requested>
       </td>
       <td>
         <span class="votePENDING">Pending</span>
-        <tal:vote-link condition="review/show_vote_link">
+        <tal:vote-link condition="review/user_can_review">
           <a tal:attributes="href string:+vote?claim=${review/reviewer/name}&review_type=${review/review_type}">[Review]</a>
         </tal:vote-link>
       </td>
@@ -67,7 +69,7 @@
 
     <tal:request-review define="link context/menu:context/request_review"
                         condition="link/enabled">
-    <tr tal:condition="view/show_comment_links">
+    <tr>
       <td colspan="4" style="text-align:right">
         <div tal:content="structure link/render">
           Request review

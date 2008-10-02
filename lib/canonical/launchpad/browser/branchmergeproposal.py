@@ -23,7 +23,6 @@ __all__ = [
     'BranchMergeProposalReviewView',
     'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
-    'BranchMergeProposalVoteLinkView',
     'BranchMergeProposalVoteView',
     'BranchMergeProposalWorkInProgressView',
     ]
@@ -373,20 +372,22 @@ class DecoratedCodeReviewVoteReference:
         # already voted, or if the user is the source branch owner.
         branch = context.branch_merge_proposal.source_branch
         if user is None:
-            self.show_vote_link = False
+            self.user_can_review = False
         else:
-            self.show_vote_link = (
+            self.user_can_review = (
                 (self.show_edit or
                  (user.inTeam(context.reviewer) and (users_vote is None))) and
                 (self.context.branch_merge_proposal.isMergable()))
 
     @property
+    def show_date_requested(self):
+        """Show the requested date if the reviewer is not the requester."""
+        return self.context.registrant != self.context.reviewer
+
+    @property
     def date_requested(self):
         """When the review was requested or None."""
-        if self.context.registrant == self.context.reviewer:
-            return None
-        else:
-            return self.context.date_created
+        return self.context.date_created
 
     @property
     def date_of_comment(self):
@@ -404,29 +405,26 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
     __used_for__ = IBranchMergeProposal
 
-    # Show hyperlinks to the comments?
-    show_comment_links = False
-
     @property
     def show_table(self):
         """Should the reviewer table be shown at all?
 
-        If there are no pending reviews, or current reviews, and the logged in
-        user is not able to review, then don't show the table at all.
-
-        If there are no reviews, pending or otherwise, and the user can add
-        reviewers, then show the table.
+        We want to show the table when there is something for the user to do
+        with it. If the user can request a review, or is a reviewer with
+        reviews to do, then show the table.
         """
-        # Can request a review if the user has edit permissions, and the
-        # branch is not in a final state.
+        # The user can request a review if the user has edit permissions, and
+        # the branch is not in a final state.  We want to show the table as
+        # the menu link is now shown in the table itself.
         can_request_review = (
             check_permission('launchpad.Edit', self.context) and
             self.context.isMergable())
 
-        return self.show_comment_links and (
-            len(self.reviews) > 0 or
-            self.show_user_review_link or
-            can_request_review)
+        # Show the table if there are review to show, or the user can review,
+        # or if the user can request a review.
+        return (len(self.reviews) > 0 or
+                self.show_user_review_link or
+                can_request_review)
 
     @cachedproperty
     def reviews(self):
@@ -462,13 +460,6 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return (self.context.isPersonValidReviewer(self.user) and
                 self.user not in reviewers and
                 self.context.isMergable())
-
-
-class BranchMergeProposalVoteLinkView(BranchMergeProposalVoteView):
-    """A view to show the votes with hyperlinks to the comments."""
-
-    # Show hyperlinks to the comments?
-    show_comment_links = True
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
@@ -731,7 +722,11 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     def initial_values(self):
         # Default to the tip of the target branch, on the assumption that the
         # source branch has just been merged into it.
-        return {'merged_revno': self.context.target_branch.revision_count}
+        if self.context.merged_revno is not None:
+            revno = self.context.merged_revno
+        else:
+            revno = self.context.target_branch.revision_count
+        return {'merged_revno': revno}
 
     @property
     def next_url(self):
