@@ -503,8 +503,8 @@ usage when streaming huge files.
     RESTRICTED
 
 `StreamOrRedirectLibraryFileAliasView` ignores the system http_proxy
-configuration and still able to access the restricted file even if a
-invalid proxy address is set.
+configuration and is still able to access the restricted file even if
+a invalid proxy address is set.
 
 This approach was adopted because all launchpad machines are
 configured to use the same proxy, originally for external
