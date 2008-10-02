@@ -92,14 +92,13 @@ class UpdateStackedBranches(LaunchpadScript):
         server = get_server(self.options.dry_run)
         server.setUp()
         if self.options.dry_run:
-            print "Running read-only..."
-        else:
-            print "Processing..."
+            self.logger.debug('Running read-only')
+        self.logger.debug('Beginning processing')
         try:
             self.updateBranches(self.parseFromStream(sys.stdin))
         finally:
             server.tearDown()
-        print "Done."
+        self.logger.info('Done')
 
 
     def updateStackedOn(self, branch_id, bzr_branch_url, stacked_on_location):
@@ -115,23 +114,27 @@ class UpdateStackedBranches(LaunchpadScript):
         try:
             bzrdir = BzrDir.open(bzr_branch_url)
         except errors.NotBranchError:
-            print "No bzrdir for %r at %r" % (branch_id, bzr_branch_url)
+            self.logger.warn(
+                "No bzrdir for %r at %r" % (branch_id, bzr_branch_url))
             return
 
         try:
             current_stacked_on_location = get_branch_stacked_on_url(bzrdir)
         except errors.NotBranchError:
-            print "No branch for %r at %r" % (branch_id, bzr_branch_url)
+            self.logger.warn(
+                "No branch for %r at %r" % (branch_id, bzr_branch_url))
         except errors.NotStacked:
-            print "Branch for %r at %r is not stacked at all. Giving up." % (
-                branch_id, bzr_branch_url)
+            self.logger.warn(
+                "Branch for %r at %r is not stacked at all. Giving up."
+                % (branch_id, bzr_branch_url))
         except errors.UnstackableBranchFormat:
-            print "Branch for %r at %r is unstackable. Giving up." % (
-                branch_id, bzr_branch_url)
+            self.logger.error(
+                "Branch for %r at %r is unstackable. Giving up."
+                % (branch_id, bzr_branch_url))
         else:
             if current_stacked_on_location != stacked_on_location:
-                print (
-                    'Branch for %r at %r stacked on %r, should be on %r. Fixing.'
+                self.logger.info(
+                    'Branch for %r at %r stacked on %r, should be on %r.'
                     % (branch_id, bzr_branch_url, current_stacked_on_location,
                        stacked_on_location))
                 if not self.options.dry_run:
