@@ -335,6 +335,26 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc';
+         * Binary files: '.deb' and '.udeb';
+         * Source changesfile: '_source.changes';
+         * Package diffs: '.diff.gz';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            filename and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
 
 class IPPA(IArchive):
     """Marker interface so traversal works differently for PPAs."""
