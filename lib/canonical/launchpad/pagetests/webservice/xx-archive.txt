@@ -168,9 +168,19 @@ upload a particular package.
     >>> permissions = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
     ...     source_package_name='mozilla-firefox').jsonBody()
-    >>> pprint_entry(permissions)
     >>> for entry in permissions['entries']:
     ...     print entry['permission']
     ...     print entry['person_link']
-    Archive Upload Rights  http://api.launchpad.dev/beta/~carlos
+    Archive Upload Rights  http://.../~carlos
+
+getUploadersForComponent returns all the permissions where someone can
+upload to a particular component:
+
+    >>> permissions = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...     component_name='main').jsonBody()
+    >>> for entry in permissions['entries']:
+    ...     print entry['permission']
+    ...     print entry['person_link']
+    Archive Upload Rights  http://.../~ubuntu-team
 

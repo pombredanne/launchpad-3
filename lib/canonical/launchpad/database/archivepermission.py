@@ -21,7 +21,7 @@ from canonical.database.sqlbase import sqlvalues, SQLBase
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
-from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 
