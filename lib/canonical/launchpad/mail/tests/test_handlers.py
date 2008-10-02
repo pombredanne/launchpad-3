@@ -322,6 +322,7 @@ class TestCodeHandler(TestCaseWithFactory):
                                base_revision_id='base-revid')
 
     def test_acquireBranchesForProposal(self):
+        """Ensure CodeHandler._acquireBranchesForProposal works."""
         target_branch = self.factory.makeBranch()
         source_branch = self.factory.makeBranch()
         md = self.makeMergeDirective(source_branch, target_branch)
@@ -332,6 +333,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(mp_target, target_branch)
 
     def test_acquireBranchesForProposalRemoteTarget(self):
+        """CodeHandler._acquireBranchesForProposal fails on remote targets."""
         source_branch = self.factory.makeBranch()
         md = self.makeMergeDirective(source_branch,
                                      target_branch_url='http://example.com')
@@ -341,23 +343,34 @@ class TestCodeHandler(TestCaseWithFactory):
                           submitter)
 
     def test_acquireBranchesForProposalRemoteSource(self):
+        """CodeHandler._acquireBranchesForProposal allows remote sources.
+
+        If there's no existing remote branch, it creates one, using
+        the suffix of the url as a branch name seed.
+        """
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(source_branch_url=source_branch_url,
                                        target_branch=target_branch)
         branches = getUtility(IBranchSet)
-        self.assertEqual(None, branches.getByUrl(source_branch_url))
+        self.assertIs(None, branches.getByUrl(source_branch_url))
         submitter = self.factory.makePerson()
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
             md, submitter)
         self.assertEqual(mp_target, target_branch)
-        self.assertFalse(mp_source is None)
+        self.assertIsNot(None, mp_source)
         self.assertEqual(mp_source, branches.getByUrl(source_branch_url))
         self.assertEqual(BranchType.REMOTE, mp_source.branch_type)
         self.assertEqual(mp_target.product, mp_source.product)
         self.assertEqual('suffix', mp_source.name)
 
     def test_acquireBranchesForProposalRemoteSourceDupeName(self):
+        """CodeHandler._acquireBranchesForProposal creates names safely.
+
+        When creating a new branch, it uses the suffix of the url as a branch
+        name seed.  If there is already a branch with that name, it appends
+        a numeric suffix.
+        """
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
         md = self.makeMergeDirective(source_branch_url=source_branch_url,
@@ -371,9 +384,10 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('suffix-1', mp_source.name)
 
     def test_findMergeDirectiveAndComment(self):
+        """findMergeDirectiveAndComment works."""
         md = self.makeMergeDirective()
-        message = self.factory.makeSignedMessage(body='Hi!\n',
-            attachment_contents=''.join(md.to_lines()),
+        message = self.factory.makeSignedMessage(
+            body='Hi!\n', attachment_contents=''.join(md.to_lines()),
             force_transfer_encoding=True)
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
@@ -382,14 +396,22 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(md.target_branch, md2.target_branch)
 
     def test_findMergeDirectiveAndCommentEmptyBody(self):
+        """findMergeDirectiveAndComment handles empty message bodies.
+
+        Empty message bodies are returned verbatim.
+        """
         md = self.makeMergeDirective()
-        message = self.factory.makeSignedMessage(body='',
-            attachment_contents=''.join(md.to_lines()))
+        message = self.factory.makeSignedMessage(
+            body='', attachment_contents=''.join(md.to_lines()))
         code_handler = CodeHandler()
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('', comment)
 
     def test_findMergeDirectiveAndCommentNoMergeDirective(self):
+        """findMergeDirectiveAndComment handles missing merge directives.
+
+        MissingMergeDirective is raised when no merge directive is present.
+        """
         md = self.makeMergeDirective()
         message = self.factory.makeSignedMessage(body='Hi!\n')
         code_handler = CodeHandler()
@@ -397,6 +419,11 @@ class TestCodeHandler(TestCaseWithFactory):
             code_handler.findMergeDirectiveAndComment, message)
 
     def makeMergeDirectiveEmail(self, body='Hi!\n'):
+        """Create an email with a merge directive attached.
+
+        :param body: The message body to use for the email.
+        :return: message, source_branch, target_branch
+        """
         target_branch = self.factory.makeBranch()
         source_branch = self.factory.makeBranch(product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
@@ -406,6 +433,7 @@ class TestCodeHandler(TestCaseWithFactory):
         return message, source_branch, target_branch
 
     def test_processMergeProposal(self):
+        """processMergeProposal creates a merge proposal and comment."""
         message, source_branch, target_branch = self.makeMergeDirectiveEmail()
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
@@ -415,21 +443,28 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('My subject', comment.message.subject)
 
     def test_processMergeProposalEmptyMessage(self):
+        """processMergeProposal handles empty message bodies.
+
+        Messages with empty bodies produce merge proposals only, not
+        comments.
+        """
         message, source_branch, target_branch = (
             self.makeMergeDirectiveEmail(body=' '))
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
-        self.assertTrue(comment is None)
+        self.assertIs(None, comment)
         self.assertEqual(0, bmp.all_comments.count())
 
     def test_processWithMergeDirectiveEmail(self):
+        """process creates a merge proposal from a merge directive email."""
         message, source, target = self.makeMergeDirectiveEmail()
         code_handler = CodeHandler()
         self.assertEqual(0, source.landing_targets.count())
         code_handler.process(message, 'merge@code.launchpad.net', None)
         self.assertEqual(target, source.landing_targets[0].target_branch)
+
 
 class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""

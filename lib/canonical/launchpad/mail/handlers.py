@@ -656,13 +656,13 @@ class CodeHandler:
             basename = urlparse(md.source_branch)[2].split('/')[-1]
             name = basename
             count = 1
-            while not branches.isBranchNameAvailable(submitter,
-                mp_target.product, name):
+            while not branches.isBranchNameAvailable(
+                submitter, mp_target.product, name):
                 name = '%s-%d' % (basename, count)
                 count += 1
-            mp_source = branches.new(BranchType.REMOTE, name, submitter,
-                                     submitter, mp_target.product,
-                                     md.source_branch)
+            mp_source = branches.new(
+                BranchType.REMOTE, name, submitter, submitter,
+                mp_target.product, md.source_branch)
         return mp_source, mp_target
 
     def findMergeDirectiveAndComment(self, message):
@@ -685,6 +685,13 @@ class CodeHandler:
             raise MissingMergeDirective()
 
     def processMergeProposal(self, message):
+        """Generate a merge proposal (and comment) from an email message.
+
+        The message is expected to contain a merge directive in one of its
+        parts.  Its values are used to generate a BranchMergeProposal.
+        If the message has a non-empty body, it is turned into a
+        CodeReviewComment.
+        """
         submitter = getUtility(ILaunchBag).user
         comment_text, md = self.findMergeDirectiveAndComment(message)
         source, target = self._acquireBranchesForProposal(md, submitter)
