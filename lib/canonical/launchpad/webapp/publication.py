@@ -358,6 +358,9 @@ class LaunchpadBrowserPublication(
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 

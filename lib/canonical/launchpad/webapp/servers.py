@@ -1149,6 +1149,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     def finishReadOnlyRequest(self, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        # Transaction commits usually need to be aware of the possibility of
+        # a doomed transaction.  We do not expect that this code will
+        # encounter doomed transactions.  If it does, this will need to be
+        # revisited.
         txn.commit()
 
     def getPrincipal(self, request):
