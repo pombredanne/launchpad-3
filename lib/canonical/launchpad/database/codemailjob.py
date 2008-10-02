@@ -134,3 +134,11 @@ class CodeMailJobSource:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(CodeMailJob, CodeMailJob.job == Job.id,
                           Job.id.is_in(Job.ready_jobs))
+
+    @classmethod
+    def runAll(klass):
+        for job in klass.findRunnableJobs():
+            try:
+                job.run()
+            except:
+                job.job.fail()

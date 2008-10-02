@@ -76,6 +76,20 @@ class TestCodeMailJob(TestCaseWithFactory):
         self.assertEqual(
             [mail_job1], list(CodeMailJobSource.findRunnableJobs()))
 
+    def test_runAll(self):
+        mail_job1 = self.makeExampleMail()
+        mail_job2 = self.makeExampleMail()
+        mail_job2.job.start()
+        mail_job3 = self.makeExampleMail()
+        def raise_value_error():
+            mail_job3.job.start()
+            raise ValueError('Fake error')
+        mail_job3.run = raise_value_error
+        CodeMailJobSource.runAll()
+        self.assertEqual(JobStatus.COMPLETED, mail_job1.job.status)
+        self.assertEqual(JobStatus.RUNNING, mail_job2.job.status)
+        self.assertEqual(JobStatus.FAILED, mail_job3.job.status)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
