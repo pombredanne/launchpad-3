@@ -17,7 +17,6 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
-from optparse import OptionParser
 import sys
 import xmlrpclib
 
@@ -76,83 +75,6 @@ def set_branch_stacked_on_url(bzrdir, stacked_on_url):
         stacked_on_url, 'stacked_on_location')
 
 
-def update_stacked_on(branch_id, bzr_branch_url, stacked_on_location,
-                      read_only):
-    """Update the Bazaar branch at 'bzr_branch_url' to be stacked correctly.
-
-    :param branch_id: The database ID of the branch. This is only used for
-        logging.
-    :param bzr_branch_url: The URL of the Bazaar branch. Normally this is of
-        the form lp-mirrored:/// or lp-hosted:///.
-    :param stacked_on_location: The location to store in the branch's
-        stacked_on_location configuration variable.
-    :param read_only: If True, then don't actually update the branch.conf,
-        just do everything else.
-    """
-    try:
-        bzrdir = BzrDir.open(bzr_branch_url)
-    except errors.NotBranchError:
-        print "No bzrdir for %r at %r" % (branch_id, bzr_branch_url)
-        return
-
-    try:
-        current_stacked_on_location = get_branch_stacked_on_url(bzrdir)
-    except errors.NotBranchError:
-        print "No branch for %r at %r" % (branch_id, bzr_branch_url)
-    except errors.NotStacked:
-        print "Branch for %r at %r is not stacked at all. Giving up." % (
-            branch_id, bzr_branch_url)
-    except errors.UnstackableBranchFormat:
-        print "Branch for %r at %r is unstackable. Giving up." % (
-            branch_id, bzr_branch_url)
-    else:
-        if current_stacked_on_location != stacked_on_location:
-            print (
-                'Branch for %r at %r stacked on %r, should be on %r. Fixing.'
-                % (branch_id, bzr_branch_url, current_stacked_on_location,
-                   stacked_on_location))
-            if not read_only:
-                set_branch_stacked_on_url(bzrdir, stacked_on_location)
-
-
-def parse_from_stream(stream):
-    """Parse branch input from the given stream.
-
-    Expects the stream to be populated only by blank lines or by lines of the
-    form: '<foo> <bar> <baz> <qux>\n'. Such lines are yielded as 4-tuples.
-    Blank lines are ignored.
-    """
-    for line in stream.readlines():
-        if not line.strip():
-            continue
-        branch_id, branch_type, unique_name, stacked_on_name = line.split()
-        yield branch_id, branch_type, unique_name, stacked_on_name
-
-
-def parse_arguments():
-    """Parse command-line arguments."""
-    parser = OptionParser()
-    return parser.parse_args()
-
-
-def update_branches(branches, read_only):
-    """Update the stacked_on_location for all branches in 'branches'.
-
-    :param branches: An iterator yielding (branch_id, branch_type,
-        unique_name, stacked_on_unique_name).
-    """
-    for branch_info in branches:
-        (branch_id, branch_type, unique_name, stacked_on_name) = branch_info
-        stacked_on_location = '/' + stacked_on_name
-        if branch_type == 'HOSTED':
-            update_stacked_on(
-                branch_id, get_hosted_url(unique_name),
-                stacked_on_location, read_only)
-        update_stacked_on(
-            branch_id, get_mirrored_url(unique_name), stacked_on_location,
-            read_only)
-
-
 class UpdateStackedBranches(LaunchpadScript):
     """Update stacked branches so their stacked_on_location matches the db."""
 
@@ -174,11 +96,77 @@ class UpdateStackedBranches(LaunchpadScript):
         else:
             print "Processing..."
         try:
-            update_branches(
-                parse_from_stream(sys.stdin), self.options.dry_run)
+            self.updateBranches(self.parseFromStream(sys.stdin))
         finally:
             server.tearDown()
         print "Done."
+
+
+    def updateStackedOn(self, branch_id, bzr_branch_url, stacked_on_location):
+        """Stack the Bazaar branch at 'bzr_branch_url' on the given URL.
+
+        :param branch_id: The database ID of the branch. This is only used for
+            logging.
+        :param bzr_branch_url: The URL of the Bazaar branch. Normally this is
+            of the form lp-mirrored:/// or lp-hosted:///.
+        :param stacked_on_location: The location to store in the branch's
+            stacked_on_location configuration variable.
+        """
+        try:
+            bzrdir = BzrDir.open(bzr_branch_url)
+        except errors.NotBranchError:
+            print "No bzrdir for %r at %r" % (branch_id, bzr_branch_url)
+            return
+
+        try:
+            current_stacked_on_location = get_branch_stacked_on_url(bzrdir)
+        except errors.NotBranchError:
+            print "No branch for %r at %r" % (branch_id, bzr_branch_url)
+        except errors.NotStacked:
+            print "Branch for %r at %r is not stacked at all. Giving up." % (
+                branch_id, bzr_branch_url)
+        except errors.UnstackableBranchFormat:
+            print "Branch for %r at %r is unstackable. Giving up." % (
+                branch_id, bzr_branch_url)
+        else:
+            if current_stacked_on_location != stacked_on_location:
+                print (
+                    'Branch for %r at %r stacked on %r, should be on %r. Fixing.'
+                    % (branch_id, bzr_branch_url, current_stacked_on_location,
+                       stacked_on_location))
+                if not self.options.dry_run:
+                    set_branch_stacked_on_url(bzrdir, stacked_on_location)
+
+
+    def parseFromStream(self, stream):
+        """Parse branch input from the given stream.
+
+        Expects the stream to be populated only by blank lines or by lines of
+        the form: '<foo> <bar> <baz> <qux>\n'. Such lines are yielded as
+        4-tuples. Blank lines are ignored.
+        """
+        for line in stream.readlines():
+            if not line.strip():
+                continue
+            branch_id, branch_type, unique_name, stacked_on_name = line.split()
+            yield branch_id, branch_type, unique_name, stacked_on_name
+
+
+    def updateBranches(self, branches):
+        """Update the stacked_on_location for all branches in 'branches'.
+
+        :param branches: An iterator yielding (branch_id, branch_type,
+            unique_name, stacked_on_unique_name).
+        """
+        for branch_info in branches:
+            (branch_id, branch_type, unique_name, stacked_on_name) = branch_info
+            stacked_on_location = '/' + stacked_on_name
+            if branch_type == 'HOSTED':
+                self.updateStackedOn(
+                    branch_id, get_hosted_url(unique_name),
+                    stacked_on_location)
+            self.updateStackedOn(
+                branch_id, get_mirrored_url(unique_name), stacked_on_location)
 
 
 if __name__ == '__main__':
