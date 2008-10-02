@@ -27,7 +27,7 @@ from canonical.codehosting.branchfs import (
     LaunchpadServer)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
-from canonical.codehosting.inmemory import FakeLaunchpadFrontend
+from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import AsyncVirtualTransport
@@ -741,7 +741,7 @@ class TestRequestMirror(TestCaseWithTransport):
     def setUp(self):
         self._server = None
         self._request_mirror_log = []
-        frontend = FakeLaunchpadFrontend()
+        frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.authserver = frontend.getFilesystemEndpoint()
         self.authserver.requestMirror = (
@@ -793,7 +793,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         backing_transport = memory_transport.clone('backing')
         mirror_transport = memory_transport.clone('mirror')
 
-        self._frontend = FakeLaunchpadFrontend()
+        self._frontend = InMemoryFrontend()
         self.factory = self._frontend.getLaunchpadObjectFactory()
 
         authserver = self._frontend.getFilesystemEndpoint()

@@ -13,7 +13,7 @@ from bzrlib.urlutils import local_path_to_url
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
 from canonical.codehosting.branchfsclient import BlockingProxy
-from canonical.codehosting.inmemory import FakeLaunchpadFrontend
+from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -31,7 +31,7 @@ class TestingServer(LaunchpadInternalServer):
         using the `FakeLaunchpad` authserver client and backed onto a
         MemoryTransport.
         """
-        frontend = FakeLaunchpadFrontend()
+        frontend = InMemoryFrontend()
         branchfs = frontend.getFilesystemEndpoint()
         branch = frontend.getLaunchpadObjectFactory().makeBranch()
         self._branch_path = branch.unique_name

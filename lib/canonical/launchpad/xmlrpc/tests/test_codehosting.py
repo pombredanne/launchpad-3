@@ -13,7 +13,7 @@ from bzrlib.tests import adapt_tests, TestScenarioApplier
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.inmemory import FakeLaunchpadFrontend
+from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -558,9 +558,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
-        # branches (i.e. owned by us or by a team we are on), we get the
-        # database id of the branch, and a flag saying that we can write to
-        # that branch.
+        # branches, we get the database id of the branch, and a flag saying
+        # that we can write to that branch.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
@@ -568,6 +567,42 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual(branch.id, branch_id)
         self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_team_owned(self):
+        # When we get the branch information for a hosted branch owned by one
+        # of our teams, we get the database id of the branch, and a flag
+        # saying that we can write to that branch.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_unowned(self):
+        # We only have read-only access to hosted branches owned by other
+        # people.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_team_unowned(self):
+        # We only have read-only access to hosted branches owned by other
+        # teams.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
@@ -749,7 +784,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch, 'next_mirror_time', UTC_NOW)
 
 
-class RealLaunchpadFrontend:
+class LaunchpadDatabaseFrontend:
 
     def getFilesystemEndpoint(self):
         return BranchFileSystem(None, None)
@@ -770,10 +805,10 @@ class RealLaunchpadFrontend:
 class PullerEndpointScenarioApplier(TestScenarioApplier):
 
     scenarios = [
-        ('real', {'frontend': RealLaunchpadFrontend,
-                  'layer': DatabaseFunctionalLayer}),
-        ('fake', {'frontend': FakeLaunchpadFrontend,
-                  'layer': DatabaseFunctionalLayer}),
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': DatabaseFunctionalLayer}),
         ]
 
 
