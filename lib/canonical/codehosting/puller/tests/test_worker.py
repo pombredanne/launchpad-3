@@ -170,14 +170,18 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(new_http.__class__, http.__class__)
 
     def test_defaultStackedOnBranchDoesNotForceStacking(self):
+        # If the policy supplies a stacked on URL but the source branch does
+        # not support stacking, the destination branch does not support
+        # stacking.
         stack_on = self.make_branch('default-stack-on')
-        class Foo(AcceptAnythingPolicy):
+        class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
             def getStackedOnURLForDestinationBranch(self, foo, branch):
                 return stack_on.base
         source_branch = self.make_branch('source-branch', format='pack-0.92')
         self.assertFalse(source_branch._format.supports_stacking())
         to_mirror = self.makePullerWorker(
-            source_branch.base, self.get_url('destdir'), policy=Foo())
+            source_branch.base, self.get_url('destdir'),
+            policy=PrearrangedStackedBranchPolicy())
         to_mirror.mirrorWithoutChecks()
         dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
         self.assertFalse(dest._format.supports_stacking())
