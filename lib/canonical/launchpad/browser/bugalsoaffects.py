@@ -591,7 +591,7 @@ class IAddBugTaskWithUpstreamLinkForm(IAddBugTaskForm):
     can be provided.
     """
     link_upstream_how = Choice(
-        title=_('How'), required=True,
+        title=_('How'), required=False,
         vocabulary=LinkUpstreamHowOptions,
         default=LinkUpstreamHowOptions.LINK_UPSTREAM,
         description=_("How to link to an upstream bug."))
@@ -615,7 +615,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how',
+                  LaunchpadRadioWidget, _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -698,10 +699,10 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         # XXX: GavinPanella 2008-02-13 bug=201793: EMAIL_UPSTREAM will
         # be uncommented in a later branch.
         return {
-            LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[0],
-            #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[1],
-            LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[1],
-            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[2]}
+            LinkUpstreamHowOptions.LINK_UPSTREAM.name      : items[1],
+            #LinkUpstreamHowOptions.EMAIL_UPSTREAM.name     : items[2],
+            LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE.name: items[2],
+            LinkUpstreamHowOptions.UNLINKED_UPSTREAM.name  : items[3]}
 
     def main_action(self, data):
         link_upstream_how = data.get('link_upstream_how')
