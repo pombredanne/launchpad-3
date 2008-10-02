@@ -841,7 +841,7 @@ the publication, up to the point where it was forcefully stopped.
 
 When a Retry or DisconnectionError exception is raised and the request
 supports retry, it will be retried with a copy of the WSGI environment.
-If that happens, though, we'll remove the [publication,traversal]ticks 
+If that happens, though, we'll remove the [publication,traversal]ticks
 variables from there.
 
     >>> request, publication = get_request_and_publication()
@@ -1069,6 +1069,40 @@ the OAuthNonce table.
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+
+== Doomed transactions are aborted ==
+
+Doomed transactions are aborted.
+
+    >>> request, publication = get_request_and_publication(method='POST')
+    >>> txn = transaction.begin()
+
+    # This sets up an alert so we can easily see that the transaction has
+    # been aborted.
+    >>> bound_abort = txn.abort
+    >>> def faux_abort():
+    ...     bound_abort()
+    ...     print 'Aborted'
+    ...
+    >>> txn.abort = faux_abort
+
+    # Now we doom the transaction.
+    >>> txn.doom()
+    >>> txn.isDoomed()
+    True
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> request._publicationticks_start = 1345
+
+    >>> publication.afterCall(request, None)
+    Aborted
+    >>> txn.isDoomed() # It is still doomed.
+    True
+    >>> del txn.abort # Clean up test fixture.
 
 
 == HEAD requests have empty body ==
