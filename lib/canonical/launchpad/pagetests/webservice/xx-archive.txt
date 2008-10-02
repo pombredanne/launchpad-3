@@ -33,16 +33,18 @@ at "ubuntutest":
     http://.../debian
     http://.../gentoo
 
-    >>> ubuntu = distros['entries'][2]
+    >>> ubuntutest = distros['entries'][2]
+    >>> ubuntu = distros['entries'][0]
 
 "ubuntutest" has a "main_archive" which is always present:
 
-    >>> print ubuntu['main_archive_link']
+    >>> print ubuntutest['main_archive_link']
     http://.../ubuntutest/+archive/primary
 
 The archive has the following attributes:
 
-    >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
+    >>> main_archive = webservice.get(
+    ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(main_archive)
     description: None
     distribution_link: u'http://.../ubuntutest'
@@ -54,10 +56,10 @@ The archive has the following attributes:
 
 A distribution can also provide a list of all its archives:
 
-    >>> print ubuntu['archives_collection_link']
+    >>> print ubuntutest['archives_collection_link']
     http://.../ubuntutest/archives
     >>> archives = webservice.get(
-    ...     ubuntu['archives_collection_link']).jsonBody()
+    ...     ubuntutest['archives_collection_link']).jsonBody()
     >>> print_self_link_of_entries(archives)
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
     http://api.launchpad.dev/beta/ubuntutest/+archive/primary
@@ -141,12 +143,17 @@ And one for an individual:
         u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
     source_package_name: None
 
+
+== Archive Permission Custom Operations ==
+
 Permission collections can be retrieved with custom operations on the
 archive.
 
+getPermissionsForUser returns all the permissions that a user has.
+
     >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
     >>> permissions = webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'getPermissionsForUser',
+    ...     ubuntutest['main_archive_link'], 'getPermissionsForUser',
     ...     user=ubuntu_team['self_link']).jsonBody()
     >>> for entry in permissions['entries']:
     ...     print entry['permission']
@@ -154,4 +161,16 @@ archive.
     ...     print entry['source_package_name']
     Archive Upload Rights universe None
     Archive Upload Rights main None
+
+getUploadersForPackage returns all the permissions where someone can
+upload a particular package.
+
+    >>> permissions = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...     source_package_name='mozilla-firefox').jsonBody()
+    >>> pprint_entry(permissions)
+    >>> for entry in permissions['entries']:
+    ...     print entry['permission']
+    ...     print entry['person_link']
+    Archive Upload Rights  http://api.launchpad.dev/beta/~carlos
 

@@ -710,10 +710,10 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.permissionsForUser(self, user)
 
-    def getUploadersForPackage(self, sourcepackagename):
+    def getUploadersForPackage(self, source_package_name):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.uploadersForPackage(self, sourcepackagename)
+        return permission_set.uploadersForPackage(self, source_package_name)
 
     def getUploadersForComponent(self, component=None):
         """See `IArchive`."""

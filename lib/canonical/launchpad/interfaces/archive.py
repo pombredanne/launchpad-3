@@ -331,6 +331,18 @@ class IArchive(IHasOwner):
         :return: A list of IArchivePermission records.
         """
 
+    @operation_parameters(
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    @export_read_operation()
+    def getUploadersForPackage(source_package_name):
+        """Return `IArchivePermission` records for the package's uploaders.
+
+        :param source_package_name: An `ISourcePackageName` or textual name
+            for the source package.
+        """
+
     def canUpload(user, component_or_package=None):
         """Check to see if user is allowed to upload to component.
 
@@ -397,11 +409,6 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
-
-
-# Avoid circular import.
-from canonical.launchpad.interfaces.distribution import IDistribution
-IArchive['distribution'].schema = IDistribution
 
 
 class IArchiveSourceSelectionForm(Interface):
@@ -563,7 +570,13 @@ class ArchivePurpose(DBEnumeratedType):
 
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.
+from canonical.launchpad.interfaces.distribution import IDistribution
+IArchive['distribution'].schema = IDistribution
+
 from canonical.launchpad.interfaces.archivepermission import IArchivePermission
 IArchive['getPermissionsForUser'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getUploadersForPackage'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission
