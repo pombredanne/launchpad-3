@@ -140,3 +140,18 @@ And one for an individual:
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
     source_package_name: None
+
+Permission collections can be retrieved with custom operations on the
+archive.
+
+    >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
+    >>> permissions = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPermissionsForUser',
+    ...     user=ubuntu_team['self_link']).jsonBody()
+    >>> for entry in permissions['entries']:
+    ...     print entry['permission']
+    ...     print entry['component_name']
+    ...     print entry['source_package_name']
+    Archive Upload Rights universe None
+    Archive Upload Rights main None
+

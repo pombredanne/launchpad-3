@@ -700,6 +700,36 @@ class Archive(SQLBase):
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
 
+    def getPermissions(self, user, item, perm_type):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.checkAuthenticated(user, self, perm_type, item)
+
+    def getPermissionsForUser(self, user):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForUser(self, user)
+
+    def getUploadersForPackage(self, sourcepackagename):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPackage(self, sourcepackagename)
+
+    def getUploadersForComponent(self, component=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForComponent(self, component)
+
+    def getQueueAdminsForComponent(self, component):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.queueAdminsForComponent(self, component)
+
+    def getComponentsForQueueAdmin(self, user):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.componentsForQueueAdmin(self, user)
+
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         if self.is_ppa:
@@ -715,9 +745,7 @@ class Archive(SQLBase):
 
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.checkAuthenticated(
-            user, self, permission, component)
+        permissions = self.getPermissions(user, component, permission)
         return permissions.count() > 0
 
     def getFileByName(self, filename):

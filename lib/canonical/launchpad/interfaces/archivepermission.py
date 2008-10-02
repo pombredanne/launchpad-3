@@ -129,6 +129,13 @@ class IArchivePermissionSet(Interface):
         authenticated in that context.
         """
 
+    def permissionsForUser(user, archive):
+        """All `ArchivePermission` records for the user.
+
+        :param user: An `IPerson`
+        :paran archive: An `IArchive`
+        """
+
     def uploadersForComponent(archive, component=None):
         """The `ArchivePermission` records for authorised component uploaders.
 
@@ -149,6 +156,17 @@ class IArchivePermissionSet(Interface):
             components he has access to.
 
         :return: `ArchivePermission` records for all the components that
+            'user' is allowed to upload to.
+        """
+
+    def packagesForUploader(archive, user):
+        """The `ArchivePermission` records for the user's upload packages.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to find out which
+            packages he has access to.
+
+        :return: `ArchivePermission` records for all the packages that
             'user' is allowed to upload to.
         """
 

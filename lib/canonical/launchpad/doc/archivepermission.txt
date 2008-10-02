@@ -113,6 +113,13 @@ passing a type that it does not know about results in a TypeError:
 IArchivePermissionSet also has some helpers to make it very easy to
 check permissions.
 
+permissionsForUser() returns all the permission records for the supplied user:
+
+    >>> permissions = permission_set.permissionsForUser(
+    ...     ubuntu.main_archive,  ubuntu_team)
+    >>> permissions.count()
+    8
+
 uploadersForComponent() returns ArchivePermission records where a person
 or team has permission to upload to the supplied component:
 
@@ -168,6 +175,15 @@ to be thrown.
     ...
     NotFoundError: 'fakepackage'
 
+Similarly, packagesForUploaders() returns the ArchivePermission records where
+the supplied user has permission to upload to packages.
+
+    >>> carlos = getUtility(IPersonSet).getByName("carlos")
+    >>> packages = permission_set.packagesForUploader(
+    ...     ubuntu.main_archive, carlos)
+    >>> for permission in sorted(packages, key=operator.attrgetter("id")):
+    ...     print permission.sourcepackagename.name
+    mozilla-firefox
 
 queueAdminsForComponent() returns the ArchivePermission records where a
 person or team has permission to administer an archive's package

@@ -119,6 +119,16 @@ class ArchivePermissionSet:
 
         return auth
 
+    def permissionsForUser(self, archive, user):
+        """See `IArchivePermissionSet`."""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                          TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, user))
+
     def _componentsFor(self, archive, user, permission_type):
         """Helper function to get ArchivePermission objects."""
         return ArchivePermission.select("""
@@ -146,6 +156,9 @@ class ArchivePermissionSet:
             ]
 
         if component is not None:
+            if isinstance(component, basestring):
+                component = getUtility(
+                    IComponentSet)[component]
             clauses.append(
                 "ArchivePermission.component = %s" % sqlvalues(component))
         else:
@@ -153,6 +166,19 @@ class ArchivePermissionSet:
 
         query = " AND ".join(clauses)
         return ArchivePermission.select(query, prejoins=["component"])
+
+    def packagesForUploader(self, archive, user):
+        """See `IArchive`."""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.sourcepackagename IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                    TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, user),
+            prejoins=["sourcepackagename"])
 
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""
@@ -166,6 +192,9 @@ class ArchivePermissionSet:
 
     def queueAdminsForComponent(self, archive, component):
         "See `IArchivePermissionSet`."""
+        if isinstance(component, basestring):
+            component = getUtility(
+                IComponentSet)[component]
         results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
             component=component)

@@ -25,12 +25,14 @@ from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, exported, export_read_operation,
+    operation_parameters, operation_returns_collection_of)
 
 
 class ArchiveDependencyError(Exception):
@@ -310,6 +312,25 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def getPermissions(user, item, perm_type):
+        """Get the `IArchivePermission` record with the supplied details.
+
+        :param user: An `IPerson`
+        :param item: An `IComponent`, `ISourcePackageName`
+        :param perm_type: An ArchivePermission enum,
+        :return: A list of IArchivePermission records.
+        """
+
+    @operation_parameters(user=Reference(schema=IPerson))
+    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    @export_read_operation()
+    def getPermissionsForUser(user):
+        """Return the `IArchivePermission` records applicable to the user.
+
+        :param user: An `IPerson`
+        :return: A list of IArchivePermission records.
+        """
+
     def canUpload(user, component_or_package=None):
         """Check to see if user is allowed to upload to component.
 
@@ -539,3 +560,10 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+
+# MONKEY PATCH TIME!
+# Fix circular dependency issues.
+from canonical.launchpad.interfaces.archivepermission import IArchivePermission
+IArchive['getPermissionsForUser'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
