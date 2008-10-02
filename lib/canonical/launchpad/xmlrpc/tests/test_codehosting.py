@@ -13,7 +13,7 @@ from bzrlib.tests import adapt_tests, TestScenarioApplier
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.inmemory import FakeLaunchpadFrontend
+from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -784,7 +784,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch, 'next_mirror_time', UTC_NOW)
 
 
-class RealLaunchpadFrontend:
+class LaunchpadDatabaseFrontend:
 
     def getFilesystemEndpoint(self):
         return BranchFileSystem(None, None)
@@ -805,10 +805,10 @@ class RealLaunchpadFrontend:
 class PullerEndpointScenarioApplier(TestScenarioApplier):
 
     scenarios = [
-        ('real', {'frontend': RealLaunchpadFrontend,
-                  'layer': DatabaseFunctionalLayer}),
-        ('fake', {'frontend': FakeLaunchpadFrontend,
-                  'layer': DatabaseFunctionalLayer}),
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': DatabaseFunctionalLayer}),
         ]
 
 

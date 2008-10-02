@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'FakeLaunchpadFrontend',
+    'InMemoryFrontend',
     ]
 
 from xmlrpclib import Fault
@@ -382,7 +382,7 @@ class FakeBranchFilesystem:
         return '/' + product.development_focus.user_branch.unique_name
 
 
-class FakeLaunchpadFrontend:
+class InMemoryFrontend:
 
     def __init__(self):
         self._branch_set = ObjectSet()
