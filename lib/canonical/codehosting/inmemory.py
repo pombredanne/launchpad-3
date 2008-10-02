@@ -51,22 +51,24 @@ class ObjectSet:
     """Generic set of database objects."""
 
     def __init__(self):
-        self._objects = []
+        self._objects = {}
+        self._next_id = 1
 
     def _add(self, db_object):
-        self._objects.append(db_object)
-        db_object.id = len(self._objects) - 1
+        self._objects[self._next_id] = db_object
+        db_object.id = self._next_id
+        self._next_id += 1
         db_object._set_object_set(self)
         return db_object
 
+    def _delete(self, db_object):
+        del self._objects[db_object.id]
+
     def __iter__(self):
-        return iter(self._objects)
+        return self._objects.itervalues()
 
     def get(self, id):
-        try:
-            return self._objects[id]
-        except IndexError:
-            return None
+        return self._objects.get(id, None)
 
     def getByName(self, name):
         for obj in self:
