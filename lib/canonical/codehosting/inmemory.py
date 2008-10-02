@@ -305,10 +305,9 @@ class FakeBranchFilesystem:
                     NOT_FOUND_FAULT_CODE,
                     "Project %r does not exist." % (product_name,))
         try:
-            # XXX: BranchType is not tested.
             return self._factory.makeBranch(
                 owner=owner, name=branch_name, product=product,
-                registrant=registrant).id
+                registrant=registrant, branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
             return Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
 

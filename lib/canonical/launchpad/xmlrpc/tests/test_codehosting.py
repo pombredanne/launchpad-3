@@ -482,6 +482,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
@@ -495,6 +496,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
