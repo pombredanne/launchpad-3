@@ -31,7 +31,7 @@ from canonical.codehosting.transport import (
     get_chrooted_transport, get_readonly_transport, _MultiServer)
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.scripts.base import LaunchpadScript
 
 
 def get_server(read_only):
@@ -132,9 +132,6 @@ def parse_from_stream(stream):
 def parse_arguments():
     """Parse command-line arguments."""
     parser = OptionParser()
-    parser.add_option(
-        '-n', '--dry-run', default=False, action="store_true", dest="dry_run",
-        help="Don't change anything on disk, just go through the motions.")
     return parser.parse_args()
 
 
@@ -156,21 +153,33 @@ def update_branches(branches, read_only):
             read_only)
 
 
-def main(options, arguments):
-    execute_zcml_for_scripts()
-    server = get_server(options.dry_run)
-    server.setUp()
-    if options.dry_run:
-        print "Running read-only..."
-    else:
-        print "Processing..."
-    try:
-        update_branches(parse_from_stream(sys.stdin), options.dry_run)
-    finally:
-        server.tearDown()
-    print "Done."
+class UpdateStackedBranches(LaunchpadScript):
+    """Update stacked branches so their stacked_on_location matches the db."""
+
+    def __init__(self):
+        super(UpdateStackedBranches, self).__init__('update-stacked-on')
+
+    def add_my_options(self):
+        self.parser.add_option(
+            '-n', '--dry-run', default=False, action="store_true",
+            dest="dry_run",
+            help=("Don't change anything on disk, just go through the "
+                  "motions."))
+
+    def main(self):
+        server = get_server(self.options.dry_run)
+        server.setUp()
+        if self.options.dry_run:
+            print "Running read-only..."
+        else:
+            print "Processing..."
+        try:
+            update_branches(
+                parse_from_stream(sys.stdin), self.options.dry_run)
+        finally:
+            server.tearDown()
+        print "Done."
 
 
 if __name__ == '__main__':
-    options, arguments = parse_arguments()
-    main(options, arguments)
+    UpdateStackedBranches().lock_and_run()
