@@ -106,10 +106,14 @@ Job.dependants = ReferenceSet(
     Job.id, JobDependency.prerequisite, JobDependency.dependant, Job.id)
 
 PrerequisiteJob = ClassAlias(Job)
+
+Job.incomplete = Not(
+    PrerequisiteJob.status.is_in((JobStatus.COMPLETED, JobStatus.FAILED)))
+
 Job.blocked_jobs = Select(
     Job.id, And(Job.id == JobDependency.dependant,
     PrerequisiteJob.id == JobDependency.prerequisite,
-    PrerequisiteJob.status != JobStatus.COMPLETED), distinct=True)
+    Job.incomplete), distinct=True)
 
 Job.ready_jobs = Select(Job.id, And(Job.status == JobStatus.WAITING,
     Not(Job.id.is_in(Job.blocked_jobs))))

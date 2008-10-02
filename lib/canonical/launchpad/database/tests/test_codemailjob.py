@@ -68,6 +68,7 @@ class TestCodeMailJob(TestCaseWithFactory):
         """
         mail_job1 = self.makeExampleMail()
         mail_job1.job.addPrerequisite(Job(status=JobStatus.COMPLETED))
+        mail_job1.job.addPrerequisite(Job(status=JobStatus.FAILED))
         mail_job2 = self.makeExampleMail()
         mail_job2.job.status = JobStatus.COMPLETED
         mail_job3 = self.makeExampleMail()

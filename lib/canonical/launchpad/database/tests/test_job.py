@@ -174,7 +174,7 @@ class TestJobDependency(TestCase):
         prerequisite_1.status = JobStatus.COMPLETED
         self.assertEqual(
             [(job.id,)], list(Store.of(job).execute(Job.blocked_jobs)))
-        prerequisite_2.status = JobStatus.COMPLETED
+        prerequisite_2.status = JobStatus.FAILED
         self.assertEqual(
             [], list(Store.of(job).execute(Job.blocked_jobs)))
 
