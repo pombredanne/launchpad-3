@@ -155,12 +155,12 @@ getPermissionsForUser returns all the permissions that a user has.
     >>> permissions = webservice.named_get(
     ...     ubuntutest['main_archive_link'], 'getPermissionsForUser',
     ...     user=ubuntu_team['self_link']).jsonBody()
-    >>> for entry in permissions['entries']:
+    >>> for entry in sorted(permissions['entries']):
     ...     print entry['permission']
     ...     print entry['component_name']
     ...     print entry['source_package_name']
-    Archive Upload Rights universe None
     Archive Upload Rights main None
+    Archive Upload Rights universe None
 
 getUploadersForPackage returns all the permissions where someone can
 upload a particular package.
@@ -183,4 +183,17 @@ upload to a particular component:
     ...     print entry['permission']
     ...     print entry['person_link']
     Archive Upload Rights  http://.../~ubuntu-team
+
+If you don't specify the component, you get all the uploaders for
+all components.
+
+    >>> permissions = webservice.named_get(
+    ...     ubuntutest['main_archive_link'],
+    ...     'getUploadersForComponent').jsonBody()
+    >>> for entry in permissions['entries']:
+    ...     print entry['permission']
+    ...     print entry['component_name']
+    ...     print entry['person_link']
+    Archive Upload Rights universe http://.../~ubuntu-team
+    Archive Upload Rights main http://.../~ubuntu-team
 

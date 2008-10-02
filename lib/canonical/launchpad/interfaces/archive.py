@@ -344,10 +344,10 @@ class IArchive(IHasOwner):
         """
 
     @operation_parameters(
-        component_name=TextLine(title=_("Component Name"), required=True))
+        component_name=TextLine(title=_("Component Name"), required=False))
     @operation_returns_collection_of(Interface) # Really IArchivePermission
     @export_read_operation()
-    def getUploadersForComponent(component_name):
+    def getUploadersForComponent(component_name=None):
         """Return `IArchivePermission` records for the component's uploaders.
 
         :param component_name: An `IComponent` or textual name for the
