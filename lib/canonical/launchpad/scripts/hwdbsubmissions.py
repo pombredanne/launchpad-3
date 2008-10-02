@@ -1645,17 +1645,16 @@ class ProcessingLoop(object):
 
     def isDone(self):
         """See `ITunableLoop`."""
-        if self.max_submissions is not None:
-            if self.max_submissions <= (
-                self.valid_submissions + self.invalid_submissions):
-                return True
         return self.last_batch
 
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
-        submissions = list(getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size])
-        if len(submissions) < chunk_size:
+        # chunk_size is a float; we compare it below with an int value,
+        # which can lead to unexpected results.
+        chunk_size = int(chunk_size)
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
+        if submissions.count() < chunk_size:
             self.last_batch = True
         for submission in submissions:
             try:
@@ -1681,8 +1680,18 @@ class ProcessingLoop(object):
                 error_utility.raising(info, request)
                 self.logger.error('%s (%s)' % (message, request.oopsid))
 
+                self.transaction.abort()
                 submission.status = HWSubmissionProcessingStatus.INVALID
+                # Ensure that this submission is marked as bad, even if
+                # further submissions in this batch raise an exception.
+                self.transaction.commit()
                 self.invalid_submissions += 1
+
+            if self.max_submissions is not None:
+                if self.max_submissions <= (
+                    self.valid_submissions + self.invalid_submissions):
+                    self.last_batch = True
+                    break
         self.transaction.commit()
 
 def process_pending_submissions(transaction, logger, max_submissions=None):
@@ -1692,7 +1701,8 @@ def process_pending_submissions(transaction, logger, max_submissions=None):
     mark them as either PROCESSED or INVALID.
     """
     loop = ProcessingLoop(transaction, logger, max_submissions)
-    loop_tuner = LoopTuner(loop, 2, maximum_chunk_size=50)
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
     loop_tuner.run()
     logger.info(
         'Processed %i valid and %i invalid HWDB submissions'
