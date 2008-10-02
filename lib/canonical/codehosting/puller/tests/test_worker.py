@@ -175,7 +175,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # stacking.
         stack_on = self.make_branch('default-stack-on')
         class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
-            def getStackedOnURLForDestinationBranch(self, foo, branch):
+            def getStackedOnURLForDestinationBranch(self, source_branch,
+                                                    destination_url):
                 return stack_on.base
         source_branch = self.make_branch('source-branch', format='pack-0.92')
         self.assertFalse(source_branch._format.supports_stacking())
