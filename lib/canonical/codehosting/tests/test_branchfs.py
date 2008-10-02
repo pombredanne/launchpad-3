@@ -452,17 +452,11 @@ class LaunchpadTransportTests:
         authserver = frontend.getFilesystemEndpoint()
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
-        self.mirror_transport = MemoryTransport()
         self.server = self.getServer(
             authserver, self.requester.id, self.backing_transport,
-            self.mirror_transport)
+            MemoryTransport())
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
-        self.backing_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/01', '00/00/00/01/.bzr',
-             '00/00/00/01/.bzr/branch', '00/00/00/01/.bzr/branch/lock'])
-        self.backing_transport.put_bytes(
-            '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
     def assertFiresFailure(self, exception, function, *args, **kwargs):
         """Assert that calling `function` will cause `exception` to be fired.
