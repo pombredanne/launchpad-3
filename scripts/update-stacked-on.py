@@ -17,6 +17,7 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
+from optparse import OptionParser
 import sys
 import xmlrpclib
 
@@ -24,28 +25,26 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
+from canonical.codehosting.branchfs import LaunchpadInternalServer
+from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.transport import (
-    BlockingProxy, LaunchpadInternalServer,
     get_chrooted_transport, get_readonly_transport, _MultiServer)
 from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
-READ_ONLY = False
-
-
-def get_server():
+def get_server(read_only):
     """Get a server that can write to both hosted and mirrored areas."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.branches_root)
-    if READ_ONLY:
+    if read_only:
         hosted_transport = get_readonly_transport(hosted_transport)
     mirrored_transport = get_chrooted_transport(
         config.supermirror.branchesdest)
-    if READ_ONLY:
+    if read_only:
         mirrored_transport = get_readonly_transport(mirrored_transport)
     hosted_server = LaunchpadInternalServer(
         'lp-hosted:///', authserver, hosted_transport)
@@ -77,7 +76,8 @@ def set_branch_stacked_on_url(bzrdir, stacked_on_url):
         stacked_on_url, 'stacked_on_location')
 
 
-def update_stacked_on(branch_id, bzr_branch_url, stacked_on_location):
+def update_stacked_on(branch_id, bzr_branch_url, stacked_on_location,
+                      read_only):
     """Update the Bazaar branch at 'bzr_branch_url' to be stacked correctly.
 
     :param branch_id: The database ID of the branch. This is only used for
@@ -86,6 +86,8 @@ def update_stacked_on(branch_id, bzr_branch_url, stacked_on_location):
         the form lp-mirrored:/// or lp-hosted:///.
     :param stacked_on_location: The location to store in the branch's
         stacked_on_location configuration variable.
+    :param read_only: If True, then don't actually update the branch.conf,
+        just do everything else.
     """
     try:
         bzrdir = BzrDir.open(bzr_branch_url)
@@ -109,7 +111,7 @@ def update_stacked_on(branch_id, bzr_branch_url, stacked_on_location):
                 'Branch for %r at %r stacked on %r, should be on %r. Fixing.'
                 % (branch_id, bzr_branch_url, current_stacked_on_location,
                    stacked_on_location))
-            if not READ_ONLY:
+            if not read_only:
                 set_branch_stacked_on_url(bzrdir, stacked_on_location)
 
 
@@ -127,25 +129,48 @@ def parse_from_stream(stream):
         yield branch_id, branch_type, unique_name, stacked_on_name
 
 
-def main():
-    execute_zcml_for_scripts()
-    server = get_server()
-    server.setUp()
-    print "Processing..."
-    try:
-        for branch_info in parse_from_stream(sys.stdin):
-            (branch_id, branch_type, unique_name, stacked_on_name) = branch_info
-            stacked_on_location = '/' + stacked_on_name
-            if branch_type == 'HOSTED':
-                update_stacked_on(
-                    branch_id, get_hosted_url(unique_name),
-                    stacked_on_location)
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = OptionParser()
+    parser.add_option(
+        '-n', '--dry-run', default=False, action="store_true", dest="dry_run",
+        help="Don't change anything on disk, just go through the motions.")
+    return parser.parse_args()
+
+
+def update_branches(branches, read_only):
+    """Update the stacked_on_location for all branches in 'branches'.
+
+    :param branches: An iterator yielding (branch_id, branch_type,
+        unique_name, stacked_on_unique_name).
+    """
+    for branch_info in branches:
+        (branch_id, branch_type, unique_name, stacked_on_name) = branch_info
+        stacked_on_location = '/' + stacked_on_name
+        if branch_type == 'HOSTED':
             update_stacked_on(
-                branch_id, get_mirrored_url(unique_name), stacked_on_location)
+                branch_id, get_hosted_url(unique_name),
+                stacked_on_location, read_only)
+        update_stacked_on(
+            branch_id, get_mirrored_url(unique_name), stacked_on_location,
+            read_only)
+
+
+def main(options, arguments):
+    execute_zcml_for_scripts()
+    server = get_server(options.dry_run)
+    server.setUp()
+    if options.dry_run:
+        print "Running read-only..."
+    else:
+        print "Processing..."
+    try:
+        update_branches(parse_from_stream(sys.stdin), options.dry_run)
     finally:
         server.tearDown()
     print "Done."
 
 
 if __name__ == '__main__':
-    main()
+    options, arguments = parse_arguments()
+    main(options, arguments)
