@@ -310,16 +310,18 @@ class TestCodeHandler(TestCaseWithFactory):
         if source_branch_url is None:
             if source_branch is None:
                 source_branch = self.factory.makeBranch()
-            source_branch_url = (config.codehosting.supermirror_root +
-                                 source_branch.unique_name)
+            source_branch_url = (
+                config.codehosting.supermirror_root +
+                source_branch.unique_name)
         if target_branch_url is None:
             if target_branch is None:
                 target_branch = self.factory.makeBranch()
-            target_branch_url = (config.codehosting.supermirror_root +
-                                 target_branch.unique_name)
-        return MergeDirective2('revid', 'sha', 0, 0, target_branch_url,
-                               source_branch=source_branch_url,
-                               base_revision_id='base-revid')
+            target_branch_url = (
+                config.codehosting.supermirror_root +
+                target_branch.unique_name)
+        return MergeDirective2(
+            'revid', 'sha', 0, 0, target_branch_url,
+            source_branch=source_branch_url, base_revision_id='base-revid')
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
@@ -335,12 +337,12 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_acquireBranchesForProposalRemoteTarget(self):
         """CodeHandler._acquireBranchesForProposal fails on remote targets."""
         source_branch = self.factory.makeBranch()
-        md = self.makeMergeDirective(source_branch,
-                                     target_branch_url='http://example.com')
+        md = self.makeMergeDirective(
+            source_branch, target_branch_url='http://example.com')
         submitter = self.factory.makePerson()
-        self.assertRaises(NonLaunchpadTarget,
-                          self.code_handler._acquireBranchesForProposal, md,
-                          submitter)
+        self.assertRaises(
+            NonLaunchpadTarget, self.code_handler._acquireBranchesForProposal,
+            md, submitter)
 
     def test_acquireBranchesForProposalRemoteSource(self):
         """CodeHandler._acquireBranchesForProposal allows remote sources.
@@ -350,8 +352,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
-        md = self.makeMergeDirective(source_branch_url=source_branch_url,
-                                       target_branch=target_branch)
+        md = self.makeMergeDirective(
+            source_branch_url=source_branch_url, target_branch=target_branch)
         branches = getUtility(IBranchSet)
         self.assertIs(None, branches.getByUrl(source_branch_url))
         submitter = self.factory.makePerson()
@@ -373,8 +375,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """
         target_branch = self.factory.makeBranch()
         source_branch_url = 'http://example.com/suffix'
-        md = self.makeMergeDirective(source_branch_url=source_branch_url,
-                                     target_branch=target_branch)
+        md = self.makeMergeDirective(
+            source_branch_url=source_branch_url, target_branch=target_branch)
         branches = getUtility(IBranchSet)
         submitter = self.factory.makePerson()
         duplicate_branch = self.factory.makeBranch(
@@ -428,8 +430,7 @@ class TestCodeHandler(TestCaseWithFactory):
         source_branch = self.factory.makeBranch(product=target_branch.product)
         md = self.makeMergeDirective(source_branch, target_branch)
         message = self.factory.makeSignedMessage(body=body,
-            subject='My subject',
-            attachment_contents=''.join(md.to_lines()))
+            subject='My subject', attachment_contents=''.join(md.to_lines()))
         return message, source_branch, target_branch
 
     def test_processMergeProposal(self):

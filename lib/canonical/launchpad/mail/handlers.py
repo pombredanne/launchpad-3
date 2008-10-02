@@ -535,6 +535,11 @@ class CodeHandler:
         }
 
     def process(self, mail, email_addr, file_alias):
+        """Process an email for the code domain.
+
+        Emails may be converted to CodeReviewComments, and / or
+        BranchMergeProposals.
+        """
         if email_addr.startswith('merge@'):
             self.processMergeProposal(mail)
             return True
