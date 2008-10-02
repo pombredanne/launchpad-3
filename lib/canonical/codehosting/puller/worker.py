@@ -367,20 +367,17 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        # literal_stacked_on_url is the URL specified by the policy and
-        # dest_stacked_on_url is that same URL resolved relative to the branch
-        # URL.  literal_stacked_on_url is what we want in the branch
-        # configuration, stacked_on_url is an absolute URL that we use to
-        # check that the branch the destination branch will be stacked on
-        # exists.
-        literal_stacked_on_url = (
+        stacked_on_url = (
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
-        if literal_stacked_on_url is not None:
-            dest_stacked_on_url = urlutils.join(
-                destination_url, literal_stacked_on_url)
+        if stacked_on_url is not None:
+            # We resolve the stacked_on_url relative to the destination_url
+            # because a common case for stacked_on_url will be
+            # /~user/project/branch and we want to check the branch already
+            # exists in the mirrored area.
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
             try:
-                Branch.open(dest_stacked_on_url)
+                Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
         if isinstance(source_branch, LoomSupport):
