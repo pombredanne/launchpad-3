@@ -27,7 +27,7 @@ from canonical.codehosting.puller.worker import (
     PullerWorkerProtocol, StackingLoopError, get_vfs_format_classes,
     install_worker_ui_factory, StackedOnBranchNotFound)
 from canonical.codehosting.puller.tests import (
-    BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
+    AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
 from canonical.testing import reset_logging
@@ -168,6 +168,24 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         new_http = get_transport('http://example.com')
         self.assertEqual(get_transport('http://example.com').base, http.base)
         self.assertEqual(new_http.__class__, http.__class__)
+
+    def test_defaultStackedOnBranchDoesNotForceStacking(self):
+        # If the policy supplies a stacked on URL but the source branch does
+        # not support stacking, the destination branch does not support
+        # stacking.
+        stack_on = self.make_branch('default-stack-on')
+        class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
+            def getStackedOnURLForDestinationBranch(self, source_branch,
+                                                    destination_url):
+                return stack_on.base
+        source_branch = self.make_branch('source-branch', format='pack-0.92')
+        self.assertFalse(source_branch._format.supports_stacking())
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            policy=PrearrangedStackedBranchPolicy())
+        to_mirror.mirrorWithoutChecks()
+        dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
+        self.assertFalse(dest._format.supports_stacking())
 
     def testRaisesStackedOnBranchNotFoundInitialMirror(self):
         # If the stacked-on branch cannot be found in the mirrored area on an
@@ -634,6 +652,12 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # Calling 'mirrorDeferred' sends 'mirrorDeferred' as a netstring.
         self.protocol.mirrorDeferred()
         self.assertSentNetstrings(['mirrorDeferred', '0'])
+
+    def test_log(self):
+        # Calling 'log' sends 'log' as a netstring and its arguments, after
+        # formatting as a string.
+        self.protocol.log('logged %s', 'message')
+        self.assertSentNetstrings(['log', '1', 'logged message'])
 
 
 class TestWorkerProgressReporting(TestCaseWithTransport):

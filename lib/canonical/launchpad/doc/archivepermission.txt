@@ -57,10 +57,10 @@ has a number of useful properties that can be checked:
     >>> print main_permission.person.name
     ubuntu-team
 
-    >>> print main_permission.component.name
+    >>> print main_permission.component_name
     main
 
-    >>> print main_permission.sourcepackagename
+    >>> print main_permission.source_package_name
     None
 
 The checkAuthenticated() call is also able to check someone's

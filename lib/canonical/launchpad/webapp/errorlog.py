@@ -17,6 +17,7 @@ import types
 import urllib
 
 from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
@@ -444,6 +445,9 @@ class ErrorReportingUtility:
                         req_vars.append((_safestr(key), '<hidden>'))
                     else:
                         req_vars.append((_safestr(key), _safestr(value)))
+                if IXMLRPCRequest.providedBy(request):
+                    args = request.getPositionalArguments()
+                    req_vars.append(('xmlrpc args', _safestr(args)))
                 req_vars.sort()
             strv = _safestr(info[1])
 
