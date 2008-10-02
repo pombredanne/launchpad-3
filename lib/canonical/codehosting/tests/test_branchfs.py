@@ -791,20 +791,20 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.requester = self.factory.makePerson()
 
         self.writable_branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
-        self.read_only_branch = self.factory.makeBranch(BranchType.HOSTED)
+            BranchType.HOSTED, owner=self.requester).unique_name
+        self.read_only_branch = self.factory.makeBranch(
+            BranchType.HOSTED).unique_name
 
         self.lp_server = self._setUpLaunchpadServer(
             self.requester.id, authserver, backing_transport,
             mirror_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
 
-        self.writable_file = '/%s/.bzr/hello.txt' % (
-            self.writable_branch.unique_name,)
+        self.writable_file = '/%s/.bzr/hello.txt' % self.writable_branch
         self.file_on_both_transports = '/%s/.bzr/README' % (
-            self.read_only_branch.unique_name,)
+            self.read_only_branch,)
         self.file_on_mirror_only = '/%s/.bzr/MIRROR-ONLY' % (
-            self.read_only_branch.unique_name,)
+            self.read_only_branch,)
 
         d1 = self._makeFilesInBranches(
             backing_transport,
@@ -882,7 +882,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     def test_iter_files_refers_to_mirror(self):
         # iter_files_recursive() gets its data from the mirror if it cannot
         # write to the branch.
-        read_only_branch_name = '/%s/' % self.read_only_branch.unique_name
+        read_only_branch_name = '/%s/' % self.read_only_branch
         transport = self.lp_transport.clone(read_only_branch_name)
         files = list(transport.iter_files_recursive())
 
@@ -892,7 +892,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
 
     def test_listable_refers_to_mirror(self):
         # listable() refers to the mirror transport for read-only branches.
-        read_only_branch_name = '/%s' % self.read_only_branch.unique_name
+        read_only_branch_name = '/%s' % self.read_only_branch
         transport = self.lp_transport.clone(read_only_branch_name)
 
         # listable() returns the same value for both transports. To
