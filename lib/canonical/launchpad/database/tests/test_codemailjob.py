@@ -10,6 +10,7 @@ import unittest
 from canonical.testing import LaunchpadFunctionalLayer
 import pytz
 
+from canonical.launchpad.database import CodeMailJobSource, Job
 from canonical.launchpad.interfaces import ICodeMailJob, JobStatus
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -51,12 +52,29 @@ class TestCodeMailJob(TestCaseWithFactory):
             'My body\n-- \nMy footer', message.get_payload(decode=True))
 
     def test_run(self):
+        """Test that running a job works."""
         mail_job = self.makeExampleMail()
         db_id = mail_job.id
         mail_job.run()
         message = pop_notifications()[0]
         self.checkMessageFromExample(message)
         self.assertEqual(JobStatus.COMPLETED, mail_job.job.status)
+
+    def testFindRunnableJobs(self):
+        """Test that findRunnableJobs finds the right jobs.
+
+        mail_job1 is WAITING, and its prerequisites are all in terminal
+        states.
+        """
+        mail_job1 = self.makeExampleMail()
+        mail_job1.job.addPrerequisite(Job(status=JobStatus.COMPLETED))
+        mail_job2 = self.makeExampleMail()
+        mail_job2.job.status = JobStatus.COMPLETED
+        mail_job3 = self.makeExampleMail()
+        mail_job3.job.addPrerequisite(Job())
+        self.assertEqual(
+            [mail_job1], list(CodeMailJobSource.findRunnableJobs()))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

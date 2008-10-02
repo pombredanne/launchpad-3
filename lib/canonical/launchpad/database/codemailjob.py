@@ -12,6 +12,7 @@ from email.Header import Header
 from email.Utils import formatdate
 
 from sqlobject import ForeignKey, IntCol, StringCol
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -20,9 +21,11 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces import (
-    ICodeMailJob, ICodeMailJobSource)
+    ICodeMailJob, ICodeMailJobSource, JobStatus)
 from canonical.launchpad.mailout import append_footer
 from canonical.launchpad.mail.sendmail import sendmail
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class CodeMailJob(SQLBase):
@@ -125,3 +128,9 @@ class CodeMailJobSource:
             branch_project_name=branch_project_name, subject=subject,
             body=body, footer=footer, rfc822msgid=message_id,
             in_reply_to=in_reply_to, max_diff_lines=max_diff_lines)
+
+    @staticmethod
+    def findRunnableJobs():
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(CodeMailJob, CodeMailJob.job == Job.id,
+                          Job.id.is_in(Job.ready_jobs))
