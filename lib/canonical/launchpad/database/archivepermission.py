@@ -11,16 +11,19 @@ __all__ = [
 
 from sqlobject import ForeignKey
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
-    IComponent, ISourcePackageName, ISourcePackageNameSet)
+    IArchiveUploader, IArchiveQueueAdmin)
+from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName, ISourcePackageNameSet)
 
 
 class ArchivePermission(SQLBase):
@@ -46,6 +49,37 @@ class ArchivePermission(SQLBase):
     sourcepackagename = ForeignKey(
         foreignKey='SourcePackageName', dbName='sourcepackagename',
         notNull=False)
+
+    def _init(self, *args, **kw):
+        """Provide the right interface for URL traversal."""
+        SQLBase._init(self, *args, **kw)
+
+        # Provide the additional marker interface depending on what type
+        # of archive this is.  See also the browser:url declarations in
+        # zcml/archivepermission.zcml.
+        if self.permission == ArchivePermissionType.UPLOAD:
+            alsoProvides(self, IArchiveUploader)
+        elif self.permission == ArchivePermissionType.QUEUE_ADMIN:
+            alsoProvides(self, IArchiveQueueAdmin)
+        else:
+            raise AssertionError, (
+                "Unknown permission type %s" % self.permission)
+
+    @property
+    def component_name(self):
+        """See `IArchivePermission`"""
+        if self.component:
+            return self.component.name 
+        else:
+            return None
+
+    @property
+    def source_package_name(self):
+        """See `IArchivePermission`"""
+        if self.sourcepackagename:
+            return self.sourcepackagename.name
+        else:
+            return None
 
 
 class ArchivePermissionSet:
