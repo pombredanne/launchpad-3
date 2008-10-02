@@ -49,7 +49,7 @@ CREATE TABLE StaticDiff (
   id serial PRIMARY KEY,
   from_revision_id TEXT,
   to_revision_id TEXT,
-  diff INTEGER REFERENCES Diff,
+  diff INTEGER NOT NULL REFERENCES Diff,
   UNIQUE (from_revision_id, to_revision_id)
 );
 
