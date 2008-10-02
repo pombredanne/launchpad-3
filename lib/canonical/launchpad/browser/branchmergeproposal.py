@@ -1085,8 +1085,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         # reqeuested to review and doesn't already have a vote reference, then
         # error out as the user must have URL hacked to get here.
 
-        # TODO: move to db class to expose for API
-
+        # XXX: Tim Penhey, 2008-10-02, bug=277000
+        # Move valid_voter db class to expose for API.
         if self.user is None:
             valid_voter = False
         elif self.context.isPersonValidReviewer(self.user):
