@@ -100,7 +100,6 @@ class UpdateStackedBranches(LaunchpadScript):
             server.tearDown()
         self.logger.info('Done')
 
-
     def updateStackedOn(self, branch_id, bzr_branch_url, stacked_on_location):
         """Stack the Bazaar branch at 'bzr_branch_url' on the given URL.
 
@@ -140,20 +139,17 @@ class UpdateStackedBranches(LaunchpadScript):
                 if not self.options.dry_run:
                     set_branch_stacked_on_url(bzrdir, stacked_on_location)
 
-
     def parseFromStream(self, stream):
         """Parse branch input from the given stream.
 
-        Expects the stream to be populated only by blank lines or by lines of
-        the form: '<foo> <bar> <baz> <qux>\n'. Such lines are yielded as
-        4-tuples. Blank lines are ignored.
+        Expects the stream to be populated only by blank lines or by lines
+        with whitespace-separated fields. Such lines are yielded as tuples.
+        Blank lines are ignored.
         """
         for line in stream.readlines():
             if not line.strip():
                 continue
-            branch_id, branch_type, unique_name, stacked_on_name = line.split()
-            yield branch_id, branch_type, unique_name, stacked_on_name
-
+            yield line.split()
 
     def updateBranches(self, branches):
         """Update the stacked_on_location for all branches in 'branches'.
@@ -162,7 +158,8 @@ class UpdateStackedBranches(LaunchpadScript):
             unique_name, stacked_on_unique_name).
         """
         for branch_info in branches:
-            (branch_id, branch_type, unique_name, stacked_on_name) = branch_info
+            (branch_id, branch_type, unique_name,
+             stacked_on_name) = branch_info
             stacked_on_location = '/' + stacked_on_name
             if branch_type == 'HOSTED':
                 self.updateStackedOn(
