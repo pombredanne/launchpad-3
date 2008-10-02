@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'InMemoryFrontend',
+    'XMLRPCWrapper'
     ]
 
 from xmlrpclib import Fault
@@ -411,3 +412,16 @@ class InMemoryFrontend:
 
     def getLastActivity(self, activity_name):
         return self._script_activity_set.getByName(activity_name)
+
+
+class XMLRPCWrapper:
+    """Wrapper around the endpoints that emulates an XMLRPC client."""
+
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
+
+    def callRemote(self, method_name, *args):
+        result = getattr(self.endpoint, method_name)(*args)
+        if isinstance(result, Fault):
+            raise result
+        return result
