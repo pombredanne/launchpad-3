@@ -368,8 +368,8 @@ class DecoratedCodeReviewVoteReference:
         if user is None:
             self.user_can_review = False
         else:
-            # The user cannot review for requested team review if the user has
-            # already reviewed this proposal.
+            # The user cannot review for a requested team review if the user
+            # has already reviewed this proposal.
             self.user_can_review = (
                 is_mergable and (self.can_change_review or
                  (user.inTeam(context.reviewer) and (users_vote is None))))
@@ -498,7 +498,12 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
-        # If the reviewer is a team, don't send email.
+        # If the reviewer is a team, don't send email.  This is to stop the
+        # abuse of a user spamming all members of a team by requesting them to
+        # review a (possibly unrelated) branch.  Ideally we'd come up with a
+        # better solution, but I can't think of one yet.  In all other places
+        # we are emailing subscribers directly rather than people that haven't
+        # subscribed.
         if not candidate.is_team:
             mailer = BMPMailer.forReviewRequest(
                 reason, self.context, self.user)
@@ -992,13 +997,14 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
     @cachedproperty
     def initial_values(self):
-        """Force the non-BMP values to None."""
+        """The initial values are used to populate the form fields."""
         # Look to see if there is a vote reference already for the user.
         if self.users_vote_ref is None:
             # Look at the request to see if there is something there.
             review_type = self.request.form.get('review_type', '')
         else:
             review_type = self.users_vote_ref.review_type
+        # We'll be positive here and default the vote to approve.
         return {'vote': CodeReviewVote.APPROVE,
                 'review_type': review_type}
 
@@ -1006,22 +1012,28 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         """Get the users existing vote reference."""
         self.users_vote_ref = self.context.getUsersVoteReference(self.user)
         # If the user is not in the review team, nor in any team that has been
-        # reqeuested to review and doesn't already have a vote reference, then
+        # requested to review and doesn't already have a vote reference, then
         # error out as the user must have URL hacked to get here.
 
         # XXX: Tim Penhey, 2008-10-02, bug=277000
         # Move valid_voter db class to expose for API.
+
         if self.user is None:
+            # Anonymous users are not valid voters.
             valid_voter = False
         elif self.context.isPersonValidReviewer(self.user):
+            # A user who is a valid reviewer for the proposal is a valid
+            # voter.
             valid_voter = True
         elif self.users_vote_ref is not None:
-            # Have already voted, so can edit vote.
+            # The user has already voted, so can change their vote.
             valid_voter = True
         else:
             valid_voter = False
             # Look through the requested reviewers.
             for vote_reference in self.context.votes:
+                # If the user is in the team of a pending team review request,
+                # then they are valid voters.
                 if (vote_reference.comment is None and
                     self.user.inTeam(vote_reference.reviewer)):
                     valid_voter = True
@@ -1040,7 +1052,6 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
             if team is not None and self.user.inTeam(team):
                 # Disable the review_type field
                 self.reviewer = team.name
-                # import pdb; pdb.set_trace()
                 self.form_fields['review_type'].for_display = True
 
     @property
@@ -1052,9 +1063,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     @action('Save Review', name='vote')
     def vote_action(self, action, data):
         """Create the comment."""
-        # Get the review type from the data dict.  If the review type was read
-        # only due to claiming a review, get the review_type from the hidden
-        # field that we so cunningly added to the form.
+        # Get the review type from the data dict.  If the setUpFields set the
+        # review_type field as for_display then 'review_type' will not be in
+        # the data dict.  If this is the case, get the review_type from the
+        # hidden field that we so cunningly added to the form.
         review_type = data.get(
             'review_type',
             self.request.form.get('review_type'))
@@ -1063,7 +1075,6 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         reviewer = getUtility(IPersonSet).getByName(reviewer_name)
         if (reviewer.is_team and self.user.inTeam(reviewer) and
             self.users_vote_ref is None):
-            # import pdb; pdb.set_trace()
             vote_ref = self.context.getUsersVoteReference(
                 reviewer, review_type)
             if vote_ref is not None:

@@ -502,7 +502,7 @@ class BranchMergeProposal(SQLBase):
         """
         # Firstly look for a vote reference for the user.
         ref = self.getUsersVoteReference(user)
-        if ref != None:
+        if ref is not None:
             return ref
         # Get all the unclaimed CodeReviewVoteReferences with the review_type
         # specified.
