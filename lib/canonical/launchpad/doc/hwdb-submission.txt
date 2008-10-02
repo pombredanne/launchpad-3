@@ -252,12 +252,11 @@ key is logged.
     >>> transaction.commit()
 
     # Run the script.
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/process-hwdb-submissions.py -m1', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py', ['-m1'])
+    >>> returnvalue
+    0
     >>> print err
     INFO    creating lockfile
     ERROR   Exception while processing HWDB submission test_submission_id_1
@@ -288,11 +287,10 @@ submissions are unchanged.
 From the remaining two not yet processed submissions, one has invalid
 data, the other submission is valid.
 
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/process-hwdb-submissions.py', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py')
+    >>> returnvalue
+    0
     >>> print err
     INFO    creating lockfile
     ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
@@ -322,7 +320,8 @@ Now we have one valid, two invalid and no unprocessed submissions.
     test_submission_id_1 Invalid submission
     unique-id-1 Invalid submission
 
-Larger numbers of submissioms can be processed too.
+Larger numbers of submissions can be processed too. Add enough submissions
+that scripts.hwdbsubmissions.ProcessingLoop is called at least twice.
 
     >>> form['field.submission_data'] = valid_sample_data
     >>> for serial in range(80):
@@ -330,6 +329,10 @@ Larger numbers of submissioms can be processed too.
     ...     request = LaunchpadTestRequest(method='POST', form=form)
     ...     submit_view = getMultiAdapter((app, request), name='+submit')
     ...     submit_view.initialize()
+
+Now we have 80 new submissions and three submissions that were processed
+in previous tests.
+
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED).count()
     80
@@ -340,11 +343,14 @@ Larger numbers of submissioms can be processed too.
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
     >>> transaction.commit()
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/process-hwdb-submissions.py -m 60', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+
+Let's leave some submissions unprocessed in order to check if the
+processing loop terminates properly, when the parameter "-m" is given.
+
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py', ['-m60'])
+    >>> returnvalue
+    0
     >>> print err
     INFO    creating lockfile
     INFO    Processed 60 valid and 0 invalid HWDB submissions
@@ -359,6 +365,9 @@ Larger numbers of submissioms can be processed too.
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
+
+Let's add more subscription so that we have more than max_chunk_size
+unprocessed submissions and process all of them.
 
     >>> for serial in range(80, 160):
     ...     form['field.submission_key'] = u'submission-%i' % serial
@@ -375,11 +384,10 @@ Larger numbers of submissioms can be processed too.
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
     >>> transaction.commit()
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/process-hwdb-submissions.py', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
+    >>> returnvalue, out, err = run_script(
+    ...     'cronscripts/process-hwdb-submissions.py')
+    >>> returnvalue
+    0
     >>> print err
     INFO    creating lockfile
     INFO    Processed 100 valid and 0 invalid HWDB submissions

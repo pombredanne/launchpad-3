@@ -1641,31 +1641,38 @@ class ProcessingLoop(object):
         self.max_submissions = max_submissions
         self.valid_submissions = 0
         self.invalid_submissions = 0
-        self.last_batch = False
+        self.finished = False
+
+    def _validateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.PROCESSED
+        self.valid_submissions += 1
+
+    def _invalidateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.INVALID
+        self.invalid_submissions += 1
 
     def isDone(self):
         """See `ITunableLoop`."""
-        return self.last_batch
+        return self.finished
 
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
-        # which can lead to unexpected results.
+        # which can lead to unexpected results. Since it is also used as
+        # a limit for an SQL, convert it into an integer.
         chunk_size = int(chunk_size)
         submissions = getUtility(IHWSubmissionSet).getByStatus(
             HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
         if submissions.count() < chunk_size:
-            self.last_batch = True
+            self.finished = True
         for submission in submissions:
             try:
                 parser = SubmissionParser(self.logger)
                 success = parser.processSubmission(submission)
                 if success:
-                    submission.status = HWSubmissionProcessingStatus.PROCESSED
-                    self.valid_submissions += 1
+                    self._validateSubmission(submission)
                 else:
-                    submission.status = HWSubmissionProcessingStatus.INVALID
-                    self.invalid_submissions += 1
+                    self._invalidateSubmission(submission)
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
@@ -1681,16 +1688,15 @@ class ProcessingLoop(object):
                 self.logger.error('%s (%s)' % (message, request.oopsid))
 
                 self.transaction.abort()
-                submission.status = HWSubmissionProcessingStatus.INVALID
+                self._invalidateSubmission(submission)
                 # Ensure that this submission is marked as bad, even if
                 # further submissions in this batch raise an exception.
                 self.transaction.commit()
-                self.invalid_submissions += 1
 
             if self.max_submissions is not None:
                 if self.max_submissions <= (
                     self.valid_submissions + self.invalid_submissions):
-                    self.last_batch = True
+                    self.finished = True
                     break
         self.transaction.commit()
 
