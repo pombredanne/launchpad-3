@@ -25,6 +25,9 @@ __all__ = []
 
 def main():
     parser = OptionParser("Usage: %prog [options] [start|stop]")
+    parser.add_option(
+        '-l', '--lag', default=None, dest="lag", metavar='PGINTERVAL',
+        help="Lag events by PGINTERVAL, such as '10 seconds' or '2 minutes'")
     logger_options(parser)
     options, args = parser.parse_args()
 
@@ -32,13 +35,13 @@ def main():
         parser.error("No command given.")
 
     if len(args) != 1:
-        parser.error("Only one command allowed.")
+        parser.error("Only one command allowed (got %s)." % repr(args))
 
     command = args[0]
     if command not in ['start', 'stop']:
         parser.error("Unknown command %s." % command)
 
-    log = logger()
+    log = logger(options)
 
     assert config.database.main_master != config.database.main_slave, (
         "Master and slave identical - LPCONFIG not a replicated setup.")
@@ -57,7 +60,9 @@ def main():
             log.debug("Logging to %s" % logfile)
             log.debug("PID file %s" % pidfile)
             # Hard code suitable command line arguments for development.
-            slon_args = "-d 2 -s 10000 -t 30000 -l '10 seconds'"
+            slon_args = "-d 2 -s 10000 -t 30000"
+            if options.lag is not None:
+                slon_args = "%s -l '%s'" % (slon_args, options.lag)
             cmd = [
                 "start-stop-daemon",
                 "--start",

@@ -1,12 +1,13 @@
 HERE=`pwd`
 
 DEVCONFIG=replicated-development
+LAG=10 seconds
 
 default:
 	echo Usage: make [start|stop|restart]
 
 start:
-	LPCONFIG=${DEVCONFIG} ./slon_ctl.py start
+	LPCONFIG=${DEVCONFIG} ./slon_ctl.py --lag="${LAG}" start
 
 stop:
 	LPCONFIG=${DEVCONFIG} ./slon_ctl.py stop
@@ -26,10 +27,12 @@ devsetup:
 	LPCONFIG=${DEVCONFIG} make -C ../schema
 	# Create the slave database, empty at this point.
 	createdb --encoding=UTF8 launchpad_dev_slave1
-	# Start the slon daemons
-	LPCONFIG=${DEVCONFIG} make start
+	# Start the slon daemons with 0 lag for quick setup.
+	LPCONFIG=${DEVCONFIG} make start LAG="0 seconds"
 	# Generate a preamble for manual slonik(1) usage.
 	LPCONFIG=${DEVCONFIG} ./preamble.py > preamble.sk
-	# Turn the slave into a replica
+	# Turn the slave into a replica.
 	LPCONFIG=${DEVCONFIG} ./initialize.py
+	# Restart slon daemons with default lag setting.
+	LPCONFIG=${DEVCONFIG} make restart LAG="${LAG}"
 
