@@ -27,9 +27,11 @@ from canonical.codehosting.branchfs import (
     LaunchpadServer)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.inmemory import FakeLaunchpadFrontend
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import AsyncVirtualTransport
+from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.testing import TwistedLayer
@@ -782,13 +784,27 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         backing_transport = memory_transport.clone('backing')
         mirror_transport = memory_transport.clone('mirror')
 
+        self._frontend = FakeLaunchpadFrontend()
+        self.factory = self._frontend.getLaunchpadObjectFactory()
+
+        authserver = self._frontend.getFilesystemEndpoint()
+        self.requester = self.factory.makePerson()
+
+        self.writable_branch = self.factory.makeBranch(
+            BranchType.HOSTED, owner=self.requester)
+        self.read_only_branch = self.factory.makeBranch(BranchType.HOSTED)
+
         self.lp_server = self._setUpLaunchpadServer(
-            backing_transport, mirror_transport)
+            self.requester.id, authserver, backing_transport,
+            mirror_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
 
-        self.writable_file = '/~testuser/firefox/baz/.bzr/hello.txt'
-        self.file_on_both_transports = '/~name12/+junk/junk.dev/.bzr/README'
-        self.file_on_mirror_only = '/~name12/+junk/junk.dev/.bzr/MIRROR-ONLY'
+        self.writable_file = '/%s/.bzr/hello.txt' % (
+            self.writable_branch.unique_name,)
+        self.file_on_both_transports = '/%s/.bzr/README' % (
+            self.read_only_branch.unique_name,)
+        self.file_on_mirror_only = '/%s/.bzr/MIRROR-ONLY' % (
+            self.read_only_branch.unique_name,)
 
         d1 = self._makeFilesInBranches(
             backing_transport,
@@ -808,11 +824,10 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.addCleanup(memory_server.tearDown)
         return memory_server
 
-    def _setUpLaunchpadServer(self, backing_transport, mirror_transport):
-        self.authserver = FakeLaunchpad()
-        self.user_id = 1
+    def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
+                              mirror_transport):
         server = LaunchpadServer(
-            BlockingProxy(self.authserver), self.user_id, backing_transport,
+            BlockingProxy(authserver), user_id, backing_transport,
             mirror_transport)
         server.setUp()
         self.addCleanup(server.tearDown)
@@ -845,7 +860,8 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         # able to create directories within that branch.
         self.assertRaises(
             errors.TransportNotPossible,
-            self.lp_transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+            self.lp_transport.mkdir,
+            '%s/.bzr' % self.read_only_branch.unique_name)
 
     def test_rename_target_readonly(self):
         # Even if we can write to a file, we can't rename it to location which
@@ -853,7 +869,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.assertRaises(
             errors.TransportNotPossible,
             self.lp_transport.rename, self.writable_file,
-            '/~name12/+junk/junk.dev/.bzr/goodbye.txt')
+            '/%s/.bzr/goodbye.txt' % self.read_only_branch.unique_name)
 
     def test_readonly_refers_to_mirror(self):
         # Read-only operations should get their data from the mirror, not the
@@ -866,7 +882,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     def test_iter_files_refers_to_mirror(self):
         # iter_files_recursive() gets its data from the mirror if it cannot
         # write to the branch.
-        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        read_only_branch_name = '/%s/' % self.read_only_branch.unique_name
         transport = self.lp_transport.clone(read_only_branch_name)
         files = list(transport.iter_files_recursive())
 
@@ -876,7 +892,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
 
     def test_listable_refers_to_mirror(self):
         # listable() refers to the mirror transport for read-only branches.
-        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        read_only_branch_name = '/%s' % self.read_only_branch.unique_name
         transport = self.lp_transport.clone(read_only_branch_name)
 
         # listable() returns the same value for both transports. To
