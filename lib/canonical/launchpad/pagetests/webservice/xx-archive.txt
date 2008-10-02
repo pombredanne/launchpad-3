@@ -209,3 +209,19 @@ can administer distroseries queues in a particular component.
     Queue Administration Rights  http://.../~name12
     Queue Administration Rights  http://.../~ubuntu-team
 
+getComponentsForQueueAdmin returns all the permissions relating to components
+where the user is able to administer distroseries queues.
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> permissions = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getComponentsForQueueAdmin',
+    ...     user=name12['self_link']).jsonBody()
+    >>> for entry in sorted(permissions['entries']):
+    ...     print entry['permission']
+    ...     print entry['component_name']
+    ...     print entry['person_link']
+    Queue Administration Rights main http://.../~name12
+    Queue Administration Rights multiverse http://.../~name12
+    Queue Administration Rights restricted http://.../~name12
+    Queue Administration Rights universe http://.../~name12
+

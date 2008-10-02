@@ -341,6 +341,7 @@ class IArchive(IHasOwner):
 
         :param source_package_name: An `ISourcePackageName` or textual name
             for the source package.
+        :return: A list of IArchivePermission records.
         """
 
     @operation_parameters(
@@ -352,6 +353,7 @@ class IArchive(IHasOwner):
 
         :param component_name: An `IComponent` or textual name for the
             component.
+        :return: A list of IArchivePermission records.
         """
 
     @operation_parameters(
@@ -363,6 +365,17 @@ class IArchive(IHasOwner):
 
         :param component_name: An `IComponent` or textual name for the
             component.
+        :return: A list of IArchivePermission records.
+        """
+
+    @operation_parameters(user=Reference(schema=IPerson))
+    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    @export_read_operation()
+    def getComponentsForQueueAdmin(user):
+        """Return `IArchivePermission`s for the user's queue admin components.
+
+        :param user: An `IPerson`
+        :return: A list of IArchivePermission records.
         """
 
     def canUpload(user, component_or_package=None):
@@ -606,5 +619,8 @@ IArchive['getUploadersForComponent'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission
 IArchive['getQueueAdminsForComponent'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getComponentsForQueueAdmin'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission
