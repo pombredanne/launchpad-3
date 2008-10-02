@@ -346,6 +346,12 @@ class TestTemplateGuess(unittest.TestCase):
         potemplate = subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, self.distrotemplate1)
 
+    def test_ByTranslationDomain_none(self):
+        # Test getPOTemplateByTranslationDomain for the zero-match case.
+        subset = POTemplateSubset(distroseries=self.distroseries)
+        potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
+        self.assertEqual(potemplate, None)
+
     def test_ByTranslationDomain_duplicate(self):
         # getPOTemplateByTranslationDomain returns no template if there
         # is more than one match.

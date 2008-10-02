@@ -43,6 +43,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.translationformat import TranslationMessageData
 
 
+log = logging.getLogger(__name__)
+
+
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright %(copyright)s %(year)s
  This file is distributed under the same license as the %(origin)s package.
@@ -848,7 +851,7 @@ class POTemplateSubset:
         elif len(result) == 1:
             return result[0]
         else:
-            logging.warn(
+            log.warn(
                 "Found multiple templates with translation domain '%s'.  "
                 "There should be only one."
                 % translation_domain)
