@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import datetime
+import logging
 import os
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
@@ -837,8 +838,21 @@ class POTemplateSubset:
         queries.append('POTemplate.translation_domain = %s' % sqlvalues(
             translation_domain))
 
-        return POTemplate.selectOne(' AND '.join(queries),
-            clauseTables=clausetables)
+        # Fetch up to 2 templates, to check for duplicates.
+        matches = POTemplate.select(
+            ' AND '.join(queries), clauseTables=clausetables, limit=2)
+
+        result = [match for match in matches]
+        if len(result) == 0:
+            return None
+        elif len(result) == 1:
+            return result[0]
+        else:
+            logging.warn(
+                "Found multiple templates with translation domain '%s'.  "
+                "There should be only one."
+                % translation_domain)
+            return None
 
     def getPOTemplateByPath(self, path):
         """See `IPOTemplateSubset`."""
