@@ -228,6 +228,12 @@ class ShipItDistroSeries(DBEnumeratedType):
         The Hardy Heron long-term-support release.
         """)
 
+    INTREPID = DBItem(7, """
+        8.10 (Intrepid Ibex)
+
+        The Intrepid Ibex release.
+        """)
+
 
 def _validate_positive_int(value):
     """Return True if the given value is a positive integer.
@@ -248,7 +254,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
-    current_distroseries = ShipItDistroSeries.HARDY
+    current_distroseries = ShipItDistroSeries.INTREPID
     max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 

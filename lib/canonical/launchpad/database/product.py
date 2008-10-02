@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_allowed_default_stacking_names',
     'Product',
     'ProductSet',
     'ProductWithLicenses',
@@ -24,7 +23,6 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.lazr import decorates
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.constants import UTC_NOW
@@ -280,9 +278,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def default_stacked_on_branch(self):
         """See `IProduct`."""
-        if self.name in get_allowed_default_stacking_names():
-            return self.development_focus.series_branch
-        return None
+        return self.development_focus.series_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -928,10 +924,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             user.inTeam(celebs.registry_experts) or
             user.inTeam(celebs.admin) or
             user.inTeam(self.owner))
-
-def get_allowed_default_stacking_names():
-    """Return a list of names of `Product`s that allow default stacking."""
-    return config.codehosting.allow_default_stacking.split(',')
 
 
 class ProductSet:
