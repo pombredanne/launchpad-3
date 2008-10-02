@@ -11,7 +11,7 @@ import unittest
 import bzrlib.branch
 from bzrlib.branch import BranchReferenceFormat, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, BzrDirMetaFormat1
-from bzrlib.errors import NotBranchError, UnstackableBranchFormat
+from bzrlib.errors import NotBranchError
 from bzrlib.remote import RemoteBranch
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
