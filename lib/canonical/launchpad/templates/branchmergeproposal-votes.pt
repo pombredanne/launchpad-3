@@ -34,7 +34,7 @@
           Approved
         </span>
         <tal:date replace="review/date_of_comment/fmt:displaydate" />
-        <a tal:condition="review/show_edit" href="+review">
+        <a tal:condition="review/can_change_review" href="+review">
           <img src="/@@/edit" title="Vote again" alt="vote"/>
         </a>
       </td>

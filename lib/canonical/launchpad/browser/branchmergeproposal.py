@@ -130,15 +130,23 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['edit', 'delete', 'request_review',
-             'add_comment', 'merge', 'enqueue', 'dequeue',
-             'resubmit', 'update_merge_revno', 'edit_status']
+    links = [
+        'edit',
+        'delete',
+        'request_review',
+        'add_comment',
+        'merge',
+        'enqueue',
+        'dequeue',
+        'resubmit',
+        'update_merge_revno',
+        'edit_status',
+        ]
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
         # Can't add a comment to Merged, Superseded or Rejected.
-        status = self.context.queue_status
-        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        enabled = self.context.isMergable()
         return Link('+comment', 'Add a comment', icon='add', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -355,15 +363,15 @@ class DecoratedCodeReviewVoteReference:
     def __init__(self, context, user, users_vote):
         self.context = context
         is_mergable = self.context.branch_merge_proposal.isMergable()
-        self.show_edit = (user == context.reviewer) and is_mergable
-        # Don't show the vote link if the link is for a team and the user has
-        # already voted, or if the user is the source branch owner.
+        self.can_change_review = (user == context.reviewer) and is_mergable
         branch = context.branch_merge_proposal.source_branch
         if user is None:
             self.user_can_review = False
         else:
+            # The user cannot review for requested team review if the user has
+            # already reviewed this proposal.
             self.user_can_review = (
-                is_mergable and (self.show_edit or
+                is_mergable and (self.can_change_review or
                  (user.inTeam(context.reviewer) and (users_vote is None))))
 
     @property
@@ -1043,7 +1051,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
     @action('Save Review', name='vote')
     def vote_action(self, action, data):
-        """Create the comment..."""
+        """Create the comment."""
         # Get the review type from the data dict.  If the review type was read
         # only due to claiming a review, get the review_type from the hidden
         # field that we so cunningly added to the form.
