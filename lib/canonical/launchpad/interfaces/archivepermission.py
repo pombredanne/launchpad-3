@@ -152,6 +152,17 @@ class IArchivePermissionSet(Interface):
             'user' is allowed to upload to.
         """
 
+    def packagesForUploader(archive, user):
+        """The `ArchivePermission` records for the user's upload packages.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to find out which
+            packages he has access to.
+
+        :return: `ArchivePermission` records for all the packages that
+            'user' is allowed to upload to.
+        """
+
     def uploadersForPackage(archive, sourcepackagename):
         """The `ArchivePermission` records for authorised package uploaders.
 

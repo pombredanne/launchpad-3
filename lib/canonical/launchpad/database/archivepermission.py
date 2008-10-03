@@ -22,7 +22,7 @@ from canonical.database.sqlbase import sqlvalues, SQLBase
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
-from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 
@@ -169,6 +169,19 @@ class ArchivePermissionSet:
 
         query = " AND ".join(clauses)
         return ArchivePermission.select(query, prejoins=["component"])
+
+    def packagesForUploader(self, archive, user):
+        """See `IArchive`."""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.sourcepackagename IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                    TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, user),
+            prejoins=["sourcepackagename"])
 
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""

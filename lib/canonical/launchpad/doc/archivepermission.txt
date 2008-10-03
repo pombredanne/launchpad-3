@@ -178,7 +178,9 @@ to be thrown.
     ...     for permission in sorted(packages, key=operator.attrgetter("id")):
     ...         print permission.sourcepackagename.name
 
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> showPersonsPackages(ubuntu.main_archive, carlos)
+    mozilla-firefox
 
 queueAdminsForComponent() returns the ArchivePermission records where a
 person or team has permission to administer an archive's package
