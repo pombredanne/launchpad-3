@@ -44,3 +44,6 @@ class ICodeMailJobSource(Interface):
                branch_url, branch_project_name, subject, body, footer,
                message_id, in_reply_to):
         """Create a CodeMailJob."""
+
+    def runAll():
+        """Run all qualified CodeMailJobs."""
