@@ -8,12 +8,13 @@ __all__ = ['Job', 'JobDependency', 'InvalidTransition']
 
 import datetime
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 import pytz
 from sqlobject import IntCol, StringCol
-from storm.expr import Select, And, Not
+from storm.expr import Select, And, Not, Or
 from storm.info import ClassAlias
 from storm.references import ReferenceSet
 from zope.interface import implements
@@ -115,5 +116,8 @@ Job.blocked_jobs = Select(
     PrerequisiteJob.id == JobDependency.prerequisite,
     Job.incomplete), distinct=True)
 
-Job.ready_jobs = Select(Job.id, And(Job.status == JobStatus.WAITING,
-    Not(Job.id.is_in(Job.blocked_jobs))))
+Job.ready_jobs = Select(
+    Job.id, And(Job.status == JobStatus.WAITING,
+    Not(Job.id.is_in(Job.blocked_jobs)),
+    Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW)
+    ))
