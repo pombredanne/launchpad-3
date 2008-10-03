@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.codehosting import (
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
-    datetime_from_tuple, LAUNCHPAD_SERVICES)
+    datetime_from_tuple, LAUNCHPAD_SERVICES, iter_split)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -386,9 +386,10 @@ class FakeBranchFilesystem:
         if not path.startswith('/'):
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
-        for branch in self._branch_set:
-            if branch.unique_name == stripped_path:
-                return (BRANCH_TRANSPORT, {'id': branch.id}, '')
+        for first, second in iter_split(stripped_path, '/'):
+            for branch in self._branch_set:
+                if branch.unique_name == first:
+                    return (BRANCH_TRANSPORT, {'id': branch.id}, second)
         return faults.PathTranslationError(path)
 
 

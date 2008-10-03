@@ -8,6 +8,7 @@ __all__ = [
     'BranchPuller',
     'datetime_from_tuple',
     'LAUNCHPAD_SERVICES',
+    'iter_split',
     ]
 
 
@@ -281,8 +282,22 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
-        branch = getUtility(IBranchSet).getByUniqueName(stripped_path)
-        if branch:
-            return (BRANCH_TRANSPORT, {'id': branch.id}, '')
-        else:
-            return faults.PathTranslationError(path)
+        for first, second in iter_split(stripped_path, '/'):
+            branch = getUtility(IBranchSet).getByUniqueName(first)
+            if branch is not None:
+                return (BRANCH_TRANSPORT, {'id': branch.id}, second)
+        return faults.PathTranslationError(path)
+
+
+def iter_split(string, splitter):
+    """Iterate over ways to split 'string' in two with 'splitter'.
+
+    If 'string' is empty, then yield nothing. Otherwise, yield tuples like
+    ('a', 'b/c'), ('a/b', 'c'), ('a/b/c', '') for a string 'a/b/c' and a
+    splitter '/'.
+    """
+    if string == '':
+        return
+    tokens = string.split(splitter)
+    for i in range(1, len(tokens) + 1):
+        yield splitter.join(tokens[:i]), splitter.join(tokens[i:])

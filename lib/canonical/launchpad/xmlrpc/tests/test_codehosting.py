@@ -25,10 +25,11 @@ from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
-    BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
+    BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, iter_split,
+    run_with_login)
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -807,6 +808,39 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
+    def test_translatePath_path_in_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        translation = self.branchfs.translatePath(
+            requester.id, '/%s/child' % branch.unique_name)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, 'child'), translation)
+
+    def test_translatePath_nested_path_in_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        translation = self.branchfs.translatePath(
+            requester.id, '/%s/a/b' % branch.unique_name)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, 'a/b'), translation)
+
+
+class TestIterateSplit(TestCase):
+    """Tests for iter_split."""
+
+    def test_iter_split(self):
+        # iter_split loops over each way of splitting a string in two using
+        # the given splitter.
+        self.assertEqual([('one', '')], list(iter_split('one', '/')))
+        self.assertEqual([], list(iter_split('', '/')))
+        self.assertEqual(
+            [('one', 'two'), ('one/two', '')],
+            list(iter_split('one/two', '/')))
+        self.assertEqual(
+            [('one', 'two/three'), ('one/two', 'three'),
+             ('one/two/three', '')],
+            list(iter_split('one/two/three', '/')))
+
 
 class LaunchpadDatabaseFrontend:
 
@@ -846,5 +880,6 @@ def test_suite():
          ])
     adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
     suite.addTests(
-        map(loader.loadTestsFromTestCase, [TestRunWithLogin]))
+        map(loader.loadTestsFromTestCase,
+            [TestRunWithLogin, TestIterateSplit]))
     return suite
