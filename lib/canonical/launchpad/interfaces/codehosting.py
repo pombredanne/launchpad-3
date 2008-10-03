@@ -36,6 +36,8 @@ WRITABLE = 'w'
 
 # Indicates that a path's real location is on a branch transport.
 BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
+# Indicates that a path points to a control directory.
+CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 
 
 class IBranchPullerApplication(ILaunchpadApplication):

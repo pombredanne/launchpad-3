@@ -23,8 +23,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -957,6 +957,18 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_control_directory(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus()
+        path = escape(u'/~%s/%s' % (requester.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, ''),
             translation)
 
 

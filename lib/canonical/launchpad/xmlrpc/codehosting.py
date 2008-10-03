@@ -279,6 +279,21 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
+    def _serializeBranch(self, requester, branch, trailing_path):
+        if requester == LAUNCHPAD_SERVICES:
+            branch = removeSecurityProxy(branch)
+        try:
+            branch_id = branch.id
+        except Unauthorized:
+            return None
+        if branch.branch_type == BranchType.REMOTE:
+            return None
+        return (
+            BRANCH_TRANSPORT,
+            {'id': branch_id,
+             'writable': self._canWriteToBranch(requester, branch)},
+            trailing_path)
+
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
         def translate_path(requester):
@@ -290,19 +305,10 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     unescape(first).encode('utf-8'))
                 if branch is None:
                     continue
-                if requester == LAUNCHPAD_SERVICES:
-                    branch = removeSecurityProxy(branch)
-                try:
-                    branch_id = branch.id
-                except Unauthorized:
+                branch = self._serializeBranch(requester, branch)
+                if branch is None:
                     break
-                if branch.branch_type == BranchType.REMOTE:
-                    break
-                return (
-                    BRANCH_TRANSPORT,
-                    {'id': branch_id,
-                     'writable': self._canWriteToBranch(requester, branch)},
-                    second)
+                return branch
             # XXX: Should we use the unescaped path in the error? Unescaped is
             # easier to read.
             return faults.PathTranslationError(path)
