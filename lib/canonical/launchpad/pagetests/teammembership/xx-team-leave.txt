@@ -14,7 +14,7 @@ by choosing the 'Leave' button.
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.p
     <p>Are you sure you want to leave this team?</p>
-    >>> admin_browser.getControl('Leave the Team').click()
+    >>> admin_browser.getControl('Leave').click()
 
 Foo Bar is redirect to the team page after he leaves.
 
