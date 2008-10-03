@@ -18,10 +18,10 @@
   <securedutility
     class="canonical.launchpad.database.ArchivePermissionSet"
     provides="canonical.launchpad.interfaces.IArchivePermissionSet">
-    <allow attributes="checkAuthenticated permissionsForUser
-                       componentsForUploader uploadersForComponent
-                       packagesForUploader uploadersForPackage
-                       queueAdminsForComponent componentsForQueueAdmin"/>
+    <allow attributes="checkAuthenticated componentsForUploader
+                       uploadersForComponent packagesForUploader
+                       uploadersForPackage queueAdminsForComponent
+                       componentsForQueueAdmin"/>
     <require
       permission="launchpad.Edit"
       attributes="newPackageUploader newComponentUploader newQueueAdmin

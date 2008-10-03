@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -59,7 +60,7 @@ from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -1857,12 +1858,20 @@ class EditArchivePermissionSet(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IArchivePermissionSet
 
-    def checkUnauthenticated(self):
-        """Anonymous users have no access."""
-        return False
-
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(celebrities.admin) or 
-                user.inTeam(celebrities.ubuntu_techboard))
+        if user.inTeam(celebrities.admin):
+            return True
+
+        techboard = getUtility(IPersonSet).getByName("techboard")
+        if techboard is None:
+            # We expect techboard to be present but it's not.  Log an
+            # OOPS.
+            error = AssertionError(
+                "'techboard' team is missing, has it been renamed?")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return user.inTeam(techboard)
