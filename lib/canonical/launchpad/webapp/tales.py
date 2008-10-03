@@ -407,7 +407,7 @@ class ObjectFormatterAPI:
 
     implements(ITraversable)
 
-    # The names which can be traversed further (e.g context/fmg:url/+edit).
+    # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url'}
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {}
