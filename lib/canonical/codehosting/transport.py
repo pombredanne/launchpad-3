@@ -38,6 +38,14 @@ class TranslationError(BzrError):
 
     _fmt = ("Could not translate %(virtual_url_fragment)r. %(reason)s")
 
+    def __init__(self, virtual_url_fragment, reason=None):
+        BzrError.__init__(self)
+        self.virtual_url_fragment = virtual_url_fragment
+        if reason is not None:
+            self.reason = str(reason)
+        else:
+            self.reason = ''
+
 
 def get_chrooted_transport(url):
     """Return a chrooted transport serving `url`."""

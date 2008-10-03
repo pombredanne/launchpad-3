@@ -120,10 +120,7 @@ class NotABranchPath(TranslationError):
 class NotEnoughInformation(NotABranchPath):
     """Raised when there's not enough information in the path."""
 
-    def __init__(self, virtual_url_fragment):
-        NotABranchPath.__init__(
-            self, virtual_url_fragment=virtual_url_fragment,
-            reason="Not enough information.")
+    reason = "Not enough information."
 
 
 class InvalidOwnerDirectory(NotABranchPath):
@@ -132,10 +129,7 @@ class InvalidOwnerDirectory(NotABranchPath):
     This generally means that it doesn't start with a tilde (~).
     """
 
-    def __init__(self, virtual_url_fragment):
-        NotABranchPath.__init__(
-            self, virtual_url_fragment=virtual_url_fragment,
-            reason="Path must start with a user or team directory.")
+    reason = "Path must start with a user or team directory."
 
 
 class InvalidControlDirectory(BzrError):
