@@ -12,20 +12,13 @@ Anne and Bart are Launchpad users.
     >>> anne = factory.makePerson('anne@example.com', 'anne')
     >>> bart = factory.makePerson('bart@example.com', 'bart')
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     IEmailAddressSet)
-    >>> email_set = getUtility(IEmailAddressSet)
-    >>> anne_email = email_set.getByEmail('anne@example.com')
-    >>> bart_email = email_set.getByEmail('bart@example.com')
-    >>> print bart_email
-
 Anne wants to contact Bart to ask him a question about his Launchpad project,
 but Bart's email addresses are hidden.  Anne decides to use Launchpad's direct
 user-to-user contact form to send Bart a message.  Is she allowed to?
 
     >>> from canonical.launchpad.interfaces.message import IThrottle
     >>> throttle = getUtility(IThrottle)
-    >>> throttle.allow(anne_email)
+    >>> throttle.allow(anne)
     True
 
 Launchpad records the event when Anne sends the message to Bart.
@@ -43,12 +36,12 @@ Launchpad records the event when Anne sends the message to Bart.
     ... This looks just like project Blonde.  Please contact me.
     ... """))
 
-    >>> from store.locals import Store
-    >>> Store.of(anne_email).add(contact)
+    >>> import transaction
+    >>> transaction.commit()
 
 Anne really likes Bart's project, so she sends him another message.
 
-    >>> throttle.allow(anne_email)
+    >>> throttle.allow(anne)
     True
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -61,12 +54,9 @@ Anne really likes Bart's project, so she sends him another message.
     ... No really, this is so cool!
     ... """))
 
-    >>> from store.locals import Store
-    >>> Store.of(anne_email).add(contact)
-
 Anne also likes Cris's project, and wants to contact her directly.
 
-    >>> throttle.allow(anne_email)
+    >>> throttle.allow(anne)
     True
 
     >>> cris = factory.makePerson('cris@example.com', 'cris')
@@ -80,11 +70,8 @@ Anne also likes Cris's project, and wants to contact her directly.
     ... Not as cool as Bumstead, but still neat.
     ... """))
 
-    >>> from store.locals import Store
-    >>> Store.of(anne_email).add(contact)
-
 Anne is no longer allowed to contact any Launchpad users directly, at least
 until tomorrow.
 
-    >>> throttle.allow(anne_email)
+    >>> throttle.allow(anne)
     False

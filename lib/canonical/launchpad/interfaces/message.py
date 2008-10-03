@@ -213,14 +213,14 @@ class IMessageChunk(Interface):
 class IUserToUserEmail(Interface):
     """User to user direct email communications."""
 
-    sender_email = Object(
-        schema=IEmailAddress,
-        title=_("The sender's email address"),
+    sender = Object(
+        schema=IPerson,
+        title=_("The message sender"),
         required=True, readonly=True)
 
-    recipient_email = Object(
-        schema=IEmailAddress,
-        title=_("The recipient's email address"),
+    recipient = Object(
+        schema=IPerson,
+        title=_("The message recipient"),
         required=True, readonly=True)
 
     date_sent = Datetime(
@@ -241,11 +241,11 @@ class IUserToUserEmail(Interface):
 class IThrottle(Interface):
     """Throttle for user-to-user emails."""
 
-    def allow(sender_email):
+    def allow(sender):
         """Is the sender allowed to send a message to a Launchpad user?
 
-        :param sender_email: The email address of the sender.
-        :type sender_email: `IEmailAddress`
+        :param sender: The sender of this message.
+        :type sender_email: `IPerson`
         :return: True if the sender is allowed to send a message to a
             Launchpad user, otherwise false.
         :rtype: bool

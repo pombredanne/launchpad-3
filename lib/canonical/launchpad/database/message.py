@@ -51,6 +51,23 @@ from canonical.database.datetimecol import UtcDateTimeCol
 MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 
+def utcdatetime_from_field(field_value):
+    """Turn an RFC 2822 Date: header value into a Python datetime (UTC).
+
+    :param field_value: The value of the Date: header
+    :type field_value: string
+    :return: The corresponding datetime (UTC)
+    :rtype: `datetime.datetime`
+    :raise `InvalidEmailMessage`: when the date string cannot be converted.
+    """
+    try:
+        date_tuple = parsedate_tz(field_value)
+        timestamp = mktime_tz(date_tuple)
+        return datetime.fromtimestamp(timestamp, tz=pytz.timezone('UTC'))
+    except (TypeError, ValueError, OverflowError):
+        raise InvalidEmailMessage('Invalid date %s' % field_value)
+
+
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
     coming into the bug system, or coming in from a mailing list.
@@ -328,14 +345,7 @@ class MessageSet:
         if date_created is not None:
             datecreated = date_created
         else:
-            try:
-                datestr = parsed_message['date']
-                thedate = parsedate_tz(datestr)
-                timestamp = mktime_tz(thedate)
-                datecreated = datetime.fromtimestamp(timestamp,
-                    tz=pytz.timezone('UTC'))
-            except (TypeError, ValueError, OverflowError):
-                raise InvalidEmailMessage('Invalid date %s' % datestr)
+            datecreated = utcdatetime_from_field(parsed_message['date'])
 
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
@@ -538,20 +548,20 @@ class UserToUserEmail(Storm):
     implements(IUserToUserEmail)
 
     __storm_table__ = 'UserToUserEmail'
-    
+
     id = Int(primary=True)
 
-    sender_email_id = Int()
-    sender_email = Reference(sender_email_id, 'EmailAddress.id')
+    sender_id = Int()
+    sender = Reference(sender_id, 'Person.id')
 
-    recipient_email_id = Int()
-    recipient_email = Reference(recipient_email_id, 'EmailAddress.id')
+    recipient_id = Int()
+    recipient = Reference(recipient_id, 'Person.id')
 
-    date_sent = DateTime()
+    date_sent = DateTime(allow_none=False)
 
-    subject = RawStr()
+    subject = RawStr(allow_none=False)
 
-    message_id = RawStr()
+    message_id = RawStr(allow_none=False)
 
     def __init__(self, message):
         """Create a new user-to-user email entry.
@@ -559,29 +569,32 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
+        # Find the person who is sending this message.
+        person_set = getUtility(IPersonSet)
         from_ = message['from']
         assert from_ is not None, 'Message has no From: field'
+        sender = person_set.getByEmail(from_)
+        assert sender is not None, 'No person for sender email: %s' % from_
+        # Find the person who is the recipient.
         to = message['to']
         assert to is not None, 'Message has no To: field'
+        recipient = person_set.getByEmail(to)
+        assert recipient is not None, 'No person for recipient email: %s' % to
+        # Convert the date string into a UTC datetime.
         date = message['date']
         assert date is not None, 'Message has no Date: field'
+        self.date_sent = utcdatetime_from_field(date)
+        # Find the subject and message-id.
         message_id = message['message-id']
         assert message_id is not None, 'Message has no Message-ID: field'
         subject = message['subject']
         assert subject is not None, 'Message has no Subject: field'
-        email_set = getUtility(IEmailAddressSet)
-        sender_email = email_set.getByEmail(from_)
-        assert sender_email is not None, (
-            'Sender email not found: %s' % from_)
-        self.sender_email = sender_email
-        print to
-        recipient_email = email_set.getByEmail(to)
-        assert recipient_email is not None, (
-            'Recipient email not found %s' % to)
-        self.recipient_email = recipient_email
-        self.date_sent = date
+        # Initialize.
+        self.sender = sender
+        self.recipient = recipient
         self.message_id = message_id
         self.subject = subject
+        Store.of(sender).add(self)
 
 
 class Throttle:
@@ -589,7 +602,7 @@ class Throttle:
 
     implements(IThrottle)
 
-    def allow(self, sender_email):
+    def allow(self, sender):
         """See `IThrottle`."""
         # Users are only allowed to send X number of messages in a certain
         # period of time.  Both the number of messages and the time period are
@@ -599,9 +612,9 @@ class Throttle:
             config.launchpad.user_to_user_throttle_interval)
         # Count the number of messages from the sender since the throttle
         # date.
-        store = Store.of(sender_email)
+        store = Store.of(sender)
         messages_sent = store.find(
             UserToUserEmail,
-            And(UserToUserEmail.sender_email == sender_email,
+            And(UserToUserEmail.sender == sender,
                 UserToUserEmail.date_sent >= window)).count()
         return messages_sent < config.launchpad.user_to_user_max_messages
