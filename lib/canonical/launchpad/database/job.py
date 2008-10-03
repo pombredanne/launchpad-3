@@ -3,7 +3,7 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['Job', 'JobDependency', 'InvalidTransition']
+__all__ = ['InvalidTransition', 'Job', 'JobDependency']
 
 
 import datetime
