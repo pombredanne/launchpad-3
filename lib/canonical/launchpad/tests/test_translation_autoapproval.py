@@ -339,6 +339,34 @@ class TestTemplateGuess(unittest.TestCase):
             sourcepackagename=self.from_packagename)
         self.assertEqual(guessed_template, None)
 
+    def test_ByTranslationDomain(self):
+        # getPOTemplateByTranslationDomain looks up a template by
+        # translation domain.
+        subset = POTemplateSubset(distroseries=self.distroseries)
+        potemplate = subset.getPOTemplateByTranslationDomain('test1')
+        self.assertEqual(potemplate, self.distrotemplate1)
+
+    def test_ByTranslationDomain_none(self):
+        # Test getPOTemplateByTranslationDomain for the zero-match case.
+        subset = POTemplateSubset(distroseries=self.distroseries)
+        potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
+        self.assertEqual(potemplate, None)
+
+    def test_ByTranslationDomain_duplicate(self):
+        # getPOTemplateByTranslationDomain returns no template if there
+        # is more than one match.
+        self.distrotemplate1.iscurrent = True
+        other_package = SourcePackageNameSet().new('other-package')
+        other_subset = POTemplateSubset(
+            distroseries=self.distroseries, sourcepackagename=other_package)
+        clashing_template = other_subset.new(
+            'test3', 'test1', 'test3.pot', self.distro.owner)
+        distro_subset = POTemplateSubset(distroseries=self.distroseries)
+        potemplate = distro_subset.getPOTemplateByTranslationDomain('test1')
+        self.assertEqual(potemplate, None)
+
+        clashing_template.destroySelf()
+
 
 class TestKdePOFileGuess(unittest.TestCase):
     """Test auto-approval's `POFile` guessing for KDE uploads.
