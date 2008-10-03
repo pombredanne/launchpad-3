@@ -32,4 +32,4 @@ ALTER TABLE ONLY usertouseremail
 ADD CONSTRAINT usertouseremail_recipient_fkey
 FOREIGN KEY (recipient_id) REFERENCES person(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99,0);
