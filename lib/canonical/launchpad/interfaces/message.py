@@ -23,10 +23,7 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-#from canonical.launchpad.interfaces.bug import IBug
-#from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 

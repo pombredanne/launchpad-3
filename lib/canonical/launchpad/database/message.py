@@ -12,7 +12,6 @@ __all__ = [
 
 
 import email
-import datetime
 
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
@@ -24,8 +23,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.locals import (
-    And, Count, DateTime, Int, RawStr, Reference, Store, Storm)
+from storm.locals import And, DateTime, Int, RawStr, Reference, Store, Storm
 
 import pytz
 
@@ -35,7 +33,6 @@ from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.message import (
     IMessage, IMessageChunk, IMessageSet, IThrottle, IUserToUserEmail,
     InvalidEmailMessage)
@@ -571,6 +568,7 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
+        super(UserToUserEmail, self).__init__()
         # Find the person who is sending this message.
         person_set = getUtility(IPersonSet)
         from_ = message['from']
