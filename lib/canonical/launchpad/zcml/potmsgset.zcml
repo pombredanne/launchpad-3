@@ -6,6 +6,12 @@
 
     <content class="canonical.launchpad.database.POTMsgSet">
       <allow interface="canonical.launchpad.interfaces.IPOTMsgSet"/>
+      <!-- The following require is needed only for tests that use
+           IPOTMsgSets outside of its usual security proxy environment. -->
+      <require
+        permission="launchpad.Admin"
+        set_attributes="commenttext sourcecomment filereferences flagscomment"
+        />
     </content>
 
 </configure>
