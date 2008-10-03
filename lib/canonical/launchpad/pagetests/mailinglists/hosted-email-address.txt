@@ -18,13 +18,16 @@ the address is reserved for the team which owns the ML.
 
 The team owner sets the contact address to the hosted mailing list.
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> user_browser.open('http://launchpad.dev/~aardvarks')
     >>> user_browser.getLink('Change contact address').click()
     >>> user_browser.getControl('The Launchpad mailing list').selected = True
     >>> user_browser.getControl('Change').click()
     >>> user_browser.getLink('Change contact address').click()
-    >>> user_browser.getControl(name='field.contact_method').displayValue
-    ['\xa0The Launchpad mailing list for this team...]
+    >>> control = user_browser.getControl(name='field.contact_method')
+    >>> [strip_label(label) for label in control.displayValue]
+    ['The Launchpad mailing list for this team...]
 
 The team owner sets the contact address to an external email address, and
 Launchpad sends that address a confirmation message.
@@ -67,8 +70,9 @@ confirmed.
     Email address successfully confirmed.
 
     >>> user_browser.getLink('Change contact address').click()
-    >>> user_browser.getControl(name='field.contact_method').displayValue
-    ['\xa0Another e-mail address']
+    >>> control = user_browser.getControl(name='field.contact_method')
+    >>> [strip_label(label) for label in control.displayValue]
+    ['Another e-mail address']
 
 The web UI will only display the team's contact address, but the
 EmailAddress object for that team's mailing list will still be in the

@@ -6,7 +6,7 @@ occurs. Other users get no traceback and only the OOPS ID.
 To be able to test, a page that generates HTTP 500 errors is registered.
 Accessing that page gives us the OOPS error page.
 
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> class ErrorView(object):
     ...     """A broken view"""
     ...     def __call__(self, *args, **kw):
