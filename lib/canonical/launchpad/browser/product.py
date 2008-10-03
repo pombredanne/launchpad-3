@@ -574,6 +574,7 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.Edit')
     def translators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
@@ -1213,8 +1214,7 @@ class ProductAdminView(ProductEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
     def validate(self, data):
@@ -1674,6 +1674,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
+    show_set_development_focus = True
+
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
@@ -1762,6 +1764,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
+        if not check_permission('launchpad.View', dev_focus_branch):
+            dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
@@ -1769,6 +1773,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
+                check_permission('launchpad.View', branch) and
                 show_branch(branch)):
                 result.append(branch)
         return result

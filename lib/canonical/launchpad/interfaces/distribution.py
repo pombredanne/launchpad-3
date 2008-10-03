@@ -13,7 +13,7 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.schema import Choice, Datetime, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from canonical.lazr.rest.declarations import (
@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -214,15 +215,24 @@ class IDistributionPublic(
         description=_("The distribution language pack administrator."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    main_archive = Object(
-        title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
-        )
+    main_archive = exported(
+        Reference(
+            title=_('Distribution Main Archive.'), readonly=True,
+            schema=IArchive))
 
-    all_distro_archives = Attribute(
-        "A sequence of the distribution's non-PPA IArchives.")
+    all_distro_archives = exported(
+        CollectionField(
+            title=_("A sequence of the distribution's non-PPA Archives."),
+            readonly=True, required=False,
+            value_type=Reference(schema=IArchive)),
+        exported_as='archives')
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
+
+    upstream_report_excluded_packages = Attribute(
+        "A list of the source packages that should not be shown on the "
+        "upstream bug report for this Distribution.")
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
@@ -386,10 +396,15 @@ class IDistributionPublic(
         If the component_name supplied is unknown, None is returned.
         """
 
-    def getPackagesAndPublicUpstreamBugCounts(limit=50):
+    def getPackagesAndPublicUpstreamBugCounts(limit=50,
+                                              exclude_packages=None):
         """Return list of tuples of packages, upstreams and public bug counts.
 
-        Returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
+        :param limit: The maximum number of rows to return.
+        :param exclude_packages: A list of source packages to exclude.
+            These should be specified as strings which correspond with
+            SourcePackageName.name.
+        :returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
 
         This API is quite specialized; it returns a list of up to limit
         tuples containing IProducts and three different bug counts:

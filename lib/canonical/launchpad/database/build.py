@@ -686,6 +686,23 @@ class Build(SQLBase):
             restricted=restricted)
         self.upload_log = library_file
 
+    def getFileByName(self, filename):
+        """See `IBuild`."""
+        if filename.endswith('.changes'):
+            file_object = self.changesfile
+        elif filename.endswith('.txt.gz'):
+            file_object = self.buildlog
+        elif filename.endswith('_log.txt'):
+            file_object = self.upload_log
+        else:
+            raise AssertionError(
+                "'%s' filename and/or extension is not supported." % filename)
+
+        if file_object is not None and file_object.filename == filename:
+            return file_object
+
+        raise NotFoundError(filename)
+
 
 class BuildSet:
     implements(IBuildSet)

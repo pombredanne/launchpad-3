@@ -8,7 +8,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter,
+    IProductSet, IPOTemplateSet, ITranslationImporter,
     TranslationFileFormat)
 from canonical.launchpad.translationformat import (
     importers, is_identical_translation, TranslationImporter,
@@ -41,31 +41,6 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(
             verifyObject(ITranslationImporter, self.translation_importer),
             "TranslationImporter doesn't follow the interface")
-
-    def testGetPersonByEmail(self):
-        """Check whether we create new persons with the correct explanation.
-
-        When importing a POFile, it may be necessary to create new Person
-        entries, to represent the last translators of that POFile.
-        """
-        test_email = 'danilo@canonical.com'
-        personset = getUtility(IPersonSet)
-
-        # The account we are going to use is not yet in Launchpad.
-        self.failUnless(
-            personset.getByEmail(test_email) is None,
-            'There is already an account for %s' % test_email)
-
-        person = self.translation_importer._getPersonByEmail(test_email)
-
-        self.assertEqual(
-            person.creation_rationale.name, 'POFILEIMPORT',
-            '%s was not created due to a POFile import' % test_email)
-        self.assertEqual(
-            person.creation_comment,
-            'when importing the %s translation of %s' % (
-                self.translation_importer.pofile.language.displayname,
-                self.translation_importer.potemplate.displayname))
 
     def testGetImporterByFileFormat(self):
         """Check whether we get the right importer from the file format."""

@@ -42,6 +42,18 @@ The utility itself implements IOpenIDRPConfigSet:
     >>> verifyObject(IOpenIDRPConfigSet, getUtility(IOpenIDRPConfigSet))
     True
 
+Some RPs include a trailing '/' on their URLs, which is the standard,
+while others do not.  The `trust_root` is always normalized to have a
+trailing slash.
+
+    >>> rpconfig2 = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://foo.example.com',
+    ...     displayname='Example RP',
+    ...     description='Example RP description',
+    ...     allowed_sreg=['fullname', 'nickname'])
+    >>> print rpconfig2.trust_root
+    http://foo.example.com/
+
 
 == Modifying OpenIDRPConfig objects ==
 
@@ -95,6 +107,16 @@ root:
     >>> print getUtility(IOpenIDRPConfigSet).getByTrustRoot('http://unknown')
     None
 
+Most RPs include the trailing '/' in their trust root URL but some do
+not.  The search should match whether the trailing slash is there or
+not.
+
+    >>> rpconfig3 = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com')
+    >>> print rpconfig3.trust_root
+    http://*.example.com/
+    >>> rpconfig3.id == rpconfig.id
+    True
 
 == Listing all OpenIDRPConfig objects ==
 
