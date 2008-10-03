@@ -230,6 +230,10 @@ class IDistributionPublic(
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
 
+    upstream_report_excluded_packages = Attribute(
+        "A list of the source packages that should not be shown on the "
+        "upstream bug report for this Distribution.")
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -392,10 +396,15 @@ class IDistributionPublic(
         If the component_name supplied is unknown, None is returned.
         """
 
-    def getPackagesAndPublicUpstreamBugCounts(limit=50):
+    def getPackagesAndPublicUpstreamBugCounts(limit=50,
+                                              exclude_packages=None):
         """Return list of tuples of packages, upstreams and public bug counts.
 
-        Returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
+        :param limit: The maximum number of rows to return.
+        :param exclude_packages: A list of source packages to exclude.
+            These should be specified as strings which correspond with
+            SourcePackageName.name.
+        :returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
 
         This API is quite specialized; it returns a list of up to limit
         tuples containing IProducts and three different bug counts:
