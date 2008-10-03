@@ -22,17 +22,18 @@ and/or revoked from that user's +oauth-tokens page.
     >>> print extract_text(main_content)
     Authorized applications
     ...
+    Claimed tokens:
     Application name:
         foobar123451432
         Authorized...to read non-private data
     Application name:
         launchpad-library
         Authorized...to change anything
+    Unclaimed tokens:
     Application name:
         foobar123451432
         Authorized...to read anything
-        The requesting application has until ...
-        to convert this request token into an access token...
+        Must be claimed before...
 
 For each token we have a separate <form> with the token and consumer
 keys stored in hidden <input>s as well as the button to revoke the
@@ -42,21 +43,24 @@ authorization.
     >>> for input in li.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key foobar123451432
-    access_token_key ...
+    token_key ...
+    token_type access_token
     revoke Revoke Authorization
 
     >>> li2 = li.findNextSibling('li')
     >>> for input in li2.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key launchpad-library
-    access_token_key ...
+    token_key ...
+    token_type access_token
     revoke Revoke Authorization
 
-    >>> li3 = li2.findNextSibling('li')
+    >>> li3 = li2.findNext('li')
     >>> for input in li3.find('form').findAll('input'):
     ...     print input['name'], input['value']
     consumer_key foobar123451432
-    request_token_key ...
+    token_key ...
+    token_type request_token
     revoke Revoke Authorization
 
 If a token is revoked the application will not be able to access
@@ -74,14 +78,15 @@ shown as one of the authorized ones.
     >>> print extract_text(find_tag_by_id(my_browser.contents, 'maincontent'))
     Authorized applications
     ...
+    Claimed tokens:
     Application name:
         foobar123451432
         Authorized...to read non-private data
+    Unclaimed tokens:
     Application name:
         foobar123451432
         Authorized...to read anything
-        The requesting application has until...
-        to convert this request token into an access token.
+        Must be claimed before...
 
 Some tokens grant access only to a certain context in Launchpad.  If
 that's the case, the description of the authorization granted will
