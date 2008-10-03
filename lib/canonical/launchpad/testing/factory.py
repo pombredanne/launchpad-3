@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import CodeMailJob, StaticDiffJob,
+from canonical.launchpad.database import CodeMailJob, StaticDiffJob
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.database.constants import DEFAULT
 
