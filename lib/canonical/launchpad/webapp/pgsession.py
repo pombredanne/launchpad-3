@@ -12,15 +12,17 @@ from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.session.interfaces import (
+from zope.session.interfaces import (
     ISessionDataContainer, ISessionData, ISessionPkgData)
 
 from storm.zope.interfaces import IZStorm
+
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
+
 
 class PGSessionBase:
     store_name = 'session'

@@ -24,7 +24,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.cachedproperty import cachedproperty

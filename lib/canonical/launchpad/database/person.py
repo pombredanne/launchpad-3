@@ -25,7 +25,7 @@ import random
 import re
 
 from zope.app.error.interfaces import IErrorReportingUtility
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
