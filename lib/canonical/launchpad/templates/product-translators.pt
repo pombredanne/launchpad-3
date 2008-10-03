@@ -24,9 +24,10 @@
       <div metal:use-macro="context/@@launchpad_form/form">
 
         <p metal:fill-slot="extra_info">
-          Select the translation group that will be responsible for
-          <strong tal:content="context/title">Ubuntu Linux</strong>
-          translations. If you need to create a new translation group, please
+          Select the translation group that will be managing the
+          translations for
+          <tal:product replace="context/title">Launchpad</tal:product>.
+          If you need a new translation group instead,
           <a tal:attributes="href view/answersUrl">submit a question</a>
           to the Launchpad Translations team.
         </p>
