@@ -204,3 +204,14 @@ class IBranchFileSystem(Interface):
         :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
         """
+
+    def translatePath(requester_id, path):
+        """Translate 'path' so that the codehosting transport can access it.
+
+        :param requester_id: the database ID of the person requesting the
+            path translation.
+        :param path: the path being translated.
+
+        :returns: `PathTranslationError` if 'path' cannot be translated.
+            (transport_type, transport_parameters, path_in_transport)
+        """
