@@ -395,48 +395,50 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.
+    """Adapter for any object to a formatted string."""
 
-    Used for fmt:url.
-    """
+    implements(ITraversable)
+
+    # The names which can be traversed further (e.g context/fmg:url/+edit).
+    traversable_names = {'link': 'link', 'url': 'url'}
+    # Names which are allowed but can't be traversed further.
+    final_traversable_names = {}
 
     def __init__(self, context):
         self._context = context
 
     def url(self, view_name=None):
+        """Return the object's canonical URL.
+
+        :param view_name: If not None, return the URL to the page with that
+            name on this object.
+        """
         url = canonical_url(
             self._context, path_only_if_possible=True, view_name=view_name)
         return url
 
-
-class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
-    """Adapter for any object to a formatted string.
-
-    Adds fmt:link which shows the icon and formatted string in an anchor.
-    """
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
     def traverse(self, name, furtherPath):
-        if name in ('link', 'url'):
+        if name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
             else:
                 extra_path = None
-            return getattr(self, name)(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
+            method_name = self.traversable_names[name]
+            return getattr(self, method_name)(extra_path)
+        elif name in self.final_traversable_names:
+            method_name = self.final_traversable_names[name]
+            return getattr(self, method_name)()
         else:
             raise TraversalError, name
 
-    def link(self, extra_path):
-        """Return an HTML link to the object's page containing an icon
-        followed by the object's name.
+    def link(self, view_name):
+        """Return an HTML link to the object's page.
+
+        The link consists of an icon followed by the object's name.
+
+        :param view_name: If not None, the link will point to the page with
+            that name on this object.
         """
         raise NotImplemented
 
@@ -853,33 +855,24 @@ class BadgeDisplayAPI:
         return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
-class PersonFormatterAPI(ObjectFormatterExtendedAPI):
+class PersonFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IPerson` objects to a formatted string."""
 
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url', 'local_time'
-        ])
+    final_traversable_names = {'local-time': 'local_time'}
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for links with an optional rootsite."""
-        extra_path = '/'.join(reversed(furtherPath))
-        if name == 'link':
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name.startswith('link:'):
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
+        if name.startswith('link:'):
             rootsite = name.split(':')[1]
+            extra_path = None
+            if len(furtherPath) > 0:
+                extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
             return self.link(extra_path, rootsite=rootsite)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
         else:
-            raise TraversalError(name)
+            return super(PersonFormatterAPI, self).traverse(name, furtherPath)
 
     def local_time(self):
         """Return the local time for this person."""
@@ -888,21 +881,19 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             time_zone = self._context.time_zone
         return datetime.now(pytz.timezone(time_zone)).strftime('%T %Z')
 
-    def link(self, extra_path, rootsite=None):
+    def link(self, view_name, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person, rootsite=rootsite)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
+        url = canonical_url(person, rootsite=rootsite, view_name=view_name)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, cgi.escape(person.browsername))
 
 
-class CustomizableFormatter(ObjectFormatterExtendedAPI):
-    """A ObjectFormatterExtendedAPI that is easy to customize.
+class CustomizableFormatter(ObjectFormatterAPI):
+    """A ObjectFormatterAPI that is easy to customize.
 
     This provides fmt:url and fmt:link support for the object it
     adapts.
@@ -957,7 +948,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         """
         return queryAdapter(self._context, IPathAdapter, 'image').icon()
 
-    def link(self, extra_path):
+    def link(self, view_name):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
@@ -972,7 +963,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
             html += '&nbsp;'
         html += self._make_link_summary()
         if check_permission(self._link_permission, self._context):
-            url = self.url(extra_path)
+            url = self.url(view_name)
         else:
             url = ''
         if url:
@@ -991,8 +982,8 @@ class PillarFormatterAPI(CustomizableFormatter):
         displayname = self._context.displayname
         return {'displayname': displayname}
 
-    def link(self, extra_path):
-        html = super(PillarFormatterAPI, self).link(extra_path)
+    def link(self, view_name):
+        html = super(PillarFormatterAPI, self).link(view_name)
         if IProduct.providedBy(self._context):
             license_status = self._context.license_status
             if license_status != LicenseStatus.OPEN_SOURCE:
@@ -1002,27 +993,18 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
-class BranchFormatterAPI(ObjectFormatterExtendedAPI):
+class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
-    def traverse(self, name, furtherPath):
-        """Special case traversal to support multiple link formats."""
-        if name == 'project-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.projectLink(extra_path)
-        if name == 'title-link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.titleLink(extra_path)
-        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+    traversable_names = {
+        'link': 'link', 'url': 'url', 'project-link': 'projectLink',
+        'title-link': 'titleLink'}
 
-    def _args(self, extra_path):
+    def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
         url = canonical_url(branch)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
+        url = self.url(view_name)
         if branch.title is not None:
             title = branch.title
         else:
@@ -1040,25 +1022,25 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             'url': url,
             }
 
-    def link(self, extra_path):
+    def link(self, view_name):
         """A hyperlinked branch icon with the unique name."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
+            '&nbsp;%(unique_name)s</a>' % self._args(view_name))
 
-    def projectLink(self, extra_path):
+    def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(name)s</a>: %(title)s' % self._args(extra_path))
+            '&nbsp;%(name)s</a>: %(title)s' % self._args(view_name))
 
-    def titleLink(self, extra_path):
+    def titleLink(self, view_name):
         """A hyperlinked branch name with following title."""
         return (
             '<a href="%(url)s" title="%(display_name)s">'
-            '%(name)s</a>: %(title)s' % self._args(extra_path))
+            '%(name)s</a>: %(title)s' % self._args(view_name))
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -1228,15 +1210,18 @@ class SpecificationBranchFormatterAPI(CustomizableFormatter):
 class BugTrackerFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugTracker` objects to a formatted string."""
 
-    implements(ITraversable)
+    final_traversable_names = {
+        'aliases': 'aliases',
+        'external-link': 'external_link',
+        'external-title-link': 'external_title_link'}
 
-    def link(self):
+    def link(self, view_name):
         """Return an HTML link to the bugtracker page.
 
         If the user is not logged-in, the title of the bug tracker is
         modified to obfuscate all email addresses.
         """
-        url = self.url()
+        url = self.url(view_name)
         title = self._context.title
         if getUtility(ILaunchBag).user is None:
             title = FormattersAPI(title).obfuscate_email()
@@ -1286,32 +1271,13 @@ class BugTrackerFormatterAPI(ObjectFormatterAPI):
             else:
                 yield alias
 
-    def traverse(self, name, furtherPath):
-        """See `ITraversable`.
-
-        Names supported:
-          url: As for `ObjectFormatterAPI`.
-          external-link: See `external_link`.
-          aliases: See `aliases`.
-        """
-        if name == 'url':
-            return self.url()
-        elif name == 'link':
-            return self.link()
-        elif name == 'external-link':
-            return self.external_link()
-        elif name == 'external-title-link':
-            return self.external_title_link()
-        elif name == 'aliases':
-            return self.aliases()
-        else:
-            raise TraversalError(name)
-
 
 class BugWatchFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IBugWatch` objects to a formatted string."""
 
-    implements(ITraversable)
+    final_traversable_names = {
+        'external-link': 'external_link',
+        'external-link-short': 'external_link_short'}
 
     def _make_external_link(self, summary=None):
         """Return an external HTML link to the target of the bug watch.
@@ -1352,23 +1318,6 @@ class BugWatchFormatterAPI(ObjectFormatterAPI):
         remote bug number.
         """
         return self._make_external_link(self._context.remotebug)
-
-    def traverse(self, name, furtherPath):
-        """See `ITraversable`.
-
-        Names supported:
-          url: As for `ObjectFormatterAPI`.
-          external-link: See `external_link`.
-          external-link-short: See `external_link_short`.
-        """
-        if name == 'url':
-            return self.url()
-        elif name == 'external-link':
-            return self.external_link()
-        elif name == 'external-link-short':
-            return self.external_link_short()
-        else:
-            raise TraversalError(name)
 
 
 class NumberFormatterAPI:

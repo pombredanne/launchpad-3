@@ -1091,7 +1091,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if self.uses_launchpad_bugtracker:
             return 'Launchpad'
         elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link()
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
         else:
             return 'None specified'
 
