@@ -1,4 +1,4 @@
--- Generated Tue Sep 23 11:46:25 2008 UTC
+-- Generated Tue Jan 29 09:27:48 2008 UTC
 
 SET client_min_messages TO ERROR;
 
@@ -11,26 +11,31 @@ SET escape_string_warning = off;
 
 SET search_path = public, pg_catalog;
 
+CREATE TYPE pgstattuple_type AS (
+	table_len bigint,
+	tuple_count bigint,
+	tuple_len bigint,
+	tuple_percent double precision,
+	dead_tuple_count bigint,
+	dead_tuple_len bigint,
+	dead_tuple_percent double precision,
+	free_space bigint,
+	free_percent double precision
+);
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
-CREATE TABLE account (
+CREATE TABLE revision (
     id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    creation_rationale integer NOT NULL,
-    status integer NOT NULL,
-    date_status_set timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    displayname text NOT NULL,
-    openid_identifier text DEFAULT generate_openid_identifier() NOT NULL,
-    status_comment text,
-    old_openid_identifier text
-);
-
-CREATE TABLE accountpassword (
-    id integer NOT NULL,
-    account integer NOT NULL,
-    password text NOT NULL
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    log_body text NOT NULL,
+    revision_author integer NOT NULL,
+    gpgkey integer,
+    "owner" integer NOT NULL,
+    revision_id text NOT NULL,
+    revision_date timestamp without time zone
 );
 
 CREATE TABLE announcement (
@@ -50,6 +55,14 @@ CREATE TABLE announcement (
     CONSTRAINT valid_url CHECK (valid_absolute_url(url))
 );
 
+CREATE SEQUENCE announcement_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE announcement_id_seq OWNED BY announcement.id;
+
 CREATE TABLE answercontact (
     id integer NOT NULL,
     product integer,
@@ -60,84 +73,33 @@ CREATE TABLE answercontact (
     CONSTRAINT valid_target CHECK ((((product IS NULL) <> (distribution IS NULL)) AND ((product IS NULL) OR (sourcepackagename IS NULL))))
 );
 
+CREATE SEQUENCE answercontact_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE answercontact_id_seq OWNED BY answercontact.id;
+
 CREATE TABLE archive (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer,
     description text,
     enabled boolean DEFAULT true NOT NULL,
     authorized_size integer,
     whiteboard text,
-    distribution integer NOT NULL,
+    distribution integer,
     purpose integer NOT NULL,
-    private boolean DEFAULT false NOT NULL,
-    sources_cached integer,
-    binaries_cached integer,
-    package_description_cache text,
-    fti ts2.tsvector,
-    buildd_secret text,
-    require_virtualized boolean DEFAULT true NOT NULL,
-    name text DEFAULT 'default'::text NOT NULL,
-    publish boolean DEFAULT true NOT NULL,
-    date_updated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    total_count integer DEFAULT 0 NOT NULL,
-    pending_count integer DEFAULT 0 NOT NULL,
-    succeeded_count integer DEFAULT 0 NOT NULL,
-    failed_count integer DEFAULT 0 NOT NULL,
-    building_count integer DEFAULT 0 NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    signing_key integer,
-    CONSTRAINT valid_buildd_secret CHECK ((((private = true) AND (buildd_secret IS NOT NULL)) OR (private = false))),
-    CONSTRAINT valid_name CHECK (valid_name(name))
+    private boolean DEFAULT false NOT NULL
 );
 
-CREATE TABLE archivearch (
-    id integer NOT NULL,
-    archive integer NOT NULL,
-    processorfamily integer NOT NULL
-);
+CREATE SEQUENCE archive_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE archiveauthtoken (
-    id integer NOT NULL,
-    archive integer NOT NULL,
-    person integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_deactivated timestamp without time zone,
-    token text NOT NULL
-);
-
-CREATE TABLE archivedependency (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    archive integer NOT NULL,
-    dependency integer NOT NULL,
-    pocket integer,
-    component integer,
-    CONSTRAINT distinct_archives CHECK ((archive <> dependency))
-);
-
-CREATE TABLE archivepermission (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    person integer NOT NULL,
-    permission integer NOT NULL,
-    archive integer NOT NULL,
-    component integer,
-    sourcepackagename integer,
-    CONSTRAINT component_or_sourcepackagename CHECK (((component IS NULL) OR (sourcepackagename IS NULL)))
-);
-
-CREATE TABLE archivesubscriber (
-    id integer NOT NULL,
-    archive integer NOT NULL,
-    registrant integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    subscriber integer NOT NULL,
-    date_expires timestamp without time zone,
-    status integer NOT NULL,
-    description text,
-    date_cancelled timestamp without time zone,
-    cancelled_by integer
-);
+ALTER SEQUENCE archive_id_seq OWNED BY archive.id;
 
 CREATE TABLE binarypackagename (
     id integer NOT NULL,
@@ -160,6 +122,12 @@ CREATE TABLE binarypackagefile (
     filetype integer NOT NULL,
     id integer DEFAULT nextval(('binarypackagefile_id_seq'::text)::regclass) NOT NULL
 );
+
+CREATE SEQUENCE binarypackagefile_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
 CREATE TABLE binarypackagerelease (
     id integer NOT NULL,
@@ -205,9 +173,7 @@ CREATE TABLE build (
     dependencies text,
     archive integer NOT NULL,
     estimated_build_duration interval,
-    build_warnings text,
-    date_first_dispatched timestamp without time zone,
-    upload_log integer
+    build_warnings text
 );
 
 CREATE TABLE component (
@@ -222,11 +188,11 @@ CREATE TABLE distroarchseries (
     distroseries integer NOT NULL,
     processorfamily integer NOT NULL,
     architecturetag text NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     official boolean NOT NULL,
     package_count integer DEFAULT 0 NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    supports_virtualized boolean DEFAULT false NOT NULL
+    ppa_supported boolean DEFAULT false NOT NULL
 );
 
 CREATE TABLE distroseries (
@@ -239,7 +205,7 @@ CREATE TABLE distroseries (
     releasestatus integer NOT NULL,
     datereleased timestamp without time zone,
     parent_series integer,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     lucilleconfig text,
     summary text NOT NULL,
     displayname text NOT NULL,
@@ -270,7 +236,6 @@ CREATE TABLE libraryfilealias (
     expires timestamp without time zone,
     last_accessed timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    restricted boolean DEFAULT false NOT NULL,
     CONSTRAINT valid_filename CHECK ((filename !~~ '%/%'::text))
 );
 
@@ -329,8 +294,24 @@ CREATE TABLE sourcepackagerelease (
 CREATE VIEW binarypackagefilepublishing AS
     SELECT (((libraryfilealias.id)::text || '.'::text) || (securebinarypackagepublishinghistory.id)::text) AS id, distroseries.distribution, securebinarypackagepublishinghistory.id AS binarypackagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distroseries.name AS distroseriesname, distroarchseries.architecturetag, securebinarypackagepublishinghistory.status AS publishingstatus, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive FROM (((((((((securebinarypackagepublishinghistory JOIN binarypackagerelease ON ((securebinarypackagepublishinghistory.binarypackagerelease = binarypackagerelease.id))) JOIN build ON ((binarypackagerelease.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN binarypackagefile ON ((binarypackagefile.binarypackagerelease = binarypackagerelease.id))) JOIN libraryfilealias ON ((binarypackagefile.libraryfile = libraryfilealias.id))) JOIN distroarchseries ON ((securebinarypackagepublishinghistory.distroarchseries = distroarchseries.id))) JOIN distroseries ON ((distroarchseries.distroseries = distroseries.id))) JOIN component ON ((securebinarypackagepublishinghistory.component = component.id))) WHERE (securebinarypackagepublishinghistory.dateremoved IS NULL);
 
+CREATE SEQUENCE binarypackagename_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE binarypackagename_id_seq OWNED BY binarypackagename.id;
+
 CREATE VIEW binarypackagepublishinghistory AS
     SELECT securebinarypackagepublishinghistory.id, securebinarypackagepublishinghistory.binarypackagerelease, securebinarypackagepublishinghistory.status, securebinarypackagepublishinghistory.component, securebinarypackagepublishinghistory.section, securebinarypackagepublishinghistory.priority, securebinarypackagepublishinghistory.distroarchseries, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive, securebinarypackagepublishinghistory.datecreated, securebinarypackagepublishinghistory.datepublished, securebinarypackagepublishinghistory.datesuperseded, securebinarypackagepublishinghistory.supersededby, securebinarypackagepublishinghistory.datemadepending, securebinarypackagepublishinghistory.scheduleddeletiondate, securebinarypackagepublishinghistory.dateremoved, securebinarypackagepublishinghistory.removed_by, securebinarypackagepublishinghistory.removal_comment, securebinarypackagepublishinghistory.embargo, securebinarypackagepublishinghistory.embargolifted FROM securebinarypackagepublishinghistory WHERE (securebinarypackagepublishinghistory.embargo = false);
+
+CREATE SEQUENCE binarypackagerelease_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE binarypackagerelease_id_seq OWNED BY binarypackagerelease.id;
 
 CREATE TABLE bounty (
     id integer NOT NULL,
@@ -342,12 +323,20 @@ CREATE TABLE bounty (
     difficulty integer NOT NULL,
     reviewer integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     deadline timestamp without time zone,
     claimant integer,
     dateclaimed timestamp without time zone,
     bountystatus integer DEFAULT 1 NOT NULL
 );
+
+CREATE SEQUENCE bounty_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bounty_id_seq OWNED BY bounty.id;
 
 CREATE TABLE bountymessage (
     id integer NOT NULL,
@@ -355,17 +344,33 @@ CREATE TABLE bountymessage (
     message integer NOT NULL
 );
 
+CREATE SEQUENCE bountymessage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bountymessage_id_seq OWNED BY bountymessage.id;
+
 CREATE TABLE bountysubscription (
     id integer NOT NULL,
     bounty integer NOT NULL,
     person integer NOT NULL
 );
 
+CREATE SEQUENCE bountysubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bountysubscription_id_seq OWNED BY bountysubscription.id;
+
 CREATE TABLE branch (
     id integer NOT NULL,
     title text,
     summary text,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     product integer,
     author integer,
     name text NOT NULL,
@@ -390,12 +395,7 @@ CREATE TABLE branch (
     merge_robot integer,
     merge_control_status integer DEFAULT 1 NOT NULL,
     date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    registrant integer NOT NULL,
-    branch_format integer,
-    repository_format integer,
-    metadir_format integer,
-    stacked_on integer,
-    CONSTRAINT branch_merge_control CHECK (((merge_robot IS NULL) OR (merge_control_status = ANY (ARRAY[3, 4])))),
+    CONSTRAINT branch_robotic_control CHECK ((((merge_robot IS NULL) AND (merge_control_status = 1)) OR (merge_robot IS NOT NULL))),
     CONSTRAINT branch_type_url_consistent CHECK (((((branch_type = 2) AND (url IS NOT NULL)) OR ((branch_type = ANY (ARRAY[1, 3])) AND (url IS NULL))) OR (branch_type = 4))),
     CONSTRAINT branch_url_no_trailing_slash CHECK ((url !~~ '%/'::text)),
     CONSTRAINT branch_url_not_supermirror CHECK ((url !~~ 'http://bazaar.launchpad.net/%'::text)),
@@ -403,6 +403,14 @@ CREATE TABLE branch (
     CONSTRAINT valid_name CHECK (valid_branch_name(name)),
     CONSTRAINT valid_url CHECK (valid_absolute_url(url))
 );
+
+CREATE SEQUENCE branch_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branch_id_seq OWNED BY branch.id;
 
 CREATE TABLE branchmergeproposal (
     id integer NOT NULL,
@@ -430,27 +438,57 @@ CREATE TABLE branchmergeproposal (
     date_merge_started timestamp without time zone,
     date_merge_finished timestamp without time zone,
     merge_log_file integer,
-    superseded_by integer,
-    root_message_id text,
     CONSTRAINT different_branches CHECK ((((source_branch <> target_branch) AND (dependent_branch <> source_branch)) AND (dependent_branch <> target_branch))),
     CONSTRAINT positive_revno CHECK (((merged_revno IS NULL) OR (merged_revno > 0)))
 );
 
+CREATE SEQUENCE branchmergeproposal_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchmergeproposal_id_seq OWNED BY branchmergeproposal.id;
+
 CREATE TABLE branchmergerobot (
     id integer NOT NULL,
     registrant integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     name text NOT NULL,
     whiteboard text,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE branchmergerobot_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchmergerobot_id_seq OWNED BY branchmergerobot.id;
+
+CREATE SEQUENCE branchrelationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
 CREATE TABLE branchrevision (
     id integer NOT NULL,
-    sequence integer,
+    "sequence" integer,
     branch integer NOT NULL,
     revision integer NOT NULL
 );
+
+CREATE SEQUENCE branchrevision_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchrevision_id_seq OWNED BY branchrevision.id;
 
 CREATE TABLE branchsubscription (
     id integer NOT NULL,
@@ -458,9 +496,16 @@ CREATE TABLE branchsubscription (
     branch integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     notification_level integer DEFAULT 1 NOT NULL,
-    max_diff_lines integer,
-    review_level integer DEFAULT 0 NOT NULL
+    max_diff_lines integer
 );
+
+CREATE SEQUENCE branchsubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchsubscription_id_seq OWNED BY branchsubscription.id;
 
 CREATE TABLE branchvisibilitypolicy (
     id integer NOT NULL,
@@ -471,13 +516,22 @@ CREATE TABLE branchvisibilitypolicy (
     CONSTRAINT only_one_target CHECK (((project IS NULL) <> (product IS NULL)))
 );
 
+CREATE SEQUENCE branchvisibilitypolicy_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchvisibilitypolicy_id_seq OWNED BY branchvisibilitypolicy.id;
+
 CREATE TABLE person (
     id integer NOT NULL,
     displayname text NOT NULL,
+    "password" text,
     teamowner integer,
     teamdescription text,
     name text NOT NULL,
-    language integer,
+    "language" integer,
     fti ts2.tsvector,
     defaultmembershipperiod integer,
     defaultrenewalperiod integer,
@@ -501,27 +555,29 @@ CREATE TABLE person (
     registrant integer,
     logo integer,
     renewal_policy integer DEFAULT 10 NOT NULL,
+    openid_identifier text NOT NULL,
+    account_status_comment text,
+    account_status integer DEFAULT 10 NOT NULL,
     personal_standing integer DEFAULT 0 NOT NULL,
-    personal_standing_reason text,
+    personal_standing_reason_text text,
     mail_resumption_date date,
     mailing_list_auto_subscribe_policy integer DEFAULT 1 NOT NULL,
     mailing_list_receive_duplicates boolean DEFAULT true NOT NULL,
     visibility integer DEFAULT 1 NOT NULL,
     verbose_bugnotifications boolean DEFAULT false NOT NULL,
-    account integer,
     CONSTRAINT creation_rationale_not_null_for_people CHECK (((creation_rationale IS NULL) = (teamowner IS NOT NULL))),
     CONSTRAINT no_loops CHECK ((id <> teamowner)),
     CONSTRAINT non_empty_displayname CHECK ((btrim(displayname) <> ''::text)),
     CONSTRAINT people_have_no_emblems CHECK (((icon IS NULL) OR (teamowner IS NOT NULL))),
     CONSTRAINT sane_defaultrenewalperiod CHECK (CASE WHEN (teamowner IS NULL) THEN (defaultrenewalperiod IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN ((defaultrenewalperiod IS NOT NULL) AND (defaultrenewalperiod > 0)) ELSE ((defaultrenewalperiod IS NULL) OR (defaultrenewalperiod > 0)) END),
-    CONSTRAINT teams_have_no_account CHECK (((account IS NULL) OR (teamowner IS NULL))),
+    CONSTRAINT teams_have_no_account CHECK (((teamowner IS NULL) OR (account_status = 10))),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
 CREATE TABLE product (
     id integer NOT NULL,
     project integer,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     name text NOT NULL,
     displayname text NOT NULL,
     title text NOT NULL,
@@ -545,7 +601,7 @@ CREATE TABLE product (
     translationpermission integer DEFAULT 1 NOT NULL,
     official_rosetta boolean DEFAULT false NOT NULL,
     official_malone boolean DEFAULT false NOT NULL,
-    bug_supervisor integer,
+    bugcontact integer,
     security_contact integer,
     driver integer,
     bugtracker integer,
@@ -562,16 +618,13 @@ CREATE TABLE product (
     enable_bug_expiration boolean DEFAULT false NOT NULL,
     bug_reporting_guidelines text,
     reviewer_whiteboard text,
-    official_codehosting boolean DEFAULT false NOT NULL,
-    license_approved boolean DEFAULT false NOT NULL,
-    registrant integer NOT NULL,
     CONSTRAINT only_launchpad_has_expiration CHECK (((enable_bug_expiration IS FALSE) OR (official_malone IS TRUE))),
-    CONSTRAINT private_bugs_need_contact CHECK (((private_bugs IS FALSE) OR (bug_supervisor IS NOT NULL))),
+    CONSTRAINT private_bugs_need_contact CHECK (((private_bugs IS FALSE) OR (bugcontact IS NOT NULL))),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
 CREATE VIEW branchwithsortkeys AS
-    SELECT branch.id, branch.title, branch.summary, branch.owner, branch.product, branch.author, branch.name, branch.home_page, branch.url, branch.whiteboard, branch.lifecycle_status, branch.last_mirrored, branch.last_mirror_attempt, branch.mirror_failures, branch.pull_disabled, branch.mirror_status_message, branch.last_scanned, branch.last_scanned_id, branch.last_mirrored_id, branch.date_created, branch.revision_count, branch.next_mirror_time, branch.private, branch.branch_type, branch.reviewer, branch.merge_robot, branch.merge_control_status, branch.date_last_modified, branch.registrant, product.name AS product_name, author.displayname AS author_name, owner.displayname AS owner_name FROM (((branch JOIN person owner ON ((branch.owner = owner.id))) LEFT JOIN product ON ((branch.product = product.id))) LEFT JOIN person author ON ((branch.author = author.id)));
+    SELECT branch.id, branch.title, branch.summary, branch."owner", branch.product, branch.author, branch.name, branch.home_page, branch.url, branch.whiteboard, branch.lifecycle_status, branch.last_mirrored, branch.last_mirror_attempt, branch.mirror_failures, branch.pull_disabled, branch.mirror_status_message, branch.last_scanned, branch.last_scanned_id, branch.last_mirrored_id, branch.date_created, branch.revision_count, branch.next_mirror_time, branch.private, branch.branch_type, branch.reviewer, branch.merge_robot, branch.merge_control_status, branch.date_last_modified, product.name AS product_name, author.displayname AS author_name, "owner".displayname AS owner_name FROM (((branch JOIN person "owner" ON ((branch."owner" = "owner".id))) LEFT JOIN product ON ((branch.product = product.id))) LEFT JOIN person author ON ((branch.author = author.id)));
 
 CREATE TABLE bug (
     id integer NOT NULL,
@@ -579,7 +632,7 @@ CREATE TABLE bug (
     name text,
     title text NOT NULL,
     description text NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     duplicateof integer,
     fti ts2.tsvector,
     private boolean DEFAULT false NOT NULL,
@@ -590,11 +643,18 @@ CREATE TABLE bug (
     date_last_message timestamp without time zone,
     number_of_duplicates integer DEFAULT 0 NOT NULL,
     message_count integer DEFAULT 0 NOT NULL,
-    users_affected_count integer DEFAULT 0,
     CONSTRAINT notduplicateofself CHECK ((NOT (id = duplicateof))),
     CONSTRAINT sane_description CHECK (((ltrim(description) <> ''::text) AND (char_length(description) <= 50000))),
     CONSTRAINT valid_bug_name CHECK (valid_bug_name(name))
 );
+
+CREATE SEQUENCE bug_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bug_id_seq OWNED BY bug.id;
 
 CREATE TABLE bugactivity (
     id integer NOT NULL,
@@ -607,11 +667,13 @@ CREATE TABLE bugactivity (
     message text
 );
 
-CREATE TABLE bugaffectsperson (
-    id integer NOT NULL,
-    bug integer NOT NULL,
-    person integer NOT NULL
-);
+CREATE SEQUENCE bugactivity_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugactivity_id_seq OWNED BY bugactivity.id;
 
 CREATE TABLE bugattachment (
     id integer NOT NULL,
@@ -620,9 +682,17 @@ CREATE TABLE bugattachment (
     title text,
     libraryfile integer NOT NULL,
     bug integer NOT NULL,
-    type integer NOT NULL,
+    "type" integer NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
+
+CREATE SEQUENCE bugattachment_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugattachment_id_seq OWNED BY bugattachment.id;
 
 CREATE TABLE bugbranch (
     id integer NOT NULL,
@@ -635,6 +705,14 @@ CREATE TABLE bugbranch (
     registrant integer NOT NULL
 );
 
+CREATE SEQUENCE bugbranch_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugbranch_id_seq OWNED BY bugbranch.id;
+
 CREATE TABLE bugcve (
     id integer NOT NULL,
     bug integer NOT NULL,
@@ -642,15 +720,28 @@ CREATE TABLE bugcve (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE bugcve_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugcve_id_seq OWNED BY bugcve.id;
+
 CREATE TABLE bugmessage (
     id integer NOT NULL,
     bug integer NOT NULL,
     message integer NOT NULL,
-    bugwatch integer,
-    remote_comment_id text,
-    visible boolean DEFAULT true NOT NULL,
-    CONSTRAINT imported_comment CHECK (((remote_comment_id IS NULL) OR (bugwatch IS NOT NULL)))
+    bugwatch integer
 );
+
+CREATE SEQUENCE bugmessage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugmessage_id_seq OWNED BY bugmessage.id;
 
 CREATE TABLE bugnomination (
     id integer NOT NULL,
@@ -660,9 +751,17 @@ CREATE TABLE bugnomination (
     status integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     date_decided timestamp without time zone,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     decider integer
 );
+
+CREATE SEQUENCE bugnomination_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugnomination_id_seq OWNED BY bugnomination.id;
 
 CREATE TABLE bugnotification (
     id integer NOT NULL,
@@ -672,13 +771,13 @@ CREATE TABLE bugnotification (
     date_emailed timestamp without time zone
 );
 
-CREATE TABLE bugnotificationrecipient (
-    id integer NOT NULL,
-    bug_notification integer NOT NULL,
-    person integer NOT NULL,
-    reason_header text NOT NULL,
-    reason_body text NOT NULL
-);
+CREATE SEQUENCE bugnotification_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugnotification_id_seq OWNED BY bugnotification.id;
 
 CREATE TABLE bugpackageinfestation (
     id integer NOT NULL,
@@ -694,6 +793,15 @@ CREATE TABLE bugpackageinfestation (
     lastmodifiedby integer NOT NULL
 );
 
+CREATE SEQUENCE bugpackageinfestation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugpackageinfestation_id_seq OWNED BY bugpackageinfestation.id;
+
 CREATE TABLE bugproductinfestation (
     id integer NOT NULL,
     bug integer NOT NULL,
@@ -708,6 +816,15 @@ CREATE TABLE bugproductinfestation (
     lastmodifiedby integer NOT NULL
 );
 
+CREATE SEQUENCE bugproductinfestation_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugproductinfestation_id_seq OWNED BY bugproductinfestation.id;
+
 CREATE TABLE bugsubscription (
     id integer NOT NULL,
     person integer NOT NULL,
@@ -716,12 +833,28 @@ CREATE TABLE bugsubscription (
     subscribed_by integer NOT NULL
 );
 
+CREATE SEQUENCE bugsubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugsubscription_id_seq OWNED BY bugsubscription.id;
+
 CREATE TABLE bugtag (
     id integer NOT NULL,
     bug integer NOT NULL,
     tag text NOT NULL,
     CONSTRAINT valid_tag CHECK (valid_name(tag))
 );
+
+CREATE SEQUENCE bugtag_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugtag_id_seq OWNED BY bugtag.id;
 
 CREATE TABLE bugtask (
     id integer NOT NULL,
@@ -737,7 +870,7 @@ CREATE TABLE bugtask (
     assignee integer,
     date_assigned timestamp without time zone,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     milestone integer,
     bugwatch integer,
     statusexplanation text,
@@ -748,12 +881,16 @@ CREATE TABLE bugtask (
     date_closed timestamp without time zone,
     productseries integer,
     date_incomplete timestamp without time zone,
-    date_left_new timestamp without time zone,
-    date_triaged timestamp without time zone,
-    date_fix_committed timestamp without time zone,
-    date_fix_released timestamp without time zone,
     CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN ((((productseries IS NULL) AND (distribution IS NULL)) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (productseries IS NOT NULL) THEN (((distribution IS NULL) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (distribution IS NOT NULL) THEN (distroseries IS NULL) WHEN (distroseries IS NOT NULL) THEN true ELSE false END)
 );
+
+CREATE SEQUENCE bugtask_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugtask_id_seq OWNED BY bugtask.id;
 
 CREATE TABLE bugtracker (
     id integer NOT NULL,
@@ -762,14 +899,19 @@ CREATE TABLE bugtracker (
     title text NOT NULL,
     summary text,
     baseurl text NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     contactdetails text,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    version text,
-    block_comment_pushing boolean DEFAULT false NOT NULL,
-    has_lp_plugin boolean,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
+
+CREATE SEQUENCE bugtracker_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugtracker_id_seq OWNED BY bugtracker.id;
 
 CREATE TABLE bugtrackeralias (
     id integer NOT NULL,
@@ -777,13 +919,13 @@ CREATE TABLE bugtrackeralias (
     base_url text NOT NULL
 );
 
-CREATE TABLE bugtrackerperson (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    bugtracker integer NOT NULL,
-    person integer NOT NULL,
-    name text NOT NULL
-);
+CREATE SEQUENCE bugtrackeralias_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugtrackeralias_id_seq OWNED BY bugtrackeralias.id;
 
 CREATE TABLE bugwatch (
     id integer NOT NULL,
@@ -794,11 +936,26 @@ CREATE TABLE bugwatch (
     lastchanged timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     lastchecked timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     last_error_type integer,
-    remote_importance text,
-    remote_lp_bug_id integer
+    remote_importance text
 );
+
+CREATE SEQUENCE bugwatch_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugwatch_id_seq OWNED BY bugwatch.id;
+
+CREATE SEQUENCE build_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE build_id_seq OWNED BY build.id;
 
 CREATE TABLE builder (
     id integer NOT NULL,
@@ -806,11 +963,11 @@ CREATE TABLE builder (
     name text NOT NULL,
     title text NOT NULL,
     description text NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     speedindex integer,
     builderok boolean NOT NULL,
     failnotes text,
-    virtualized boolean DEFAULT true NOT NULL,
+    "trusted" boolean DEFAULT false NOT NULL,
     url text NOT NULL,
     manual boolean DEFAULT false,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -818,6 +975,14 @@ CREATE TABLE builder (
     active boolean DEFAULT true NOT NULL,
     CONSTRAINT valid_absolute_url CHECK (valid_absolute_url(url))
 );
+
+CREATE SEQUENCE builder_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE builder_id_seq OWNED BY builder.id;
 
 CREATE TABLE buildqueue (
     id integer NOT NULL,
@@ -830,6 +995,14 @@ CREATE TABLE buildqueue (
     manual boolean DEFAULT false NOT NULL
 );
 
+CREATE SEQUENCE buildqueue_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE buildqueue_id_seq OWNED BY buildqueue.id;
+
 CREATE TABLE codeimport (
     id integer NOT NULL,
     branch integer NOT NULL,
@@ -841,11 +1014,20 @@ CREATE TABLE codeimport (
     cvs_module text,
     review_status integer DEFAULT 1 NOT NULL,
     date_last_successful timestamp without time zone,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     assignee integer,
     update_interval interval,
     CONSTRAINT valid_vcs_details CHECK (CASE WHEN (rcs_type = 1) THEN (((((cvs_root IS NOT NULL) AND (cvs_root <> ''::text)) AND (cvs_module IS NOT NULL)) AND (cvs_module <> ''::text)) AND (svn_branch_url IS NULL)) WHEN (rcs_type = 2) THEN ((((cvs_root IS NULL) AND (cvs_module IS NULL)) AND (svn_branch_url IS NOT NULL)) AND valid_absolute_url(svn_branch_url)) ELSE false END)
 );
+
+CREATE SEQUENCE codeimport_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE codeimport_id_seq OWNED BY codeimport.id;
 
 CREATE TABLE codeimportevent (
     id integer NOT NULL,
@@ -856,12 +1038,30 @@ CREATE TABLE codeimportevent (
     machine integer
 );
 
+CREATE SEQUENCE codeimportevent_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE codeimportevent_id_seq OWNED BY codeimportevent.id;
+
 CREATE TABLE codeimporteventdata (
     id integer NOT NULL,
     event integer,
     data_type integer NOT NULL,
     data_value text
 );
+
+CREATE SEQUENCE codeimporteventdata_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE codeimporteventdata_id_seq OWNED BY codeimporteventdata.id;
 
 CREATE TABLE codeimportjob (
     id integer NOT NULL,
@@ -878,6 +1078,15 @@ CREATE TABLE codeimportjob (
     CONSTRAINT valid_state CHECK (CASE WHEN (state = 10) THEN (((((machine IS NULL) AND (ordering IS NULL)) AND (heartbeat IS NULL)) AND (date_started IS NULL)) AND (logtail IS NULL)) WHEN (state = 20) THEN (((((machine IS NOT NULL) AND (ordering IS NOT NULL)) AND (heartbeat IS NULL)) AND (date_started IS NULL)) AND (logtail IS NULL)) WHEN (state = 30) THEN (((((machine IS NOT NULL) AND (ordering IS NULL)) AND (heartbeat IS NOT NULL)) AND (date_started IS NOT NULL)) AND (logtail IS NOT NULL)) ELSE false END)
 );
 
+CREATE SEQUENCE codeimportjob_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE codeimportjob_id_seq OWNED BY codeimportjob.id;
+
 CREATE TABLE codeimportmachine (
     id integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -885,6 +1094,15 @@ CREATE TABLE codeimportmachine (
     state integer DEFAULT 10 NOT NULL,
     heartbeat timestamp without time zone
 );
+
+CREATE SEQUENCE codeimportmachine_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE codeimportmachine_id_seq OWNED BY codeimportmachine.id;
 
 CREATE TABLE codeimportresult (
     id integer NOT NULL,
@@ -898,37 +1116,22 @@ CREATE TABLE codeimportresult (
     date_job_started timestamp without time zone
 );
 
-CREATE TABLE codereviewmessage (
-    id integer NOT NULL,
-    branch_merge_proposal integer NOT NULL,
-    message integer NOT NULL,
-    vote integer,
-    vote_tag text
-);
+CREATE SEQUENCE codeimportresult_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE codereviewvote (
-    id integer NOT NULL,
-    branch_merge_proposal integer NOT NULL,
-    reviewer integer NOT NULL,
-    review_type text,
-    registrant integer NOT NULL,
-    vote_message integer,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
-);
+ALTER SEQUENCE codeimportresult_id_seq OWNED BY codeimportresult.id;
 
-CREATE TABLE commercialsubscription (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_starts timestamp without time zone NOT NULL,
-    date_expires timestamp without time zone NOT NULL,
-    status integer DEFAULT 10 NOT NULL,
-    product integer NOT NULL,
-    registrant integer NOT NULL,
-    purchaser integer NOT NULL,
-    whiteboard text,
-    sales_system_id text
-);
+CREATE SEQUENCE component_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE component_id_seq OWNED BY component.id;
 
 CREATE TABLE componentselection (
     id integer NOT NULL,
@@ -937,11 +1140,28 @@ CREATE TABLE componentselection (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE componentselection_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE componentselection_id_seq OWNED BY componentselection.id;
+
 CREATE TABLE continent (
     id integer NOT NULL,
     code text NOT NULL,
     name text NOT NULL
 );
+
+CREATE SEQUENCE continent_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE continent_id_seq OWNED BY continent.id;
 
 CREATE TABLE country (
     id integer NOT NULL,
@@ -953,27 +1173,32 @@ CREATE TABLE country (
     continent integer NOT NULL
 );
 
-CREATE TABLE customlanguagecode (
-    id integer NOT NULL,
-    product integer,
-    distribution integer,
-    sourcepackagename integer,
-    language_code text NOT NULL,
-    language integer,
-    CONSTRAINT distro_and_sourcepackage CHECK (((sourcepackagename IS NULL) = (distribution IS NULL))),
-    CONSTRAINT product_or_distro CHECK (((product IS NULL) <> (distribution IS NULL)))
-);
+CREATE SEQUENCE country_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE country_id_seq OWNED BY country.id;
 
 CREATE TABLE cve (
     id integer NOT NULL,
-    sequence text NOT NULL,
+    "sequence" text NOT NULL,
     status integer NOT NULL,
     description text NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     datemodified timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     fti ts2.tsvector,
-    CONSTRAINT valid_cve_ref CHECK (valid_cve(sequence))
+    CONSTRAINT valid_cve_ref CHECK (valid_cve("sequence"))
 );
+
+CREATE SEQUENCE cve_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE cve_id_seq OWNED BY cve.id;
 
 CREATE TABLE cvereference (
     id integer NOT NULL,
@@ -984,20 +1209,28 @@ CREATE TABLE cvereference (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE cvereference_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE cvereference_id_seq OWNED BY cvereference.id;
+
 CREATE TABLE distribution (
     id integer NOT NULL,
     name text NOT NULL,
     title text NOT NULL,
     description text NOT NULL,
     domainname text NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     lucilleconfig text,
     displayname text NOT NULL,
     summary text NOT NULL,
     members integer NOT NULL,
     translationgroup integer,
     translationpermission integer DEFAULT 1 NOT NULL,
-    bug_supervisor integer,
+    bugcontact integer,
     official_malone boolean DEFAULT false NOT NULL,
     official_rosetta boolean DEFAULT false NOT NULL,
     security_contact integer,
@@ -1022,12 +1255,28 @@ CREATE TABLE distribution (
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
+CREATE SEQUENCE distribution_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distribution_id_seq OWNED BY distribution.id;
+
 CREATE TABLE distributionbounty (
     id integer NOT NULL,
     bounty integer NOT NULL,
     distribution integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE distributionbounty_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distributionbounty_id_seq OWNED BY distributionbounty.id;
 
 CREATE TABLE distributionmirror (
     id integer NOT NULL,
@@ -1038,7 +1287,7 @@ CREATE TABLE distributionmirror (
     rsync_base_url text,
     displayname text,
     description text,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     speed integer NOT NULL,
     country integer NOT NULL,
     content integer NOT NULL,
@@ -1056,12 +1305,20 @@ CREATE TABLE distributionmirror (
     CONSTRAINT valid_rsync_base_url CHECK (valid_absolute_url(rsync_base_url))
 );
 
-CREATE TABLE distributionsourcepackage (
-    id integer NOT NULL,
-    distribution integer NOT NULL,
-    sourcepackagename integer NOT NULL,
-    bug_reporting_guidelines text
-);
+CREATE SEQUENCE distributionmirror_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distributionmirror_id_seq OWNED BY distributionmirror.id;
+
+CREATE SEQUENCE distributionrole_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
 CREATE TABLE distributionsourcepackagecache (
     id integer NOT NULL,
@@ -1072,9 +1329,24 @@ CREATE TABLE distributionsourcepackagecache (
     binpkgsummaries text,
     binpkgdescriptions text,
     fti ts2.tsvector,
-    changelog text,
-    archive integer NOT NULL
+    changelog text
 );
+
+CREATE SEQUENCE distributionsourcepackagecache_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distributionsourcepackagecache_id_seq OWNED BY distributionsourcepackagecache.id;
+
+CREATE SEQUENCE distroarchseries_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distroarchseries_id_seq OWNED BY distroarchseries.id;
 
 CREATE TABLE distrocomponentuploader (
     id integer NOT NULL,
@@ -1084,10 +1356,26 @@ CREATE TABLE distrocomponentuploader (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE distrocomponentuploader_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distrocomponentuploader_id_seq OWNED BY distrocomponentuploader.id;
+
+CREATE SEQUENCE distroseries_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distroseries_id_seq OWNED BY distroseries.id;
+
 CREATE TABLE distroserieslanguage (
     id integer NOT NULL,
     distroseries integer,
-    language integer,
+    "language" integer,
     currentcount integer NOT NULL,
     updatescount integer NOT NULL,
     rosettacount integer NOT NULL,
@@ -1096,8 +1384,16 @@ CREATE TABLE distroserieslanguage (
     unreviewed_count integer DEFAULT 0 NOT NULL
 );
 
+CREATE SEQUENCE distroserieslanguage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distroserieslanguage_id_seq OWNED BY distroserieslanguage.id;
+
 CREATE TABLE distroseriespackagecache (
-    id integer NOT NULL,
+    id integer DEFAULT nextval('distroseriespackagecache'::regclass) NOT NULL,
     distroseries integer NOT NULL,
     binarypackagename integer NOT NULL,
     name text,
@@ -1105,23 +1401,36 @@ CREATE TABLE distroseriespackagecache (
     description text,
     summaries text,
     descriptions text,
-    fti ts2.tsvector,
-    archive integer NOT NULL
+    fti ts2.tsvector
 );
+
+CREATE SEQUENCE distroseriespackagecache_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE distroseriespackagecache_id_seq OWNED BY distroseriespackagecache.id;
 
 CREATE TABLE emailaddress (
     id integer NOT NULL,
     email text NOT NULL,
-    person integer,
+    person integer NOT NULL,
     status integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    account integer,
-    CONSTRAINT emailaddress__is_linked__chk CHECK (((person IS NOT NULL) OR (account IS NOT NULL)))
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE emailaddress_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE emailaddress_id_seq OWNED BY emailaddress.id;
 
 CREATE TABLE entitlement (
     id integer NOT NULL,
-    person integer,
+    person integer NOT NULL,
     entitlement_type integer NOT NULL,
     quota integer NOT NULL,
     amount_used integer DEFAULT 0 NOT NULL,
@@ -1133,12 +1442,17 @@ CREATE TABLE entitlement (
     date_approved timestamp without time zone,
     state integer DEFAULT 30 NOT NULL,
     whiteboard text,
-    is_dirty boolean DEFAULT true NOT NULL,
-    distribution integer,
-    product integer,
-    project integer,
-    CONSTRAINT only_one_target CHECK ((null_count(ARRAY[person, product, project, distribution]) = 3))
+    is_dirty boolean DEFAULT true NOT NULL
 );
+
+CREATE SEQUENCE entitlement_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE entitlement_id_seq OWNED BY entitlement.id;
 
 CREATE TABLE faq (
     id integer NOT NULL,
@@ -1147,7 +1461,7 @@ CREATE TABLE faq (
     content text NOT NULL,
     product integer,
     distribution integer,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     last_updated_by integer,
     date_last_updated timestamp without time zone,
@@ -1155,10 +1469,26 @@ CREATE TABLE faq (
     CONSTRAINT product_or_distro CHECK (((product IS NULL) <> (distribution IS NULL)))
 );
 
+CREATE SEQUENCE faq_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE faq_id_seq OWNED BY faq.id;
+
 CREATE TABLE featuredproject (
     id integer NOT NULL,
     pillar_name integer NOT NULL
 );
+
+CREATE SEQUENCE featuredproject_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE featuredproject_id_seq OWNED BY featuredproject.id;
 
 CREATE TABLE fticache (
     id integer NOT NULL,
@@ -1166,9 +1496,17 @@ CREATE TABLE fticache (
     columns text NOT NULL
 );
 
+CREATE SEQUENCE fticache_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE fticache_id_seq OWNED BY fticache.id;
+
 CREATE TABLE gpgkey (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     keyid text NOT NULL,
     fingerprint text NOT NULL,
     active boolean NOT NULL,
@@ -1180,6 +1518,14 @@ CREATE TABLE gpgkey (
     CONSTRAINT valid_keyid CHECK (valid_keyid(keyid))
 );
 
+CREATE SEQUENCE gpgkey_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE gpgkey_id_seq OWNED BY gpgkey.id;
+
 CREATE TABLE hwdevice (
     id integer NOT NULL,
     bus_vendor_id integer NOT NULL,
@@ -1189,18 +1535,29 @@ CREATE TABLE hwdevice (
     submissions integer NOT NULL
 );
 
-CREATE TABLE hwdeviceclass (
-    id integer NOT NULL,
-    device integer NOT NULL,
-    main_class integer NOT NULL,
-    sub_class integer
-);
+CREATE SEQUENCE hwdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevice_id_seq OWNED BY hwdevice.id;
 
 CREATE TABLE hwdevicedriverlink (
     id integer NOT NULL,
     device integer NOT NULL,
     driver integer
 );
+
+CREATE SEQUENCE hwdevicedriverlink_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevicedriverlink_id_seq OWNED BY hwdevicedriverlink.id;
 
 CREATE TABLE hwdevicenamevariant (
     id integer NOT NULL,
@@ -1210,12 +1567,30 @@ CREATE TABLE hwdevicenamevariant (
     submissions integer NOT NULL
 );
 
+CREATE SEQUENCE hwdevicenamevariant_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevicenamevariant_id_seq OWNED BY hwdevicenamevariant.id;
+
 CREATE TABLE hwdriver (
     id integer NOT NULL,
     package_name text,
     name text NOT NULL,
     license integer
 );
+
+CREATE SEQUENCE hwdriver_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdriver_id_seq OWNED BY hwdriver.id;
 
 CREATE TABLE hwsubmission (
     id integer NOT NULL,
@@ -1226,31 +1601,49 @@ CREATE TABLE hwsubmission (
     private boolean NOT NULL,
     contactable boolean NOT NULL,
     submission_key text NOT NULL,
-    owner integer,
+    "owner" integer,
     distroarchseries integer,
     raw_submission integer NOT NULL,
     system_fingerprint integer NOT NULL,
     raw_emailaddress text
 );
 
-CREATE TABLE hwsubmissionbug (
-    id integer NOT NULL,
-    submission integer NOT NULL,
-    bug integer NOT NULL
-);
+CREATE SEQUENCE hwsubmission_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwsubmission_id_seq OWNED BY hwsubmission.id;
 
 CREATE TABLE hwsubmissiondevice (
     id integer NOT NULL,
     device_driver_link integer NOT NULL,
     submission integer NOT NULL,
-    parent integer,
-    hal_device_id integer NOT NULL
+    parent integer
 );
+
+CREATE SEQUENCE hwsubmissiondevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwsubmissiondevice_id_seq OWNED BY hwsubmissiondevice.id;
 
 CREATE TABLE hwsystemfingerprint (
     id integer NOT NULL,
     fingerprint text NOT NULL
 );
+
+CREATE SEQUENCE hwsystemfingerprint_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwsystemfingerprint_id_seq OWNED BY hwsystemfingerprint.id;
 
 CREATE TABLE hwtest (
     id integer NOT NULL,
@@ -1259,6 +1652,15 @@ CREATE TABLE hwtest (
     version text NOT NULL
 );
 
+CREATE SEQUENCE hwtest_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtest_id_seq OWNED BY hwtest.id;
+
 CREATE TABLE hwtestanswer (
     id integer NOT NULL,
     test integer NOT NULL,
@@ -1266,17 +1668,35 @@ CREATE TABLE hwtestanswer (
     intval integer,
     floatval double precision,
     unit text,
-    comment text,
-    language integer,
+    "comment" text,
+    "language" integer,
     submission integer NOT NULL,
     CONSTRAINT hwtestanswer_check CHECK (((((choice IS NULL) AND (unit IS NOT NULL)) AND ((intval IS NULL) <> (floatval IS NULL))) OR ((((choice IS NOT NULL) AND (unit IS NULL)) AND (intval IS NULL)) AND (floatval IS NULL))))
 );
+
+CREATE SEQUENCE hwtestanswer_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswer_id_seq OWNED BY hwtestanswer.id;
 
 CREATE TABLE hwtestanswerchoice (
     id integer NOT NULL,
     choice text NOT NULL,
     test integer NOT NULL
 );
+
+CREATE SEQUENCE hwtestanswerchoice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswerchoice_id_seq OWNED BY hwtestanswerchoice.id;
 
 CREATE TABLE hwtestanswercount (
     id integer NOT NULL,
@@ -1290,17 +1710,44 @@ CREATE TABLE hwtestanswercount (
     CONSTRAINT hwtestanswercount_check CHECK ((((((choice IS NULL) AND (average IS NOT NULL)) AND (sum_square IS NOT NULL)) AND (unit IS NOT NULL)) OR ((((choice IS NOT NULL) AND (average IS NULL)) AND (sum_square IS NULL)) AND (unit IS NULL))))
 );
 
+CREATE SEQUENCE hwtestanswercount_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswercount_id_seq OWNED BY hwtestanswercount.id;
+
 CREATE TABLE hwtestanswercountdevice (
     id integer NOT NULL,
     answer integer NOT NULL,
     device_driver integer NOT NULL
 );
 
+CREATE SEQUENCE hwtestanswercountdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswercountdevice_id_seq OWNED BY hwtestanswercountdevice.id;
+
 CREATE TABLE hwtestanswerdevice (
     id integer NOT NULL,
     answer integer NOT NULL,
     device_driver integer NOT NULL
 );
+
+CREATE SEQUENCE hwtestanswerdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswerdevice_id_seq OWNED BY hwtestanswerdevice.id;
 
 CREATE TABLE hwvendorid (
     id integer NOT NULL,
@@ -1309,10 +1756,28 @@ CREATE TABLE hwvendorid (
     vendor_name integer NOT NULL
 );
 
+CREATE SEQUENCE hwvendorid_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwvendorid_id_seq OWNED BY hwvendorid.id;
+
 CREATE TABLE hwvendorname (
     id integer NOT NULL,
     name text NOT NULL
 );
+
+CREATE SEQUENCE hwvendorname_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwvendorname_id_seq OWNED BY hwvendorname.id;
 
 CREATE TABLE ircid (
     id integer NOT NULL,
@@ -1321,21 +1786,45 @@ CREATE TABLE ircid (
     nickname text NOT NULL
 );
 
+CREATE SEQUENCE ircid_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE ircid_id_seq OWNED BY ircid.id;
+
 CREATE TABLE jabberid (
     id integer NOT NULL,
     person integer NOT NULL,
     jabberid text NOT NULL
 );
 
+CREATE SEQUENCE jabberid_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE jabberid_id_seq OWNED BY jabberid.id;
+
 CREATE TABLE karma (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     person integer NOT NULL,
-    action integer NOT NULL,
+    "action" integer NOT NULL,
     product integer,
     distribution integer,
     sourcepackagename integer
 );
+
+CREATE SEQUENCE karma_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE karma_id_seq OWNED BY karma.id;
 
 CREATE TABLE karmaaction (
     id integer NOT NULL,
@@ -1345,6 +1834,14 @@ CREATE TABLE karmaaction (
     title text NOT NULL,
     summary text NOT NULL
 );
+
+CREATE SEQUENCE karmaaction_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE karmaaction_id_seq OWNED BY karmaaction.id;
 
 CREATE TABLE karmacache (
     id integer NOT NULL,
@@ -1361,6 +1858,14 @@ CREATE TABLE karmacache (
     CONSTRAINT sourcepackagename_requires_distribution CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
 );
 
+CREATE SEQUENCE karmacache_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE karmacache_id_seq OWNED BY karmacache.id;
+
 CREATE TABLE karmacategory (
     id integer NOT NULL,
     name text NOT NULL,
@@ -1368,13 +1873,30 @@ CREATE TABLE karmacategory (
     summary text NOT NULL
 );
 
+CREATE SEQUENCE karmacategory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE karmacategory_id_seq OWNED BY karmacategory.id;
+
 CREATE TABLE karmatotalcache (
     id integer NOT NULL,
     person integer NOT NULL,
     karma_total integer NOT NULL
 );
 
-CREATE TABLE language (
+CREATE SEQUENCE karmatotalcache_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE karmatotalcache_id_seq OWNED BY karmatotalcache.id;
+
+CREATE TABLE "language" (
     id integer NOT NULL,
     code text NOT NULL,
     englishname text,
@@ -1387,16 +1909,32 @@ CREATE TABLE language (
     CONSTRAINT valid_language CHECK (((pluralforms IS NULL) = (pluralexpression IS NULL)))
 );
 
+CREATE SEQUENCE language_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE language_id_seq OWNED BY "language".id;
+
 CREATE TABLE languagepack (
     id integer NOT NULL,
     file integer NOT NULL,
     date_exported timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     date_last_used timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     distroseries integer NOT NULL,
-    type integer DEFAULT 1 NOT NULL,
+    "type" integer DEFAULT 1 NOT NULL,
     updates integer,
-    CONSTRAINT valid_updates CHECK ((((type = 2) AND (updates IS NOT NULL)) OR ((type = 1) AND (updates IS NULL))))
+    CONSTRAINT valid_updates CHECK (((("type" = 2) AND (updates IS NOT NULL)) OR (("type" = 1) AND (updates IS NULL))))
 );
+
+CREATE SEQUENCE languagepack_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE languagepack_id_seq OWNED BY languagepack.id;
 
 CREATE TABLE launchpaddatabaserevision (
     major integer NOT NULL,
@@ -1411,6 +1949,22 @@ CREATE TABLE launchpadstatistic (
     dateupdated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
 );
 
+CREATE SEQUENCE launchpadstatistic_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE launchpadstatistic_id_seq OWNED BY launchpadstatistic.id;
+
+CREATE SEQUENCE libraryfilealias_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE libraryfilealias_id_seq OWNED BY libraryfilealias.id;
+
 CREATE TABLE libraryfilecontent (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
@@ -1420,6 +1974,29 @@ CREATE TABLE libraryfilecontent (
     deleted boolean DEFAULT false NOT NULL,
     md5 character(32) NOT NULL
 );
+
+CREATE SEQUENCE libraryfilecontent_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE libraryfilecontent_id_seq OWNED BY libraryfilecontent.id;
+
+CREATE TABLE license (
+    id integer NOT NULL,
+    legalese text NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+);
+
+CREATE SEQUENCE license_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE license_id_seq OWNED BY license.id;
 
 CREATE TABLE logintoken (
     id integer NOT NULL,
@@ -1435,6 +2012,14 @@ CREATE TABLE logintoken (
     CONSTRAINT valid_fingerprint CHECK (((fingerprint IS NULL) OR valid_fingerprint(fingerprint)))
 );
 
+CREATE SEQUENCE logintoken_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE logintoken_id_seq OWNED BY logintoken.id;
+
 CREATE TABLE mailinglist (
     id integer NOT NULL,
     team integer NOT NULL,
@@ -1444,16 +2029,33 @@ CREATE TABLE mailinglist (
     date_reviewed timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     date_activated timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     status integer DEFAULT 1 NOT NULL,
-    welcome_message text
+    welcome_message_text text
 );
+
+CREATE SEQUENCE mailinglist_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mailinglist_id_seq OWNED BY mailinglist.id;
 
 CREATE TABLE mailinglistban (
     id integer NOT NULL,
     person integer NOT NULL,
     banned_by integer NOT NULL,
     date_banned timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    reason text NOT NULL
+    reason_text text NOT NULL
 );
+
+CREATE SEQUENCE mailinglistban_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mailinglistban_id_seq OWNED BY mailinglistban.id;
 
 CREATE TABLE mailinglistsubscription (
     id integer NOT NULL,
@@ -1463,9 +2065,17 @@ CREATE TABLE mailinglistsubscription (
     email_address integer
 );
 
+CREATE SEQUENCE mailinglistsubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mailinglistsubscription_id_seq OWNED BY mailinglistsubscription.id;
+
 CREATE TABLE mentoringoffer (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     team integer NOT NULL,
     bug integer,
@@ -1473,11 +2083,19 @@ CREATE TABLE mentoringoffer (
     CONSTRAINT context_required CHECK (((bug IS NULL) <> (specification IS NULL)))
 );
 
+CREATE SEQUENCE mentoringoffer_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mentoringoffer_id_seq OWNED BY mentoringoffer.id;
+
 CREATE TABLE message (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     subject text,
-    owner integer,
+    "owner" integer,
     parent integer,
     distribution integer,
     rfc822msgid text NOT NULL,
@@ -1485,28 +2103,52 @@ CREATE TABLE message (
     raw integer
 );
 
+CREATE SEQUENCE message_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE message_id_seq OWNED BY message.id;
+
 CREATE TABLE messageapproval (
     id integer NOT NULL,
+    message_id text NOT NULL,
     posted_by integer NOT NULL,
     mailing_list integer NOT NULL,
     posted_message integer NOT NULL,
     posted_date timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     status integer DEFAULT 0 NOT NULL,
     disposed_by integer,
-    disposal_date timestamp without time zone DEFAULT timezone('UTC'::text, now()),
-    reason text,
-    message integer NOT NULL
+    disposal_date timestamp without time zone DEFAULT timezone('UTC'::text, now())
 );
+
+CREATE SEQUENCE messageapproval_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE messageapproval_id_seq OWNED BY messageapproval.id;
 
 CREATE TABLE messagechunk (
     id integer NOT NULL,
     message integer NOT NULL,
-    sequence integer NOT NULL,
+    "sequence" integer NOT NULL,
     content text,
     blob integer,
     fti ts2.tsvector,
     CONSTRAINT text_or_content CHECK ((((blob IS NULL) AND (content IS NULL)) OR ((blob IS NULL) <> (content IS NULL))))
 );
+
+CREATE SEQUENCE messagechunk_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE messagechunk_id_seq OWNED BY messagechunk.id;
 
 CREATE TABLE milestone (
     id integer NOT NULL,
@@ -1523,9 +2165,17 @@ CREATE TABLE milestone (
     CONSTRAINT valid_target CHECK ((NOT ((product IS NULL) AND (distribution IS NULL))))
 );
 
+CREATE SEQUENCE milestone_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE milestone_id_seq OWNED BY milestone.id;
+
 CREATE TABLE mirror (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     baseurl text NOT NULL,
     country integer NOT NULL,
     name text NOT NULL,
@@ -1536,6 +2186,15 @@ CREATE TABLE mirror (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE mirror_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirror_id_seq OWNED BY mirror.id;
+
 CREATE TABLE mirrorcdimagedistroseries (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
@@ -1544,6 +2203,14 @@ CREATE TABLE mirrorcdimagedistroseries (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE mirrorcdimagedistroseries_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrorcdimagedistroseries_id_seq OWNED BY mirrorcdimagedistroseries.id;
+
 CREATE TABLE mirrorcontent (
     id integer NOT NULL,
     mirror integer NOT NULL,
@@ -1551,6 +2218,15 @@ CREATE TABLE mirrorcontent (
     component integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE mirrorcontent_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrorcontent_id_seq OWNED BY mirrorcontent.id;
 
 CREATE TABLE mirrordistroarchseries (
     id integer NOT NULL,
@@ -1562,6 +2238,14 @@ CREATE TABLE mirrordistroarchseries (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE mirrordistroarchseries_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrordistroarchseries_id_seq OWNED BY mirrordistroarchseries.id;
+
 CREATE TABLE mirrordistroseriessource (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
@@ -1572,12 +2256,28 @@ CREATE TABLE mirrordistroseriessource (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE mirrordistroseriessource_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrordistroseriessource_id_seq OWNED BY mirrordistroseriessource.id;
+
 CREATE TABLE mirrorproberecord (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
     log_file integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
 );
+
+CREATE SEQUENCE mirrorproberecord_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrorproberecord_id_seq OWNED BY mirrorproberecord.id;
 
 CREATE TABLE mirrorsourcecontent (
     id integer NOT NULL,
@@ -1587,63 +2287,29 @@ CREATE TABLE mirrorsourcecontent (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE mirrorsourcecontent_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE mirrorsourcecontent_id_seq OWNED BY mirrorsourcecontent.id;
+
 CREATE TABLE nameblacklist (
     id integer NOT NULL,
     regexp text NOT NULL,
-    comment text,
+    "comment" text,
     CONSTRAINT valid_regexp CHECK (valid_regexp(regexp))
 );
 
-CREATE TABLE oauthaccesstoken (
-    id integer NOT NULL,
-    consumer integer NOT NULL,
-    person integer NOT NULL,
-    permission integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_expires timestamp without time zone,
-    key text NOT NULL,
-    secret text NOT NULL,
-    product integer,
-    project integer,
-    distribution integer,
-    sourcepackagename integer,
-    CONSTRAINT just_one_context CHECK ((null_count(ARRAY[product, project, distribution]) >= 2)),
-    CONSTRAINT sourcepackagename_needs_distro CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
-);
+CREATE SEQUENCE nameblacklist_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE oauthconsumer (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    disabled boolean DEFAULT false NOT NULL,
-    key text NOT NULL,
-    secret text
-);
-
-CREATE TABLE oauthnonce (
-    id integer NOT NULL,
-    request_timestamp timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    nonce text NOT NULL,
-    access_token integer NOT NULL
-);
-
-CREATE TABLE oauthrequesttoken (
-    id integer NOT NULL,
-    consumer integer NOT NULL,
-    person integer,
-    permission integer,
-    date_expires timestamp without time zone,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_reviewed timestamp without time zone,
-    key text NOT NULL,
-    secret text NOT NULL,
-    product integer,
-    project integer,
-    distribution integer,
-    sourcepackagename integer,
-    CONSTRAINT just_one_context CHECK ((null_count(ARRAY[product, project, distribution]) >= 2)),
-    CONSTRAINT reviewed_request CHECK ((((date_reviewed IS NULL) = (person IS NULL)) AND ((date_reviewed IS NULL) = (permission IS NULL)))),
-    CONSTRAINT sourcepackagename_needs_distro CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
-);
+ALTER SEQUENCE nameblacklist_id_seq OWNED BY nameblacklist.id;
 
 CREATE TABLE officialbugtag (
     id integer NOT NULL,
@@ -1653,6 +2319,15 @@ CREATE TABLE officialbugtag (
     product integer,
     CONSTRAINT context_required CHECK (((product IS NOT NULL) OR (distribution IS NOT NULL)))
 );
+
+CREATE SEQUENCE officialbugtag_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE officialbugtag_id_seq OWNED BY officialbugtag.id;
 
 CREATE TABLE openidassociations (
     server_url character varying(2047) NOT NULL,
@@ -1673,6 +2348,15 @@ CREATE TABLE openidauthorization (
     trust_root text NOT NULL
 );
 
+CREATE SEQUENCE openidauthorization_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE openidauthorization_id_seq OWNED BY openidauthorization.id;
+
 CREATE TABLE openidrpconfig (
     id integer NOT NULL,
     trust_root text NOT NULL,
@@ -1683,65 +2367,50 @@ CREATE TABLE openidrpconfig (
     creation_rationale integer DEFAULT 13 NOT NULL
 );
 
-CREATE TABLE openidrpsummary (
-    id integer NOT NULL,
-    account integer NOT NULL,
-    openid_identifier text NOT NULL,
-    trust_root text NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_last_used timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    total_logins integer DEFAULT 1 NOT NULL
-);
+CREATE SEQUENCE openidrpconfig_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE packagebugsupervisor (
+ALTER SEQUENCE openidrpconfig_id_seq OWNED BY openidrpconfig.id;
+
+CREATE TABLE packagebugcontact (
     id integer NOT NULL,
     distribution integer NOT NULL,
     sourcepackagename integer NOT NULL,
-    bug_supervisor integer NOT NULL,
+    bugcontact integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
-CREATE TABLE packagecopyrequest (
-    id integer NOT NULL,
-    target_archive integer NOT NULL,
-    target_distroseries integer,
-    target_component integer,
-    target_pocket integer,
-    copy_binaries boolean DEFAULT false NOT NULL,
-    source_archive integer NOT NULL,
-    source_distroseries integer,
-    source_component integer,
-    source_pocket integer,
-    requester integer NOT NULL,
-    status integer NOT NULL,
-    reason text,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_started timestamp without time zone,
-    date_completed timestamp without time zone
-);
+CREATE SEQUENCE packagebugcontact_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE packagediff (
-    id integer NOT NULL,
-    date_requested timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    requester integer NOT NULL,
-    from_source integer NOT NULL,
-    to_source integer NOT NULL,
-    date_fulfilled timestamp without time zone,
-    diff_content integer,
-    CONSTRAINT distinct_sources CHECK ((from_source <> to_source))
-);
+ALTER SEQUENCE packagebugcontact_id_seq OWNED BY packagebugcontact.id;
 
 CREATE TABLE packageselection (
     id integer NOT NULL,
     distroseries integer NOT NULL,
     sourcepackagename integer,
     binarypackagename integer,
-    action integer NOT NULL,
+    "action" integer NOT NULL,
     component integer,
     section integer,
     priority integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE packageselection_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE packageselection_id_seq OWNED BY packageselection.id;
 
 CREATE TABLE packageupload (
     id integer NOT NULL,
@@ -1754,12 +2423,28 @@ CREATE TABLE packageupload (
     archive integer NOT NULL
 );
 
+CREATE SEQUENCE packageupload_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE packageupload_id_seq OWNED BY packageupload.id;
+
 CREATE TABLE packageuploadbuild (
     id integer NOT NULL,
     packageupload integer NOT NULL,
     build integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE packageuploadbuild_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE packageuploadbuild_id_seq OWNED BY packageuploadbuild.id;
 
 CREATE TABLE packageuploadcustom (
     id integer NOT NULL,
@@ -1769,12 +2454,28 @@ CREATE TABLE packageuploadcustom (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE packageuploadcustom_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE packageuploadcustom_id_seq OWNED BY packageuploadcustom.id;
+
 CREATE TABLE packageuploadsource (
     id integer NOT NULL,
     packageupload integer NOT NULL,
     sourcepackagerelease integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE packageuploadsource_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE packageuploadsource_id_seq OWNED BY packageuploadsource.id;
 
 CREATE TABLE packaging (
     packaging integer NOT NULL,
@@ -1783,16 +2484,38 @@ CREATE TABLE packaging (
     distroseries integer,
     productseries integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    owner integer,
+    "owner" integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE packaging_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+CREATE SEQUENCE person_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE person_id_seq OWNED BY person.id;
 
 CREATE TABLE personlanguage (
     id integer NOT NULL,
     person integer NOT NULL,
-    language integer NOT NULL,
+    "language" integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE personlanguage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE personlanguage_id_seq OWNED BY personlanguage.id;
 
 CREATE TABLE personlocation (
     id integer NOT NULL,
@@ -1800,22 +2523,18 @@ CREATE TABLE personlocation (
     person integer NOT NULL,
     latitude double precision,
     longitude double precision,
-    time_zone text,
+    time_zone text NOT NULL,
     last_modified_by integer NOT NULL,
-    date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    visible boolean DEFAULT true,
-    locked boolean DEFAULT false,
-    CONSTRAINT latitude_and_longitude_together CHECK (((latitude IS NULL) = (longitude IS NULL)))
+    date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
-CREATE TABLE personnotification (
-    id integer NOT NULL,
-    person integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    date_emailed timestamp without time zone,
-    body text NOT NULL,
-    subject text NOT NULL
-);
+CREATE SEQUENCE personlocation_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE personlocation_id_seq OWNED BY personlocation.id;
 
 CREATE TABLE pillarname (
     id integer NOT NULL,
@@ -1824,10 +2543,17 @@ CREATE TABLE pillarname (
     project integer,
     distribution integer,
     active boolean DEFAULT true NOT NULL,
-    alias_for integer,
-    CONSTRAINT only_one_target CHECK ((null_count(ARRAY[product, project, distribution, alias_for]) = 3)),
+    CONSTRAINT only_one_target CHECK ((((((product IS NOT NULL) AND (project IS NULL)) AND (distribution IS NULL)) OR (((product IS NULL) AND (project IS NOT NULL)) AND (distribution IS NULL))) OR (((product IS NULL) AND (project IS NULL)) AND (distribution IS NOT NULL)))),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
+
+CREATE SEQUENCE pillarname_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pillarname_id_seq OWNED BY pillarname.id;
 
 CREATE TABLE pocketchroot (
     id integer NOT NULL,
@@ -1837,33 +2563,53 @@ CREATE TABLE pocketchroot (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE pocketchroot_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pocketchroot_id_seq OWNED BY pocketchroot.id;
+
 CREATE TABLE pocomment (
     id integer NOT NULL,
     potemplate integer NOT NULL,
     pomsgid integer,
-    language integer,
+    "language" integer,
     potranslation integer,
     commenttext text NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     person integer
 );
 
+CREATE SEQUENCE pocomment_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pocomment_id_seq OWNED BY pocomment.id;
+
 CREATE TABLE pofile (
     id integer NOT NULL,
     potemplate integer NOT NULL,
-    language integer NOT NULL,
+    "language" integer NOT NULL,
     description text,
     topcomment text,
-    header text,
+    "header" text,
     fuzzyheader boolean NOT NULL,
     lasttranslator integer,
+    license integer,
     currentcount integer NOT NULL,
     updatescount integer NOT NULL,
     rosettacount integer NOT NULL,
     lastparsed timestamp without time zone,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     variant text,
     path text NOT NULL,
+    exportfile integer,
+    exporttime timestamp without time zone,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     from_sourcepackagename integer,
     unreviewed_count integer DEFAULT 0 NOT NULL,
@@ -1881,15 +2627,16 @@ CREATE TABLE potemplate (
     priority integer DEFAULT 0 NOT NULL,
     description text,
     copyright text,
+    license integer,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     path text NOT NULL,
     iscurrent boolean NOT NULL,
     messagecount integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     sourcepackagename integer,
     distroseries integer,
     sourcepackageversion text,
-    header text NOT NULL,
+    "header" text NOT NULL,
     binarypackagename integer,
     languagepack boolean DEFAULT false NOT NULL,
     productseries integer,
@@ -1907,7 +2654,7 @@ CREATE TABLE potemplate (
 CREATE TABLE potmsgset (
     id integer NOT NULL,
     msgid_singular integer NOT NULL,
-    sequence integer NOT NULL,
+    "sequence" integer NOT NULL,
     potemplate integer NOT NULL,
     commenttext text,
     filereferences text,
@@ -1934,7 +2681,7 @@ CREATE TABLE translationmessage (
     msgstr1 integer,
     msgstr2 integer,
     msgstr3 integer,
-    comment text,
+    "comment" text,
     origin integer NOT NULL,
     validation_status integer DEFAULT 0 NOT NULL,
     is_current boolean DEFAULT false NOT NULL,
@@ -1942,16 +2689,11 @@ CREATE TABLE translationmessage (
     is_imported boolean DEFAULT false NOT NULL,
     was_obsolete_in_last_import boolean DEFAULT false NOT NULL,
     was_fuzzy_in_last_import boolean DEFAULT false NOT NULL,
-    msgstr4 integer,
-    msgstr5 integer,
-    potemplate integer,
-    language integer,
-    variant text,
     CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK (((reviewer IS NULL) = (date_reviewed IS NULL)))
 );
 
 CREATE VIEW poexport AS
-    SELECT ((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((translationmessage.id)::text, 'X'::text)) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate.header AS template_header, potemplate.languagepack, pofile.id AS pofile, pofile.language, pofile.variant, pofile.topcomment AS translation_file_comment, pofile.header AS translation_header, pofile.fuzzyheader AS is_translation_header_fuzzy, potmsgset.sequence, potmsgset.id AS potmsgset, translationmessage.comment, potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural, translationmessage.is_current, translationmessage.is_imported, potranslation0.translation AS translation0, potranslation1.translation AS translation1, potranslation2.translation AS translation2, potranslation3.translation AS translation3, potranslation4.translation AS translation4, potranslation5.translation AS translation5 FROM (((((((((((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) JOIN pofile ON ((potemplate.id = pofile.potemplate))) LEFT JOIN translationmessage ON ((((potmsgset.id = translationmessage.potmsgset) AND (translationmessage.pofile = pofile.id)) AND (translationmessage.is_current IS TRUE)))) LEFT JOIN pomsgid msgid_singular ON ((msgid_singular.id = potmsgset.msgid_singular))) LEFT JOIN pomsgid msgid_plural ON ((msgid_plural.id = potmsgset.msgid_plural))) LEFT JOIN potranslation potranslation0 ON ((potranslation0.id = translationmessage.msgstr0))) LEFT JOIN potranslation potranslation1 ON ((potranslation1.id = translationmessage.msgstr1))) LEFT JOIN potranslation potranslation2 ON ((potranslation2.id = translationmessage.msgstr2))) LEFT JOIN potranslation potranslation3 ON ((potranslation3.id = translationmessage.msgstr3))) LEFT JOIN potranslation potranslation4 ON ((potranslation4.id = translationmessage.msgstr4))) LEFT JOIN potranslation potranslation5 ON ((potranslation5.id = translationmessage.msgstr5)));
+    SELECT ((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((translationmessage.id)::text, 'X'::text)) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate."header" AS template_header, potemplate.languagepack, pofile.id AS pofile, pofile."language", pofile.variant, pofile.topcomment AS translation_file_comment, pofile."header" AS translation_header, pofile.fuzzyheader AS is_translation_header_fuzzy, potmsgset."sequence", potmsgset.id AS potmsgset, translationmessage."comment", potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural, translationmessage.is_fuzzy, translationmessage.is_current, translationmessage.is_imported, potranslation0.translation AS translation0, potranslation1.translation AS translation1, potranslation2.translation AS translation2, potranslation3.translation AS translation3 FROM (((((((((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) JOIN pofile ON ((potemplate.id = pofile.potemplate))) LEFT JOIN translationmessage ON ((((potmsgset.id = translationmessage.potmsgset) AND (translationmessage.pofile = pofile.id)) AND (translationmessage.is_current IS TRUE)))) LEFT JOIN pomsgid msgid_singular ON ((msgid_singular.id = potmsgset.msgid_singular))) LEFT JOIN pomsgid msgid_plural ON ((msgid_plural.id = potmsgset.msgid_plural))) LEFT JOIN potranslation potranslation0 ON ((potranslation0.id = translationmessage.msgstr0))) LEFT JOIN potranslation potranslation1 ON ((potranslation1.id = translationmessage.msgstr1))) LEFT JOIN potranslation potranslation2 ON ((potranslation2.id = translationmessage.msgstr2))) LEFT JOIN potranslation potranslation3 ON ((potranslation3.id = translationmessage.msgstr3)));
 
 CREATE TABLE poexportrequest (
     id integer NOT NULL,
@@ -1962,6 +2704,22 @@ CREATE TABLE poexportrequest (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE poexportrequest_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE poexportrequest_id_seq OWNED BY poexportrequest.id;
+
+CREATE SEQUENCE pofile_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pofile_id_seq OWNED BY pofile.id;
+
 CREATE TABLE pofiletranslator (
     id integer NOT NULL,
     person integer NOT NULL,
@@ -1969,6 +2727,14 @@ CREATE TABLE pofiletranslator (
     latest_message integer NOT NULL,
     date_last_touched timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE pofiletranslator_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pofiletranslator_id_seq OWNED BY pofiletranslator.id;
 
 CREATE TABLE poll (
     id integer NOT NULL,
@@ -1978,13 +2744,21 @@ CREATE TABLE poll (
     dateopens timestamp without time zone NOT NULL,
     datecloses timestamp without time zone NOT NULL,
     proposition text NOT NULL,
-    type integer NOT NULL,
+    "type" integer NOT NULL,
     allowspoilt boolean DEFAULT false NOT NULL,
     secrecy integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     CONSTRAINT is_team CHECK (is_team(team)),
     CONSTRAINT sane_dates CHECK ((dateopens < datecloses))
 );
+
+CREATE SEQUENCE poll_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE poll_id_seq OWNED BY poll.id;
 
 CREATE TABLE polloption (
     id integer NOT NULL,
@@ -1995,18 +2769,67 @@ CREATE TABLE polloption (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE polloption_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE polloption_id_seq OWNED BY polloption.id;
+
+CREATE SEQUENCE pomsgid_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pomsgid_id_seq OWNED BY pomsgid.id;
+
 CREATE TABLE posubscription (
     id integer NOT NULL,
     person integer NOT NULL,
     potemplate integer NOT NULL,
-    language integer,
+    "language" integer,
     notificationinterval interval,
     lastnotified timestamp without time zone,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE posubscription_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE posubscription_id_seq OWNED BY posubscription.id;
+
+CREATE SEQUENCE potemplate_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE potemplate_id_seq OWNED BY potemplate.id;
+
 CREATE VIEW potexport AS
-    SELECT COALESCE((potmsgset.id)::text, 'X'::text) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate.header AS template_header, potemplate.languagepack, potmsgset.sequence, potmsgset.id AS potmsgset, potmsgset.commenttext AS comment, potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural FROM (((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) LEFT JOIN pomsgid msgid_singular ON ((potmsgset.msgid_singular = msgid_singular.id))) LEFT JOIN pomsgid msgid_plural ON ((potmsgset.msgid_plural = msgid_plural.id)));
+    SELECT COALESCE((potmsgset.id)::text, 'X'::text) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate."header" AS template_header, potemplate.languagepack, potmsgset."sequence", potmsgset.id AS potmsgset, potmsgset.commenttext AS "comment", potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural FROM (((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) LEFT JOIN pomsgid msgid_singular ON ((potmsgset.msgid_singular = msgid_singular.id))) LEFT JOIN pomsgid msgid_plural ON ((potmsgset.msgid_plural = msgid_plural.id)));
+
+CREATE SEQUENCE potmsgset_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE potmsgset_id_seq OWNED BY potmsgset.id;
+
+CREATE SEQUENCE potranslation_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE potranslation_id_seq OWNED BY potranslation.id;
 
 CREATE TABLE processor (
     id integer NOT NULL,
@@ -2016,6 +2839,14 @@ CREATE TABLE processor (
     description text NOT NULL
 );
 
+CREATE SEQUENCE processor_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE processor_id_seq OWNED BY processor.id;
+
 CREATE TABLE processorfamily (
     id integer NOT NULL,
     name text NOT NULL,
@@ -2023,12 +2854,36 @@ CREATE TABLE processorfamily (
     description text NOT NULL
 );
 
+CREATE SEQUENCE processorfamily_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE processorfamily_id_seq OWNED BY processorfamily.id;
+
+CREATE SEQUENCE product_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE product_id_seq OWNED BY product.id;
+
 CREATE TABLE productbounty (
     id integer NOT NULL,
     bounty integer NOT NULL,
     product integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE productbounty_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productbounty_id_seq OWNED BY productbounty.id;
 
 CREATE TABLE productcvsmodule (
     id integer NOT NULL,
@@ -2039,11 +2894,28 @@ CREATE TABLE productcvsmodule (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE productcvsmodule_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productcvsmodule_id_seq OWNED BY productcvsmodule.id;
+
 CREATE TABLE productlicense (
     id integer NOT NULL,
     product integer NOT NULL,
     license integer NOT NULL
 );
+
+CREATE SEQUENCE productlicense_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productlicense_id_seq OWNED BY productlicense.id;
 
 CREATE TABLE productrelease (
     id integer NOT NULL,
@@ -2052,12 +2924,20 @@ CREATE TABLE productrelease (
     codename text,
     description text,
     changelog text,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     summary text,
     productseries integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     CONSTRAINT valid_version CHECK (sane_version(version))
 );
+
+CREATE SEQUENCE productrelease_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productrelease_id_seq OWNED BY productrelease.id;
 
 CREATE TABLE productreleasefile (
     productrelease integer NOT NULL,
@@ -2070,6 +2950,12 @@ CREATE TABLE productreleasefile (
     fti ts2.tsvector,
     signature integer
 );
+
+CREATE SEQUENCE productreleasefile_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
 CREATE TABLE productseries (
     id integer NOT NULL,
@@ -2095,10 +2981,9 @@ CREATE TABLE productseries (
     datefinished timestamp without time zone,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     driver integer,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     user_branch integer,
     date_published_sync timestamp without time zone,
-    status integer DEFAULT 2 NOT NULL,
     CONSTRAINT complete_cvs CHECK ((((cvsroot IS NULL) = (cvsmodule IS NULL)) AND ((cvsroot IS NULL) = (cvsbranch IS NULL)))),
     CONSTRAINT no_empty_strings CHECK (((((cvsroot <> ''::text) AND (cvsmodule <> ''::text)) AND (cvsbranch <> ''::text)) AND (svnrepository <> ''::text))),
     CONSTRAINT valid_importseries CHECK (((importstatus IS NULL) OR (rcstype IS NOT NULL))),
@@ -2106,11 +2991,13 @@ CREATE TABLE productseries (
     CONSTRAINT valid_releasefileglob CHECK (valid_absolute_url(releasefileglob))
 );
 
-CREATE TABLE productseriescodeimport (
-    id integer NOT NULL,
-    productseries integer NOT NULL,
-    codeimport integer NOT NULL
-);
+CREATE SEQUENCE productseries_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productseries_id_seq OWNED BY productseries.id;
 
 CREATE TABLE productsvnmodule (
     id integer NOT NULL,
@@ -2120,9 +3007,18 @@ CREATE TABLE productsvnmodule (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE productsvnmodule_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productsvnmodule_id_seq OWNED BY productsvnmodule.id;
+
 CREATE TABLE project (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     name text NOT NULL,
     displayname text NOT NULL,
     title text NOT NULL,
@@ -2147,9 +3043,16 @@ CREATE TABLE project (
     logo integer,
     bug_reporting_guidelines text,
     reviewer_whiteboard text,
-    registrant integer NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
+
+CREATE SEQUENCE project_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE project_id_seq OWNED BY project.id;
 
 CREATE TABLE projectbounty (
     id integer NOT NULL,
@@ -2158,12 +3061,35 @@ CREATE TABLE projectbounty (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE projectbounty_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE projectbounty_id_seq OWNED BY projectbounty.id;
+
+CREATE SEQUENCE projectbugtracker_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
 CREATE TABLE projectrelationship (
     id integer NOT NULL,
     subject integer NOT NULL,
     label integer NOT NULL,
-    object integer NOT NULL
+    "object" integer NOT NULL
 );
+
+CREATE SEQUENCE projectrelationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE projectrelationship_id_seq OWNED BY projectrelationship.id;
 
 CREATE TABLE section (
     id integer NOT NULL,
@@ -2180,9 +3106,17 @@ CREATE TABLE pushmirroraccess (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE pushmirroraccess_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE pushmirroraccess_id_seq OWNED BY pushmirroraccess.id;
+
 CREATE TABLE question (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     title text NOT NULL,
     description text NOT NULL,
     assignee integer,
@@ -2202,11 +3136,19 @@ CREATE TABLE question (
     whiteboard text,
     fti ts2.tsvector,
     answer integer,
-    language integer NOT NULL,
+    "language" integer NOT NULL,
     faq integer,
     CONSTRAINT product_or_distro CHECK (((product IS NULL) <> (distribution IS NULL))),
     CONSTRAINT sourcepackagename_needs_distro CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
 );
+
+CREATE SEQUENCE question_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE question_id_seq OWNED BY question.id;
 
 CREATE TABLE questionbug (
     id integer NOT NULL,
@@ -2215,13 +3157,29 @@ CREATE TABLE questionbug (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE questionbug_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE questionbug_id_seq OWNED BY questionbug.id;
+
 CREATE TABLE questionmessage (
     id integer NOT NULL,
     question integer NOT NULL,
     message integer NOT NULL,
-    action integer NOT NULL,
+    "action" integer NOT NULL,
     new_status integer NOT NULL
 );
+
+CREATE SEQUENCE questionmessage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE questionmessage_id_seq OWNED BY questionmessage.id;
 
 CREATE TABLE questionreopening (
     id integer NOT NULL,
@@ -2233,12 +3191,28 @@ CREATE TABLE questionreopening (
     priorstate integer NOT NULL
 );
 
+CREATE SEQUENCE questionreopening_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE questionreopening_id_seq OWNED BY questionreopening.id;
+
 CREATE TABLE questionsubscription (
     id integer NOT NULL,
     question integer NOT NULL,
     person integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE questionsubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE questionsubscription_id_seq OWNED BY questionsubscription.id;
 
 CREATE TABLE requestedcds (
     id integer NOT NULL,
@@ -2252,33 +3226,52 @@ CREATE TABLE requestedcds (
     CONSTRAINT quantityapproved_is_positive CHECK ((quantityapproved >= 0))
 );
 
-CREATE TABLE revision (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    log_body text NOT NULL,
-    revision_author integer NOT NULL,
-    gpgkey integer,
-    revision_id text NOT NULL,
-    revision_date timestamp without time zone,
-    karma_allocated boolean DEFAULT false
-);
+CREATE SEQUENCE requestedcds_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE requestedcds_id_seq OWNED BY requestedcds.id;
+
+CREATE SEQUENCE revision_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE revision_id_seq OWNED BY revision.id;
 
 CREATE TABLE revisionauthor (
     id integer NOT NULL,
-    name text NOT NULL,
-    email text,
-    person integer
+    name text NOT NULL
 );
 
+CREATE SEQUENCE revisionauthor_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE revisionauthor_id_seq OWNED BY revisionauthor.id;
+
 CREATE VIEW revisionnumber AS
-    SELECT branchrevision.id, branchrevision.sequence, branchrevision.branch, branchrevision.revision FROM branchrevision;
+    SELECT branchrevision.id, branchrevision."sequence", branchrevision.branch, branchrevision.revision FROM branchrevision;
 
 CREATE TABLE revisionparent (
     id integer NOT NULL,
-    sequence integer NOT NULL,
+    "sequence" integer NOT NULL,
     revision integer NOT NULL,
     parent_id text NOT NULL
 );
+
+CREATE SEQUENCE revisionparent_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE revisionparent_id_seq OWNED BY revisionparent.id;
 
 CREATE TABLE revisionproperty (
     id integer NOT NULL,
@@ -2286,6 +3279,14 @@ CREATE TABLE revisionproperty (
     name text NOT NULL,
     value text NOT NULL
 );
+
+CREATE SEQUENCE revisionproperty_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE revisionproperty_id_seq OWNED BY revisionproperty.id;
 
 CREATE TABLE scriptactivity (
     id integer NOT NULL,
@@ -2295,12 +3296,44 @@ CREATE TABLE scriptactivity (
     date_completed timestamp without time zone NOT NULL
 );
 
+CREATE SEQUENCE scriptactivity_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE scriptactivity_id_seq OWNED BY scriptactivity.id;
+
+CREATE SEQUENCE section_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE section_id_seq OWNED BY section.id;
+
 CREATE TABLE sectionselection (
     id integer NOT NULL,
     distroseries integer NOT NULL,
     section integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE sectionselection_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sectionselection_id_seq OWNED BY sectionselection.id;
+
+CREATE SEQUENCE securebinarypackagepublishinghistory_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE securebinarypackagepublishinghistory_id_seq OWNED BY securebinarypackagepublishinghistory.id;
 
 CREATE TABLE securesourcepackagepublishinghistory (
     id integer NOT NULL,
@@ -2324,35 +3357,27 @@ CREATE TABLE securesourcepackagepublishinghistory (
     removal_comment text
 );
 
+CREATE SEQUENCE securesourcepackagepublishinghistory_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE securesourcepackagepublishinghistory_id_seq OWNED BY securesourcepackagepublishinghistory.id;
+
 CREATE TABLE shipitreport (
     id integer NOT NULL,
     datecreated timestamp without time zone NOT NULL,
     csvfile integer NOT NULL
 );
 
-CREATE TABLE shipitsurvey (
-    id integer NOT NULL,
-    person integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    exported boolean DEFAULT false NOT NULL
-);
+CREATE SEQUENCE shipitreport_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
-CREATE TABLE shipitsurveyanswer (
-    id integer NOT NULL,
-    answer text NOT NULL
-);
-
-CREATE TABLE shipitsurveyquestion (
-    id integer NOT NULL,
-    question text NOT NULL
-);
-
-CREATE TABLE shipitsurveyresult (
-    id integer NOT NULL,
-    survey integer NOT NULL,
-    question integer NOT NULL,
-    answer integer
-);
+ALTER SEQUENCE shipitreport_id_seq OWNED BY shipitreport.id;
 
 CREATE TABLE shipment (
     id integer NOT NULL,
@@ -2363,12 +3388,21 @@ CREATE TABLE shipment (
     trackingcode text
 );
 
+CREATE SEQUENCE shipment_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE shipment_id_seq OWNED BY shipment.id;
+
 CREATE TABLE shippingrequest (
     id integer NOT NULL,
     recipient integer NOT NULL,
     whoapproved integer,
     whocancelled integer,
     daterequested timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    shockandawe integer,
     reason text,
     highpriority boolean DEFAULT false NOT NULL,
     recipientdisplayname text NOT NULL,
@@ -2384,10 +3418,18 @@ CREATE TABLE shippingrequest (
     shipment integer,
     status integer NOT NULL,
     normalized_address text NOT NULL,
-    type integer,
+    "type" integer,
     CONSTRAINT enforce_shipped_status CHECK (((status <> 4) OR (shipment IS NOT NULL))),
     CONSTRAINT printable_addresses CHECK (is_printable_ascii((((((((COALESCE(recipientdisplayname, ''::text) || COALESCE(addressline1, ''::text)) || COALESCE(addressline2, ''::text)) || COALESCE(organization, ''::text)) || COALESCE(city, ''::text)) || COALESCE(province, ''::text)) || COALESCE(postcode, ''::text)) || COALESCE(phone, ''::text))))
 );
+
+CREATE SEQUENCE shippingrequest_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE shippingrequest_id_seq OWNED BY shippingrequest.id;
 
 CREATE TABLE shippingrun (
     id integer NOT NULL,
@@ -2397,9 +3439,34 @@ CREATE TABLE shippingrun (
     requests_count integer NOT NULL
 );
 
+CREATE SEQUENCE shippingrun_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE shippingrun_id_seq OWNED BY shippingrun.id;
+
+CREATE TABLE shockandawe (
+    id integer NOT NULL,
+    name text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+);
+
+CREATE SEQUENCE shockandawe_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE shockandawe_id_seq OWNED BY shockandawe.id;
+
 CREATE TABLE signedcodeofconduct (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     signingkey integer,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     signedcode text,
@@ -2407,6 +3474,14 @@ CREATE TABLE signedcodeofconduct (
     active boolean DEFAULT false NOT NULL,
     admincomment text
 );
+
+CREATE SEQUENCE signedcodeofconduct_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE signedcodeofconduct_id_seq OWNED BY signedcodeofconduct.id;
 
 CREATE TABLE sourcepackagereleasefile (
     sourcepackagerelease integer NOT NULL,
@@ -2418,15 +3493,44 @@ CREATE TABLE sourcepackagereleasefile (
 CREATE VIEW sourcepackagefilepublishing AS
     SELECT (((libraryfilealias.id)::text || '.'::text) || (securesourcepackagepublishinghistory.id)::text) AS id, distroseries.distribution, securesourcepackagepublishinghistory.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distroseries.name AS distroseriesname, securesourcepackagepublishinghistory.status AS publishingstatus, securesourcepackagepublishinghistory.pocket, securesourcepackagepublishinghistory.archive FROM ((((((securesourcepackagepublishinghistory JOIN sourcepackagerelease ON ((securesourcepackagepublishinghistory.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN sourcepackagereleasefile ON ((sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id))) JOIN libraryfilealias ON ((libraryfilealias.id = sourcepackagereleasefile.libraryfile))) JOIN distroseries ON ((securesourcepackagepublishinghistory.distroseries = distroseries.id))) JOIN component ON ((securesourcepackagepublishinghistory.component = component.id))) WHERE (securesourcepackagepublishinghistory.dateremoved IS NULL);
 
+CREATE SEQUENCE sourcepackagename_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sourcepackagename_id_seq OWNED BY sourcepackagename.id;
+
 CREATE VIEW sourcepackagepublishinghistory AS
     SELECT securesourcepackagepublishinghistory.id, securesourcepackagepublishinghistory.sourcepackagerelease, securesourcepackagepublishinghistory.status, securesourcepackagepublishinghistory.component, securesourcepackagepublishinghistory.section, securesourcepackagepublishinghistory.distroseries, securesourcepackagepublishinghistory.pocket, securesourcepackagepublishinghistory.archive, securesourcepackagepublishinghistory.datecreated, securesourcepackagepublishinghistory.datepublished, securesourcepackagepublishinghistory.datesuperseded, securesourcepackagepublishinghistory.supersededby, securesourcepackagepublishinghistory.datemadepending, securesourcepackagepublishinghistory.scheduleddeletiondate, securesourcepackagepublishinghistory.dateremoved, securesourcepackagepublishinghistory.removed_by, securesourcepackagepublishinghistory.removal_comment, securesourcepackagepublishinghistory.embargo, securesourcepackagepublishinghistory.embargolifted FROM securesourcepackagepublishinghistory WHERE (securesourcepackagepublishinghistory.embargo = false);
+
+CREATE SEQUENCE sourcepackagerelationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+CREATE SEQUENCE sourcepackagerelease_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sourcepackagerelease_id_seq OWNED BY sourcepackagerelease.id;
+
+CREATE SEQUENCE sourcepackagereleasefile_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 
 CREATE TABLE specification (
     id integer NOT NULL,
     name text NOT NULL,
     title text NOT NULL,
     summary text,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     assignee integer,
     drafter integer,
     approver integer,
@@ -2469,6 +3573,14 @@ CREATE TABLE specification (
     CONSTRAINT valid_url CHECK (valid_absolute_url(specurl))
 );
 
+CREATE SEQUENCE specification_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specification_id_seq OWNED BY specification.id;
+
 CREATE TABLE specificationbranch (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -2478,11 +3590,27 @@ CREATE TABLE specificationbranch (
     registrant integer NOT NULL
 );
 
+CREATE SEQUENCE specificationbranch_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationbranch_id_seq OWNED BY specificationbranch.id;
+
 CREATE TABLE specificationbug (
     id integer NOT NULL,
     specification integer NOT NULL,
     bug integer NOT NULL
 );
+
+CREATE SEQUENCE specificationbug_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationbug_id_seq OWNED BY specificationbug.id;
 
 CREATE TABLE specificationdependency (
     id integer NOT NULL,
@@ -2491,6 +3619,14 @@ CREATE TABLE specificationdependency (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     CONSTRAINT specificationdependency_not_self CHECK ((specification <> dependency))
 );
+
+CREATE SEQUENCE specificationdependency_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationdependency_id_seq OWNED BY specificationdependency.id;
 
 CREATE TABLE specificationfeedback (
     id integer NOT NULL,
@@ -2501,11 +3637,28 @@ CREATE TABLE specificationfeedback (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE specificationfeedback_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationfeedback_id_seq OWNED BY specificationfeedback.id;
+
 CREATE TABLE specificationmessage (
     id integer NOT NULL,
     specification integer,
     message integer
 );
+
+CREATE SEQUENCE specificationmessage_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationmessage_id_seq OWNED BY specificationmessage.id;
 
 CREATE TABLE specificationsubscription (
     id integer NOT NULL,
@@ -2515,15 +3668,29 @@ CREATE TABLE specificationsubscription (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
+CREATE SEQUENCE specificationsubscription_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE specificationsubscription_id_seq OWNED BY specificationsubscription.id;
+
 CREATE TABLE spokenin (
-    language integer NOT NULL,
+    "language" integer NOT NULL,
     country integer NOT NULL,
     id integer DEFAULT nextval(('spokenin_id_seq'::text)::regclass) NOT NULL
 );
 
+CREATE SEQUENCE spokenin_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
 CREATE TABLE sprint (
     id integer NOT NULL,
-    owner integer NOT NULL,
+    "owner" integer NOT NULL,
     name text NOT NULL,
     title text NOT NULL,
     summary text NOT NULL,
@@ -2541,6 +3708,14 @@ CREATE TABLE sprint (
     CONSTRAINT sprint_starts_before_ends CHECK ((time_starts < time_ends))
 );
 
+CREATE SEQUENCE sprint_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sprint_id_seq OWNED BY sprint.id;
+
 CREATE TABLE sprintattendance (
     id integer NOT NULL,
     attendee integer NOT NULL,
@@ -2550,6 +3725,14 @@ CREATE TABLE sprintattendance (
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     CONSTRAINT sprintattendance_starts_before_ends CHECK ((time_starts < time_ends))
 );
+
+CREATE SEQUENCE sprintattendance_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sprintattendance_id_seq OWNED BY sprintattendance.id;
 
 CREATE TABLE sprintspecification (
     id integer NOT NULL,
@@ -2564,14 +3747,30 @@ CREATE TABLE sprintspecification (
     CONSTRAINT sprintspecification_decision_recorded CHECK (((status = 30) OR ((decider IS NOT NULL) AND (date_decided IS NOT NULL))))
 );
 
+CREATE SEQUENCE sprintspecification_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sprintspecification_id_seq OWNED BY sprintspecification.id;
+
 CREATE TABLE sshkey (
     id integer NOT NULL,
     person integer,
     keytype integer NOT NULL,
     keytext text NOT NULL,
-    comment text NOT NULL,
+    "comment" text NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
+
+CREATE SEQUENCE sshkey_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE sshkey_id_seq OWNED BY sshkey.id;
 
 CREATE TABLE standardshipitrequest (
     id integer NOT NULL,
@@ -2585,6 +3784,14 @@ CREATE TABLE standardshipitrequest (
     CONSTRAINT quantityppc_is_positive CHECK ((quantityppc >= 0)),
     CONSTRAINT quantityx86_is_positive CHECK ((quantityx86 >= 0))
 );
+
+CREATE SEQUENCE standardshipitrequest_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE standardshipitrequest_id_seq OWNED BY standardshipitrequest.id;
 
 CREATE TABLE structuralsubscription (
     id integer NOT NULL,
@@ -2601,37 +3808,51 @@ CREATE TABLE structuralsubscription (
     blueprint_notification_level integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     date_last_updated timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    CONSTRAINT one_target CHECK ((null_count(ARRAY[product, productseries, project, distroseries, distribution, milestone]) = 5)),
+    CONSTRAINT one_target CHECK ((null_count(ARRAY[product, productseries, project, distroseries, distribution]) = 4)),
     CONSTRAINT sourcepackagename_requires_distribution CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
 );
+
+CREATE SEQUENCE structuralsubscription_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE structuralsubscription_id_seq OWNED BY structuralsubscription.id;
 
 CREATE TABLE teammembership (
     id integer NOT NULL,
     person integer NOT NULL,
     team integer NOT NULL,
     status integer NOT NULL,
-    date_joined timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
-    date_expires timestamp without time zone,
-    last_changed_by integer,
-    last_change_comment text,
-    proposed_by integer,
-    acknowledged_by integer,
-    reviewed_by integer,
-    date_proposed timestamp without time zone,
-    date_last_changed timestamp without time zone,
-    date_acknowledged timestamp without time zone,
-    date_reviewed timestamp without time zone,
-    proponent_comment text,
-    acknowledger_comment text,
-    reviewer_comment text,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+    datejoined timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    dateexpires timestamp without time zone,
+    reviewer integer,
+    reviewercomment text
 );
+
+CREATE SEQUENCE teammembership_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE teammembership_id_seq OWNED BY teammembership.id;
 
 CREATE TABLE teamparticipation (
     id integer NOT NULL,
     team integer NOT NULL,
     person integer NOT NULL
 );
+
+CREATE SEQUENCE teamparticipation_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE teamparticipation_id_seq OWNED BY teamparticipation.id;
 
 CREATE TABLE temporaryblobstorage (
     id integer NOT NULL,
@@ -2640,14 +3861,30 @@ CREATE TABLE temporaryblobstorage (
     file_alias integer NOT NULL
 );
 
+CREATE SEQUENCE temporaryblobstorage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE temporaryblobstorage_id_seq OWNED BY temporaryblobstorage.id;
+
 CREATE TABLE translationgroup (
     id integer NOT NULL,
     name text NOT NULL,
     title text,
     summary text,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    owner integer NOT NULL
+    "owner" integer NOT NULL
 );
+
+CREATE SEQUENCE translationgroup_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE translationgroup_id_seq OWNED BY translationgroup.id;
 
 CREATE TABLE translationimportqueueentry (
     id integer NOT NULL,
@@ -2667,1862 +3904,6 @@ CREATE TABLE translationimportqueueentry (
     CONSTRAINT valid_link CHECK ((((productseries IS NULL) <> (distroseries IS NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS NULL))))
 );
 
-CREATE TABLE translationrelicensingagreement (
-    id integer NOT NULL,
-    person integer NOT NULL,
-    allow_relicensing boolean DEFAULT true NOT NULL,
-    date_decided timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
-);
-
-CREATE TABLE translationtemplateitem (
-    id integer NOT NULL,
-    potemplate integer NOT NULL,
-    sequence integer NOT NULL,
-    potmsgset integer NOT NULL,
-    CONSTRAINT translationtemplateitem_sequence_check CHECK ((sequence > 0))
-);
-
-CREATE TABLE translator (
-    id integer NOT NULL,
-    translationgroup integer NOT NULL,
-    language integer NOT NULL,
-    translator integer NOT NULL,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
-);
-
-CREATE VIEW validpersoncache AS
-    SELECT emailaddress.person AS id FROM emailaddress, account WHERE ((((emailaddress.account = account.id) AND (emailaddress.person IS NOT NULL)) AND (emailaddress.status = 4)) AND (account.status = 20));
-
-CREATE VIEW validpersonorteamcache AS
-    SELECT person.id FROM ((person LEFT JOIN emailaddress ON ((person.id = emailaddress.person))) LEFT JOIN account ON ((emailaddress.account = account.id))) WHERE ((person.teamowner IS NOT NULL) OR ((account.status = 20) AND (emailaddress.status = 4)));
-
-CREATE TABLE vote (
-    id integer NOT NULL,
-    person integer,
-    poll integer NOT NULL,
-    preference integer,
-    option integer,
-    token text NOT NULL
-);
-
-CREATE TABLE votecast (
-    id integer NOT NULL,
-    person integer NOT NULL,
-    poll integer NOT NULL
-);
-
-CREATE TABLE webserviceban (
-    id integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()),
-    person integer,
-    consumer integer,
-    token integer,
-    ip inet,
-    active boolean DEFAULT true,
-    CONSTRAINT at_least_one_spec CHECK (((ip IS NOT NULL) OR (null_count(ARRAY[person, consumer, token]) < 3))),
-    CONSTRAINT person_or_consumer_or_token_or_none CHECK ((null_count(ARRAY[person, consumer, token]) >= 2))
-);
-
-CREATE TABLE wikiname (
-    id integer NOT NULL,
-    person integer NOT NULL,
-    wiki text NOT NULL,
-    wikiname text NOT NULL
-);
-
-CREATE FUNCTION plpgsql_call_handler() RETURNS language_handler
-    AS '$libdir/plpgsql', 'plpgsql_call_handler'
-    LANGUAGE c;
-
-CREATE FUNCTION plpython_call_handler() RETURNS language_handler
-    AS '$libdir/plpython', 'plpython_call_handler'
-    LANGUAGE c;
-
-CREATE SEQUENCE account_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE account_id_seq OWNED BY account.id;
-
-CREATE SEQUENCE accountpassword_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE accountpassword_id_seq OWNED BY accountpassword.id;
-
-CREATE SEQUENCE announcement_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE announcement_id_seq OWNED BY announcement.id;
-
-CREATE SEQUENCE answercontact_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE answercontact_id_seq OWNED BY answercontact.id;
-
-CREATE SEQUENCE archive_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archive_id_seq OWNED BY archive.id;
-
-CREATE SEQUENCE archivearch_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archivearch_id_seq OWNED BY archivearch.id;
-
-CREATE SEQUENCE archiveauthtoken_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archiveauthtoken_id_seq OWNED BY archiveauthtoken.id;
-
-CREATE SEQUENCE archivedependency_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archivedependency_id_seq OWNED BY archivedependency.id;
-
-CREATE SEQUENCE archivepermission_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archivepermission_id_seq OWNED BY archivepermission.id;
-
-CREATE SEQUENCE archivesubscriber_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE archivesubscriber_id_seq OWNED BY archivesubscriber.id;
-
-CREATE SEQUENCE binarypackagefile_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE binarypackagename_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE binarypackagename_id_seq OWNED BY binarypackagename.id;
-
-CREATE SEQUENCE binarypackagerelease_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE binarypackagerelease_id_seq OWNED BY binarypackagerelease.id;
-
-CREATE SEQUENCE bounty_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bounty_id_seq OWNED BY bounty.id;
-
-CREATE SEQUENCE bountymessage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bountymessage_id_seq OWNED BY bountymessage.id;
-
-CREATE SEQUENCE bountysubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bountysubscription_id_seq OWNED BY bountysubscription.id;
-
-CREATE SEQUENCE branch_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branch_id_seq OWNED BY branch.id;
-
-CREATE SEQUENCE branchmergeproposal_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branchmergeproposal_id_seq OWNED BY branchmergeproposal.id;
-
-CREATE SEQUENCE branchmergerobot_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branchmergerobot_id_seq OWNED BY branchmergerobot.id;
-
-CREATE SEQUENCE branchrelationship_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE branchrevision_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branchrevision_id_seq OWNED BY branchrevision.id;
-
-CREATE SEQUENCE branchsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branchsubscription_id_seq OWNED BY branchsubscription.id;
-
-CREATE SEQUENCE branchvisibilitypolicy_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE branchvisibilitypolicy_id_seq OWNED BY branchvisibilitypolicy.id;
-
-CREATE SEQUENCE bug_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bug_id_seq OWNED BY bug.id;
-
-CREATE SEQUENCE bugactivity_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugactivity_id_seq OWNED BY bugactivity.id;
-
-CREATE SEQUENCE bugaffectsperson_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugaffectsperson_id_seq OWNED BY bugaffectsperson.id;
-
-CREATE SEQUENCE bugattachment_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugattachment_id_seq OWNED BY bugattachment.id;
-
-CREATE SEQUENCE bugbranch_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugbranch_id_seq OWNED BY bugbranch.id;
-
-CREATE SEQUENCE bugcve_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugcve_id_seq OWNED BY bugcve.id;
-
-CREATE SEQUENCE bugmessage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugmessage_id_seq OWNED BY bugmessage.id;
-
-CREATE SEQUENCE bugnomination_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugnomination_id_seq OWNED BY bugnomination.id;
-
-CREATE SEQUENCE bugnotification_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugnotification_id_seq OWNED BY bugnotification.id;
-
-CREATE SEQUENCE bugnotificationrecipient_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugnotificationrecipient_id_seq OWNED BY bugnotificationrecipient.id;
-
-CREATE SEQUENCE bugpackageinfestation_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugpackageinfestation_id_seq OWNED BY bugpackageinfestation.id;
-
-CREATE SEQUENCE bugproductinfestation_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugproductinfestation_id_seq OWNED BY bugproductinfestation.id;
-
-CREATE SEQUENCE bugsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugsubscription_id_seq OWNED BY bugsubscription.id;
-
-CREATE SEQUENCE bugtag_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugtag_id_seq OWNED BY bugtag.id;
-
-CREATE SEQUENCE bugtask_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugtask_id_seq OWNED BY bugtask.id;
-
-CREATE SEQUENCE bugtracker_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugtracker_id_seq OWNED BY bugtracker.id;
-
-CREATE SEQUENCE bugtrackeralias_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugtrackeralias_id_seq OWNED BY bugtrackeralias.id;
-
-CREATE SEQUENCE bugtrackerperson_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugtrackerperson_id_seq OWNED BY bugtrackerperson.id;
-
-CREATE SEQUENCE bugwatch_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugwatch_id_seq OWNED BY bugwatch.id;
-
-CREATE SEQUENCE build_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE build_id_seq OWNED BY build.id;
-
-CREATE SEQUENCE builder_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE builder_id_seq OWNED BY builder.id;
-
-CREATE SEQUENCE buildqueue_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE buildqueue_id_seq OWNED BY buildqueue.id;
-
-CREATE SEQUENCE codeimport_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimport_id_seq OWNED BY codeimport.id;
-
-CREATE SEQUENCE codeimportevent_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimportevent_id_seq OWNED BY codeimportevent.id;
-
-CREATE SEQUENCE codeimporteventdata_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimporteventdata_id_seq OWNED BY codeimporteventdata.id;
-
-CREATE SEQUENCE codeimportjob_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimportjob_id_seq OWNED BY codeimportjob.id;
-
-CREATE SEQUENCE codeimportmachine_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimportmachine_id_seq OWNED BY codeimportmachine.id;
-
-CREATE SEQUENCE codeimportresult_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codeimportresult_id_seq OWNED BY codeimportresult.id;
-
-CREATE SEQUENCE codereviewmessage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codereviewmessage_id_seq OWNED BY codereviewmessage.id;
-
-CREATE SEQUENCE codereviewvote_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE codereviewvote_id_seq OWNED BY codereviewvote.id;
-
-CREATE SEQUENCE commercialsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE commercialsubscription_id_seq OWNED BY commercialsubscription.id;
-
-CREATE SEQUENCE component_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE component_id_seq OWNED BY component.id;
-
-CREATE SEQUENCE componentselection_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE componentselection_id_seq OWNED BY componentselection.id;
-
-CREATE SEQUENCE continent_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE continent_id_seq OWNED BY continent.id;
-
-CREATE SEQUENCE country_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE country_id_seq OWNED BY country.id;
-
-CREATE SEQUENCE customlanguagecode_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE customlanguagecode_id_seq OWNED BY customlanguagecode.id;
-
-CREATE SEQUENCE cve_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE cve_id_seq OWNED BY cve.id;
-
-CREATE SEQUENCE cvereference_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE cvereference_id_seq OWNED BY cvereference.id;
-
-CREATE SEQUENCE distribution_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distribution_id_seq OWNED BY distribution.id;
-
-CREATE SEQUENCE distributionbounty_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distributionbounty_id_seq OWNED BY distributionbounty.id;
-
-CREATE SEQUENCE distributionmirror_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distributionmirror_id_seq OWNED BY distributionmirror.id;
-
-CREATE SEQUENCE distributionrole_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE distributionsourcepackage_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distributionsourcepackage_id_seq OWNED BY distributionsourcepackage.id;
-
-CREATE SEQUENCE distributionsourcepackagecache_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distributionsourcepackagecache_id_seq OWNED BY distributionsourcepackagecache.id;
-
-CREATE SEQUENCE distroarchseries_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distroarchseries_id_seq OWNED BY distroarchseries.id;
-
-CREATE SEQUENCE distrocomponentuploader_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distrocomponentuploader_id_seq OWNED BY distrocomponentuploader.id;
-
-CREATE SEQUENCE distroseries_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distroseries_id_seq OWNED BY distroseries.id;
-
-CREATE SEQUENCE distroserieslanguage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distroserieslanguage_id_seq OWNED BY distroserieslanguage.id;
-
-CREATE SEQUENCE distroseriespackagecache_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE distroseriespackagecache_id_seq OWNED BY distroseriespackagecache.id;
-
-CREATE SEQUENCE emailaddress_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE emailaddress_id_seq OWNED BY emailaddress.id;
-
-CREATE SEQUENCE entitlement_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE entitlement_id_seq OWNED BY entitlement.id;
-
-CREATE SEQUENCE faq_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE faq_id_seq OWNED BY faq.id;
-
-CREATE SEQUENCE featuredproject_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE featuredproject_id_seq OWNED BY featuredproject.id;
-
-CREATE SEQUENCE fticache_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE fticache_id_seq OWNED BY fticache.id;
-
-CREATE SEQUENCE gpgkey_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE gpgkey_id_seq OWNED BY gpgkey.id;
-
-CREATE SEQUENCE hwdevice_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwdevice_id_seq OWNED BY hwdevice.id;
-
-CREATE SEQUENCE hwdeviceclass_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwdeviceclass_id_seq OWNED BY hwdeviceclass.id;
-
-CREATE SEQUENCE hwdevicedriverlink_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwdevicedriverlink_id_seq OWNED BY hwdevicedriverlink.id;
-
-CREATE SEQUENCE hwdevicenamevariant_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwdevicenamevariant_id_seq OWNED BY hwdevicenamevariant.id;
-
-CREATE SEQUENCE hwdriver_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwdriver_id_seq OWNED BY hwdriver.id;
-
-CREATE SEQUENCE hwsubmission_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwsubmission_id_seq OWNED BY hwsubmission.id;
-
-CREATE SEQUENCE hwsubmissionbug_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwsubmissionbug_id_seq OWNED BY hwsubmissionbug.id;
-
-CREATE SEQUENCE hwsubmissiondevice_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwsubmissiondevice_id_seq OWNED BY hwsubmissiondevice.id;
-
-CREATE SEQUENCE hwsystemfingerprint_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwsystemfingerprint_id_seq OWNED BY hwsystemfingerprint.id;
-
-CREATE SEQUENCE hwtest_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtest_id_seq OWNED BY hwtest.id;
-
-CREATE SEQUENCE hwtestanswer_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtestanswer_id_seq OWNED BY hwtestanswer.id;
-
-CREATE SEQUENCE hwtestanswerchoice_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtestanswerchoice_id_seq OWNED BY hwtestanswerchoice.id;
-
-CREATE SEQUENCE hwtestanswercount_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtestanswercount_id_seq OWNED BY hwtestanswercount.id;
-
-CREATE SEQUENCE hwtestanswercountdevice_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtestanswercountdevice_id_seq OWNED BY hwtestanswercountdevice.id;
-
-CREATE SEQUENCE hwtestanswerdevice_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwtestanswerdevice_id_seq OWNED BY hwtestanswerdevice.id;
-
-CREATE SEQUENCE hwvendorid_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwvendorid_id_seq OWNED BY hwvendorid.id;
-
-CREATE SEQUENCE hwvendorname_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE hwvendorname_id_seq OWNED BY hwvendorname.id;
-
-CREATE SEQUENCE ircid_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE ircid_id_seq OWNED BY ircid.id;
-
-CREATE SEQUENCE jabberid_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE jabberid_id_seq OWNED BY jabberid.id;
-
-CREATE SEQUENCE karma_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE karma_id_seq OWNED BY karma.id;
-
-CREATE SEQUENCE karmaaction_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE karmaaction_id_seq OWNED BY karmaaction.id;
-
-CREATE SEQUENCE karmacache_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE karmacache_id_seq OWNED BY karmacache.id;
-
-CREATE SEQUENCE karmacategory_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE karmacategory_id_seq OWNED BY karmacategory.id;
-
-CREATE SEQUENCE karmatotalcache_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE karmatotalcache_id_seq OWNED BY karmatotalcache.id;
-
-CREATE SEQUENCE language_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE language_id_seq OWNED BY language.id;
-
-CREATE SEQUENCE languagepack_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE languagepack_id_seq OWNED BY languagepack.id;
-
-CREATE SEQUENCE launchpadstatistic_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE launchpadstatistic_id_seq OWNED BY launchpadstatistic.id;
-
-CREATE SEQUENCE libraryfilealias_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE libraryfilealias_id_seq OWNED BY libraryfilealias.id;
-
-CREATE SEQUENCE libraryfilecontent_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE libraryfilecontent_id_seq OWNED BY libraryfilecontent.id;
-
-CREATE SEQUENCE logintoken_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE logintoken_id_seq OWNED BY logintoken.id;
-
-CREATE SEQUENCE mailinglist_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mailinglist_id_seq OWNED BY mailinglist.id;
-
-CREATE SEQUENCE mailinglistban_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mailinglistban_id_seq OWNED BY mailinglistban.id;
-
-CREATE SEQUENCE mailinglistsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mailinglistsubscription_id_seq OWNED BY mailinglistsubscription.id;
-
-CREATE SEQUENCE mentoringoffer_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mentoringoffer_id_seq OWNED BY mentoringoffer.id;
-
-CREATE SEQUENCE message_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE message_id_seq OWNED BY message.id;
-
-CREATE SEQUENCE messageapproval_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE messageapproval_id_seq OWNED BY messageapproval.id;
-
-CREATE SEQUENCE messagechunk_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE messagechunk_id_seq OWNED BY messagechunk.id;
-
-CREATE SEQUENCE milestone_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE milestone_id_seq OWNED BY milestone.id;
-
-CREATE SEQUENCE mirror_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirror_id_seq OWNED BY mirror.id;
-
-CREATE SEQUENCE mirrorcdimagedistroseries_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrorcdimagedistroseries_id_seq OWNED BY mirrorcdimagedistroseries.id;
-
-CREATE SEQUENCE mirrorcontent_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrorcontent_id_seq OWNED BY mirrorcontent.id;
-
-CREATE SEQUENCE mirrordistroarchseries_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrordistroarchseries_id_seq OWNED BY mirrordistroarchseries.id;
-
-CREATE SEQUENCE mirrordistroseriessource_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrordistroseriessource_id_seq OWNED BY mirrordistroseriessource.id;
-
-CREATE SEQUENCE mirrorproberecord_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrorproberecord_id_seq OWNED BY mirrorproberecord.id;
-
-CREATE SEQUENCE mirrorsourcecontent_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE mirrorsourcecontent_id_seq OWNED BY mirrorsourcecontent.id;
-
-CREATE SEQUENCE nameblacklist_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE nameblacklist_id_seq OWNED BY nameblacklist.id;
-
-CREATE SEQUENCE oauthaccesstoken_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE oauthaccesstoken_id_seq OWNED BY oauthaccesstoken.id;
-
-CREATE SEQUENCE oauthconsumer_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE oauthconsumer_id_seq OWNED BY oauthconsumer.id;
-
-CREATE SEQUENCE oauthnonce_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE oauthnonce_id_seq OWNED BY oauthnonce.id;
-
-CREATE SEQUENCE oauthrequesttoken_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE oauthrequesttoken_id_seq OWNED BY oauthrequesttoken.id;
-
-CREATE SEQUENCE officialbugtag_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE officialbugtag_id_seq OWNED BY officialbugtag.id;
-
-CREATE SEQUENCE openidauthorization_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE openidauthorization_id_seq OWNED BY openidauthorization.id;
-
-CREATE SEQUENCE openidrpconfig_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE openidrpconfig_id_seq OWNED BY openidrpconfig.id;
-
-CREATE SEQUENCE openidrpsummary_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE openidrpsummary_id_seq OWNED BY openidrpsummary.id;
-
-CREATE SEQUENCE packagebugsupervisor_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packagebugsupervisor_id_seq OWNED BY packagebugsupervisor.id;
-
-CREATE SEQUENCE packagecopyrequest_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packagecopyrequest_id_seq OWNED BY packagecopyrequest.id;
-
-CREATE SEQUENCE packagediff_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packagediff_id_seq OWNED BY packagediff.id;
-
-CREATE SEQUENCE packageselection_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packageselection_id_seq OWNED BY packageselection.id;
-
-CREATE SEQUENCE packageupload_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packageupload_id_seq OWNED BY packageupload.id;
-
-CREATE SEQUENCE packageuploadbuild_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packageuploadbuild_id_seq OWNED BY packageuploadbuild.id;
-
-CREATE SEQUENCE packageuploadcustom_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packageuploadcustom_id_seq OWNED BY packageuploadcustom.id;
-
-CREATE SEQUENCE packageuploadsource_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE packageuploadsource_id_seq OWNED BY packageuploadsource.id;
-
-CREATE SEQUENCE packaging_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE person_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE person_id_seq OWNED BY person.id;
-
-CREATE SEQUENCE personlanguage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE personlanguage_id_seq OWNED BY personlanguage.id;
-
-CREATE SEQUENCE personlocation_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE personlocation_id_seq OWNED BY personlocation.id;
-
-CREATE SEQUENCE personnotification_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE personnotification_id_seq OWNED BY personnotification.id;
-
-CREATE SEQUENCE pillarname_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pillarname_id_seq OWNED BY pillarname.id;
-
-CREATE SEQUENCE pocketchroot_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pocketchroot_id_seq OWNED BY pocketchroot.id;
-
-CREATE SEQUENCE pocomment_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pocomment_id_seq OWNED BY pocomment.id;
-
-CREATE SEQUENCE poexportrequest_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE poexportrequest_id_seq OWNED BY poexportrequest.id;
-
-CREATE SEQUENCE pofile_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pofile_id_seq OWNED BY pofile.id;
-
-CREATE SEQUENCE pofiletranslator_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pofiletranslator_id_seq OWNED BY pofiletranslator.id;
-
-CREATE SEQUENCE poll_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE poll_id_seq OWNED BY poll.id;
-
-CREATE SEQUENCE polloption_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE polloption_id_seq OWNED BY polloption.id;
-
-CREATE SEQUENCE pomsgid_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pomsgid_id_seq OWNED BY pomsgid.id;
-
-CREATE SEQUENCE posubscription_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE posubscription_id_seq OWNED BY posubscription.id;
-
-CREATE SEQUENCE potemplate_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE potemplate_id_seq OWNED BY potemplate.id;
-
-CREATE SEQUENCE potmsgset_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE potmsgset_id_seq OWNED BY potmsgset.id;
-
-CREATE SEQUENCE potranslation_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE potranslation_id_seq OWNED BY potranslation.id;
-
-CREATE SEQUENCE processor_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE processor_id_seq OWNED BY processor.id;
-
-CREATE SEQUENCE processorfamily_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE processorfamily_id_seq OWNED BY processorfamily.id;
-
-CREATE SEQUENCE product_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE product_id_seq OWNED BY product.id;
-
-CREATE SEQUENCE productbounty_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productbounty_id_seq OWNED BY productbounty.id;
-
-CREATE SEQUENCE productcvsmodule_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productcvsmodule_id_seq OWNED BY productcvsmodule.id;
-
-CREATE SEQUENCE productlicense_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productlicense_id_seq OWNED BY productlicense.id;
-
-CREATE SEQUENCE productrelease_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productrelease_id_seq OWNED BY productrelease.id;
-
-CREATE SEQUENCE productreleasefile_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE productseries_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productseries_id_seq OWNED BY productseries.id;
-
-CREATE SEQUENCE productseriescodeimport_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productseriescodeimport_id_seq OWNED BY productseriescodeimport.id;
-
-CREATE SEQUENCE productsvnmodule_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE productsvnmodule_id_seq OWNED BY productsvnmodule.id;
-
-CREATE SEQUENCE project_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE project_id_seq OWNED BY project.id;
-
-CREATE SEQUENCE projectbounty_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE projectbounty_id_seq OWNED BY projectbounty.id;
-
-CREATE SEQUENCE projectbugtracker_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE projectrelationship_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE projectrelationship_id_seq OWNED BY projectrelationship.id;
-
-CREATE SEQUENCE pushmirroraccess_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pushmirroraccess_id_seq OWNED BY pushmirroraccess.id;
-
-CREATE SEQUENCE question_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE question_id_seq OWNED BY question.id;
-
-CREATE SEQUENCE questionbug_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE questionbug_id_seq OWNED BY questionbug.id;
-
-CREATE SEQUENCE questionmessage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE questionmessage_id_seq OWNED BY questionmessage.id;
-
-CREATE SEQUENCE questionreopening_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE questionreopening_id_seq OWNED BY questionreopening.id;
-
-CREATE SEQUENCE questionsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE questionsubscription_id_seq OWNED BY questionsubscription.id;
-
-CREATE SEQUENCE requestedcds_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE requestedcds_id_seq OWNED BY requestedcds.id;
-
-CREATE SEQUENCE revision_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE revision_id_seq OWNED BY revision.id;
-
-CREATE SEQUENCE revisionauthor_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE revisionauthor_id_seq OWNED BY revisionauthor.id;
-
-CREATE SEQUENCE revisionparent_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE revisionparent_id_seq OWNED BY revisionparent.id;
-
-CREATE SEQUENCE revisionproperty_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE revisionproperty_id_seq OWNED BY revisionproperty.id;
-
-CREATE SEQUENCE scriptactivity_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE scriptactivity_id_seq OWNED BY scriptactivity.id;
-
-CREATE SEQUENCE section_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE section_id_seq OWNED BY section.id;
-
-CREATE SEQUENCE sectionselection_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sectionselection_id_seq OWNED BY sectionselection.id;
-
-CREATE SEQUENCE securebinarypackagepublishinghistory_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE securebinarypackagepublishinghistory_id_seq OWNED BY securebinarypackagepublishinghistory.id;
-
-CREATE SEQUENCE securesourcepackagepublishinghistory_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE securesourcepackagepublishinghistory_id_seq OWNED BY securesourcepackagepublishinghistory.id;
-
-CREATE SEQUENCE shipitreport_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipitreport_id_seq OWNED BY shipitreport.id;
-
-CREATE SEQUENCE shipitsurvey_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipitsurvey_id_seq OWNED BY shipitsurvey.id;
-
-CREATE SEQUENCE shipitsurveyanswer_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipitsurveyanswer_id_seq OWNED BY shipitsurveyanswer.id;
-
-CREATE SEQUENCE shipitsurveyquestion_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipitsurveyquestion_id_seq OWNED BY shipitsurveyquestion.id;
-
-CREATE SEQUENCE shipitsurveyresult_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipitsurveyresult_id_seq OWNED BY shipitsurveyresult.id;
-
-CREATE SEQUENCE shipment_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shipment_id_seq OWNED BY shipment.id;
-
-CREATE SEQUENCE shippingrequest_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shippingrequest_id_seq OWNED BY shippingrequest.id;
-
-CREATE SEQUENCE shippingrun_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE shippingrun_id_seq OWNED BY shippingrun.id;
-
-CREATE SEQUENCE signedcodeofconduct_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE signedcodeofconduct_id_seq OWNED BY signedcodeofconduct.id;
-
-CREATE SEQUENCE sourcepackagename_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sourcepackagename_id_seq OWNED BY sourcepackagename.id;
-
-CREATE SEQUENCE sourcepackagerelationship_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE sourcepackagerelease_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sourcepackagerelease_id_seq OWNED BY sourcepackagerelease.id;
-
-CREATE SEQUENCE sourcepackagereleasefile_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE specification_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specification_id_seq OWNED BY specification.id;
-
-CREATE SEQUENCE specificationbranch_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationbranch_id_seq OWNED BY specificationbranch.id;
-
-CREATE SEQUENCE specificationbug_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationbug_id_seq OWNED BY specificationbug.id;
-
-CREATE SEQUENCE specificationdependency_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationdependency_id_seq OWNED BY specificationdependency.id;
-
-CREATE SEQUENCE specificationfeedback_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationfeedback_id_seq OWNED BY specificationfeedback.id;
-
-CREATE SEQUENCE specificationmessage_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationmessage_id_seq OWNED BY specificationmessage.id;
-
-CREATE SEQUENCE specificationsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE specificationsubscription_id_seq OWNED BY specificationsubscription.id;
-
-CREATE SEQUENCE spokenin_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-CREATE SEQUENCE sprint_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sprint_id_seq OWNED BY sprint.id;
-
-CREATE SEQUENCE sprintattendance_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sprintattendance_id_seq OWNED BY sprintattendance.id;
-
-CREATE SEQUENCE sprintspecification_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sprintspecification_id_seq OWNED BY sprintspecification.id;
-
-CREATE SEQUENCE sshkey_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE sshkey_id_seq OWNED BY sshkey.id;
-
-CREATE SEQUENCE standardshipitrequest_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE standardshipitrequest_id_seq OWNED BY standardshipitrequest.id;
-
-CREATE SEQUENCE structuralsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE structuralsubscription_id_seq OWNED BY structuralsubscription.id;
-
-CREATE SEQUENCE teammembership_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE teammembership_id_seq OWNED BY teammembership.id;
-
-CREATE SEQUENCE teamparticipation_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE teamparticipation_id_seq OWNED BY teamparticipation.id;
-
-CREATE SEQUENCE temporaryblobstorage_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE temporaryblobstorage_id_seq OWNED BY temporaryblobstorage.id;
-
-CREATE SEQUENCE translationgroup_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE translationgroup_id_seq OWNED BY translationgroup.id;
-
 CREATE SEQUENCE translationimportqueueentry_id_seq
     INCREMENT BY 1
     NO MAXVALUE
@@ -4539,21 +3920,13 @@ CREATE SEQUENCE translationmessage_id_seq
 
 ALTER SEQUENCE translationmessage_id_seq OWNED BY translationmessage.id;
 
-CREATE SEQUENCE translationrelicensingagreement_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE translationrelicensingagreement_id_seq OWNED BY translationrelicensingagreement.id;
-
-CREATE SEQUENCE translationtemplateitem_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE translationtemplateitem_id_seq OWNED BY translationtemplateitem.id;
+CREATE TABLE translator (
+    id integer NOT NULL,
+    translationgroup integer NOT NULL,
+    "language" integer NOT NULL,
+    translator integer NOT NULL,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
+);
 
 CREATE SEQUENCE translator_id_seq
     INCREMENT BY 1
@@ -4563,6 +3936,19 @@ CREATE SEQUENCE translator_id_seq
 
 ALTER SEQUENCE translator_id_seq OWNED BY translator.id;
 
+CREATE TABLE validpersonorteamcache (
+    id integer NOT NULL
+);
+
+CREATE TABLE vote (
+    id integer NOT NULL,
+    person integer,
+    poll integer NOT NULL,
+    preference integer,
+    "option" integer,
+    token text NOT NULL
+);
+
 CREATE SEQUENCE vote_id_seq
     INCREMENT BY 1
     NO MAXVALUE
@@ -4570,6 +3956,12 @@ CREATE SEQUENCE vote_id_seq
     CACHE 1;
 
 ALTER SEQUENCE vote_id_seq OWNED BY vote.id;
+
+CREATE TABLE votecast (
+    id integer NOT NULL,
+    person integer NOT NULL,
+    poll integer NOT NULL
+);
 
 CREATE SEQUENCE votecast_id_seq
     INCREMENT BY 1
@@ -4579,14 +3971,12 @@ CREATE SEQUENCE votecast_id_seq
 
 ALTER SEQUENCE votecast_id_seq OWNED BY votecast.id;
 
-CREATE SEQUENCE webserviceban_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE webserviceban_id_seq OWNED BY webserviceban.id;
+CREATE TABLE wikiname (
+    id integer NOT NULL,
+    person integer NOT NULL,
+    wiki text NOT NULL,
+    wikiname text NOT NULL
+);
 
 CREATE SEQUENCE wikiname_id_seq
     INCREMENT BY 1
@@ -4596,25 +3986,11 @@ CREATE SEQUENCE wikiname_id_seq
 
 ALTER SEQUENCE wikiname_id_seq OWNED BY wikiname.id;
 
-ALTER TABLE account ALTER COLUMN id SET DEFAULT nextval('account_id_seq'::regclass);
-
-ALTER TABLE accountpassword ALTER COLUMN id SET DEFAULT nextval('accountpassword_id_seq'::regclass);
-
 ALTER TABLE announcement ALTER COLUMN id SET DEFAULT nextval('announcement_id_seq'::regclass);
 
 ALTER TABLE answercontact ALTER COLUMN id SET DEFAULT nextval('answercontact_id_seq'::regclass);
 
 ALTER TABLE archive ALTER COLUMN id SET DEFAULT nextval('archive_id_seq'::regclass);
-
-ALTER TABLE archivearch ALTER COLUMN id SET DEFAULT nextval('archivearch_id_seq'::regclass);
-
-ALTER TABLE archiveauthtoken ALTER COLUMN id SET DEFAULT nextval('archiveauthtoken_id_seq'::regclass);
-
-ALTER TABLE archivedependency ALTER COLUMN id SET DEFAULT nextval('archivedependency_id_seq'::regclass);
-
-ALTER TABLE archivepermission ALTER COLUMN id SET DEFAULT nextval('archivepermission_id_seq'::regclass);
-
-ALTER TABLE archivesubscriber ALTER COLUMN id SET DEFAULT nextval('archivesubscriber_id_seq'::regclass);
 
 ALTER TABLE binarypackagename ALTER COLUMN id SET DEFAULT nextval('binarypackagename_id_seq'::regclass);
 
@@ -4642,8 +4018,6 @@ ALTER TABLE bug ALTER COLUMN id SET DEFAULT nextval('bug_id_seq'::regclass);
 
 ALTER TABLE bugactivity ALTER COLUMN id SET DEFAULT nextval('bugactivity_id_seq'::regclass);
 
-ALTER TABLE bugaffectsperson ALTER COLUMN id SET DEFAULT nextval('bugaffectsperson_id_seq'::regclass);
-
 ALTER TABLE bugattachment ALTER COLUMN id SET DEFAULT nextval('bugattachment_id_seq'::regclass);
 
 ALTER TABLE bugbranch ALTER COLUMN id SET DEFAULT nextval('bugbranch_id_seq'::regclass);
@@ -4655,8 +4029,6 @@ ALTER TABLE bugmessage ALTER COLUMN id SET DEFAULT nextval('bugmessage_id_seq'::
 ALTER TABLE bugnomination ALTER COLUMN id SET DEFAULT nextval('bugnomination_id_seq'::regclass);
 
 ALTER TABLE bugnotification ALTER COLUMN id SET DEFAULT nextval('bugnotification_id_seq'::regclass);
-
-ALTER TABLE bugnotificationrecipient ALTER COLUMN id SET DEFAULT nextval('bugnotificationrecipient_id_seq'::regclass);
 
 ALTER TABLE bugpackageinfestation ALTER COLUMN id SET DEFAULT nextval('bugpackageinfestation_id_seq'::regclass);
 
@@ -4671,8 +4043,6 @@ ALTER TABLE bugtask ALTER COLUMN id SET DEFAULT nextval('bugtask_id_seq'::regcla
 ALTER TABLE bugtracker ALTER COLUMN id SET DEFAULT nextval('bugtracker_id_seq'::regclass);
 
 ALTER TABLE bugtrackeralias ALTER COLUMN id SET DEFAULT nextval('bugtrackeralias_id_seq'::regclass);
-
-ALTER TABLE bugtrackerperson ALTER COLUMN id SET DEFAULT nextval('bugtrackerperson_id_seq'::regclass);
 
 ALTER TABLE bugwatch ALTER COLUMN id SET DEFAULT nextval('bugwatch_id_seq'::regclass);
 
@@ -4694,12 +4064,6 @@ ALTER TABLE codeimportmachine ALTER COLUMN id SET DEFAULT nextval('codeimportmac
 
 ALTER TABLE codeimportresult ALTER COLUMN id SET DEFAULT nextval('codeimportresult_id_seq'::regclass);
 
-ALTER TABLE codereviewmessage ALTER COLUMN id SET DEFAULT nextval('codereviewmessage_id_seq'::regclass);
-
-ALTER TABLE codereviewvote ALTER COLUMN id SET DEFAULT nextval('codereviewvote_id_seq'::regclass);
-
-ALTER TABLE commercialsubscription ALTER COLUMN id SET DEFAULT nextval('commercialsubscription_id_seq'::regclass);
-
 ALTER TABLE component ALTER COLUMN id SET DEFAULT nextval('component_id_seq'::regclass);
 
 ALTER TABLE componentselection ALTER COLUMN id SET DEFAULT nextval('componentselection_id_seq'::regclass);
@@ -4707,8 +4071,6 @@ ALTER TABLE componentselection ALTER COLUMN id SET DEFAULT nextval('componentsel
 ALTER TABLE continent ALTER COLUMN id SET DEFAULT nextval('continent_id_seq'::regclass);
 
 ALTER TABLE country ALTER COLUMN id SET DEFAULT nextval('country_id_seq'::regclass);
-
-ALTER TABLE customlanguagecode ALTER COLUMN id SET DEFAULT nextval('customlanguagecode_id_seq'::regclass);
 
 ALTER TABLE cve ALTER COLUMN id SET DEFAULT nextval('cve_id_seq'::regclass);
 
@@ -4720,8 +4082,6 @@ ALTER TABLE distributionbounty ALTER COLUMN id SET DEFAULT nextval('distribution
 
 ALTER TABLE distributionmirror ALTER COLUMN id SET DEFAULT nextval('distributionmirror_id_seq'::regclass);
 
-ALTER TABLE distributionsourcepackage ALTER COLUMN id SET DEFAULT nextval('distributionsourcepackage_id_seq'::regclass);
-
 ALTER TABLE distributionsourcepackagecache ALTER COLUMN id SET DEFAULT nextval('distributionsourcepackagecache_id_seq'::regclass);
 
 ALTER TABLE distroarchseries ALTER COLUMN id SET DEFAULT nextval('distroarchseries_id_seq'::regclass);
@@ -4731,8 +4091,6 @@ ALTER TABLE distrocomponentuploader ALTER COLUMN id SET DEFAULT nextval('distroc
 ALTER TABLE distroseries ALTER COLUMN id SET DEFAULT nextval('distroseries_id_seq'::regclass);
 
 ALTER TABLE distroserieslanguage ALTER COLUMN id SET DEFAULT nextval('distroserieslanguage_id_seq'::regclass);
-
-ALTER TABLE distroseriespackagecache ALTER COLUMN id SET DEFAULT nextval('distroseriespackagecache_id_seq'::regclass);
 
 ALTER TABLE emailaddress ALTER COLUMN id SET DEFAULT nextval('emailaddress_id_seq'::regclass);
 
@@ -4748,8 +4106,6 @@ ALTER TABLE gpgkey ALTER COLUMN id SET DEFAULT nextval('gpgkey_id_seq'::regclass
 
 ALTER TABLE hwdevice ALTER COLUMN id SET DEFAULT nextval('hwdevice_id_seq'::regclass);
 
-ALTER TABLE hwdeviceclass ALTER COLUMN id SET DEFAULT nextval('hwdeviceclass_id_seq'::regclass);
-
 ALTER TABLE hwdevicedriverlink ALTER COLUMN id SET DEFAULT nextval('hwdevicedriverlink_id_seq'::regclass);
 
 ALTER TABLE hwdevicenamevariant ALTER COLUMN id SET DEFAULT nextval('hwdevicenamevariant_id_seq'::regclass);
@@ -4757,8 +4113,6 @@ ALTER TABLE hwdevicenamevariant ALTER COLUMN id SET DEFAULT nextval('hwdevicenam
 ALTER TABLE hwdriver ALTER COLUMN id SET DEFAULT nextval('hwdriver_id_seq'::regclass);
 
 ALTER TABLE hwsubmission ALTER COLUMN id SET DEFAULT nextval('hwsubmission_id_seq'::regclass);
-
-ALTER TABLE hwsubmissionbug ALTER COLUMN id SET DEFAULT nextval('hwsubmissionbug_id_seq'::regclass);
 
 ALTER TABLE hwsubmissiondevice ALTER COLUMN id SET DEFAULT nextval('hwsubmissiondevice_id_seq'::regclass);
 
@@ -4794,7 +4148,7 @@ ALTER TABLE karmacategory ALTER COLUMN id SET DEFAULT nextval('karmacategory_id_
 
 ALTER TABLE karmatotalcache ALTER COLUMN id SET DEFAULT nextval('karmatotalcache_id_seq'::regclass);
 
-ALTER TABLE language ALTER COLUMN id SET DEFAULT nextval('language_id_seq'::regclass);
+ALTER TABLE "language" ALTER COLUMN id SET DEFAULT nextval('language_id_seq'::regclass);
 
 ALTER TABLE languagepack ALTER COLUMN id SET DEFAULT nextval('languagepack_id_seq'::regclass);
 
@@ -4803,6 +4157,8 @@ ALTER TABLE launchpadstatistic ALTER COLUMN id SET DEFAULT nextval('launchpadsta
 ALTER TABLE libraryfilealias ALTER COLUMN id SET DEFAULT nextval('libraryfilealias_id_seq'::regclass);
 
 ALTER TABLE libraryfilecontent ALTER COLUMN id SET DEFAULT nextval('libraryfilecontent_id_seq'::regclass);
+
+ALTER TABLE license ALTER COLUMN id SET DEFAULT nextval('license_id_seq'::regclass);
 
 ALTER TABLE logintoken ALTER COLUMN id SET DEFAULT nextval('logintoken_id_seq'::regclass);
 
@@ -4838,27 +4194,13 @@ ALTER TABLE mirrorsourcecontent ALTER COLUMN id SET DEFAULT nextval('mirrorsourc
 
 ALTER TABLE nameblacklist ALTER COLUMN id SET DEFAULT nextval('nameblacklist_id_seq'::regclass);
 
-ALTER TABLE oauthaccesstoken ALTER COLUMN id SET DEFAULT nextval('oauthaccesstoken_id_seq'::regclass);
-
-ALTER TABLE oauthconsumer ALTER COLUMN id SET DEFAULT nextval('oauthconsumer_id_seq'::regclass);
-
-ALTER TABLE oauthnonce ALTER COLUMN id SET DEFAULT nextval('oauthnonce_id_seq'::regclass);
-
-ALTER TABLE oauthrequesttoken ALTER COLUMN id SET DEFAULT nextval('oauthrequesttoken_id_seq'::regclass);
-
 ALTER TABLE officialbugtag ALTER COLUMN id SET DEFAULT nextval('officialbugtag_id_seq'::regclass);
 
 ALTER TABLE openidauthorization ALTER COLUMN id SET DEFAULT nextval('openidauthorization_id_seq'::regclass);
 
 ALTER TABLE openidrpconfig ALTER COLUMN id SET DEFAULT nextval('openidrpconfig_id_seq'::regclass);
 
-ALTER TABLE openidrpsummary ALTER COLUMN id SET DEFAULT nextval('openidrpsummary_id_seq'::regclass);
-
-ALTER TABLE packagebugsupervisor ALTER COLUMN id SET DEFAULT nextval('packagebugsupervisor_id_seq'::regclass);
-
-ALTER TABLE packagecopyrequest ALTER COLUMN id SET DEFAULT nextval('packagecopyrequest_id_seq'::regclass);
-
-ALTER TABLE packagediff ALTER COLUMN id SET DEFAULT nextval('packagediff_id_seq'::regclass);
+ALTER TABLE packagebugcontact ALTER COLUMN id SET DEFAULT nextval('packagebugcontact_id_seq'::regclass);
 
 ALTER TABLE packageselection ALTER COLUMN id SET DEFAULT nextval('packageselection_id_seq'::regclass);
 
@@ -4875,8 +4217,6 @@ ALTER TABLE person ALTER COLUMN id SET DEFAULT nextval('person_id_seq'::regclass
 ALTER TABLE personlanguage ALTER COLUMN id SET DEFAULT nextval('personlanguage_id_seq'::regclass);
 
 ALTER TABLE personlocation ALTER COLUMN id SET DEFAULT nextval('personlocation_id_seq'::regclass);
-
-ALTER TABLE personnotification ALTER COLUMN id SET DEFAULT nextval('personnotification_id_seq'::regclass);
 
 ALTER TABLE pillarname ALTER COLUMN id SET DEFAULT nextval('pillarname_id_seq'::regclass);
 
@@ -4920,8 +4260,6 @@ ALTER TABLE productrelease ALTER COLUMN id SET DEFAULT nextval('productrelease_i
 
 ALTER TABLE productseries ALTER COLUMN id SET DEFAULT nextval('productseries_id_seq'::regclass);
 
-ALTER TABLE productseriescodeimport ALTER COLUMN id SET DEFAULT nextval('productseriescodeimport_id_seq'::regclass);
-
 ALTER TABLE productsvnmodule ALTER COLUMN id SET DEFAULT nextval('productsvnmodule_id_seq'::regclass);
 
 ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
@@ -4964,19 +4302,13 @@ ALTER TABLE securesourcepackagepublishinghistory ALTER COLUMN id SET DEFAULT nex
 
 ALTER TABLE shipitreport ALTER COLUMN id SET DEFAULT nextval('shipitreport_id_seq'::regclass);
 
-ALTER TABLE shipitsurvey ALTER COLUMN id SET DEFAULT nextval('shipitsurvey_id_seq'::regclass);
-
-ALTER TABLE shipitsurveyanswer ALTER COLUMN id SET DEFAULT nextval('shipitsurveyanswer_id_seq'::regclass);
-
-ALTER TABLE shipitsurveyquestion ALTER COLUMN id SET DEFAULT nextval('shipitsurveyquestion_id_seq'::regclass);
-
-ALTER TABLE shipitsurveyresult ALTER COLUMN id SET DEFAULT nextval('shipitsurveyresult_id_seq'::regclass);
-
 ALTER TABLE shipment ALTER COLUMN id SET DEFAULT nextval('shipment_id_seq'::regclass);
 
 ALTER TABLE shippingrequest ALTER COLUMN id SET DEFAULT nextval('shippingrequest_id_seq'::regclass);
 
 ALTER TABLE shippingrun ALTER COLUMN id SET DEFAULT nextval('shippingrun_id_seq'::regclass);
+
+ALTER TABLE shockandawe ALTER COLUMN id SET DEFAULT nextval('shockandawe_id_seq'::regclass);
 
 ALTER TABLE signedcodeofconduct ALTER COLUMN id SET DEFAULT nextval('signedcodeofconduct_id_seq'::regclass);
 
@@ -5022,61 +4354,19 @@ ALTER TABLE translationimportqueueentry ALTER COLUMN id SET DEFAULT nextval('tra
 
 ALTER TABLE translationmessage ALTER COLUMN id SET DEFAULT nextval('translationmessage_id_seq'::regclass);
 
-ALTER TABLE translationrelicensingagreement ALTER COLUMN id SET DEFAULT nextval('translationrelicensingagreement_id_seq'::regclass);
-
-ALTER TABLE translationtemplateitem ALTER COLUMN id SET DEFAULT nextval('translationtemplateitem_id_seq'::regclass);
-
 ALTER TABLE translator ALTER COLUMN id SET DEFAULT nextval('translator_id_seq'::regclass);
 
 ALTER TABLE vote ALTER COLUMN id SET DEFAULT nextval('vote_id_seq'::regclass);
 
 ALTER TABLE votecast ALTER COLUMN id SET DEFAULT nextval('votecast_id_seq'::regclass);
 
-ALTER TABLE webserviceban ALTER COLUMN id SET DEFAULT nextval('webserviceban_id_seq'::regclass);
-
 ALTER TABLE wikiname ALTER COLUMN id SET DEFAULT nextval('wikiname_id_seq'::regclass);
-
-ALTER TABLE ONLY account
-    ADD CONSTRAINT account_openid_identifier_key UNIQUE (openid_identifier);
-
-ALTER TABLE ONLY account
-    ADD CONSTRAINT account_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY accountpassword
-    ADD CONSTRAINT accountpassword_account_key UNIQUE (account);
-
-ALTER TABLE ONLY accountpassword
-    ADD CONSTRAINT accountpassword_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY announcement
     ADD CONSTRAINT announcement_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY archive
     ADD CONSTRAINT archive_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY archivearch
-    ADD CONSTRAINT archivearch__processorfamily__archive__key UNIQUE (processorfamily, archive);
-
-ALTER TABLE ONLY archivearch
-    ADD CONSTRAINT archivearch_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY archiveauthtoken
-    ADD CONSTRAINT archiveauthtoken_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY archiveauthtoken
-    ADD CONSTRAINT archiveauthtoken_token_key UNIQUE (token);
-
-ALTER TABLE ONLY archivedependency
-    ADD CONSTRAINT archivedependency_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY archivedependency
-    ADD CONSTRAINT archivedependency_unique UNIQUE (archive, dependency, pocket, component);
-
-ALTER TABLE ONLY archivepermission
-    ADD CONSTRAINT archivepermission_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY archivesubscriber
-    ADD CONSTRAINT archivesubscriber_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY revisionauthor
     ADD CONSTRAINT archuserid_archuserid_key UNIQUE (name);
@@ -5131,6 +4421,9 @@ ALTER TABLE ONLY branch
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY branchmergeproposal
+    ADD CONSTRAINT branchmergeproposal_source_branch_key UNIQUE (source_branch, target_branch, date_merged);
+
 ALTER TABLE ONLY branchmergerobot
     ADD CONSTRAINT branchmergerobot_name_key UNIQUE (name);
 
@@ -5158,12 +4451,6 @@ ALTER TABLE ONLY bug
 ALTER TABLE ONLY bugactivity
     ADD CONSTRAINT bugactivity_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY bugaffectsperson
-    ADD CONSTRAINT bugaffectsperson_bug_person_uniq UNIQUE (bug, person);
-
-ALTER TABLE ONLY bugaffectsperson
-    ADD CONSTRAINT bugaffectsperson_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY bugattachment
     ADD CONSTRAINT bugattachment_pkey PRIMARY KEY (id);
 
@@ -5177,10 +4464,7 @@ ALTER TABLE ONLY bugcve
     ADD CONSTRAINT bugcve_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT bugmessage__bug__message__key UNIQUE (bug, message);
-
-ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT bugmessage__bugwatch__remote_comment_id__key UNIQUE (bugwatch, remote_comment_id);
+    ADD CONSTRAINT bugmessage_bug_key UNIQUE (bug, message);
 
 ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT bugmessage_pkey PRIMARY KEY (id);
@@ -5193,12 +4477,6 @@ ALTER TABLE ONLY bugnotification
 
 ALTER TABLE ONLY bugnotification
     ADD CONSTRAINT bugnotification_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY bugnotificationrecipient
-    ADD CONSTRAINT bugnotificationrecipient__bug_notificaion__person__key UNIQUE (bug_notification, person);
-
-ALTER TABLE ONLY bugnotificationrecipient
-    ADD CONSTRAINT bugnotificationrecipient_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY bugpackageinfestation
     ADD CONSTRAINT bugpackageinfestation_bug_key UNIQUE (bug, sourcepackagerelease);
@@ -5233,20 +4511,11 @@ ALTER TABLE ONLY bugtrackeralias
 ALTER TABLE ONLY bugtrackeralias
     ADD CONSTRAINT bugtrackeralias_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY bugtrackerperson
-    ADD CONSTRAINT bugtrackerperson__bugtracker__name__key UNIQUE (bugtracker, name);
-
-ALTER TABLE ONLY bugtrackerperson
-    ADD CONSTRAINT bugtrackerperson_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_bugtask_target UNIQUE (id, bug);
 
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY build
-    ADD CONSTRAINT build__datecreated__key UNIQUE (datecreated);
 
 ALTER TABLE ONLY build
     ADD CONSTRAINT build_distroarchseries_uniq UNIQUE (distroarchseries, sourcepackagerelease, archive);
@@ -5296,24 +4565,6 @@ ALTER TABLE ONLY codeimportmachine
 ALTER TABLE ONLY codeimportresult
     ADD CONSTRAINT codeimportresult_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY codereviewmessage
-    ADD CONSTRAINT codereviewmessage__branch_merge_proposal__id_key UNIQUE (branch_merge_proposal, id);
-
-ALTER TABLE ONLY codereviewmessage
-    ADD CONSTRAINT codereviewmessage_message_key UNIQUE (message);
-
-ALTER TABLE ONLY codereviewmessage
-    ADD CONSTRAINT codereviewmessage_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvode__reviewer__branch_merge_proposal__key UNIQUE (reviewer, branch_merge_proposal);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvote_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY commercialsubscription
-    ADD CONSTRAINT commercialsubscription_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY component
     ADD CONSTRAINT component_name_key UNIQUE (name);
 
@@ -5347,14 +4598,11 @@ ALTER TABLE ONLY country
 ALTER TABLE ONLY country
     ADD CONSTRAINT country_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY customlanguagecode
-    ADD CONSTRAINT customlanguagecode_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY cve
     ADD CONSTRAINT cve_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY cve
-    ADD CONSTRAINT cve_sequence_uniq UNIQUE (sequence);
+    ADD CONSTRAINT cve_sequence_uniq UNIQUE ("sequence");
 
 ALTER TABLE ONLY cvereference
     ADD CONSTRAINT cvereference_pkey PRIMARY KEY (id);
@@ -5386,14 +4634,10 @@ ALTER TABLE ONLY distributionmirror
 ALTER TABLE ONLY distributionmirror
     ADD CONSTRAINT distributionmirror_rsync_base_url_key UNIQUE (rsync_base_url);
 
-ALTER TABLE ONLY distributionsourcepackage
-    ADD CONSTRAINT distributionpackage__sourcepackagename__distribution__key UNIQUE (sourcepackagename, distribution);
-
-ALTER TABLE ONLY distributionsourcepackage
-    ADD CONSTRAINT distributionsourcepackage_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY distributionsourcepackagecache
-    ADD CONSTRAINT distributionsourcepackagecache__distribution__sourcepackagename UNIQUE (distribution, sourcepackagename, archive);
+    ADD CONSTRAINT distributionsourcepackagecache_distribution_sourcepackagename_u UNIQUE (distribution, sourcepackagename);
+
+ALTER TABLE distributionsourcepackagecache CLUSTER ON distributionsourcepackagecache_distribution_sourcepackagename_u;
 
 ALTER TABLE ONLY distributionsourcepackagecache
     ADD CONSTRAINT distributionsourcepackagecache_pkey PRIMARY KEY (id);
@@ -5423,7 +4667,7 @@ ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distrorelease_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY distroserieslanguage
-    ADD CONSTRAINT distroreleaselanguage_distrorelease_language_uniq UNIQUE (distroseries, language);
+    ADD CONSTRAINT distroreleaselanguage_distrorelease_language_uniq UNIQUE (distroseries, "language");
 
 ALTER TABLE ONLY distroserieslanguage
     ADD CONSTRAINT distroreleaselanguage_pkey PRIMARY KEY (id);
@@ -5444,10 +4688,15 @@ ALTER TABLE ONLY packageuploadcustom
     ADD CONSTRAINT distroreleasequeuecustom_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY packageuploadsource
+    ADD CONSTRAINT distroreleasequeuesource__distroreleasequeue__sourcepackagerele UNIQUE (packageupload, sourcepackagerelease);
+
+ALTER TABLE ONLY packageuploadsource
     ADD CONSTRAINT distroreleasequeuesource_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY distroseriespackagecache
-    ADD CONSTRAINT distroseriespackagecache__distroseries__binarypackagename__arch UNIQUE (distroseries, binarypackagename, archive);
+    ADD CONSTRAINT distroseriespackagecache__binarypackagename_distroseries__key UNIQUE (binarypackagename, distroseries);
+
+ALTER TABLE distroseriespackagecache CLUSTER ON distroseriespackagecache__binarypackagename_distroseries__key;
 
 ALTER TABLE ONLY emailaddress
     ADD CONSTRAINT emailaddress__person__id__key UNIQUE (person, id);
@@ -5474,7 +4723,7 @@ ALTER TABLE ONLY gpgkey
     ADD CONSTRAINT gpgkey_fingerprint_key UNIQUE (fingerprint);
 
 ALTER TABLE ONLY gpgkey
-    ADD CONSTRAINT gpgkey_owner_key UNIQUE (owner, id);
+    ADD CONSTRAINT gpgkey_owner_key UNIQUE ("owner", id);
 
 ALTER TABLE ONLY gpgkey
     ADD CONSTRAINT gpgkey_pkey PRIMARY KEY (id);
@@ -5484,9 +4733,6 @@ ALTER TABLE ONLY hwdevice
 
 ALTER TABLE ONLY hwdevice
     ADD CONSTRAINT hwdevice_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY hwdeviceclass
-    ADD CONSTRAINT hwdeviceclass_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY hwdevicedriverlink
     ADD CONSTRAINT hwdevicedriverlink_pkey PRIMARY KEY (id);
@@ -5509,11 +4755,8 @@ ALTER TABLE ONLY hwsubmission
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY hwsubmissionbug
-    ADD CONSTRAINT hwsubmissionbug__submission__bug__key UNIQUE (submission, bug);
-
-ALTER TABLE ONLY hwsubmissionbug
-    ADD CONSTRAINT hwsubmissionbug_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice__devicer_driver_link__submission__key UNIQUE (device_driver_link, submission);
 
 ALTER TABLE ONLY hwsubmissiondevice
     ADD CONSTRAINT hwsubmissiondevice_pkey PRIMARY KEY (id);
@@ -5561,6 +4804,9 @@ ALTER TABLE ONLY hwvendorid
     ADD CONSTRAINT hwvendorid_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY hwvendorname
+    ADD CONSTRAINT hwvendorname_name_key UNIQUE (name);
+
+ALTER TABLE ONLY hwvendorname
     ADD CONSTRAINT hwvendorname_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY ircid
@@ -5593,10 +4839,10 @@ ALTER TABLE ONLY karmatotalcache
 ALTER TABLE ONLY karmatotalcache
     ADD CONSTRAINT karmatotalcache_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY language
+ALTER TABLE ONLY "language"
     ADD CONSTRAINT language_code_key UNIQUE (code);
 
-ALTER TABLE ONLY language
+ALTER TABLE ONLY "language"
     ADD CONSTRAINT language_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY languagepack
@@ -5620,6 +4866,9 @@ ALTER TABLE ONLY libraryfilecontent
     ADD CONSTRAINT libraryfilecontent_pkey PRIMARY KEY (id);
 
 ALTER TABLE libraryfilecontent CLUSTER ON libraryfilecontent_pkey;
+
+ALTER TABLE ONLY license
+    ADD CONSTRAINT license_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY logintoken
     ADD CONSTRAINT logintoken_pkey PRIMARY KEY (id);
@@ -5652,10 +4901,13 @@ ALTER TABLE ONLY message
     ADD CONSTRAINT message_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY messageapproval
+    ADD CONSTRAINT messageapproval_message_id_key UNIQUE (message_id);
+
+ALTER TABLE ONLY messageapproval
     ADD CONSTRAINT messageapproval_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY messagechunk
-    ADD CONSTRAINT messagechunk_message_idx UNIQUE (message, sequence);
+    ADD CONSTRAINT messagechunk_message_idx UNIQUE (message, "sequence");
 
 ALTER TABLE ONLY messagechunk
     ADD CONSTRAINT messagechunk_pkey PRIMARY KEY (id);
@@ -5708,30 +4960,6 @@ ALTER TABLE ONLY nameblacklist
 ALTER TABLE ONLY nameblacklist
     ADD CONSTRAINT nameblacklist_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_key_key UNIQUE (key);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY oauthconsumer
-    ADD CONSTRAINT oauthconsumer_key_key UNIQUE (key);
-
-ALTER TABLE ONLY oauthconsumer
-    ADD CONSTRAINT oauthconsumer_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY oauthnonce
-    ADD CONSTRAINT oauthnonce_nonce_token_key UNIQUE (nonce, access_token);
-
-ALTER TABLE ONLY oauthnonce
-    ADD CONSTRAINT oauthnonce_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_key_key UNIQUE (key);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY officialbugtag
     ADD CONSTRAINT officialbugtag_pkey PRIMARY KEY (id);
 
@@ -5744,32 +4972,17 @@ ALTER TABLE ONLY openidauthorization
 ALTER TABLE ONLY openidrpconfig
     ADD CONSTRAINT openidrpconfig_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY openidrpsummary
-    ADD CONSTRAINT openidrpsummary__account__trust_root__openid_identifier__key UNIQUE (account, trust_root, openid_identifier);
+ALTER TABLE ONLY packagebugcontact
+    ADD CONSTRAINT packagebugcontact_distinct_bugcontact UNIQUE (sourcepackagename, distribution, bugcontact);
 
-ALTER TABLE ONLY openidrpsummary
-    ADD CONSTRAINT openidrpsummary_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY packagebugsupervisor
-    ADD CONSTRAINT packagebugsupervisor__sourcepackagename__distribution__key UNIQUE (sourcepackagename, distribution);
-
-ALTER TABLE ONLY packagebugsupervisor
-    ADD CONSTRAINT packagebugsupervisor_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY packagediff
-    ADD CONSTRAINT packagediff_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY packagebugcontact
+    ADD CONSTRAINT packagebugcontact_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY securebinarypackagepublishinghistory
     ADD CONSTRAINT packagepublishinghistory_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY packageselection
     ADD CONSTRAINT packageselection_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY packageuploadsource
-    ADD CONSTRAINT packageuploadsource__packageupload__key UNIQUE (packageupload);
 
 ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging_pkey PRIMARY KEY (id);
@@ -5778,7 +4991,7 @@ ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging_uniqueness UNIQUE (distroseries, sourcepackagename, productseries);
 
 ALTER TABLE ONLY person
-    ADD CONSTRAINT person__account__id__key UNIQUE (account, id);
+    ADD CONSTRAINT person_openid_identifier_key UNIQUE (openid_identifier);
 
 ALTER TABLE ONLY person
     ADD CONSTRAINT person_pkey PRIMARY KEY (id);
@@ -5786,7 +4999,7 @@ ALTER TABLE ONLY person
 ALTER TABLE person CLUSTER ON person_pkey;
 
 ALTER TABLE ONLY personlanguage
-    ADD CONSTRAINT personlanguage_person_key UNIQUE (person, language);
+    ADD CONSTRAINT personlanguage_person_key UNIQUE (person, "language");
 
 ALTER TABLE ONLY personlanguage
     ADD CONSTRAINT personlanguage_pkey PRIMARY KEY (id);
@@ -5796,9 +5009,6 @@ ALTER TABLE ONLY personlocation
 
 ALTER TABLE ONLY personlocation
     ADD CONSTRAINT personlocation_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY personnotification
-    ADD CONSTRAINT personnotification_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY pillarname
     ADD CONSTRAINT pillarname_name_key UNIQUE (name);
@@ -5850,7 +5060,7 @@ ALTER TABLE ONLY pomsgid
     ADD CONSTRAINT pomsgid_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY posubscription
-    ADD CONSTRAINT posubscription_person_key UNIQUE (person, potemplate, language);
+    ADD CONSTRAINT posubscription_person_key UNIQUE (person, potemplate, "language");
 
 ALTER TABLE ONLY posubscription
     ADD CONSTRAINT posubscription_pkey PRIMARY KEY (id);
@@ -5924,15 +5134,6 @@ ALTER TABLE ONLY productseries
 ALTER TABLE ONLY productseries
     ADD CONSTRAINT productseries_svnrepository_key UNIQUE (svnrepository);
 
-ALTER TABLE ONLY productseriescodeimport
-    ADD CONSTRAINT productseriescodeimport_codeimport_key UNIQUE (codeimport);
-
-ALTER TABLE ONLY productseriescodeimport
-    ADD CONSTRAINT productseriescodeimport_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY productseriescodeimport
-    ADD CONSTRAINT productseriescodeimport_productseries_key UNIQUE (productseries);
-
 ALTER TABLE ONLY productsvnmodule
     ADD CONSTRAINT productsvnmodule_pkey PRIMARY KEY (id);
 
@@ -5967,7 +5168,7 @@ ALTER TABLE ONLY branchrevision
     ADD CONSTRAINT revisionnumber_branch_id_unique UNIQUE (branch, id);
 
 ALTER TABLE ONLY branchrevision
-    ADD CONSTRAINT revisionnumber_branch_sequence_unique UNIQUE (branch, sequence);
+    ADD CONSTRAINT revisionnumber_branch_sequence_unique UNIQUE (branch, "sequence");
 
 ALTER TABLE ONLY branchrevision
     ADD CONSTRAINT revisionnumber_pkey PRIMARY KEY (id);
@@ -6002,24 +5203,6 @@ ALTER TABLE ONLY sectionselection
 ALTER TABLE ONLY shipitreport
     ADD CONSTRAINT shipitreport_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY shipitsurvey
-    ADD CONSTRAINT shipitsurvey_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY shipitsurveyanswer
-    ADD CONSTRAINT shipitsurveyanswer_answer_key UNIQUE (answer);
-
-ALTER TABLE ONLY shipitsurveyanswer
-    ADD CONSTRAINT shipitsurveyanswer_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY shipitsurveyquestion
-    ADD CONSTRAINT shipitsurveyquestion_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY shipitsurveyquestion
-    ADD CONSTRAINT shipitsurveyquestion_question_key UNIQUE (question);
-
-ALTER TABLE ONLY shipitsurveyresult
-    ADD CONSTRAINT shipitsurveyresult_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY shipment
     ADD CONSTRAINT shipment_logintoken_key UNIQUE (logintoken);
 
@@ -6038,14 +5221,17 @@ ALTER TABLE ONLY shippingrun
 ALTER TABLE ONLY shippingrun
     ADD CONSTRAINT shippingrun_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY shockandawe
+    ADD CONSTRAINT shockandawe_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY signedcodeofconduct
     ADD CONSTRAINT signedcodeofconduct_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY mentoringoffer
-    ADD CONSTRAINT single_offer_per_bug_key UNIQUE (bug, owner);
+    ADD CONSTRAINT single_offer_per_bug_key UNIQUE (bug, "owner");
 
 ALTER TABLE ONLY mentoringoffer
-    ADD CONSTRAINT single_offer_per_spec_key UNIQUE (specification, owner);
+    ADD CONSTRAINT single_offer_per_spec_key UNIQUE (specification, "owner");
 
 ALTER TABLE ONLY sourcepackagename
     ADD CONSTRAINT sourcepackagename_name_key UNIQUE (name);
@@ -6105,7 +5291,7 @@ ALTER TABLE ONLY specificationsubscription
     ADD CONSTRAINT specificationsubscription_spec_person_uniq UNIQUE (specification, person);
 
 ALTER TABLE ONLY spokenin
-    ADD CONSTRAINT spokenin__country__language__key UNIQUE (language, country);
+    ADD CONSTRAINT spokenin__country__language__key UNIQUE ("language", country);
 
 ALTER TABLE ONLY spokenin
     ADD CONSTRAINT spokenin_pkey PRIMARY KEY (id);
@@ -6189,7 +5375,7 @@ ALTER TABLE ONLY questionsubscription
     ADD CONSTRAINT ticketsubscription_ticket_person_uniq UNIQUE (question, person);
 
 ALTER TABLE ONLY translator
-    ADD CONSTRAINT translation_translationgroup_key UNIQUE (translationgroup, language);
+    ADD CONSTRAINT translation_translationgroup_key UNIQUE (translationgroup, "language");
 
 ALTER TABLE ONLY translationgroup
     ADD CONSTRAINT translationgroup_name_key UNIQUE (name);
@@ -6203,20 +5389,16 @@ ALTER TABLE ONLY translationimportqueueentry
 ALTER TABLE ONLY translationmessage
     ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY translationrelicensingagreement
-    ADD CONSTRAINT translationrelicensingagreement__person__key UNIQUE (person);
-
-ALTER TABLE ONLY translationrelicensingagreement
-    ADD CONSTRAINT translationrelicensingagreement_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY translationtemplateitem
-    ADD CONSTRAINT translationtemplateitem_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY translator
     ADD CONSTRAINT translator_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY specificationfeedback
     ADD CONSTRAINT unique_spec_requestor_provider UNIQUE (specification, requester, reviewer);
+
+ALTER TABLE ONLY validpersonorteamcache
+    ADD CONSTRAINT validpersonorteamcache_pkey PRIMARY KEY (id);
+
+ALTER TABLE validpersonorteamcache CLUSTER ON validpersonorteamcache_pkey;
 
 ALTER TABLE ONLY vote
     ADD CONSTRAINT vote_pkey PRIMARY KEY (id);
@@ -6227,16 +5409,11 @@ ALTER TABLE ONLY votecast
 ALTER TABLE ONLY votecast
     ADD CONSTRAINT votecast_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY webserviceban
-    ADD CONSTRAINT webserviceban_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY wikiname
     ADD CONSTRAINT wikiname_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY wikiname
     ADD CONSTRAINT wikiname_wikiname_key UNIQUE (wikiname, wiki);
-
-CREATE INDEX account__old_openid_identifier__idx ON account USING btree (old_openid_identifier);
 
 CREATE INDEX announcement__distribution__active__idx ON announcement USING btree (distribution, active) WHERE (distribution IS NOT NULL);
 
@@ -6250,47 +5427,9 @@ CREATE UNIQUE INDEX answercontact__distribution__person__key ON answercontact US
 
 CREATE INDEX answercontact__person__idx ON answercontact USING btree (person);
 
-CREATE UNIQUE INDEX archive__distribution__purpose__key ON archive USING btree (distribution, purpose) WHERE (purpose = ANY (ARRAY[1, 4]));
+CREATE UNIQUE INDEX archive__distribution__purpose__key ON archive USING btree (distribution, purpose) WHERE ((distribution IS NOT NULL) AND ("owner" IS NULL));
 
-CREATE INDEX archive__owner__idx ON archive USING btree (owner);
-
-CREATE UNIQUE INDEX archive__owner__key ON archive USING btree (owner, distribution, name);
-
-CREATE INDEX archive__signing_key__idx ON archive USING btree (signing_key) WHERE (signing_key IS NOT NULL);
-
-CREATE INDEX archive_fti ON archive USING gist (fti ts2.gist_tsvector_ops);
-
-CREATE INDEX archiveauthtoken__archive__idx ON archiveauthtoken USING btree (archive);
-
-CREATE INDEX archiveauthtoken__date_created__idx ON archiveauthtoken USING btree (date_created);
-
-CREATE INDEX archiveauthtoken__person__idx ON archiveauthtoken USING btree (person);
-
-CREATE INDEX archivedependency__archive__idx ON archivedependency USING btree (archive);
-
-CREATE INDEX archivedependency__component__idx ON archivedependency USING btree (component);
-
-CREATE INDEX archivedependency__dependency__idx ON archivedependency USING btree (dependency);
-
-CREATE UNIQUE INDEX archivedependency__unique__temp ON archivedependency USING btree (archive, dependency) WHERE ((pocket IS NULL) OR (component IS NULL));
-
-CREATE INDEX archivepermission__archive__component__permission__idx ON archivepermission USING btree (archive, component, permission);
-
-CREATE INDEX archivepermission__archive__sourcepackagename__permission__idx ON archivepermission USING btree (archive, sourcepackagename, permission);
-
-CREATE INDEX archivepermission__person__archive__idx ON archivepermission USING btree (person, archive);
-
-CREATE INDEX archivesubscriber__archive__idx ON archivesubscriber USING btree (archive);
-
-CREATE INDEX archivesubscriber__cancelled_by__idx ON archivesubscriber USING btree (cancelled_by) WHERE (cancelled_by IS NOT NULL);
-
-CREATE INDEX archivesubscriber__date_created__idx ON archivesubscriber USING btree (date_created);
-
-CREATE INDEX archivesubscriber__date_expires__idx ON archivesubscriber USING btree (date_expires) WHERE (date_expires IS NOT NULL);
-
-CREATE INDEX archivesubscriber__registrant__idx ON archivesubscriber USING btree (registrant);
-
-CREATE INDEX archivesubscriber__subscriber__idx ON archivesubscriber USING btree (subscriber);
+CREATE UNIQUE INDEX archive__owner__key ON archive USING btree ("owner");
 
 CREATE INDEX binarypackagefile_binarypackage_idx ON binarypackagefile USING btree (binarypackagerelease);
 
@@ -6310,7 +5449,7 @@ CREATE INDEX bountymessage_bounty_idx ON bountymessage USING btree (bounty);
 
 CREATE INDEX branch__date_created__idx ON branch USING btree (date_created);
 
-CREATE INDEX branch__last_scanned__owner__idx ON branch USING btree (last_scanned, owner) WHERE (last_scanned IS NOT NULL);
+CREATE INDEX branch__last_scanned__owner__idx ON branch USING btree (last_scanned, "owner") WHERE (last_scanned IS NOT NULL);
 
 CREATE INDEX branch__next_mirror_time__idx ON branch USING btree (next_mirror_time) WHERE (next_mirror_time IS NOT NULL);
 
@@ -6318,17 +5457,13 @@ CREATE INDEX branch__private__idx ON branch USING btree (private);
 
 CREATE INDEX branch__product__id__idx ON branch USING btree (product, id);
 
-CREATE INDEX branch__registrant__idx ON branch USING btree (registrant);
-
 CREATE INDEX branch__reviewer__idx ON branch USING btree (reviewer);
-
-CREATE INDEX branch__stacked_on__idx ON branch USING btree (stacked_on) WHERE (stacked_on IS NOT NULL);
 
 CREATE INDEX branch_author_idx ON branch USING btree (author);
 
-CREATE UNIQUE INDEX branch_name_owner_product_key ON branch USING btree (name, owner, (COALESCE(product, -1)));
+CREATE UNIQUE INDEX branch_name_owner_product_key ON branch USING btree (name, "owner", (COALESCE(product, -1)));
 
-CREATE INDEX branch_owner_idx ON branch USING btree (owner);
+CREATE INDEX branch_owner_idx ON branch USING btree ("owner");
 
 ALTER TABLE branch CLUSTER ON branch_owner_idx;
 
@@ -6344,11 +5479,9 @@ CREATE INDEX branchmergeproposal__reviewer__idx ON branchmergeproposal USING btr
 
 CREATE INDEX branchmergeproposal__source_branch__idx ON branchmergeproposal USING btree (source_branch);
 
-CREATE INDEX branchmergeproposal__superseded_by__idx ON branchmergeproposal USING btree (superseded_by) WHERE (superseded_by IS NOT NULL);
-
 CREATE INDEX branchmergeproposal__target_branch__idx ON branchmergeproposal USING btree (target_branch);
 
-CREATE INDEX branchmergerobot__owner__idx ON branchmergerobot USING btree (owner);
+CREATE INDEX branchmergerobot__owner__idx ON branchmergerobot USING btree ("owner");
 
 CREATE INDEX branchmergerobot__registrant__idx ON branchmergerobot USING btree (registrant);
 
@@ -6370,23 +5503,19 @@ ALTER TABLE bug CLUSTER ON bug__date_last_updated__idx;
 
 CREATE INDEX bug__datecreated__idx ON bug USING btree (datecreated);
 
-CREATE INDEX bug__users_affected_count__idx ON bug USING btree (users_affected_count);
-
 CREATE INDEX bug__who_made_private__idx ON bug USING btree (who_made_private) WHERE (who_made_private IS NOT NULL);
 
 CREATE INDEX bug_duplicateof_idx ON bug USING btree (duplicateof);
 
 CREATE INDEX bug_fti ON bug USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX bug_owner_idx ON bug USING btree (owner);
+CREATE INDEX bug_owner_idx ON bug USING btree ("owner");
 
 CREATE INDEX bugactivity_bug_datechanged_idx ON bugactivity USING btree (bug, datechanged);
 
 CREATE INDEX bugactivity_datechanged_idx ON bugactivity USING btree (datechanged);
 
 CREATE INDEX bugactivity_person_datechanged_idx ON bugactivity USING btree (person, datechanged);
-
-CREATE INDEX bugaffectsperson__person__idx ON bugaffectsperson USING btree (person);
 
 CREATE INDEX bugattachment_libraryfile_idx ON bugattachment USING btree (libraryfile);
 
@@ -6396,13 +5525,17 @@ CREATE INDEX bugbranch__registrant__idx ON bugbranch USING btree (registrant);
 
 CREATE INDEX bugcve_cve_index ON bugcve USING btree (cve);
 
+CREATE INDEX bugmessage__bugwatch__idx ON bugmessage USING btree (bugwatch);
+
+CREATE INDEX bugmessage_bug_idx ON bugmessage USING btree (bug);
+
 CREATE INDEX bugmessage_message_idx ON bugmessage USING btree (message);
 
 CREATE INDEX bugnomination__bug__idx ON bugnomination USING btree (bug);
 
 CREATE INDEX bugnomination__decider__idx ON bugnomination USING btree (decider) WHERE (decider IS NOT NULL);
 
-CREATE INDEX bugnomination__owner__idx ON bugnomination USING btree (owner);
+CREATE INDEX bugnomination__owner__idx ON bugnomination USING btree ("owner");
 
 CREATE INDEX bugnotification__date_emailed__idx ON bugnotification USING btree (date_emailed);
 
@@ -6436,7 +5569,7 @@ CREATE INDEX bugtask__distroseries__sourcepackagename__idx ON bugtask USING btre
 
 CREATE INDEX bugtask__milestone__idx ON bugtask USING btree (milestone);
 
-CREATE INDEX bugtask__owner__idx ON bugtask USING btree (owner);
+CREATE INDEX bugtask__owner__idx ON bugtask USING btree ("owner");
 
 CREATE UNIQUE INDEX bugtask__product__bug__key ON bugtask USING btree (product, bug) WHERE (product IS NOT NULL);
 
@@ -6452,11 +5585,9 @@ CREATE INDEX bugtask_fti ON bugtask USING gist (fti ts2.gist_tsvector_ops);
 
 CREATE UNIQUE INDEX bugtracker_name_key ON bugtracker USING btree (name);
 
-CREATE INDEX bugtracker_owner_idx ON bugtracker USING btree (owner);
+CREATE INDEX bugtracker_owner_idx ON bugtracker USING btree ("owner");
 
 CREATE INDEX bugtrackeralias__bugtracker__idx ON bugtrackeralias USING btree (bugtracker);
-
-CREATE INDEX bugtrackerperson__person__idx ON bugtrackerperson USING btree (person);
 
 CREATE INDEX bugwatch_bug_idx ON bugwatch USING btree (bug);
 
@@ -6464,15 +5595,13 @@ CREATE INDEX bugwatch_bugtracker_idx ON bugwatch USING btree (bugtracker);
 
 CREATE INDEX bugwatch_datecreated_idx ON bugwatch USING btree (datecreated);
 
-CREATE INDEX bugwatch_owner_idx ON bugwatch USING btree (owner);
+CREATE INDEX bugwatch_owner_idx ON bugwatch USING btree ("owner");
 
 CREATE INDEX build__archive__idx ON build USING btree (archive);
 
 CREATE INDEX build__distroarchseries__buildstate__idx ON build USING btree (distroarchseries, buildstate);
 
 CREATE INDEX build__distroarchseries__datebuilt__idx ON build USING btree (distroarchseries, datebuilt);
-
-CREATE INDEX build__upload_log__idx ON build USING btree (upload_log) WHERE (upload_log IS NOT NULL);
 
 CREATE INDEX build_builder_and_buildstate_idx ON build USING btree (builder, buildstate);
 
@@ -6500,7 +5629,7 @@ CREATE INDEX codeimport__assignee__idx ON codeimport USING btree (assignee);
 
 CREATE UNIQUE INDEX codeimport__cvs_root__cvs_module__key ON codeimport USING btree (cvs_root, cvs_module) WHERE (cvs_root IS NOT NULL);
 
-CREATE INDEX codeimport__owner__idx ON codeimport USING btree (owner);
+CREATE INDEX codeimport__owner__idx ON codeimport USING btree ("owner");
 
 CREATE INDEX codeimport__registrant__idx ON codeimport USING btree (registrant);
 
@@ -6509,8 +5638,6 @@ CREATE UNIQUE INDEX codeimport__svn_branch_url__idx ON codeimport USING btree (s
 CREATE INDEX codeimportevent__code_import__date_created__id__idx ON codeimportevent USING btree (code_import, date_created, id);
 
 CREATE INDEX codeimportevent__date_created__id__idx ON codeimportevent USING btree (date_created, id);
-
-CREATE INDEX codeimportevent__message__date_created__idx ON codeimportevent USING btree (machine, date_created) WHERE (machine IS NOT NULL);
 
 CREATE INDEX codeimportevent__person__idx ON codeimportevent USING btree (person) WHERE (person IS NOT NULL);
 
@@ -6526,26 +5653,6 @@ CREATE INDEX codeimportresult__machine__date_created__idx ON codeimportresult US
 
 CREATE INDEX codeimportresult__requesting_user__idx ON codeimportresult USING btree (requesting_user);
 
-CREATE INDEX codereviewvote__branch_merge_proposal__idx ON codereviewvote USING btree (branch_merge_proposal);
-
-CREATE INDEX codereviewvote__registrant__idx ON codereviewvote USING btree (registrant);
-
-CREATE INDEX codereviewvote__reviewer__idx ON codereviewvote USING btree (reviewer);
-
-CREATE INDEX codereviewvote__vote_message__idx ON codereviewvote USING btree (vote_message);
-
-CREATE INDEX commercialsubscription__product__idx ON commercialsubscription USING btree (product);
-
-CREATE INDEX commercialsubscription__purchaser__idx ON commercialsubscription USING btree (purchaser);
-
-CREATE INDEX commercialsubscription__registrant__idx ON commercialsubscription USING btree (registrant);
-
-CREATE INDEX commercialsubscription__sales_system_id__idx ON commercialsubscription USING btree (sales_system_id);
-
-CREATE UNIQUE INDEX customlanguagecode__distribution__sourcepackagename__code__key ON customlanguagecode USING btree (distribution, sourcepackagename, language_code) WHERE (distribution IS NOT NULL);
-
-CREATE UNIQUE INDEX customlanguagecode__product__code__key ON customlanguagecode USING btree (product, language_code) WHERE (product IS NOT NULL);
-
 CREATE INDEX cve_datecreated_idx ON cve USING btree (datecreated);
 
 CREATE INDEX cve_datemodified_idx ON cve USING btree (datemodified);
@@ -6554,8 +5661,6 @@ CREATE INDEX cve_fti ON cve USING gist (fti ts2.gist_tsvector_ops);
 
 CREATE INDEX cvereference_cve_idx ON cvereference USING btree (cve);
 
-CREATE INDEX distribution__bug_supervisor__idx ON distribution USING btree (bug_supervisor) WHERE (bug_supervisor IS NOT NULL);
-
 CREATE INDEX distribution__icon__idx ON distribution USING btree (icon) WHERE (icon IS NOT NULL);
 
 CREATE INDEX distribution__language_pack_admin__idx ON distribution USING btree (language_pack_admin);
@@ -6563,6 +5668,8 @@ CREATE INDEX distribution__language_pack_admin__idx ON distribution USING btree 
 CREATE INDEX distribution__logo__idx ON distribution USING btree (logo) WHERE (logo IS NOT NULL);
 
 CREATE INDEX distribution__mugshot__idx ON distribution USING btree (mugshot) WHERE (mugshot IS NOT NULL);
+
+CREATE INDEX distribution_bugcontact_idx ON distribution USING btree (bugcontact);
 
 CREATE INDEX distribution_fti ON distribution USING gist (fti ts2.gist_tsvector_ops);
 
@@ -6574,31 +5681,23 @@ CREATE INDEX distributionmirror__country__status__idx ON distributionmirror USIN
 
 CREATE INDEX distributionmirror__status__idx ON distributionmirror USING btree (status);
 
-CREATE INDEX distributionsourcepackagecache__archive__idx ON distributionsourcepackagecache USING btree (archive);
-
 CREATE INDEX distributionsourcepackagecache_fti ON distributionsourcepackagecache USING gist (fti ts2.gist_tsvector_ops);
 
 CREATE INDEX distroarchseries__distroseries__idx ON distroarchseries USING btree (distroseries);
 
-CREATE INDEX distroarchseries__owner__idx ON distroarchseries USING btree (owner);
+CREATE INDEX distroarchseries__owner__idx ON distroarchseries USING btree ("owner");
 
 CREATE INDEX distrocomponentuploader_uploader_idx ON distrocomponentuploader USING btree (uploader);
 
 CREATE INDEX distroseries__driver__idx ON distroseries USING btree (driver) WHERE (driver IS NOT NULL);
 
-CREATE INDEX distroseries__owner__idx ON distroseries USING btree (owner);
-
-CREATE INDEX distroseriespackagecache__archive__idx ON distroseriespackagecache USING btree (archive);
+CREATE INDEX distroseries__owner__idx ON distroseries USING btree ("owner");
 
 CREATE INDEX distroseriespackagecache__distroseries__idx ON distroseriespackagecache USING btree (distroseries);
 
 CREATE INDEX distroseriespackagecache_fti ON distroseriespackagecache USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE UNIQUE INDEX emailaddress__account__key ON emailaddress USING btree (account) WHERE ((status = 4) AND (account IS NOT NULL));
-
-CREATE INDEX emailaddress__lower_email__key ON emailaddress USING btree (lower(email));
-
-CREATE UNIQUE INDEX emailaddress__person__key ON emailaddress USING btree (person) WHERE ((status = 4) AND (person IS NOT NULL));
+CREATE UNIQUE INDEX emailaddress_person_key ON emailaddress USING btree (person, (NULLIF((status = 4), false)));
 
 CREATE INDEX emailaddress_person_status_idx ON emailaddress USING btree (person, status);
 
@@ -6606,13 +5705,7 @@ ALTER TABLE emailaddress CLUSTER ON emailaddress_person_status_idx;
 
 CREATE INDEX entitlement__approved_by__idx ON entitlement USING btree (approved_by) WHERE (approved_by IS NOT NULL);
 
-CREATE INDEX entitlement__distribution__idx ON entitlement USING btree (distribution) WHERE (distribution IS NOT NULL);
-
 CREATE INDEX entitlement__person__idx ON entitlement USING btree (person);
-
-CREATE INDEX entitlement__product__idx ON entitlement USING btree (product) WHERE (product IS NOT NULL);
-
-CREATE INDEX entitlement__project__idx ON entitlement USING btree (project) WHERE (project IS NOT NULL);
 
 CREATE INDEX entitlement__registrant__idx ON entitlement USING btree (registrant) WHERE (registrant IS NOT NULL);
 
@@ -6628,17 +5721,7 @@ CREATE INDEX featuredproject__pillar_name__idx ON featuredproject USING btree (p
 
 CREATE INDEX hwdevice__bus_product_id__idx ON hwdevice USING btree (bus_product_id);
 
-CREATE UNIQUE INDEX hwdevice__bus_vendor_id__bus_product_id__key ON hwdevice USING btree (bus_vendor_id, bus_product_id) WHERE (variant IS NULL);
-
 CREATE INDEX hwdevice__name__idx ON hwdevice USING btree (name);
-
-CREATE UNIQUE INDEX hwdeviceclass__device__main_class__key ON hwdeviceclass USING btree (device, main_class) WHERE (sub_class IS NULL);
-
-CREATE UNIQUE INDEX hwdeviceclass__device__main_class__sub_class__key ON hwdeviceclass USING btree (device, main_class, sub_class) WHERE (sub_class IS NOT NULL);
-
-CREATE INDEX hwdeviceclass__main_class__idx ON hwdeviceclass USING btree (main_class);
-
-CREATE INDEX hwdeviceclass__sub_class__idx ON hwdeviceclass USING btree (sub_class);
 
 CREATE UNIQUE INDEX hwdevicedriverlink__device__driver__key ON hwdevicedriverlink USING btree (device, driver) WHERE (driver IS NOT NULL);
 
@@ -6654,9 +5737,7 @@ CREATE INDEX hwdevicenamevariant__product_name__idx ON hwdevicenamevariant USING
 
 CREATE INDEX hwdriver__name__idx ON hwdriver USING btree (name);
 
-CREATE UNIQUE INDEX hwdriver__name__key ON hwdriver USING btree (name) WHERE (package_name IS NULL);
-
-CREATE INDEX hwsubmission__owner__idx ON hwsubmission USING btree (owner);
+CREATE INDEX hwsubmission__owner__idx ON hwsubmission USING btree ("owner");
 
 CREATE INDEX hwsubmission__raw_emailaddress__idx ON hwsubmission USING btree (raw_emailaddress);
 
@@ -6665,10 +5746,6 @@ CREATE INDEX hwsubmission__raw_submission__idx ON hwsubmission USING btree (raw_
 CREATE INDEX hwsubmission__status__idx ON hwsubmission USING btree (status);
 
 CREATE INDEX hwsubmission__system_fingerprint__idx ON hwsubmission USING btree (system_fingerprint);
-
-CREATE INDEX hwsubmissionbug__bug ON hwsubmissionbug USING btree (bug);
-
-CREATE INDEX hwsubmissiondevice__device_driver_link__idx ON hwsubmissiondevice USING btree (device_driver_link);
 
 CREATE INDEX hwsubmissiondevice__parent__idx ON hwsubmissiondevice USING btree (parent) WHERE (parent IS NOT NULL);
 
@@ -6700,9 +5777,9 @@ CREATE INDEX hwvendorid__vendor_id_for_bus__idx ON hwvendorid USING btree (vendo
 
 CREATE INDEX hwvendorid__vendorname__idx ON hwvendorid USING btree (vendor_name);
 
-CREATE UNIQUE INDEX hwvendorname__lc_vendor_name__idx ON hwvendorname USING btree (ulower(name));
-
 CREATE INDEX hwvendorname__name__idx ON hwdriver USING btree (name);
+
+CREATE UNIQUE INDEX idx_emailaddress_email ON emailaddress USING btree (lower(email));
 
 CREATE INDEX ircid_person_idx ON ircid USING btree (person);
 
@@ -6746,8 +5823,6 @@ CREATE UNIQUE INDEX karmatotalcache_karma_total_person_idx ON karmatotalcache US
 
 CREATE INDEX languagepack__file__idx ON languagepack USING btree (file);
 
-CREATE INDEX libraryfilealias__filename__idx ON libraryfilealias USING btree (filename);
-
 CREATE INDEX libraryfilealias_content_idx ON libraryfilealias USING btree (content);
 
 CREATE INDEX libraryfilecontent__md5__idx ON libraryfilecontent USING btree (md5);
@@ -6774,13 +5849,13 @@ CREATE INDEX mailinglistsubscription__mailing_list__idx ON mailinglistsubscripti
 
 CREATE UNIQUE INDEX mailinglistsubscription__person__mailing_list__key ON mailinglistsubscription USING btree (person, mailing_list);
 
-CREATE INDEX mentoringoffer__owner__idx ON mentoringoffer USING btree (owner);
+CREATE INDEX mentoringoffer__owner__idx ON mentoringoffer USING btree ("owner");
 
 CREATE INDEX mentoringoffer__team__idx ON mentoringoffer USING btree (team);
 
 CREATE INDEX message_fti ON message USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX message_owner_idx ON message USING btree (owner);
+CREATE INDEX message_owner_idx ON message USING btree ("owner");
 
 CREATE INDEX message_parent_idx ON message USING btree (parent);
 
@@ -6791,8 +5866,6 @@ CREATE INDEX message_rfc822msgid_idx ON message USING btree (rfc822msgid);
 CREATE INDEX messageapproval__disposed_by__idx ON messageapproval USING btree (disposed_by) WHERE (disposed_by IS NOT NULL);
 
 CREATE INDEX messageapproval__mailing_list__status__posted_date__idx ON messageapproval USING btree (mailing_list, status, posted_date);
-
-CREATE INDEX messageapproval__message__idx ON messageapproval USING btree (message);
 
 CREATE INDEX messageapproval__posted_by__idx ON messageapproval USING btree (posted_by);
 
@@ -6812,37 +5885,13 @@ CREATE INDEX mirrorproberecord__distribution_mirror__date_created__idx ON mirror
 
 CREATE INDEX mirrorproberecord__log_file__idx ON mirrorproberecord USING btree (log_file) WHERE (log_file IS NOT NULL);
 
-CREATE INDEX oauthaccesstoken__consumer__idx ON oauthaccesstoken USING btree (consumer);
-
-CREATE INDEX oauthaccesstoken__date_expires__idx ON oauthaccesstoken USING btree (date_expires) WHERE (date_expires IS NOT NULL);
-
-CREATE INDEX oauthaccesstoken__distribution__sourcepackagename__idx ON oauthaccesstoken USING btree (distribution, sourcepackagename) WHERE (distribution IS NOT NULL);
-
-CREATE INDEX oauthaccesstoken__person__idx ON oauthaccesstoken USING btree (person);
-
-CREATE INDEX oauthaccesstoken__product__idx ON oauthaccesstoken USING btree (product) WHERE (product IS NOT NULL);
-
-CREATE INDEX oauthaccesstoken__project__idx ON oauthaccesstoken USING btree (project) WHERE (project IS NOT NULL);
-
-CREATE INDEX oauthnonce__access_token__idx ON oauthnonce USING btree (access_token);
-
-CREATE INDEX oauthrequesttoken__consumer__idx ON oauthrequesttoken USING btree (consumer);
-
-CREATE INDEX oauthrequesttoken__date_created__idx ON oauthrequesttoken USING btree (date_created);
-
-CREATE INDEX oauthrequesttoken__distribution__sourcepackagename__idx ON oauthrequesttoken USING btree (distribution, sourcepackagename) WHERE (distribution IS NOT NULL);
-
-CREATE INDEX oauthrequesttoken__person__idx ON oauthrequesttoken USING btree (person) WHERE (person IS NOT NULL);
-
-CREATE INDEX oauthrequesttoken__product__idx ON oauthrequesttoken USING btree (product) WHERE (product IS NOT NULL);
-
-CREATE INDEX oauthrequesttoken__project__idx ON oauthrequesttoken USING btree (project) WHERE (project IS NOT NULL);
-
 CREATE UNIQUE INDEX officialbugtag__distribution__tag__key ON officialbugtag USING btree (distribution, tag) WHERE (distribution IS NOT NULL);
 
 CREATE UNIQUE INDEX officialbugtag__product__tag__key ON officialbugtag USING btree (product, tag) WHERE (product IS NOT NULL);
 
 CREATE UNIQUE INDEX officialbugtag__project__tag__key ON officialbugtag USING btree (project, tag) WHERE (product IS NOT NULL);
+
+CREATE UNIQUE INDEX one_launchpad_wikiname ON wikiname USING btree (person) WHERE (wiki = 'https://wiki.ubuntu.com/'::text);
 
 CREATE UNIQUE INDEX openidauthorization__person__client_id__trust_root__unq ON openidauthorization USING btree (person, client_id, trust_root) WHERE (client_id IS NOT NULL);
 
@@ -6854,27 +5903,7 @@ CREATE INDEX openidrpconfig__logo__idx ON openidrpconfig USING btree (logo);
 
 CREATE UNIQUE INDEX openidrpconfig__trust_root__key ON openidrpconfig USING btree (trust_root);
 
-CREATE INDEX openidrpsummary__openid_identifier__idx ON openidrpsummary USING btree (openid_identifier);
-
-CREATE INDEX openidrpsummary__trust_root__idx ON openidrpsummary USING btree (trust_root);
-
-CREATE INDEX packagebugsupervisor__bug_supervisor__idx ON packagebugsupervisor USING btree (bug_supervisor);
-
-CREATE INDEX packagecopyrequest__datecreated__idx ON packagecopyrequest USING btree (date_created);
-
-CREATE INDEX packagecopyrequest__requester__idx ON packagecopyrequest USING btree (requester);
-
-CREATE INDEX packagecopyrequest__targetarchive__idx ON packagecopyrequest USING btree (target_archive);
-
-CREATE INDEX packagecopyrequest__targetdistroseries__idx ON packagecopyrequest USING btree (target_distroseries) WHERE (target_distroseries IS NOT NULL);
-
-CREATE INDEX packagediff__diff_content__idx ON packagediff USING btree (diff_content);
-
-CREATE INDEX packagediff__from_source__idx ON packagediff USING btree (from_source);
-
-CREATE INDEX packagediff__requester__idx ON packagediff USING btree (requester);
-
-CREATE INDEX packagediff__to_source__idx ON packagediff USING btree (to_source);
+CREATE INDEX packagebugcontact_bugcontact_idx ON packagebugcontact USING btree (bugcontact);
 
 CREATE INDEX packageupload__changesfile__idx ON packageupload USING btree (changesfile);
 
@@ -6914,12 +5943,6 @@ CREATE UNIQUE INDEX person_name_key ON person USING btree (name);
 
 CREATE INDEX person_sorting_idx ON person USING btree (person_sort_key(displayname, name));
 
-CREATE INDEX personnotification__date_emailed__idx ON personnotification USING btree (date_emailed);
-
-CREATE INDEX personnotification__person__idx ON personnotification USING btree (person);
-
-CREATE INDEX pillarname__alias_for__idx ON pillarname USING btree (alias_for) WHERE (alias_for IS NOT NULL);
-
 CREATE UNIQUE INDEX pillarname__distribution__key ON pillarname USING btree (distribution) WHERE (distribution IS NOT NULL);
 
 CREATE UNIQUE INDEX pillarname__product__key ON pillarname USING btree (product) WHERE (product IS NOT NULL);
@@ -6936,13 +5959,15 @@ CREATE UNIQUE INDEX pofile__unreviewed_count__id__key ON pofile USING btree (unr
 
 CREATE INDEX pofile_datecreated_idx ON pofile USING btree (datecreated);
 
-CREATE INDEX pofile_language_idx ON pofile USING btree (language);
+CREATE INDEX pofile_exportfile_idx ON pofile USING btree (exportfile);
+
+CREATE INDEX pofile_language_idx ON pofile USING btree ("language");
 
 CREATE INDEX pofile_lasttranslator_idx ON pofile USING btree (lasttranslator);
 
-CREATE INDEX pofile_owner_idx ON pofile USING btree (owner);
+CREATE INDEX pofile_owner_idx ON pofile USING btree ("owner");
 
-CREATE UNIQUE INDEX pofile_template_and_language_idx ON pofile USING btree (potemplate, language, (COALESCE(variant, ''::text)));
+CREATE UNIQUE INDEX pofile_template_and_language_idx ON pofile USING btree (potemplate, "language", (COALESCE(variant, ''::text)));
 
 ALTER TABLE pofile CLUSTER ON pofile_template_and_language_idx;
 
@@ -6968,25 +5993,21 @@ CREATE INDEX potemplate__source_file__idx ON potemplate USING btree (source_file
 
 CREATE INDEX potemplate_languagepack_idx ON potemplate USING btree (languagepack);
 
-CREATE INDEX potemplate_owner_idx ON potemplate USING btree (owner);
+CREATE INDEX potemplate_owner_idx ON potemplate USING btree ("owner");
 
-CREATE UNIQUE INDEX potmsgset__potemplate__context__msgid_singular__msgid_plural__k ON potmsgset USING btree (potemplate, context, msgid_singular, msgid_plural) WHERE ((context IS NOT NULL) AND (msgid_plural IS NOT NULL));
+CREATE UNIQUE INDEX potmsgset__potemplate__context__primemsgid__key ON potmsgset USING btree (potemplate, context, msgid_singular) WHERE (context IS NOT NULL);
 
-CREATE UNIQUE INDEX potmsgset__potemplate__context__msgid_singular__no_msgid_plural ON potmsgset USING btree (potemplate, context, msgid_singular) WHERE ((context IS NOT NULL) AND (msgid_plural IS NULL));
+CREATE UNIQUE INDEX potmsgset__potemplate__no_context__primemsgid__key ON potmsgset USING btree (potemplate, msgid_singular) WHERE (context IS NULL);
 
-CREATE UNIQUE INDEX potmsgset__potemplate__no_context__msgid_singular__msgid_plural ON potmsgset USING btree (potemplate, msgid_singular, msgid_plural) WHERE ((context IS NULL) AND (msgid_plural IS NOT NULL));
-
-CREATE UNIQUE INDEX potmsgset__potemplate__no_context__msgid_singular__no_msgid_plu ON potmsgset USING btree (potemplate, msgid_singular) WHERE ((context IS NULL) AND (msgid_plural IS NULL));
-
-CREATE INDEX potmsgset_potemplate_and_sequence_idx ON potmsgset USING btree (potemplate, sequence);
+CREATE INDEX potmsgset_potemplate_and_sequence_idx ON potmsgset USING btree (potemplate, "sequence");
 
 CREATE INDEX potmsgset_primemsgid_idx ON potmsgset USING btree (msgid_singular);
 
-CREATE INDEX potmsgset_sequence_idx ON potmsgset USING btree (sequence);
+CREATE INDEX potmsgset_sequence_idx ON potmsgset USING btree ("sequence");
 
 CREATE UNIQUE INDEX potranslation_translation_key ON potranslation USING btree (sha1(translation));
 
-CREATE INDEX product__bug_supervisor__idx ON product USING btree (bug_supervisor) WHERE (bug_supervisor IS NOT NULL);
+CREATE INDEX product__bugcontact__idx ON product USING btree (bugcontact) WHERE (bugcontact IS NOT NULL);
 
 CREATE INDEX product__driver__idx ON product USING btree (driver) WHERE (driver IS NOT NULL);
 
@@ -6996,17 +6017,15 @@ CREATE INDEX product__logo__idx ON product USING btree (logo) WHERE (logo IS NOT
 
 CREATE INDEX product__mugshot__idx ON product USING btree (mugshot) WHERE (mugshot IS NOT NULL);
 
-CREATE INDEX product__registrant__idx ON product USING btree (registrant);
-
 CREATE INDEX product__security_contact__idx ON product USING btree (security_contact) WHERE (security_contact IS NOT NULL);
 
 CREATE INDEX product_active_idx ON product USING btree (active);
 
-CREATE INDEX product_bugcontact_idx ON product USING btree (bug_supervisor);
+CREATE INDEX product_bugcontact_idx ON product USING btree (bugcontact);
 
 CREATE INDEX product_fti ON product USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX product_owner_idx ON product USING btree (owner);
+CREATE INDEX product_owner_idx ON product USING btree ("owner");
 
 CREATE INDEX product_project_idx ON product USING btree (project);
 
@@ -7016,7 +6035,7 @@ CREATE INDEX productlicense__license__idx ON productlicense USING btree (license
 
 CREATE INDEX productrelease_datecreated_idx ON productrelease USING btree (datecreated);
 
-CREATE INDEX productrelease_owner_idx ON productrelease USING btree (owner);
+CREATE INDEX productrelease_owner_idx ON productrelease USING btree ("owner");
 
 CREATE INDEX productreleasefile__signature__idx ON productreleasefile USING btree (signature) WHERE (signature IS NOT NULL);
 
@@ -7032,11 +6051,9 @@ CREATE INDEX project__logo__idx ON project USING btree (logo) WHERE (logo IS NOT
 
 CREATE INDEX project__mugshot__idx ON project USING btree (mugshot) WHERE (mugshot IS NOT NULL);
 
-CREATE INDEX project__registrant__idx ON project USING btree (registrant);
-
 CREATE INDEX project_fti ON project USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX project_owner_idx ON project USING btree (owner);
+CREATE INDEX project_owner_idx ON project USING btree ("owner");
 
 CREATE INDEX project_translationgroup_idx ON project USING btree (translationgroup);
 
@@ -7076,17 +6093,7 @@ CREATE INDEX questionsubscription__subscriber__idx ON questionsubscription USING
 
 CREATE INDEX requestedcds_request_architecture_idx ON requestedcds USING btree (request, architecture);
 
-CREATE INDEX revision__gpgkey__idx ON revision USING btree (gpgkey) WHERE (gpgkey IS NOT NULL);
-
-CREATE INDEX revision__karma_allocated__idx ON revision USING btree (karma_allocated) WHERE (karma_allocated IS FALSE);
-
-CREATE INDEX revision__revision_author__idx ON revision USING btree (revision_author);
-
-CREATE INDEX revision__revision_date__idx ON revision USING btree (revision_date);
-
-CREATE INDEX revisionauthor__email__idx ON revisionauthor USING btree (email);
-
-CREATE INDEX revisionauthor__person__idx ON revisionauthor USING btree (person);
+CREATE INDEX revision_owner_idx ON revision USING btree ("owner");
 
 CREATE INDEX scriptactivity__name__date_started__idx ON scriptactivity USING btree (name, date_started);
 
@@ -7124,12 +6131,6 @@ CREATE INDEX securesourcepackagepublishinghistory_sourcepackagerelease_idx ON se
 
 CREATE INDEX securesourcepackagepublishinghistory_status_idx ON securesourcepackagepublishinghistory USING btree (status);
 
-CREATE INDEX shipitsurvey__person__idx ON shipitsurvey USING btree (person);
-
-CREATE UNIQUE INDEX shipitsurvey__unexported__key ON shipitsurvey USING btree (id) WHERE (exported IS FALSE);
-
-CREATE INDEX shipitsurveyresult__survey__question__answer__idx ON shipitsurveyresult USING btree (survey, question, answer);
-
 CREATE INDEX shipment_shippingrun_idx ON shipment USING btree (shippingrun);
 
 CREATE INDEX shippingrequest__daterequested__approved__idx ON shippingrequest USING btree (daterequested) WHERE (status = 1);
@@ -7156,7 +6157,7 @@ CREATE INDEX shippingrequest_recipient_idx ON shippingrequest USING btree (recip
 
 CREATE INDEX shippingrequest_whoapproved_idx ON shippingrequest USING btree (whoapproved);
 
-CREATE INDEX signedcodeofconduct_owner_idx ON signedcodeofconduct USING btree (owner);
+CREATE INDEX signedcodeofconduct_owner_idx ON signedcodeofconduct USING btree ("owner");
 
 CREATE INDEX sourcepackagerelease__upload_archive__idx ON sourcepackagerelease USING btree (upload_archive);
 
@@ -7190,7 +6191,7 @@ CREATE INDEX specification_drafter_idx ON specification USING btree (drafter);
 
 CREATE INDEX specification_fti ON specification USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX specification_owner_idx ON specification USING btree (owner);
+CREATE INDEX specification_owner_idx ON specification USING btree ("owner");
 
 CREATE INDEX specificationbranch__registrant__idx ON specificationbranch USING btree (registrant);
 
@@ -7254,14 +6255,6 @@ CREATE INDEX structuralsubscription__subscribed_by__idx ON structuralsubscriptio
 
 CREATE INDEX structuralsubscription__subscriber__idx ON structuralsubscription USING btree (subscriber);
 
-CREATE INDEX teammembership__acknowledged_by__idx ON teammembership USING btree (acknowledged_by) WHERE (acknowledged_by IS NOT NULL);
-
-CREATE INDEX teammembership__last_changed_by__idx ON teammembership USING btree (last_changed_by) WHERE (last_changed_by IS NOT NULL);
-
-CREATE INDEX teammembership__proposed_by__idx ON teammembership USING btree (proposed_by) WHERE (proposed_by IS NOT NULL);
-
-CREATE INDEX teammembership__reviewed_by__idx ON teammembership USING btree (reviewed_by) WHERE (reviewed_by IS NOT NULL);
-
 CREATE INDEX teamparticipation_person_idx ON teamparticipation USING btree (person);
 
 ALTER TABLE teamparticipation CLUSTER ON teamparticipation_person_idx;
@@ -7274,21 +6267,17 @@ CREATE UNIQUE INDEX translationimportqueueentry__entry_per_importer__unq ON tran
 
 CREATE UNIQUE INDEX translationimportqueueentry__status__dateimported__id__idx ON translationimportqueueentry USING btree (status, dateimported, id);
 
-CREATE INDEX translationmessage__current_or_imported__idx ON translationmessage USING btree (potmsgset) WHERE ((is_current IS TRUE) OR (is_imported IS TRUE));
+CREATE INDEX translationmessage__83fix2__idx ON translationmessage USING btree (potmsgset) WHERE (((is_current IS TRUE) OR (is_imported IS TRUE)) AND (is_fuzzy IS NOT TRUE));
 
 CREATE INDEX translationmessage__msgstr0__idx ON translationmessage USING btree (msgstr0);
 
-CREATE INDEX translationmessage__msgstr1__idx ON translationmessage USING btree (msgstr1) WHERE (msgstr1 IS NOT NULL);
+CREATE INDEX translationmessage__msgstr1__idx ON translationmessage USING btree (msgstr1);
 
-CREATE INDEX translationmessage__msgstr2__idx ON translationmessage USING btree (msgstr2) WHERE (msgstr2 IS NOT NULL);
+CREATE INDEX translationmessage__msgstr2__idx ON translationmessage USING btree (msgstr2);
 
-CREATE INDEX translationmessage__msgstr3__idx ON translationmessage USING btree (msgstr3) WHERE (msgstr3 IS NOT NULL);
+CREATE INDEX translationmessage__msgstr3__idx ON translationmessage USING btree (msgstr3);
 
-CREATE INDEX translationmessage__msgstr4__idx ON translationmessage USING btree (msgstr4) WHERE (msgstr4 IS NOT NULL);
-
-CREATE INDEX translationmessage__msgstr5__idx ON translationmessage USING btree (msgstr5) WHERE (msgstr5 IS NOT NULL);
-
-CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key ON translationmessage USING btree (pofile, potmsgset, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)), (COALESCE(msgstr4, -1)), (COALESCE(msgstr5, -1)));
+CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key ON translationmessage USING btree (pofile, potmsgset, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)));
 
 CREATE INDEX translationmessage__pofile__submitter__idx ON translationmessage USING btree (pofile, submitter);
 
@@ -7304,33 +6293,15 @@ CREATE INDEX translationmessage__reviewer__idx ON translationmessage USING btree
 
 CREATE INDEX translationmessage__submitter__idx ON translationmessage USING btree (submitter);
 
-CREATE UNIQUE INDEX translationtemplateitem__potemplate__potmsgset__key ON translationtemplateitem USING btree (potemplate, potmsgset);
-
-CREATE INDEX translationtemplateitem__potmsgset__idx ON translationtemplateitem USING btree (potmsgset);
-
 CREATE INDEX votecast_poll_idx ON votecast USING btree (poll);
-
-CREATE UNIQUE INDEX webserviceban__consumer__ip__key ON webserviceban USING btree (consumer, ip) WHERE ((consumer IS NOT NULL) AND (ip IS NOT NULL));
-
-CREATE UNIQUE INDEX webserviceban__consumer__key ON webserviceban USING btree (consumer) WHERE ((consumer IS NOT NULL) AND (ip IS NULL));
-
-CREATE UNIQUE INDEX webserviceban__ip__key ON webserviceban USING btree (ip) WHERE ((((person IS NULL) AND (consumer IS NULL)) AND (token IS NULL)) AND (ip IS NOT NULL));
-
-CREATE UNIQUE INDEX webserviceban__person__ip__key ON webserviceban USING btree (person, ip) WHERE ((person IS NOT NULL) AND (ip IS NOT NULL));
-
-CREATE UNIQUE INDEX webserviceban__person__key ON webserviceban USING btree (person) WHERE ((person IS NOT NULL) AND (ip IS NULL));
-
-CREATE UNIQUE INDEX webserviceban__token__ip__key ON webserviceban USING btree (token, ip) WHERE ((token IS NOT NULL) AND (ip IS NOT NULL));
-
-CREATE UNIQUE INDEX webserviceban__token__key ON webserviceban USING btree (token) WHERE ((token IS NOT NULL) AND (ip IS NULL));
 
 CREATE INDEX wikiname_person_idx ON wikiname USING btree (person);
 
 CREATE RULE delete_rule AS ON DELETE TO revisionnumber DO INSTEAD DELETE FROM branchrevision WHERE (branchrevision.id = old.id);
 
-CREATE RULE insert_rule AS ON INSERT TO revisionnumber DO INSTEAD INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (new.id, new.sequence, new.branch, new.revision);
+CREATE RULE insert_rule AS ON INSERT TO revisionnumber DO INSTEAD INSERT INTO branchrevision (id, "sequence", branch, revision) VALUES (new.id, new."sequence", new.branch, new.revision);
 
-CREATE RULE update_rule AS ON UPDATE TO revisionnumber DO INSTEAD UPDATE branchrevision SET id = new.id, sequence = new.sequence, branch = new.branch, revision = new.revision WHERE (branchrevision.id = old.id);
+CREATE RULE update_rule AS ON UPDATE TO revisionnumber DO INSTEAD UPDATE branchrevision SET id = new.id, "sequence" = new."sequence", branch = new.branch, revision = new.revision WHERE (branchrevision.id = old.id);
 
 CREATE TRIGGER mv_pillarname_distribution_t
     AFTER INSERT OR UPDATE ON distribution
@@ -7352,6 +6323,16 @@ CREATE TRIGGER mv_pofiletranslator_translationmessage
     FOR EACH ROW
     EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
+CREATE TRIGGER mv_validpersonorteamcache_emailaddress_t
+    AFTER INSERT OR DELETE OR UPDATE ON emailaddress
+    FOR EACH ROW
+    EXECUTE PROCEDURE mv_validpersonorteamcache_emailaddress();
+
+CREATE TRIGGER mv_validpersonorteamcache_person_t
+    AFTER INSERT OR UPDATE ON person
+    FOR EACH ROW
+    EXECUTE PROCEDURE mv_validpersonorteamcache_person();
+
 CREATE TRIGGER set_bug_message_count_t
     AFTER INSERT OR DELETE OR UPDATE ON bugmessage
     FOR EACH ROW
@@ -7362,25 +6343,25 @@ CREATE TRIGGER set_bug_number_of_duplicates_t
     FOR EACH ROW
     EXECUTE PROCEDURE set_bug_number_of_duplicates();
 
-CREATE TRIGGER set_bug_users_affected_count_t
-    AFTER INSERT OR DELETE ON bugaffectsperson
-    FOR EACH ROW
-    EXECUTE PROCEDURE set_bug_users_affected_count();
-
 CREATE TRIGGER set_date_last_message_t
     AFTER INSERT OR DELETE OR UPDATE ON bugmessage
     FOR EACH ROW
     EXECUTE PROCEDURE set_bug_date_last_message();
 
-CREATE TRIGGER set_date_status_set_t
-    BEFORE UPDATE ON account
-    FOR EACH ROW
-    EXECUTE PROCEDURE set_date_status_set();
-
 CREATE TRIGGER set_normalized_address
     BEFORE INSERT OR UPDATE ON shippingrequest
     FOR EACH ROW
     EXECUTE PROCEDURE set_shipit_normalized_address();
+
+CREATE TRIGGER set_openid_identifier_t
+    BEFORE INSERT ON person
+    FOR EACH ROW
+    EXECUTE PROCEDURE set_openid_identifier();
+
+CREATE TRIGGER temp_t_set_openid_identifier
+    BEFORE UPDATE ON person
+    FOR EACH ROW
+    EXECUTE PROCEDURE set_openid_identifier();
 
 CREATE TRIGGER tsvectorupdate
     BEFORE INSERT OR UPDATE ON bugtask
@@ -7467,11 +6448,6 @@ CREATE TRIGGER tsvectorupdate
     FOR EACH ROW
     EXECUTE PROCEDURE ts2.ftiupdate('title', 'a', 'tags', 'b', 'content', 'd');
 
-CREATE TRIGGER tsvectorupdate
-    BEFORE INSERT OR UPDATE ON archive
-    FOR EACH ROW
-    EXECUTE PROCEDURE ts2.ftiupdate('description', 'a', 'package_description_cache', 'b');
-
 CREATE TRIGGER you_are_your_own_member
     AFTER INSERT ON person
     FOR EACH ROW
@@ -7484,7 +6460,7 @@ ALTER TABLE ONLY builder
     ADD CONSTRAINT "$1" FOREIGN KEY (processor) REFERENCES processor(id);
 
 ALTER TABLE ONLY distribution
-    ADD CONSTRAINT "$1" FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT "$1" FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY libraryfilealias
     ADD CONSTRAINT "$1" FOREIGN KEY (content) REFERENCES libraryfilecontent(id);
@@ -7496,7 +6472,7 @@ ALTER TABLE ONLY sourcepackagereleasefile
     ADD CONSTRAINT "$1" FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
 
 ALTER TABLE ONLY spokenin
-    ADD CONSTRAINT "$1" FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT "$1" FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$1" FOREIGN KEY (potemplate) REFERENCES potemplate(id);
@@ -7508,6 +6484,9 @@ ALTER TABLE ONLY bugsubscription
     ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY bugactivity
+    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
+
+ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
 
 ALTER TABLE ONLY sshkey
@@ -7523,7 +6502,7 @@ ALTER TABLE ONLY polloption
     ADD CONSTRAINT "$1" FOREIGN KEY (poll) REFERENCES poll(id);
 
 ALTER TABLE ONLY product
-    ADD CONSTRAINT "$1" FOREIGN KEY (bug_supervisor) REFERENCES person(id);
+    ADD CONSTRAINT "$1" FOREIGN KEY (bugcontact) REFERENCES person(id);
 
 ALTER TABLE ONLY shipitreport
     ADD CONSTRAINT "$1" FOREIGN KEY (csvfile) REFERENCES libraryfilealias(id);
@@ -7531,8 +6510,11 @@ ALTER TABLE ONLY shipitreport
 ALTER TABLE ONLY country
     ADD CONSTRAINT "$1" FOREIGN KEY (continent) REFERENCES continent(id);
 
+ALTER TABLE ONLY packagebugcontact
+    ADD CONSTRAINT "$1" FOREIGN KEY (distribution) REFERENCES distribution(id);
+
 ALTER TABLE ONLY builder
-    ADD CONSTRAINT "$2" FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY productreleasefile
     ADD CONSTRAINT "$2" FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
@@ -7558,17 +6540,26 @@ ALTER TABLE ONLY buildqueue
 ALTER TABLE ONLY distribution
     ADD CONSTRAINT "$2" FOREIGN KEY (members) REFERENCES person(id);
 
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT "$2" FOREIGN KEY (exportfile) REFERENCES libraryfilealias(id);
+
+ALTER TABLE ONLY packagebugcontact
+    ADD CONSTRAINT "$2" FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
 ALTER TABLE ONLY pocomment
-    ADD CONSTRAINT "$3" FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT "$3" FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY posubscription
-    ADD CONSTRAINT "$3" FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT "$3" FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY productrelease
     ADD CONSTRAINT "$3" FOREIGN KEY (productseries) REFERENCES productseries(id);
 
 ALTER TABLE ONLY distribution
-    ADD CONSTRAINT "$3" FOREIGN KEY (bug_supervisor) REFERENCES person(id);
+    ADD CONSTRAINT "$3" FOREIGN KEY (bugcontact) REFERENCES person(id);
+
+ALTER TABLE ONLY packagebugcontact
+    ADD CONSTRAINT "$3" FOREIGN KEY (bugcontact) REFERENCES person(id);
 
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT "$3" FOREIGN KEY (from_sourcepackagename) REFERENCES sourcepackagename(id);
@@ -7579,11 +6570,8 @@ ALTER TABLE ONLY pocomment
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$5" FOREIGN KEY (person) REFERENCES person(id);
 
-ALTER TABLE ONLY accountpassword
-    ADD CONSTRAINT accountpassword_account_fkey FOREIGN KEY (account) REFERENCES account(id) ON DELETE CASCADE;
-
 ALTER TABLE ONLY karma
-    ADD CONSTRAINT action_fkey FOREIGN KEY (action) REFERENCES karmaaction(id);
+    ADD CONSTRAINT action_fkey FOREIGN KEY ("action") REFERENCES karmaaction(id);
 
 ALTER TABLE ONLY announcement
     ADD CONSTRAINT announcement_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
@@ -7613,55 +6601,7 @@ ALTER TABLE ONLY archive
     ADD CONSTRAINT archive__distribution__fk FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 ALTER TABLE ONLY archive
-    ADD CONSTRAINT archive__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
-
-ALTER TABLE ONLY archive
-    ADD CONSTRAINT archive_signing_key_fkey FOREIGN KEY (signing_key) REFERENCES gpgkey(id);
-
-ALTER TABLE ONLY archivearch
-    ADD CONSTRAINT archivearch__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY archivearch
-    ADD CONSTRAINT archivearch__processorfamily__fk FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
-
-ALTER TABLE ONLY archiveauthtoken
-    ADD CONSTRAINT archiveauthtoken_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY archiveauthtoken
-    ADD CONSTRAINT archiveauthtoken_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY archivedependency
-    ADD CONSTRAINT archivedependency_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY archivedependency
-    ADD CONSTRAINT archivedependency_component_fkey FOREIGN KEY (component) REFERENCES component(id);
-
-ALTER TABLE ONLY archivedependency
-    ADD CONSTRAINT archivedependency_dependency_fkey FOREIGN KEY (dependency) REFERENCES archive(id);
-
-ALTER TABLE ONLY archivepermission
-    ADD CONSTRAINT archivepermission__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY archivepermission
-    ADD CONSTRAINT archivepermission__component__fk FOREIGN KEY (component) REFERENCES component(id);
-
-ALTER TABLE ONLY archivepermission
-    ADD CONSTRAINT archivepermission__person__fk FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY archivepermission
-    ADD CONSTRAINT archivepermission__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY archivesubscriber
-    ADD CONSTRAINT archivesubscriber_archive_fkey FOREIGN KEY (archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY archivesubscriber
-    ADD CONSTRAINT archivesubscriber_cancelled_by_fkey FOREIGN KEY (cancelled_by) REFERENCES person(id);
-
-ALTER TABLE ONLY archivesubscriber
-    ADD CONSTRAINT archivesubscriber_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
-
-ALTER TABLE ONLY archivesubscriber
-    ADD CONSTRAINT archivesubscriber_subscriber_fkey FOREIGN KEY (subscriber) REFERENCES person(id);
+    ADD CONSTRAINT archive__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY binarypackagefile
     ADD CONSTRAINT binarypackagefile_binarypackagerelease_fk FOREIGN KEY (binarypackagerelease) REFERENCES binarypackagerelease(id);
@@ -7685,7 +6625,7 @@ ALTER TABLE ONLY bounty
     ADD CONSTRAINT bounty_claimant_fk FOREIGN KEY (claimant) REFERENCES person(id);
 
 ALTER TABLE ONLY bounty
-    ADD CONSTRAINT bounty_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT bounty_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bounty
     ADD CONSTRAINT bounty_reviewer_fk FOREIGN KEY (reviewer) REFERENCES person(id);
@@ -7709,19 +6649,13 @@ ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_merge_robot_fkey FOREIGN KEY (merge_robot) REFERENCES branchmergerobot(id);
 
 ALTER TABLE ONLY branch
-    ADD CONSTRAINT branch_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT branch_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_product_fk FOREIGN KEY (product) REFERENCES product(id);
 
 ALTER TABLE ONLY branch
-    ADD CONSTRAINT branch_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
-
-ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
-
-ALTER TABLE ONLY branch
-    ADD CONSTRAINT branch_stacked_on_fkey FOREIGN KEY (stacked_on) REFERENCES branch(id);
 
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_dependent_branch_fkey FOREIGN KEY (dependent_branch) REFERENCES branch(id);
@@ -7748,19 +6682,16 @@ ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_source_branch_fkey FOREIGN KEY (source_branch) REFERENCES branch(id);
 
 ALTER TABLE ONLY branchmergeproposal
-    ADD CONSTRAINT branchmergeproposal_superseded_by_fkey FOREIGN KEY (superseded_by) REFERENCES branchmergeproposal(id);
-
-ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_target_branch_fkey FOREIGN KEY (target_branch) REFERENCES branch(id);
 
 ALTER TABLE ONLY branchmergerobot
-    ADD CONSTRAINT branchmergerobot_owner_fkey FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT branchmergerobot_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY branchmergerobot
     ADD CONSTRAINT branchmergerobot_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
 
 ALTER TABLE ONLY branchrevision
-    ADD CONSTRAINT branchrevision__branch__fk FOREIGN KEY (branch) REFERENCES branch(id) ON DELETE CASCADE;
+    ADD CONSTRAINT branchrevision_branch_fk FOREIGN KEY (branch) REFERENCES branch(id);
 
 ALTER TABLE ONLY branchrevision
     ADD CONSTRAINT branchrevision_revision_fk FOREIGN KEY (revision) REFERENCES revision(id);
@@ -7787,13 +6718,7 @@ ALTER TABLE ONLY bug
     ADD CONSTRAINT bug_duplicateof_fk FOREIGN KEY (duplicateof) REFERENCES bug(id);
 
 ALTER TABLE ONLY bug
-    ADD CONSTRAINT bug_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
-
-ALTER TABLE ONLY bugaffectsperson
-    ADD CONSTRAINT bugaffectsperson_bug_fkey FOREIGN KEY (bug) REFERENCES bug(id);
-
-ALTER TABLE ONLY bugaffectsperson
-    ADD CONSTRAINT bugaffectsperson_person_fkey FOREIGN KEY (person) REFERENCES person(id);
+    ADD CONSTRAINT bug_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bugattachment
     ADD CONSTRAINT bugattachment_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
@@ -7823,9 +6748,6 @@ ALTER TABLE ONLY bugcve
     ADD CONSTRAINT bugcve_cve_fk FOREIGN KEY (cve) REFERENCES cve(id);
 
 ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT bugmessage__bug__fk FOREIGN KEY (bug) REFERENCES bug(id);
-
-ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT bugmessage_bugwatch_fkey FOREIGN KEY (bugwatch) REFERENCES bugwatch(id);
 
 ALTER TABLE ONLY bugmessage
@@ -7841,7 +6763,7 @@ ALTER TABLE ONLY bugnomination
     ADD CONSTRAINT bugnomination__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY bugnomination
-    ADD CONSTRAINT bugnomination__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT bugnomination__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bugnomination
     ADD CONSTRAINT bugnomination__productseries__fk FOREIGN KEY (productseries) REFERENCES productseries(id);
@@ -7851,12 +6773,6 @@ ALTER TABLE ONLY bugnotification
 
 ALTER TABLE ONLY bugnotification
     ADD CONSTRAINT bugnotification_message_fkey FOREIGN KEY (message) REFERENCES message(id);
-
-ALTER TABLE ONLY bugnotificationrecipient
-    ADD CONSTRAINT bugnotificationrecipient_bug_notification_fkey FOREIGN KEY (bug_notification) REFERENCES bugnotification(id);
-
-ALTER TABLE ONLY bugnotificationrecipient
-    ADD CONSTRAINT bugnotificationrecipient_person_fkey FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY bugpackageinfestation
     ADD CONSTRAINT bugpackageinfestation_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
@@ -7913,7 +6829,7 @@ ALTER TABLE ONLY bugtask
     ADD CONSTRAINT bugtask__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT bugtask__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bugtask
     ADD CONSTRAINT bugtask__product__fk FOREIGN KEY (product) REFERENCES product(id);
@@ -7928,16 +6844,10 @@ ALTER TABLE ONLY bugtask
     ADD CONSTRAINT bugtask__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
 ALTER TABLE ONLY bugtracker
-    ADD CONSTRAINT bugtracker_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT bugtracker_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bugtrackeralias
     ADD CONSTRAINT bugtrackeralias__bugtracker__fk FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
-
-ALTER TABLE ONLY bugtrackerperson
-    ADD CONSTRAINT bugtrackerperson_bugtracker_fkey FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
-
-ALTER TABLE ONLY bugtrackerperson
-    ADD CONSTRAINT bugtrackerperson_person_fkey FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
@@ -7946,7 +6856,7 @@ ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_bugtracker_fk FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
 
 ALTER TABLE ONLY bugwatch
-    ADD CONSTRAINT bugwatch_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT bugwatch_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY build
     ADD CONSTRAINT build__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
@@ -7966,9 +6876,6 @@ ALTER TABLE ONLY build
 ALTER TABLE ONLY build
     ADD CONSTRAINT build__sourcepackagerelease__fk FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
 
-ALTER TABLE ONLY build
-    ADD CONSTRAINT build__upload_log__fk FOREIGN KEY (upload_log) REFERENCES libraryfilealias(id);
-
 ALTER TABLE ONLY codeimport
     ADD CONSTRAINT codeimport_assignee_fkey FOREIGN KEY (assignee) REFERENCES person(id);
 
@@ -7976,7 +6883,7 @@ ALTER TABLE ONLY codeimport
     ADD CONSTRAINT codeimport_branch_fkey FOREIGN KEY (branch) REFERENCES branch(id);
 
 ALTER TABLE ONLY codeimport
-    ADD CONSTRAINT codeimport_owner_fkey FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT codeimport_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY codeimport
     ADD CONSTRAINT codeimport_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
@@ -8014,50 +6921,11 @@ ALTER TABLE ONLY codeimportresult
 ALTER TABLE ONLY codeimportresult
     ADD CONSTRAINT codeimportresult__requesting_user__fk FOREIGN KEY (requesting_user) REFERENCES person(id);
 
-ALTER TABLE ONLY codereviewmessage
-    ADD CONSTRAINT codereviewmessage_branch_merge_proposal_fkey FOREIGN KEY (branch_merge_proposal) REFERENCES branchmergeproposal(id);
-
-ALTER TABLE ONLY codereviewmessage
-    ADD CONSTRAINT codereviewmessage_message_fkey FOREIGN KEY (message) REFERENCES message(id);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvote_branch_merge_proposal_fkey FOREIGN KEY (branch_merge_proposal) REFERENCES branchmergeproposal(id);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvote_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvote_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
-
-ALTER TABLE ONLY codereviewvote
-    ADD CONSTRAINT codereviewvote_vote_message_fkey FOREIGN KEY (vote_message) REFERENCES codereviewmessage(id);
-
-ALTER TABLE ONLY commercialsubscription
-    ADD CONSTRAINT commercialsubscription__product__fk FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY commercialsubscription
-    ADD CONSTRAINT commercialsubscription__purchaser__fk FOREIGN KEY (purchaser) REFERENCES person(id);
-
-ALTER TABLE ONLY commercialsubscription
-    ADD CONSTRAINT commercialsubscription__registrant__fk FOREIGN KEY (registrant) REFERENCES person(id);
-
 ALTER TABLE ONLY componentselection
     ADD CONSTRAINT componentselection__component__fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY componentselection
     ADD CONSTRAINT componentselection__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
-
-ALTER TABLE ONLY customlanguagecode
-    ADD CONSTRAINT customlanguagecode_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY customlanguagecode
-    ADD CONSTRAINT customlanguagecode_language_fkey FOREIGN KEY (language) REFERENCES language(id);
-
-ALTER TABLE ONLY customlanguagecode
-    ADD CONSTRAINT customlanguagecode_product_fkey FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY customlanguagecode
-    ADD CONSTRAINT customlanguagecode_sourcepackagename_fkey FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
 ALTER TABLE ONLY cvereference
     ADD CONSTRAINT cvereference_cve_fk FOREIGN KEY (cve) REFERENCES cve(id);
@@ -8105,19 +6973,10 @@ ALTER TABLE ONLY distributionmirror
     ADD CONSTRAINT distributionmirror_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 ALTER TABLE ONLY distributionmirror
-    ADD CONSTRAINT distributionmirror_owner_fkey FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT distributionmirror_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY distributionmirror
     ADD CONSTRAINT distributionmirror_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
-
-ALTER TABLE ONLY distributionsourcepackage
-    ADD CONSTRAINT distributionpackage__distribution__fk FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY distributionsourcepackage
-    ADD CONSTRAINT distributionpackage__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY distributionsourcepackagecache
-    ADD CONSTRAINT distributionsourcepackagecache__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
 
 ALTER TABLE ONLY distributionsourcepackagecache
     ADD CONSTRAINT distributionsourcepackagecache_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
@@ -8129,7 +6988,7 @@ ALTER TABLE ONLY distroarchseries
     ADD CONSTRAINT distroarchseries__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY distroarchseries
-    ADD CONSTRAINT distroarchseries__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT distroarchseries__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY distroarchseries
     ADD CONSTRAINT distroarchseries__processorfamily__fk FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
@@ -8147,7 +7006,7 @@ ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distrorelease_parentrelease_fk FOREIGN KEY (parent_series) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY distroserieslanguage
-    ADD CONSTRAINT distroreleaselanguage_language_fk FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT distroreleaselanguage_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__distribution__fk FOREIGN KEY (distribution) REFERENCES distribution(id);
@@ -8168,7 +7027,7 @@ ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__nominatedarchindep__fk FOREIGN KEY (nominatedarchindep) REFERENCES distroarchseries(id);
 
 ALTER TABLE ONLY distroseries
-    ADD CONSTRAINT distroseries__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT distroseries__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__parent_series__fk FOREIGN KEY (parent_series) REFERENCES distroseries(id);
@@ -8177,10 +7036,7 @@ ALTER TABLE ONLY distroserieslanguage
     ADD CONSTRAINT distroserieslanguage__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY distroserieslanguage
-    ADD CONSTRAINT distroserieslanguage__language__fk FOREIGN KEY (language) REFERENCES language(id);
-
-ALTER TABLE ONLY distroseriespackagecache
-    ADD CONSTRAINT distroseriespackagecache__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
+    ADD CONSTRAINT distroserieslanguage__language__fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY distroseriespackagecache
     ADD CONSTRAINT distroseriespackagecache__binarypackagename__fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
@@ -8189,28 +7045,13 @@ ALTER TABLE ONLY distroseriespackagecache
     ADD CONSTRAINT distroseriespackagecache__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY emailaddress
-    ADD CONSTRAINT emailaddress__account__fk FOREIGN KEY (account) REFERENCES account(id) ON DELETE SET NULL;
-
-ALTER TABLE ONLY emailaddress
-    ADD CONSTRAINT emailaddress__account__person__fk FOREIGN KEY (account, person) REFERENCES person(account, id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
-
-ALTER TABLE ONLY emailaddress
     ADD CONSTRAINT emailaddress_person_fk FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY entitlement
     ADD CONSTRAINT entitlement_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES person(id);
 
 ALTER TABLE ONLY entitlement
-    ADD CONSTRAINT entitlement_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY entitlement
     ADD CONSTRAINT entitlement_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY entitlement
-    ADD CONSTRAINT entitlement_product_fkey FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY entitlement
-    ADD CONSTRAINT entitlement_project_fkey FOREIGN KEY (project) REFERENCES project(id);
 
 ALTER TABLE ONLY entitlement
     ADD CONSTRAINT entitlement_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
@@ -8222,7 +7063,7 @@ ALTER TABLE ONLY faq
     ADD CONSTRAINT faq_last_updated_by_fkey FOREIGN KEY (last_updated_by) REFERENCES person(id);
 
 ALTER TABLE ONLY faq
-    ADD CONSTRAINT faq_owner_fkey FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT faq_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY faq
     ADD CONSTRAINT faq_product_fkey FOREIGN KEY (product) REFERENCES product(id);
@@ -8231,13 +7072,10 @@ ALTER TABLE ONLY featuredproject
     ADD CONSTRAINT featuredproject_pillar_name_fkey FOREIGN KEY (pillar_name) REFERENCES pillarname(id);
 
 ALTER TABLE ONLY gpgkey
-    ADD CONSTRAINT gpgkey_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT gpgkey_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY hwdevice
     ADD CONSTRAINT hwdevice_bus_vendor_id_fkey FOREIGN KEY (bus_vendor_id) REFERENCES hwvendorid(id);
-
-ALTER TABLE ONLY hwdeviceclass
-    ADD CONSTRAINT hwdeviceclass_device_fkey FOREIGN KEY (device) REFERENCES hwdevice(id);
 
 ALTER TABLE ONLY hwdevicedriverlink
     ADD CONSTRAINT hwdevicedriverlink_device_fkey FOREIGN KEY (device) REFERENCES hwdevice(id);
@@ -8251,23 +7089,20 @@ ALTER TABLE ONLY hwdevicenamevariant
 ALTER TABLE ONLY hwdevicenamevariant
     ADD CONSTRAINT hwdevicenamevariant_vendor_name_fkey FOREIGN KEY (vendor_name) REFERENCES hwvendorname(id);
 
+ALTER TABLE ONLY hwdriver
+    ADD CONSTRAINT hwdriver_license_fkey FOREIGN KEY (license) REFERENCES license(id);
+
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
 ALTER TABLE ONLY hwsubmission
-    ADD CONSTRAINT hwsubmission__owned__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT hwsubmission__owned__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__raw_submission__fk FOREIGN KEY (raw_submission) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__system_fingerprint__fk FOREIGN KEY (system_fingerprint) REFERENCES hwsystemfingerprint(id);
-
-ALTER TABLE ONLY hwsubmissionbug
-    ADD CONSTRAINT hwsubmissionbug_bug_fkey FOREIGN KEY (bug) REFERENCES bug(id);
-
-ALTER TABLE ONLY hwsubmissionbug
-    ADD CONSTRAINT hwsubmissionbug_submission_fkey FOREIGN KEY (submission) REFERENCES hwsubmission(id);
 
 ALTER TABLE ONLY hwsubmissiondevice
     ADD CONSTRAINT hwsubmissiondevice_device_driver_link_fkey FOREIGN KEY (device_driver_link) REFERENCES hwdevicedriverlink(id);
@@ -8285,7 +7120,7 @@ ALTER TABLE ONLY hwtestanswer
     ADD CONSTRAINT hwtestanswer_choice_fkey FOREIGN KEY (choice) REFERENCES hwtestanswerchoice(id);
 
 ALTER TABLE ONLY hwtestanswer
-    ADD CONSTRAINT hwtestanswer_language_fkey FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT hwtestanswer_language_fkey FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY hwtestanswer
     ADD CONSTRAINT hwtestanswer_submission_fkey FOREIGN KEY (submission) REFERENCES hwsubmission(id);
@@ -8396,7 +7231,7 @@ ALTER TABLE ONLY mentoringoffer
     ADD CONSTRAINT mentoringoffer_bug_fkey FOREIGN KEY (bug) REFERENCES bug(id);
 
 ALTER TABLE ONLY mentoringoffer
-    ADD CONSTRAINT mentoringoffer_owner_fkey FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT mentoringoffer_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY mentoringoffer
     ADD CONSTRAINT mentoringoffer_specification_fkey FOREIGN KEY (specification) REFERENCES specification(id);
@@ -8408,7 +7243,7 @@ ALTER TABLE ONLY message
     ADD CONSTRAINT message_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 ALTER TABLE ONLY message
-    ADD CONSTRAINT message_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT message_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY message
     ADD CONSTRAINT message_parent_fk FOREIGN KEY (parent) REFERENCES message(id);
@@ -8421,9 +7256,6 @@ ALTER TABLE ONLY messageapproval
 
 ALTER TABLE ONLY messageapproval
     ADD CONSTRAINT messageapproval_mailing_list_fkey FOREIGN KEY (mailing_list) REFERENCES mailinglist(id);
-
-ALTER TABLE ONLY messageapproval
-    ADD CONSTRAINT messageapproval_message_fkey FOREIGN KEY (message) REFERENCES message(id);
 
 ALTER TABLE ONLY messageapproval
     ADD CONSTRAINT messageapproval_posted_by_fkey FOREIGN KEY (posted_by) REFERENCES person(id);
@@ -8459,7 +7291,7 @@ ALTER TABLE ONLY mirror
     ADD CONSTRAINT mirror_country_fk FOREIGN KEY (country) REFERENCES country(id);
 
 ALTER TABLE ONLY mirror
-    ADD CONSTRAINT mirror_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT mirror_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY mirrorcdimagedistroseries
     ADD CONSTRAINT mirrorcdimagedistroseries__distribution_mirror__fk FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
@@ -8509,45 +7341,6 @@ ALTER TABLE ONLY mirrorsourcecontent
 ALTER TABLE ONLY mirrorsourcecontent
     ADD CONSTRAINT mirrorsourcecontent_mirror_fk FOREIGN KEY (mirror) REFERENCES mirror(id);
 
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_consumer_fkey FOREIGN KEY (consumer) REFERENCES oauthconsumer(id);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_product_fkey FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_project_fkey FOREIGN KEY (project) REFERENCES project(id);
-
-ALTER TABLE ONLY oauthaccesstoken
-    ADD CONSTRAINT oauthaccesstoken_sourcepackagename_fkey FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY oauthnonce
-    ADD CONSTRAINT oauthnonce_access_token_fkey FOREIGN KEY (access_token) REFERENCES oauthaccesstoken(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_consumer_fkey FOREIGN KEY (consumer) REFERENCES oauthconsumer(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_product_fkey FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_project_fkey FOREIGN KEY (project) REFERENCES project(id);
-
-ALTER TABLE ONLY oauthrequesttoken
-    ADD CONSTRAINT oauthrequesttoken_sourcepackagename_fkey FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
 ALTER TABLE ONLY officialbugtag
     ADD CONSTRAINT officialbugtag_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
 
@@ -8562,42 +7355,6 @@ ALTER TABLE ONLY openidauthorization
 
 ALTER TABLE ONLY openidrpconfig
     ADD CONSTRAINT openidrpconfig__logo__fk FOREIGN KEY (logo) REFERENCES libraryfilealias(id);
-
-ALTER TABLE ONLY openidrpsummary
-    ADD CONSTRAINT openidrpsummary_account_fkey FOREIGN KEY (account) REFERENCES account(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest__sourcearchive__fk FOREIGN KEY (source_archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest__targetarchive__fk FOREIGN KEY (target_archive) REFERENCES archive(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_requester_fk FOREIGN KEY (requester) REFERENCES person(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_sourcecomponent_fk FOREIGN KEY (source_component) REFERENCES component(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_sourcedistroseries_fk FOREIGN KEY (source_distroseries) REFERENCES distroseries(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_targetcomponent_fk FOREIGN KEY (target_component) REFERENCES component(id);
-
-ALTER TABLE ONLY packagecopyrequest
-    ADD CONSTRAINT packagecopyrequest_targetdistroseries_fk FOREIGN KEY (target_distroseries) REFERENCES distroseries(id);
-
-ALTER TABLE ONLY packagediff
-    ADD CONSTRAINT packagediff_diff_content_fkey FOREIGN KEY (diff_content) REFERENCES libraryfilealias(id);
-
-ALTER TABLE ONLY packagediff
-    ADD CONSTRAINT packagediff_from_source_fkey FOREIGN KEY (from_source) REFERENCES sourcepackagerelease(id);
-
-ALTER TABLE ONLY packagediff
-    ADD CONSTRAINT packagediff_requester_fkey FOREIGN KEY (requester) REFERENCES person(id);
-
-ALTER TABLE ONLY packagediff
-    ADD CONSTRAINT packagediff_to_source_fkey FOREIGN KEY (to_source) REFERENCES sourcepackagerelease(id);
 
 ALTER TABLE ONLY packageselection
     ADD CONSTRAINT packageselection__binarypackagename__fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
@@ -8648,7 +7405,7 @@ ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY packaging
-    ADD CONSTRAINT packaging_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT packaging_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging_productseries_fk FOREIGN KEY (productseries) REFERENCES productseries(id);
@@ -8666,16 +7423,13 @@ ALTER TABLE ONLY person
     ADD CONSTRAINT person__mugshot__fk FOREIGN KEY (mugshot) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY person
-    ADD CONSTRAINT person_account_fkey FOREIGN KEY (account) REFERENCES account(id) ON DELETE SET NULL;
-
-ALTER TABLE ONLY person
     ADD CONSTRAINT person_country_fk FOREIGN KEY (country) REFERENCES country(id);
 
 ALTER TABLE ONLY karmacache
     ADD CONSTRAINT person_fk FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY person
-    ADD CONSTRAINT person_language_fk FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT person_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY person
     ADD CONSTRAINT person_merged_fk FOREIGN KEY (merged) REFERENCES person(id);
@@ -8687,7 +7441,7 @@ ALTER TABLE ONLY person
     ADD CONSTRAINT person_teamowner_fk FOREIGN KEY (teamowner) REFERENCES person(id);
 
 ALTER TABLE ONLY personlanguage
-    ADD CONSTRAINT personlanguage_language_fk FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT personlanguage_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY personlanguage
     ADD CONSTRAINT personlanguage_person_fk FOREIGN KEY (person) REFERENCES person(id);
@@ -8697,12 +7451,6 @@ ALTER TABLE ONLY personlocation
 
 ALTER TABLE ONLY personlocation
     ADD CONSTRAINT personlocation_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY personnotification
-    ADD CONSTRAINT personnotification_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY pillarname
-    ADD CONSTRAINT pillarname__alias_for__fk FOREIGN KEY (alias_for) REFERENCES pillarname(id);
 
 ALTER TABLE ONLY pillarname
     ADD CONSTRAINT pillarname_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id) ON DELETE CASCADE;
@@ -8729,13 +7477,16 @@ ALTER TABLE ONLY poexportrequest
     ADD CONSTRAINT poexportrequest_pofile_fk FOREIGN KEY (pofile) REFERENCES pofile(id);
 
 ALTER TABLE ONLY pofile
-    ADD CONSTRAINT pofile_language_fk FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT pofile_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_lasttranslator_fk FOREIGN KEY (lasttranslator) REFERENCES person(id);
 
 ALTER TABLE ONLY pofile
-    ADD CONSTRAINT pofile_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT pofile_license_fk FOREIGN KEY (license) REFERENCES license(id);
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_potemplate_fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
@@ -8765,7 +7516,10 @@ ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
 
 ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT potemplate_license_fk FOREIGN KEY (license) REFERENCES license(id);
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_productseries_fk FOREIGN KEY (productseries) REFERENCES productseries(id);
@@ -8801,13 +7555,10 @@ ALTER TABLE ONLY product
     ADD CONSTRAINT product_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
 
 ALTER TABLE ONLY product
-    ADD CONSTRAINT product_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT product_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY product
     ADD CONSTRAINT product_project_fk FOREIGN KEY (project) REFERENCES project(id);
-
-ALTER TABLE ONLY product
-    ADD CONSTRAINT product_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
 
 ALTER TABLE ONLY product
     ADD CONSTRAINT product_security_contact_fkey FOREIGN KEY (security_contact) REFERENCES person(id);
@@ -8828,7 +7579,7 @@ ALTER TABLE ONLY productlicense
     ADD CONSTRAINT productlicense_product_fkey FOREIGN KEY (product) REFERENCES product(id);
 
 ALTER TABLE ONLY productrelease
-    ADD CONSTRAINT productrelease_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT productrelease_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY productreleasefile
     ADD CONSTRAINT productreleasefile__signature__fk FOREIGN KEY (signature) REFERENCES libraryfilealias(id);
@@ -8846,16 +7597,10 @@ ALTER TABLE ONLY productseries
     ADD CONSTRAINT productseries_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
 
 ALTER TABLE ONLY productseries
-    ADD CONSTRAINT productseries_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT productseries_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY productseries
     ADD CONSTRAINT productseries_product_fk FOREIGN KEY (product) REFERENCES product(id);
-
-ALTER TABLE ONLY productseriescodeimport
-    ADD CONSTRAINT productseriescodeimport_codeimport_fkey FOREIGN KEY (codeimport) REFERENCES codeimport(id);
-
-ALTER TABLE ONLY productseriescodeimport
-    ADD CONSTRAINT productseriescodeimport_productseries_fkey FOREIGN KEY (productseries) REFERENCES productseries(id);
 
 ALTER TABLE ONLY productsvnmodule
     ADD CONSTRAINT productsvnmodule_product_fk FOREIGN KEY (product) REFERENCES product(id);
@@ -8876,10 +7621,7 @@ ALTER TABLE ONLY project
     ADD CONSTRAINT project_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
 
 ALTER TABLE ONLY project
-    ADD CONSTRAINT project_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
-
-ALTER TABLE ONLY project
-    ADD CONSTRAINT project_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
+    ADD CONSTRAINT project_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_translationgroup_fk FOREIGN KEY (translationgroup) REFERENCES translationgroup(id);
@@ -8891,7 +7633,7 @@ ALTER TABLE ONLY projectbounty
     ADD CONSTRAINT projectbounty_project_fk FOREIGN KEY (project) REFERENCES project(id);
 
 ALTER TABLE ONLY projectrelationship
-    ADD CONSTRAINT projectrelationship_object_fk FOREIGN KEY (object) REFERENCES project(id);
+    ADD CONSTRAINT projectrelationship_object_fk FOREIGN KEY ("object") REFERENCES project(id);
 
 ALTER TABLE ONLY projectrelationship
     ADD CONSTRAINT projectrelationship_subject_fk FOREIGN KEY (subject) REFERENCES project(id);
@@ -8912,10 +7654,10 @@ ALTER TABLE ONLY question
     ADD CONSTRAINT question__faq__fk FOREIGN KEY (faq) REFERENCES faq(id);
 
 ALTER TABLE ONLY question
-    ADD CONSTRAINT question__language__fkey FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT question__language__fkey FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY question
-    ADD CONSTRAINT question__owner__fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT question__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY question
     ADD CONSTRAINT question__product__fk FOREIGN KEY (product) REFERENCES product(id);
@@ -8954,16 +7696,16 @@ ALTER TABLE ONLY requestedcds
     ADD CONSTRAINT requestedcds_request_fk FOREIGN KEY (request) REFERENCES shippingrequest(id);
 
 ALTER TABLE ONLY teammembership
-    ADD CONSTRAINT reviewer_fk FOREIGN KEY (last_changed_by) REFERENCES person(id);
+    ADD CONSTRAINT reviewer_fk FOREIGN KEY (reviewer) REFERENCES person(id);
 
 ALTER TABLE ONLY revision
     ADD CONSTRAINT revision_gpgkey_fk FOREIGN KEY (gpgkey) REFERENCES gpgkey(id);
 
 ALTER TABLE ONLY revision
-    ADD CONSTRAINT revision_revision_author_fk FOREIGN KEY (revision_author) REFERENCES revisionauthor(id);
+    ADD CONSTRAINT revision_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
-ALTER TABLE ONLY revisionauthor
-    ADD CONSTRAINT revisionauthor_person_fkey FOREIGN KEY (person) REFERENCES person(id);
+ALTER TABLE ONLY revision
+    ADD CONSTRAINT revision_revision_author_fk FOREIGN KEY (revision_author) REFERENCES revisionauthor(id);
 
 ALTER TABLE ONLY revisionparent
     ADD CONSTRAINT revisionparent_revision_fk FOREIGN KEY (revision) REFERENCES revision(id);
@@ -9019,18 +7761,6 @@ ALTER TABLE ONLY securesourcepackagepublishinghistory
 ALTER TABLE ONLY securesourcepackagepublishinghistory
     ADD CONSTRAINT securesourcepackagepublishinghistory_supersededby_fk FOREIGN KEY (supersededby) REFERENCES sourcepackagerelease(id);
 
-ALTER TABLE ONLY shipitsurvey
-    ADD CONSTRAINT shipitsurvey_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY shipitsurveyresult
-    ADD CONSTRAINT shipitsurveyresult_answer_fkey FOREIGN KEY (answer) REFERENCES shipitsurveyanswer(id);
-
-ALTER TABLE ONLY shipitsurveyresult
-    ADD CONSTRAINT shipitsurveyresult_question_fkey FOREIGN KEY (question) REFERENCES shipitsurveyquestion(id);
-
-ALTER TABLE ONLY shipitsurveyresult
-    ADD CONSTRAINT shipitsurveyresult_survey_fkey FOREIGN KEY (survey) REFERENCES shipitsurvey(id);
-
 ALTER TABLE ONLY shipment
     ADD CONSTRAINT shipment_shippingrun_fk FOREIGN KEY (shippingrun) REFERENCES shippingrun(id);
 
@@ -9044,6 +7774,9 @@ ALTER TABLE ONLY shippingrequest
     ADD CONSTRAINT shippingrequest_shipment_fk FOREIGN KEY (shipment) REFERENCES shipment(id);
 
 ALTER TABLE ONLY shippingrequest
+    ADD CONSTRAINT shippingrequest_shockandawe_fk FOREIGN KEY (shockandawe) REFERENCES shockandawe(id);
+
+ALTER TABLE ONLY shippingrequest
     ADD CONSTRAINT shippingrequest_whoapproved_fk FOREIGN KEY (whoapproved) REFERENCES person(id);
 
 ALTER TABLE ONLY shippingrequest
@@ -9053,10 +7786,10 @@ ALTER TABLE ONLY shippingrun
     ADD CONSTRAINT shippingrun_csvfile_fk FOREIGN KEY (csvfile) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY signedcodeofconduct
-    ADD CONSTRAINT signedcodeofconduct_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT signedcodeofconduct_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY signedcodeofconduct
-    ADD CONSTRAINT signedcodeofconduct_signingkey_fk FOREIGN KEY (owner, signingkey) REFERENCES gpgkey(owner, id) ON UPDATE CASCADE;
+    ADD CONSTRAINT signedcodeofconduct_signingkey_fk FOREIGN KEY ("owner", signingkey) REFERENCES gpgkey("owner", id) ON UPDATE CASCADE;
 
 ALTER TABLE ONLY sourcepackagerelease
     ADD CONSTRAINT sourcepackagerelease__creator__fk FOREIGN KEY (creator) REFERENCES person(id);
@@ -9110,7 +7843,7 @@ ALTER TABLE ONLY specification
     ADD CONSTRAINT specification_goal_proposer_fkey FOREIGN KEY (goal_proposer) REFERENCES person(id);
 
 ALTER TABLE ONLY specification
-    ADD CONSTRAINT specification_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT specification_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY specification
     ADD CONSTRAINT specification_product_fk FOREIGN KEY (product) REFERENCES product(id);
@@ -9182,7 +7915,7 @@ ALTER TABLE ONLY sprint
     ADD CONSTRAINT sprint_driver_fkey FOREIGN KEY (driver) REFERENCES person(id);
 
 ALTER TABLE ONLY sprint
-    ADD CONSTRAINT sprint_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT sprint_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY sprintattendance
     ADD CONSTRAINT sprintattendance_attendee_fk FOREIGN KEY (attendee) REFERENCES person(id);
@@ -9230,16 +7963,7 @@ ALTER TABLE ONLY structuralsubscription
     ADD CONSTRAINT structuralsubscription_subscriber_fkey FOREIGN KEY (subscriber) REFERENCES person(id);
 
 ALTER TABLE ONLY teammembership
-    ADD CONSTRAINT teammembership_acknowledged_by_fkey FOREIGN KEY (acknowledged_by) REFERENCES person(id);
-
-ALTER TABLE ONLY teammembership
     ADD CONSTRAINT teammembership_person_fk FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY teammembership
-    ADD CONSTRAINT teammembership_proposed_by_fkey FOREIGN KEY (proposed_by) REFERENCES person(id);
-
-ALTER TABLE ONLY teammembership
-    ADD CONSTRAINT teammembership_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES person(id);
 
 ALTER TABLE ONLY teammembership
     ADD CONSTRAINT teammembership_team_fk FOREIGN KEY (team) REFERENCES person(id);
@@ -9254,7 +7978,7 @@ ALTER TABLE ONLY temporaryblobstorage
     ADD CONSTRAINT temporaryblobstorage_file_alias_fkey FOREIGN KEY (file_alias) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY translationgroup
-    ADD CONSTRAINT translationgroup_owner_fk FOREIGN KEY (owner) REFERENCES person(id);
+    ADD CONSTRAINT translationgroup_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY translationimportqueueentry
     ADD CONSTRAINT translationimportqueueentry__content__fk FOREIGN KEY (content) REFERENCES libraryfilealias(id);
@@ -9290,12 +8014,6 @@ ALTER TABLE ONLY translationmessage
     ADD CONSTRAINT translationmessage__msgstr3__fk FOREIGN KEY (msgstr3) REFERENCES potranslation(id);
 
 ALTER TABLE ONLY translationmessage
-    ADD CONSTRAINT translationmessage__msgstr4__fk FOREIGN KEY (msgstr4) REFERENCES potranslation(id);
-
-ALTER TABLE ONLY translationmessage
-    ADD CONSTRAINT translationmessage__msgstr5__fk FOREIGN KEY (msgstr5) REFERENCES potranslation(id);
-
-ALTER TABLE ONLY translationmessage
     ADD CONSTRAINT translationmessage__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
 
 ALTER TABLE ONLY translationmessage
@@ -9307,29 +8025,17 @@ ALTER TABLE ONLY translationmessage
 ALTER TABLE ONLY translationmessage
     ADD CONSTRAINT translationmessage__submitter__fk FOREIGN KEY (submitter) REFERENCES person(id);
 
-ALTER TABLE ONLY translationmessage
-    ADD CONSTRAINT translationmessage_language_fkey FOREIGN KEY (language) REFERENCES language(id);
-
-ALTER TABLE ONLY translationmessage
-    ADD CONSTRAINT translationmessage_potemplate_fkey FOREIGN KEY (potemplate) REFERENCES potemplate(id);
-
-ALTER TABLE ONLY translationrelicensingagreement
-    ADD CONSTRAINT translationrelicensingagreement__person__fk FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY translationtemplateitem
-    ADD CONSTRAINT translationtemplateitem_potemplate_fkey FOREIGN KEY (potemplate) REFERENCES potemplate(id);
-
-ALTER TABLE ONLY translationtemplateitem
-    ADD CONSTRAINT translationtemplateitem_potmsgset_fkey FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
-
 ALTER TABLE ONLY translator
-    ADD CONSTRAINT translator_language_fk FOREIGN KEY (language) REFERENCES language(id);
+    ADD CONSTRAINT translator_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY translator
     ADD CONSTRAINT translator_person_fk FOREIGN KEY (translator) REFERENCES person(id);
 
 ALTER TABLE ONLY translator
     ADD CONSTRAINT translator_translationgroup_fk FOREIGN KEY (translationgroup) REFERENCES translationgroup(id);
+
+ALTER TABLE ONLY validpersonorteamcache
+    ADD CONSTRAINT validpersonorteamcache_id_fkey FOREIGN KEY (id) REFERENCES person(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY vote
     ADD CONSTRAINT vote_person_fk FOREIGN KEY (person) REFERENCES person(id);
@@ -9338,22 +8044,13 @@ ALTER TABLE ONLY vote
     ADD CONSTRAINT vote_poll_fk FOREIGN KEY (poll) REFERENCES poll(id);
 
 ALTER TABLE ONLY vote
-    ADD CONSTRAINT vote_poll_option_fk FOREIGN KEY (poll, option) REFERENCES polloption(poll, id);
+    ADD CONSTRAINT vote_poll_option_fk FOREIGN KEY (poll, "option") REFERENCES polloption(poll, id);
 
 ALTER TABLE ONLY votecast
     ADD CONSTRAINT votecast_person_fk FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY votecast
     ADD CONSTRAINT votecast_poll_fk FOREIGN KEY (poll) REFERENCES poll(id);
-
-ALTER TABLE ONLY webserviceban
-    ADD CONSTRAINT webserviceban_consumer_fkey FOREIGN KEY (consumer) REFERENCES oauthconsumer(id);
-
-ALTER TABLE ONLY webserviceban
-    ADD CONSTRAINT webserviceban_person_fkey FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY webserviceban
-    ADD CONSTRAINT webserviceban_token_fkey FOREIGN KEY (token) REFERENCES oauthaccesstoken(id);
 
 ALTER TABLE ONLY wikiname
     ADD CONSTRAINT wikiname_person_fk FOREIGN KEY (person) REFERENCES person(id);

@@ -17,7 +17,7 @@ from StringIO import StringIO
 
 # zope3
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.app.form.browser import TextWidget
 from zope.app.form.browser.add import AddView

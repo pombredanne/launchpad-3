@@ -116,7 +116,7 @@
   </head>
   <body
     id="document"
-    tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
+    tal:attributes="class string:tab-${view/menu:selectedfacetname} ${view/macro:pagetype}"
   >
     <div id="locationbar">
       <tal:login replace="structure context/@@login_status" />
@@ -137,7 +137,7 @@
 
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
-      tal:define="facetmenu CONTEXTS/menu:facet"
+      tal:define="facetmenu view/menu:facet"
       id="lp-apps"
       class="clearfix"
     >
@@ -243,7 +243,7 @@
                           tal:condition="view/macro:pagehas/portlets"
                         >
                           <tal:menu condition="view/macro:pagehas/actionsmenu"
-                                    replace="structure CONTEXTS/@@+menubox" />
+                                    replace="structure view/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
                           <metal:portlets define-slot="portlets_one" />
@@ -286,7 +286,7 @@
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
-              <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
+              <tal:block tal:replace="view/menu:selectedfacetname" />
             </li>
             <li>Page type:
                <tal:pagetype replace="view/macro:pagetype" />
@@ -363,9 +363,6 @@
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
-       <LAYER name="gToday:datepicker:agenda.js"
-              src="/+popcalxp/npopeng.htm"
-              background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datepicker>
   </body>

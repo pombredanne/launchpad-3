@@ -335,7 +335,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[16], 'ArbitraryException: xyz\n')
@@ -403,7 +403,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines.pop(0), '\n')
 
         # traceback
-        self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
+        self.assertEqual(lines.pop(0), 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         lines.pop(0)
@@ -471,7 +471,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[15], '\n')
 
         # traceback
-        self.assertEqual(lines[16], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[16], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[19], 'ArbitraryException: xyz\n')
@@ -520,7 +520,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(

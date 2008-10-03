@@ -1425,7 +1425,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         principal = loginsource.getPrincipalByLogin(
             self.user.preferredemail.email)
         assert principal is not None, "User must be logged in at this point."
-        if not principal.validate(data.get('password')):
+        # The widget will transform '' into a special marker value.
+        password = data.get('password')
+        if password is self.schema['password'].UNCHANGED_PASSWORD:
+            password = u''
+        if not principal.validate(password):
             self.setFieldError('password', 'Incorrect password.')
             return
 

@@ -27,7 +27,7 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.app.traversing.interfaces import IPathAdapter
+from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface, implements
