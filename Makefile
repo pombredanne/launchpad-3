@@ -129,7 +129,7 @@ runners:
 	echo "$(PYTHON) $(PWD)/src/zdaemon/zdctl.py \
 	      -S schema.xml \
 	      -C zdaemon.conf -d \$$*" >> bin/zopectl
-	chmod +x bin/zopectl 
+	chmod +x bin/zopectl
 
 test_build: build
 	$(PYTHON) test.py $(TESTFLAGS) $(TESTOPTS)
@@ -149,6 +149,12 @@ run: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice -C $(CONFFILE)
+
+windmill:
+    # Same as the regular app server, but with SSL switched off.
+	rm -f thread*.request
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,google-webservice -C testrunner-windmill
 
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
@@ -186,7 +192,7 @@ bzr_version_info:
 	fi
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
-# properly. We also should really wait until services are running before 
+# properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
