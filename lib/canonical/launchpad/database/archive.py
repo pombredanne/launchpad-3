@@ -16,8 +16,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
-
 from canonical.archivepublisher.config import Config as PubConfig
+from canonical.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -33,9 +33,12 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.database.queue import (
+    PackageUpload, PackageUploadSource)
 from canonical.launchpad.interfaces.archive import (
     ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
     IDistributionArchive, IPPA)
@@ -45,7 +48,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import (
-    IHasOwner, ILaunchpadCelebrities)
+    IHasOwner, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.webapp.interfaces import (
@@ -715,6 +719,68 @@ class Archive(SQLBase):
         permissions = permission_set.checkAuthenticated(
             user, self, permission, component)
         return permissions.count() > 0
+
+    def getFileByName(self, filename):
+        """See `IArchive`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        base_clauses = (
+            LibraryFileAlias.filename == filename,
+            )
+
+        if re_issource.match(filename):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageReleaseFile.sourcepackagereleaseID,
+                SourcePackageReleaseFile.libraryfileID ==
+                    LibraryFileAlias.id,
+                )
+        elif re_isadeb.match(filename):
+            clauses = (
+                BinaryPackagePublishingHistory.archive == self.id,
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageFile.binarypackagereleaseID,
+                BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
+                )
+        elif filename.endswith('_source.changes'):
+            clauses = (
+                SourcePackagePublishingHistory.archive == self.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    PackageUploadSource.sourcepackagereleaseID,
+                PackageUploadSource.packageuploadID == PackageUpload.id,
+                PackageUpload.status == PackageUploadStatus.DONE,
+                PackageUpload.changesfileID == LibraryFileAlias.id,
+                )
+        else:
+            raise AssertionError(
+                "'%s' filename and/or extension is not supported." % filename)
+
+        def do_query():
+            result = store.find((LibraryFileAlias), *(base_clauses + clauses))
+            result = result.config(distinct=True)
+            result.order_by(LibraryFileAlias.id)
+            return result.first()
+
+        archive_file = do_query()
+
+        if archive_file is None:
+            # If a diff.gz wasn't found in the source-files domain, try in
+            # the PackageDiff domain.
+            if filename.endswith('.diff.gz'):
+                clauses = (
+                    SourcePackagePublishingHistory.archive == self.id,
+                    SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                        PackageDiff.to_sourceID,
+                    PackageDiff.diff_contentID == LibraryFileAlias.id,
+                    )
+                package_diff_file = do_query()
+                if package_diff_file is not None:
+                    return package_diff_file
+
+            raise NotFoundError(filename)
+
+        return archive_file
 
 
 class ArchiveSet:
