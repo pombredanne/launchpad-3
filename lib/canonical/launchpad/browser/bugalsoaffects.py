@@ -615,7 +615,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how',
+                  LaunchpadRadioWidget, _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)

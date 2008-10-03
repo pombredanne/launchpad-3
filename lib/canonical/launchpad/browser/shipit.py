@@ -28,7 +28,7 @@ from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError, IInputWidget
 from zope.app.form.utility import setUpWidgets
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config

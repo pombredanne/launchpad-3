@@ -24,7 +24,7 @@ from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryView
+from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -67,7 +67,7 @@ class LoginRoot:
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
             root_object = getUtility(ILaunchpadRoot)
-            view = queryView(root_object, name, request)
+            view = queryMultiAdapter((root_object, request), name=name)
             return view
         else:
             return self
@@ -358,6 +358,9 @@ class LaunchpadBrowserPublication(
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 
