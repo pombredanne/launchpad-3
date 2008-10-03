@@ -290,13 +290,19 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     unescape(first).encode('utf-8'))
                 if branch is None:
                     continue
+                if requester == LAUNCHPAD_SERVICES:
+                    branch = removeSecurityProxy(branch)
                 try:
                     branch_id = branch.id
                 except Unauthorized:
                     break
                 if branch.branch_type == BranchType.REMOTE:
                     break
-                return (BRANCH_TRANSPORT, {'id': branch_id}, second)
+                return (
+                    BRANCH_TRANSPORT,
+                    {'id': branch_id,
+                     'writable': self._canWriteToBranch(requester, branch)},
+                    second)
             # XXX: Should we use the unescaped path in the error? Unescaped is
             # easier to read.
             return faults.PathTranslationError(path)

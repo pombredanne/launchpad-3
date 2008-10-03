@@ -70,13 +70,17 @@ class ObjectSet:
     def __iter__(self):
         return self._objects.itervalues()
 
+    def _find(self, **kwargs):
+        [(key, value)] = kwargs.items()
+        for obj in self:
+            if getattr(obj, key) == value:
+                return obj
+
     def get(self, id):
         return self._objects.get(id, None)
 
     def getByName(self, name):
-        for obj in self:
-            if obj.name == name:
-                return obj
+        return self._find(name=name)
 
 
 class FakeBranch(FakeDatabaseObject):
@@ -353,10 +357,7 @@ class FakeBranchFilesystem:
     def getBranchInformation(self, requester_id, user_name, product_name,
                              branch_name):
         unique_name = '~%s/%s/%s' % (user_name, product_name, branch_name)
-        branch = None
-        for possible_match in self._branch_set:
-            if possible_match.unique_name == unique_name:
-                branch = possible_match
+        branch = self._branch_set._find(unique_name=unique_name)
         if branch is None:
             return '', ''
         if not branch._canRead(requester_id):
@@ -390,14 +391,19 @@ class FakeBranchFilesystem:
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')
-            for branch in self._branch_set:
-                if branch.unique_name == first:
-                    if not branch._canRead(requester_id):
-                        break
-                    elif branch.branch_type == BranchType.REMOTE:
-                        break
-                    else:
-                        return (BRANCH_TRANSPORT, {'id': branch.id}, second)
+            branch = self._branch_set._find(unique_name=first)
+            if branch is None:
+                continue
+            if not branch._canRead(requester_id):
+                break
+            elif branch.branch_type == BranchType.REMOTE:
+                break
+            else:
+                return (
+                    BRANCH_TRANSPORT,
+                    {'id': branch.id,
+                     'writable': self._canWrite(requester_id, branch),
+                     }, second)
         return faults.PathTranslationError(path)
 
 

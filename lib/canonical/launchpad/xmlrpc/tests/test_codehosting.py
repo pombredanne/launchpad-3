@@ -804,7 +804,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
 
     def test_translatePath_branch_with_trailing_slash(self):
         requester = self.factory.makePerson()
@@ -813,7 +814,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
 
     def test_translatePath_path_in_branch(self):
         requester = self.factory.makePerson()
@@ -822,7 +824,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, 'child'), translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'child'),
+            translation)
 
     def test_translatePath_nested_path_in_branch(self):
         requester = self.factory.makePerson()
@@ -831,7 +834,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, 'a/b'), translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'a/b'),
+            translation)
 
     def test_translatePath_preserves_escaping(self):
         requester = self.factory.makePerson()
@@ -844,8 +848,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, escape(child_path)),
-            translation)
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False},
+             escape(child_path)), translation)
 
     def test_translatePath_no_such_branch(self):
         # XXX: Maybe we should distinguish between "I don't know how to
@@ -862,12 +867,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_translatePath_private_branch(self):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
-            self.factory.makeBranch(private=True, owner=requester))
+            self.factory.makeBranch(
+                BranchType.HOSTED, private=True, owner=requester))
         path = escape(u'/%s' % branch.unique_name)
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
 
     def test_translatePath_invisible_branch(self):
         requester = self.factory.makePerson()
@@ -891,8 +898,66 @@ class BranchFileSystemTest(TestCaseWithFactory):
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
 
-    # LAUNCHPAD_SERVICES can read private
-    # XXX: Write permissions?
+    def test_translatePath_launchpad_services_private(self):
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
+
+    def test_translatePath_team_owned(self):
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
+
+    def test_translatePath_team_unowned(self):
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned_mirrored(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.MIRRORED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned_imported(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.IMPORTED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
 
 
 class TestIterateSplit(TestCase):
