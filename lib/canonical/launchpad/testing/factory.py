@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.database.message import Message
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -52,8 +52,7 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import (
-    Message, MessageChunk, CodeMailJob, StaticDiffJob,)
+from canonical.launchpad.database import CodeMailJob, StaticDiffJob,
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.database.constants import DEFAULT
 
@@ -471,7 +470,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -490,7 +490,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -561,7 +562,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -569,7 +570,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
@@ -955,6 +957,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         msg_id = make_msgid('launchpad')
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
-            msg_id = email.Utils.make_msgid()
+            msg_id = make_msgid('launchpad')
         return msg_id
 

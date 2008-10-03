@@ -7,7 +7,7 @@ from unittest import TestLoader
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 
-from canonical.launchpad.database import Job, JobDependency, InvalidTransition
+from canonical.launchpad.database import InvalidTransition, Job, JobDependency
 from canonical.launchpad.interfaces import IJob, JobStatus
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
