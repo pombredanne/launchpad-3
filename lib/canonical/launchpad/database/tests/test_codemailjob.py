@@ -89,6 +89,7 @@ class TestCodeMailJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.COMPLETED, mail_job1.job.status)
         self.assertEqual(JobStatus.RUNNING, mail_job2.job.status)
         self.assertEqual(JobStatus.FAILED, mail_job3.job.status)
+        self.assertIsNot(None, mail_job1.job.lease_expires)
 
 
 def test_suite():

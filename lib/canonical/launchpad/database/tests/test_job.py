@@ -11,7 +11,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from storm.locals import Store
 
-from canonical.launchpad.database import InvalidTransition, Job, JobDependency
+from canonical.launchpad.database import (
+    InvalidTransition, Job, JobDependency, LeaseHeld)
 from canonical.launchpad.interfaces import IJob, JobStatus
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
@@ -192,6 +193,21 @@ class TestJobDependency(TestCase):
         prerequisite_2.status = JobStatus.FAILED
         self.assertEqual(
             [], list(Store.of(job).execute(Job.blocked_jobs)))
+
+    def test_acquireLease(self):
+        job = Job()
+        job.acquireLease()
+        self.assertIsNot(None, job.lease_expires)
+
+    def test_acquireHeldLease(self):
+        job = Job()
+        job.acquireLease()
+        self.assertRaises(LeaseHeld, job.acquireLease)
+
+    def test_acquireStaleLease(self):
+        job = Job()
+        job.acquireLease(-1)
+        job.acquireLease()
 
 
 def test_suite():

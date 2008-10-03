@@ -3,10 +3,11 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['InvalidTransition', 'Job', 'JobDependency']
+__all__ = ['InvalidTransition', 'Job', 'JobDependency', 'LeaseHeld']
 
 
 import datetime
+import time
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -31,6 +32,12 @@ class InvalidTransition(Exception):
         Exception.__init__(
             self, 'Transition from %s to %s is invalid.' %
             (current_status, requested_status))
+
+
+class LeaseHeld(Exception):
+
+    def __init__(self):
+        Exception.__init__(self, 'Lease is already held.')
 
 
 class Job(SQLBase):
@@ -65,6 +72,14 @@ class Job(SQLBase):
         if status not in self._valid_transitions[self.status]:
             raise InvalidTransition(self.status, status)
         self.status = status
+
+    def acquireLease(self, duration=300):
+        if (self.lease_expires is not None
+            and self.lease_expires >= datetime.datetime.now(UTC)):
+            raise LeaseHeld
+        expiry = datetime.datetime.fromtimestamp(time.time() + duration,
+            UTC)
+        self.lease_expires = expiry
 
     def start(self):
         self._set_status(JobStatus.RUNNING)
