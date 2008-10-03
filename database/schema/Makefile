@@ -21,6 +21,7 @@ DBNAME=launchpad_dev
 # to quickly build a populated database to run tests against.
 TEST_DBNAME=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
+TEST_SESSION_DBNAME=session_ftest
 
 # The session database name.
 SESSION_DBNAME=session_dev
@@ -70,8 +71,13 @@ test: create
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
-	@ echo "* Adding session tables to '${TEST_DBNAME}'"
-	psql -q -d ${TEST_DBNAME} -f launchpad_session.sql
+	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
+	@if [ "$$((`psql -l | grep -w ${TEST_SESSION_DBNAME} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${TEST_SESSION_DBNAME} | grep : | cat ; \
+	fi
+	${CREATEDB} template1 ${TEST_SESSION_DBNAME} ; \
+	createlang plpgsql ${TEST_SESSION_DBNAME}; \
+	psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql ; \
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
