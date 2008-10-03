@@ -14,9 +14,8 @@ __all__ = [
     'get_chrooted_transport',
     'get_readonly_transport',
     '_MultiServer',
-    'NotABranchPath',
-    'NotEnoughInformation',
     'SynchronousAdapter',
+    'TranslationError',
     ]
 
 
@@ -27,28 +26,17 @@ from bzrlib.transport import (
     chroot, get_transport, Server, Transport)
 
 from twisted.internet import defer
-
 from canonical.twistedsupport import gatherResults
 
 
-class NotABranchPath(BzrError):
-    """Raised when we cannot translate a virtual URL fragment to a branch.
+class TranslationError(BzrError):
+    """Raised when we cannot translate a virtual URL fragment.
 
     In particular, this is raised when there is some intrinsic deficiency in
     the path itself.
     """
 
-    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
-            "%(reason)s")
-
-
-class NotEnoughInformation(NotABranchPath):
-    """Raised when there's not enough information in the path."""
-
-    def __init__(self, virtual_url_fragment):
-        NotABranchPath.__init__(
-            self, virtual_url_fragment=virtual_url_fragment,
-            reason="Not enough information.")
+    _fmt = ("Could not translate %(virtual_url_fragment)r. %(reason)s")
 
 
 def get_chrooted_transport(url):
@@ -106,6 +94,20 @@ class AsyncVirtualTransport(Transport):
         virtual_url_fragment = self._abspath(relpath)
         return self.server.translateVirtualPath(virtual_url_fragment)
 
+    def _translateError(self, failure):
+        """Translate 'failure' into something suitable for a transport.
+
+        This method is called as an errback by `_call`. Use it to translate
+        errors from the server into something that users of the transport
+        might expect. This could include translating vfs-specific errors into
+        bzrlib errors (e.g. "couldn't translate" into `NoSuchFile`) or
+        translating underlying paths into virtual paths.
+
+        :param failure: A `twisted.python.failure.Failure`.
+        """
+        failure.trap(TranslationError)
+        raise NoSuchFile(failure.value.virtual_url_fragment)
+
     def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
         virtual paths to filesystem paths.
@@ -118,17 +120,9 @@ class AsyncVirtualTransport(Transport):
             method = getattr(transport, method_name)
             return method(path, *args, **kwargs)
 
-        def convert_not_enough_information(failure):
-            # XXX: JonathanLange 2008-09-22: This is an abstration leak. This
-            # transport should simply pass errors up from the server.
-            # Converting Launchpad-specific errors into bzrlib errors is the
-            # job of the launchpad transports.
-            failure.trap(NotEnoughInformation)
-            raise NoSuchFile(failure.value.virtual_url_fragment)
-
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
-        deferred.addErrback(convert_not_enough_information)
+        deferred.addErrback(self._translateError)
         return deferred
 
     # Transport methods

@@ -72,8 +72,7 @@ from canonical.codehosting.branchfsclient import (
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.transport import (
     AsyncVirtualTransport, _MultiServer, get_chrooted_transport,
-    get_readonly_transport, NotABranchPath, NotEnoughInformation,
-    SynchronousAdapter)
+    get_readonly_transport, SynchronousAdapter, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
@@ -105,6 +104,26 @@ class BranchNotFound(BzrError):
     """Raised when on translating a virtual path for a non-existent branch."""
 
     _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
+
+
+class NotABranchPath(TranslationError):
+    """Raised when we cannot translate a virtual URL fragment to a branch.
+
+    In particular, this is raised when there is some intrinsic deficiency in
+    the path itself.
+    """
+
+    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
+            "%(reason)s")
+
+
+class NotEnoughInformation(NotABranchPath):
+    """Raised when there's not enough information in the path."""
+
+    def __init__(self, virtual_url_fragment):
+        NotABranchPath.__init__(
+            self, virtual_url_fragment=virtual_url_fragment,
+            reason="Not enough information.")
 
 
 class InvalidOwnerDirectory(NotABranchPath):

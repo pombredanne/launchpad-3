@@ -71,24 +71,14 @@ class CachingAuthserverClient:
             self._authserver.callRemote, 'createBranch', self._user_id,
             owner, product, branch)
 
-        def clear_cache_and_maybe_transalte_error(branch_id):
+        def clear_cache(branch_id):
             # Clear the cache for this branch. We *could* populate it with
             # (branch_id, 'w'), but then we'd be building in more assumptions
             # about the authserver.
             self._branch_info_cache[(owner, product, branch)] = None
-            # XXX: JonathanLange 2008-04-23: This logic should be moved to the
-            # authserver. test_make_product_directory_for_nonexistent_product
-            # and test_mkdir_not_team_member_error (in test_filesystem) both
-            # fail without this check. Those tests should be moved (or copied)
-            # to the authserver level at the same time that this check is.
-            if branch_id == '':
-                raise xmlrpclib.Fault(
-                    PERMISSION_DENIED_FAULT_CODE,
-                    'Cannot create branch: ~%s/%s/%s'
-                    % (owner, product, branch))
             return branch_id
 
-        return deferred.addCallback(clear_cache_and_maybe_transalte_error)
+        return deferred.addCallback(clear_cache)
 
     def getBranchInformation(self, owner, product, branch):
         """Get branch information from the authserver.
