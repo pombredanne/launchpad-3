@@ -772,6 +772,16 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
+    def test_translatePath_cannot_translate(self):
+        # Sometimes translatePath will not know how to translate a path. When
+        # this happens, it returns a Fault saying so, including the path it
+        # couldn't translate.
+        requester = self.factory.makePerson()
+        fault = self.branchfs.translatePath(requester.id, 'untranslatable')
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate 'untranslatable'.", fault)
+
 
 class LaunchpadDatabaseFrontend:
 

@@ -366,3 +366,13 @@ class NoUrlForBranch(LaunchpadFault):
 
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
+
+
+class PathTranslationError(LaunchpadFault):
+    """Raised when a virtual path cannot be translated to a real one."""
+
+    error_code = 290
+    msg_template = "Could not translate '%(path)s'."
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)

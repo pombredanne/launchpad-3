@@ -382,6 +382,9 @@ class FakeBranchFilesystem:
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
+    def translatePath(self, requester_id, path):
+        return faults.PathTranslationError(path)
+
 
 class InMemoryFrontend:
 

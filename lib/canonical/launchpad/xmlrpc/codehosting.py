@@ -275,3 +275,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             branch.requestMirror()
             return True
         return run_with_login(login_id, request_mirror)
+
+    def translatePath(self, requester_id, path):
+        """See `IBranchFileSystem`."""
+        return faults.PathTranslationError(path)
