@@ -783,6 +783,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
             faults.PathTranslationError.error_code,
             "Could not translate '/untranslatable'.", fault)
 
+    def test_translatePath_no_preceding_slash(self):
+        requester = self.factory.makePerson()
+        fault = self.branchfs.translatePath(requester.id, 'invalid')
+        self.assertFaultEqual(
+            faults.InvalidPath.error_code,
+            "Could not translate 'invalid'. Can only translate absolute "
+            "paths.", fault)
+
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch()

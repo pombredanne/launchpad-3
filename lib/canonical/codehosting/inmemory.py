@@ -383,6 +383,8 @@ class FakeBranchFilesystem:
         return '/' + product.development_focus.user_branch.unique_name
 
     def translatePath(self, requester_id, path):
+        if not path.startswith('/'):
+            return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         for branch in self._branch_set:
             if branch.unique_name == stripped_path:

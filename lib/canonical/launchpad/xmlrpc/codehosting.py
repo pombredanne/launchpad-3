@@ -278,6 +278,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
+        if not path.startswith('/'):
+            return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         branch = getUtility(IBranchSet).getByUniqueName(stripped_path)
         if branch:

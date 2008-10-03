@@ -376,3 +376,14 @@ class PathTranslationError(LaunchpadFault):
 
     def __init__(self, path):
         LaunchpadFault.__init__(self, path=path)
+
+
+class InvalidPath(LaunchpadFault):
+    """Raised when `translatePath` is passed something that's not a path."""
+
+    error_code = 300
+    msg_template = (
+        "Could not translate '%(path)s'. Can only translate absolute paths.")
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)
