@@ -1852,3 +1852,18 @@ class ViewEmailAddress(AuthorizationBase):
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))
+
+
+class EditArchivePermissionSet(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchivePermissionSet
+
+    def checkUnauthenticated(self):
+        """Anonymous users have no access."""
+        return False
+
+    def checkAuthenticated(self, user):
+        """Users must be an admin or a member of the tech board."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.admin) or 
+                user.inTeam(celebrities.ubuntu_techboard))

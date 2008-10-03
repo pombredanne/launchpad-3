@@ -372,7 +372,7 @@ class IArchive(IHasOwner):
     @operation_returns_collection_of(Interface) # Really IArchivePermission
     @export_read_operation()
     def getComponentsForQueueAdmin(user):
-        """Return `IArchivePermission`s for the user's queue admin components.
+        """Return `IArchivePermission` for the user's queue admin components.
 
         :param user: An `IPerson`
         :return: A list of IArchivePermission records.
