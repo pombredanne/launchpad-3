@@ -37,6 +37,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
@@ -170,7 +171,7 @@ class ArchiveURL:
         return u"+archive/%s" % self.context.name.lower()
 
 
-class ArchiveNavigation(Navigation):
+class ArchiveNavigation(Navigation, FileNavigationMixin):
     """Navigation methods for IArchive."""
 
     usedfor = IArchive
