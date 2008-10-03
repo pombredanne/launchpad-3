@@ -602,19 +602,20 @@ class Throttle:
 
     implements(IThrottle)
 
-    def allow(self, sender):
+    def allow(self, sender, after=None):
         """See `IThrottle`."""
-        # Users are only allowed to send X number of messages in a certain
-        # period of time.  Both the number of messages and the time period are
-        # configurable.
-        now = datetime.now(pytz.timezone('UTC'))
-        window = now - as_timedelta(
-            config.launchpad.user_to_user_throttle_interval)
+        if after is None:
+            # Users are only allowed to send X number of messages in a certain
+            # period of time.  Both the number of messages and the time period
+            # are configurable.
+            now = datetime.now(pytz.timezone('UTC'))
+            after = now - as_timedelta(
+                config.launchpad.user_to_user_throttle_interval)
         # Count the number of messages from the sender since the throttle
         # date.
         store = Store.of(sender)
         messages_sent = store.find(
             UserToUserEmail,
             And(UserToUserEmail.sender == sender,
-                UserToUserEmail.date_sent >= window)).count()
+                UserToUserEmail.date_sent >= after)).count()
         return messages_sent < config.launchpad.user_to_user_max_messages

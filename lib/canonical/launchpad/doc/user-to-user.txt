@@ -41,7 +41,12 @@ Launchpad records the event when Anne sends the message to Bart.
 
 Anne really likes Bart's project, so she sends him another message.
 
-    >>> throttle.allow(anne)
+    # Use an explicit cutoff date instead of yesterday.
+    >>> from canonical.launchpad.database.message import (
+    ...     utcdatetime_from_field)
+    >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:38 +0100')
+
+    >>> throttle.allow(anne, after)
     True
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -53,10 +58,11 @@ Anne really likes Bart's project, so she sends him another message.
     ...
     ... No really, this is so cool!
     ... """))
+    >>> transaction.commit()
 
 Anne also likes Cris's project, and wants to contact her directly.
 
-    >>> throttle.allow(anne)
+    >>> throttle.allow(anne, after)
     True
 
     >>> cris = factory.makePerson('cris@example.com', 'cris')
@@ -69,9 +75,10 @@ Anne also likes Cris's project, and wants to contact her directly.
     ...
     ... Not as cool as Bumstead, but still neat.
     ... """))
+    >>> transaction.commit()
 
 Anne is no longer allowed to contact any Launchpad users directly, at least
 until tomorrow.
 
-    >>> throttle.allow(anne)
+    >>> throttle.allow(anne, after)
     False
