@@ -11,12 +11,7 @@ __all__ = [
     'CachingAuthserverClient',
     ]
 
-import xmlrpclib
-
 from twisted.internet import defer
-
-from canonical.launchpad.interfaces.codehosting import (
-    PERMISSION_DENIED_FAULT_CODE)
 
 
 class BlockingProxy:
