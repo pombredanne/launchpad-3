@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# Copyright 2005-2008 Canonical Ltd. All rights reserved.
 # pylint: disable-msg=W0702
 
 """Functions for language pack creation script."""
@@ -92,12 +92,30 @@ def export(distroseries, component, update, force_utf8, logger,
 
     pofiles = export_set.get_distroseries_pofiles(
         distroseries, date, component, languagepack=True)
+
+    # Manual caching.  Fetch POTMsgSets in bulk per template, and cache
+    # them across POFiles if subsequent POFiles happen to be for the
+    # same template.
+    cached_potemplate = None
+    cached_potmsgsets = None
+
+    # Manual caching.  We can easily afford to cache all languages, and
+    # we might end up flushing them otherwise.
+    cached_languages = set()
+
     for index, pofile in enumerate(pofiles):
         number = index + 1
         logger.debug("Exporting PO file %d (%d/%d)" %
             (pofile.id, number, pofile_count))
 
         potemplate = pofile.potemplate
+        if potemplate != cached_potemplate:
+            cached_potemplate = potemplate
+            cached_potmsgsets = [
+                potmsgset for potmsgset in potemplate.getPOTMsgSets()]
+
+        cached_languages.add(pofile.language)
+
         domain = potemplate.translation_domain.encode('ascii')
         language_code = pofile.language.code.encode('ascii')
 
@@ -128,9 +146,10 @@ def export(distroseries, component, update, force_utf8, logger,
 
         if number % cache_clear_interval == 0:
             # XXX JeroenVermeulen 2008-07-28 bug=252545: we go through a
-            # lot of data here, and it accumulates somewhere in the
-            # object cache.  Invalidate the cache from time to time, and
-            # allow the garbage collector to run.
+            # lot of data here, mostly TranslationMessage which aren't
+            # reused across iterations, and it accumulates somewhere
+            # in the object cache.  Invalidate the cache from time to
+            # time, and allow the garbage collector to run.
             Store.of(pofile).invalidate()
             gc.collect()
 
