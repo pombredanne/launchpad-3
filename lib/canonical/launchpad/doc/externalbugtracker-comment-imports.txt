@@ -465,7 +465,8 @@ is used as the From address.
     Reply at: http://.../.../+bug/.../comments/2
 
 If we already have comments imported for a bug watch, one notification
-will be sent for each imported comment, even if there are more than one.
+will be sent for each subsequent imported comment, even if there is
+more than one.
 
     >>> external_bugtracker.poster_tuple = (
     ...     "Joe Bloggs", "joe.bloggs@example.com")
