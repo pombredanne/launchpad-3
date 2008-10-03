@@ -368,6 +368,8 @@ class NoUrlForBranch(LaunchpadFault):
         LaunchpadFault.__init__(self, unique_name=unique_name)
 
 
+# XXX: Should this name & text imply "Don't know how to translate" or "Not
+# found" or maybe something else?
 class PathTranslationError(LaunchpadFault):
     """Raised when a virtual path cannot be translated to a real one."""
 

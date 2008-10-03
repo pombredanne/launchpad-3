@@ -840,6 +840,17 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id}, escape(child_path)),
             translation)
 
+    def test_translatePath_no_such_branch(self):
+        # XXX: Maybe we should distinguish between "I don't know how to
+        # translate /foo" and "there's no branch at /~foo/bar/baz".
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
+        fault = self.branchfs.translatePath(requester.id, escape(path))
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % escape(path), fault)
+
 
 class TestIterateSplit(TestCase):
     """Tests for iter_split."""

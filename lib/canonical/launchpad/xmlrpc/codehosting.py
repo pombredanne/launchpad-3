@@ -289,6 +289,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 unescape(first).encode('utf-8'))
             if branch is not None:
                 return (BRANCH_TRANSPORT, {'id': branch.id}, second)
+        # XXX: Should we use the unescaped path in the error? Unescaped is
+        # easier to read.
         return faults.PathTranslationError(path)
 
 
