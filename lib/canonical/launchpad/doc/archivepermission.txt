@@ -262,6 +262,8 @@ will not allow access and generates an OOPS.
     >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
     >>> print report.id == report2.id
     False
+    >>> print report2.value
+    'techboard' team is missing, has it been renamed?
 
 Set up the techboard team:
 
