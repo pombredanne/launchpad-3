@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -777,10 +778,26 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # this happens, it returns a Fault saying so, including the path it
         # couldn't translate.
         requester = self.factory.makePerson()
-        fault = self.branchfs.translatePath(requester.id, 'untranslatable')
+        fault = self.branchfs.translatePath(requester.id, '/untranslatable')
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
-            "Could not translate 'untranslatable'.", fault)
+            "Could not translate '/untranslatable'.", fault)
+
+    def test_translatePath_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        translation = self.branchfs.translatePath(
+            requester.id, '/' + branch.unique_name)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
+
+    def test_translatePath_branch_with_trailing_slash(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        translation = self.branchfs.translatePath(
+            requester.id, '/' + branch.unique_name + '/')
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
 
 class LaunchpadDatabaseFrontend:

@@ -13,7 +13,7 @@ from xmlrpclib import Fault
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
 from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -383,6 +383,10 @@ class FakeBranchFilesystem:
         return '/' + product.development_focus.user_branch.unique_name
 
     def translatePath(self, requester_id, path):
+        stripped_path = path.strip('/')
+        for branch in self._branch_set:
+            if branch.unique_name == stripped_path:
+                return (BRANCH_TRANSPORT, {'id': branch.id}, '')
         return faults.PathTranslationError(path)
 
 

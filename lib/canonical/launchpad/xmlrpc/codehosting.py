@@ -25,7 +25,7 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchFileSystem, IBranchPuller, LAUNCHPAD_SERVICES,
+    BRANCH_TRANSPORT, IBranchFileSystem, IBranchPuller, LAUNCHPAD_SERVICES,
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
@@ -278,4 +278,9 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
-        return faults.PathTranslationError(path)
+        stripped_path = path.strip('/')
+        branch = getUtility(IBranchSet).getByUniqueName(stripped_path)
+        if branch:
+            return (BRANCH_TRANSPORT, {'id': branch.id}, '')
+        else:
+            return faults.PathTranslationError(path)

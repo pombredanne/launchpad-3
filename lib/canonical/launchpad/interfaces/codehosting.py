@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_TRANSPORT',
     'IBranchPuller',
     'IBranchPullerApplication',
     'IBranchFileSystem',
@@ -32,6 +33,9 @@ assert not valid_name(LAUNCHPAD_SERVICES), (
 # These are used as permissions for getBranchInformation.
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+# Indicates that a path's real location is on a branch transport.
+BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 
 
 class IBranchPullerApplication(ILaunchpadApplication):
