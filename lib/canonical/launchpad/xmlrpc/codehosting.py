@@ -288,11 +288,15 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             for first, second in iter_split(stripped_path, '/'):
                 branch = getUtility(IBranchSet).getByUniqueName(
                     unescape(first).encode('utf-8'))
-                if branch is not None:
-                    try:
-                        return (BRANCH_TRANSPORT, {'id': branch.id}, second)
-                    except Unauthorized:
-                        break
+                if branch is None:
+                    continue
+                try:
+                    branch_id = branch.id
+                except Unauthorized:
+                    break
+                if branch.branch_type == BranchType.REMOTE:
+                    break
+                return (BRANCH_TRANSPORT, {'id': branch_id}, second)
             # XXX: Should we use the unescaped path in the error? Unescaped is
             # easier to read.
             return faults.PathTranslationError(path)

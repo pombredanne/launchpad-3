@@ -880,8 +880,17 @@ class BranchFileSystemTest(TestCaseWithFactory):
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
 
-    # Invisible branch
-    # Remote branch
+    def test_translatePath_remote_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.REMOTE)
+        path = escape(u'/%s' % branch.unique_name)
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: This should do whatever test_translatePath_no_such_branch does.
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
     # LAUNCHPAD_SERVICES can read private
     # XXX: Write permissions?
 

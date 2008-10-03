@@ -392,10 +392,12 @@ class FakeBranchFilesystem:
             first = unescape(first).encode('utf-8')
             for branch in self._branch_set:
                 if branch.unique_name == first:
-                    if branch._canRead(requester_id):
-                        return (BRANCH_TRANSPORT, {'id': branch.id}, second)
-                    else:
+                    if not branch._canRead(requester_id):
                         break
+                    elif branch.branch_type == BranchType.REMOTE:
+                        break
+                    else:
+                        return (BRANCH_TRANSPORT, {'id': branch.id}, second)
         return faults.PathTranslationError(path)
 
 
