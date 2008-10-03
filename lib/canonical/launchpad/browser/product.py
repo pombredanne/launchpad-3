@@ -1176,9 +1176,14 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
 
 class ProductChangeTranslatorsView(ProductEditView):
-    label = "Change translation group"
+    label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
+    @cachedproperty
+    def answersUrl(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers', view_name='+addquestion')
 
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
