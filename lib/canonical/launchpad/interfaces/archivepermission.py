@@ -184,3 +184,59 @@ class IArchivePermissionSet(Interface):
         :return: `ArchivePermission` records for all the components that
             'user' is allowed to administer the queue for.
         """
+
+    def newPackageUploader(archive, user, sourcepackagename):
+        """Create and return a new `ArchivePermission` for an uploader.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to add permission.
+        :param sourcepackagename: An `ISourcePackageName` or a string
+            package name.
+
+        :return: The new `ArchivePermission`
+        """
+
+    def newComponentUploader(archive, user, component):
+        """Create and return a new `ArchivePermission` for an uploader.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to add permission.
+        :param component: An `IComponent` or a string package name.
+
+        :return: The new `ArchivePermission`
+        """
+
+    def newQueueAdmin(archive, user, component):
+        """Create and return a new `ArchivePermission` for a queue admin.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to add permission.
+        :param component: An `IComponent` or a string package name.
+
+        :return: The new `ArchivePermission`
+        """
+
+    def deletePackageUploader(archive, user, sourcepackagename):
+        """Revoke upload permissions for a user.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to revoke permission.
+        :param sourcepackagename: An `ISourcePackageName` or a string
+            package name.
+        """
+
+    def deleteComponentUploader(archive, user, component):
+        """Revoke upload permissions for a user.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to revoke permission.
+        :param component: An `IComponent` or a string package name.
+        """
+
+    def deleteQueueAdmin(self, archive, user, component):
+        """Revoke queue admin permissions for a user.
+
+        :param archive: The context `IArchive` for the permission check.
+        :param user: An `IPerson` for whom you want to revoke permission.
+        :param component: An `IComponent` or a string package name.
+        """
