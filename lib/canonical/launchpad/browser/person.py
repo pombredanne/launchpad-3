@@ -4720,8 +4720,8 @@ class PersonOAuthTokensView(LaunchpadView):
         elif token_type == 'request_token':
             token = consumer.getRequestToken(token_key)
         else:
-            raise AssertionError("Invalid form value for token_type: %r"
-                                 % token_type)
+            raise UnexpectedFormData("Invalid form value for token_type: %r"
+                                     % token_type)
         if token is not None:
             token.date_expires = datetime.now(pytz.timezone('UTC'))
             self.request.response.addInfoNotification(
