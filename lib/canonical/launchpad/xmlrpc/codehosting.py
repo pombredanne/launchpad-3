@@ -17,6 +17,8 @@ from xmlrpclib import Fault
 
 import pytz
 
+from bzrlib.urlutils import unescape
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -283,7 +285,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
-            branch = getUtility(IBranchSet).getByUniqueName(first)
+            branch = getUtility(IBranchSet).getByUniqueName(
+                unescape(first).encode('utf-8'))
             if branch is not None:
                 return (BRANCH_TRANSPORT, {'id': branch.id}, second)
         return faults.PathTranslationError(path)

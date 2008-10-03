@@ -10,6 +10,8 @@ __all__ = [
 
 from xmlrpclib import Fault
 
+from bzrlib.urlutils import unescape
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
 from canonical.launchpad.interfaces.codehosting import (
@@ -387,6 +389,7 @@ class FakeBranchFilesystem:
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
+            first = unescape(first).encode('utf-8')
             for branch in self._branch_set:
                 if branch.unique_name == first:
                     return (BRANCH_TRANSPORT, {'id': branch.id}, second)

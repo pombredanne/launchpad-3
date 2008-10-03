@@ -9,6 +9,7 @@ import pytz
 import unittest
 
 from bzrlib.tests import adapt_tests, TestScenarioApplier
+from bzrlib.urlutils import escape
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -779,48 +780,50 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # this happens, it returns a Fault saying so, including the path it
         # couldn't translate.
         requester = self.factory.makePerson()
-        fault = self.branchfs.translatePath(requester.id, '/untranslatable')
+        path = escape(u'/untranslatable')
+        fault = self.branchfs.translatePath(requester.id, path)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
-            "Could not translate '/untranslatable'.", fault)
+            "Could not translate '%s'." % path, fault)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
-        fault = self.branchfs.translatePath(requester.id, 'invalid')
+        path = escape(u'invalid')
+        fault = self.branchfs.translatePath(requester.id, path)
         self.assertFaultEqual(
             faults.InvalidPath.error_code,
-            "Could not translate 'invalid'. Can only translate absolute "
-            "paths.", fault)
+            "Could not translate '%s'. Can only translate absolute paths."
+            % path, fault)
 
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch()
-        translation = self.branchfs.translatePath(
-            requester.id, '/' + branch.unique_name)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
     def test_translatePath_branch_with_trailing_slash(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch()
-        translation = self.branchfs.translatePath(
-            requester.id, '/' + branch.unique_name + '/')
+        path = escape(u'/%s/' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
     def test_translatePath_path_in_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch()
-        translation = self.branchfs.translatePath(
-            requester.id, '/%s/child' % branch.unique_name)
+        path = escape(u'/%s/child' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, 'child'), translation)
 
     def test_translatePath_nested_path_in_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch()
-        translation = self.branchfs.translatePath(
-            requester.id, '/%s/a/b' % branch.unique_name)
+        path = escape(u'/%s/a/b' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, 'a/b'), translation)
 

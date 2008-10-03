@@ -214,7 +214,8 @@ class IBranchFileSystem(Interface):
 
         :param requester_id: the database ID of the person requesting the
             path translation.
-        :param path: the path being translated.
+        :param path: the path being translated. This should be a URL escaped
+            string.
 
         :returns: `PathTranslationError` if 'path' cannot be translated.
             (transport_type, transport_parameters, path_in_transport)
