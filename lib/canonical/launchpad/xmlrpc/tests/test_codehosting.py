@@ -827,6 +827,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, 'a/b'), translation)
 
+    def test_translatePath_preserves_escaping(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        child_path = u'a@b'
+        # This test is only meaningful if the path isn't the same when
+        # escaped.
+        self.assertNotEqual(escape(child_path), child_path.encode('utf-8'))
+        path = escape(u'/%s/%s' % (branch.unique_name, child_path))
+        translation = self.branchfs.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, escape(child_path)),
+            translation)
+
 
 class TestIterateSplit(TestCase):
     """Tests for iter_split."""
