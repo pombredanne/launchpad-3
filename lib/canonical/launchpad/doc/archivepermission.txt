@@ -172,6 +172,9 @@ to be thrown.
     ...
     NotFoundError: 'fakepackage'
 
+Similarly, packagesForUploader() returns the ArchivePermission records where
+the supplied user has permission to upload to packages.
+
     >>> def showPersonsPackages(archive, person):
     ...     packages = permission_set.packagesForUploader(
     ...         archive, person)
