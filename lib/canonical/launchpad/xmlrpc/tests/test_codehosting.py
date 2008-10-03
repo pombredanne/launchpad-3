@@ -782,6 +782,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
         fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -790,6 +791,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.InvalidPath.error_code,
             "Could not translate '%s'. Can only translate absolute paths."
@@ -800,6 +802,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         path = escape(u'/%s' % branch.unique_name)
         translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
@@ -808,6 +811,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         path = escape(u'/%s/' % branch.unique_name)
         translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
 
@@ -816,6 +820,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         path = escape(u'/%s/child' % branch.unique_name)
         translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, 'child'), translation)
 
@@ -824,6 +829,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         path = escape(u'/%s/a/b' % branch.unique_name)
         translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, 'a/b'), translation)
 
@@ -836,6 +842,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertNotEqual(escape(child_path), child_path.encode('utf-8'))
         path = escape(u'/%s/%s' % (branch.unique_name, child_path))
         translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id}, escape(child_path)),
             translation)
@@ -847,9 +854,36 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
         fault = self.branchfs.translatePath(requester.id, escape(path))
+        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % escape(path), fault)
+
+    def test_translatePath_private_branch(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeBranch(private=True, owner=requester))
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id}, ''), translation)
+
+    def test_translatePath_invisible_branch(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: This should do whatever test_translatePath_no_such_branch does.
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
+    # Invisible branch
+    # Remote branch
+    # LAUNCHPAD_SERVICES can read private
+    # XXX: Write permissions?
 
 
 class TestIterateSplit(TestCase):

@@ -281,17 +281,22 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
-        if not path.startswith('/'):
-            return faults.InvalidPath(path)
-        stripped_path = path.strip('/')
-        for first, second in iter_split(stripped_path, '/'):
-            branch = getUtility(IBranchSet).getByUniqueName(
-                unescape(first).encode('utf-8'))
-            if branch is not None:
-                return (BRANCH_TRANSPORT, {'id': branch.id}, second)
-        # XXX: Should we use the unescaped path in the error? Unescaped is
-        # easier to read.
-        return faults.PathTranslationError(path)
+        def translate_path(requester):
+            if not path.startswith('/'):
+                return faults.InvalidPath(path)
+            stripped_path = path.strip('/')
+            for first, second in iter_split(stripped_path, '/'):
+                branch = getUtility(IBranchSet).getByUniqueName(
+                    unescape(first).encode('utf-8'))
+                if branch is not None:
+                    try:
+                        return (BRANCH_TRANSPORT, {'id': branch.id}, second)
+                    except Unauthorized:
+                        break
+            # XXX: Should we use the unescaped path in the error? Unescaped is
+            # easier to read.
+            return faults.PathTranslationError(path)
+        return run_with_login(requester_id, translate_path)
 
 
 def iter_split(string, splitter):
