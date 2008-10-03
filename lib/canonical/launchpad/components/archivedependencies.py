@@ -60,8 +60,12 @@ def getComponentsForBuilding(build):
     :param build: a context `IBuild`.
     :return: a list of component names.
     """
+    # BACKPORTS should be able to fetch build dependencies from any
+    # component in order to cope with component changes occurring
+    # accross distroseries. See bug #198936 for further information.
     if build.pocket == PackagePublishingPocket.BACKPORTS:
         return component_dependencies['multiverse']
+
     return component_dependencies[build.current_component.name]
 
 
@@ -118,54 +122,44 @@ def getSourcesListForBuilding(build):
 
     sources_list_lines = []
     for archive, pocket, components in deps:
-        archive_dep = ArchiveDependency(
-            archive, build.distroarchseries, pocket, components)
-        if not archive_dep.has_published_binaries:
+        has_published_binaries = _hasPublishedBinaries(
+            archive, build.distroarchseries, pocket)
+        if not has_published_binaries:
             continue
-        sources_list_lines.append(
-            archive_dep.binary_sources_list_line)
+        sources_list_line = _getBinarySourcesListLine(
+            archive, build.distroarchseries, pocket, components)
+        sources_list_lines.append(sources_list_line)
 
     return sources_list_lines
 
 
-class ArchiveDependency:
+def _hasPublishedBinaries(archive, distroarchseries, pocket):
+    """Whether or not the archive dependency has published binaries."""
+    # The primary archive dependencies are always relevant.
+    if archive.purpose == ArchivePurpose.PRIMARY:
+        return True
 
-    def __init__(self, archive, distroarchseries, pocket, components):
-        self.archive = archive
-        self.distroarchseries = distroarchseries
-        self.pocket = pocket
-        self.components = components
+    published_binaries = archive.getAllPublishedBinaries(
+        distroarchseries=distroarchseries,
+        status=PackagePublishingStatus.PUBLISHED)
+    # XXX cprov 20080923 bug=246200: This count should be replaced
+    # by bool() (__non_zero__) when storm implementation gets fixed.
+    return published_binaries.count() > 0
 
-    @property
-    def has_published_binaries(self):
-        """Whether or not the archive dependency has published binaries."""
-        # The primary archive dependencies are always relevant.
-        if self.archive.purpose == ArchivePurpose.PRIMARY:
-            return True
 
-        published_binaries = self.archive.getAllPublishedBinaries(
-            distroarchseries=self.distroarchseries,
-            status=PackagePublishingStatus.PUBLISHED)
-        # XXX cprov 20080923 bug=246200: This count should be replaced
-        # by bool() (__non_zero__) when storm implementation gets fixed.
-        return published_binaries.count() > 0
+def _getBinarySourcesListLine(archive, distroarchseries, pocket, components):
+    """Return the correponding binary sources_list line."""
+    # Encode the private PPA repository password in the
+    # sources_list line. Note that the buildlog will be
+    # sanitized to not expose it.
+    if archive.private:
+        uri = URI(archive.archive_url)
+        uri = uri.replace(
+            userinfo="buildd:%s" % archive.buildd_secret)
+        url = str(uri)
+    else:
+        url = archive.archive_url
 
-    @property
-    def binary_sources_list_line(self):
-        """Return the correponding binary sources_list line."""
-        # Encode the private PPA repository password in the
-        # sources_list line. Note that the buildlog will be
-        # sanitized to not expose it.
-        if self.archive.private:
-            uri = URI(self.archive.archive_url)
-            uri = uri.replace(
-                userinfo="buildd:%s" % self.archive.buildd_secret)
-            url = str(uri)
-        else:
-            url = self.archive.archive_url
-
-        suite = (self.distroarchseries.distroseries.name +
-                 pocketsuffix[self.pocket])
-        components_term = ' '.join(self.components)
-        return 'deb %s %s %s' % (url, suite, components_term)
+    suite = distroarchseries.distroseries.name + pocketsuffix[pocket]
+    return 'deb %s %s %s' % (url, suite, ' '.join(components))
 

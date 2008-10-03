@@ -4,7 +4,7 @@
 is used to provided the contents of 'sources_list' file used to build
 sources in the given IBuildQueue context.
 
-We will user Celso's PPA for testing these mechanisms.
+We will use Celso's PPA for testing these mechanisms.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -12,7 +12,7 @@ We will user Celso's PPA for testing these mechanisms.
     PPA for Celso Providelo
 
 `component_dependencies` contains a static map of the default ubuntu
-component dependencies (known s 'ogre-model').
+component dependencies (known as the 'ogre-model').
 
     >>> from canonical.launchpad.components.archivedependencies import (
     ...     component_dependencies)
@@ -95,7 +95,7 @@ expected content for building the just-created source.
 Note that only the default ubuntu dependencies for a public PPA will be
 considered when building the source candidate. That's because there is
 no binary published in Celso's PPA hoary/i386, so there is
-not need to request builder to load its archive indexes.
+no need to request the builder to load its archive indexes.
 
     >>> from canonical.launchpad.interfaces.publishing import (
     ...     PackagePublishingStatus)
@@ -234,9 +234,9 @@ A proper name for this "model" would be 'cross-component-dependency'.
     multiverse | main restricted universe multiverse
        partner | partner
 
-As reported in bug #198936, builds for the BACKPORTS pocket are
-allowed to use any component available, independently of the component they are
-currently published. This special-case is important because it
+As fixed for bug #198936, builds for the BACKPORTS pocket are allowed
+to use any component available, independently of the component they
+are currently published. This special-case is important because it
 avoids changes to accommodate the backported source in the already
 released series.
 
