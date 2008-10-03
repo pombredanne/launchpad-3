@@ -150,11 +150,12 @@ run: inplace stop
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice -C $(CONFFILE)
 
-windmill:
+windmill: inplace stop
     # Same as the regular app server, but with SSL switched off.
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,google-webservice -C testrunner-windmill
+		 -r librarian,google-webservice \
+		 -C configs/testrunner-windmill/launchpad.conf
 
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
