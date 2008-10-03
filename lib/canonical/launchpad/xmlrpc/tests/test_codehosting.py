@@ -581,17 +581,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(branch.id, branch_id)
         self.assertEqual(WRITABLE, permissions)
 
-    def test_getBranchInformation_unowned(self):
-        # We only have read-only access to hosted branches owned by other
-        # people.
-        requester = self.factory.makePerson()
-        branch = self.factory.makeBranch(BranchType.HOSTED)
-        branch_id, permissions = self.branchfs.getBranchInformation(
-            requester.id, branch.owner.name, branch.product.name, branch.name)
-        login(ANONYMOUS)
-        self.assertEqual(branch.id, branch_id)
-        self.assertEqual(READ_ONLY, permissions)
-
     def test_getBranchInformation_team_unowned(self):
         # We only have read-only access to hosted branches owned by other
         # teams.
