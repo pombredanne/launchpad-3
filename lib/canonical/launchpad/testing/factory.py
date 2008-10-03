@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -51,7 +52,6 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -441,7 +441,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -460,7 +461,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -531,7 +533,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -539,7 +541,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
@@ -583,7 +586,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
         if msgid is None:
-            msgid = make_msgid('launchpad')
+            msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
@@ -746,7 +749,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        rfc822msgid = make_msgid("launchpad")
+        rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)
         MessageChunk(message=message, sequence=1, content=content)
@@ -846,7 +849,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_series=parent_series, owner=distribution.owner)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
-                       sourcepackagename=None, owner=None):
+                       sourcepackagename=None, owner=None, name=None,
+                       translation_domain=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -858,8 +862,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
 
-        name = self.getUniqueString()
-        translation_domain = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if translation_domain is None:
+            translation_domain = self.getUniqueString()
 
         if owner is None:
             if productseries is None:
@@ -907,3 +913,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeUniqueRFC822MsgId(self):
+        """Make a unique RFC 822 message id.
+
+        The created message id is guaranteed not to exist in the
+        `Message` table already.
+        """
+        msg_id = make_msgid('launchpad')
+        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+            msg_id = make_msgid('launchpad')
+        return msg_id
+

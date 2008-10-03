@@ -24,7 +24,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BaseImageUpload, PasswordField, UniqueField)
+    BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.lazr.fields import Reference
@@ -74,7 +74,7 @@ class ILaunchpadOpenIDStoreFactory(Interface):
         """Create a LaunchpadOpenIDStore instance."""
 
 
-class TrustRootField(UniqueField):
+class TrustRootField(UniqueField, URIField):
     """An OpenID Relying Party trust root, which is unique."""
 
     attribute = 'trust_root'
@@ -115,6 +115,7 @@ class IOpenIDRPConfig(Interface):
     id = Int(title=u'ID', required=True)
     trust_root = TrustRootField(
         title=_('Trust Root'), required=True,
+        trailing_slash=True,
         description=_('The openid.trust_root value sent by the '
                       'Relying Party'))
     displayname = TextLine(

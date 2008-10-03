@@ -98,25 +98,41 @@ def get_branch_and_user(filename):
     Return a 2-tuple of (branch, username).  If no matching branch url can be
     found within the first 10 lines of the file, (None, None) is returned.
     """
+    DEVPAD = 'devpad.canonical.com'
+    LP = 'bazaar.launchpad.net'
     with open(filename) as fp:
         for i, line in enumerate(fp):
+            if i >= 10:
+                # The branch was not in the first 10 lines, so we fail.
+                break
             branch = line.strip()
             parts = urlparse.urlsplit(branch)
-            if not parts.scheme or not parts.netloc.startswith('devpad'):
-                if i < 10:
-                    continue
-                break
-            path = parts.path.split(SLASH)
-            if path[1] <> 'code' or path[2] == 'launchpad':
+            if not parts.scheme:
                 continue
-            return SLASH.join(path[2:]), path[2]
+            path = parts.path.split(SLASH)
+            if parts.netloc == LP:
+                username = path[1][1:]
+                return SLASH.join(path[1:]), username
+            elif parts.netloc == DEVPAD:
+                if path[1] <> 'code' or path[2] == 'launchpad':
+                    continue
+                return SLASH.join(path[2:]), path[2]
+            else:
+                continue
         return None, None
 
 
 def get_this_tree():
-    """Get the working tree that this review script lives in."""
-    tree_root = os.path.dirname(os.path.dirname(__file__))
-    return WorkingTree.open(tree_root)
+    """Get the working tree.
+
+    First try the branch we're sitting in and if that fails then use the one
+    this review script lives in.
+    """
+    try:
+        return WorkingTree.open(os.getcwdu())
+    except NotBranchError:
+        tree_root = os.path.dirname(os.path.dirname(__file__))
+        return WorkingTree.open(tree_root)
 
 
 def get_most_recent_author(tree):

@@ -171,8 +171,11 @@ If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
 
     >>> from canonical.config import config
-    >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
-    >>> config.launchpad.max_bug_attachment_size = 0
+    >>> max_bug_attachment_size = """
+    ...     [launchpad]
+    ...     max_bug_attachment_size: 0
+    ...     """
+    >>> config.push('max_bug_attachment_size', max_bug_attachment_size)
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={'field.subject': u'Title',
@@ -285,7 +288,7 @@ from the librarian.
     >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
-    >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
+    >>> config_data = config.pop('max_bug_attachment_size')
     >>> event_listener.unregister()
 
 

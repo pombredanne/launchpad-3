@@ -76,6 +76,12 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.timeout import set_default_timeout_function
 
 
+# Any requests that have the following element at the beginning of their
+# PATH_INFO will be handled by the web service, as if they had gone to
+# api.launchpad.net.
+WEBSERVICE_PATH_OVERRIDE = 'api'
+
+
 class StepsToGo:
     """
 
@@ -174,6 +180,7 @@ class ApplicationServerSettingRequestFactory:
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request
 
+
 class VirtualHostRequestPublicationFactory:
     """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
 
@@ -181,6 +188,8 @@ class VirtualHostRequestPublicationFactory:
     that matches a particular port and set of HTTP methods.
     """
     implements(IRequestPublicationFactory)
+
+    default_methods = ['GET', 'HEAD', 'POST']
 
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None, methods=None, handle_default_host=False):
@@ -205,7 +214,7 @@ class VirtualHostRequestPublicationFactory:
         self.publication_factory = publication_factory
         self.port = port
         if methods is None:
-            methods = ['GET', 'HEAD', 'POST']
+            methods = self.default_methods
         self.methods = methods
         self.handle_default_host = handle_default_host
 
@@ -276,9 +285,8 @@ class VirtualHostRequestPublicationFactory:
             self.checkRequest(environment))
 
         if not real_request_factory:
-            real_request_factory = self.request_factory
-            publication_factory = self.publication_factory
-
+            real_request_factory, publication_factory = (
+                self.getRequestAndPublicationFactories(environment))
 
         host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
@@ -299,6 +307,19 @@ class VirtualHostRequestPublicationFactory:
         self._thread_local.environment = None
         return (request_factory, publication_factory)
 
+    def getRequestAndPublicationFactories(self, environment):
+        """Return the request and publication factories to use.
+
+        You can override this method if the request and publication can
+        vary based on the environment.
+        """
+        return self.request_factory, self.publication_factory
+
+    def getAcceptableMethods(self, environment):
+        """Return the HTTP methods acceptable in this particular environment.
+        """
+        return self.methods
+
     def checkRequest(self, environment):
         """Makes sure that the incoming HTTP request is of an expected type.
 
@@ -311,13 +332,16 @@ class VirtualHostRequestPublicationFactory:
             the request does comply, (None, None).
         """
         method = environment.get('REQUEST_METHOD')
-        if method in self.methods:
-            return None, None
+
+        if method in self.getAcceptableMethods(environment):
+            factories = (None, None)
         else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
                 405, headers={'Allow':" ".join(self.methods)})
-            return request_factory, publication_factory
+            factories = (request_factory, publication_factory)
+
+        return factories
 
 
 class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
@@ -354,13 +378,57 @@ class WebServiceRequestPublicationFactory(
     resources published through a web service.
     """
 
+    default_methods = [
+        'GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
+
     def __init__(self, vhost_name, request_factory, publication_factory,
                  port=None):
         """This factory accepts requests that use all five major HTTP methods.
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
-            vhost_name, request_factory, publication_factory, port,
-            ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
+            vhost_name, request_factory, publication_factory, port)
+
+
+class VHostWebServiceRequestPublicationFactory(
+    VirtualHostRequestPublicationFactory):
+    """An `IRequestPublicationFactory` handling requests to vhosts.
+
+    It also handles requests to the launchpad web service, if the
+    request's path points to a web service resource.
+    """
+
+    def getAcceptableMethods(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
+
+        If this is a request for a webservice path, returns the appropriate
+        methods.
+        """
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceRequestPublicationFactory.default_methods
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getAcceptableMethods(environment)
+
+    def getRequestAndPublicationFactories(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
+
+        If this is a request for a webservice path, returns the appropriate
+        factories.
+        """
+        if self.isWebServicePath(environment.get('PATH_INFO', '')):
+            return WebServiceClientRequest, WebServicePublication
+        else:
+            return super(
+                VHostWebServiceRequestPublicationFactory,
+                self).getRequestAndPublicationFactories(environment)
+
+    def isWebServicePath(self, path):
+        """Does the path refer to a web service resource?"""
+        # Add a trailing slash, if it is missing.
+        if not path.endswith('/'):
+            path = path + '/'
+        return path.startswith('/%s/' % WEBSERVICE_PATH_OVERRIDE)
 
 
 class NotFoundRequestPublicationFactory:
@@ -1086,6 +1154,18 @@ class WebServicePublication(LaunchpadBrowserPublication):
         txn.commit()
 
     def getPrincipal(self, request):
+        """See `LaunchpadBrowserPublication`.
+
+        Web service requests are authenticated using OAuth, except for the
+        one made using (presumably) JavaScript on the /api override path.
+        """
+        # Use the regular HTTP authentication, when the request is not
+        # on the API virtual host but comes through the path_override on
+        # the other regular virtual hosts.
+        request_path = request.get('PATH_INFO', '')
+        if request_path.startswith("/%s" % WEBSERVICE_PATH_OVERRIDE):
+            return super(WebServicePublication, self).getPrincipal(request)
+
         # Fetch OAuth authorization information from the request.
         form = get_oauth_authorization(request)
 
@@ -1143,22 +1223,42 @@ class WebServiceRequestTraversal:
     def traverse(self, ob):
         """See `zope.publisher.interfaces.IPublisherRequest`.
 
-        WebService requests call the WebServicePublication.getResource()
-        on the result of the default traversal.
+        This is called once at the beginning of the traversal process.
+
+        WebService requests call the `WebServicePublication.getResource()`
+        on the result of the base class's traversal.
         """
-        stack = self.getTraversalStack()
-        # Only accept versioned URLs.
-        if len(stack) > 0:
-            last_component = stack.pop()
-        else:
-            last_component = ''
-        if last_component == 'beta':
-            self.setTraversalStack(stack)
-            self.setVirtualHostRoot(names=('beta', ))
-        else:
-            raise NotFound(self, '', self)
+        self._removeVirtualHostTraversals()
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
+
+    def _removeVirtualHostTraversals(self):
+        """Remove the /api and /beta traversal names."""
+        names = list()
+        api = self._popTraversal(WEBSERVICE_PATH_OVERRIDE)
+        if api is not None:
+            names.append(api)
+
+        # Only accept versioned URLs.
+        beta = self._popTraversal('beta')
+        if beta is not None:
+            names.append(beta)
+            self.setVirtualHostRoot(names=names)
+        else:
+            raise NotFound(self, '', self)
+
+    def _popTraversal(self, name):
+        """Remove a name from the traversal stack, if it is present.
+
+        :return: The name of the element removed, or None if the stack
+            wasn't changed.
+        """
+        stack = self.getTraversalStack()
+        if len(stack) > 0 and stack[-1] == name:
+            item = stack.pop()
+            self.setTraversalStack(stack)
+            return item
+        return None
 
 
 class WebServiceClientRequest(WebServiceRequestTraversal,
@@ -1357,16 +1457,17 @@ def register_launchpad_request_publication_factories():
     DEATH TO ZCML!
     """
     VHRP = VirtualHostRequestPublicationFactory
+    VWSHRP = VHostWebServiceRequestPublicationFactory
 
     factories = [
-        VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
-             handle_default_host=True),
-        VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
-        VHRP('code', CodeBrowserRequest, CodePublication),
-        VHRP('translations', TranslationsBrowserRequest,
-             TranslationsPublication),
-        VHRP('bugs', BugsBrowserRequest, BugsPublication),
-        VHRP('answers', AnswersBrowserRequest, AnswersPublication),
+        VWSHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
+               handle_default_host=True),
+        VWSHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
+        VWSHRP('code', CodeBrowserRequest, CodePublication),
+        VWSHRP('translations', TranslationsBrowserRequest,
+               TranslationsPublication),
+        VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
+        VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
         VHRP('id', IdBrowserRequest, IdPublication),
         # XXX sinzui 2008-09-04 bug=264783: Remove openid.
         VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
