@@ -202,7 +202,6 @@ class RemoveTranslations(LaunchpadScript):
                  "messages in this language."),
         ExtendedOption(
             '-L', '--not-language', action='store_true', dest='not_language',
-            default=False,
             help="Invert language match: spare messages in given language."),
         ExtendedOption(
             '-C', '--is-current', dest='is_current', type='bool',
@@ -219,6 +218,9 @@ class RemoveTranslations(LaunchpadScript):
         ExtendedOption(
             '-f', '--force', action='store_true', dest='force',
             help="Override safety check on moderately unsafe action."),
+        ExtendedOption(
+            '-d', '--dry-run', action='store_true', dest='dry_run',
+            help="Go through the motions, but don't really delete.")
         ]
 
     def add_my_options(self):
@@ -285,6 +287,9 @@ class RemoveTranslations(LaunchpadScript):
         if message is not None:
             self.logger.warn(message)
 
+        if self.options.dry_run:
+            self.logger.info("Dry run only.  Not really deleting.")
+
         remove_translations(logger=self.logger,
             submitter=self.options.submitter,
             reject_license=self.options.reject_license,
@@ -295,7 +300,9 @@ class RemoveTranslations(LaunchpadScript):
             is_current=self.options.is_current,
             is_imported=self.options.is_imported,
             msgid_singular=self.options.msgid, origin=self.options.origin)
-        self.txn.commit()
+
+        if not self.options.dry_run:
+            self.txn.commit()
 
 
 def remove_translations(logger=None, submitter=None, reviewer=None, 

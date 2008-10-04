@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from optparse import OptionParser, OptionValueError
+import logging
 from pytz import timezone
 from unittest import TestLoader
 
@@ -30,18 +31,25 @@ def make_script(args=None):
     """Create a `RemoveTranslations` script with given options."""
     if isinstance(args, basestring):
         args = [args]
-    return RemoveTranslations('remove-translations-test', test_args=args)
+    script = RemoveTranslations('remove-translations-test', test_args=args)
+    script.logger.setLevel(logging.ERROR)
+    return script
 
 
 class TestRemoveTranslationsConstraints(TestCase):
     """Test safety net for translations removal options."""
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        # Acquire privileges to delete TranslationMessages.  We won't
+        # actually do that here, but we'll go through all the motions.
+        self.layer.switchDbUser('postgres')
+
     def _test_options(self, opts):
         """Get `_check_constraints_safety`'s answer for given options."""
         return make_script(opts)._check_constraints_safety()
 
-    def disabled_test_RecklessRemoval(self):
+    def test_RecklessRemoval(self):
         # The script will refuse to run if no specific person or id is
         # targeted.  Operator error is more likely than a use case for
         # casually deleting lots of loosely-specified translations.
@@ -53,13 +61,14 @@ class TestRemoveTranslationsConstraints(TestCase):
             '--msgid=foo',
             '--origin=1',
             '--force',
+            '--dry-run',
             ]
         script = make_script(opts)
-        self.assertRaises(LaunchpadScriptFailure, script.run)
+        self.assertRaises(LaunchpadScriptFailure, script.main)
 
         # The same removal will work if we add, say, a submitter id.
         opts.append('--submitter=8134719')
-        make_script(opts).run()
+        make_script(opts).main()
 
     def test_RemoveBySubmitter(self):
         # Removing all translations by one submitter is allowed.
