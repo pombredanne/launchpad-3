@@ -51,7 +51,8 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.oauth import OAuthAccessToken
+from canonical.launchpad.database.oauth import (
+    OAuthAccessToken, OAuthRequestToken)
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -400,6 +401,14 @@ class Person(
     def oauth_access_tokens(self):
         """See `IPerson`."""
         return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
+
+    @property
+    def oauth_request_tokens(self):
+        """See `IPerson`."""
+        return OAuthRequestToken.select("""
             person = %s
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))

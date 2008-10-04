@@ -4697,20 +4697,35 @@ class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
     def initialize(self):
-        # Store the (sorted) list of access tokens that are going to be
-        # used in the template.
-        self.tokens = sorted(
-            self.context.oauth_access_tokens,
-            key=lambda token: token.consumer.key)
         if self.request.method == 'POST':
             self.expireToken()
+
+    @property
+    def access_tokens(self):
+        return sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+
+    @property
+    def request_tokens(self):
+        return sorted(
+            self.context.oauth_request_tokens,
+            key=lambda token: token.consumer.key)
 
     def expireToken(self):
         """Expire the token with the key contained in the request's form."""
         form = self.request.form
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('consumer_key'))
-        token = consumer.getAccessToken(form.get('token_key'))
+        token_key = form.get('token_key')
+        token_type = form.get('token_type')
+        if token_type == 'access_token':
+            token = consumer.getAccessToken(token_key)
+        elif token_type == 'request_token':
+            token = consumer.getRequestToken(token_key)
+        else:
+            raise UnexpectedFormData("Invalid form value for token_type: %r"
+                                     % token_type)
         if token is not None:
             token.date_expires = datetime.now(pytz.timezone('UTC'))
             self.request.response.addInfoNotification(
