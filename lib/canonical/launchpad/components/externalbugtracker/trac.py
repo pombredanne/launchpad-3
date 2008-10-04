@@ -11,11 +11,13 @@ import time
 import urllib2
 import xmlrpclib
 
+from cookielib import CookieJar
 from datetime import datetime
 from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker.base import (
     BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
@@ -286,18 +288,29 @@ class TracLPPlugin(Trac):
         ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
-                 internal_xmlrpc_transport=None):
+                 internal_xmlrpc_transport=None, cookie_jar=None):
         super(TracLPPlugin, self).__init__(baseurl)
 
+        if cookie_jar is None:
+            cookie_jar = CookieJar()
         if xmlrpc_transport is None:
-            xmlrpc_transport = UrlLib2Transport(baseurl)
+            xmlrpc_transport = UrlLib2Transport(baseurl, cookie_jar)
 
+        self._cookie_jar = cookie_jar
         self._xmlrpc_transport = xmlrpc_transport
         self._internal_xmlrpc_transport = internal_xmlrpc_transport
 
         xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc')
         self._server = xmlrpclib.ServerProxy(
             xmlrpc_endpoint, transport=self._xmlrpc_transport)
+
+    @cachedproperty
+    def urlopener(self):
+        """Return a urllib2.OpenerDirector that handles cookies."""
+        opener = urllib2.build_opener(
+            urllib2.HTTPCookieProcessor(self._cookie_jar))
+
+        return opener
 
     @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
@@ -311,6 +324,15 @@ class TracLPPlugin(Trac):
             # those bugs don't exist on the remote system.
             if remote_bug['status'] != 'missing':
                 self.bugs[int(remote_bug['id'])] = remote_bug
+
+    def urlopen(self, request, data=None):
+        """See `ExternalBugTracker`.
+
+        This method is overridden here so that it uses the urlopener
+        property in order to maintain the use of Trac authentication
+        cookies across requests.
+        """
+        return self.urlopener.open(request, data)
 
     def _generateAuthenticationToken(self):
         """Create an authentication token and return it."""
@@ -333,8 +355,6 @@ class TracLPPlugin(Trac):
         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
         auth_url = urlappend(base_auth_url, token_text)
         response = self.urlopen(auth_url)
-        auth_cookie = self._extractAuthCookie(response.headers['Set-Cookie'])
-        self._xmlrpc_transport.setCookie(auth_cookie)
 
     @needs_authentication
     def getCurrentDBTime(self):
