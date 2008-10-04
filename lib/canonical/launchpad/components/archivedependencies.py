@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'component_dependencies',
     'getComponentsForBuilding',
+    'getPrimaryComponentOverride',
     'getSourcesListForBuilding',
     'pocket_dependencies',
     ]
@@ -93,12 +94,12 @@ def getSourcesListForBuilding(build):
         if build.archive.private:
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.SECURITY]
+            primary_components = component_dependencies[
+                getPrimaryComponentOverride(build)]
         else:
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.UPDATES]
-
-        # Partner and PPA may also depend on any component.
-        primary_components = component_dependencies['multiverse']
+            primary_components = component_dependencies['multiverse']
 
         deps.append(
             (build.archive, PackagePublishingPocket.RELEASE,
@@ -132,6 +133,23 @@ def getSourcesListForBuilding(build):
 
     return sources_list_lines
 
+
+def getPrimaryComponentOverride(build):
+    """Return the component name of the primary archive ancestry.
+
+    If no ancestry could be found, default to 'universe'.
+    """
+    primary_archive = build.archive.distribution.main_archive
+    ancestries = primary_archive.getPublishedSources(
+        name=build.sourcepackagerelease.name,
+        distroseries=build.distroseries, exact_match=True)
+
+    # XXX cprov 20080923 bug=246200: This count should be replaced
+    # by bool() (__non_zero__) when storm implementation gets fixed.
+    if ancestries.count() > 0:
+        return ancestries[0].component.name
+
+    return 'universe'
 
 def _hasPublishedBinaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
