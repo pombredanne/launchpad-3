@@ -270,5 +270,5 @@ output should have one checked input.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<...checked="checked"...value="GNU_GPL_V2" />, 
+    [<...checked="checked"...value="GNU_GPL_V2" />,
     <...checked="checked"...value="GNU_LGPL_V2_1" />]

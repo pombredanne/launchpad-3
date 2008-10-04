@@ -18,9 +18,10 @@ from datetime import datetime, timedelta
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
 from zope.app import zapi
+from zope.publisher.browser import BrowserView
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.app.traversing.interfaces import ITraversable, IPathAdapter
+from zope.traversing.interfaces import ITraversable, IPathAdapter
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
@@ -67,28 +68,19 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       CONTEXTS/menu:facet       gives the facet menu of the nearest object
-                                 along the canonical url chain that has an
-                                 IFacetMenu adapter.
+    The facet menu can be accessed with an expression like:
 
+        tal:define="facetmenu view/menu:facet"
+
+    which gives the facet menu of the nearest object along the canonical url
+    chain that has an IFacetMenu adapter.
     """
 
     def __init__(self, context):
         self._tales_context = context
-        if zope_isinstance(context, dict):
-            # We have what is probably a CONTEXTS dict.
-            # We get the context out of here, and use that for self.context.
-            # We also want to see if the view has a __launchpad_facetname__
-            # attribute.
-
-            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
-            # dict to a view object. Templates must switch to 'view'.
-            self._context = context['context']
-            self.view = context['view']
-            self._request = context['request']
-            self._selectedfacetname = getattr(
-                self.view, '__launchpad_facetname__', None)
-        elif zope_isinstance(context, LaunchpadView):
+        if zope_isinstance(context, (LaunchpadView, BrowserView)):
+            # The view is a LaunchpadView or a SimpleViewClass from a
+            # template. The facet is added to the call by the ZCML.
             self.view = context
             self._context = self.view.context
             self._request = self.view.request
@@ -407,6 +399,9 @@ class ObjectFormatterAPI:
 
     implements(ITraversable)
 
+    # Although we avoid mutables as class attributes, the two ones below are
+    # constants, so it's not a problem. We might want to use something like
+    # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmg:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url'}
     # Names which are allowed but can't be traversed further.

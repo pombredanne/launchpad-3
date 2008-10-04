@@ -6,7 +6,7 @@ translation suggestions.  It's hard to keep database performance for this page
 under control.
 
   >>> from canonical.launchpad.webapp.adapter import get_request_statements
-  >>> from zope.app.tests import ztapi
+  >>> from zope.app.testing import ztapi
   >>> from zope.app.publication.interfaces import IEndRequestEvent
 
   >>> class QueryCounter:
