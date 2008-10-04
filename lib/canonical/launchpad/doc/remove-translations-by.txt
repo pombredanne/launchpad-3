@@ -112,8 +112,7 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
-    DEBUG Executing SQL: ...
-    INFO Deleting 1 message(s).
+    INFO  Deleting 1 message(s).
 
 Combining the --language-code option with --not-language inverts the
 language match: delete messages in any language except the given one.
