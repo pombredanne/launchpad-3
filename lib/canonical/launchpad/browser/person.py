@@ -138,6 +138,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -165,8 +167,6 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
-from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
@@ -2353,7 +2353,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def openid_identity_url(self):
         """The identity URL for the person."""
-        return canonical_url(OpenIDPersistentIdentity(self.context))
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     @property
     def subscription_policy_description(self):
@@ -2669,7 +2669,8 @@ class EmailAddressVisibleState:
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
-    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()

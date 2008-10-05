@@ -184,6 +184,10 @@ class IAccountPublic(Interface):
             title=_('Display Name'), required=True, readonly=False,
                 description=_("Your name as you would like it displayed."))
 
+    status = Choice(
+        title=_("The status of this account"), required=True,
+        readonly=False, vocabulary=AccountStatus)
+
 
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
@@ -194,12 +198,11 @@ class IAccountPrivate(Interface):
             title=_("Rationale for this account's creation."), required=True,
             readonly=True, values=AccountCreationRationale.items)
 
-    status = Choice(
-        title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
+
     date_status_set = Datetime(
             title=_('Date status last modified.'),
             required=True, readonly=False)
+
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
