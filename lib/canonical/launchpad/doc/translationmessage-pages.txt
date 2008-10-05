@@ -158,6 +158,7 @@ We will use this helper function to simplify the test:
     ...     except SQLObjectNotFound:
     ...         msgid = POMsgID(msgid=new_msgid)
     ...     potmsgset.msgid_singular = msgid
+    ...     potmsgset._cached_singular_text = None
     ...     flush_database_updates()
 
 First, text_has_tab() determines whether a message set contains any tabs.

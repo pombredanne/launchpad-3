@@ -46,23 +46,34 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    _cached_singular_text = None
+
+    def __storm_invalidated__(self):
+        self._cached_singular_text = None
+
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
-        format_importer = getUtility(
-            ITranslationImporter).getTranslationFormatImporter(
-                self.potemplate.source_file_format)
-        if format_importer.uses_source_string_msgids:
-            # This format uses English translations as the way to store the
-            # singular_text.
-            english_language = getUtility(ILanguageSet)['en']
-            translation_message = self.getCurrentTranslationMessage(
-                english_language)
-            if (translation_message is not None and
-                translation_message.msgstr0 is not None):
-                return translation_message.msgstr0.translation
+        if self._cached_singular_text is not None:
+            return self._cached_singular_text
 
-        # By default, singular text is the msgid_singular.
+        if self.potemplate.uses_english_msgids:
+            self._cached_singular_text = self.msgid_singular.msgid
+            return self._cached_singular_text
+
+        # Singular text is stored as an "English translation."
+        english_language = getUtility(ILanguageSet)['en']
+        translation_message = self.getCurrentTranslationMessage(
+            english_language)
+        if translation_message is not None:
+            msgstr0 = translation_message.msgstr0
+            if msgstr0 is not None:
+                self._cached_singular_text = msgstr0.translation
+                return self._cached_singular_text
+
+        # There is no "English translation," at least not yet.  Return
+        # symbolic msgid, but do not cache--an English text may still be
+        # imported.
         return self.msgid_singular.msgid
 
     @property
