@@ -11,8 +11,9 @@ __all__ = [
     'StreamOrRedirectLibraryFileAliasView',
     ]
 
-
+import os
 import tempfile
+import urllib2
 
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -24,7 +25,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
     LaunchpadView, RedirectionView, stepthrough)
 from canonical.librarian.utils import filechunks
-
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -81,17 +81,31 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
         The temporary file is returned to the zope publishing machinery as
         documented in lib/zope/publisher/httpresults.txt, after adjusting
         the response 'Content-Type' appropriately.
+
+        This method explicit ignores the local 'http_proxy' settings.
         """
+        # Reset system proxy setting if it exists. The urllib2 default
+        # opener is cached that's why it has to be re-installed after
+        # the shell environment changes. Download the library file
+        # content into a local temporary file. Finally, restore original
+        # proxy-settings and refresh the urllib2 opener.
+        original_proxy = os.getenv('http_proxy')
+        try:
+            if original_proxy is not None:
+                del os.environ['http_proxy']
+                urllib2.install_opener(urllib2.build_opener())
+            tmp_file = tempfile.TemporaryFile()
+            self.context.open()
+            for chunk in filechunks(self.context):
+                tmp_file.write(chunk)
+            self.context.close()
+        finally:
+            if original_proxy is not None:
+                os.environ['http_proxy'] = original_proxy
+                urllib2.install_opener(urllib2.build_opener())
+
         self.request.response.setHeader(
             'Content-Type', self.context.mimetype)
-
-        self.context.open()
-
-        tmp_file = tempfile.TemporaryFile()
-        for chunk in filechunks(self.context):
-            tmp_file.write(chunk)
-
-        self.context.close()
 
         return tmp_file
 

@@ -188,9 +188,20 @@ the supplied user has permission to upload to packages.
     ...     for permission in sorted(packages, key=operator.attrgetter("id")):
     ...         print permission.sourcepackagename.name
 
-    >>> carlos = getUtility(IPersonSet).getByName("carlos")
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> showPersonsPackages(ubuntu.main_archive, carlos)
     mozilla-firefox
+
+If you're a member of a team that has permission, the team permission is
+returned.  Here, cprov is a member of ubuntu-team:
+
+    >>> discard = ArchivePermission(
+    ...     archive=ubuntu.main_archive, person=ubuntu_team,
+    ...     sourcepackagename=alsa_utils,
+    ...     permission=ArchivePermissionType.UPLOAD)
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> showPersonsPackages(ubuntu.main_archive, cprov)
+    alsa-utils
 
 queueAdminsForComponent() returns the ArchivePermission records where a
 person or team has permission to administer an archive's package
@@ -248,8 +259,22 @@ Set up a helper function to check access:
     ...     for method in restricted_methods:
     ...         assert(canAccess(permission_set, method) == true_or_false)
 
+If, for some reason, the techboard team is missing, the security adapter
+will not allow access and generates an OOPS.
+
+    >>> login("test@canonical.com")
+    >>> from zope.app.error.interfaces import IErrorReportingUtility
+    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> checkAccess(False)
+    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> print report.id == report2.id
+    False
+    >>> print report2.value
+    'techboard' team is missing, has it been renamed?
+
 Set up the techboard team:
 
+    >>> login("foo.bar@canonical.com")
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, TeamSubscriptionPolicy)
     >>> personset = getUtility(IPersonSet)

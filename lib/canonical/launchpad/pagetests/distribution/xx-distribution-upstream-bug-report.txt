@@ -19,7 +19,7 @@ TRIAGED to ensure that they are picked up by the report.
     >>> login('foo.bar@canonical.com')
 
     >>> watchurl = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=%s"
-    >>> bug = create_bug_from_strings(distribution='ubuntu', 
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
     ...     sourcepackagename='linux-source-2.6.15', owner='name12',
     ...     summary='take one', description='funk philosophy',
     ...     status=BugTaskStatus.TRIAGED)
@@ -76,7 +76,7 @@ totalizing the watched bugs for native upstreams, but then we'd have a
 broken percentage when comparing with bugs marked upstream. Perhaps
 we'd solve this by separating the watched column into natively watched
 and remote watched, but I don't know how to fix this right now.  See
-https://bugs.edge.launchpad.net/malone/+bug/188020 
+https://bugs.edge.launchpad.net/malone/+bug/188020
     -- kiko, 2008-02-01
 
 The Totals row will remain at the bottom of the table when it's sorted
@@ -124,7 +124,7 @@ The table includes a number of convenience links:
 Let's look more carefully at the above six links associated with counts.
 
     >>> count_anchors = all_anchors[3:9]
-    >>> (open_url, triaged_url, triaged_delta, upstream_url, 
+    >>> (open_url, triaged_url, triaged_delta, upstream_url,
     ...     upstream_delta_url, watch_delta_url) = \
     ...     [str(extract_link_from_tag(x, base_href)) for x in count_anchors]
 
@@ -237,7 +237,7 @@ If you're not allowed to edit the product, no love for you, though:
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-    >>> user_browser.goBack()
+
     >>> user_browser.getLink('change')
     Traceback (most recent call last):
     ...
@@ -311,4 +311,3 @@ them, though:
     >>> print extract_text(content)
     Upstream bug report for Kubuntu
     Kubuntu has no bugs filed against it.
-

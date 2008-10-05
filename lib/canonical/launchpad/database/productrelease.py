@@ -71,6 +71,13 @@ class ProductRelease(SQLBase):
         # Replace slashes in the filename with less problematic dashes.
         return filename.replace('/', '-')
 
+    def destroySelf(self):
+        """See `IProductRelease`."""
+        assert self.files.count() == 0, (
+            "You can't delete a product release which has files associated "
+            "with it.")
+        SQLBase.destroySelf(self)
+
     def _getFileObjectAndSize(self, file_or_data):
         """Return an object and length for file_or_data.
 
