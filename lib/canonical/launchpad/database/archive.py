@@ -705,10 +705,10 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.checkAuthenticated(user, self, perm_type, item)
 
-    def getPermissionsForUser(self, user):
+    def getPermissionsForPerson(self, person):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.permissionsForUser(self, user)
+        return permission_set.permissionsForPerson(self, person)
 
     def getUploadersForPackage(self, source_package_name):
         """See `IArchive`."""
@@ -725,10 +725,10 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.queueAdminsForComponent(self, component_name)
 
-    def getComponentsForQueueAdmin(self, user):
+    def getComponentsForQueueAdmin(self, person):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
-        return permission_set.componentsForQueueAdmin(self, user)
+        return permission_set.componentsForQueueAdmin(self, person)
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
@@ -747,6 +747,38 @@ class Archive(SQLBase):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
         return permissions.count() > 0
+
+    def newPackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackageUploader(
+            self, person, source_package_name)
+
+    def newComponentUploader(self, person, component):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newComponentUploader(self, person, component)
+
+    def newQueueAdmin(self, person, component):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newQueueAdmin(self, person, component)
+
+    def deletePackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePackageUploader(
+            self, person, source_package_name)
+
+    def deleteComponentUploader(self, person, component):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteComponentUploader(self, person, component)
+
+    def deleteQueueAdmin(self, person, component):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteQueueAdmin(self, person, component)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
