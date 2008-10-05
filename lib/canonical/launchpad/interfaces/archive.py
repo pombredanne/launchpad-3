@@ -318,8 +318,8 @@ class IArchive(IHasOwner):
 
         :param person: An `IPerson`
         :param item: An `IComponent`, `ISourcePackageName`
-        :param perm_type: An ArchivePermission enum,
-        :return: A list of IArchivePermission records.
+        :param perm_type: An ArchivePermissionType enum,
+        :return: A list of `IArchivePermission` records.
         """
 
     @operation_parameters(person=Reference(schema=IPerson))
@@ -329,7 +329,7 @@ class IArchive(IHasOwner):
         """Return the `IArchivePermission` records applicable to the person.
 
         :param person: An `IPerson`
-        :return: A list of IArchivePermission records.
+        :return: A list of `IArchivePermission` records.
         """
 
     @operation_parameters(
@@ -342,7 +342,7 @@ class IArchive(IHasOwner):
 
         :param source_package_name: An `ISourcePackageName` or textual name
             for the source package.
-        :return: A list of IArchivePermission records.
+        :return: A list of `IArchivePermission` records.
         """
 
     @operation_parameters(
@@ -354,7 +354,7 @@ class IArchive(IHasOwner):
 
         :param component_name: An `IComponent` or textual name for the
             component.
-        :return: A list of IArchivePermission records.
+        :return: A list of `IArchivePermission` records.
         """
 
     @operation_parameters(
@@ -366,7 +366,7 @@ class IArchive(IHasOwner):
 
         :param component_name: An `IComponent` or textual name for the
             component.
-        :return: A list of IArchivePermission records.
+        :return: A list of `IArchivePermission` records.
         """
 
     @operation_parameters(person=Reference(schema=IPerson))
@@ -376,7 +376,7 @@ class IArchive(IHasOwner):
         """Return `IArchivePermission` for the person's queue admin components
 
         :param person: An `IPerson`
-        :return: A list of IArchivePermission records.
+        :return: A list of `IArchivePermission` records.
         """
 
     def canUpload(person, component_or_package=None):
@@ -416,32 +416,32 @@ class IArchive(IHasOwner):
         :param person: An `IPerson` whom should be given permission.
         :param source_package_name: An `ISourcePackageName` or textual package
             name.
-        :return: An `IArchivePermission" which is the newly-created
+        :return: An `IArchivePermission` which is the newly-created
             permission.
         """
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        component=TextLine(
+        component_name=TextLine(
             title=_("Component Name"), required=True))
     @operation_returns_entry(Interface) # Really IArchivePermission
     @export_write_operation()
-    def newComponentUploader(person, component):
+    def newComponentUploader(person, component_name):
         """Add permission for a person to upload to a component.
 
         :param person: An `IPerson` whom should be given permission.
         :param component: An `IComponent` or textual component name.
-        :return: An `IArchivePermission" which is the newly-created
+        :return: An `IArchivePermission` which is the newly-created
             permission.
         """
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        component=TextLine(
+        component_name=TextLine(
             title=_("Component Name"), required=True))
     @operation_returns_entry(Interface) # Really IArchivePermission
     @export_write_operation()
-    def newQueueAdmin(person, component):
+    def newQueueAdmin(person, component_name):
         """Add permission for a person to administer a distroseries queue.
 
         The supplied person will gain permission to administer the
@@ -449,7 +449,7 @@ class IArchive(IHasOwner):
 
         :param person: An `IPerson` whom should be given permission.
         :param component: An `IComponent` or textual component name.
-        :return: An `IArchivePermission" which is the newly-created
+        :return: An `IArchivePermission` which is the newly-created
             permission.
         """
 
@@ -468,10 +468,10 @@ class IArchive(IHasOwner):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        component=TextLine(
+        component_name=TextLine(
             title=_("Component Name"), required=True))
     @export_write_operation()
-    def deleteComponentUploader(person, component):
+    def deleteComponentUploader(person, component_name):
         """Revoke permission for the person to upload to the component.
 
         :param person: An `IPerson` whose permission should be revoked.
@@ -480,10 +480,10 @@ class IArchive(IHasOwner):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        component=TextLine(
+        component_name=TextLine(
             title=_("Component Name"), required=True))
     @export_write_operation()
-    def deleteQueueAdmin(person, component):
+    def deleteQueueAdmin(person, component_name):
         """Revoke permission for the person to administer distroseries queues.
 
         The supplied person will lose permission to administer the

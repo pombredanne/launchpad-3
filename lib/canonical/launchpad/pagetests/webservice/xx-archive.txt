@@ -233,7 +233,7 @@ component.
     >>> new_permission = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
-    ...     component='restricted').jsonBody()
+    ...     component_name='restricted').jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+upload/name12.restricted
 
@@ -248,7 +248,7 @@ deleteComponentUploader() removes that permission:
     >>> print webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteComponentUploader', {},
     ...     person=name12['self_link'],
-    ...     component='restricted')
+    ...     component_name='restricted')
     HTTP/1.1 200 Ok
     ...
 
@@ -293,7 +293,7 @@ queues in a particular component.
     >>> new_permission = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
     ...     person=name12['self_link'],
-    ...     component='partner').jsonBody()
+    ...     component_name='partner').jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
 
@@ -309,7 +309,7 @@ deleteQueueAdmin removes that permission.
     >>> print webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteQueueAdmin', {},
     ...     person=name12['self_link'],
-    ...     component='partner')
+    ...     component_name='partner')
     HTTP/1.1 200 Ok
     ...
 
