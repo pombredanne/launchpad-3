@@ -304,13 +304,8 @@ class TracLPPlugin(Trac):
         self._server = xmlrpclib.ServerProxy(
             xmlrpc_endpoint, transport=self._xmlrpc_transport)
 
-    @cachedproperty
-    def urlopener(self):
-        """Return a urllib2.OpenerDirector that handles cookies."""
-        opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(self._cookie_jar))
-
-        return opener
+        self._url_opener = urllib2.build_opener(
+            urllib2.HTTPCookieProcessor(cookie_jar))
 
     @needs_authentication
     def initializeRemoteBugDB(self, bug_ids):
@@ -328,11 +323,11 @@ class TracLPPlugin(Trac):
     def urlopen(self, request, data=None):
         """See `ExternalBugTracker`.
 
-        This method is overridden here so that it uses the urlopener
-        property in order to maintain the use of Trac authentication
+        This method is overridden here so that it uses the _url_opener
+        attribute in order to maintain the use of Trac authentication
         cookies across requests.
         """
-        return self.urlopener.open(request, data)
+        return self._url_opener.open(request, data)
 
     def _generateAuthenticationToken(self):
         """Create an authentication token and return it."""
