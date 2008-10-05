@@ -120,6 +120,19 @@ class ArchivePermissionSet:
 
         return auth
 
+    def _nameToComponent(self, component):
+        """Helper to convert a possible string component to IComponent"""
+        if isinstance(component, basestring):
+            component = getUtility(IComponentSet)[component]
+        return component
+
+    def _nameToSourcePackageName(self, sourcepackagename):
+        """Helper to convert a possible string name to ISourcePackageName."""
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        return sourcepackagename
+
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
         return ArchivePermission.select("""
@@ -128,7 +141,7 @@ class ArchivePermissionSet:
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, user))
+            """ % sqlvalues(archive, person))
 
     def _componentsFor(self, archive, person, permission_type):
         """Helper function to get ArchivePermission objects."""

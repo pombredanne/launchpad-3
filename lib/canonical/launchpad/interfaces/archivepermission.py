@@ -129,10 +129,10 @@ class IArchivePermissionSet(Interface):
         authenticated in that context.
         """
 
-    def permissionsForUser(user, archive):
-        """All `ArchivePermission` records for the user.
+    def permissionsForPerson(person, archive):
+        """All `ArchivePermission` records for the person.
 
-        :param user: An `IPerson`
+        :param person: An `IPerson`
         :paran archive: An `IArchive`
         """
 
@@ -169,17 +169,6 @@ class IArchivePermissionSet(Interface):
 
         :return: `ArchivePermission` records for all the packages that
             'person' is allowed to upload to.
-        """
-
-    def packagesForUploader(archive, user):
-        """The `ArchivePermission` records for the user's upload packages.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to find out which
-            packages he has access to.
-
-        :return: `ArchivePermission` records for all the packages that
-            'user' is allowed to upload to.
         """
 
     def uploadersForPackage(archive, sourcepackagename):
@@ -269,61 +258,5 @@ class IArchivePermissionSet(Interface):
 
         :param archive: The context `IArchive` for the permission check.
         :param person: An `IPerson` for whom you want to revoke permission.
-        :param component: An `IComponent` or a string package name.
-        """
-
-    def newPackageUploader(archive, user, sourcepackagename):
-        """Create and return a new `ArchivePermission` for an uploader.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to add permission.
-        :param sourcepackagename: An `ISourcePackageName` or a string
-            package name.
-
-        :return: The new `ArchivePermission`
-        """
-
-    def newComponentUploader(archive, user, component):
-        """Create and return a new `ArchivePermission` for an uploader.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to add permission.
-        :param component: An `IComponent` or a string package name.
-
-        :return: The new `ArchivePermission`
-        """
-
-    def newQueueAdmin(archive, user, component):
-        """Create and return a new `ArchivePermission` for a queue admin.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to add permission.
-        :param component: An `IComponent` or a string package name.
-
-        :return: The new `ArchivePermission`
-        """
-
-    def deletePackageUploader(archive, user, sourcepackagename):
-        """Revoke upload permissions for a user.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to revoke permission.
-        :param sourcepackagename: An `ISourcePackageName` or a string
-            package name.
-        """
-
-    def deleteComponentUploader(archive, user, component):
-        """Revoke upload permissions for a user.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to revoke permission.
-        :param component: An `IComponent` or a string package name.
-        """
-
-    def deleteQueueAdmin(self, archive, user, component):
-        """Revoke queue admin permissions for a user.
-
-        :param archive: The context `IArchive` for the permission check.
-        :param user: An `IPerson` for whom you want to revoke permission.
         :param component: An `IComponent` or a string package name.
         """

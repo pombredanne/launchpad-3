@@ -113,9 +113,10 @@ passing a type that it does not know about results in a TypeError:
 IArchivePermissionSet also has some helpers to make it very easy to
 check permissions.
 
-permissionsForUser() returns all the permission records for the supplied user:
+permissionsForPerson() returns all the permission records for the supplied
+person:
 
-    >>> permissions = permission_set.permissionsForUser(
+    >>> permissions = permission_set.permissionsForPerson(
     ...     ubuntu.main_archive,  ubuntu_team)
     >>> permissions.count()
     8

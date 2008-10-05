@@ -312,10 +312,10 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
-    def getPermissions(user, item, perm_type):
+    def getPermissions(person, item, perm_type):
         """Get the `IArchivePermission` record with the supplied details.
 
-        :param user: An `IPerson`
+        :param person: An `IPerson`
         :param item: An `IComponent`, `ISourcePackageName`
         :param perm_type: An ArchivePermission enum,
         :return: A list of IArchivePermission records.
@@ -608,7 +608,8 @@ class ArchivePurpose(DBEnumeratedType):
 from canonical.launchpad.interfaces.distribution import IDistribution
 IArchive['distribution'].schema = IDistribution
 
-from canonical.launchpad.interfaces.archivepermission import IArchivePermission
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermission)
 IArchive['getPermissionsForUser'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].value_type.schema = IArchivePermission
