@@ -106,7 +106,7 @@ We define a helper that uses the BugTaskListingView class (obtained via
 
 Let's see some examples of how this works:
 
-  >>> login("foo.bar@canonical.com")
+  >>> login("foo.bar@canonical.com", LaunchpadTestRequest())
   >>> foobar = getUtility(ILaunchBag).user
 
   >>> ORIGINAL_STATUS = test_task.status
