@@ -1659,7 +1659,7 @@ class ProcessingLoop(object):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
         # which can lead to unexpected results. Since it is also used as
-        # a limit for an SQL, convert it into an integer.
+        # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
         submissions = getUtility(IHWSubmissionSet).getByStatus(
             HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
@@ -1707,6 +1707,11 @@ def process_pending_submissions(transaction, logger, max_submissions=None):
     mark them as either PROCESSED or INVALID.
     """
     loop = ProcessingLoop(transaction, logger, max_submissions)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
     loop_tuner = LoopTuner(
                 loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
     loop_tuner.run()
