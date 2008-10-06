@@ -14,9 +14,11 @@ to start unifying TranslationMessages that are common between
 POTemplates.  When that happens, this script will start reporting errors
 at points marked in the source below.  Change those points & run again!
 """
+
 import _pythonpath
 
 from canonical.database.sqlbase import cursor
+
 
 class SchemaElementsInitializationFailure(Exception):
     """Convenience exception class for errors found in our data."""
