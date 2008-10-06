@@ -175,6 +175,9 @@ class VPOExportSet:
             conditions.append('POTemplate.languagepack IS TRUE')
 
         query = POFile.select(' AND '.join(conditions), clauseTables=tables)
+        # Order by POTemplate.  Caching in the export scripts can be
+        # much more effective when consecutive POFiles belong to the
+        # same POTemplate, e.g. they'll have the same POTMsgSets.
         return query.distinct().orderBy([
             'POFile.potemplate', 'POFile.language', 'POFile.variant'])
 
