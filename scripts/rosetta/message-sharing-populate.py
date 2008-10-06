@@ -1,5 +1,6 @@
 #! /usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Populate schema additions for Translations Message Sharing.
 
@@ -21,7 +22,6 @@ import _pythonpath
 
 from zope.interface import implements
 
-from canonical.config import config
 from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
