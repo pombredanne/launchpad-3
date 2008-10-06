@@ -56,7 +56,6 @@ class BugReportData:
     WATCH_THRESHOLD = 90
 
     BAD_THRESHOLD = 20
-    GOOD_THRESHOLD = 90
 
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
                  watched_bugs=0):
@@ -90,25 +89,14 @@ class BugReportData:
     def row_class(self):
         """Return the class to be used for the current table row.
 
-        :returns: 'good' if all *_percentage properties are > 90;
-            'bad' if any of the *_percentage properties are < 20;
+        :returns: 'good' if watched_bugs_percentage > WATCH_THRESHOLD;
+            'bad' if watched_bugs_percentage < BAD_THRESHOLD;
             '' otherwise.
         """
-        percentages = (
-            self.triaged_bugs_percentage,
-            self.upstream_bugs_percentage,
-            self.watched_bugs_percentage,
-            )
-
-        if len([percentage for percentage in percentages
-               if percentage < self.BAD_THRESHOLD]) > 0:
-            # If any of the percentages is < BAD_THRESHOLD, return 'bad'.
-            return 'bad'
-        elif len([percentage for percentage in percentages
-                 if percentage > self.GOOD_THRESHOLD]) == len(percentages):
-            # Only return 'good' if *all* the percentages are >
-            # GOOD_THRESHOLD. Otherwise, return ''.
-            return 'good'
+        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
+            return "good"
+        elif self.watched_bugs_percentage < self.BAD_THRESHOLD:
+            return "bad"
         else:
             return ''
 
@@ -248,8 +236,9 @@ class DistributionUpstreamBugReport(LaunchpadView):
         """Assemble self.data and self.total from upstream count report."""
         self.data = []
         self.total = BugReportData()
+        packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
-            limit=self.LIMIT)
+            limit=self.LIMIT, exclude_packages=packages_to_exclude)
         for (dsp, product, open, triaged, upstream, watched) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here.  If

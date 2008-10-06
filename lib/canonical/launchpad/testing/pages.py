@@ -62,6 +62,18 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         finally:
             self.resetCookies()
 
+    def chooseRequestClass(self, method, path, environment):
+        """See `HTTPCaller`.
+
+        This version adds the 'PATH_INFO' variable to the environment,
+        because some of our factories expects it.
+        """
+        if 'PATH_INFO' not in environment:
+            environment = dict(environment)
+            environment['PATH_INFO'] = path
+        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
+            method, path, environment)
+
     def resetCookies(self):
         self.cookies = SimpleCookie()
 
@@ -366,6 +378,11 @@ def print_radio_button_field(content, name):
         else:
             radio = '( )'
         print radio, label
+
+
+def strip_label(label):
+    """Strip surrounding whitespace and non-breaking spaces."""
+    return label.replace('\xC2', '').replace('\xA0', '').strip()
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -685,15 +702,14 @@ def stop():
 
 
 def setUpGlobs(test):
-    # Our tests report being on a different port.
     test.globs['transaction'] = transaction
-    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['http'] = UnstickyCookieHTTPCaller()
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'salgado-change-anything', port=9000)
+        'launchpad-library', 'salgado-change-anything')
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()

@@ -106,7 +106,7 @@ Files published are accessible via the files property:
     >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
     ...   pub_file.archive_url) for pub_file in spph.files]
     [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
-      u'http://launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+      u'http://ftpmaster.internal/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
 == Deletion and obsolescence ==
@@ -535,8 +535,8 @@ Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo-bin_all.deb
-    foo.dsc
+    foo-bin_666_all.deb
+    foo_666.dsc
 
 We can also publish a package in a PPA and query on its files:
 
@@ -549,8 +549,8 @@ We can also publish a package in a PPA and query on its files:
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo-bin_all.deb
-    foo.dsc
+    foo-bin_666_all.deb
+    foo_666.dsc
 
 Notice that some files appear twice if they are published in more than one
 architecture (e.g. for arch-all files).
@@ -640,7 +640,7 @@ Generating respective "Packages" stanzas:
     [u'mozilla-firefox_0.9_i386.deb']
 
     >>> [pub_file.archive_url for pub_file in bpph.files]
-    [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+    [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
 
 == IPublishingSet ==

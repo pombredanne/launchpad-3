@@ -74,8 +74,6 @@ branch, they are shown an option.
     >>> print extract_text(get_summary(sample_browser))
     10 branches ... commits in the last month
     0 active reviews, 0 approved merges
-    A branch has not yet been specified as the primary development focus
-    for GNOME Terminal (set).
 
 This text is not shown if the user cannot set the branch.
 

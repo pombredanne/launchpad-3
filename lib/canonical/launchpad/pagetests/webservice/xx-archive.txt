@@ -1,0 +1,142 @@
+= Archives =
+
+For archives we publish a subset of their attributes.
+This works for PPAs:
+
+    >>> archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> print archive['self_link']
+    http://.../~cprov/+archive
+
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> pprint_entry(archive)
+    description: u'packages to help my friends.'
+    distribution_link: u'http://.../ubuntu'
+    name: u'default'
+    owner_link: u'http://.../~cprov'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive'
+    title: u'PPA for Celso Providelo'
+
+    >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
+    >>> print main['self_link']
+    http://.../ubuntu/+archive/primary
+
+Distributions can provide information about their archives.  Looking
+at "ubuntutest":
+
+    >>> distros = webservice.get("/distros").jsonBody()
+    >>> for entry in distros['entries']:
+    ...    print entry['self_link']
+    http://.../ubuntu
+    http://.../kubuntu
+    http://.../ubuntutest
+    http://.../debian
+    http://.../gentoo
+
+    >>> ubuntu = distros['entries'][2]
+
+"ubuntutest" has a "main_archive" which is always present:
+
+    >>> print ubuntu['main_archive_link']
+    http://.../ubuntutest/+archive/primary
+
+The archive has the following attributes:
+
+    >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
+    >>> pprint_entry(main_archive)
+    description: None
+    distribution_link: u'http://.../ubuntutest'
+    name: u'primary'
+    owner_link: u'http://.../~ubuntu-team'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../ubuntutest/+archive/primary'
+    title: u'Primary Archive for Ubuntu Test'
+
+A distribution can also provide a list of all its archives:
+
+    >>> print ubuntu['archives_collection_link']
+    http://.../ubuntutest/archives
+    >>> archives = webservice.get(
+    ...     ubuntu['archives_collection_link']).jsonBody()
+    >>> print_self_link_of_entries(archives)
+    http://api.launchpad.dev/beta/ubuntutest/+archive/partner
+    http://api.launchpad.dev/beta/ubuntutest/+archive/primary
+
+Attempting to grab a non-existent archive will result in a 404 error:
+
+    >>> bogus_archive = "ubuntutest/+archive/bogus"
+    >>> webservice.get(bogus_archive).jsonBody()
+    Traceback (most recent call last):
+    ...
+    ValueError: HTTP/1.1 404 Not Found
+    ...
+
+
+= Archive Permissions =
+
+Archives have associated permissions.  These are currently either upload
+rights or queue administration rights.  The URL to the permissions
+takes two forms:
+ * <archive>/+upload/username.item
+ * <archive>/+queue-admin/username.item
+where `item` is a component or a source package name.
+
+This is a permission that allows a team to upload to a component:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+upload/ubuntu-team.main").jsonBody()
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
+    date_created: ...
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~ubuntu-team'
+    resource_type_link: ...
+    self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main'
+    source_package_name: None
+
+This is a permission that allows an individual to upload a source package.
+
+    >>> carlos_mozilla_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/"
+    ...     "+upload/carlos.mozilla-firefox").jsonBody()
+    >>> pprint_entry(carlos_mozilla_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: None
+    date_created: ...
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~carlos'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox'
+    source_package_name: u'mozilla-firefox'
+
+This is a queue admin right for ubuntu-team:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/ubuntu-team.main").jsonBody()
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
+    date_created: ...
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~ubuntu-team'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main'
+    source_package_name: None
+
+And one for an individual:
+
+    >>> name16_admin_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/name12.universe").jsonBody()
+    >>> pprint_entry(name16_admin_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'universe'
+    date_created: ...
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~name12'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
+    source_package_name: None

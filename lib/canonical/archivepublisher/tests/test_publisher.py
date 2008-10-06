@@ -67,7 +67,7 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         # file got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
     def testPublishPartner(self):
@@ -87,7 +87,7 @@ class TestPublisher(TestNativePublishingBase):
         # Did the file get published in the right place?
         self.assertEqual(pub_config.poolroot,
             "/var/tmp/archive/ubuntutest-partner/pool")
-        foo_path = "%s/main/f/foo/foo.dsc" % pub_config.poolroot
+        foo_path = "%s/main/f/foo/foo_666.dsc" % pub_config.poolroot
         self.assertEqual(open(foo_path).read().strip(), "I am partner")
 
         # Check that the index is in the right place.
@@ -128,7 +128,7 @@ class TestPublisher(TestNativePublishingBase):
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # The file was published:
-        foo_path = "%s/main/f/foo/foo.dsc" % pub_config.poolroot
+        foo_path = "%s/main/f/foo/foo_666.dsc" % pub_config.poolroot
         self.assertEqual(open(foo_path).read().strip(), 'I am partner')
 
         # Nothing to test from these two calls other than that they don't blow
@@ -214,7 +214,7 @@ class TestPublisher(TestNativePublishingBase):
 
         self.assertDirtyPocketsContents([], publisher.dirty_pockets)
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(False, os.path.exists(foo_path))
 
     def testCarefulPublishing(self):
@@ -237,7 +237,7 @@ class TestPublisher(TestNativePublishingBase):
         self.assertDirtyPocketsContents(
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # file got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
     def testPublishingOnlyConsidersOneArchive(self):
@@ -475,7 +475,7 @@ class TestPublisher(TestNativePublishingBase):
              'Maintainer: Foo Bar <foo@bar.com>',
              'Architecture: all',
              'Version: 666',
-             'Filename: pool/main/f/foo/foo-bin_all.deb',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'Description: Foo app is great',
@@ -783,8 +783,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_md5_line = release_contents[md5_header_index + 7]
         self.assertEqual(
             plain_sources_md5_line,
-            (' 9ad2cacef12faa78e4962e5c2c14e07e              '
-             '225 main/source/Sources'))
+            (' 7d9b0817f5ff4a1d3f53f97bcc9c7658              '
+             '229 main/source/Sources'))
         release_md5_line = release_contents[md5_header_index + 8]
         self.assertEqual(
             release_md5_line,
@@ -802,8 +802,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_sha1_line = release_contents[sha1_header_index + 7]
         self.assertEqual(
             plain_sources_sha1_line,
-            (' 9f6692bb1c7303f2db622ba427dc4b2b727e669d              '
-             '225 main/source/Sources'))
+            (' a2da1a8407fc4e2373266e56ccc7afadf8e08a3a              '
+             '229 main/source/Sources'))
         release_sha1_line = release_contents[sha1_header_index + 8]
         self.assertEqual(
             release_sha1_line,
@@ -820,8 +820,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_sha256_line = release_contents[sha256_header_index + 7]
         self.assertEqual(
             plain_sources_sha256_line,
-            (' b9c81f94140a3318667966d8208bccbf37ca823e2fb3a36beeaad58'
-             '12a5b45db              225 main/source/Sources'))
+            (' 979d959ead8ddc29e4347a64058a372d30df58a51a4615b43fb7499'
+             '8a9e07c78              229 main/source/Sources'))
         release_sha256_line = release_contents[sha256_header_index + 8]
         self.assertEqual(
             release_sha256_line,

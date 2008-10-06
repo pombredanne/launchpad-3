@@ -358,12 +358,16 @@ the registered factories.)
     ...     publication = publication_factory(None)
     ...     return request, publication
 
-    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     ProtocolErrorPublication)
     >>> def print_request_and_publication(host='localhost', port=None,
-    ...                                   method='GET', mime_type='text/html'):
+    ...                                   method='GET',
+    ...                                   mime_type='text/html',
+    ...                                   extra_environment=None):
     ...     """Helper giving short names for the request and publication."""
     ...     request, publication = get_request_and_publication(
-    ...         host, port, method, mime_type)
+    ...         host, port, method, mime_type,
+    ...         extra_environment=extra_environment)
     ...     print type(request).__name__.split('.')[-1]
     ...     publication_classname = type(publication).__name__.split('.')[-1]
     ...     if isinstance(publication, ProtocolErrorPublication):
@@ -453,6 +457,41 @@ application/json.
     WebServicePublication
     WebServiceClientRequest
     WebServicePublication
+
+When a request for '/api' is made to one of the application virtualhost,
+it is also handled by the web service request and publication:
+
+    >>> print_request_and_publication(
+    ...     'launchpad.dev', method='GET',
+    ...     extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    >>> for subdomain in [
+    ...     'answers', 'blueprints', 'bugs', 'code', 'translations']:
+    ...     print_request_and_publication(
+    ...         '%s.launchpad.dev' % subdomain, method='GET',
+    ...         extra_environment={'PATH_INFO': '/api'})
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+
+Requests for '/api' on other hosts like feeds or xmlrpc are handled like
+other requests on these hosts:
+
+    >>> for host in ['feeds.launchpad.dev', 'shipit.ubuntu.dev']:
+    ...     print_request_and_publication(
+    ...         host, method='GET', extra_environment={'PATH_INFO': '/api'})
+    FeedsBrowserRequest
+    FeedsPublication
+    UbuntuShipItBrowserRequest
+    ShipItPublication
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -802,7 +841,7 @@ the publication, up to the point where it was forcefully stopped.
 
 When a Retry or DisconnectionError exception is raised and the request
 supports retry, it will be retried with a copy of the WSGI environment.
-If that happens, though, we'll remove the [publication,traversal]ticks 
+If that happens, though, we'll remove the [publication,traversal]ticks
 variables from there.
 
     >>> request, publication = get_request_and_publication()
@@ -812,14 +851,15 @@ variables from there.
     >>> request.supportsRetry()
     True
     >>> from zope.publisher.interfaces import Retry
+    >>> foo_exc_info = (Exception, 'foo', None)
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -834,15 +874,14 @@ variables from there.
     True
     >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise DisconnectionError()
+    ...     raise DisconnectionError('foo DisconnectionError')
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class storm.exceptions.DisconnectionError...
-    ...
+    Retry: foo DisconnectionError
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
@@ -862,13 +901,13 @@ WSGI env.
     False
     >>> from zope.publisher.interfaces import Retry
     >>> try:
-    ...     raise Retry('foo')
+    ...     raise Retry(foo_exc_info)
     ... except:
     ...     publication.handleException(
     ...         None, request, sys.exc_info(), retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: 'foo'
+    Retry: foo
 
     >>> request._orig_env['launchpad.publicationticks']
     500
@@ -1030,6 +1069,40 @@ the OAuthNonce table.
     Traceback (most recent call last):
     ...
     Unauthorized: Invalid nonce/timestamp: This nonce has been used already.
+
+
+== Doomed transactions are aborted ==
+
+Doomed transactions are aborted.
+
+    >>> request, publication = get_request_and_publication(method='POST')
+    >>> txn = transaction.begin()
+
+    # This sets up an alert so we can easily see that the transaction has
+    # been aborted.
+    >>> bound_abort = txn.abort
+    >>> def faux_abort():
+    ...     bound_abort()
+    ...     print 'Aborted'
+    ...
+    >>> txn.abort = faux_abort
+
+    # Now we doom the transaction.
+    >>> txn.doom()
+    >>> txn.isDoomed()
+    True
+
+    # Our afterCall() implementation expects to find a
+    # _publicationticks_start in its request, which is set by
+    # callObject(). Since we don't want to callObject() here, we'll
+    # have to change the request manually.
+    >>> request._publicationticks_start = 1345
+
+    >>> publication.afterCall(request, None)
+    Aborted
+    >>> txn.isDoomed() # It is still doomed.
+    True
+    >>> del txn.abort # Clean up test fixture.
 
 
 == HEAD requests have empty body ==

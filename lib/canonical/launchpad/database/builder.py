@@ -29,6 +29,8 @@ from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.components.archivedependencies import (
+    getSourcesListForBuilding)
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import makePoolPath
 from canonical.launchpad.validators.person import validate_public_person
@@ -38,8 +40,7 @@ from canonical.launchpad.interfaces import (
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     ILibraryFileAliasSet, NotFoundError, PackagePublishingPocket,
-    PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
-from canonical.launchpad.webapp.uri import URI
+    PackagePublishingStatus, ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -228,113 +229,6 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.slave = new_slave
 
-    @property
-    def pocket_dependencies(self):
-        """A dictionary of pocket to possible pocket tuple.
-
-        Return a dictionary that maps a pocket to pockets that it can
-        depend on for a build.
-
-        The dependencies apply equally no matter which archive type is
-        using them; but some archives may not have builds in all the pockets.
-        """
-        return {
-            PackagePublishingPocket.RELEASE :
-                (PackagePublishingPocket.RELEASE,),
-            PackagePublishingPocket.SECURITY :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY),
-            PackagePublishingPocket.UPDATES :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES),
-            PackagePublishingPocket.BACKPORTS :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES,
-                 PackagePublishingPocket.BACKPORTS),
-            PackagePublishingPocket.PROPOSED :
-                (PackagePublishingPocket.RELEASE,
-                 PackagePublishingPocket.SECURITY,
-                 PackagePublishingPocket.UPDATES,
-                 PackagePublishingPocket.PROPOSED),
-            }
-
-    def _determineArchivesForBuild(self, build_queue_item):
-        """Work out what sources.list lines should be passed to builder."""
-        ogre_components = " ".join(build_queue_item.build.ogre_components)
-        dist_name = build_queue_item.archseries.distroseries.name
-        target_archive = build_queue_item.build.archive
-        ubuntu_source_lines = []
-
-        if (target_archive.purpose == ArchivePurpose.PARTNER or
-            target_archive.purpose == ArchivePurpose.PPA):
-            # Although partner and PPA builds are always in the release
-            # pocket, they depend on the same pockets as though they
-            # were in the updates pocket.
-            #
-            # XXX Julian 2008-03-20
-            # Private PPAs, however, behave as though they are in the
-            # security pocket.  This is a hack to get the security
-            # PPA working as required until cprov lands his changes for
-            # configurable PPA pocket dependencies.
-            if target_archive.private:
-                ubuntu_pockets = self.pocket_dependencies[
-                    PackagePublishingPocket.SECURITY]
-            else:
-                ubuntu_pockets = self.pocket_dependencies[
-                    PackagePublishingPocket.UPDATES]
-
-            # Partner and PPA may also depend on any component.
-            ubuntu_components = 'main restricted universe multiverse'
-
-            # Calculate effects of current archive dependencies.
-            archive_dependencies = [target_archive]
-            archive_dependencies.extend(
-                [dependency.dependency
-                 for dependency in target_archive.dependencies])
-            for archive in archive_dependencies:
-                # Skip archives with no binaries published for the
-                # target distroarchseries.
-                published_binaries = archive.getAllPublishedBinaries(
-                    distroarchseries=build_queue_item.archseries,
-                    status=PackagePublishingStatus.PUBLISHED)
-                if published_binaries.count() == 0:
-                    continue
-
-                # Encode the private PPA repository password in the
-                # sources_list line. Note that the buildlog will be
-                # sanitized to not expose it.
-                if archive.private:
-                    uri = URI(archive.archive_url)
-                    uri = uri.replace(
-                        userinfo="buildd:%s" % archive.buildd_secret)
-                    url = str(uri)
-                else:
-                    url = archive.archive_url
-
-                source_line = (
-                    'deb %s %s %s'
-                    % (url, dist_name, ogre_components))
-                ubuntu_source_lines.append(source_line)
-        else:
-            ubuntu_pockets = self.pocket_dependencies[
-                build_queue_item.build.pocket]
-            ubuntu_components = ogre_components
-
-        # Here we build a list of sources.list lines for each pocket
-        # required in the primary archive.
-        for pocket in ubuntu_pockets:
-            if pocket == PackagePublishingPocket.RELEASE:
-                dist_pocket = dist_name
-            else:
-                dist_pocket = dist_name + pocketsuffix[pocket]
-            ubuntu_source_lines.append(
-                'deb http://ftpmaster.internal/ubuntu %s %s'
-                % (dist_pocket, ubuntu_components))
-
-        return ubuntu_source_lines
-
     def _verifyBuildRequest(self, build_queue_item, logger):
         """Assert some pre-build checks.
 
@@ -452,7 +346,7 @@ class Builder(SQLBase):
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
-        args['archives'] = self._determineArchivesForBuild(build_queue_item)
+        args['archives'] = getSourcesListForBuilding(build_queue_item.build)
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())
@@ -776,12 +670,6 @@ class BuilderSet(object):
 
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
-        if virtualized:
-            archive_purposes = [ArchivePurpose.PPA]
-        else:
-            archive_purposes = [
-                ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]
-
         query = """
            BuildQueue.build = Build.id AND
            Build.archive = Archive.id AND
@@ -789,8 +677,8 @@ class BuilderSet(object):
            DistroArchSeries.processorfamily = Processor.family AND
            Processor.id = %s AND
            Build.buildstate = %s AND
-           Archive.purpose IN %s
-        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, archive_purposes)
+           Archive.require_virtualized = %s
+        """ % sqlvalues(processor, BuildStatus.NEEDSBUILD, virtualized)
 
         clauseTables = [
             'Build', 'DistroArchSeries', 'Processor', 'Archive']

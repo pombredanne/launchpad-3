@@ -1091,18 +1091,37 @@ restricted by archive owner.
 As mentioned in the error message, getPPAByDistributionAndOwnerName()
 should be used instead. See below.
 
+Similarly, IArchiveSet.getByDistroAndName() retrieves an IArchive given a
+distribution and the archive name.  Returned archives are always distribution
+archives; that is PPAs are not considered.
+
+XXX Julian 2008-09-24 We need to add a getByOwnerAndName() to fetch PPAs
+at some point, but it's not needed right now.
+
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'partner')
+    >>> print partner_archive.title
+    Partner Archive for Ubuntu Test
+
+Passing an invalid name will cause an empty result set.
+
+    >>> bogus = getUtility(IArchiveSet).getByDistroAndName(
+    ...     ubuntutest, 'bogus')
+    >>> print bogus
+    None
+
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
     >>> print partner_archive.archive_url
-    http://launchpad.dev/ubuntutest-partner
+    http://ftpmaster.internal/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
     http://ppa.launchpad.dev/name16/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    http://launchpad.dev/ubuntutest
+    http://ftpmaster.internal/ubuntutest
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.

@@ -24,7 +24,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BaseImageUpload, PasswordField, UniqueField)
+    BaseImageUpload, PasswordField, URIField, UniqueField)
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.lazr.fields import Reference
@@ -74,7 +74,7 @@ class ILaunchpadOpenIDStoreFactory(Interface):
         """Create a LaunchpadOpenIDStore instance."""
 
 
-class TrustRootField(UniqueField):
+class TrustRootField(UniqueField, URIField):
     """An OpenID Relying Party trust root, which is unique."""
 
     attribute = 'trust_root'
@@ -115,6 +115,7 @@ class IOpenIDRPConfig(Interface):
     id = Int(title=u'ID', required=True)
     trust_root = TrustRootField(
         title=_('Trust Root'), required=True,
+        trailing_slash=True,
         description=_('The openid.trust_root value sent by the '
                       'Relying Party'))
     displayname = TextLine(
@@ -206,11 +207,20 @@ class IOpenIDPersistentIdentity(Interface):
     This interface is generally needed by the UI.
     """
     account = Attribute('The `IAccount` for the user.')
-    openid_identifier = Attribute('The openid_identifier for the `IAccount`.')
-    openid_identity_url = Attribute("The OpenID identity URL for the user.")
-
-    def supportsURL(identity_url):
-        """Return True if the identity_url format is supported, or False."""
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove old_openid_identity_url and new_*.
+    old_openid_identifier = Attribute(
+        'The old openid_identifier for the `IAccount`.')
+    old_openid_identity_url = Attribute(
+        'The old OpenID identity URL for the user.')
+    new_openid_identifier = Attribute(
+        'The new openid_identifier for the `IAccount`.')
+    new_openid_identity_url = Attribute(
+        'The new OpenID identity URL for the user.')
+    openid_identity_url = Attribute(
+        'The OpenID identity URL for the user.')
+    openid_identifier = Attribute(
+        'The OpenID identifier used with the request.')
 
 
 class ILoginServiceAuthorizeForm(Interface):

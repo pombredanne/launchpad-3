@@ -39,7 +39,7 @@ flavours mirrored.
 
 We include in the distribution mirror page a control which allows
 generating apt sources.list entries for each series for which we have
-mirror contents 
+mirror contents
 
     >>> browser.open('http://localhost/ubuntu/+mirror/archive-mirror2')
     >>> results = find_tag_by_id(browser.contents, 'sources-list-entries')
@@ -55,10 +55,9 @@ and the select control that lets you update them:
     ...
     <select id="field.series" name="field.series" size="1"
             onchange="updateSeries(this);">
-      <option
+      <option selected="selected"
         value="YOUR_DISTRO_SERIES_HERE">Choose a Distribution series</option>
       <option value="hoary">The Hoary Hedgehog Release</option>
       <option value="warty">The Warty Warthog Release</option>
     </select>
     ...
-
