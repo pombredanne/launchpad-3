@@ -10,7 +10,7 @@ import os.path
 import re
 import unittest
 
-import psycopg
+import psycopg2
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -116,7 +116,7 @@ class TestRevision(unittest.TestCase):
         # This second statement raises an exception, as no such patch
         # has been applied.
         self.failUnlessRaises(
-                psycopg.ProgrammingError, self.cur.execute,
+                psycopg2.Error, self.cur.execute,
                 "SELECT assert_patch_applied(1,999,999)")
 
 
