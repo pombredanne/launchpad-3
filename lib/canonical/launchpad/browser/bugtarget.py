@@ -19,7 +19,7 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
-import email
+import tempfile
 import urllib
 
 from zope.app.form.browser import TextWidget
@@ -36,6 +36,7 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
+from canonical.launchpad.browser.fp import FileFeedParser
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
@@ -81,7 +82,10 @@ class FileBugData:
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
         """
-        mime_msg = email.message_from_string(raw_mime_msg)
+        tempdir = tempfile.mkdtemp()
+        parser = FileFeedParser(tempdir)
+        parser.feed(raw_mime_msg)
+        mime_msg = parser.close()
         if mime_msg.is_multipart():
             self.initial_summary = mime_msg.get('Subject')
             tags = mime_msg.get('Tags', '')
