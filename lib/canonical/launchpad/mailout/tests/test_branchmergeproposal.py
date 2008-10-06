@@ -56,7 +56,6 @@ class TestMergeProposalMailing(TestCase):
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
-        #import pdb; pdb.set_trace()
         self.assertEqual("""\
 Baz Qux has proposed merging lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6.
 
