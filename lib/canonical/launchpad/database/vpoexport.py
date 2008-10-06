@@ -24,6 +24,7 @@ class VPOExportSet:
 
     implements(IVPOExportSet)
 
+    VIEW_NAME_PREFIX = 'POExport.' 
     column_names = [
         'potemplate',
         'template_header',
@@ -51,17 +52,25 @@ class VPOExportSet:
         'translation4',
         'translation5',
     ]
-    columns = ', '.join(['POExport.' + name for name in column_names])
+    columns = ', '.join([ VIEW_NAME_PREFIX + name for name in column_names])
 
+    # Obsolete translations are marked with a sequence number of 0, so they
+    # would get sorted to the front of the file during export. To avoid that,
+    # sequence numbers of 0 are translated to NULL and ordered to the end
+    # with NULLS LAST so that they appear at the end of the file.
+    # TODO: henninge 2008-10-01 spec=message-sharing-switchover: This will
+    # change when message sharing is implemented, according to jtv.
     sort_column_names = [
-        'potemplate',
-        'language',
-        'variant',
-        'sequence',
-        'id',
+        VIEW_NAME_PREFIX+'potemplate',
+        VIEW_NAME_PREFIX+'language',
+        VIEW_NAME_PREFIX+'variant',
+        'CASE '
+            'WHEN '+VIEW_NAME_PREFIX+'sequence = 0 THEN NULL '
+            'ELSE '+VIEW_NAME_PREFIX+'sequence '
+        'END NULLS LAST',
+        VIEW_NAME_PREFIX+'id',
     ]
-    sort_columns = ', '.join(
-        ['POExport.' + name for name in sort_column_names])
+    sort_columns = ', '.join(sort_column_names)
 
     def _select(self, join=None, where=None):
         query = 'SELECT %s FROM POExport' % self.columns

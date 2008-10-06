@@ -14,7 +14,7 @@ from transaction.interfaces import ISynchronizer
 
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
@@ -637,9 +637,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     # Note that NotificationResponse defines a 'redirect' method which
     # needs to override the 'redirect' method in BrowserResponse
     def __init__(self, header_output=None, http_transaction=None):
-        super(LaunchpadBrowserResponse, self).__init__(
-                header_output, http_transaction
-                )
+        super(LaunchpadBrowserResponse, self).__init__()
 
     def redirect(self, location, status=None, temporary_if_possible=False):
         """Do a redirect.
@@ -1151,6 +1149,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
     def finishReadOnlyRequest(self, txn):
         """Commit the transaction so that created OAuthNonces are stored."""
+        # Transaction commits usually need to be aware of the possibility of
+        # a doomed transaction.  We do not expect that this code will
+        # encounter doomed transactions.  If it does, this will need to be
+        # revisited.
         txn.commit()
 
     def getPrincipal(self, request):
@@ -1468,6 +1470,8 @@ def register_launchpad_request_publication_factories():
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
         VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
+        VHRP('id', IdBrowserRequest, IdPublication),
+        # XXX sinzui 2008-09-04 bug=264783: Remove openid.
         VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
         VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
              ShipItPublication),

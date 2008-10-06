@@ -230,14 +230,6 @@ class IBuild(Interface):
         "The PackageUpload for this build, or None if there is "
         "no build.")
 
-    component_dependencies = Attribute(
-        "Return a dictionary which maps a component name to a list of "
-        "component names it could depend of.")
-
-    ogre_components = Attribute(
-        "The components this build is allowed to use. It returns a string "
-        "that can be used directly at the end of sources.list lines.")
-
     def retry():
         """Restore the build record to its initial state.
 
@@ -305,6 +297,25 @@ class IBuild(Interface):
 
         :param content: string containing the upload-processor log output for
             the binaries created in this build.
+        """
+
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Binary changesfile: '.changes';
+         * Build logs: '.txt.gz';
+         * Build upload logs: '_log.txt';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            filename and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
 
