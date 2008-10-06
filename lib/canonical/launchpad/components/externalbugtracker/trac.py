@@ -347,7 +347,7 @@ class TracLPPlugin(Trac):
             response = self.urlopen(auth_url)
         except urllib2.HTTPError, error:
             raise BugTrackerAuthenticationError(
-                auth_url, '%s "%s"' % (error.code, error.msg))
+                self.baseurl, '%s "%s"' % (error.code, error.msg))
 
     @needs_authentication
     def getCurrentDBTime(self):
