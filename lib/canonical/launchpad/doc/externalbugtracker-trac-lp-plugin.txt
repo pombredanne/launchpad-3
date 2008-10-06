@@ -102,6 +102,35 @@ manually manipulate cookies.
     >>> test_transport.cookie_processor.cookiejar == trac._cookie_jar
     True
 
+So if we look in the TracLPPlugin's CookieJar we'll see the same cookie:
+
+    >>> trac._cookie_jar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth'...
+
+And altering the cookie in the TracLPPlugin's CookieJar will mean, of
+course, that it's altered in the XML-RPC transport's CookieJar, too.
+
+    >>> from cookielib import Cookie
+    >>> new_cookie = Cookie(
+    ...     name="trac_auth",
+    ...     value="Look ma, a new cookie!",
+    ...     version=0, port=None, port_specified=False,
+    ...     domain='http://example.com', domain_specified=True,
+    ...     domain_initial_dot=None, path='', path_specified=False,
+    ...     secure=False, expires=False, discard=None, comment=None,
+    ...     comment_url=None, rest=None)
+
+    >>> trac._cookie_jar.clear()
+    >>> trac._cookie_jar.set_cookie(new_cookie)
+
+    >>> trac._cookie_jar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    value='Look ma, a new cookie!'...>
+
+    >>> test_transport.cookie_processor.cookiejar
+    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    value='Look ma, a new cookie!'...>
+
 
 == Current time ==
 
