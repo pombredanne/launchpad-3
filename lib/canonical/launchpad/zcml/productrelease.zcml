@@ -7,12 +7,12 @@
 
 
     <!-- This is class ProductReleaseSet -->
-    <content class="canonical.launchpad.database.ProductReleaseSet">
+    <class class="canonical.launchpad.database.ProductReleaseSet">
         <allow interface="canonical.launchpad.interfaces.IProductReleaseSet" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductReleaseSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ProductReleaseSet"
@@ -22,7 +22,7 @@
 
 
     <!-- This is class ProductRelease -->
-    <content class="canonical.launchpad.database.ProductRelease">
+    <class class="canonical.launchpad.database.ProductRelease">
         <allow interface="canonical.launchpad.interfaces.IProductReleasePublic" />
         <require
             permission="launchpad.Edit"
@@ -30,7 +30,7 @@
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -136,11 +136,11 @@
     </browser:editform>
 
     <!-- This is class ProductReleaseFile -->
-    <content class="canonical.launchpad.database.ProductReleaseFile">
+    <class class="canonical.launchpad.database.ProductReleaseFile">
         <allow interface="canonical.launchpad.interfaces.IProductReleaseFilePublic" />
         <require
             permission="launchpad.Edit"
             interface="canonical.launchpad.interfaces.IProductReleaseFileEditRestricted" />
-    </content>
+    </class>
 
 </configure>

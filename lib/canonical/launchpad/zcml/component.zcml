@@ -5,19 +5,19 @@
     i18n_domain="launchpad">
 
     <!-- Component -->
-    <content class="canonical.launchpad.database.Component">
+    <class class="canonical.launchpad.database.Component">
         <allow interface="canonical.launchpad.interfaces.IComponent"/>
-    </content>
+    </class>
 
     <!-- ComponentSelection -->
-    <content class="canonical.launchpad.database.ComponentSelection">
+    <class class="canonical.launchpad.database.ComponentSelection">
         <allow interface="canonical.launchpad.interfaces.IComponentSelection"/>
-    </content>
+    </class>
 
     <!-- ComponentSet -->
-    <content class="canonical.launchpad.database.ComponentSet">
+    <class class="canonical.launchpad.database.ComponentSet">
         <allow interface="canonical.launchpad.interfaces.IComponentSet"/>
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ComponentSet"

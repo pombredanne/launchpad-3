@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- DistributionSourcePackageCache -->
-  <content class="canonical.launchpad.database.DistributionSourcePackageCache">
+  <class class="canonical.launchpad.database.DistributionSourcePackageCache">
     <allow
       interface="canonical.launchpad.interfaces.IDistributionSourcePackageCache" />
-  </content>
+  </class>
 
 </configure>

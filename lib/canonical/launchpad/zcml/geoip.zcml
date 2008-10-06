@@ -5,9 +5,9 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.geoip.GeoIP">
+    <class class="canonical.launchpad.utilities.geoip.GeoIP">
         <allow interface="canonical.launchpad.interfaces.IGeoIP" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.utilities.geoip.GeoIP"

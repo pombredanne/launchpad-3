@@ -104,10 +104,6 @@ warnings.filterwarnings(
         'ignore', 'twisted.python.plugin', DeprecationWarning,
         )
 warnings.filterwarnings(
-        'ignore', 'The concrete concept of a view has been deprecated.',
-        DeprecationWarning
-        )
-warnings.filterwarnings(
         'ignore', 'bzrlib.*was deprecated', DeprecationWarning
 )
 
