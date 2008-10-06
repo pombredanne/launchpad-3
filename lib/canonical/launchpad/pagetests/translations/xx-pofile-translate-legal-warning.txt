@@ -1,0 +1,56 @@
+= Warning about imported suggestions =
+
+When a suggestion is coming from an import, a warning is shown about the
+likely licensing incompatibility.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+Our sampledata contains imported Spanish translations for message
+'evolution addressbook' in both an upstream project and in Hoary
+distroseries.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('carlos@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+    >>> evolution = product_set.getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
+    >>> pofile_es = evolution_potemplate.getPOFileByLang('es')
+    >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> upstream_translationmessage = potmsgset.getImportedTranslationMessage(
+    ...     pofile_es.language)
+    >>> upstream_translationmessage.translations
+    [u'libreta de direcciones de Evolution']
+
+    >>> hoary_potemplate = evolution_potemplate.relatives_by_name[0]
+    >>> hoary_pofile_es = hoary_potemplate.getPOFileByLang('es')
+    >>> potmsgset = hoary_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> ubuntu_translationmessage = potmsgset.getImportedTranslationMessage(
+    ...     hoary_pofile_es.language)
+    >>> ubuntu_translationmessage.translations
+    [u'libreta de direcciones de Evolution']
+
+We can remove an imported translation from an Evolution upstream translation.
+
+    >>> removeSecurityProxy(upstream_translationmessage).destroySelf()
+
+    >>> logout()
+
+This makes the upstream Evolution translate pages show a suggestion
+from the Hoary sourcepackage which is coming from the import.
+
+    >>> browser.open('http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'msgset_1_es_suggestion_562_0'))
+    libreta de direcciones de Evolution
+
+A warning icon about the legal situation is shown alongside the suggestion
+itself.
+
+    >>> warning_link = find_tag_by_class(browser.contents, 'legal-warning')
+    >>> extract_link_from_tag(warning_link)
+    trt
+
