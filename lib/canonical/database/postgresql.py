@@ -484,9 +484,9 @@ class ConnectionString:
     'launchpad_dev'
     >>> cs.user
     'foo'
-    >>> print str(cs)
+    >>> str(cs)
     'dbname=launchpad_dev user=foo'
-    >>> print repr(cs)
+    >>> repr(cs)
     'dbname=launchpad_dev user=foo'
     """
     CONNECTION_KEYS = [
@@ -517,7 +517,7 @@ class ConnectionString:
         '--host=localhost --username=slony test'
 
         >>> cs = ConnectionString('port=5433 dbname=test')
-        >>> cs.asPgCommandLineArgs()
+        >>> cs.asPGCommandLineArgs()
         '--port=5433 test'
         """
         params = []
@@ -526,7 +526,7 @@ class ConnectionString:
         if self.port is not None:
             params.append("--port=%s" % self.port)
         if self.user is not None:
-            params.append("--user=%s" % self.user)
+            params.append("--username=%s" % self.user)
         if self.dbname is not None:
             params.append(self.dbname)
         return ' '.join(params)
