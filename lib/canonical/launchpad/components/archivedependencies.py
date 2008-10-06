@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'component_dependencies',
     'get_components_for_building',
-    'get_primary_component_override',
+    'get_primary_current_component',
     'get_sources_list_for_building',
     'pocket_dependencies',
     ]
@@ -95,7 +95,7 @@ def get_sources_list_for_building(build):
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.SECURITY]
             primary_components = component_dependencies[
-                get_primary_component_override(build)]
+                get_primary_current_component(build)]
         else:
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.UPDATES]
@@ -134,7 +134,7 @@ def get_sources_list_for_building(build):
     return sources_list_lines
 
 
-def get_primary_component_override(build):
+def get_primary_current_component(build):
     """Return the component name of the primary archive ancestry.
 
     If no ancestry could be found, default to 'universe'.

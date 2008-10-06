@@ -276,9 +276,9 @@ The default component override value is 'universe' and it's used when
 we can't find any suitable ancestry in the primary archive.
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     get_primary_component_override)
+    ...     get_primary_current_component)
 
-    >>> print get_primary_component_override(a_build)
+    >>> print get_primary_current_component(a_build)
     universe
 
     >>> print_building_sources_list(a_build)
@@ -291,7 +291,7 @@ The system immediately recognizes and respects an ancestry tagetted to
 the main component.
 
     >>> primary_pub = test_publisher.getPubSource(version='1.0')
-    >>> print get_primary_component_override(a_build)
+    >>> print get_primary_current_component(a_build)
     main
 
     >>> print_building_sources_list(a_build)
@@ -305,7 +305,7 @@ The same thing happens when the ancestry component is overridden.
     >>> override = primary_pub.changeOverride(
     ...     new_component=getUtility(IComponentSet)['restricted'])
 
-    >>> print get_primary_component_override(a_build)
+    >>> print get_primary_current_component(a_build)
     restricted
 
     >>> print_building_sources_list(a_build)
