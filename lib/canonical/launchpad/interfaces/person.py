@@ -524,10 +524,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    openid_identifier = TextLine(
-        title=_("Key used to generate opaque OpenID identities."),
-        readonly=True, required=False)
-
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
         readonly=True, vocabulary=AccountStatus)

@@ -402,7 +402,7 @@ class ObjectFormatterAPI:
     # Although we avoid mutables as class attributes, the two ones below are
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
-    # The names which can be traversed further (e.g context/fmg:url/+edit).
+    # The names which can be traversed further (e.g context/fmt:url/+edit).
     traversable_names = {'link': 'link', 'url': 'url'}
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {}
