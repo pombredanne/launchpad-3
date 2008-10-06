@@ -127,6 +127,12 @@ def _can_edit_translations(pofile, person):
         if person.inTeam(product.owner):
             return True
 
+    # If a person has decided not to license their translations under BSD
+    # license, they can't edit translations.
+    if (person.translations_relicensing_agreement is not None and
+        person.translations_relicensing_agreement is False):
+        return False
+
     # Finally, check whether the user is member of the translation team or
     # owner for the given PO file.
     translators = [t.translator for t in pofile.translators]

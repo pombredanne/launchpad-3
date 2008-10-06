@@ -41,7 +41,8 @@ from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
-    TranslationConflict, TranslationConstants, UnexpectedFormData)
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
     Link, urlparse)
