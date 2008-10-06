@@ -336,7 +336,7 @@ class LaunchpadBrowserPublication(
             # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
             # mapply cannot handle these methods because it cannot introspect
             # them.  We'll just call them directly.
-            return apply(ob, request.getPositionalArguments())
+            return ob(*request.getPositionalArguments())
 
         return mapply(ob, request.getPositionalArguments(), request)
 
