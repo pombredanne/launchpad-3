@@ -97,7 +97,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getComponentsForBuilding)
+    ...     get_components_for_building)
 
     >>> ogre_pub = test_publisher.getPubSource(sourcename='ogre')
     >>> [ogre_build] = ogre_pub.createMissingBuilds()
@@ -111,7 +111,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...         syncUpdate(ogre_pub.secure_record)
     ...         flush_database_caches()
     ...         components_term = " ".join(
-    ...             getComponentsForBuilding(ogre_build))
+    ...             get_components_for_building(ogre_build))
     ...         print '%10s | %s' % (ogre_build.current_component.name,
     ...                              components_term)
 
@@ -165,14 +165,14 @@ We will use Celso's PPA for testing these mechanisms.
     ...     version='1.1', archive=cprov.archive)
     >>> [a_build] = pub_source.createMissingBuilds()
 
-Now we can verify if getSourcesListForBuilding() method returns the
+Now we can verify if get_sources_list_for_building() method returns the
 expected content for building the just-created source.
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getSourcesListForBuilding)
+    ...     get_sources_list_for_building)
 
     >>> def print_building_sources_list(candidate):
-    ...     sources_list = getSourcesListForBuilding(candidate)
+    ...     sources_list = get_sources_list_for_building(candidate)
     ...     for line in sorted(sources_list):
     ...         print line
 
@@ -276,9 +276,9 @@ The default component override value is 'universe' and it's used when
 we can't find any suitable ancestry in the primary archive.
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getPrimaryComponentOverride)
+    ...     get_primary_component_override)
 
-    >>> print getPrimaryComponentOverride(a_build)
+    >>> print get_primary_component_override(a_build)
     universe
 
     >>> print_building_sources_list(a_build)
@@ -291,7 +291,7 @@ The system immediately recognizes and respects an ancestry tagetted to
 the main component.
 
     >>> primary_pub = test_publisher.getPubSource(version='1.0')
-    >>> print getPrimaryComponentOverride(a_build)
+    >>> print get_primary_component_override(a_build)
     main
 
     >>> print_building_sources_list(a_build)
@@ -305,7 +305,7 @@ The same thing happens when the ancestry component is overridden.
     >>> override = primary_pub.changeOverride(
     ...     new_component=getUtility(IComponentSet)['restricted'])
 
-    >>> print getPrimaryComponentOverride(a_build)
+    >>> print get_primary_component_override(a_build)
     restricted
 
     >>> print_building_sources_list(a_build)
