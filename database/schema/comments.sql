@@ -187,6 +187,14 @@ COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textu
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 
+
+-- BugNotificationAttachment
+
+COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
+COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached to the sent bug notification. It will be attached as a mime/multipart part, with a content type of message/rfc822.';
+COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
+
+
 -- BugNotificationRecipient
 COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
 COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';
