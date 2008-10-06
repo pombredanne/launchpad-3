@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 
 from zope.app.form.interfaces import ConversionError
-from zope.app.tests import ztapi
+from zope.app.testing import ztapi
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
