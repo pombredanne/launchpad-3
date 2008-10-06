@@ -203,8 +203,12 @@ class IByteStorage(Interface):
     is_stored = Attribute("Whether or not there's a previously created "
                           "external byte stream here.")
 
-    def createStored(mediaType, representation):
-        """Create a new stored bytestream."""
+    def createStored(mediaType, representation, filename=None):
+        """Create a new stored bytestream.
+
+        :param filename: The name of the file being stored. If None,
+        the name of the storage field is used instead.
+        """
 
     def deleteStored():
         """Delete an existing stored bytestream."""

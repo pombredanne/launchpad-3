@@ -3,27 +3,25 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseContextMenu',
-    'ProductReleaseEditView',
-    'ProductReleaseAddView',
-    'ProductReleaseRdfView',
     'ProductReleaseAddDownloadFileView',
+    'ProductReleaseAddView',
+    'ProductReleaseContextMenu',
+    'ProductReleaseDeleteView',
+    'ProductReleaseEditView',
     'ProductReleaseNavigation',
+    'ProductReleaseRdfView',
     'ProductReleaseView',
     ]
 
 import mimetypes
-from StringIO import StringIO
 
-# zope3
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.app.form.browser import TextWidget
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-# launchpad
 from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
 from canonical.launchpad.interfaces.productseries import IProductSeriesSet
@@ -192,3 +190,24 @@ class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         return set([self.context])
+
+
+class ProductReleaseDeleteView(LaunchpadFormView):
+    """A view for deleting an `IProductRelease`."""
+    label = 'Delete release'
+    schema = IProductRelease
+    field_names = []
+
+    def canBeDeleted(self, action=None):
+        """Can this release be deleted?
+
+        Only releases which have no files associated with it can be deleted.
+        """
+        return self.context.files.count() == 0
+
+    @action('Yes, Delete it', name='delete', condition=canBeDeleted)
+    def add_action(self, action, data):
+        self.request.response.addInfoNotification(
+            "Release %s deleted." % self.context.version)
+        self.next_url = canonical_url(self.context.productseries)
+        self.context.destroySelf()

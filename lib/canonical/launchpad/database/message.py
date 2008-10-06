@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -136,9 +136,11 @@ class MessageSet:
             raise NotFoundError(rfc822msgid)
         return messages
 
-    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW,
+    def fromText(self, subject, content, owner=None, datecreated=None,
         rfc822msgid=None):
         """See IMessageSet."""
+        if datecreated is None:
+            datecreated = UTC_NOW
         if rfc822msgid is None:
             rfc822msgid = make_msgid("launchpad")
 
@@ -153,7 +155,7 @@ class MessageSet:
         return message
 
     def _decode_header(self, header):
-        r"""Decode an RFC 2097 encoded header.
+        r"""Decode an RFC 2047 encoded header.
 
             >>> MessageSet()._decode_header('=?iso-8859-1?q?F=F6=F6_b=E4r?=')
             u'F\xf6\xf6 b\xe4r'
@@ -174,6 +176,16 @@ class MessageSet:
         for bytes, charset in bits:
             if charset is None:
                 charset = 'us-ascii'
+            # 2008-09-26 gary:
+            # The RFC 2047 encoding names and the Python encoding names are
+            # not always the same. A safer and more correct approach would use
+            #   bytes.decode(email.Charset.Charset(charset).input_codec,
+            #                'replace')
+            # or similar, rather than
+            #   bytes.decode(charset, 'replace')
+            # That said, this has not bitten us so far, and is only likely to
+            # cause problems in unusual encodings that we are hopefully
+            # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
                 (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
 
@@ -504,4 +516,3 @@ class MessageChunk(SQLBase):
                 "Type:       %s\n"
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
-

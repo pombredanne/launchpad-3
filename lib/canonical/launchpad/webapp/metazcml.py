@@ -5,17 +5,17 @@ __metaclass__ = type
 import inspect
 
 import zope.app.form.browser.metaconfigure
+import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.component.servicenames
-from zope.app.component.contentdirective import ContentDirective
+import zope.configuration.config
 from zope.app.component.fields import LayerField
 from zope.app.component.metaconfigure import (
     adapter, handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
-from zope.app.pagetemplate.engine import Engine
+from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publisher.browser.viewmeta import (
     page as original_page, pages as original_pages)
-from zope.app.security.metadirectives import IDefinePermissionDirective
 from zope.app.security.permission import Permission
 from zope.component import getUtility
 from zope.configuration.fields import (
@@ -28,6 +28,10 @@ from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
 from zope.security.proxy import ProxyFactory
+
+from zope.app.component.contentdirective import ClassDirective
+
+from zope.security.zcml import IPermissionDirective
 
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.generalform import (
@@ -106,7 +110,7 @@ class SecuredUtilityDirective:
         self._context = _context
         self.provides = provides
         self.permission_collector = PermissionCollectingContext()
-        self.contentdirective = ContentDirective(
+        self.contentdirective = ClassDirective(
             self.permission_collector, class_)
 
     def require(self, _context, **kw):
@@ -357,7 +361,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             raise AttributeError('The name "%s" is not in %s.%s'
                 % (attribute_to_parent, for_.__module__, for_.__name__))
     if path_expression is not None:
-        compiled_path_expression = Engine.compile(path_expression)
+        compiled_path_expression = TrustedEngine.compile(path_expression)
 
     # Dead chicken for the namespace gods.
     rootsite_ = rootsite
@@ -715,7 +719,7 @@ class SchemaDisplayDirective(
             self)
 
 
-class IDefineLaunchpadPermissionDirective(IDefinePermissionDirective):
+class IDefineLaunchpadPermissionDirective(IPermissionDirective):
 
     access_level = TextLine(
         title=u"Access level", required=False,

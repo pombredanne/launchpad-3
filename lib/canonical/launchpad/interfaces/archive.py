@@ -14,6 +14,8 @@ __all__ = [
     'IArchivePackageDeletionForm',
     'IArchiveSet',
     'IArchiveSourceSelectionForm',
+    'IDistributionArchive',
+    'IPPA',
     'IPPAActivateForm',
     ]
 
@@ -21,10 +23,14 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
 
 
 class ArchiveDependencyError(Exception):
@@ -40,21 +46,25 @@ class ArchiveDependencyError(Exception):
 
 class IArchive(IHasOwner):
     """An Archive interface"""
+    export_as_webservice_entry()
 
     id = Attribute("The archive ID.")
 
-    owner = Choice(
-        title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("""The PPA owner."""))
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, vocabulary='ValidOwner',
+            description=_("""The PPA owner.""")))
 
-    name = TextLine(
-        title=_("Name"), required=True,
-        constraint=name_validator,
-        description=_("The name of this archive."))
+    name = exported(
+        TextLine(
+            title=_("Name"), required=True,
+            constraint=name_validator,
+            description=_("The name of this archive.")))
 
-    description = Text(
-        title=_("PPA contents description"), required=False,
-        description=_("A short description of contents of this PPA."))
+    description = exported(
+        Text(
+            title=_("PPA contents description"), required=False,
+            description=_("A short description of contents of this PPA.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
@@ -100,8 +110,11 @@ class IArchive(IHasOwner):
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
 
-    distribution = Attribute(
-        "The distribution that uses or is used by this archive.")
+    distribution = exported(
+        Reference(
+            Interface, # Redefined to IDistribution later.
+            title=_("The distribution that uses or is used by this "
+                    "archive.")))
 
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
@@ -115,7 +128,8 @@ class IArchive(IHasOwner):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
-    title = Attribute("Archive Title.")
+    title = exported(
+        Text(title=_("Archive Title."), required=False))
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
@@ -263,27 +277,35 @@ class IArchive(IHasOwner):
         not found.
         """
 
-    def getArchiveDependency(dependency):
+    def getArchiveDependency(dependency, pocket, component):
         """Return the `IArchiveDependency` object for the given dependency.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
+
         :return: `IArchiveDependency` or None if a corresponding object
             could not be found.
         """
 
-    def removeArchiveDependency(dependency):
+    def removeArchiveDependency(dependency, pocket, component):
         """Remove the `IArchiveDependency` record for the given dependency.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
         """
 
-    def addArchiveDependency(dependency):
+    def addArchiveDependency(dependency, pocket, component):
         """Record an archive dependency record for the context archive.
 
         Raises `ArchiveDependencyError` if given 'dependency' does not fit
         the context archive.
 
         :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an `IComponent` object.
+
         :return: a `IArchiveDependency` object targeted to the context
             `IArchive` requiring 'dependency' `IArchive`.
         """
@@ -313,6 +335,35 @@ class IArchive(IHasOwner):
         queue for items with 'component'.
         """
 
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc';
+         * Binary files: '.deb' and '.udeb';
+         * Source changesfile: '_source.changes';
+         * Package diffs: '.diff.gz';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            filename and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+
+class IPPA(IArchive):
+    """Marker interface so traversal works differently for PPAs."""
+
+
+class IDistributionArchive(IArchive):
+    """Marker interface so traversal works differently for distro archives."""
+
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
@@ -325,6 +376,11 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
+
+
+# Avoid circular import.
+from canonical.launchpad.interfaces.distribution import IDistribution
+IArchive['distribution'].schema = IDistribution
 
 
 class IArchiveSourceSelectionForm(Interface):
@@ -398,6 +454,9 @@ class IArchiveSet(Interface):
 
         :raises AssertionError if used for with ArchivePurpose.PPA.
         """
+
+    def getByDistroAndName(distribution, name):
+        """Return the `IArchive` with the given distribution and name."""
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
@@ -479,3 +538,4 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
+

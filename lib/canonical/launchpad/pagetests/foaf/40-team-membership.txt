@@ -201,16 +201,14 @@ First, Kiko has not joined any teams:
   None
 
 
-Next, Alexander Limi is only a direct member:
+Next, Marilize Coetzee is only a direct member:
 
-  >>> browser.open('http://launchpad.dev/~limi/+participation')
+  >>> browser.open('http://launchpad.dev/~marilize/+participation')
   >>> 'has not yet joined any teams' in browser.contents
   False
   >>> print extract_text(find_portlet(browser.contents, 'Direct membership'))
   Direct membership
-  Ubuntu Gnome Team
-  Joined on ...
-  Ubuntu Team
+  ShipIt Administrators
   Joined on ...
   >>> print find_portlet(browser.contents, 'Indirect membership')
   None

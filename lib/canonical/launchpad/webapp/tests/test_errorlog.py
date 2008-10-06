@@ -15,7 +15,9 @@ import traceback
 
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal)
+from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
@@ -23,7 +25,7 @@ from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility, ScriptRequest, _is_sensitive)
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
@@ -333,7 +335,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[16], 'ArbitraryException: xyz\n')
@@ -401,7 +403,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines.pop(0), '\n')
 
         # traceback
-        self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
+        self.assertEqual(lines.pop(0), 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         lines.pop(0)
@@ -410,6 +412,22 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
+
+    def test_raising_with_xmlrpc_request(self):
+        # Test ErrorReportingUtility.raising() with an XML-RPC request.
+        request = TestRequest()
+        directlyProvides(request, IXMLRPCRequest)
+        request.getPositionalArguments = lambda : (1,2)
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+        self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
@@ -453,7 +471,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[15], '\n')
 
         # traceback
-        self.assertEqual(lines[16], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[16], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[19], 'ArbitraryException: xyz\n')
@@ -502,7 +520,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[12], '\n')
 
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(
@@ -622,6 +640,24 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(''.join(lines[13:17]), exc_tb)
 
 
+class TestSensitiveRequestVariables(unittest.TestCase):
+    """Test request variables that should not end up in the stored OOPS.
+
+    The _is_sensitive() method will return True for any variable name that
+    should not be included in the OOPS.
+    """
+
+    def test_oauth_signature_is_sensitive(self):
+        """The OAuth signature can be in the body of a POST request, but if
+        that happens we don't want it to be included in the OOPS, so we need
+        to mark it as sensitive.
+        """
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://api.launchpad.dev'},
+            form={'oauth_signature': '&BTXPJ6pQTvh49r9p'})
+        self.failUnless(_is_sensitive(request, 'oauth_signature'))
+
+
 class TestRequestWithUnauthenticatedPrincipal(TestRequest):
     principal = UnauthenticatedPrincipal(42)
 
@@ -645,6 +681,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestErrorReport))
     suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
+    suite.addTest(unittest.makeSuite(TestSensitiveRequestVariables))
     return suite
 
 if __name__ == '__main__':

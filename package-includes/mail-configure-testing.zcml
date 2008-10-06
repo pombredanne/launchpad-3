@@ -3,7 +3,7 @@
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
 
-    <include package="zope.app.mail"/>
+    <include package="zope.sendmail"/>
 
     <!-- Configure email for testing. Use direct delivery instead of
     queued, as otherwise tests would be more painful and the background

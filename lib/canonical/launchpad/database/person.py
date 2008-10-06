@@ -25,7 +25,7 @@ import random
 import re
 
 from zope.app.error.interfaces import IErrorReportingUtility
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
@@ -70,7 +70,7 @@ from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget, IHasBugs
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
 from canonical.launchpad.interfaces.distribution import IDistribution
@@ -2177,8 +2177,8 @@ class Person(
     @property
     def safe_email_or_blank(self):
         """See `IPerson`."""
-        if ((self.preferredemail is not None) and
-            not(self.hide_email_addresses)):
+        if (self.preferredemail is not None
+            and not self.hide_email_addresses):
             return self.preferredemail.email
         else:
             return ''

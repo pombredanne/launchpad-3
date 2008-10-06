@@ -116,8 +116,8 @@ class WebServiceTestCase(CleanUp, unittest.TestCase):
          <include package="canonical.lazr.rest" file="configure.zcml" />
 
         <adapter for="*"
-            factory="zope.app.traversing.adapters.DefaultTraversable"
-            provides="zope.app.traversing.interfaces.ITraversable" />
+            factory="zope.traversing.adapters.DefaultTraversable"
+            provides="zope.traversing.interfaces.ITraversable" />
 
         <webservice:register module="canonical.lazr.testmodule" />
         </configure>

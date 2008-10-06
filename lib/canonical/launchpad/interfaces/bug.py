@@ -259,6 +259,9 @@ class IBug(ICanBeMentored):
     message_count = Int(
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
+    users_affected_count = exported(
+        Int(title=_('The number of users affected by this bug'),
+            required=True, readonly=True))
 
     messages = exported(
         CollectionField(
@@ -567,6 +570,23 @@ class IBug(ICanBeMentored):
         All the tasks that don't have a package will be available under
         None.
         """
+
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def isUserAffected(user):
+        """Is :user: marked as affected by this bug?"""
+
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+
+    def markUserAffected(user):
+        """Mark :user: as affected by this bug."""
+
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def unmarkUserAffected(user):
+        """Unmark :user: as affected by this bug."""
+
 
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
