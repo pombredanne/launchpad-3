@@ -56,5 +56,5 @@ ALTER TABLE Poll DROP CONSTRAINT is_team;
 -- the OAuthAccessToken table is moved too.
 ALTER TABLE OauthNonce DROP CONSTRAINT oauthnonce_access_token_fkey;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 71, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 1, 0);
 

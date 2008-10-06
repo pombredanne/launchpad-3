@@ -24,8 +24,8 @@ class TestRevision(unittest.TestCase):
 
     def setUp(self):
         schema_dir = os.path.join(config.root, 'database', 'schema')
-        baseline, = glob(os.path.join(schema_dir, 'launchpad-???-00-0.sql'))
-        match = re.search('launchpad-(\d{3})-00-0.sql', baseline)
+        baseline, = glob(os.path.join(schema_dir, 'launchpad-*-00-0.sql'))
+        match = re.search('launchpad-(\d+)-00-0.sql', baseline)
         self.major = int(match.group(1))
         self.cur = cursor()
 
@@ -40,7 +40,7 @@ class TestRevision(unittest.TestCase):
         # an exception is raised
         path = os.path.join(
                 config.root, 'database', 'schema',
-                'patch-%03d-96-0.sql' % self.major
+                'patch-%04d-96-0.sql' % self.major
                 )
         self.failIf(
                 os.path.exists(path),

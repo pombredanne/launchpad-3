@@ -138,6 +138,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -165,8 +167,6 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
-from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
@@ -1425,7 +1425,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         principal = loginsource.getPrincipalByLogin(
             self.user.preferredemail.email)
         assert principal is not None, "User must be logged in at this point."
-        if not principal.validate(data.get('password')):
+        # The widget will transform '' into a special marker value.
+        password = data.get('password')
+        if password is self.schema['password'].UNCHANGED_PASSWORD:
+            password = u''
+        if not principal.validate(password):
             self.setFieldError('password', 'Incorrect password.')
             return
 
@@ -2100,7 +2104,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Commercial projects you administer'),
                    vocabulary='CommercialProjects',
                    required=True),
-            custom_widget=self.custom_widgets['project'],
             render_context=self.render_context)
         return field
 
@@ -2121,7 +2124,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=True),
-            custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
 
@@ -2351,7 +2353,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def openid_identity_url(self):
         """The identity URL for the person."""
-        return canonical_url(OpenIDPersistentIdentity(self.context))
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     @property
     def subscription_policy_description(self):
@@ -2667,7 +2669,8 @@ class EmailAddressVisibleState:
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
-    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -3525,7 +3528,6 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                  title=_(''),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False),
-            custom_widget=self.custom_widgets['teams'],
             render_context=self.render_context)
 
     def setUpWidgets(self, context=None):
@@ -3759,9 +3761,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='mailing_list_auto_subscribe_policy',
                    title=_('When should launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy),
-            custom_widget=self.custom_widgets[
-                    'mailing_list_auto_subscribe_policy'])
+                   source=MailingListAutoSubscribePolicy))
 
     @property
     def mailing_list_widgets(self):
@@ -4698,20 +4698,35 @@ class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
     def initialize(self):
-        # Store the (sorted) list of access tokens that are going to be
-        # used in the template.
-        self.tokens = sorted(
-            self.context.oauth_access_tokens,
-            key=lambda token: token.consumer.key)
         if self.request.method == 'POST':
             self.expireToken()
+
+    @property
+    def access_tokens(self):
+        return sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+
+    @property
+    def request_tokens(self):
+        return sorted(
+            self.context.oauth_request_tokens,
+            key=lambda token: token.consumer.key)
 
     def expireToken(self):
         """Expire the token with the key contained in the request's form."""
         form = self.request.form
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('consumer_key'))
-        token = consumer.getAccessToken(form.get('token_key'))
+        token_key = form.get('token_key')
+        token_type = form.get('token_type')
+        if token_type == 'access_token':
+            token = consumer.getAccessToken(token_key)
+        elif token_type == 'request_token':
+            token = consumer.getRequestToken(token_key)
+        else:
+            raise UnexpectedFormData("Invalid form value for token_type: %r"
+                                     % token_type)
         if token is not None:
             token.date_expires = datetime.now(pytz.timezone('UTC'))
             self.request.response.addInfoNotification(

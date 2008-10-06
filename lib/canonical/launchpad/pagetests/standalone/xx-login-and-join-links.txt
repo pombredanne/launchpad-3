@@ -27,7 +27,7 @@ Check that the logout page redirects appropriately.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/?loggingout=1
+  Location: http://localhost/?loggingout=1
   ...
 
 Check that the logout page redirects appropriately from a more interesting url.
@@ -37,7 +37,7 @@ Check that the logout page redirects appropriately from a more interesting url.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/firefox/?loggingout=1
+  Location: http://localhost/firefox/?loggingout=1
   ...
 
 Check that basic auth works.
@@ -62,4 +62,3 @@ The login page preserves all the query parameters it is given
   True
   >>> '<input type="hidden" name="bar" value="tsimpson" />' in result
   True
-

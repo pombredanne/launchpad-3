@@ -109,7 +109,7 @@ warnings.filterwarnings(
         )
 warnings.filterwarnings(
         'ignore', 'bzrlib.*was deprecated', DeprecationWarning
-        )
+)
 
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
@@ -159,7 +159,6 @@ os.listdir = listdir
 
 
 if __name__ == '__main__':
-
     # Extract arguments so we can see them too. We need to strip
     # --resume-layer and --default stuff if found as get_options can't
     # handle it.
@@ -167,6 +166,7 @@ if __name__ == '__main__':
         args = list(sys.argv)
         args.pop(1) # --resume-layer
         args.pop(1) # The layer name
+        args.pop(1) # The resume number
         while len(args) > 1 and args[1] == '--default':
             args.pop(1) # --default
             args.pop(1) # The default value

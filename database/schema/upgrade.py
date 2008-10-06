@@ -356,10 +356,10 @@ def get_patchlist(con):
     # Generate a list of all patches we might want to apply
     patches = []
     all_patch_files = glob.glob(
-            os.path.join(SCHEMA_DIR, 'patch-???-??-?.sql'))
+        os.path.join(SCHEMA_DIR, 'patch-????-??-?.sql'))
     all_patch_files.sort()
     for patch_file in all_patch_files:
-        m = re.search('patch-(\d\d\d)-(\d\d)-(\d).sql$', patch_file)
+        m = re.search('patch-(\d+)-(\d+)-(\d).sql$', patch_file)
         if m is None:
             log.fatal('Invalid patch filename %s' % repr(patch_file))
             sys.exit(1)

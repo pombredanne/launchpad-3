@@ -27,10 +27,10 @@ def confirm_dbrevision(cur):
     # Get a list of patches the code expects to have been applied from the
     # filesystem.
     schema_dir = os.path.join(config.root, 'database', 'schema')
-    patches_glob = os.path.join(schema_dir, 'patch-???-??-?.sql')
+    patches_glob = os.path.join(schema_dir, 'patch-*-*-*.sql')
     fs_patches = []
     for patch_file in glob(patches_glob):
-        match = re.search('patch-(\d\d\d)-(\d\d)-(\d).sql', patch_file)
+        match = re.search('patch-(\d+)-(\d+)-(\d+).sql', patch_file)
         if match is None:
             raise InvalidDatabaseRevision("Bad patch name %r" % (patch_file,))
         fs_patches.append(
@@ -56,7 +56,7 @@ def confirm_dbrevision(cur):
     for patch_tuple in fs_patches:
         if patch_tuple not in db_patches:
             raise InvalidDatabaseRevision(
-                "patch-%03d-%02d-%d.sql has not been applied to the database"
+                "patch-%04d-%02d-%d.sql has not been applied to the database"
                 % patch_tuple
                 )
 
@@ -71,7 +71,7 @@ def confirm_dbrevision(cur):
     for patch_tuple in db_patches:
         if patch_tuple[2] == 0 and patch_tuple not in fs_patches:
             raise InvalidDatabaseRevision(
-                "patch-%03d-%02d-%d.sql has been applied to the database "
+                "patch-%04d-%02d-%d.sql has been applied to the database "
                 "but does not exist in this source code tree"
                 % patch_tuple
                 )

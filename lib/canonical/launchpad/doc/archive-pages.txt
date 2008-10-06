@@ -223,6 +223,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     (cprov.archive, add_dependency_request),
     ...     name="+edit-dependencies")
     >>> view.initialize()
+    >>> transaction.commit()
 
 Now we can see that the view properties correctly indicates the
 presence of a PPA dependency.
@@ -257,7 +258,8 @@ first listed dependency.
     setFocusByName('field.selected_dependencies');
     // -->
 
-We simply let the zope infrastructure raise FormError on malformed requests.
+We warn the user when a malformed request does not include selected
+dependencies for a removal.
 
     >>> broken_request = LaunchpadTestRequest(
     ...     form={'field.actions.remove': 'Remove Dependencies',})
@@ -265,9 +267,10 @@ We simply let the zope infrastructure raise FormError on malformed requests.
     >>> view = getMultiAdapter(
     ...     (cprov.archive, broken_request), name="+edit-dependencies")
     >>> view.initialize()
-    Traceback (most recent call last):
+    >>> for message in view.errors:
+    ...     print message
     ...
-    FormError: ('No input', 'selected_dependencies')
+    No dependencies selected.
 
 If we remove the just-added dependency, the view gets back to its
 initial/empty state.
@@ -489,4 +492,3 @@ value is submitted.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('destination_archive', u'Destination PPA', )
-

@@ -161,7 +161,7 @@ Python properties.
 Breadcrumbs may have icons.  The icon is only set for a breadcrumb if
 the builder's context has an IPathAdapter registration.
 
-    >>> from zope.app.traversing.interfaces import IPathAdapter
+    >>> from zope.traversing.interfaces import IPathAdapter
     >>> from canonical.launchpad.webapp.tales import (
     ...     ObjectImageDisplayAPI)
 

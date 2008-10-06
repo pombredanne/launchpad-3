@@ -30,15 +30,17 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsBackLinking)
+from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -622,7 +624,9 @@ class BugWatchUpdater(object):
 
         external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
 
-        imported_comments = 0
+        previous_imported_comments = bug_watch.getImportedBugMessages()
+        is_initial_import = previous_imported_comments.count() == 0
+        imported_comments = []
         for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
@@ -646,16 +650,40 @@ class BugWatchUpdater(object):
                 bug_watch, comment_id, poster)
 
             bug_message = bug_watch.addComment(comment_id, comment_message)
-            notify(SQLObjectCreatedEvent(
-                bug_message,
-                user=getUtility(ILaunchpadCelebrities).bug_watch_updater))
-            imported_comments += 1
+            imported_comments.append(bug_message)
 
-        if imported_comments > 0:
+        if len(imported_comments) > 0:
+            bug_watch_updater = (
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
+            if is_initial_import:
+                notification_text = get_email_template(
+                    'bugwatch-initial-comment-import.txt') % dict(
+                        num_of_comments=len(imported_comments),
+                        bug_watch_url=bug_watch.url)
+                comment_text_template = get_email_template(
+                    'bugwatch-comment.txt')
+
+                for bug_message in imported_comments:
+                    comment = bug_message.message
+                    notification_text += comment_text_template % dict(
+                        comment_date=comment.datecreated.isoformat(),
+                        commenter=comment.owner.displayname,
+                        comment_text=comment.text_contents,
+                        comment_reply_url=canonical_url(comment))
+                notification_message = getUtility(IMessageSet).fromText(
+                    subject=bug_watch.bug.followup_subject(),
+                    content=notification_text,
+                    owner=bug_watch_updater)
+                bug_watch.bug.addCommentNotification(notification_message)
+            else:
+                for bug_message in imported_comments:
+                    notify(SQLObjectCreatedEvent(
+                        bug_message,
+                        user=bug_watch_updater))
             self.log.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
-                {'count': imported_comments,
+                {'count': len(imported_comments),
                  'remotebug': bug_watch.remotebug,
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
