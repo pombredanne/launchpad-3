@@ -196,6 +196,13 @@ start: inplace stop bzr_version_info
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
+# This is a stripped down version of the "start" target for use on 
+# production servers - removes dependencies which we know will be
+# available because of how the initscripts are run.
+initscript-start: bzr_version_info
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > ${LPCONFIG}-nohup.out 2>&1 &
+
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
 stop: build
