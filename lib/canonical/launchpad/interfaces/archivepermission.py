@@ -213,7 +213,8 @@ class IArchivePermissionSet(Interface):
         :param sourcepackagename: An `ISourcePackageName` or a string
             package name.
 
-        :return: The new `ArchivePermission`
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
         """
 
     def newComponentUploader(archive, person, component):
@@ -223,7 +224,8 @@ class IArchivePermissionSet(Interface):
         :param person: An `IPerson` for whom you want to add permission.
         :param component: An `IComponent` or a string package name.
 
-        :return: The new `ArchivePermission`
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
         """
 
     def newQueueAdmin(archive, person, component):
@@ -233,7 +235,8 @@ class IArchivePermissionSet(Interface):
         :param person: An `IPerson` for whom you want to add permission.
         :param component: An `IComponent` or a string package name.
 
-        :return: The new `ArchivePermission`
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
         """
 
     def deletePackageUploader(archive, person, sourcepackagename):

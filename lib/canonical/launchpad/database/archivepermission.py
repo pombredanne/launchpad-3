@@ -216,6 +216,10 @@ class ArchivePermissionSet:
     def newPackageUploader(self, archive, person, sourcepackagename):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, sourcepackagename)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person,
             sourcepackagename=sourcepackagename,
@@ -224,6 +228,10 @@ class ArchivePermissionSet:
     def newComponentUploader(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, component)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.UPLOAD)
@@ -231,6 +239,10 @@ class ArchivePermissionSet:
     def newQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.QUEUE_ADMIN, component)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.QUEUE_ADMIN)

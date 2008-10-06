@@ -309,6 +309,14 @@ specific package:
     mozilla-firefox
     alsa-utils
 
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newPackageUploader(
+    ...     ubuntu.main_archive, carlos, "alsa-utils")
+    >>> new_permission.id == dup_permission.id
+    True
+
 deletePackageUploader() removes it:
 
     >>> permission_set.deletePackageUploader(
@@ -326,6 +334,14 @@ specific component:
     restricted
     main
     multiverse
+
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newComponentUploader(
+    ...     ubuntu.main_archive, sabdfl, "multiverse")
+    >>> new_permission.id == dup_permission.id
+    True
 
 deleteComponentUploader() removes it:
 
@@ -345,6 +361,14 @@ specific component in the distroseries queues:
     ubuntu-team
     name12
     carlos
+
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newQueueAdmin(
+    ...     ubuntu.main_archive, carlos, "main")
+    >>> new_permission.id == dup_permission.id
+    True
 
 deleteQueueAdmin() removes it:
 
