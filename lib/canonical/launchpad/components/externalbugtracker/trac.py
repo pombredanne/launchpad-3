@@ -336,19 +336,14 @@ class TracLPPlugin(Trac):
             transport=self._internal_xmlrpc_transport)
         return internal_xmlrpc.newBugTrackerToken()
 
-    def _extractAuthCookie(self, cookie_header):
-        """Extract the Trac authentication cookie from the header."""
-        cookie = cookie_header.split(';')[0]
-        if cookie.startswith('trac_auth='):
-            return cookie
-        else:
-            return None
-
     def _authenticate(self):
         """Authenticate with the Trac instance."""
         token_text = self._generateAuthenticationToken()
         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
         auth_url = urlappend(base_auth_url, token_text)
+
+        # If the authentication fails and the remote server return a
+        # 401, this line will raise an HTTPError.
         response = self.urlopen(auth_url)
 
     @needs_authentication
