@@ -150,7 +150,7 @@ def export(distroseries, component, update, force_utf8, logger,
             # reused across iterations, and it accumulates somewhere
             # in the object cache.  Invalidate the cache from time to
             # time, and allow the garbage collector to run.
-            Store.of(pofile).invalidate()
+            Store.of(pofile).flush()
             gc.collect()
 
     logger.info("Exporting XPI template files.")
