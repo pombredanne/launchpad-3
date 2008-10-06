@@ -2114,3 +2114,10 @@ COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this toke
 COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
 COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
 COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
+
+COMMENT ON TABLE UserToUserEmail IS 'A log of all direct user-to-user email contacts that have gone through Launchpad.';
+COMMENT ON COLUMN UserToUserEmail.sender IS 'The person sending this email.';
+COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.';
+COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
+COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
+COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
