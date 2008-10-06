@@ -56,8 +56,9 @@ class TestMergeProposalMailing(TestCase):
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
+        #import pdb; pdb.set_trace()
         self.assertEqual("""\
-Baz Qux has proposed merging foo into bar.
+Baz Qux has proposed merging lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6.
 
 Whiteboard:
 I think this would be good.
@@ -149,7 +150,7 @@ I think this would be good.
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
-The proposal to merge foo into bar has been updated.
+The proposal to merge lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6 has been updated.
 
     Status: Work in progress => Needs review
 
@@ -273,7 +274,7 @@ class TestRecipientReason(TestCaseWithFactory):
         vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of foo into bar.',
+            'You are requested to review the proposed merge of lp://dev/~person-name5/product-name11/branch7 into lp://dev/~person-name16/product-name11/branch18.',
             reason.getReason())
 
     def test_getReasonPerson(self):
@@ -281,7 +282,7 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscription.person, merge_proposal, '')
-        self.assertEqual('You are subscribed to branch foo.',
+        self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
     def test_getReasonTeam(self):
@@ -292,7 +293,7 @@ class TestRecipientReason(TestCaseWithFactory):
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
             subscription, team_member, bmp, '')
-        self.assertEqual('Your team Qux is subscribed to branch foo.',
+        self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
 
