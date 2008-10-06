@@ -16,7 +16,6 @@ All the standard requests can be seen at /shipit-ubuntu/standardoptions.
     ...Standard request options...
     ...Ubuntu...
     ...Kubuntu...
-    ...Edubuntu...
     ...
 
 
@@ -52,7 +51,7 @@ We can delete one of them, if we want.
 And we can also create a new one.
 
     >>> browser.open('http://shipit.ubuntu.dev/standardoptions/+new')
-    >>> browser.getControl('Distribution Flavour').displayValue = ['Edubuntu']
+    >>> browser.getControl('Distribution Flavour').displayValue = ['Kubuntu']
     >>> browser.getControl(name='field.quantityx86').value = '20'
     >>> browser.getControl(name='field.quantityamd64').value = '10'
     >>> browser.getControl('Description').value = '30 CDs (20 PC, 10 64-bit)'

@@ -2,7 +2,10 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON_VERSION=2.4
-PYTHON=python${PYTHON_VERSION}
+# XXX sinzui 2008-04-15:
+# Filter all deprecation warnings during the transition period to
+# Zope 3.4. We want to remove the DeprecationWarning when we are done.
+PYTHON=python${PYTHON_VERSION} -Wi::DeprecationWarning
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
@@ -229,6 +232,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
+	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
 

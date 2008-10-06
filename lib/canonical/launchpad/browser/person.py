@@ -1425,7 +1425,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         principal = loginsource.getPrincipalByLogin(
             self.user.preferredemail.email)
         assert principal is not None, "User must be logged in at this point."
-        if not principal.validate(data.get('password')):
+        # The widget will transform '' into a special marker value.
+        password = data.get('password')
+        if password is self.schema['password'].UNCHANGED_PASSWORD:
+            password = u''
+        if not principal.validate(password):
             self.setFieldError('password', 'Incorrect password.')
             return
 
@@ -2100,7 +2104,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Commercial projects you administer'),
                    vocabulary='CommercialProjects',
                    required=True),
-            custom_widget=self.custom_widgets['project'],
             render_context=self.render_context)
         return field
 
@@ -2121,7 +2124,6 @@ class PersonVouchersView(LaunchpadFormView):
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=True),
-            custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
 
@@ -3525,7 +3527,6 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                  title=_(''),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False),
-            custom_widget=self.custom_widgets['teams'],
             render_context=self.render_context)
 
     def setUpWidgets(self, context=None):
@@ -3759,9 +3760,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='mailing_list_auto_subscribe_policy',
                    title=_('When should launchpad automatically subscribe '
                            'you to a team&#x2019;s mailing list?'),
-                   source=MailingListAutoSubscribePolicy),
-            custom_widget=self.custom_widgets[
-                    'mailing_list_auto_subscribe_policy'])
+                   source=MailingListAutoSubscribePolicy))
 
     @property
     def mailing_list_widgets(self):

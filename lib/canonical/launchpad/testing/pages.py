@@ -62,6 +62,18 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         finally:
             self.resetCookies()
 
+    def chooseRequestClass(self, method, path, environment):
+        """See `HTTPCaller`.
+
+        This version adds the 'PATH_INFO' variable to the environment,
+        because some of our factories expects it.
+        """
+        if 'PATH_INFO' not in environment:
+            environment = dict(environment)
+            environment['PATH_INFO'] = path
+        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
+            method, path, environment)
+
     def resetCookies(self):
         self.cookies = SimpleCookie()
 
@@ -368,6 +380,11 @@ def print_radio_button_field(content, name):
         print radio, label
 
 
+def strip_label(label):
+    """Strip surrounding whitespace and non-breaking spaces."""
+    return label.replace('\xC2', '').replace('\xA0', '').strip()
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
@@ -400,7 +417,7 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content):
+def extract_text(content, extract_image_text=False):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
@@ -427,6 +444,17 @@ def extract_text(content):
                     continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
+
+                # If extract_image_text is True and the node is an
+                # image, try to find its title or alt attributes.
+                if extract_image_text and node.name.lower() == 'img':
+                    # Title outweighs alt text for the purposes of
+                    # pagetest output.
+                    if node.get('title') is not None:
+                        result.append(node['title'])
+                    elif node.get('alt') is not None:
+                        result.append(node['alt'])
+
             # Process this node's children next.
             nodes[0:0] = list(node)
 
@@ -674,15 +702,14 @@ def stop():
 
 
 def setUpGlobs(test):
-    # Our tests report being on a different port.
     test.globs['transaction'] = transaction
-    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['http'] = UnstickyCookieHTTPCaller()
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'salgado-change-anything', port=9000)
+        'launchpad-library', 'salgado-change-anything')
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()

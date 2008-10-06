@@ -11,12 +11,20 @@ __all__ = [
     'ImplicitTypeSchema',
     'ImplicitTypeSection',
     'Section',
-    'SectionSchema',]
+    'SectionSchema',
+    'as_host_port',
+    'as_username_groupname',
+    ]
+
+
+import StringIO
+import grp
+import os
+import pwd
+import re
 
 from ConfigParser import NoSectionError, RawConfigParser
 from os.path import abspath, basename, dirname
-import re
-import StringIO
 from textwrap import dedent
 
 from zope.interface import implements
@@ -644,3 +652,45 @@ class Category:
         if full_name in self._sections:
             return self._sections[full_name]
         raise AttributeError("No section named %s." % name)
+
+
+def as_host_port(value, default_host='localhost', default_port=25):
+    """Return a 2-tuple of (host, port) from a value like 'host:port'.
+
+    :param value: The configuration value.
+    :type value: string
+    :param default_host: Optional host name to use if the configuration value
+        is missing the host name.
+    :type default_host: string
+    :param default_port: Optional port number to use if the configuration
+        value is missing the port number.
+    :type default_port: integer
+    :return: a 2-tuple of the form (host, port)
+    :rtype: 2-tuple of (string, integer)
+    """
+    if ':' in value:
+        host, port = value.split(':')
+        if host == '':
+            host = default_host
+        port = int(port)
+    else:
+        host = value
+        port = default_port
+    return host, port
+
+
+def as_username_groupname(value=None):
+    """Turn a string of the form user:group into the user and group names.
+
+    :param value: The configuration value.
+    :type value: a string containing exactly one colon, or None
+    :return: a 2-tuple of (username, groupname).  If `value` was None, then
+        the current user and group names are returned.
+    :rtype: 2-tuple of type (string, string)
+    """
+    if value:
+        user, group = value.split(':', 1)
+    else:
+        user  = pwd.getpwuid(os.getuid()).pw_name
+        group = grp.getgrgid(os.getgid()).gr_name
+    return user, group

@@ -139,3 +139,51 @@ web service:
     HTTP/1.1 404 Not Found
     ...
 
+== API Requests to other hosts ==
+
+JavaScript working with the API must deal with the browser's Same Origin
+Policy - requests may only be made to the host that the page was loaded
+from.  For example, we can not visit a page on http://bugs.launchpad.net
+and make a request to http://api.launchpad.net.
+
+Instead of directing the request to api.launchpad.net, we may direct it
+at the /api subpath of the current virtual host, such as
+http://bugs.launchpad.net/api.  Such requests are handled as if they
+were directed at the api.launchpad.net subdomain.
+
+The URLs in the returned representations point to the current host,
+rather than the api host.  The canonical_url() function also returns
+links to the current host.
+
+The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+request to http://api.launchpad.net/beta/, but with the links pointing
+to a different host.
+
+    >>> root = webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    >>> print root['people_collection_link']
+    http://bugs.launchpad.dev/api/beta/people
+
+Requests on these hosts also honor the standard Launchpad authorization
+scheme (and don't require OAuth).
+
+    >>> from canonical.launchpad.testing.pages import WebServiceCaller
+    >>> noauth_webservice = WebServiceCaller()
+    >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
+    >>> print noauth_webservice.get(
+    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://bugs.launchpad.dev/api/beta/~name12
+    <BLANKLINE>
+
+But the regular authentication still doesn't work on the normal API
+virtual host:
+
+    >>> print noauth_webservice.get(
+    ...     'http://api.launchpad.dev/beta/people/+me',
+    ...     headers={'Authorization': sample_auth})
+    HTTP/1.1 401 Unauthorized
+    ...
+

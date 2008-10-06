@@ -3,6 +3,7 @@
 """Base classes for HTTP resources."""
 
 __metaclass__ = type
+
 __all__ = [
     'BatchingResourceMixin',
     'Collection',
@@ -19,6 +20,7 @@ __all__ = [
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
     ]
+
 
 import copy
 from cStringIO import StringIO
@@ -254,8 +256,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        adapters = getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)
+        adapters = list(
+            getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
     def toWADL(self, template_name="wadl-resource.pt"):
@@ -322,6 +324,37 @@ class HTTPResource:
             field = field.bind(self.context)
             return isinstance(field.vocabulary, SQLObjectVocabularyBase)
         return False
+
+    def _parseContentDispositionHeader(self, value):
+        """Parse a Content-Disposition header.
+
+        :return: a 2-tuple (disposition-type, disposition-params).
+        disposition-params is a dict mapping parameter names to values.
+        """
+        disposition = None
+        params = {}
+        if value is None:
+            return (disposition, params)
+        pieces = value.split(';')
+        if len(pieces) > 1:
+            disposition = pieces[0].strip()
+        for name_value in pieces[1:]:
+            name_and_value = name_value.split('=', 2)
+            if len(name_and_value) == 2:
+                name = name_and_value[0].strip()
+                value = name_and_value[1].strip()
+                # Strip quotation marks if present. RFC2183 gives
+                # guidelines for when to quote these values, but it's
+                # very likely that a client will quote even short
+                # filenames, and unlikely that a filename will
+                # actually begin and end with quotes.
+                if (value[0] == '"' and value[-1] == '"'):
+                    value = value[1:-1]
+            else:
+                name = name_and_value
+                value = None
+            params[name] = value
+        return (disposition, params)
 
     def _parseAcceptStyleHeader(self, value):
         """Parse an HTTP header from the Accept-* family.
@@ -434,9 +467,13 @@ class CustomOperationResourceMixin:
         :return: The result of the operation: either a string or an
         object that needs to be serialized to JSON.
         """
-        operation = getMultiAdapter((self.context, self.request),
-                                    IResourceGETOperation,
-                                    name=operation_name)
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
         return operation()
 
     def handleCustomPOST(self, operation_name):
@@ -1119,7 +1156,11 @@ class ServiceRootResource(HTTPResource):
         top-level entry resources (should there be any) are not
         represented.
         """
-        data_for_json = {}
+        type_url = "%s#%s" % (
+            canonical_url(
+                self.request.publication.getApplication(self.request)),
+            "service-root")
+        data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
             data_for_json[link_name] = canonical_url(publication)
@@ -1133,6 +1174,9 @@ class ServiceRootResource(HTTPResource):
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
+                # XXX sinzui 2008-09-29 bug=276079:
+                # Top-level collections need a marker interface
+                # so that so top-level utilities are explicit.
                 if (provided.isOrExtends(ICollection)
                      and ICollection.implementedBy(registration.value)):
                     try:
@@ -1140,8 +1184,12 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
+                    entry_schema = registration.value.entry_schema
+                    if isinstance(entry_schema, property):
+                        # It's not a top-level resource.
+                        continue
                     adapter = EntryAdapterUtility.forEntryInterface(
-                        registration.value.entry_schema)
+                        entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         # Now, collect the top-level entries.
@@ -1150,6 +1198,16 @@ class ServiceRootResource(HTTPResource):
             top_level_resources[link_name] = utility
 
         return top_level_resources
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            adapter.singular_type)
 
 
 class Entry:

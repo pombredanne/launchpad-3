@@ -12,6 +12,7 @@ __all__ = [
     'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'SetFieldMarshaller',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
     'TextFieldMarshaller',
@@ -20,15 +21,14 @@ __all__ = [
     'VocabularyLookupFieldMarshaller',
     ]
 
-from datetime import datetime, date
+from datetime import datetime
 import pytz
 from StringIO import StringIO
 import urllib
 
 import simplejson
 
-from zope.app.datetimeutils import (
-    DateError, DateTimeError, DateTimeParser, SyntaxError)
+from zope.app.datetimeutils import DateTimeError, DateTimeParser
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -299,23 +299,22 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
                 raise ValueError("Time not in UTC.")
             return datetime(year, month, day, hours, minutes,
                             seconds, microseconds, pytz.utc)
-        except (DateError, DateTimeError, SyntaxError):
+        except DateTimeError: # DateError and SyntaxError inherit from this.
             raise ValueError("Value doesn't look like a date.")
 
 
-class DateFieldMarshaller(SimpleFieldMarshaller):
+class DateFieldMarshaller(DateTimeFieldMarshaller):
     """A marshaller that transforms its value into a date object."""
 
     def _marshall_from_json_data(self, value):
         """Parse the value as a datetime.date object."""
-        value = DateTimeParser().parse(value)
-        (year, month, day, hours, minutes, secondsAndMicroseconds,
-            timezone) = value
-        return date(year, month, day)
+        super_class = super(DateFieldMarshaller, self)
+        date_time = super_class._marshall_from_json_data(value)
+        return date_time.date()
 
 
 class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
-    """A marshaller for List, Tuple, Set and other AbstractCollections.
+    """A marshaller for AbstractCollections.
 
     It looks up the marshaller for its value-type, to handle its contained
     elements.
@@ -346,7 +345,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
 
         # In AbstractCollection subclasses, _type contains the type object,
         # which can be used as a factory.
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_json_data(item)
             for item in value)
 
@@ -362,9 +361,16 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if not isinstance(value, list):
             value = [value]
-        return self.field._type(
+        return self._python_collection_factory(
             self.value_marshaller.marshall_from_request(item)
             for item in value)
+
+    @property
+    def _python_collection_factory(self):
+        """Create the appropriate python collection from a list."""
+        # In AbstractCollection subclasses, _type contains the type object,
+        # which can be used as a factory.
+        return self.field._type
 
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.
@@ -374,6 +380,14 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         return [self.value_marshaller.unmarshall(entry, item)
                for item in value]
+
+
+class SetFieldMarshaller(AbstractCollectionFieldMarshaller):
+    """Marshaller for sets."""
+
+    @property
+    def _python_collection_factory(self):
+        return set
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
