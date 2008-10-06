@@ -18,6 +18,16 @@
     <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription"
+         style="font-size: larger; background: ##FF7800; padding: 0.3em">
+      <strong>Want to test drive Launchpad?</strong>
+      If you've never used Launchpad before, start off at <a
+      href="https://staging.launchpad.net/"><strong>staging.launchpad.net</strong></a>,
+      our code staging instance. You can use that server to create sample
+      projects, file random bugs and even push throw-away branches, all
+      without disturbing the community actively using Launchpad.
+    </div>
+
+    <div metal:fill-slot="extra_info" class="documentDescription"
          style="font-size: larger; background: #e0f0d0; padding: 0.3em">
       Form filling fun! The more information you provide out here, the more
       attention and collaboration your project will be able to attract.
