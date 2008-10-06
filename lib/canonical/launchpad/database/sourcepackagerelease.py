@@ -9,7 +9,6 @@ import operator
 import pytz
 from StringIO import StringIO
 import re
-import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
