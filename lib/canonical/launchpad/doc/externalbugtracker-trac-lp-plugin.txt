@@ -131,6 +131,23 @@ course, that it's altered in the XML-RPC transport's CookieJar, too.
     <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
     value='Look ma, a new cookie!'...>
 
+If authentication fails, a BugTrackerAuthenticationError will be raised.
+
+    >>> from urllib2 import HTTPError
+    >>> class TestFailingTracLPPlugin(TracLPPlugin):
+    ...     def urlopen(self, url):
+    ...         raise HTTPError(url, 401, "Denied!", {}, None)
+
+    >>> test_trac = TestFailingTracLPPlugin(
+    ...     'http://example.com', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport(),
+    ...     cookie_jar=cookie_jar)
+    >>> test_trac._authenticate()
+    Traceback (most recent call last):
+      ...
+    BugTrackerAuthenticationError: http://example.com/launchpad-auth/...
+    401 "Denied!"...
+
 
 == Current time ==
 

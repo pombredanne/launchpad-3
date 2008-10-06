@@ -20,8 +20,9 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker.base import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData
+    BugNotFound, BugTrackerAuthenticationError, ExternalBugTracker,
+    InvalidBugId, LookupTree, UnknownRemoteStatusError,
+    UnparseableBugData
     )
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -342,9 +343,11 @@ class TracLPPlugin(Trac):
         base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
         auth_url = urlappend(base_auth_url, token_text)
 
-        # If the authentication fails and the remote server return a
-        # 401, this line will raise an HTTPError.
-        response = self.urlopen(auth_url)
+        try:
+            response = self.urlopen(auth_url)
+        except urllib2.HTTPError, error:
+            raise BugTrackerAuthenticationError(
+                auth_url, '%s "%s"' % (error.code, error.msg))
 
     @needs_authentication
     def getCurrentDBTime(self):
