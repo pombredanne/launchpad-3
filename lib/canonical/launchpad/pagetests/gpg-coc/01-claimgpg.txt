@@ -139,10 +139,12 @@ Make sure that UIDs were properly processed; in particular, check that
 "sample.revoked@canonical.com", the revoked UID in the key, wasn't
 added as an email address:
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
     >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
-    >>> sorted(control.displayOptions)
-    ['\xa0sample.person@canonical.com', '\xa0testtest@canonical.com']
+    >>> [strip_label(label) for label in sorted(control.displayOptions)]
+    ['sample.person@canonical.com', 'testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -335,7 +337,7 @@ Coming to his senses, he asks for a re-validation of the key.
 
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    A message has been sent to test@canonical.com with instructions 
+    A message has been sent to test@canonical.com with instructions
     to reactivate these key(s): 1024D/17B05A8F
 
 He opens the page and checks that the key is displayed as pending

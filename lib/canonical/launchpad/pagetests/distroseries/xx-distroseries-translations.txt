@@ -108,9 +108,9 @@ the system tells him that he's not allowed to see those pages.
     HTTPError: HTTP Error 503: Service Unavailable
     >>> main_content = find_main_content(user_browser.contents)
     >>> print main_content.findNext('p').renderContents()
-    Translation status for Hoary is not available because we are updating
-    translations in bulk. You will be able to see the status once the update
-    process is finished. Try again in several hours.
+    The page you are trying to use is not available because we are
+    updating translations in bulk. You will be able to use this page once
+    the update process is finished. Try again in several hours.
     >>> user_browser.handleErrors = False
 
 Although, an administrator can see the same page.

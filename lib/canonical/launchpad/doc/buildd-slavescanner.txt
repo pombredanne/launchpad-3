@@ -1052,7 +1052,7 @@ sources_list.
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
      deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://launchpad.dev/ubuntu-partner hoary main
+     deb http://ftpmaster.internal/ubuntu-partner hoary main
     Suite: hoary
     Archive Purpose: PARTNER
     Archive Private: False
@@ -1299,28 +1299,6 @@ Make a build in the updates pocket:
     AssertionError: i386 build of evolution 1.0 in ubuntu hoary UPDATES (...) can not be built for pocket UPDATES: invalid pocket due to the series status of hoary.
 
 == Pocket dependencies ==
-
-When passing the archives property to a slave, the required pockets
-are dependent on the pocket that we are building in, such that:
-
-    >>> def show_pocket_deps():
-    ...     print "Pocket    |   Dependencies"
-    ...     print "----------+---------------"
-    ...     for (key, value) in a_builder.pocket_dependencies.items():
-    ...         print "%7s |" % (key.name,),
-    ...         for pocket in value:
-    ...             print pocket.name,
-    ...         print
-
-    >>> show_pocket_deps()
-    Pocket    |   Dependencies
-    ----------+---------------
-      RELEASE | RELEASE
-    BACKPORTS | RELEASE SECURITY UPDATES BACKPORTS
-     SECURITY | RELEASE SECURITY
-      UPDATES | RELEASE SECURITY UPDATES
-     PROPOSED | RELEASE SECURITY UPDATES PROPOSED
-
 
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
