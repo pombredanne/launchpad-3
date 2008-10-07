@@ -15,7 +15,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet, ITranslationImporter,
+    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet, 
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.launchpad.helpers import shortlist

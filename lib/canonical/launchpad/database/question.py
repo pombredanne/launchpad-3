@@ -48,8 +48,6 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
-from canonical.launchpad.database.bugtask import (
-    search_value_to_where_condition)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.questionbug import QuestionBug
@@ -61,7 +59,6 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
 

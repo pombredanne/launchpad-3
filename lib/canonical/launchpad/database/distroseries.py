@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
@@ -34,7 +34,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
