@@ -447,7 +447,8 @@ class IVote(Interface):
         readonly=False)
 
     token = Text(
-        title=_('The token we give to the user.'), required=True, readonly=True)
+        title=_('The token we give to the user.'),
+        required=True, readonly=True)
 
 
 class OptionIsNotFromSimplePoll(Exception):
