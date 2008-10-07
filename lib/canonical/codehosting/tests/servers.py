@@ -25,9 +25,10 @@ from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from twisted.internet import defer
 from twisted.python.util import sibpath
 
+from canonical.codehosting import get_rocketfuel_root
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.daemons.sftp import SSHService
+from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
@@ -153,6 +154,49 @@ class FakeLaunchpadServer(LaunchpadServer):
         return defer.succeed(None)
 
 
+class CodeHostingTac(TacTestSetup):
+
+    def __init__(self, hosted_area, mirrored_area):
+        TacTestSetup.__init__(self)
+        # The hosted area.
+        self._branches_root = hosted_area
+        # The mirrored area.
+        self._mirror_root = mirrored_area
+        # Where the pidfile, logfile etc will go.
+        self._server_root = tempfile.mkdtemp()
+
+    def setUpRoot(self):
+        if os.path.isdir(self._branches_root):
+            shutil.rmtree(self._branches_root)
+        os.makedirs(self._branches_root, 0700)
+        if os.path.isdir(self._mirror_root):
+            shutil.rmtree(self._mirror_root)
+        os.makedirs(self._mirror_root, 0700)
+        set_up_host_keys_for_testing()
+        set_up_test_user('testuser', 'testteam')
+
+    def tearDownRoot(self):
+        shutil.rmtree(self._branches_root)
+        shutil.rmtree(self._server_root)
+
+    @property
+    def root(self):
+        return self._server_root
+
+    @property
+    def tacfile(self):
+        return os.path.abspath(
+            os.path.join(get_rocketfuel_root(), 'daemons/sftp.tac'))
+
+    @property
+    def logfile(self):
+        return os.path.join(self.root, 'codehosting.log')
+
+    @property
+    def pidfile(self):
+        return os.path.join(self.root, 'codehosting.pid')
+
+
 class SSHCodeHostingServer(Server):
 
     def __init__(self, schema, branches_root, mirror_root):
@@ -160,6 +204,8 @@ class SSHCodeHostingServer(Server):
         self._schema = schema
         self._branches_root = branches_root
         self._mirror_root = mirror_root
+        self._tac_server = CodeHostingTac(
+            self._branches_root, self._mirror_root)
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -190,30 +236,16 @@ class SSHCodeHostingServer(Server):
         ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
 
     def setUp(self):
+        self._tac_server.setUp()
         self._real_home, self._fake_home = self.setUpFakeHome()
         self._old_vendor_manager = self.forceParamiko()
-        if os.path.isdir(self._branches_root):
-            shutil.rmtree(self._branches_root)
-        os.makedirs(self._branches_root, 0700)
-        if os.path.isdir(self._mirror_root):
-            shutil.rmtree(self._mirror_root)
-        os.makedirs(self._mirror_root, 0700)
-        set_up_host_keys_for_testing()
-        set_up_test_user('testuser', 'testteam')
-        self.server = SSHService()
-        self.server.startService()
 
     def tearDown(self):
         self.closeAllConnections()
         os.environ['HOME'] = self._real_home
-        deferred = self.server.stopService()
-        def cleanup_server(ignored):
-            shutil.rmtree(self._branches_root)
-            shutil.rmtree(self._fake_home)
-            ssh._ssh_vendor_manager._cached_ssh_vendor = (
-                self._old_vendor_manager)
-            return ignored
-        return deferred.addBoth(cleanup_server)
+        self._tac_server.tearDown()
+        shutil.rmtree(self._fake_home)
+        ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
 
     def get_url(self, user=None):
         if user is None:
