@@ -48,7 +48,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Try to remove a branch directory, which is not allowed.
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied, transport.rmdir, 'foo')
 
         # The 'foo' directory is still listed.
@@ -60,14 +60,14 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # sometimes a transport will ask to look at files that aren't of that
         # form. In that case, the transport is denied permission.
         transport = self.getTransport()
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied, transport.mkdir, 'apple')
 
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
         transport = self.getTransport()
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied, transport.mkdir, '~apple')
 
     def test_make_existing_user_directory(self):
@@ -75,18 +75,15 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # the error is, but it should be one of FileExists,
         # TransportNotPossible or NoSuchFile
         transport = self.getTransport()
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied, transport.mkdir, '~testuser')
 
     def test_mkdir_not_team_member_error(self):
         # You can't make a branch under the directory of a team that you don't
         # belong to.
         transport = self.getTransport()
-        # The SFTP server will get NoSuchFile because /~not-my-team
-        # does not exist, while the smart server gets PermissionDenied
-        # because we can't create the given branch.
-        self.assertTransportRaises(
-            (errors.NoSuchFile, errors.PermissionDenied),
+        self.assertRaises(
+            errors.PermissionDenied,
             transport.mkdir, '~not-my-team/firefox/new-branch')
 
     def test_make_team_branch_directory(self):
@@ -100,18 +97,15 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_make_team_junk_branch_directory(self):
         # Teams do not have +junk products
         transport = self.getTransport()
-        # The SFTP server will get NoSuchFile because /~testteam/+junk
-        # does not exist, while the smart server gets PermissionDenied
-        # because we can't create the given branch.
-        self.assertTransportRaises(
-            (errors.NoSuchFile, errors.PermissionDenied),
+        self.assertRaises(
+            errors.PermissionDenied,
             transport.mkdir, '~testteam/+junk/new-branch')
 
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
         transport = self.getTransport()
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied,
             transport.mkdir, '~testuser/no-such-product/new-branch')
 
@@ -187,7 +181,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # inside a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied,
             transport.mkdir, '~testuser/+junk/banana/republic')
 
@@ -196,7 +190,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # inside a branch. Files are not allowed.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied,
             transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
 
@@ -207,7 +201,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport = self.getTransport()
         transport.mkdir('~testuser/firefox/banana')
         transport.mkdir('~testuser/firefox/banana/.bzr')
-        self.assertTransportRaises(
+        self.assertRaises(
             errors.PermissionDenied,
             transport.rename, '~testuser/firefox/banana/.bzr',
             '~testuser/firefox/banana/republic')
@@ -240,8 +234,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('dir1/foo')
         transport.mkdir('dir2')
         transport.mkdir('dir2/bar')
-        self.assertRaises(
-            (errors.FileExists, IOError), transport.rename, 'dir1', 'dir2')
+        self.assertRaises(errors.FileExists, transport.rename, 'dir1', 'dir2')
 
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
