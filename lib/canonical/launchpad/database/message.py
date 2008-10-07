@@ -19,7 +19,6 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.interface.interface import adapter_hooks
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
