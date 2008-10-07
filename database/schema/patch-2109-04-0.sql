@@ -16,4 +16,6 @@ CREATE TRIGGER set_bug_users_affected_count_t
     FOR EACH ROW
     EXECUTE PROCEDURE set_bug_users_affected_count();
 
+CREATE INDEX bug__users_unaffected_count__idx ON Bug(users_unaffected_count);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
