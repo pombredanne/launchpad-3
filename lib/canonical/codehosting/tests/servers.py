@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeHostingServer',
     'SSHCodeHostingServer',
     'make_bzr_ssh_server',
     'make_launchpad_server',
@@ -154,38 +153,13 @@ class FakeLaunchpadServer(LaunchpadServer):
         return defer.succeed(None)
 
 
-class CodeHostingServer(Server):
-
-    def __init__(self, branches_root, mirror_root):
-        Server.__init__(self)
-        self._branches_root = branches_root
-        self._mirror_root = mirror_root
-
-    def setUp(self):
-        if os.path.isdir(self._branches_root):
-            shutil.rmtree(self._branches_root)
-        os.makedirs(self._branches_root, 0700)
-        if os.path.isdir(self._mirror_root):
-            shutil.rmtree(self._mirror_root)
-        os.makedirs(self._mirror_root, 0700)
-        set_up_host_keys_for_testing()
-        set_up_test_user('testuser', 'testteam')
-
-    def tearDown(self):
-        shutil.rmtree(self._branches_root)
-        return defer.succeed(None)
-
-    def getTransport(self, relpath=None):
-        """Return a new transport for 'relpath', adding necessary cleanup."""
-        raise NotImplementedError()
-
-
-class SSHCodeHostingServer(CodeHostingServer):
+class SSHCodeHostingServer(Server):
 
     def __init__(self, schema, branches_root, mirror_root):
+        Server.__init__(self)
         self._schema = schema
-        CodeHostingServer.__init__(
-            self, branches_root, mirror_root)
+        self._branches_root = branches_root
+        self._mirror_root = mirror_root
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -218,18 +192,28 @@ class SSHCodeHostingServer(CodeHostingServer):
     def setUp(self):
         self._real_home, self._fake_home = self.setUpFakeHome()
         self._old_vendor_manager = self.forceParamiko()
-        CodeHostingServer.setUp(self)
+        if os.path.isdir(self._branches_root):
+            shutil.rmtree(self._branches_root)
+        os.makedirs(self._branches_root, 0700)
+        if os.path.isdir(self._mirror_root):
+            shutil.rmtree(self._mirror_root)
+        os.makedirs(self._mirror_root, 0700)
+        set_up_host_keys_for_testing()
+        set_up_test_user('testuser', 'testteam')
         self.server = SSHService()
         self.server.startService()
 
     def tearDown(self):
         self.closeAllConnections()
-        deferred1 = self.server.stopService()
         os.environ['HOME'] = self._real_home
-        deferred2 = CodeHostingServer.tearDown(self)
-        shutil.rmtree(self._fake_home)
-        ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
-        return defer.gatherResults([deferred1, deferred2])
+        deferred = self.server.stopService()
+        def cleanup_server(ignored):
+            shutil.rmtree(self._branches_root)
+            shutil.rmtree(self._fake_home)
+            ssh._ssh_vendor_manager._cached_ssh_vendor = (
+                self._old_vendor_manager)
+            return ignored
+        return deferred.addBoth(cleanup_server)
 
     def get_url(self, user=None):
         if user is None:
