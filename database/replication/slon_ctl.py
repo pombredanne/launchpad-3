@@ -68,6 +68,7 @@ def main():
                 "--start",
                 "--background",
                 "--pidfile", pidfile,
+                "--oknodo",
                 "--exec", "/usr/bin/slon",
                 "--startas", "/bin/sh",
                 "--", "-c",
@@ -84,12 +85,15 @@ def main():
             cmd = [
                 "start-stop-daemon",
                 "--stop",
-                "--pidfile", pidfile]
+                "--pidfile", pidfile,
+                "--oknodo"]
         log.debug("Running %s" % repr(cmd))
         return_code = subprocess.call(cmd)
         if return_code != 0:
             log.fatal("Failed. Return code %s" % return_code)
             return return_code
+
+    return 0
 
 
 if __name__ == '__main__':
