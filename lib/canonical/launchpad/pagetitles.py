@@ -1057,6 +1057,8 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
+productrelease_delete = ContextTitle('Delete %s in Launchpad')
+
 productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
@@ -1417,6 +1419,9 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_mailinglist_subscribers = ContextBrowsername(
+    'Mailing list subscribers for the %s team')
 
 team_map = ContextBrowsername('Map of %s participants')
 

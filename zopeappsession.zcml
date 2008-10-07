@@ -25,7 +25,7 @@
 
   <adapter
       for="zope.publisher.interfaces.IRequest"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
+      provides="zope.traversing.interfaces.IPathAdapter"
       factory=".session.Session"
       name="session"
       permission="zope.Public"
@@ -33,7 +33,7 @@
 
   <content class=".session.Session">
     <allow interface=".interfaces.ISession" />
-    <implements interface="zope.app.traversing.interfaces.IPathAdapter" />
+    <implements interface="zope.traversing.interfaces.IPathAdapter" />
   </content>
 
   <content class=".http.CookieClientIdManager">

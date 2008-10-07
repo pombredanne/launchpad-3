@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -21,7 +22,7 @@ from canonical.database.sqlbase import sqlvalues, SQLBase
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
-from canonical.launchpad.interfaces.component import IComponent
+from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
 
@@ -86,7 +87,7 @@ class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
     implements(IArchivePermissionSet)
 
-    def checkAuthenticated(self, user, archive, permission, item):
+    def checkAuthenticated(self, person, archive, permission, item):
         """See `IArchivePermissionSet`."""
         clauses = ["""
             ArchivePermission.archive = %s AND
@@ -95,7 +96,7 @@ class ArchivePermissionSet:
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission, user)
+            """ % sqlvalues(archive, permission, person)
             ]
 
         prejoins = []
@@ -119,7 +120,20 @@ class ArchivePermissionSet:
 
         return auth
 
-    def _componentsFor(self, archive, user, permission_type):
+    def _nameToComponent(self, component):
+        """Helper to convert a possible string component to IComponent"""
+        if isinstance(component, basestring):
+            component = getUtility(IComponentSet)[component]
+        return component
+
+    def _nameToSourcePackageName(self, sourcepackagename):
+        """Helper to convert a possible string name to ISourcePackageName."""
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        return sourcepackagename
+
+    def _componentsFor(self, archive, person, permission_type):
         """Helper function to get ArchivePermission objects."""
         return ArchivePermission.select("""
             ArchivePermission.archive = %s AND
@@ -129,13 +143,13 @@ class ArchivePermissionSet:
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission_type, user),
+            """ % sqlvalues(archive, permission_type, person),
             prejoins=["component"])
 
-    def componentsForUploader(self, archive, user):
+    def componentsForUploader(self, archive, person):
         """See `IArchivePermissionSet`,"""
         return self._componentsFor(
-            archive, user, ArchivePermissionType.UPLOAD)
+            archive, person, ArchivePermissionType.UPLOAD)
 
     def uploadersForComponent(self, archive, component=None):
         "See `IArchivePermissionSet`."""
@@ -146,6 +160,7 @@ class ArchivePermissionSet:
             ]
 
         if component is not None:
+            component = self._nameToComponent(component)
             clauses.append(
                 "ArchivePermission.component = %s" % sqlvalues(component))
         else:
@@ -154,11 +169,22 @@ class ArchivePermissionSet:
         query = " AND ".join(clauses)
         return ArchivePermission.select(query, prejoins=["component"])
 
+    def packagesForUploader(self, archive, person):
+        """See `IArchive`."""
+        return ArchivePermission.select("""
+            ArchivePermission.archive = %s AND
+            ArchivePermission.permission = %s AND
+            ArchivePermission.sourcepackagename IS NOT NULL AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                    TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, person),
+            prejoins=["sourcepackagename"])
+
     def uploadersForPackage(self, archive, sourcepackagename):
         "See `IArchivePermissionSet`."""
-        if isinstance(sourcepackagename, basestring):
-            sourcepackagename = getUtility(
-                ISourcePackageNameSet)[sourcepackagename]
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.UPLOAD,
             sourcepackagename=sourcepackagename)
@@ -166,12 +192,60 @@ class ArchivePermissionSet:
 
     def queueAdminsForComponent(self, archive, component):
         "See `IArchivePermissionSet`."""
+        component = self._nameToComponent(component)
         results = ArchivePermission.selectBy(
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
             component=component)
         return results.prejoin(["component"])
 
-    def componentsForQueueAdmin(self, archive, user):
+    def componentsForQueueAdmin(self, archive, person):
         """See `IArchivePermissionSet`."""
         return self._componentsFor(
-            archive, user, ArchivePermissionType.QUEUE_ADMIN)
+            archive, person, ArchivePermissionType.QUEUE_ADMIN)
+
+    def newPackageUploader(self, archive, person, sourcepackagename):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        return ArchivePermission(
+            archive=archive, person=person,
+            sourcepackagename=sourcepackagename,
+            permission=ArchivePermissionType.UPLOAD)
+
+    def newComponentUploader(self, archive, person, component):
+        """See `IArchivePermissionSet`."""
+        component = self._nameToComponent(component)
+        return ArchivePermission(
+            archive=archive, person=person, component=component,
+            permission=ArchivePermissionType.UPLOAD)
+
+    def newQueueAdmin(self, archive, person, component):
+        """See `IArchivePermissionSet`."""
+        component = self._nameToComponent(component)
+        return ArchivePermission(
+            archive=archive, person=person, component=component,
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+
+    def deletePackageUploader(self, archive, person, sourcepackagename):
+        """See `IArchivePermissionSet`."""
+        sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person,
+            sourcepackagename=sourcepackagename,
+            permission=ArchivePermissionType.UPLOAD)
+        Store.of(permission).remove(permission)
+
+    def deleteComponentUploader(self, archive, person, component):
+        """See `IArchivePermissionSet`."""
+        component = self._nameToComponent(component)
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person, component=component,
+            permission=ArchivePermissionType.UPLOAD)
+        Store.of(permission).remove(permission)
+
+    def deleteQueueAdmin(self, archive, person, component):
+        """See `IArchivePermissionSet`."""
+        component = self._nameToComponent(component)
+        permission = ArchivePermission.selectOneBy(
+            archive=archive, person=person, component=component,
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+        Store.of(permission).remove(permission)

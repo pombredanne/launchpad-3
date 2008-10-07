@@ -8,6 +8,7 @@ __all__ = [
     'fault_catcher',
     'get_alternative_email',
     'mailman',
+    'new_list_for_team',
     'new_person',
     'new_team',
     'print_actions',

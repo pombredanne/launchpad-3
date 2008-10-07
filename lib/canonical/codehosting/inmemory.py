@@ -22,12 +22,24 @@ from canonical.launchpad.xmlrpc import faults
 
 
 class FakeStore:
-    """Fake store that implements find well enough to pass tests."""
+    """Fake store that implements find well enough to pass tests.
+
+    This is needed because some of the `test_codehosting` tests use
+    assertSqlAttributeEqualsDate, which relies on ORM behaviour. Here, we fake
+    enough of the ORM to pass the tests.
+    """
 
     def __init__(self, object_set):
         self._object_set = object_set
 
     def find(self, cls, **kwargs):
+        """Implement Store.find that takes two attributes: id and one other.
+
+        This is called by `assertSqlAttributeEqualsDate`, which relies on
+        `find` returning either a single match or None. Returning a match
+        implies that the given attribute has the expected value. Returning
+        None implies the opposite.
+        """
         branch_id = kwargs.pop('id')
         assert len(kwargs) == 1, (
             'Expected only id and one other. Got %r' % kwargs)
@@ -78,6 +90,7 @@ class ObjectSet:
 
 
 class FakeBranch(FakeDatabaseObject):
+    """Fake branch object."""
 
     def __init__(self, branch_type, name, owner, url=None, product=None,
                  stacked_on=None, private=False, registrant=None):
@@ -111,18 +124,9 @@ class FakeBranch(FakeDatabaseObject):
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
-    def _canRead(self, person_id):
-        """Can 'person' see this branch?"""
-        # XXX: This is a terrible replacement for the privacy check, but it
-        # makes the tests pass.
-        if person_id == LAUNCHPAD_SERVICES:
-            return True
-        if not self.private:
-            return True
-        return self.owner.id == person_id
-
 
 class FakePerson(FakeDatabaseObject):
+    """Fake person object."""
 
     def __init__(self, name):
         self.name = self.displayname = name
@@ -139,6 +143,7 @@ class FakePerson(FakeDatabaseObject):
 
 
 class FakeTeam(FakePerson):
+    """Fake team."""
 
     def __init__(self, name, members=None):
         super(FakeTeam, self).__init__(name)
@@ -152,6 +157,7 @@ class FakeTeam(FakePerson):
 
 
 class FakeProduct(FakeDatabaseObject):
+    """Fake product."""
 
     def __init__(self, name):
         self.name = name
@@ -159,11 +165,13 @@ class FakeProduct(FakeDatabaseObject):
 
 
 class FakeProductSeries(FakeDatabaseObject):
+    """Fake product series."""
 
     user_branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
+    """Fake script activity."""
 
     def __init__(self, name, hostname, date_started, date_completed):
         self.id = self.name = name
@@ -314,9 +322,12 @@ class FakeBranchFilesystem:
                 NOT_FOUND_FAULT_CODE,
                 "User/team %r does not exist." % (owner_name,))
         registrant = self._person_set.get(requester_id)
-        # XXX: Really terrible check for whether the registrant has permission
-        # to create the branch, but it passes the tests.
-        if registrant is not owner:
+        # The real code consults the branch creation policy of the product. We
+        # don't need to do so here, since the tests above this layer never
+        # encounter that behaviour. If they *do* change to rely on the branch
+        # creation policy, the observed behaviour will be failure to raise
+        # exceptions.
+        if not registrant.inTeam(owner):
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,
                 ('%s cannot create branches owned by %s'
@@ -339,6 +350,19 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
+    def _canRead(self, person_id, branch):
+        """Can the person 'person_id' see 'branch'?"""
+        # This is a substitute for an actual launchpad.View check on the
+        # branch. It doesn't have to match the behaviour exactly, as long as
+        # it's stricter than the real implementation (that way, mismatches in
+        # behaviour should generate explicit errors.)
+        if person_id == LAUNCHPAD_SERVICES:
+            return True
+        if not branch.private:
+            return True
+        person = self._person_set.get(person_id)
+        return person.inTeam(branch.owner)
+
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
         if person_id == LAUNCHPAD_SERVICES:
@@ -357,7 +381,7 @@ class FakeBranchFilesystem:
                 branch = possible_match
         if branch is None:
             return '', ''
-        if not branch._canRead(requester_id):
+        if not self._canRead(requester_id, branch):
             return '', ''
         if branch.branch_type == BranchType.REMOTE:
             return '', ''
@@ -378,12 +402,16 @@ class FakeBranchFilesystem:
         branch = product.development_focus.user_branch
         if branch is None:
             return ''
-        if not branch._canRead(requester_id):
+        if not self._canRead(requester_id, branch):
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
 
 class InMemoryFrontend:
+    """A in-memory 'frontend' to Launchpad's branch services.
+
+    This is an in-memory version of `LaunchpadDatabaseFrontend`.
+    """
 
     def __init__(self):
         self._branch_set = ObjectSet()
@@ -399,18 +427,39 @@ class InMemoryFrontend:
             self._factory)
 
     def getFilesystemEndpoint(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Return an in-memory implementation of IBranchFileSystem that passes
+        the tests in `test_codehosting`.
+        """
         return self._branchfs
 
     def getPullerEndpoint(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Return an in-memory implementation of IBranchPuller that passes the
+        tests in `test_codehosting`.
+        """
         return self._puller
 
     def getLaunchpadObjectFactory(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Returns a partial, in-memory implementation of LaunchpadObjectFactory
+        -- enough to pass the tests.
+        """
         return self._factory
 
     def getBranchSet(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Returns a partial implementation of `IBranchSet` -- enough to pass the
+        tests.
+        """
         return self._branch_set
 
     def getLastActivity(self, activity_name):
+        """Get the last script activity with 'activity_name'."""
         return self._script_activity_set.getByName(activity_name)
 
 

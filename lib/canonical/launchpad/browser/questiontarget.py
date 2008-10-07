@@ -180,7 +180,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages = set(self.user_support_languages)
         languages.intersection_update(self.context_question_languages)
         terms = []
-        for lang in languages:
+        for lang in sorted(languages, key=attrgetter('code')):
             terms.append(SimpleTerm(lang, lang.code, lang.displayname))
         return form.Fields(
             List(__name__='language',
