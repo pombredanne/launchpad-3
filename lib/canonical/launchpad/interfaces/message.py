@@ -238,7 +238,7 @@ class IUserToUserEmail(Interface):
 class IUserContactBy(Interface):
     """Can a Launchpad user contact another Launchpad user?"""
 
-    is_allow = Attribute(
+    is_allowed = Attribute(
         """Is the sender allowed to send a message to a Launchpad user?
 
         :return: True if the sender is allowed to send a message to a

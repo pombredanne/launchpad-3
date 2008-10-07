@@ -572,12 +572,12 @@ class UserToUserEmail(Storm):
         super(UserToUserEmail, self).__init__()
         # Find the person who is sending this message.
         realname, address = parseaddr(message['from'])
-        assert address is not None, 'Message has no From: field'
+        assert address, 'Message has no From: field'
         sender = person_set.getByEmail(address)
         assert sender is not None, 'No person for sender email: %s' % address
         # Find the person who is the recipient.
         realname, address = parseaddr(message['to'])
-        assert address is not None, 'Message has no To: field'
+        assert address, 'Message has no To: field'
         recipient = person_set.getByEmail(address)
         assert recipient is not None, (
             'No person for recipient email: %s' % address)
