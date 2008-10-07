@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -454,8 +454,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
 class BranchFileSystemTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchFileSystem`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
         frontend = self.frontend()
@@ -797,7 +795,7 @@ class PullerEndpointScenarioApplier(TestScenarioApplier):
         ('db', {'frontend': LaunchpadDatabaseFrontend,
                 'layer': DatabaseFunctionalLayer}),
         ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': DatabaseFunctionalLayer}),
+                      'layer': FunctionalLayer}),
         ]
 
 
