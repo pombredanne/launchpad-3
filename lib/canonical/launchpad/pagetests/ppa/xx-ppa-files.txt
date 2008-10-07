@@ -221,7 +221,7 @@ Sample Person can't access the file.
     ...
     Unauthorized
 
-'No Privileges' users, the PPA owner, can download the file.
+'No Privileges' users, the PPA owner, can download the DSC file.
 
     >>> no_priv_browser.open(file_lp_url)
 
@@ -235,6 +235,60 @@ And its informations match the library file.
 
     >>> no_priv_browser.headers['content-type'] == file_mimetype
     True
+
+Gzipped package diffs ('.diff.gz') and buildlogs ('.txt.gz') are
+treated differently than the other files. Since we want their contents
+to be rendered inline by the browsers we override their 'content-encoding'
+and 'content-type' to 'gzip' and 'text/plain', respectively.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> buildlog_content = buildlog.read()
+    >>> buildlog_size = str(buildlog.content.filesize)
+    >>> buildlog_lp_url = str(
+    ...     'http://launchpad.dev/~no-priv/+archive/+build/%d/+files/%s' %
+    ...     (build.id, buildlog.filename))
+
+    >>> diff_content = package_diff.diff_content.read()
+    >>> diff_size = str(package_diff.diff_content.content.filesize)
+    >>> diff_lp_url = str(
+    ...     'http://launchpad.dev/~no-priv/+archive/+files/%s' %
+    ...     package_diff.diff_content.filename)
+
+    >>> logout()
+
+Restricted buildlogs are served with the pristine content and size,
+but 'content-type' and 'content-encoding' are modified.
+
+    >>> no_priv_browser.open(buildlog_lp_url)
+
+    >>> no_priv_browser.contents == buildlog_content
+    True
+
+    >>> no_priv_browser.headers['content-length'] == buildlog_size
+    True
+
+    >>> print no_priv_browser.headers['content-type']
+    text/plain
+
+    >>> print no_priv_browser.headers['content-encoding']
+    gzip
+
+The same happens for package diffs.
+
+    >>> no_priv_browser.open(diff_lp_url)
+
+    >>> no_priv_browser.contents == diff_content
+    True
+
+    >>> no_priv_browser.headers['content-length'] == diff_size
+    True
+
+    >>> print no_priv_browser.headers['content-type']
+    text/plain
+
+    >>> print no_priv_browser.headers['content-encoding']
+    gzip
 
 When the PPA and the `LibraryFileAlias` become public, the +files/
 proxy redirects to the public http url.
