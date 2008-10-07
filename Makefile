@@ -153,13 +153,6 @@ run: inplace stop
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice -C $(CONFFILE)
 
-windmill: inplace stop
-    # Same as the regular app server, but with SSL switched off.
-	rm -f thread*.request
-	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,google-webservice \
-		 -C $(CONFFILE)
-
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
 	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
@@ -203,13 +196,13 @@ start: inplace stop bzr_version_info
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
-# This is a stripped down version of the "start" target for use on 
+# This is a stripped down version of the "start" target for use on
 # production servers - removes running 'make build' because we already
 # run this as part of our initscripts, so not needed here. Likewise we
-# don't want to run 'make stop' because it takes unnecessary time 
-# even if the service is already stopped, and bzr_version_info is not 
+# don't want to run 'make stop' because it takes unnecessary time
+# even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
-initscript-start: 
+initscript-start:
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
