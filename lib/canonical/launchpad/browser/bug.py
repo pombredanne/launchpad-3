@@ -290,9 +290,9 @@ class BugContextMenu(ContextMenu):
                 icon = None
             else:
                 if affected:
-                    text = "This bug affects me too"
-                else:
                     text = "This bug does not affect me"
+                else:
+                    text = "This bug affects me too"
                 icon = 'edit'
             return Link('+affectsmetoo', text, icon=icon, enabled=True)
         else:
