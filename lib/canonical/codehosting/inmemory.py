@@ -112,8 +112,10 @@ class FakeBranch(FakeDatabaseObject):
 
     def _canRead(self, person_id):
         """Can 'person' see this branch?"""
-        # XXX: This is a terrible replacement for the privacy check, but it
-        # makes the tests pass.
+        # This is a substitute for an actual launchpad.View check on the
+        # branch. It doesn't have to match the behaviour exactly, as long as
+        # it's stricter than the real implementation (that way, mismatches in
+        # behaviour should generate explicit errors.)
         if person_id == LAUNCHPAD_SERVICES:
             return True
         if not self.private:
@@ -313,9 +315,12 @@ class FakeBranchFilesystem:
                 NOT_FOUND_FAULT_CODE,
                 "User/team %r does not exist." % (owner_name,))
         registrant = self._person_set.get(requester_id)
-        # XXX: Really terrible check for whether the registrant has permission
-        # to create the branch, but it passes the tests.
-        if registrant is not owner:
+        # The real code consults the branch creation policy of the product. We
+        # don't need to do so here, since the tests above this layer never
+        # encounter that behaviour. If they *do* change to rely on the branch
+        # creation policy, the observed behaviour will be failure to raise
+        # exceptions.
+        if not registrant.inTeam(owner):
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,
                 ('%s cannot create branches owned by %s'
