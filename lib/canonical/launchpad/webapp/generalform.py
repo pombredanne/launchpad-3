@@ -12,12 +12,12 @@ __all__ = [
     ]
 
 import transaction
+from zope.component import provideAdapter
 from zope.interface import Interface
 from zope.schema import getFieldNamesInOrder
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.checker import defineChecker, NamesChecker
 
-from zope.app import zapi
 from zope.app.form.interfaces import (
     IInputWidget, WidgetsError, ErrorContainer)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -258,7 +258,5 @@ def GeneralFormViewFactory(name, schema, label, permission, layer,
                                permission))
     if layer is None:
         layer = IBrowserRequest
-
-    sm = zapi.getGlobalSiteManager()
-    sm.provideAdapter((for_, layer), Interface, name, class_)
+    provideAdapter(class_, (for_, layer), Interface, name)
 
