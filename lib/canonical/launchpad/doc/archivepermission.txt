@@ -57,10 +57,10 @@ has a number of useful properties that can be checked:
     >>> print main_permission.person.name
     ubuntu-team
 
-    >>> print main_permission.component.name
+    >>> print main_permission.component_name
     main
 
-    >>> print main_permission.sourcepackagename
+    >>> print main_permission.source_package_name
     None
 
 The checkAuthenticated() call is also able to check someone's
@@ -136,10 +136,14 @@ ArchivePermission records for all matching components:
 componentsForUploader() returns ArchivePermission records for all the
 components that the supplied user has permission to upload to.
 
-    >>> permissions = permission_set.componentsForUploader(
-    ...     ubuntu.main_archive, sabdfl)
-    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
-    ...     print permission.component.name
+    >>> def showComponentUploaders(archive, person):
+    ...     permissions = permission_set.componentsForUploader(
+    ...         archive, person)
+    ...     for permission in sorted(
+    ...         permissions, key=operator.attrgetter("id")):
+    ...         print permission.component.name
+
+    >>> showComponentUploaders(ubuntu.main_archive, sabdfl)
     universe
     restricted
     main
@@ -168,16 +172,42 @@ to be thrown.
     ...
     NotFoundError: 'fakepackage'
 
+Similarly, packagesForUploader() returns the ArchivePermission records where
+the supplied user has permission to upload to packages.
+
+    >>> def showPersonsPackages(archive, person):
+    ...     packages = permission_set.packagesForUploader(
+    ...         archive, person)
+    ...     for permission in sorted(packages, key=operator.attrgetter("id")):
+    ...         print permission.sourcepackagename.name
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> showPersonsPackages(ubuntu.main_archive, carlos)
+    mozilla-firefox
+
+If you're a member of a team that has permission, the team permission is
+returned.  Here, cprov is a member of ubuntu-team:
+
+    >>> discard = ArchivePermission(
+    ...     archive=ubuntu.main_archive, person=ubuntu_team,
+    ...     sourcepackagename=alsa_utils,
+    ...     permission=ArchivePermissionType.UPLOAD)
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> showPersonsPackages(ubuntu.main_archive, cprov)
+    alsa-utils
 
 queueAdminsForComponent() returns the ArchivePermission records where a
 person or team has permission to administer an archive's package
 queues in that component.
 
-    >>> archive_admins = permission_set.queueAdminsForComponent(
-    ...     ubuntu.main_archive, main_component)
-    >>> for archive_admin in sorted(
-    ...     archive_admins, key=operator.attrgetter("id")):
-    ...     print archive_admin.person.name
+    >>> def showQueueAdmins(archive, component):
+    ...     archive_admins = permission_set.queueAdminsForComponent(
+    ...         archive, component)
+    ...     for archive_admin in sorted(
+    ...         archive_admins, key=operator.attrgetter("id")):
+    ...         print archive_admin.person.name
+
+    >>> showQueueAdmins(ubuntu.main_archive, main_component)
     ubuntu-team
     name12
 
@@ -203,4 +233,116 @@ the distroseries queue.
     universe
     multiverse
 
+
+== Amending Permissions ==
+
+There are some methods that will enable the caller to add and delete
+permissions.  They currently require launchpad.Edit permission to
+use, which enforces the user to be an admin or a member of the "techboard"
+(Ubuntu Technical Board) team.
+
+Set up a helper function to check access:
+
+    >>> from zope.security.checker import canAccess
+    >>> restricted_methods = (
+    ...     'newPackageUploader', 'newComponentUploader', 'newQueueAdmin',
+    ...     'deletePackageUploader', 'deleteComponentUploader',
+    ...     'deleteQueueAdmin')
+    >>> def checkAccess(true_or_false):
+    ...     for method in restricted_methods:
+    ...         assert(canAccess(permission_set, method) == true_or_false)
+
+If, for some reason, the techboard team is missing, the security adapter
+will not allow access and generates an OOPS.
+
+    >>> login("test@canonical.com")
+    >>> from zope.app.error.interfaces import IErrorReportingUtility
+    >>> report = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> checkAccess(False)
+    >>> report2 = getUtility(IErrorReportingUtility).getLastOopsReport()
+    >>> print report.id == report2.id
+    False
+    >>> print report2.value
+    'techboard' team is missing, has it been renamed?
+
+Set up the techboard team:
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, TeamSubscriptionPolicy)
+    >>> personset = getUtility(IPersonSet)
+    >>> owner = personset.getByName("name16")
+    >>> techboard = personset.newTeam(
+    ...     owner, "techboard", "techboard",
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+
+Ordinary users have no access:
+
+    >>> login("test@canonical.com")
+    >>> checkAccess(False)
+
+Admins have access:
+
+    >>> login("foo.bar@canonical.com")
+    >>> checkAccess(True)
+
+Now add "test@canonical.com" to the techboard team and log in as him.
+
+    >>> person = personset.getByEmail("test@canonical.com")
+    >>> person.join(techboard)
+    >>> login_person(person)
+
+newPackageUploader() creates a permission for a person to upload to a
+specific package:
+
+    >>> new_permission = permission_set.newPackageUploader(
+    ...     ubuntu.main_archive, carlos, "alsa-utils")
+    >>> showPersonsPackages(ubuntu.main_archive, carlos)
+    mozilla-firefox
+    alsa-utils
+
+deletePackageUploader() removes it:
+
+    >>> permission_set.deletePackageUploader(
+    ...     ubuntu.main_archive, carlos, "alsa-utils")
+    >>> showPersonsPackages(ubuntu.main_archive, carlos)
+    mozilla-firefox
+
+newComponentUploader() creates a permission for a person to upload to a
+specific component:
+
+    >>> new_permission = permission_set.newComponentUploader(
+    ...     ubuntu.main_archive, sabdfl, "multiverse")
+    >>> showComponentUploaders(ubuntu.main_archive, sabdfl)
+    universe
+    restricted
+    main
+    multiverse
+
+deleteComponentUploader() removes it:
+
+    >>> permission_set.deleteComponentUploader(
+    ...     ubuntu.main_archive, sabdfl, "multiverse")
+    >>> showComponentUploaders(ubuntu.main_archive, sabdfl)
+    universe
+    restricted
+    main
+
+newQueueAdmin() creates a permission for a person to administer a
+specific component in the distroseries queues:
+
+    >>> new_permission = permission_set.newQueueAdmin(
+    ...     ubuntu.main_archive, carlos, "main")
+    >>> showQueueAdmins(ubuntu.main_archive, main_component)
+    ubuntu-team
+    name12
+    carlos
+
+deleteQueueAdmin() removes it:
+
+    >>> permission_set.deleteQueueAdmin(
+    ...     ubuntu.main_archive, carlos, "main")
+    >>> showQueueAdmins(ubuntu.main_archive, main_component)
+    ubuntu-team
+    name12
 

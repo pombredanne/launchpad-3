@@ -30,7 +30,7 @@ __all__ = [
     'ProjectView',
     ]
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility

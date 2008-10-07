@@ -1167,7 +1167,15 @@ class MockHTTPTask:
         # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
-        self.bytes_written = int(response.getHeader('Content-length'))
+        # When streaming files (see lib/zope/publisher/httpresults.txt)
+        # the 'Content-Length' header is missing. When it happens we set
+        # 'bytes_written' to an obviously invalid value. This variable is
+        # used for logging purposes, see webapp/servers.py.
+        content_length = response.getHeader('Content-Length')
+        if content_length is not None:
+            self.bytes_written = int(content_length)
+        else:
+            self.bytes_written = -1
         self.request_data.headers = self.request.headers
         self.request_data.first_line = first_line
 

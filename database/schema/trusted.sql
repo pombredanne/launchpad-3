@@ -1,4 +1,22 @@
--- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+CREATE OR REPLACE FUNCTION assert_patch_applied(
+    major integer, minor integer, patch integer) RETURNS boolean
+LANGUAGE plpythonu STABLE AS
+$$
+    rv = plpy.execute("""
+        SELECT * FROM LaunchpadDatabaseRevision
+        WHERE major=%d AND minor=%d AND patch=%d
+        """ % (major, minor, patch))
+    if len(rv) == 0:
+        raise Exception(
+            'patch-%d-%02d-%d not applied.' % (major, minor, patch))
+    else:
+        return True
+$$;
+
+COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
+'Raise an exception if the given database patch has not been applied.';
 
 
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
