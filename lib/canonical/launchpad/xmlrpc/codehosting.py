@@ -325,5 +325,5 @@ def iter_split(string, splitter):
     if string == '':
         return
     tokens = string.split(splitter)
-    for i in range(1, len(tokens) + 1):
+    for i in reversed(range(1, len(tokens) + 1)):
         yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
