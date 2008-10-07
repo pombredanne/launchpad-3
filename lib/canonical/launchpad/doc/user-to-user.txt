@@ -16,7 +16,17 @@ Anne wants to contact Bart to ask him a question about his Launchpad project,
 but Bart's email addresses are hidden.  Anne decides to use Launchpad's direct
 user-to-user contact form to send Bart a message.  Is she allowed to?
 
+    # For testing purposes, we can't use the current date and time.
+    >>> from canonical.launchpad.database.message import (
+    ...     utcdatetime_from_field)
+    >>> date = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:37 +0100')
+
     >>> from canonical.launchpad.interfaces.message import IUserContactBy
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    True
+
+    # Similarly, test the implicit date interface, which real code will use.
+    # The outcome is the same in this case.
     >>> IUserContactBy(anne).is_allowed
     True
 
@@ -43,9 +53,9 @@ Anne really likes Bart's project, so she sends him another message.
     # Use an explicit cutoff date instead of yesterday.
     >>> from canonical.launchpad.database.message import (
     ...     utcdatetime_from_field)
-    >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:38 +0100')
+    >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:20:00 +0100')
 
-    >>> IUserContactBy(anne).is_allowed
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     True
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -61,7 +71,7 @@ Anne really likes Bart's project, so she sends him another message.
 
 Anne also likes Cris's project, and wants to contact her directly.
 
-    >>> IUserContactBy(anne).is_allowed
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     True
 
     >>> cris = factory.makePerson('cris@example.com', 'cris')
@@ -79,7 +89,7 @@ Anne also likes Cris's project, and wants to contact her directly.
 Anne is no longer allowed to contact any Launchpad users directly, at least
 until tomorrow.
 
-    >>> IUserContactBy(anne).is_allowed
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     False
 
 

@@ -618,8 +618,30 @@ class UserContactBy:
 
         :param sender: The sender we're checking.
         :type sender: `IPerson`
+        :param after: The cutoff date for throttling.  Primarily used only for
+            testing purposes.
+        :type after: `datetime.datetime`
         """
         self.sender = sender
+
+    def _isAllowedAfter(self, after):
+        """Like .is_allowed but used with an explicit cutoff date.
+
+        For testing purposes only.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        :return: True if email is allowed
+        :rtype: bool
+        """
+        # Count the number of messages from the sender since the throttle
+        # date.
+        store = Store.of(self.sender)
+        messages_sent = store.find(
+            UserToUserEmail,
+            And(UserToUserEmail.sender == self.sender,
+                UserToUserEmail.date_sent >= after)).count()
+        return messages_sent < config.launchpad.user_to_user_max_messages
 
     @property
     def is_allowed(self):
@@ -630,11 +652,4 @@ class UserContactBy:
         now = datetime.now(pytz.timezone('UTC'))
         after = now - as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
-        # Count the number of messages from the sender since the throttle
-        # date.
-        store = Store.of(self.sender)
-        messages_sent = store.find(
-            UserToUserEmail,
-            And(UserToUserEmail.sender == self.sender,
-                UserToUserEmail.date_sent >= after)).count()
-        return messages_sent < config.launchpad.user_to_user_max_messages
+        return self._isAllowedAfter(after)
