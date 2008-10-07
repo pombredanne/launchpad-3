@@ -236,8 +236,9 @@ class DistributionUpstreamBugReport(LaunchpadView):
         """Assemble self.data and self.total from upstream count report."""
         self.data = []
         self.total = BugReportData()
+        packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
-            limit=self.LIMIT)
+            limit=self.LIMIT, exclude_packages=packages_to_exclude)
         for (dsp, product, open, triaged, upstream, watched) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here.  If
