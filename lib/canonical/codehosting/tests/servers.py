@@ -157,7 +157,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 class CodeHostingTac(TacTestSetup):
 
     def __init__(self, hosted_area, mirrored_area):
-        TacTestSetup.__init__(self)
+        super(CodeHostingTac, self).__init__()
         # The hosted area.
         self._branches_root = hosted_area
         # The mirrored area.
