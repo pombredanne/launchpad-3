@@ -110,18 +110,6 @@ class FakeBranch(FakeDatabaseObject):
     def requestMirror(self):
         self.next_mirror_time = UTC_NOW
 
-    def _canRead(self, person_id):
-        """Can 'person' see this branch?"""
-        # This is a substitute for an actual launchpad.View check on the
-        # branch. It doesn't have to match the behaviour exactly, as long as
-        # it's stricter than the real implementation (that way, mismatches in
-        # behaviour should generate explicit errors.)
-        if person_id == LAUNCHPAD_SERVICES:
-            return True
-        if not self.private:
-            return True
-        return self.owner.id == person_id
-
 
 class FakePerson(FakeDatabaseObject):
 
@@ -343,6 +331,19 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
+    def _canRead(self, person_id, branch):
+        """Can the person 'person_id' see 'branch'?"""
+        # This is a substitute for an actual launchpad.View check on the
+        # branch. It doesn't have to match the behaviour exactly, as long as
+        # it's stricter than the real implementation (that way, mismatches in
+        # behaviour should generate explicit errors.)
+        if person_id == LAUNCHPAD_SERVICES:
+            return True
+        if not branch.private:
+            return True
+        person = self._person_set.get(person_id)
+        return person.inTeam(branch.owner)
+
     def _canWrite(self, person_id, branch):
         """Can the person 'person_id' write to 'branch'?"""
         if person_id == LAUNCHPAD_SERVICES:
@@ -361,7 +362,7 @@ class FakeBranchFilesystem:
                 branch = possible_match
         if branch is None:
             return '', ''
-        if not branch._canRead(requester_id):
+        if not self._canRead(requester_id, branch):
             return '', ''
         if branch.branch_type == BranchType.REMOTE:
             return '', ''
@@ -382,7 +383,7 @@ class FakeBranchFilesystem:
         branch = product.development_focus.user_branch
         if branch is None:
             return ''
-        if not branch._canRead(requester_id):
+        if not self._canRead(requester_id, branch):
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
