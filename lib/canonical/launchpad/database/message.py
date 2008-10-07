@@ -23,7 +23,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.locals import And, DateTime, Int, RawStr, Reference, Store, Storm
+from storm.locals import And, DateTime, Int, Reference, Store, Storm, Unicode
 
 import pytz
 
@@ -558,9 +558,9 @@ class UserToUserEmail(Storm):
 
     date_sent = DateTime(allow_none=False)
 
-    subject = RawStr(allow_none=False)
+    subject = Unicode(allow_none=False)
 
-    message_id = RawStr(allow_none=False)
+    message_id = Unicode(allow_none=False)
 
     def __init__(self, message):
         """Create a new user-to-user email entry.
