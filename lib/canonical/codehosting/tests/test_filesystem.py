@@ -333,7 +333,7 @@ def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
     # smart server. This ensures that both services provide the same
     # behaviour.
-    servers = [make_sftp_server, make_launchpad_server]
+    servers = [make_launchpad_server]
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
     filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
