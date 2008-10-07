@@ -305,7 +305,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     unescape(first).encode('utf-8'))
                 if branch is None:
                     continue
-                branch = self._serializeBranch(requester, branch)
+                branch = self._serializeBranch(requester, branch, second)
                 if branch is None:
                     break
                 return branch
