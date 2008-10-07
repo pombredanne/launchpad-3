@@ -586,6 +586,13 @@ host.
     http://api.launchpad.dev/beta/firefox/1.0/1.0.0
     http://.../firefox/1.0/rc1
 
+They can be deleted with the 'delete' operation.
+
+    >>> results = webservice.named_post('/firefox/1.0/rc1', 'delete')
+    >>> print results
+    HTTP/1.1 200 Ok
+    ...
+
 
 == Project release file entry ==
 

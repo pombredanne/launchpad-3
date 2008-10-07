@@ -37,9 +37,9 @@ CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 # on production. It is generated using newbaseline.py in
 # sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
 # 
-REV=121
+REV=2109
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8969605947a1aec8787b8489a006088f  launchpad-121-00-0.sql
+MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
 default: all
 
 test: create 

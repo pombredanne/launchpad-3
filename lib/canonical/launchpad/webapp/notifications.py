@@ -15,7 +15,7 @@ __metaclass__ = type
 from datetime import datetime
 
 from zope.interface import implements
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
