@@ -8,7 +8,7 @@ there is an ILaunchpadCelebrities utility available that gives access
 to these well-known objects through attributes.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -51,7 +51,7 @@ for branches, and branch related objects.
 The English language is used in many places.  It's the native language
 for translation, as well as for Launchpad itself.
 
-    >>> english = getUtility(ILanguageSet).byCode('en')
+    >>> english = getUtility(ILanguageSet).getLanguageByCode('en')
     >>> english == celebs.english
     True
 
