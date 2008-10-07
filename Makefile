@@ -155,7 +155,7 @@ windmill: inplace stop
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice \
-		 -C configs/testrunner-windmill/launchpad.conf
+		 -C $(CONFFILE)
 
 start-gdb: inplace stop bzr_version_info
 	rm -f thread*.request
