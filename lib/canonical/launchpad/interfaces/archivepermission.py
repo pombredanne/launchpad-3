@@ -133,7 +133,7 @@ class IArchivePermissionSet(Interface):
         """All `ArchivePermission` records for the person.
 
         :param person: An `IPerson`
-        :paran archive: An `IArchive`
+        :param archive: An `IArchive`
         """
 
     def uploadersForComponent(archive, component=None):
