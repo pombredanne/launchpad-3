@@ -157,9 +157,6 @@ class FakeLaunchpadServer(LaunchpadServer):
         LaunchpadServer.tearDown(self)
         return defer.succeed(None)
 
-    def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        return func(*args, **kwargs)
-
 
 class CodeHostingServer(Server):
 
@@ -250,39 +247,12 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
         SSHCodeHostingServer.__init__(
             self, 'sftp', branches_root, mirror_root)
 
-    def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for
-        the server to acknowledge the end of the session.
-        """
-        ever_connected = threading.Event()
-        done = threading.Event()
-        self.server.setConnectionMadeEvent(ever_connected)
-        self.server.setConnectionLostEvent(done)
-        try:
-            return func(*args, **kwargs)
-        finally:
-            self.closeAllConnections()
-            # done.wait() can block forever if func() never actually
-            # connects, so only wait if we are sure that the client
-            # connected.
-            if ever_connected.isSet():
-                done.wait()
-
 
 class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
     def __init__(self, branches_root, mirror_root):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', branches_root, mirror_root)
-
-    def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all connections, and wait for the
-        server to acknowledge the end of the session.
-        """
-        try:
-            return func(*args, **kwargs)
-        finally:
-            self.closeAllConnections()
 
 
 class _TestSSHService(SSHService):

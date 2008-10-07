@@ -112,8 +112,7 @@ class SSHTestCase(ServerTestCase):
         output = StringIO()
         push_command = cmd_branch()
         push_command.outf = output
-        self.server.runAndWaitForDisconnect(
-            push_command.run, remote_url, local_directory)
+        push_command.run(remote_url, local_directory)
         return output.getvalue()
 
     def push(self, local_directory, remote_url, **options):
@@ -131,9 +130,7 @@ class SSHTestCase(ServerTestCase):
         push_command = cmd_push()
         push_command.outf = output
         options['location'] = remote_url
-        self.runInChdir(
-            local_directory,
-            self.server.runAndWaitForDisconnect, push_command.run, **options)
+        self.runInChdir(local_directory, push_command.run, **options)
         return output.getvalue()
 
     def getLastRevision(self, remote_url):
@@ -144,8 +141,7 @@ class SSHTestCase(ServerTestCase):
         main thread.
         """
         self.assertNotInMainThread('getLastRevision')
-        return self.server.runAndWaitForDisconnect(
-            lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
+        return bzrlib.branch.Branch.open(remote_url).last_revision()
 
     def getTransportURL(self, relpath=None, username=None):
         """Return the base URL for the tests."""
@@ -241,10 +237,7 @@ class AcceptanceTests(SSHTestCase):
 
     def assertNotBranch(self, url):
         """Assert that there's no branch at 'url'."""
-        self.assertRaises(
-            NotBranchError,
-            self.server.runAndWaitForDisconnect,
-            bzrlib.branch.Branch.open, url)
+        self.assertRaises(NotBranchError, bzrlib.branch.Branch.open, url)
 
     def addRevisionToBranch(self, branch):
         """Add a new revision in the database to the given database branch."""
