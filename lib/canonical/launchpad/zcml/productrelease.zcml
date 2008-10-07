@@ -101,6 +101,15 @@
         template="../templates/productrelease-file-add.pt"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+delete"
+        class="canonical.launchpad.browser.ProductReleaseDeleteView"
+        permission="launchpad.Edit"
+        facet="overview"
+        template="../templates/productrelease-delete.pt"
+        />
+
     <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IProductRelease"

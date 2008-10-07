@@ -19,16 +19,6 @@
           title="FOAF" href="+rdf"
           />
     </tal:valid_person_or_team>
-    <tal:openid_enabled condition="context/is_openid_enabled">
-      <link
-          rel="openid.server"
-          tal:attributes="href view/openid_server_url"
-          />
-      <link
-          rel="openid.delegate"
-          tal:attributes="href view/openid_identity_url"
-          />
-    </tal:openid_enabled>
     <meta tal:condition="not: context/is_valid_person_or_team"
           name="robots" content="noindex,nofollow" />
   </tal:block>

@@ -16,6 +16,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.launchpad import (
     IOpenIDApplication, NotFoundError)
@@ -27,7 +28,6 @@ from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
     Navigation, RedirectionView, stepthrough, stepto)
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class OpenIDApplicationURL:
@@ -36,30 +36,39 @@ class OpenIDApplicationURL:
 
     path = ''
     inside = None
-    rootsite = 'openid'
 
     def __init__(self, context):
         self.context = context
+
+    @cachedproperty
+    def rootsite(self):
+        """The root site of the application."""
+        return CurrentOpenIDEndPoint.getVHost()
 
 
 class OpenIDApplicationNavigation(Navigation):
     """Navigation for `IOpenIDApplication`"""
     usedfor = IOpenIDApplication
 
+    def _get_active_identity(self, openid_identifier):
+        """Return the IOpenIDPersistentIdentity if it is active, or None."""
+        account = getUtility(IAccountSet).getByOpenIDIdentifier(
+            openid_identifier)
+        if account is None or account.status != AccountStatus.ACTIVE:
+            return None
+        return IOpenIDPersistentIdentity(account)
+
     @stepthrough('+id')
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
-        account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
-        # XXX sinzui 2008-09-09 bug=237280:
-        # Account.status should be public.
-        if (account is not None
-            and removeSecurityProxy(account).status == AccountStatus.ACTIVE):
-            return IOpenIDPersistentIdentity(account)
+        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
+            return self._get_active_identity(name)
         else:
-            return None
+            raise NotFoundError(name)
 
     @stepto('+rpconfig')
     def rpconfig(self):
+        """Traverse to the `IOpenIDRPConfigSet`."""
         return getUtility(IOpenIDRPConfigSet)
 
     @stepto('token')
@@ -71,9 +80,21 @@ class OpenIDApplicationNavigation(Navigation):
         return getUtility(ILoginTokenSet)
 
     def traverse(self, name):
-        """Redirect person names to equivalent persistent identity URLs."""
+        """Traverse to the `IOpenIDPersistentIdentity`.
+
+        If an IOpenIDPersistentIdentity cannot be retrieved, redirect person
+        names to equivalent persistent identity URLs.
+        """
+        if CurrentOpenIDEndPoint.supportsURL(self.request.getURL()):
+            # Retrieve the IOpenIDPersistentIdentity for /nnn/user-name.
+            identifier = '%s/%s' % (name, self.request.stepstogo.consume())
+            identity = self._get_active_identity(identifier)
+            if identity is not None:
+                return identity
+        # Redirect /~user-name to equivalent persistent identity URLs.
         person = getUtility(IPersonSet).getByName(name)
-        if person is not None and person.is_openid_enabled:
+        if (person is not None and person.is_openid_enabled
+            and person.account.status == AccountStatus.ACTIVE):
             openid_identity = IOpenIDPersistentIdentity(person.account)
             target = openid_identity.openid_identity_url
             return RedirectionView(target, self.request, 303)
@@ -139,7 +160,7 @@ class XRDSContentNegotiationMixin:
     @cachedproperty
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return allvhosts.configs['openid'].rooturl + '+openid'
+        return CurrentOpenIDEndPoint.getServiceURL()
 
 
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
@@ -150,7 +171,7 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     @cachedproperty
     def openid_identity_url(self):
         """The person's persistent OpenID identity URL."""
-        return canonical_url(self.context)
+        return self.context.openid_identity_url
 
 
 class OpenIDApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):

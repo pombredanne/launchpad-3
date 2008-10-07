@@ -11,13 +11,23 @@
 
   <!-- ArchivePermissionSet -->
   <class class="canonical.launchpad.database.ArchivePermissionSet">
-    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet"/>
+    <implements
+      interface="canonical.launchpad.interfaces.IArchivePermissionSet"/>
   </class>
 
   <securedutility
     class="canonical.launchpad.database.ArchivePermissionSet"
     provides="canonical.launchpad.interfaces.IArchivePermissionSet">
-    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet" />
+    <allow attributes="checkAuthenticated componentsForUploader
+                       uploadersForComponent packagesForUploader
+                       uploadersForPackage queueAdminsForComponent
+                       componentsForQueueAdmin"/>
+    <require
+      permission="launchpad.Edit"
+      attributes="newPackageUploader newComponentUploader newQueueAdmin
+                  deletePackageUploader deleteComponentUploader
+                  deleteQueueAdmin"
+      />
   </securedutility>
 
   <browser:url
