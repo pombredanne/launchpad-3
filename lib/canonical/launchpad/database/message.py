@@ -550,10 +550,10 @@ class UserToUserEmail(Storm):
 
     id = Int(primary=True)
 
-    sender_id = Int()
+    sender_id = Int(name='sender')
     sender = Reference(sender_id, 'Person.id')
 
-    recipient_id = Int()
+    recipient_id = Int(name='recipient')
     recipient = Reference(recipient_id, 'Person.id')
 
     date_sent = DateTime(allow_none=False)
