@@ -29,12 +29,15 @@ class TestingServer(LaunchpadInternalServer):
 
         We register ourselves with the scheme lp-testing=${id(self)}:///
         using the `FakeLaunchpad` authserver client and backed onto a
-        MemoryTransport.
+        LocalTransport.
         """
         frontend = InMemoryFrontend()
         branchfs = frontend.getFilesystemEndpoint()
         branch = frontend.getLaunchpadObjectFactory().makeBranch()
         self._branch_path = branch.unique_name
+        # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
+        # MemoryTransport, but a bug in Bazaar's implementation makes it
+        # unreliable for tests that involve particular errors.
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
             BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
@@ -53,9 +56,6 @@ class TestingServer(LaunchpadInternalServer):
                 "Don't know how to create non-root transport. Not needed for "
                 "testing.")
         root_transport = LaunchpadInternalServer._transportFactory(self, url)
-        # We clone to this particular URL because FakeLaunchpad's constructor
-        # creates a branch with this URL.  This is an instance of the Mystery
-        # Guest test anti-pattern.
         bzrdir_transport = root_transport.clone(
             self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
