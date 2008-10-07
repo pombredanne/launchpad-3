@@ -179,14 +179,20 @@ upload a particular package.
     >>> show_mozilla_permissions()
     Archive Upload Rights ...~carlos None mozilla-firefox
 
-newPackageUploader() adds a new permission for a person to upload a
-package.
+newPackageUploader() is a factory function that adds a new permission for
+a person to upload a package.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
-    >>> new_permission = webservice.named_post(
+    >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
-    ...     source_package_name='mozilla-firefox').jsonBody()
+    ...     source_package_name='mozilla-firefox')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+upload/name12.mozilla-firefox
 
@@ -230,10 +236,16 @@ all components.
 newComponentUploader adds a new permission for a person to upload to a
 component.
 
-    >>> new_permission = webservice.named_post(
+    >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
-    ...     component_name='restricted').jsonBody()
+    ...     component_name='restricted')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+upload/name12.restricted
 
@@ -290,10 +302,16 @@ where the user is able to administer distroseries queues.
 newQueueAdmin adds a new permission for a person to administer distroseries
 queues in a particular component.
 
-    >>> new_permission = webservice.named_post(
+    >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
     ...     person=name12['self_link'],
-    ...     component_name='partner').jsonBody()
+    ...     component_name='partner')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
 

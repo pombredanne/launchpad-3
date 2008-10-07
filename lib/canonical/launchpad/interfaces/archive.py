@@ -32,8 +32,8 @@ from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
-    export_write_operation, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry)
+    export_factory_operation, export_write_operation, operation_parameters,
+    operation_returns_collection_of)
 
 
 class ArchiveDependencyError(Exception):
@@ -323,7 +323,8 @@ class IArchive(IHasOwner):
         """
 
     @operation_parameters(person=Reference(schema=IPerson))
-    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPermissionsForPerson(person):
         """Return the `IArchivePermission` records applicable to the person.
@@ -335,7 +336,8 @@ class IArchive(IHasOwner):
     @operation_parameters(
         source_package_name=TextLine(
             title=_("Source Package Name"), required=True))
-    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getUploadersForPackage(source_package_name):
         """Return `IArchivePermission` records for the package's uploaders.
@@ -347,7 +349,8 @@ class IArchive(IHasOwner):
 
     @operation_parameters(
         component_name=TextLine(title=_("Component Name"), required=False))
-    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getUploadersForComponent(component_name=None):
         """Return `IArchivePermission` records for the component's uploaders.
@@ -359,7 +362,8 @@ class IArchive(IHasOwner):
 
     @operation_parameters(
         component_name=TextLine(title=_("Component Name"), required=True))
-    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getQueueAdminsForComponent(component_name):
         """Return `IArchivePermission` records for authorised queue admins.
@@ -370,7 +374,8 @@ class IArchive(IHasOwner):
         """
 
     @operation_parameters(person=Reference(schema=IPerson))
-    @operation_returns_collection_of(Interface) # Really IArchivePermission
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getComponentsForQueueAdmin(person):
         """Return `IArchivePermission` for the person's queue admin components
@@ -408,8 +413,8 @@ class IArchive(IHasOwner):
         person=Reference(schema=IPerson),
         source_package_name=TextLine(
             title=_("Source Package Name"), required=True))
-    @operation_returns_entry(Interface) # Really IArchivePermission
-    @export_write_operation()
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
     def newPackageUploader(person, source_package_name):
         """Add permisson for a person to upload a package to this archive.
 
@@ -424,8 +429,8 @@ class IArchive(IHasOwner):
         person=Reference(schema=IPerson),
         component_name=TextLine(
             title=_("Component Name"), required=True))
-    @operation_returns_entry(Interface) # Really IArchivePermission
-    @export_write_operation()
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
     def newComponentUploader(person, component_name):
         """Add permission for a person to upload to a component.
 
@@ -439,8 +444,8 @@ class IArchive(IHasOwner):
         person=Reference(schema=IPerson),
         component_name=TextLine(
             title=_("Component Name"), required=True))
-    @operation_returns_entry(Interface) # Really IArchivePermission
-    @export_write_operation()
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
     def newQueueAdmin(person, component_name):
         """Add permission for a person to administer a distroseries queue.
 

@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Database class for table ArchivePermission."""
 
@@ -25,6 +25,9 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
+
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ArchivePermission(SQLBase):
@@ -135,7 +138,9 @@ class ArchivePermissionSet:
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
-        return ArchivePermission.select("""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchivePermission, """
             ArchivePermission.archive = %s AND
             EXISTS (SELECT TeamParticipation.person
                     FROM TeamParticipation
