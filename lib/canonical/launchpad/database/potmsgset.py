@@ -37,8 +37,8 @@ credit_message_ids = {
     u'translator_credits': None,
 
     # KDE credits messages.
-    u'Your emails': 'EMAIL OF TRANSLATORS',
-    u'Your names': 'NAME OF TRANSLATORS',
+    u'Your emails': u'EMAIL OF TRANSLATORS',
+    u'Your names': u'NAME OF TRANSLATORS',
 
     # Old KDE credits messages.
     u'_: EMAIL OF TRANSLATORS\nYour emails': None,
@@ -701,25 +701,18 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return (self.msgid_singular is not None and
-                self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits',
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'Your emails',
-            ])
+        return self.is_translation_credit
 
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
-        if self.msgid_singular not in credit_message_ids:
+        if self.msgid_singular.msgid not in credit_message_ids:
             return False
 
-        expected_context = credit_message_ids[self.msgid_singular]
-        return expected_context is None or self.context == expected_context
+        expected_context = credit_message_ids[self.msgid_singular.msgid]
+        return expected_context is None or (self.context == expected_context)
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
