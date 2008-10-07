@@ -20,7 +20,7 @@ Here we have some imports and utility fetch.
     ...     RosettaImportStatus)
     >>> from canonical.launchpad.database import (
     ...     DistroSeries, ProductSeries, SourcePackageName)
-    >>> from canonical.launchpad.ftests import login, sync, syncUpdate
+    >>> from canonical.launchpad.ftests import login, syncUpdate
 
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
