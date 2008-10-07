@@ -86,7 +86,7 @@ until tomorrow.
 == Non-ASCII Subjects ==
 
 Dave wants to contact Elly but since both speak non-ASCII, so the message Dave
-sends has a Subject header encoded by RFC 2231.
+sends has a Subject header encoded by RFC 2047.
 
     >>> dave = factory.makePerson('dave@example.com', 'dave')
     >>> elly = factory.makePerson('elly@example.com', 'elly')
