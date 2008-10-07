@@ -282,13 +282,15 @@ This causes a notification to be sent.
 The message notifies the requested reviewer.
 
     >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of Klingon support
-    in GNOME Terminal into GNOME Terminal Mainline.
+    You have been requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of Klingon support in
-    GNOME Terminal into GNOME Terminal Mainline.
+    You are requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
 
 Additional reviews can be requested.
@@ -301,13 +303,15 @@ This sends a notification only to the requested reviewer.
 
     >>> [notification] = pop_notifications()
     >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of Klingon support
-    in GNOME Terminal into GNOME Terminal Mainline.
+    You have been requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of Klingon support in
-    GNOME Terminal into GNOME Terminal Mainline.
+    You are requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
 
 You can even re-request the same person to review, so that a new email is
@@ -319,13 +323,15 @@ sent.
     >>> sample_browser.getControl('Request review').click()
     >>> [notification] = pop_notifications()
     >>> print notification.get_payload(decode=True)
-    You have been requested to review the proposed merge of Klingon support
-    in GNOME Terminal into GNOME Terminal Mainline.
+    You have been requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are requested to review the proposed merge of Klingon support in
-    GNOME Terminal into GNOME Terminal Mainline.
+    You are requested to review the proposed merge of
+    lp://dev/~name12/gnome-terminal/klingon into
+    lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
 
 Only the last request is listed, showing the last review type.
@@ -396,13 +402,14 @@ An email notification is also created.
     Proposed merge of Klingon support in GNOME Terminal into GNOME Terminal
     Mainline updated
     >>> print notification.get_payload(decode=True)
-    The proposal to merge Klingon support in GNOME Terminal into GNOME
-    Terminal Mainline has been updated.
+    The proposal to merge lp://dev/~name12/gnome-terminal/klingon
+    into lp://dev/~name12/gnome-terminal/main
+    has been updated.
     <BLANKLINE>
          Status: Needs review => Merged
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch GNOME Terminal Mainline.
+    You are subscribed to branch lp://dev/~name12/gnome-terminal/main.
     <BLANKLINE>
 
 The source branch is still shown on the branch's merges page.
