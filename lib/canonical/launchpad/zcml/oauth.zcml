@@ -22,6 +22,9 @@
 
   <content class="canonical.launchpad.database.OAuthRequestToken">
       <allow interface="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IOAuthRequestToken"/>
   </content>
 
   <securedutility

@@ -51,7 +51,8 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.oauth import OAuthAccessToken
+from canonical.launchpad.database.oauth import (
+    OAuthAccessToken, OAuthRequestToken)
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -250,17 +251,12 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
+    # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
     # access via Person to use the less strinct controls on that interface.
     # Part of the process of removing these methods from Person will be
     # losening the permissions on Account or fixing the callsites.
-    @property
-    def openid_identifier(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).openid_identifier
-
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -400,6 +396,14 @@ class Person(
     def oauth_access_tokens(self):
         """See `IPerson`."""
         return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
+
+    @property
+    def oauth_request_tokens(self):
+        """See `IPerson`."""
+        return OAuthRequestToken.select("""
             person = %s
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))
