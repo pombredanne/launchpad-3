@@ -28,8 +28,9 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, IBranchFileSystem, IBranchPuller, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -294,6 +295,18 @@ class BranchFileSystem(LaunchpadXMLRPCView):
              'writable': self._canWriteToBranch(requester, branch)},
             trailing_path)
 
+    def _getProduct(self, requester, product_path):
+        try:
+            owner_name, product_name = product_path.split('/')
+        except ValueError:
+            # Wrong number of segments -- can't be a product.
+            print "Wrong number of segments -- can't be a product."
+            return
+        product = getUtility(IProductSet).getByName(product_name)
+        default_branch = product.default_stacked_on_branch
+        return (CONTROL_TRANSPORT,
+                {'default_stack_on': '/' + default_branch.unique_name}, '')
+
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
         def translate_path(requester):
@@ -301,14 +314,18 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 return faults.InvalidPath(path)
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
+                # Is it a branch?
                 branch = getUtility(IBranchSet).getByUniqueName(
                     unescape(first).encode('utf-8'))
-                if branch is None:
-                    continue
-                branch = self._serializeBranch(requester, branch, second)
-                if branch is None:
-                    break
-                return branch
+                if branch is not None:
+                    branch = self._serializeBranch(requester, branch, second)
+                    if branch is None:
+                        break
+                    return branch
+                # Is it a product directory?
+                product = self._getProduct(requester, first)
+                if product is not None:
+                    return product
             # XXX: Should we use the unescaped path in the error? Unescaped is
             # easier to read.
             return faults.PathTranslationError(path)

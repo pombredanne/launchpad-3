@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BRANCH_TRANSPORT',
+    'CONTROL_TRANSPORT',
     'IBranchPuller',
     'IBranchPullerApplication',
     'IBranchFileSystem',

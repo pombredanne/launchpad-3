@@ -15,7 +15,8 @@ from bzrlib.urlutils import unescape
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.xmlrpc.codehosting import (
@@ -162,6 +163,10 @@ class FakeProduct(FakeDatabaseObject):
     def __init__(self, name):
         self.name = name
         self.development_focus = FakeProductSeries()
+
+    @property
+    def default_stacked_on_branch(self):
+        return self.development_focus.user_branch
 
 
 class FakeProductSeries(FakeDatabaseObject):
@@ -385,25 +390,42 @@ class FakeBranchFilesystem:
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
+    def _getProduct(self, requester, product_path):
+        try:
+            owner_name, product_name = product_path.split('/')
+        except ValueError:
+            # Wrong number of segments -- can't be a product.
+            print "Wrong number of segments -- can't be a product."
+            return
+        product = self._product_set.getByName(product_name)
+        default_branch = product.default_stacked_on_branch
+        return (CONTROL_TRANSPORT,
+                {'default_stack_on': '/' + default_branch.unique_name}, '')
+
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')
+            # Is it a branch?
             branch = self._branch_set._find(unique_name=first)
-            if branch is None:
-                continue
-            if not branch._canRead(requester_id):
-                break
-            elif branch.branch_type == BranchType.REMOTE:
-                break
-            else:
-                return (
-                    BRANCH_TRANSPORT,
-                    {'id': branch.id,
-                     'writable': self._canWrite(requester_id, branch),
-                     }, second)
+            if branch is not None:
+                if not branch._canRead(requester_id):
+                    break
+                elif branch.branch_type == BranchType.REMOTE:
+                    break
+                else:
+                    return (
+                        BRANCH_TRANSPORT,
+                        {'id': branch.id,
+                         'writable': self._canWrite(requester_id, branch),
+                         }, second)
+
+            # Is it a product?
+            product = self._getProduct(requester_id, first)
+            if product:
+                return product
         return faults.PathTranslationError(path)
 
 
