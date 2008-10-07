@@ -29,13 +29,6 @@
       <allow interface="canonical.launchpad.interfaces.IMessageSet" />
   </securedutility>
 
-  <!-- Throttle -->
-  <securedutility
-      class="canonical.launchpad.database.message.Throttle"
-      provides="canonical.launchpad.interfaces.message.IThrottle">
-      <allow interface="canonical.launchpad.interfaces.message.IThrottle" />
-  </securedutility>
-
   <!-- Some message have a canonical_url -->
   <adapter for="canonical.launchpad.interfaces.IMessage"
     provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
@@ -47,5 +40,14 @@
     provides="canonical.launchpad.interfaces.IHeldMessageDetails"
     factory="canonical.launchpad.database.mailinglist.HeldMessageDetails"
     />
+
+  <!-- Adapt a person to an IUserContactBy for throttling of direct
+       person-to-person emails. -->
+  <adapter
+    for="canonical.launchpad.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.message.IUserContactBy"
+    factory="canonical.launchpad.database.message.UserContactBy"
+    />
+       
 
 </configure>

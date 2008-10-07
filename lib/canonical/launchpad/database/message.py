@@ -6,19 +6,20 @@ __all__ = [
     'Message',
     'MessageChunk',
     'MessageSet',
-    'Throttle',
     'UserToUserEmail',
     ]
 
 
 import email
 
+from email.Header import make_header, decode_header
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
+from zope.interface.interface import adapter_hooks
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
@@ -34,7 +35,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
 from canonical.launchpad.interfaces.message import (
-    IMessage, IMessageChunk, IMessageSet, IThrottle, IUserToUserEmail,
+    IMessage, IMessageChunk, IMessageSet, IUserContactBy, IUserToUserEmail,
     InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.config import as_timedelta
@@ -568,18 +569,19 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
+        person_set = getUtility(IPersonSet)
         super(UserToUserEmail, self).__init__()
         # Find the person who is sending this message.
-        person_set = getUtility(IPersonSet)
-        from_ = message['from']
-        assert from_ is not None, 'Message has no From: field'
-        sender = person_set.getByEmail(from_)
-        assert sender is not None, 'No person for sender email: %s' % from_
+        realname, address = parseaddr(message['from'])
+        assert address is not None, 'Message has no From: field'
+        sender = person_set.getByEmail(address)
+        assert sender is not None, 'No person for sender email: %s' % address
         # Find the person who is the recipient.
-        to = message['to']
-        assert to is not None, 'Message has no To: field'
-        recipient = person_set.getByEmail(to)
-        assert recipient is not None, 'No person for recipient email: %s' % to
+        realname, address = parseaddr(message['to'])
+        assert address is not None, 'Message has no To: field'
+        recipient = person_set.getByEmail(address)
+        assert recipient is not None, (
+            'No person for recipient email: %s' % address)
         # Convert the date string into a UTC datetime.
         date = message['date']
         assert date is not None, 'Message has no Date: field'
@@ -592,30 +594,48 @@ class UserToUserEmail(Storm):
         # Initialize.
         self.sender = sender
         self.recipient = recipient
-        self.message_id = message_id
-        self.subject = subject
+        self.message_id = unicode(message_id, 'ascii')
+        self.subject = unicode(make_header(decode_header(subject)))
+        # Add the object to the store of the sender.  Our StormMigrationGuide
+        # recommends against this saying "Note that the constructor should not
+        # usually add the object to a store -- leave that for a FooSet.new()
+        # method, or let it be inferred by a relation."
+        #
+        # On the other hand, we really don't need a UserToUserEmailSet for any
+        # other purpose.  There isn't any other relationship that can be
+        # inferred, so in this case I think it makes fine sense for the
+        # constructor to add self to the store.  Also, this closely mimics
+        # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
 
 
-class Throttle:
-    """See `IThrottle`."""
+class UserContactBy:
+    """See `IUserContactBy`."""
 
-    implements(IThrottle)
+    implements(IUserContactBy)
 
-    def allow(self, sender, after=None):
-        """See `IThrottle`."""
-        if after is None:
-            # Users are only allowed to send X number of messages in a certain
-            # period of time.  Both the number of messages and the time period
-            # are configurable.
-            now = datetime.now(pytz.timezone('UTC'))
-            after = now - as_timedelta(
-                config.launchpad.user_to_user_throttle_interval)
+    def __init__(self, sender):
+        """Create a `UserContactBy` instance.
+
+        :param sender: The sender we're checking.
+        :type sender: `IPerson`
+        """
+        self.sender = sender
+
+    @property
+    def is_allowed(self):
+        """See `IUserContactBy`."""
+        # Users are only allowed to send X number of messages in a certain
+        # period of time.  Both the number of messages and the time period
+        # are configurable.
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
         # Count the number of messages from the sender since the throttle
         # date.
-        store = Store.of(sender)
+        store = Store.of(self.sender)
         messages_sent = store.find(
             UserToUserEmail,
-            And(UserToUserEmail.sender == sender,
+            And(UserToUserEmail.sender == self.sender,
                 UserToUserEmail.date_sent >= after)).count()
         return messages_sent < config.launchpad.user_to_user_max_messages

@@ -9,7 +9,7 @@ __all__ = [
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
-    'IThrottle',
+    'IUserContactBy',
     'IUserToUserEmail',
     'IndexedMessage',
     'InvalidEmailMessage',
@@ -235,22 +235,16 @@ class IUserToUserEmail(Interface):
         required=True, readonly=True)
 
 
-class IThrottle(Interface):
-    """Throttle for user-to-user emails."""
+class IUserContactBy(Interface):
+    """Can a Launchpad user contact another Launchpad user?"""
 
-    def allow(sender, after=None):
+    is_allow = Attribute(
         """Is the sender allowed to send a message to a Launchpad user?
 
-        :param sender: The sender of this message.
-        :type sender_email: `IPerson`
-        :param after: The cutoff date for throttle comparisons.  No messages
-            sent before this date will be considered.  If not given, the
-            current date and time, less a configurable interval will be used.
-        :type after: `datetime.datetime`
         :return: True if the sender is allowed to send a message to a
             Launchpad user, otherwise false.
         :rtype: bool
-        """
+        """)
 
 
 class UnknownSender(NotFoundError):
