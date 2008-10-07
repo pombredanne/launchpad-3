@@ -38,4 +38,9 @@
     class="canonical.launchpad.browser.LibraryFileAliasMD5View"
     />
 
+  <!-- StreamOrRedirectLibraryFileAliasView -->
+  <content class="canonical.launchpad.browser.librarian.StreamOrRedirectLibraryFileAliasView">
+    <allow attributes="browserDefault __call__" />
+  </content>
+
 </configure>

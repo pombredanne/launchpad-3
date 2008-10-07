@@ -278,8 +278,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
         return form.FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact this team's members?"),
-                   required=True, vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['contact_method'])
+                   required=True, vocabulary=SimpleVocabulary(terms)))
 
     def validate(self, data):
         """Validate the team contact email address.
@@ -839,8 +838,8 @@ class TeamMemberAddView(LaunchpadFormView):
 
 
 class TeamMapView(LaunchpadView):
-    """Show all people with known locations on a map. 
-    
+    """Show all people with known locations on a map.
+
     Also provides links to edit the locations of people in the team without
     known locations.
     """

@@ -72,13 +72,14 @@ Follow the token link, to confirm the new email address.
 
 Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
+    
+    >>> from canonical.launchpad.testing.pages import strip_label
 
     >>> browser.getLink('Change details').click()
     >>> browser.getLink('E-mail Settings').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
-    >>> confirmed.displayOptions
-    ['\xa0test@canonical.com', '\xa0test2@canonical.com',
-     '\xa0testing@canonical.com']
+    >>> [strip_label(option) for option in confirmed.displayOptions]
+    ['test@canonical.com', 'test2@canonical.com', 'testing@canonical.com']
 
 If he tries to add it again, he'll get an error message explaining
 that it's already registered.
