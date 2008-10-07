@@ -21,12 +21,24 @@ from canonical.launchpad.xmlrpc import faults
 
 
 class FakeStore:
-    """Fake store that implements find well enough to pass tests."""
+    """Fake store that implements find well enough to pass tests.
+
+    This is needed because some of the `test_codehosting` tests use
+    assertSqlAttributeEqualsDate, which relies on ORM behaviour. Here, we fake
+    enough of the ORM to pass the tests.
+    """
 
     def __init__(self, object_set):
         self._object_set = object_set
 
     def find(self, cls, **kwargs):
+        """Implement Store.find that takes two attributes: id and one other.
+
+        This is called by `assertSqlAttributeEqualsDate`, which relies on
+        `find` returning either a single match or None. Returning a match
+        implies that the given attribute has the expected value. Returning
+        None implies the opposite.
+        """
         branch_id = kwargs.pop('id')
         assert len(kwargs) == 1, (
             'Expected only id and one other. Got %r' % kwargs)
@@ -77,6 +89,7 @@ class ObjectSet:
 
 
 class FakeBranch(FakeDatabaseObject):
+    """Fake branch object."""
 
     def __init__(self, branch_type, name, owner, url=None, product=None,
                  stacked_on=None, private=False, registrant=None):
@@ -112,6 +125,7 @@ class FakeBranch(FakeDatabaseObject):
 
 
 class FakePerson(FakeDatabaseObject):
+    """Fake person object."""
 
     def __init__(self, name):
         self.name = self.displayname = name
@@ -128,6 +142,7 @@ class FakePerson(FakeDatabaseObject):
 
 
 class FakeTeam(FakePerson):
+    """Fake team."""
 
     def __init__(self, name, members=None):
         super(FakeTeam, self).__init__(name)
@@ -141,6 +156,7 @@ class FakeTeam(FakePerson):
 
 
 class FakeProduct(FakeDatabaseObject):
+    """Fake product."""
 
     def __init__(self, name):
         self.name = name
@@ -148,11 +164,13 @@ class FakeProduct(FakeDatabaseObject):
 
 
 class FakeProductSeries(FakeDatabaseObject):
+    """Fake product series."""
 
     user_branch = None
 
 
 class FakeScriptActivity(FakeDatabaseObject):
+    """Fake script activity."""
 
     def __init__(self, name, hostname, date_started, date_completed):
         self.id = self.name = name
@@ -389,6 +407,10 @@ class FakeBranchFilesystem:
 
 
 class InMemoryFrontend:
+    """A in-memory 'frontend' to Launchpad's branch services.
+
+    This is an in-memory version of `LaunchpadDatabaseFrontend`.
+    """
 
     def __init__(self):
         self._branch_set = ObjectSet()
@@ -404,16 +426,37 @@ class InMemoryFrontend:
             self._factory)
 
     def getFilesystemEndpoint(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Return an in-memory implementation of IBranchFileSystem that passes
+        the tests in `test_codehosting`.
+        """
         return self._branchfs
 
     def getPullerEndpoint(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Return an in-memory implementation of IBranchPuller that passes the
+        tests in `test_codehosting`.
+        """
         return self._puller
 
     def getLaunchpadObjectFactory(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Returns a partial, in-memory implementation of LaunchpadObjectFactory
+        -- enough to pass the tests.
+        """
         return self._factory
 
     def getBranchSet(self):
+        """See `LaunchpadDatabaseFrontend`.
+
+        Returns a partial implementation of `IBranchSet` -- enough to pass the
+        tests.
+        """
         return self._branch_set
 
     def getLastActivity(self, activity_name):
+        """Get the last script activity with 'activity_name'."""
         return self._script_activity_set.getByName(activity_name)
