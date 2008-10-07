@@ -12,7 +12,6 @@ __all__ = [
 
 
 import email
-import datetime
 
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
@@ -24,8 +23,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.locals import (
-    And, Count, DateTime, Int, RawStr, Reference, Store, Storm)
+from storm.locals import And, DateTime, Int, RawStr, Reference, Store, Storm
 
 import pytz
 
@@ -35,7 +33,6 @@ from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.message import (
     IMessage, IMessageChunk, IMessageSet, IThrottle, IUserToUserEmail,
     InvalidEmailMessage)
@@ -553,10 +550,10 @@ class UserToUserEmail(Storm):
 
     id = Int(primary=True)
 
-    sender_id = Int()
+    sender_id = Int(name='sender')
     sender = Reference(sender_id, 'Person.id')
 
-    recipient_id = Int()
+    recipient_id = Int(name='recipient')
     recipient = Reference(recipient_id, 'Person.id')
 
     date_sent = DateTime(allow_none=False)
@@ -571,17 +568,19 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
-        # Find the person who is sending this message.
+        super(UserToUserEmail, self).__init__()
         person_set = getUtility(IPersonSet)
-        from_ = message['from']
-        assert from_ is not None, 'Message has no From: field'
-        sender = person_set.getByEmail(from_)
-        assert sender is not None, 'No person for sender email: %s' % from_
+        # Find the person who is sending this message.
+        realname, address = parseaddr(message['from'])
+        assert address, 'Message has no From: field'
+        sender = person_set.getByEmail(address)
+        assert sender is not None, 'No person for sender email: %s' % address
         # Find the person who is the recipient.
-        to = message['to']
-        assert to is not None, 'Message has no To: field'
-        recipient = person_set.getByEmail(to)
-        assert recipient is not None, 'No person for recipient email: %s' % to
+        realname, address = parseaddr(message['to'])
+        assert address, 'Message has no To: field'
+        recipient = person_set.getByEmail(address)
+        assert recipient is not None, (
+            'No person for recipient email: %s' % address)
         # Convert the date string into a UTC datetime.
         date = message['date']
         assert date is not None, 'Message has no Date: field'
@@ -596,6 +595,16 @@ class UserToUserEmail(Storm):
         self.recipient = recipient
         self.message_id = message_id
         self.subject = subject
+        # Add the object to the store of the sender.  Our StormMigrationGuide
+        # recommends against this saying "Note that the constructor should not
+        # usually add the object to a store -- leave that for a FooSet.new()
+        # method, or let it be inferred by a relation."
+        #
+        # On the other hand, we really don't need a UserToUserEmailSet for any
+        # other purpose.  There isn't any other relationship that can be
+        # inferred, so in this case I think it makes fine sense for the
+        # constructor to add self to the store.  Also, this closely mimics
+        # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
 
 

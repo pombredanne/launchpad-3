@@ -9,7 +9,7 @@ __all__ = [
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
-    'IThrottle',
+    'IUserContactBy',
     'IUserToUserEmail',
     'IndexedMessage',
     'InvalidEmailMessage',
@@ -23,10 +23,7 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-#from canonical.launchpad.interfaces.bug import IBug
-#from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtask import IBugTask
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 
@@ -238,18 +235,38 @@ class IUserToUserEmail(Interface):
         required=True, readonly=True)
 
 
-class IThrottle(Interface):
-    """Throttle for user-to-user emails."""
+class IUserContactBy(Interface):
+    """Can a Launchpad user contact another Launchpad user?
 
-    def allow(sender, after=None):
+    Use like an adapter:
+
+    >>> if IUserToUserContactBy(sender).isAllowed():
+
+    For testing purposes use:
+
+    >>> if UserToUserContactBy(sender, )
+    """
+
+    is_allowed
+    def isAllowed():
         """Is the sender allowed to send a message to a Launchpad user?
 
         :param sender: The sender of this message.
         :type sender_email: `IPerson`
-        :param after: The cutoff date for throttle comparisons.  No messages
-            sent before this date will be considered.  If not given, the
-            current date and time, less a configurable interval will be used.
-        :type after: `datetime.datetime`
+        :return: True if the sender is allowed to send a message to a
+            Launchpad user, otherwise False.  The current date and time, less
+            a configurable interval will be used as the cutoff date.
+        :rtype: bool
+        """
+
+    def isAllowedAfter(when):
+        """Is the sender allowed to send a message to a Launchpad user?
+
+        :param sender: The sender of this message.
+        :type sender_email: `IPerson`
+        :param when: The cutoff date for throttle comparisons.  No messages
+            sent before this date will be considered.
+        :type when: `datetime.datetime`
         :return: True if the sender is allowed to send a message to a
             Launchpad user, otherwise false.
         :rtype: bool

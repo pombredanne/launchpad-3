@@ -238,7 +238,7 @@ its __launchpad_facetname__ attribute.
     <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
     >>> cls.__launchpad_facetname__
     'FACET'
-    >>> cls2 = context.actions[3][2][4]
+    >>> cls2 = context.actions[3][2][1]
     >>> cls2
     <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
     >>> cls2.__launchpad_facetname__
@@ -707,7 +707,7 @@ an IPermission.
     ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
     ...   <permission id="foo.bar" title="Foo Bar" access_level="read" />
     ... </configure>
-    ... """) 
+    ... """)
     >>> from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> permission = getUtility(ILaunchpadPermission, 'foo.bar')
@@ -724,4 +724,3 @@ Clean up the interfaces we created for testing with.
     >>> del canonical.launchpad.ftests.IFoo
     >>> del canonical.launchpad.ftests.IFooLayer
     >>> del canonical.launchpad.ftests.FooView
-

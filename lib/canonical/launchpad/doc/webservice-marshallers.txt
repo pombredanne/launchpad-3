@@ -590,7 +590,7 @@ The return type is correctly typed to the concrete collection.
     >>> set_marshaller.marshall_from_json_data(
     ...     ['http://api.launchpad.dev/beta/~salgado',
     ...      'http://api.launchpad.dev/beta/~ubuntu-team'])
-    Set([<Person...>, <Person...>])
+    set([<Person...>, <Person...>])
 
     >>> result = choice_list_marshaller.marshall_from_request(
     ...     [u'Confirmed', u'New'])
