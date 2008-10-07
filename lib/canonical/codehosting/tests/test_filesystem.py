@@ -15,9 +15,8 @@ from bzrlib.urlutils import escape
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
-from canonical.codehosting.tests.servers import (
-    make_launchpad_server, make_sftp_server)
-from canonical.testing import TwistedAppServerLayer
+from canonical.codehosting.tests.servers import make_launchpad_server
+from canonical.testing import TwistedLayer
 from canonical.twistedsupport import defer_to_thread
 
 
@@ -53,7 +52,7 @@ class TestBranchIDToPath(unittest.TestCase):
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedAppServerLayer
+    layer = TwistedLayer
 
     @defer_to_thread
     def test_remove_branch_directory(self):
