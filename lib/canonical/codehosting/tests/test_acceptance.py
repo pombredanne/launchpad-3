@@ -498,6 +498,8 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
     def disabled_test_cant_write_to_readonly_branch(self):
+        # XXX: JonathanLange 2008-10-07 bug=269178: Disabled this test due to
+        # intermittent, inexplicable failure.
         # We can't write to a read-only branch.
         ro_branch_url = self.createBazaarBranch(
             'sabdfl', '+junk', 'ro-branch')
