@@ -361,7 +361,7 @@ class IArchive(IHasOwner):
         component_name=TextLine(title=_("Component Name"), required=True))
     @operation_returns_collection_of(Interface) # Really IArchivePermission
     @export_read_operation()
-    def getQueueAdminsForComponent(component_name=None):
+    def getQueueAdminsForComponent(component_name):
         """Return `IArchivePermission` records for authorised queue admins.
 
         :param component_name: An `IComponent` or textual name for the
