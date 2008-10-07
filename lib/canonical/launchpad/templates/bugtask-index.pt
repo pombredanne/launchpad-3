@@ -123,6 +123,14 @@
 
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
+          <td>
+            <tal:affectsmetoo
+                define="link context_menu/affectsmetoo"
+                condition="link/enabled"
+                replace="structure link/render" />
+          </td>
+        </tr>
+        <tr>
           <td style="text-align: left; width: 50%;">
             <tal:markduplicate
                 define="link context_menu/markduplicate"
