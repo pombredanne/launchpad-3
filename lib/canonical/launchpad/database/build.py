@@ -26,7 +26,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 
 from canonical.launchpad.components.archivedependencies import (
-    getComponentsForBuilding)
+    get_components_for_building)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -452,7 +452,7 @@ class Build(SQLBase):
         # Moreover, PARTNER and PPA component domain is single, i.e,
         # PARTNER only contains packages in 'partner' component and PPAs
         # only contains packages in 'main' component.
-        ogre_components = getComponentsForBuilding(self)
+        ogre_components = get_components_for_building(self)
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
             dep_candidate.component not in ogre_components):
             return False

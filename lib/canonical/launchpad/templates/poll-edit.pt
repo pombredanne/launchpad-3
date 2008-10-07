@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div tal:condition="not: context/isNotYetOpened">
+    <div tal:condition="not: context/isNotYetOpened" id="not-editable">
       <h1>This poll can't be edited</h1>
 
       <p>Only polls that are not yet opened can be edited. As soon as a poll
