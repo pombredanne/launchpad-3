@@ -6,19 +6,19 @@ __all__ = [
     'Message',
     'MessageChunk',
     'MessageSet',
-    'Throttle',
     'UserToUserEmail',
     ]
 
 
 import email
 
+from email.Header import make_header, decode_header
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
 from canonical.launchpad.interfaces.message import (
-    IMessage, IMessageChunk, IMessageSet, IThrottle, IUserToUserEmail,
+    IMessage, IMessageChunk, IMessageSet, IUserContactBy, IUserToUserEmail,
     InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.config import as_timedelta
@@ -568,6 +568,7 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
+        person_set = getUtility(IPersonSet)
         super(UserToUserEmail, self).__init__()
         person_set = getUtility(IPersonSet)
         # Find the person who is sending this message.
@@ -593,8 +594,8 @@ class UserToUserEmail(Storm):
         # Initialize.
         self.sender = sender
         self.recipient = recipient
-        self.message_id = message_id
-        self.subject = subject
+        self.message_id = unicode(message_id, 'ascii')
+        self.subject = unicode(make_header(decode_header(subject)))
         # Add the object to the store of the sender.  Our StormMigrationGuide
         # recommends against this saying "Note that the constructor should not
         # usually add the object to a store -- leave that for a FooSet.new()
@@ -608,25 +609,48 @@ class UserToUserEmail(Storm):
         Store.of(sender).add(self)
 
 
-class Throttle:
-    """See `IThrottle`."""
+class UserContactBy:
+    """See `IUserContactBy`."""
 
-    implements(IThrottle)
+    implements(IUserContactBy)
 
-    def allow(self, sender, after=None):
-        """See `IThrottle`."""
-        if after is None:
-            # Users are only allowed to send X number of messages in a certain
-            # period of time.  Both the number of messages and the time period
-            # are configurable.
-            now = datetime.now(pytz.timezone('UTC'))
-            after = now - as_timedelta(
-                config.launchpad.user_to_user_throttle_interval)
+    def __init__(self, sender):
+        """Create a `UserContactBy` instance.
+
+        :param sender: The sender we're checking.
+        :type sender: `IPerson`
+        :param after: The cutoff date for throttling.  Primarily used only for
+            testing purposes.
+        :type after: `datetime.datetime`
+        """
+        self.sender = sender
+
+    def _isAllowedAfter(self, after):
+        """Like .is_allowed but used with an explicit cutoff date.
+
+        For testing purposes only.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        :return: True if email is allowed
+        :rtype: bool
+        """
         # Count the number of messages from the sender since the throttle
         # date.
-        store = Store.of(sender)
+        store = Store.of(self.sender)
         messages_sent = store.find(
             UserToUserEmail,
-            And(UserToUserEmail.sender == sender,
+            And(UserToUserEmail.sender == self.sender,
                 UserToUserEmail.date_sent >= after)).count()
         return messages_sent < config.launchpad.user_to_user_max_messages
+
+    @property
+    def is_allowed(self):
+        """See `IUserContactBy`."""
+        # Users are only allowed to send X number of messages in a certain
+        # period of time.  Both the number of messages and the time period
+        # are configurable.
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return self._isAllowedAfter(after)

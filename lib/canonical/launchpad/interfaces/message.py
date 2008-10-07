@@ -236,41 +236,15 @@ class IUserToUserEmail(Interface):
 
 
 class IUserContactBy(Interface):
-    """Can a Launchpad user contact another Launchpad user?
+    """Can a Launchpad user contact another Launchpad user?"""
 
-    Use like an adapter:
-
-    >>> if IUserToUserContactBy(sender).isAllowed():
-
-    For testing purposes use:
-
-    >>> if UserToUserContactBy(sender, )
-    """
-
-    is_allowed
-    def isAllowed():
+    is_allow = Attribute(
         """Is the sender allowed to send a message to a Launchpad user?
 
-        :param sender: The sender of this message.
-        :type sender_email: `IPerson`
-        :return: True if the sender is allowed to send a message to a
-            Launchpad user, otherwise False.  The current date and time, less
-            a configurable interval will be used as the cutoff date.
-        :rtype: bool
-        """
-
-    def isAllowedAfter(when):
-        """Is the sender allowed to send a message to a Launchpad user?
-
-        :param sender: The sender of this message.
-        :type sender_email: `IPerson`
-        :param when: The cutoff date for throttle comparisons.  No messages
-            sent before this date will be considered.
-        :type when: `datetime.datetime`
         :return: True if the sender is allowed to send a message to a
             Launchpad user, otherwise false.
         :rtype: bool
-        """
+        """)
 
 
 class UnknownSender(NotFoundError):

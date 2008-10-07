@@ -16,9 +16,18 @@ Anne wants to contact Bart to ask him a question about his Launchpad project,
 but Bart's email addresses are hidden.  Anne decides to use Launchpad's direct
 user-to-user contact form to send Bart a message.  Is she allowed to?
 
-    >>> from canonical.launchpad.interfaces.message import IThrottle
-    >>> throttle = getUtility(IThrottle)
-    >>> throttle.allow(anne)
+    # For testing purposes, we can't use the current date and time.
+    >>> from canonical.launchpad.database.message import (
+    ...     utcdatetime_from_field)
+    >>> date = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:37 +0100')
+
+    >>> from canonical.launchpad.interfaces.message import IUserContactBy
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    True
+
+    # Similarly, test the implicit date interface, which real code will use.
+    # The outcome is the same in this case.
+    >>> IUserContactBy(anne).is_allowed
     True
 
 Launchpad records the event when Anne sends the message to Bart.
@@ -44,9 +53,9 @@ Anne really likes Bart's project, so she sends him another message.
     # Use an explicit cutoff date instead of yesterday.
     >>> from canonical.launchpad.database.message import (
     ...     utcdatetime_from_field)
-    >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:38 +0100')
+    >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:20:00 +0100')
 
-    >>> throttle.allow(anne, after)
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     True
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -62,7 +71,7 @@ Anne really likes Bart's project, so she sends him another message.
 
 Anne also likes Cris's project, and wants to contact her directly.
 
-    >>> throttle.allow(anne, after)
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     True
 
     >>> cris = factory.makePerson('cris@example.com', 'cris')
@@ -80,5 +89,57 @@ Anne also likes Cris's project, and wants to contact her directly.
 Anne is no longer allowed to contact any Launchpad users directly, at least
 until tomorrow.
 
-    >>> throttle.allow(anne, after)
+    >>> IUserContactBy(anne)._isAllowedAfter(date)
     False
+
+
+== Non-ASCII Subjects ==
+
+Dave wants to contact Elly but since both speak non-ASCII, so the message Dave
+sends has a Subject header encoded by RFC 2047.
+
+    >>> dave = factory.makePerson('dave@example.com', 'dave')
+    >>> elly = factory.makePerson('elly@example.com', 'elly')
+    >>> contact = UserToUserEmail(message_from_string("""\
+    ... From: dave@example.com
+    ... To: elly@example.com
+    ... Date: Thu, 25 Sep 2008 15:30:38 +0100
+    ... Message-ID: <dolphin>
+    ... Subject: =?iso-8859-1?q?Sm=F6rg=E5sbord?=
+    ...
+    ... I am hungry!
+    ... """))
+    >>> transaction.commit()
+
+    >>> from storm.locals import Store
+    >>> entry = Store.of(dave).find(
+    ...     UserToUserEmail,
+    ...     UserToUserEmail.message_id == u'<dolphin>').one()
+    >>> entry.subject
+    u'Sm\xf6rg\xe5sbord'
+
+
+== Full names ==
+
+Again, Dave wants to contact Elly, but this time, he's configured his mailer
+to include his full name.  His contact is still recorded correctly.
+
+    >>> contact = UserToUserEmail(message_from_string("""\
+    ... From: Dave Person <dave@example.com>
+    ... To: elly@example.com (Elly Person)
+    ... Date: Thu, 25 Sep 2008 15:31:38 +0100
+    ... Message-ID: <elephant>
+    ... Subject: Hello again
+    ...
+    ... I am still hungry.
+    ... """))
+    >>> transaction.commit()
+
+    >>> from storm.locals import Store
+    >>> entry = Store.of(dave).find(
+    ...     UserToUserEmail,
+    ...     UserToUserEmail.message_id == u'<elephant>').one()
+    >>> entry.sender
+    <Person at ... dave (Dave)>
+    >>> entry.recipient
+    <Person at ... elly (Elly)>
