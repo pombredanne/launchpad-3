@@ -110,23 +110,13 @@
         template="../templates/productrelease-delete.pt"
         />
 
-    <browser:editform
+    <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IProductRelease"
-      schema="canonical.launchpad.interfaces.IProductRelease"
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
-      label="Edit product release details"
-      fields="summary description changelog codename"
       permission="launchpad.Edit"
-      template="../templates/productrelease-edit.pt"
-      >
-      <browser:widget
-        field="summary"
-        class="zope.app.form.browser.TextAreaWidget"
-        width="62"
-        height="5" />
-    </browser:editform>
+      template="../templates/productrelease-edit.pt" />
 
     <browser:editform
         name="+review"
