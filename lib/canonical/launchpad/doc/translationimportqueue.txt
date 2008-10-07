@@ -1153,6 +1153,49 @@ the extra three entries.
     evolution       | evolution-2.2      | fr.po
 
 
+= Filename filters =
+
+A tarball doesn't always have everything in quite the right place.  If
+you need to manipulate the file paths within a tarball before the files
+go into the import queue, there's no need to mess with the tarball.
+
+Instead, a filter callback to addOrUpdateEntryFromTarball lets you play
+with the filenames, defining how the import code will pretend they are
+named.  It can also tell addOrUpdateEntryFromTarball to ignore a file by
+not returning a name for it.
+
+    >>> import os.path
+    >>> netapplet = productset['netapplet']
+    >>> netapplet_trunk = netapplet.getSeriesByName('trunk')
+
+In this example, we create a filename filter that ignores templates, and
+places all other files in a directory "new-directory."
+
+    >>> def swizzle_filename(path):
+    ...     if path.endswith('.pot'):
+    ...         return None
+    ...     return os.path.join('new-directory', path)
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, is_published, rosetta_experts,
+    ...     productseries=netapplet_trunk,
+    ...     filename_filter=swizzle_filename)
+    3
+
+To all intents and purposes, it's as if the files' paths inside the
+tarball were exactly as the filename filter returned them.  And since
+the filter said to ignore files whose names end in ".pot," the
+template we upload does not make it into the queue.
+
+    >>> print_queue_entries()
+    hoary evolution | ...
+    ...
+    evolution       | evolution-2.2      | fr.po
+    netapplet       | None               | new-directory/es.po
+    netapplet       | None               | new-directory/fr.po
+
+
+
 = Invalid data =
 
 If administrators fail to correct certain errors in requests while approving
