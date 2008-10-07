@@ -157,7 +157,7 @@ Now lets try to insert a poll with the name of a existing one.
     >>> team_admin_browser.getControl(
     ...     name='field.datecloses').value = '2035-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
- 
+
     >>> message = 'dpl-2080 is already in use by another poll in this team'
     >>> message in team_admin_browser.contents
     True
