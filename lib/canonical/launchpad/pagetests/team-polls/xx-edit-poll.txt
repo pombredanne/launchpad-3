@@ -1,4 +1,19 @@
-Lets try to change dpl-2080's name to election-2100
+= Editing a poll =
+
+All attributes of a poll can be changed as long as the poll has not opened
+yet.
+
+First we create a new poll to use throghout this test.
+
+  >>> login('jeff.waugh@ubuntulinux.com')
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces.person import IPersonSet
+  >>> factory.makePoll(getUtility(IPersonSet).getByName('ubuntu-team'),
+  ...                  'dpl-2080', 'dpl-2080', 'dpl-2080')
+  <Poll...
+  >>> logout()
+
+Now we'll try to change its name to something that is already in use.
 
   >>> team_admin_browser = setupBrowser(
   ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
@@ -10,22 +25,12 @@ Lets try to change dpl-2080's name to election-2100
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+edit'
 
   >>> team_admin_browser.getControl(
-  ...   'The unique name of this poll').value = 'election-2100'
-  >>> team_admin_browser.getControl(
-  ...   'The title of this poll').value = 'polltitle'
-  >>> team_admin_browser.getControl(
-  ...   'The proposition that is going to be voted').value = 'proposition'
-  >>> team_admin_browser.getControl(
-  ...   'Users can spoil their votes?').selected = True
-  >>> team_admin_browser.getControl(
-  ...   name='field.dateopens').value = '3000-01-01 00:00:00+00:00'
-  >>> team_admin_browser.getControl(
-  ...   name='field.datecloses').value = '3000-11-01 00:00:00+00:00'
+  ...   'The unique name of this poll').value = 'never-closes'
   >>> team_admin_browser.getControl('Change').click()
 
-  >>> message = 'election-2100 is already in use by another poll in this team'
-  >>> message in team_admin_browser.contents
-  True
+  >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+  There is a problem with the information you entered.
+  ...never-closes is already in use by another poll in this team.
 
 Entering an end date that precedes the start date returns a nice error
 message.
@@ -38,9 +43,8 @@ message.
   ...   name='field.datecloses').value = '3000-01-01 00:00:00+00:00'
   >>> team_admin_browser.getControl('Change').click()
 
-  >>> message = "This event can't start after it ends"
-  >>> message in team_admin_browser.contents
-  True
+  >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+  This event can't start after it ends.
 
 We successfully change the polls name
 
@@ -67,8 +71,9 @@ Trying to edit a poll that's already open isn't possible.
   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
 
   >>> team_admin_browser.getLink('Change details').click()
-  >>> "This poll can't be edited" in team_admin_browser.contents
-  True
+  >>> print extract_text(
+  ...     find_tag_by_id(team_admin_browser.contents, 'not-editable'))
+  This poll can't be edited...
 
 It's also not possible to edit a poll that's already closed.
 
@@ -85,5 +90,6 @@ It's also not possible to edit a poll that's already closed.
   True
 
   >>> team_admin_browser.getLink('Change details').click()
-  >>> "This poll can't be edited" in team_admin_browser.contents
-  True
+  >>> print extract_text(
+  ...     find_tag_by_id(team_admin_browser.contents, 'not-editable'))
+  This poll can't be edited...
