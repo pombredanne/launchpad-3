@@ -17,16 +17,13 @@ import gc
 import os
 import shutil
 import tempfile
-import threading
 
 from zope.component import getUtility
 
 from bzrlib.transport import get_transport, ssh, Server
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 
-from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
-from twisted.internet.protocol import connectionDone
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -37,7 +34,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.codehosting.branchfs import LaunchpadServer
 from canonical.codehosting.branchfsclient import BlockingProxy
-from canonical.codehosting.sshserver import LaunchpadAvatar
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 
@@ -223,7 +219,7 @@ class SSHCodeHostingServer(CodeHostingServer):
         self._real_home, self._fake_home = self.setUpFakeHome()
         self._old_vendor_manager = self.forceParamiko()
         CodeHostingServer.setUp(self)
-        self.server = _TestSSHService()
+        self.server = SSHService()
         self.server.startService()
 
     def tearDown(self):
@@ -253,82 +249,3 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
     def __init__(self, branches_root, mirror_root):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', branches_root, mirror_root)
-
-
-class _TestSSHService(SSHService):
-    """SSH service that uses the the _TestLaunchpadAvatar and installs the
-    test keys in a place that the SSH server can find them.
-
-    This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
-    together to provide a threading event which is set when the first
-    connecting SSH client closes its connection to the SSH server.
-    """
-
-    _connection_lost_event = None
-    _connection_made_event = None
-    avatar = None
-
-    def getConnectionLostEvent(self):
-        return self._connection_lost_event
-
-    def getConnectionMadeEvent(self):
-        return self._connection_made_event
-
-    def setConnectionLostEvent(self, event):
-        self._connection_lost_event = event
-
-    def setConnectionMadeEvent(self, event):
-        self._connection_made_event = event
-
-    def makeRealm(self):
-        realm = SSHService.makeRealm(self)
-        realm.avatarFactory = self.makeAvatar
-        return realm
-
-    def makeAvatar(self, userDict, launchpad):
-        self.avatar = _TestLaunchpadAvatar(self, userDict, launchpad)
-        return self.avatar
-
-
-class _TestLaunchpadAvatar(LaunchpadAvatar):
-    """SSH avatar that uses the _TestBazaarFileTransferServer."""
-
-    def __init__(self, service, userDict, launchpad):
-        LaunchpadAvatar.__init__(self, userDict, launchpad)
-        self.service = service
-        self.subsystemLookup = {'sftp': self.makeFileTransferServer}
-
-    def getConnectionLostEvent(self):
-        return self.service.getConnectionLostEvent()
-
-    def getConnectionMadeEvent(self):
-        return self.service.getConnectionMadeEvent()
-
-    def makeFileTransferServer(self, data=None, avatar=None):
-        return _TestBazaarFileTransferServer(data, avatar)
-
-
-class _TestBazaarFileTransferServer(filetransfer.FileTransferServer):
-    """BazaarFileTransferServer that sets a threading event when it loses its
-    first connection.
-    """
-    def __init__(self, data=None, avatar=None):
-        filetransfer.FileTransferServer.__init__(
-            self, data=data, avatar=avatar)
-        self.avatar = avatar
-
-    def getConnectionLostEvent(self):
-        return self.avatar.getConnectionLostEvent()
-
-    def getConnectionMadeEvent(self):
-        return self.avatar.getConnectionMadeEvent()
-
-    def connectionMade(self):
-        event = self.getConnectionMadeEvent()
-        if event is not None:
-            event.set()
-
-    def connectionLost(self, reason=connectionDone):
-        event = self.getConnectionLostEvent()
-        if event is not None:
-            event.set()
