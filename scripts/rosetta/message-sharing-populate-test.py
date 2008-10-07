@@ -1,4 +1,6 @@
 #! /usr/bin/python2.4
+# pylint: disable-msg=W0403
+
 """Test Translation Message Sharing schema initializations.
 
 This script verifies the results of the message-sharing-populate.py
