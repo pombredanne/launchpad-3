@@ -18,6 +18,7 @@ at points marked in the source below.  Change those points & run again!
 import _pythonpath
 
 from canonical.database.sqlbase import cursor
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
 class SchemaElementsInitializationFailure(Exception):
@@ -135,11 +136,12 @@ def test_schema():
             FROM TranslationTemplateItem
             GROUP BY potmsgset
             HAVING count(*) > 1
-            )
+            ) AS shared_potmsgset
         """
     check(query, "Found shared POTMsgSets.")
 
 
 if __name__ == '__main__':
+    execute_zcml_for_scripts()
     test_schema()
     print "Done."
