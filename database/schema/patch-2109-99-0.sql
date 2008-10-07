@@ -26,10 +26,10 @@ SET DEFAULT nextval('usertouseremail_id_seq'::regclass);
 
 ALTER TABLE ONLY usertouseremail
 ADD CONSTRAINT usertouseremail_sender_fkey
-FOREIGN KEY (sender_id) REFERENCES person(id);
+FOREIGN KEY (sender) REFERENCES person(id);
 
 ALTER TABLE ONLY usertouseremail
 ADD CONSTRAINT usertouseremail_recipient_fkey
-FOREIGN KEY (recipient_id) REFERENCES person(id);
+FOREIGN KEY (recipient) REFERENCES person(id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99,0);
