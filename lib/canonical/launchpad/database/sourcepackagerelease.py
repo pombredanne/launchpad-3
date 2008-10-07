@@ -2,7 +2,10 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease']
+__all__ = [
+    'SourcePackageRelease',
+    '_filter_ubuntu_translation_file',
+    ]
 
 import datetime
 import operator
@@ -50,7 +53,7 @@ from canonical.launchpad.scripts.queue import QueueActionError
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
-def filter_ubuntu_translation_file(filename):
+def _filter_ubuntu_translation_file(filename):
     """Filter for translation filenames in tarball.
     
     Grooms filenames of translation files in tarball, returning None or
@@ -63,6 +66,12 @@ def filter_ubuntu_translation_file(filename):
         return None
 
     filename = filename[len(source_prefix):]
+
+    if filename.startswith('debian/'):
+        # Skip filenames in debian/*.  They're from debconf translations,
+        # which Ubuntu doesn't use.
+        return None
+
     return filename
 
 
@@ -590,7 +599,7 @@ class SourcePackageRelease(SQLBase):
             tarball, is_published, importer,
             sourcepackagename=self.sourcepackagename,
             distroseries=self.upload_distroseries,
-            filename_filter=filter_ubuntu_translation_file)
+            filename_filter=_filter_ubuntu_translation_file)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""
