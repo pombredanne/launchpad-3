@@ -21,6 +21,7 @@ DBNAME=launchpad_dev
 # to quickly build a populated database to run tests against.
 TEST_DBNAME=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
+TEST_SESSION_DBNAME=session_ftest
 
 # The session database name.
 SESSION_DBNAME=session_dev
@@ -36,9 +37,9 @@ CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 # on production. It is generated using newbaseline.py in
 # sftp://chinstrap/home/warthogs/archives/stub/dbascripts:
 # 
-REV=121
+REV=2109
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8969605947a1aec8787b8489a006088f  launchpad-121-00-0.sql
+MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
 default: all
 
 test: create 
@@ -70,8 +71,13 @@ test: create
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
-	@ echo "* Adding session tables to '${TEST_DBNAME}'"
-	psql -q -d ${TEST_DBNAME} -f launchpad_session.sql
+	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
+	@if [ "$$((`psql -l | grep -w ${TEST_SESSION_DBNAME} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${TEST_SESSION_DBNAME} | grep : | cat ; \
+	fi
+	${CREATEDB} template1 ${TEST_SESSION_DBNAME} ; \
+	createlang plpgsql ${TEST_SESSION_DBNAME}; \
+	psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql ; \
 
 dev: test
 	@ echo "* Creating ${DBNAME}"

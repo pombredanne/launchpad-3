@@ -8,10 +8,12 @@ import datetime
 import pytz
 import unittest
 
+from bzrlib.tests import adapt_tests, TestScenarioApplier
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -21,12 +23,13 @@ from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
-from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -99,16 +102,23 @@ class TestRunWithLogin(TestCaseWithFactory):
 
 
 class BranchPullerTest(TestCaseWithFactory):
-    """Tests for the implementation of `IBranchPuller`."""
+    """Tests for the implementation of `IBranchPuller`.
 
-    layer = DatabaseFunctionalLayer
+    :ivar frontend: A nullary callable that returns an object that implements
+        getPullerEndpoint, getLaunchpadObjectFactory and getBranchSet.
+    """
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.storage = BranchPuller(None, None)
+        frontend = self.frontend()
+        self.storage = frontend.getPullerEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branch_set = frontend.getBranchSet()
+        self.getLastActivity = frontend.getLastActivity
 
     def assertFaultEqual(self, expected_fault, observed_fault):
         """Assert that `expected_fault` equals `observed_fault`."""
+        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
         self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
         self.assertEqual(
             expected_fault.faultString, observed_fault.faultString)
@@ -151,7 +161,7 @@ class BranchPullerTest(TestCaseWithFactory):
         """Return a branch ID that isn't in the database."""
         branch_id = 999
         # We can't be sure until the sample data is gone.
-        self.assertIs(getUtility(IBranchSet).get(branch_id), None)
+        self.assertIs(self.branch_set.get(branch_id), None)
         return branch_id
 
     def test_startMirroring(self):
@@ -306,8 +316,7 @@ class BranchPullerTest(TestCaseWithFactory):
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
-        activity = getUtility(IScriptActivitySet).getLastActivity(
-            'test-recordsuccess')
+        activity = self.getLastActivity('test-recordsuccess')
         self.assertEqual('vostok', activity.hostname)
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
@@ -361,11 +370,11 @@ class BranchPullerTest(TestCaseWithFactory):
 class BranchPullQueueTest(TestCaseWithFactory):
     """Tests for the pull queue methods of `IBranchPuller`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
         super(BranchPullQueueTest, self).setUp()
-        self.storage = BranchPuller(None, None)
+        frontend = self.frontend()
+        self.storage = frontend.getPullerEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         expected_hosted = [
@@ -380,20 +389,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
             expected_mirrored, self.storage.getBranchPullQueue('MIRRORED'))
         self.assertEqual(
             expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
-
-    def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
 
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches
@@ -425,7 +420,7 @@ class BranchPullQueueTest(TestCaseWithFactory):
         # If there's a default stacked branch for the project that a branch is
         # on, then _getBranchPullInfo returns (id, url, unique_name,
         # default_branch_unique_name).
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         series = removeSecurityProxy(product.development_focus)
         default_branch = self.factory.makeBranch(product=product)
@@ -459,11 +454,12 @@ class BranchPullQueueTest(TestCaseWithFactory):
 class BranchFileSystemTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchFileSystem`."""
 
-    layer = DatabaseFunctionalLayer
-
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
-        self.branchfs = BranchFileSystem(None, None)
+        frontend = self.frontend()
+        self.branchfs = frontend.getFilesystemEndpoint()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branch_set = frontend.getBranchSet()
 
     def assertFaultEqual(self, faultCode, faultString, fault):
         """Assert that `fault` has the passed-in attributes."""
@@ -479,11 +475,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, owner.name, product.name, name)
         login(ANONYMOUS)
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(product, branch.product)
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
@@ -492,11 +489,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch_id = self.branchfs.createBranch(
             owner.id, owner.name, '+junk', name)
         login(ANONYMOUS)
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
         self.assertEqual(None, branch.product)
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
+        self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -558,9 +556,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
-        # branches (i.e. owned by us or by a team we are on), we get the
-        # database id of the branch, and a flag saying that we can write to
-        # that branch.
+        # branches, we get the database id of the branch, and a flag saying
+        # that we can write to that branch.
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
         branch_id, permissions = self.branchfs.getBranchInformation(
@@ -568,6 +565,31 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual(branch.id, branch_id)
         self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_team_owned(self):
+        # When we get the branch information for a hosted branch owned by one
+        # of our teams, we get the database id of the branch, and a flag
+        # saying that we can write to that branch.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_team_unowned(self):
+        # We only have read-only access to hosted branches owned by other
+        # teams.
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        branch_id, permissions = self.branchfs.getBranchInformation(
+            requester.id, branch.owner.name, branch.product.name, branch.name)
+        login(ANONYMOUS)
+        self.assertEqual(branch.id, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
@@ -653,20 +675,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertEqual((branch.id, READ_ONLY), branch_info)
 
-    def _enableDefaultStacking(self, product):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we add the just-created product to allow_default_stacking so we can
-        # test stacking with private branches.
-        self.pushConfig(
-            'codehosting', allow_default_stacking='%s,%s' % (
-                config.codehosting.allow_default_stacking, product.name))
-
-    def _makeProductWithStacking(self):
-        product = self.factory.makeProduct()
-        self._enableDefaultStacking(product)
-        return product
-
     def _makeProductWithDevFocus(self, private=False):
         """Make a stacking-enabled product with a development focus.
 
@@ -674,7 +682,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             private.
         :return: The new Product and the new Branch.
         """
-        product = self._makeProductWithStacking()
+        product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product, private=private)
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
@@ -713,8 +721,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
         requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
         branch = self.branchfs.getDefaultStackedOnBranch(
-            requester.id, 'firefox')
+            requester.id, product.name)
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_no_product(self):
@@ -762,5 +771,65 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch, 'next_mirror_time', UTC_NOW)
 
 
+class LaunchpadDatabaseFrontend:
+    """A 'frontend' to Launchpad's branch services.
+
+    A 'frontend' here means something that provides access to the various
+    XML-RPC endpoints, object factories and 'database' methods needed to write
+    unit tests for XML-RPC endpoints.
+
+    All of these methods are gathered together in this class so that
+    alternative implementations can be provided, see `InMemoryFrontend`.
+    """
+
+    def getFilesystemEndpoint(self):
+        """Return the branch filesystem endpoint for testing."""
+        return BranchFileSystem(None, None)
+
+    def getPullerEndpoint(self):
+        """Return the branch puller endpoint for testing."""
+        return BranchPuller(None, None)
+
+    def getLaunchpadObjectFactory(self):
+        """Return the Launchpad object factory for testing.
+
+        See `LaunchpadObjectFactory`.
+        """
+        return LaunchpadObjectFactory()
+
+    def getBranchSet(self):
+        """Return an implementation of `IBranchSet`.
+
+        Tests should use this to get the branch set they need, rather than
+        using 'getUtility(IBranchSet)'. This allows in-memory implementations
+        to work correctly.
+        """
+        return getUtility(IBranchSet)
+
+    def getLastActivity(self, activity_name):
+        """Get the last script activity with 'activity_name'."""
+        return getUtility(IScriptActivitySet).getLastActivity(activity_name)
+
+
+class PullerEndpointScenarioApplier(TestScenarioApplier):
+
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': DatabaseFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
+
+
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite()
+    puller_tests = unittest.TestSuite(
+        [loader.loadTestsFromTestCase(BranchPullerTest),
+         loader.loadTestsFromTestCase(BranchPullQueueTest),
+         loader.loadTestsFromTestCase(BranchFileSystemTest),
+         ])
+    adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
+    suite.addTests(
+        map(loader.loadTestsFromTestCase, [TestRunWithLogin]))
+    return suite
