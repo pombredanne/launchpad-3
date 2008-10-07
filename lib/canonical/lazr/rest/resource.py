@@ -3,6 +3,7 @@
 """Base classes for HTTP resources."""
 
 __metaclass__ = type
+
 __all__ = [
     'BatchingResourceMixin',
     'Collection',
@@ -19,6 +20,7 @@ __all__ = [
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
     ]
+
 
 import copy
 from cStringIO import StringIO
@@ -254,8 +256,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        adapters = getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)
+        adapters = list(
+            getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
     def toWADL(self, template_name="wadl-resource.pt"):
@@ -465,9 +467,13 @@ class CustomOperationResourceMixin:
         :return: The result of the operation: either a string or an
         object that needs to be serialized to JSON.
         """
-        operation = getMultiAdapter((self.context, self.request),
-                                    IResourceGETOperation,
-                                    name=operation_name)
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
         return operation()
 
     def handleCustomPOST(self, operation_name):
@@ -1168,6 +1174,9 @@ class ServiceRootResource(HTTPResource):
         for registration in site_manager.registrations():
             provided = registration.provided
             if IInterface.providedBy(provided):
+                # XXX sinzui 2008-09-29 bug=276079:
+                # Top-level collections need a marker interface
+                # so that so top-level utilities are explicit.
                 if (provided.isOrExtends(ICollection)
                      and ICollection.implementedBy(registration.value)):
                     try:
@@ -1175,8 +1184,12 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
+                    entry_schema = registration.value.entry_schema
+                    if isinstance(entry_schema, property):
+                        # It's not a top-level resource.
+                        continue
                     adapter = EntryAdapterUtility.forEntryInterface(
-                        registration.value.entry_schema)
+                        entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         # Now, collect the top-level entries.

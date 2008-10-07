@@ -8,7 +8,7 @@ __all__ = [
     'test_tales',
     ]
 
-from zope.app.pagetemplate.engine import Engine
+from zope.app.pagetemplate.engine import TrustedEngine
 
 
 class Context:
@@ -25,6 +25,10 @@ def test_tales(expression, **kw):
     :param kw: all variables that are defined in the context.
     :return: the evaluated expression.
     """
-    compiled_tales = Engine.compile(expression)
+    # XXX sinzui 2008-09-29 bug=276120:
+    # We need to review the security policy regarding launchpad use of
+    # tales. The non-trusted pagetemplate.engine.Engine will rightly
+    # fail if an object is accessed or imported outside of page's namespace.
+    compiled_tales = TrustedEngine.compile(expression)
     return compiled_tales(Context(**kw))
 

@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 
+
 __all__ = [
     'DisconnectionError',
     'RequestExpired',
