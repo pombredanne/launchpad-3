@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = []
 
-import os.path
 import subprocess
 import sys
 from tempfile import NamedTemporaryFile
