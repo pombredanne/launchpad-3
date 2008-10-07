@@ -69,14 +69,16 @@ class PullerWorkerMixin:
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
                          default_stacked_on_url=None, protocol=None,
-                         oops_prefix=None):
+                         oops_prefix=None, policy=None):
         """Anonymous creation method for PullerWorker."""
         if protocol is None:
             protocol = PullerWorkerProtocol(StringIO())
         if oops_prefix is None:
             oops_prefix = ''
         if branch_type is None:
-            opener = BranchMirrorer(AcceptAnythingPolicy())
+            if policy is None:
+                policy = AcceptAnythingPolicy()
+            opener = BranchMirrorer(policy)
         else:
             opener = None
         return PullerWorker(

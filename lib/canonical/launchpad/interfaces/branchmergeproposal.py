@@ -19,8 +19,8 @@ __all__ = [
     'WrongBranchMergeProposal',
     ]
 
-from zope.app.event.interfaces import IObjectEvent
 from zope.interface import Attribute, Interface
+from zope.lifecycleevent.interfaces import IObjectEvent
 from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _

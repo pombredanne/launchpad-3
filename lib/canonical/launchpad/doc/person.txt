@@ -361,7 +361,7 @@ PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from zope.app.event.interfaces import IObjectCreatedEvent
+    >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
