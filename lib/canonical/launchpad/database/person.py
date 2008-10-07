@@ -2049,7 +2049,7 @@ class Person(
         query = ['POFileTranslator.person = %s' % sqlvalues(self),
                  'POFileTranslator.pofile = POFile.id',
                  'POFile.language = Language.id',
-                 "Language.code != 'en'"]
+                 "Language.code <> 'en'"]
         history = POFileTranslator.select(
             ' AND '.join(query),
             prejoins=[

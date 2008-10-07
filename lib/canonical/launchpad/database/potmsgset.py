@@ -15,7 +15,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
+    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet, ITranslationImporter,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.launchpad.helpers import shortlist
@@ -26,6 +26,24 @@ from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
+
+
+# Msgids that indicate translation credit messages, and their
+# contexts.
+credit_message_ids = {
+    # Regular gettext credits messages.
+    u'translation-credits': None,
+    u'translator-credits': None,
+    u'translator_credits': None,
+
+    # KDE credits messages.
+    u'Your emails': 'EMAIL OF TRANSLATORS',
+    u'Your names': 'NAME OF TRANSLATORS',
+
+    # Old KDE credits messages.
+    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
+    u'_: NAME OF TRANSLATORS\nYour names': None,
+    }
 
 
 class POTMsgSet(SQLBase):
@@ -62,9 +80,8 @@ class POTMsgSet(SQLBase):
             return self._cached_singular_text
 
         # Singular text is stored as an "English translation."
-        english_language = getUtility(ILanguageSet)['en']
         translation_message = self.getCurrentTranslationMessage(
-            english_language)
+            getUtility(ILaunchpadCelebrities).english)
         if translation_message is not None:
             msgstr0 = translation_message.msgstr0
             if msgstr0 is not None:
@@ -358,6 +375,11 @@ class POTMsgSet(SQLBase):
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
+        """Make the given translation message the current one."""
+        if pofile.language.code == 'en':
+            # We're changing our own singular_text, so de-cache it.
+            self._cached_singular_text = None
+
         current_message = self.getCurrentTranslationMessage(
             pofile.language)
         if is_imported:
@@ -693,21 +715,11 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
-        if self.msgid_singular is None:
+        if self.msgid_singular not in credit_message_ids:
             return False
-        regular_credits = self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits' ]
-        old_kde_credits = self.msgid_singular.msgid in [
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'_: NAME OF TRANSLATORS\nYour names'
-            ]
-        kde_credits = ((self.msgid_singular.msgid == u'Your emails' and
-                        self.context == u'EMAIL OF TRANSLATORS') or
-                       (self.msgid_singular.msgid == u'Your names' and
-                        self.context == u'NAME OF TRANSLATORS'))
-        return (regular_credits or old_kde_credits or kde_credits)
+
+        expected_context = credit_message_ids[self.msgid_singular]
+        return expected_context is None or self.context == expected_context
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""

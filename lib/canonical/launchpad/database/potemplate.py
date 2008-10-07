@@ -357,7 +357,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See `IPOTemplate`."""
         return Language.select("POFile.language = Language.id AND "
-                               "Language.code != 'en' AND "
+                               "Language.code <> 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],

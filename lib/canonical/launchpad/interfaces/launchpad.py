@@ -107,6 +107,7 @@ class ILaunchpadCelebrities(Interface):
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
+    english = Attribute("The English language.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")

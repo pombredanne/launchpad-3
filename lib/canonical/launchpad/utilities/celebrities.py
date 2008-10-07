@@ -85,6 +85,7 @@ class LaunchpadCelebrities:
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
+    english = CelebrityDescriptor(ILanguageSet, 'English')
     rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
     bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')

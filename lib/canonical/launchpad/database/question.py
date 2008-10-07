@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Question models."""
@@ -32,8 +32,8 @@ from storm.store import Store
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
-    ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
-    IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
+    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IProductSet,
+    IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -642,7 +642,7 @@ class QuestionSet:
         if datecreated is None:
             datecreated = UTC_NOW
         if language is None:
-            language = getUtility(ILanguageSet)['en']
+            language = getUtility(ILaunchpadCelebrities).english
         question = Question(
             title=title, description=description, owner=owner,
             product=product, distribution=distribution, language=language,
@@ -1237,7 +1237,7 @@ class QuestionTargetMixin:
         languages = set()
         for contact in self.answer_contacts:
             languages |= set(contact.languages)
-        languages.add(getUtility(ILanguageSet)['en'])
+        languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
         return languages

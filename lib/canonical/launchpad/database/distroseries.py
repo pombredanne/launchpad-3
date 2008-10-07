@@ -557,12 +557,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the distribution that are visible and not English
         langidset = set(
             language.id for language in Language.select('''
-                Language.visible = TRUE AND
+                Language.visible IS TRUE AND
                 Language.id = POFile.language AND
-                Language.code != 'en' AND
+                Language.code <> 'en' AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distroseries = %s AND
-                POTemplate.iscurrent = TRUE
+                POTemplate.iscurrent IS TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
