@@ -13,9 +13,8 @@ __all__ = [
     ]
 
 from apt_pkg import ParseSrcDepends
-from zope.component import getUtility
+from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
-from zope.app import zapi
 
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -167,8 +166,8 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         # mapped in the Packaging table
         raw_field = IPackaging['productseries']
         bound_field = raw_field.bind(self.context)
-        self.productseries_widget = zapi.getViewProviding(bound_field,
-            IInputWidget, self.request)
+        self.productseries_widget = getMultiAdapter(
+            (bound_field, self.request), IInputWidget)
         self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
