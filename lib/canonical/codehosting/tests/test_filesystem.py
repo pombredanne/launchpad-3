@@ -19,7 +19,7 @@ from canonical.codehosting.tests.servers import make_launchpad_server
 class TestBranchIDToPath(unittest.TestCase):
     """Tests for branch_id_to_path."""
 
-    def test_branchIDToPath(self):
+    def test_branch_id_to_path(self):
         # branch_id_to_path converts an integer branch ID into a path of four
         # segments, with each segment being a hexadecimal number.
         self.assertEqual('00/00/00/00', branch_id_to_path(0))
@@ -32,6 +32,9 @@ class TestBranchIDToPath(unittest.TestCase):
 
 
 class TestFilesystem(TestCaseWithTransport):
+    # XXX: JonathanLange 2008-10-07 bug=267013: Many of these tests duplicate
+    # tests in test_branchfs and test_transport. We should review the tests
+    # and remove the ones that aren't needed.
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
