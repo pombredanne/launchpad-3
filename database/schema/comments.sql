@@ -931,6 +931,7 @@ COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff f
 COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
 COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
 COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+COMMENT ON COLUMN PackageDiff.status IS 'Request status, PENDING(0) when created then goes to COMPLETED(1) or FAILED(2), both terminal status where diff_content and date_fulfilled will contain the results of the request.';
 
 
 -- PackageUpload
