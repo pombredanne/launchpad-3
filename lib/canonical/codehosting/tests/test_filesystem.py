@@ -14,7 +14,6 @@ from bzrlib.urlutils import escape
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.servers import make_launchpad_server
-from canonical.testing import TwistedLayer
 
 
 class TestBranchIDToPath(unittest.TestCase):
@@ -33,8 +32,6 @@ class TestBranchIDToPath(unittest.TestCase):
 
 
 class TestFilesystem(TestCaseWithTransport):
-
-    layer = TwistedLayer
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
