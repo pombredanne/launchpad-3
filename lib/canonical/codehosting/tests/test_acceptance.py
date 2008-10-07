@@ -17,7 +17,6 @@ from bzrlib.errors import (
     LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
@@ -31,12 +30,12 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import TwistedAppServerLayer
+from canonical.testing import ZopelessAppServerLayer
 
 
 class SSHTestCase(ServerTestCase):
 
-    layer = TwistedAppServerLayer
+    layer = ZopelessAppServerLayer
     server = None
 
     def setUp(self):
@@ -49,10 +48,6 @@ class SSHTestCase(ServerTestCase):
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
-
-    def tearDown(self):
-        TestCaseWithTransport.tearDown(self)
-        return ServerTestCase.tearDown(self)
 
     def assertBranchesMatch(self, local_url, remote_url):
         """Assert that two branches have the same last revision."""
@@ -450,14 +445,13 @@ class AcceptanceTests(SSHTestCase):
             (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
-    def test_cant_push_to_existing_hosted_branch_with_revisions(self):
-        # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
+    def disable_test_cant_push_to_existing_hosted_branch_with_revisions(self):
+        # XXX: JonathanLange 2007-08-07, We shouldn't be able to push to
         # branches that have revisions in the database but not actual files:
         # it's a pathological case.
         #
         # However, at the moment we don't provide any checking for this. We
         # should in the future. Until then, this test is disabled.
-        return
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         self.addRevisionToBranch(branch)
@@ -546,7 +540,9 @@ class SmartserverTests(SSHTestCase):
         error = self.assertTransportRaises(
             PermissionDenied,
             self.push, self.local_branch_path, remote_url)
-        self.assertIn("Project 'no-such-product' does not exist.", str(error))
+        message = "Project 'no-such-product' does not exist."
+        self.assertTrue(
+            message in str(error), '%r not in %r' % (message, str(error)))
 
 
 def make_server_tests(base_suite, servers):
