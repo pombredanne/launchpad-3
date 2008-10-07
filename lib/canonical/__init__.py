@@ -12,4 +12,4 @@
 import warnings
 filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
 warnings.filterwarnings(
-    'ignore', ".*.*", category=DeprecationWarning)
+    'ignore', filter_pattern, category=DeprecationWarning)
