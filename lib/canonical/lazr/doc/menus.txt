@@ -848,8 +848,8 @@ TAL namespace 'menu' is used to query the state of a menu and to iterate
 over the links. The TALES takes the form of 'view/menu:navigation'.
 
     >>> from zope.interface import classImplements
-    >>> from zope.app.traversing.adapters import DefaultTraversable
-    >>> from zope.app.traversing.interfaces import IPathAdapter, ITraversable
+    >>> from zope.traversing.adapters import DefaultTraversable
+    >>> from zope.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
     >>> from canonical.launchpad.webapp.tales import MenuAPI
     >>> from canonical.lazr.testing.menus import summarise_tal_links
