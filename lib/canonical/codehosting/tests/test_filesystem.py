@@ -17,22 +17,6 @@ from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import make_launchpad_server
 from canonical.testing import TwistedLayer
-from canonical.twistedsupport import defer_to_thread
-
-
-def wait_for_disconnect(method):
-    """Run 'method' and wait for it to fully disconnect from the server.
-
-    Expects 'method' to be a method on an object that has a 'server' attribute
-    with a 'runAndWaitForDisconnect' method. In practice, this means a subclass
-    of `ServerTestCase`.
-    """
-    def decorated_function(self, *args, **kwargs):
-        return self.server.runAndWaitForDisconnect(
-            method, self, *args, **kwargs)
-    decorated_function.__doc__ = method.__doc__
-    decorated_function.__name__ = method.__name__
-    return decorated_function
 
 
 class TestBranchIDToPath(unittest.TestCase):
@@ -166,7 +150,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         expected_url = transport.clone('.bzr').base
         self.assertEqual(expected_url, found_bzrdir.transport.base)
 
-    @wait_for_disconnect
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
@@ -176,7 +159,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/firefox/banana'))
         self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
 
-    @wait_for_disconnect
     def test_bzr_backup_directory_inside_branch(self):
         # Bazaar sometimes needs to create .bzr.backup directories directly
         # underneath the branch directory. Thus, we allow the creation of
@@ -189,7 +171,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(
             transport.has('~testuser/firefox/banana/.bzr.backup'))
 
-    @wait_for_disconnect
     def test_backup_bzr_directory_inside_branch(self):
         # Bazaar sometimes needs to create backup.bzr directories directly
         # underneath the branch directory. This is alternative name for the
@@ -210,7 +191,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.PermissionDenied,
             transport.mkdir, '~testuser/+junk/banana/republic')
 
-    @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
         # Users can only create Bazaar control directories (e.g. '.bzr')
         # inside a branch. Files are not allowed.
@@ -220,7 +200,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.PermissionDenied,
             transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
 
-    @wait_for_disconnect
     def test_rename_to_non_bzr_directory_fails(self):
         # Users cannot create an allowed directory (e.g. '.bzr' or
         # '.bzr.backup') and then rename it to something that's not allowed
@@ -253,7 +232,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('branch/.bzr')
         return transport.clone('branch/.bzr')
 
-    @wait_for_disconnect
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
@@ -265,7 +243,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertRaises(
             (errors.FileExists, IOError), transport.rename, 'dir1', 'dir2')
 
-    @wait_for_disconnect
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
         transport = self._getBzrDirTransport()
@@ -274,7 +251,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.rename('dir1', 'dir2')
         self.assertEqual(['dir2'], transport.list_dir('.'))
 
-    @wait_for_disconnect
     def test_make_directory_twice(self):
         # The transport raises a `FileExists` error if we try to make a
         # directory that already exists.
@@ -282,7 +258,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('dir1')
         self.assertRaises(errors.FileExists, transport.mkdir, 'dir1')
 
-    @wait_for_disconnect
     def test_url_escaping(self):
         # Transports accept and return escaped URL segments. The literal path
         # we use should be preserved, even if it can be unescaped itself.
