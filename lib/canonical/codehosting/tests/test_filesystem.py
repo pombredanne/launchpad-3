@@ -13,8 +13,6 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import escape
 
 from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import make_launchpad_server
 from canonical.testing import TwistedLayer
 
@@ -34,9 +32,18 @@ class TestBranchIDToPath(unittest.TestCase):
         self.assertEqual('00/00/1a/4b', branch_id_to_path(6731))
 
 
-class TestFilesystem(ServerTestCase, TestCaseWithTransport):
+class TestFilesystem(TestCaseWithTransport):
 
     layer = TwistedLayer
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.server = make_launchpad_server()
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
 
     def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
@@ -274,11 +281,4 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
 
 def test_suite():
-    # Parametrize the tests so they run against the SFTP server and a Bazaar
-    # smart server. This ensures that both services provide the same
-    # behaviour.
-    servers = [make_launchpad_server]
-    adapter = CodeHostingTestProviderAdapter(servers)
-    loader = unittest.TestLoader()
-    filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
-    return adapt_suite(adapter, filesystem_suite)
+    return unittest.TestLoader().loadTestsFromName(__name__)
