@@ -99,17 +99,28 @@ class SalesforceVoucherProxy:
                            transport=self.xmlrpc_transport,
                            allow_none=True)
 
+    def _getUserIdentitifier(self, user):
+        """Return the user's openid_identifier."""
+        # XXX sinzui 2008-09-12 bug=236193:
+        # SalesForce should be using the identity URL from
+        # IOpenIDPersistentIdentity, not the identifier which
+        # is technically not guaranteed to be permanent. This
+        # should be fixed during migration.
+        from zope.security.proxy import removeSecurityProxy
+        return removeSecurityProxy(user.account).openid_identifier
+
     @fault_mapper
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        vouchers = self.server.getUnredeemedVouchers(
-            user.openid_identifier)
+        identifier = self._getUserIdentitifier(user)
+        vouchers = self.server.getUnredeemedVouchers(identifier)
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        vouchers = self.server.getAllVouchers(user.openid_identifier)
+        identifier = self._getUserIdentitifier(user)
+        vouchers = self.server.getAllVouchers(identifier)
         return [Voucher(voucher) for voucher in vouchers]
 
     @fault_mapper
@@ -129,8 +140,9 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
+        identifier = self._getUserIdentitifier(user)
         status = self.server.redeemVoucher(voucher_id,
-                                           user.openid_identifier,
+                                           identifier,
                                            project.id,
                                            project.name)
         return status
@@ -148,8 +160,11 @@ class SalesforceVoucherProxy:
         from zope.security.proxy import removeSecurityProxy
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(recipient.preferredemail)
+        admin_identifier = self._getUserIdentitifier(admin)
+        approver_identifier = self._getUserIdentitifier(approver)
+        recipient_identifier = self._getUserIdentitifier(recipient)
         voucher_id = self.server.grantVoucher(
-            admin.openid_identifier, approver.openid_identifier,
-            recipient.openid_identifier, recipient.name,
+            admin_identifier, approver_identifier,
+            recipient_identifier, recipient.name,
             naked_email.email, term_months)
         return voucher_id

@@ -3,7 +3,7 @@
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
 
-    <include package="zope.app.mail"/>
+    <include package="zope.sendmail"/>
 
     <mail:stubMailer 
         name="stub" from_addr="root@localhost" to_addr="root@localhost"

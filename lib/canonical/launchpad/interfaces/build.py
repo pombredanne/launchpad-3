@@ -230,14 +230,6 @@ class IBuild(Interface):
         "The PackageUpload for this build, or None if there is "
         "no build.")
 
-    component_dependencies = Attribute(
-        "Return a dictionary which maps a component name to a list of "
-        "component names it could depend of.")
-
-    ogre_components = Attribute(
-        "The components this build is allowed to use. It returns a string "
-        "that can be used directly at the end of sources.list lines.")
-
     def retry():
         """Restore the build record to its initial state.
 
