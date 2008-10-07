@@ -32,7 +32,7 @@ from canonical.launchpad.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, iter_split,
     run_with_login)
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -456,8 +456,6 @@ class BranchPullQueueTest(TestCaseWithFactory):
 
 class BranchFileSystemTest(TestCaseWithFactory):
     """Tests for the implementation of `IBranchFileSystem`."""
-
-    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(BranchFileSystemTest, self).setUp()
@@ -990,20 +988,42 @@ class TestIterateSplit(TestCase):
 
 
 class LaunchpadDatabaseFrontend:
+    """A 'frontend' to Launchpad's branch services.
+
+    A 'frontend' here means something that provides access to the various
+    XML-RPC endpoints, object factories and 'database' methods needed to write
+    unit tests for XML-RPC endpoints.
+
+    All of these methods are gathered together in this class so that
+    alternative implementations can be provided, see `InMemoryFrontend`.
+    """
 
     def getFilesystemEndpoint(self):
+        """Return the branch filesystem endpoint for testing."""
         return BranchFileSystem(None, None)
 
     def getPullerEndpoint(self):
+        """Return the branch puller endpoint for testing."""
         return BranchPuller(None, None)
 
     def getLaunchpadObjectFactory(self):
+        """Return the Launchpad object factory for testing.
+
+        See `LaunchpadObjectFactory`.
+        """
         return LaunchpadObjectFactory()
 
     def getBranchSet(self):
+        """Return an implementation of `IBranchSet`.
+
+        Tests should use this to get the branch set they need, rather than
+        using 'getUtility(IBranchSet)'. This allows in-memory implementations
+        to work correctly.
+        """
         return getUtility(IBranchSet)
 
     def getLastActivity(self, activity_name):
+        """Get the last script activity with 'activity_name'."""
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
 
 
@@ -1013,7 +1033,7 @@ class PullerEndpointScenarioApplier(TestScenarioApplier):
         ('db', {'frontend': LaunchpadDatabaseFrontend,
                 'layer': DatabaseFunctionalLayer}),
         ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': DatabaseFunctionalLayer}),
+                      'layer': FunctionalLayer}),
         ]
 
 
