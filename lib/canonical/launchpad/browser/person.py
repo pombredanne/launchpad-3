@@ -8,6 +8,7 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
+    'EmailToPersonView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -4865,3 +4866,54 @@ class TeamEditLocationView(LaunchpadView):
 def archive_to_person(archive):
     """Adapts an `IArchive` to an `IPerson`."""
     return IPerson(archive.owner)
+
+
+class IEmailToPerson(Interface):
+    """Schema for contacting a user via email through Launchpad."""
+
+    from_ = TextLine(
+        title=_('From'), required=True, readonly=False)
+
+    subject = TextLine(
+        title=_('Subject'), required=True, readonly=False)
+
+    message = Text(
+        title=_('Message'), required=True, readonly=False)
+
+
+class EmailToPersonView(LaunchpadFormView):
+    """The 'Contact this user' page."""
+
+    schema = IEmailToPerson
+    field_names = ['subject', 'message']
+    custom_widget('subject', TextWidget, displayWidth=60)
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The field needing special set up is the 'From' fields, which contains
+        a vocabulary of the user's preferred (first) and validated
+        (subsequent) email addresses.
+        """
+        super(EmailToPersonView, self).setUpFields()
+        usable_addresses = [self.user.preferredemail]
+        usable_addresses.extend(self.user.validatedemails)
+        terms = [SimpleTerm(email, email.email) for email in usable_addresses]
+        field = Choice(__name__='field.from_',
+                       title=_('From'),
+                       source=SimpleVocabulary(terms),
+                       default=terms[0].value)
+        self.form_fields += FormFields(field)
+
+    @property
+    def label(self):
+        return 'Contact ' + self.context.displayname
+
+    @action(_('Send'), name='send')
+    def action_send(self, action, data):
+        """Send an email to the user."""
+        self.next_url = self.action_url
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
