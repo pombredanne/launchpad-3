@@ -307,6 +307,31 @@ The second one, executes the import.
     ...
 
 
+=== Translation file names ===
+
+A callback tells the translations import queue what to do with the
+file names found in the tarball:
+
+    >>> from canonical.launchpad.database.sourcepackagerelease import (
+    ...     _filter_ubuntu_translation_file)
+
+Anything not in the "source/" directory is ignored.
+
+    >>> print _filter_ubuntu_translation_file('foo/bar.po')
+    None
+
+Files in source/ have that directory stripped off.
+
+    >>> print _filter_ubuntu_translation_file('source/bar.po')
+    bar.po
+
+Files in source/debian/* are ignored.  They are generally debconf
+translations, unused in Ubuntu.
+
+    >>> print _filter_ubuntu_translation_file('source/debian/bar.po')
+    None
+
+
 == Package sizes ==
 
 The size of a package can be obtained via a private SourcePackageRelease

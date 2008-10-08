@@ -258,7 +258,6 @@ def GeneralFormViewFactory(name, schema, label, permission, layer,
                                permission))
     if layer is None:
         layer = IBrowserRequest
-
     sm = zapi.getGlobalSiteManager()
-    sm.provideAdapter((for_, layer), Interface, name, class_)
+    sm.registerAdapter(class_, (for_, layer), Interface, name)
 

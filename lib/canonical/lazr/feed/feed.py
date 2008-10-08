@@ -25,7 +25,7 @@ import time
 from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.app.datetimeutils import rfc1123_date
+from zope.datetime import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
