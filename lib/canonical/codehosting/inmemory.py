@@ -424,6 +424,8 @@ class FakeBranchFilesystem:
             return
         product = self._product_set.getByName(product_name)
         default_branch = product.default_stacked_on_branch
+        if default_branch is None:
+            return
         return (CONTROL_TRANSPORT,
                 {'default_stack_on': '/' + default_branch.unique_name}, '')
 

@@ -969,6 +969,19 @@ class BranchFileSystemTest(TestCaseWithFactory):
              {'default_stack_on': '/' + branch.unique_name}, ''),
             translation)
 
+    def test_translatePath_control_directory_no_stacked_set(self):
+        # When there's no default stacked-on branch set for the project, we
+        # don't even bother translating control directory paths.
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: This should do whatever test_translatePath_no_such_branch does.
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
 
 class TestIterateSplit(TestCase):
     """Tests for iter_split."""
