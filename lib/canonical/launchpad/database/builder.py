@@ -30,7 +30,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.components.archivedependencies import (
-    getSourcesListForBuilding)
+    get_sources_list_for_building)
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import makePoolPath
 from canonical.launchpad.validators.person import validate_public_person
@@ -346,7 +346,8 @@ class Builder(SQLBase):
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
-        args['archives'] = getSourcesListForBuilding(build_queue_item.build)
+        args['archives'] = get_sources_list_for_building(
+            build_queue_item.build)
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (build_queue_item.build.pocket.name.lower())

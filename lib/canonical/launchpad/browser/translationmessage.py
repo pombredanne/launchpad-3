@@ -25,7 +25,7 @@ import urllib
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.app import datetimeutils
+from zope import datetime as zope_datetime
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -439,9 +439,9 @@ class BaseTranslationView(LaunchpadView):
                 # created. We use it to detect whether someone else updated
                 # the translation we are working on in the elapsed time
                 # between the form loading and its later submission.
-                self.lock_timestamp = datetimeutils.parseDatetimetz(
+                self.lock_timestamp = zope_datetime.parseDatetimetz(
                     self.request.form.get('lock_timestamp', u''))
-            except datetimeutils.DateTimeError:
+            except zope_datetime.DateTimeError:
                 # invalid format. Either we don't have the timestamp in the
                 # submitted form or it has the wrong format.
                 raise UnexpectedFormData, (

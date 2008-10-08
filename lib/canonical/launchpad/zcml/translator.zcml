@@ -14,12 +14,12 @@
     </securedutility>
 
     <!-- Translator -->
-    <content class="canonical.launchpad.database.Translator">
+    <class class="canonical.launchpad.database.Translator">
         <allow interface="canonical.launchpad.interfaces.ITranslator" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ITranslator" />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslator"

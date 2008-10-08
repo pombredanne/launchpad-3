@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- BinaryPackageRelease -->
-  <content class="canonical.launchpad.database.BinaryPackageRelease">
+  <class class="canonical.launchpad.database.BinaryPackageRelease">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackageRelease" />
-  </content>
+  </class>
 
   <browser:url
     for="canonical.launchpad.interfaces.IBinaryPackageRelease"
@@ -78,10 +78,10 @@
 
 
   <!-- BinaryPackageReleaseSet -->
-  <content class="canonical.launchpad.database.BinaryPackageReleaseSet">
+  <class class="canonical.launchpad.database.BinaryPackageReleaseSet">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackageReleaseSet" />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
+  </class>
 
 
   <securedutility
