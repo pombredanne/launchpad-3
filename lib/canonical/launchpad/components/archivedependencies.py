@@ -121,17 +121,7 @@ def get_sources_list_for_building(build):
             (build.distribution.main_archive, pocket, primary_components)
             )
 
-    sources_list_lines = []
-    for archive, pocket, components in deps:
-        has_published_binaries = _has_published_binaries(
-            archive, build.distroarchseries, pocket)
-        if not has_published_binaries:
-            continue
-        sources_list_line = _get_binary_sources_list_line(
-            archive, build.distroarchseries, pocket, components)
-        sources_list_lines.append(sources_list_line)
-
-    return sources_list_lines
+    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
 
 
 def get_primary_current_component(build):
@@ -182,4 +172,19 @@ def _get_binary_sources_list_line(archive, distroarchseries, pocket,
 
     suite = distroarchseries.distroseries.name + pocketsuffix[pocket]
     return 'deb %s %s %s' % (url, suite, ' '.join(components))
+
+
+def _get_sources_list_for_dependencies(dependencies, distroarchseries):
+    """ """
+    sources_list_lines = []
+    for archive, pocket, components in dependencies:
+        has_published_binaries = _has_published_binaries(
+            archive, distroarchseries, pocket)
+        if not has_published_binaries:
+            continue
+        sources_list_line = _get_binary_sources_list_line(
+            archive, distroarchseries, pocket, components)
+        sources_list_lines.append(sources_list_line)
+
+    return sources_list_lines
 
