@@ -773,17 +773,31 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
+    def assertCannotTranslate(self, requester, path):
+        """Assert that we cannot translate 'path'."""
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
+    def assertNotFound(self, requester, path):
+        """Assert that the given path cannot be found."""
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Maybe we should distinguish between "I don't know how to
+        # translate /foo" and "there's no branch at /~foo/bar/baz".
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
     def test_translatePath_cannot_translate(self):
         # Sometimes translatePath will not know how to translate a path. When
         # this happens, it returns a Fault saying so, including the path it
         # couldn't translate.
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
-        fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertCannotTranslate(requester, path)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
@@ -851,16 +865,10 @@ class BranchFileSystemTest(TestCaseWithFactory):
              escape(child_path)), translation)
 
     def test_translatePath_no_such_branch(self):
-        # XXX: Maybe we should distinguish between "I don't know how to
-        # translate /foo" and "there's no branch at /~foo/bar/baz".
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
-        fault = self.branchfs.translatePath(requester.id, escape(path))
-        login(ANONYMOUS)
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % escape(path), fault)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_private_branch(self):
         requester = self.factory.makePerson()
@@ -878,23 +886,13 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        # XXX: This should do whatever test_translatePath_no_such_branch does.
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_remote_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeBranch(BranchType.REMOTE)
         path = escape(u'/%s' % branch.unique_name)
-        fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        # XXX: This should do whatever test_translatePath_no_such_branch does.
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_launchpad_services_private(self):
         branch = removeSecurityProxy(self.factory.makeBranch(private=True))
@@ -975,12 +973,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
-        fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        # XXX: This should do whatever test_translatePath_no_such_branch does.
-        self.assertFaultEqual(
-            faults.PathTranslationError.error_code,
-            "Could not translate '%s'." % path, fault)
+        self.assertNotFound(requester, path)
 
 
 class TestIterateSplit(TestCase):
