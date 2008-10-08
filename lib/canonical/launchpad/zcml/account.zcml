@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <content class="canonical.launchpad.database.Account">
+    <class class="canonical.launchpad.database.Account">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IAccountPublic" />
@@ -10,7 +10,7 @@
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccount" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.AccountSet"

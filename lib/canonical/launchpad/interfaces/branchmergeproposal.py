@@ -20,7 +20,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.lifecycleevent.interfaces import IObjectEvent
+from zope.component.interfaces import IObjectEvent
 from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _

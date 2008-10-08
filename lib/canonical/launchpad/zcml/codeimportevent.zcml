@@ -7,9 +7,9 @@
 
   <!-- CodeImportEvent -->
 
-  <content class="canonical.launchpad.database.CodeImportEvent">
+  <class class="canonical.launchpad.database.CodeImportEvent">
     <allow interface="canonical.launchpad.interfaces.ICodeImportEvent" />
-  </content>
+  </class>
 
   <!-- CodeImportEventSet -->
 
@@ -21,8 +21,8 @@
 
   <!-- CodeImportEventToken -->
 
-  <content class="canonical.launchpad.database.CodeImportEventToken">
+  <class class="canonical.launchpad.database.CodeImportEventToken">
     <allow interface="canonical.launchpad.interfaces.ICodeImportEventToken" />
-  </content>
+  </class>
 
 </configure>
