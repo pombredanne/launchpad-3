@@ -34,7 +34,7 @@ import os
 from subprocess import Popen, PIPE
 
 from zope.component import getUtility
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields

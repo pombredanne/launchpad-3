@@ -15,7 +15,7 @@ evolution.
     <h1>Ubuntu packaging</h1>
     ...
     <form method="POST"
-    action="http://localhost:9000/evolution/trunk/+ubuntupkg">
+    action="http://localhost/evolution/trunk/+ubuntupkg">
     ...
     <input type="text" name="ubuntupkg" size="30"
     value="evolution" />

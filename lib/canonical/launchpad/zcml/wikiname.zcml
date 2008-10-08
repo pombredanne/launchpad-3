@@ -4,17 +4,17 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.WikiName">
+    <class class="canonical.launchpad.database.WikiName">
         <allow interface="canonical.launchpad.interfaces.IHasOwner" />
         <allow attributes="id person wiki wikiname url" />
         <require permission="launchpad.Edit"
                  set_schema="canonical.launchpad.interfaces.IWikiName"
                  attributes="destroySelf" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.WikiNameSet">
+    <class class="canonical.launchpad.database.WikiNameSet">
         <allow interface="canonical.launchpad.interfaces.IWikiNameSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.WikiNameSet"

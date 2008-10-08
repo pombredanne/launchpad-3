@@ -130,7 +130,18 @@ redirection is inhibited, the info message changes to one that lets
 them inhibit the redirection (a lower cookie expiry is used, since the
 default is to redirect if no cookie exists):
 
-    >>> beta_browser.addHeader('Cookie', 'inhibit_beta_redirect="1"')
+    # Workaround bug in mechanize where you cannot use the Cookie
+    # header with the CookieJar
+    >>> from mechanize._clientcookie import Cookie
+    >>> cookiejar = (
+    ...     beta_browser.mech_browser._ua_handlers['_cookies'].cookiejar)
+    >>> cookiejar.set_cookie(
+    ...     Cookie(
+    ...         version=0, name='inhibit_beta_redirect', value='1', port=None,
+    ...         port_specified=False, domain='.launchpad.dev', 
+    ...         domain_specified=True, domain_initial_dot=True, path='/', 
+    ...         path_specified=True, secure=False, expires=None, 
+    ...         discard=None, comment=None, comment_url=None, rest={}))
     >>> check(beta_browser.open, 'http://launchpad.dev/')
     >>> print beta_browser.url
     http://launchpad.dev/

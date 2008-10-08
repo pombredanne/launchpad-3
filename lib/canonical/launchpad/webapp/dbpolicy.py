@@ -10,7 +10,7 @@ __all__ = [
 from datetime import datetime, timedelta
 from textwrap import dedent
 
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest

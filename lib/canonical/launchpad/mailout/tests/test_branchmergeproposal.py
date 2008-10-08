@@ -58,7 +58,7 @@ class TestMergeProposalMailing(TestCase):
         bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
-Baz Qux has proposed merging foo into bar.
+Baz Qux has proposed merging lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6.
 
 Whiteboard:
 I think this would be good.
@@ -170,7 +170,7 @@ I think this would be good.
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
-The proposal to merge foo into bar has been updated.
+The proposal to merge lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6 has been updated.
 
     Status: Work in progress => Needs review
 
