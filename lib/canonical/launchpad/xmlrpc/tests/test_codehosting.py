@@ -981,6 +981,32 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         self.assertNotFound(requester, path)
 
+    def test_translatePath_control_directory_private_branch(self):
+        product, branch = self._makeProductWithDevFocus(private=True)
+        branch = removeSecurityProxy(branch)
+        requester = branch.owner
+        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, ''),
+            translation)
+
+    def test_translatePath_control_directory_other_owner(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus()
+        owner = self.factory.makePerson()
+        path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, ''),
+            translation)
+
 
 class TestIterateSplit(TestCase):
     """Tests for iter_split."""
