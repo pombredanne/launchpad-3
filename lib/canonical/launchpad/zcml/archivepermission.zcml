@@ -21,7 +21,7 @@
     <allow attributes="checkAuthenticated componentsForUploader
                        uploadersForComponent packagesForUploader
                        uploadersForPackage queueAdminsForComponent
-                       componentsForQueueAdmin"/>
+                       componentsForQueueAdmin permissionsForPerson"/>
     <require
       permission="launchpad.Edit"
       attributes="newPackageUploader newComponentUploader newQueueAdmin
