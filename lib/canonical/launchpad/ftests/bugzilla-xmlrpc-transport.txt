@@ -145,7 +145,7 @@ so that they are treated as "key: value" pairs.
     is_open: True
     last_change_time: 20080610T16:19:53
     priority: P1
-    product: HeartOfGold
+    product: Marvin
     resolution: FIXED
     severity: normal
     status: RESOLVED
@@ -170,7 +170,7 @@ one bug will be returned (assuming they all exist and are accessible).
     is_open: True
     last_change_time: 20080610T16:19:53
     priority: P1
-    product: HeartOfGold
+    product: Marvin
     resolution: FIXED
     severity: normal
     status: RESOLVED
@@ -270,6 +270,49 @@ returned.
     >>> return_value = server.Launchpad.get_bugs({
     ...     'ids': [1, 2],
     ...     'changed_since': changed_since,
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> len(bug_dicts)
+    0
+
+Specifying a 'products' parameter will cause Launchpad.get_bugs() to
+only return bugs which affect those products.
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'products': ['HeartOfGold'],
+    ...     'permissive': True,
+    ...     })
+
+    >>> bug_dicts = return_value['bugs']
+    >>> assert len(bug_dicts) == 1, "There should only be one bug dict."
+
+    >>> bug_dict = bug_dicts[0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+If both products and ids are specified when calling
+Launchpad.get_bugs(), the union of bugs in (ids, products) will be
+returned.
+
+    >>> return_value = server.Launchpad.get_bugs({
+    ...     'ids': [1],
+    ...     'products': ['HeartOfGold'],
     ...     'permissive': True,
     ...     })
 

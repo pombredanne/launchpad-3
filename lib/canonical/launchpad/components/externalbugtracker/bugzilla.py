@@ -436,7 +436,7 @@ class BugzillaLPPlugin(Bugzilla):
 
         return bug_ids
 
-    def initializeRemoteBugDB(self, bug_ids):
+    def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
         # data.
@@ -454,6 +454,10 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': bug_ids_to_retrieve,
             'permissive': True,
             }
+
+        if products is not None:
+            request_args['products'] = products
+
         response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
