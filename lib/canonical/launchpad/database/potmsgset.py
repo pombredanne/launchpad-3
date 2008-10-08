@@ -15,7 +15,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet, 
+    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.launchpad.helpers import shortlist
@@ -92,6 +92,10 @@ class POTMsgSet(SQLBase):
         # symbolic msgid, but do not cache--an English text may still be
         # imported.
         return self.msgid_singular.msgid
+
+    def clearCachedSingularText(self):
+        """Clear cached result for `singular_text`, if any."""
+        self._cached_singular_text = None
 
     @property
     def plural_text(self):
@@ -376,12 +380,7 @@ class POTMsgSet(SQLBase):
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
         """Make the given translation message the current one."""
-        if pofile.language.code == 'en':
-            # We're changing our own singular_text, so de-cache it.
-            self._cached_singular_text = None
-
-        current_message = self.getCurrentTranslationMessage(
-            pofile.language)
+        current_message = self.getCurrentTranslationMessage(pofile.language)
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
