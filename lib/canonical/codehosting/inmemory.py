@@ -426,6 +426,8 @@ class FakeBranchFilesystem:
         default_branch = product.default_stacked_on_branch
         if default_branch is None:
             return
+        if not self._canRead(requester, default_branch):
+            return
         return (CONTROL_TRANSPORT,
                 {'default_stack_on': '/' + default_branch.unique_name}, '')
 

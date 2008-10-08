@@ -307,8 +307,12 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         default_branch = product.default_stacked_on_branch
         if default_branch is None:
             return
-        return (CONTROL_TRANSPORT,
-                {'default_stack_on': '/' + default_branch.unique_name}, '')
+        try:
+            unique_name = default_branch.unique_name
+        except Unauthorized:
+            return
+        return (
+            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name}, '')
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""

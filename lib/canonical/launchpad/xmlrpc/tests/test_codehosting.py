@@ -975,6 +975,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         self.assertNotFound(requester, path)
 
+    def test_translatePath_control_directory_invisble_branch(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus(private=True)
+        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        self.assertNotFound(requester, path)
+
 
 class TestIterateSplit(TestCase):
     """Tests for iter_split."""
