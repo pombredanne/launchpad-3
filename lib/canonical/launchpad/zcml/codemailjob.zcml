@@ -10,8 +10,8 @@
     <allow interface="canonical.launchpad.interfaces.ICodeMailJobSource" />
   </securedutility>
 
-  <content class="canonical.launchpad.database.CodeMailJob">
+  <class class="canonical.launchpad.database.CodeMailJob">
     <allow attributes="destroySelf run toMessage"/>
-  </content>
+  </class>
 
 </configure>
