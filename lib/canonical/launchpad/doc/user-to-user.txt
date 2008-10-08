@@ -21,13 +21,14 @@ user-to-user contact form to send Bart a message.  Is she allowed to?
     ...     utcdatetime_from_field)
     >>> date = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:37 +0100')
 
-    >>> from canonical.launchpad.interfaces.message import IUserContactBy
-    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    >>> from canonical.launchpad.interfaces.message import (
+    ...     IDirectEmailAuthorization)
+    >>> IDirectEmailAuthorization(anne)._isAllowedAfter(date)
     True
 
     # Similarly, test the implicit date interface, which real code will use.
     # The outcome is the same in this case.
-    >>> IUserContactBy(anne).is_allowed
+    >>> IDirectEmailAuthorization(anne).is_allowed
     True
 
 Launchpad records the event when Anne sends the message to Bart.
@@ -55,7 +56,7 @@ Anne really likes Bart's project, so she sends him another message.
     ...     utcdatetime_from_field)
     >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:20:00 +0100')
 
-    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    >>> IDirectEmailAuthorization(anne)._isAllowedAfter(date)
     True
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -71,7 +72,7 @@ Anne really likes Bart's project, so she sends him another message.
 
 Anne also likes Cris's project, and wants to contact her directly.
 
-    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    >>> IDirectEmailAuthorization(anne)._isAllowedAfter(date)
     True
 
     >>> cris = factory.makePerson('cris@example.com', 'cris')
@@ -89,7 +90,7 @@ Anne also likes Cris's project, and wants to contact her directly.
 Anne is no longer allowed to contact any Launchpad users directly, at least
 until tomorrow.
 
-    >>> IUserContactBy(anne)._isAllowedAfter(date)
+    >>> IDirectEmailAuthorization(anne)._isAllowedAfter(date)
     False
 
 
@@ -147,16 +148,16 @@ to include his full name.  His contact is still recorded correctly.
 
 == Adapters ==
 
-As noticed above, we can adapt from an IPerson to an IUserContactBy.
+As noticed above, we can adapt from an IPerson to an IDirectEmailAuthorization.
 
     >>> from zope.interface.verify import verifyObject
-    >>> adapted = IUserContactBy(anne)
-    >>> verifyObject(IUserContactBy, adapted)
+    >>> adapted = IDirectEmailAuthorization(anne)
+    >>> verifyObject(IDirectEmailAuthorization, adapted)
     True
 
 But adapting from other types fails.
 
-    >>> IUserContactBy(anne.preferredemail)
+    >>> IDirectEmailAuthorization(anne.preferredemail)
     Traceback (most recent call last):
     ...
     TypeError: ('Could not adapt', ...

@@ -5,11 +5,11 @@ __metaclass__ = type
 
 __all__ = [
     'DuplicateMessageId',
+    'IDirectEmailAuthorization',
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
-    'IUserContactBy',
     'IUserToUserEmail',
     'IndexedMessage',
     'InvalidEmailMessage',
@@ -235,7 +235,7 @@ class IUserToUserEmail(Interface):
         required=True, readonly=True)
 
 
-class IUserContactBy(Interface):
+class IDirectEmailAuthorization(Interface):
     """Can a Launchpad user contact another Launchpad user?"""
 
     is_allowed = Bool(

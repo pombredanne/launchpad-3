@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DirectEmailAuthorization',
     'Message',
     'MessageChunk',
     'MessageSet',
@@ -34,8 +35,8 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
 from canonical.launchpad.interfaces.message import (
-    IMessage, IMessageChunk, IMessageSet, IUserContactBy, IUserToUserEmail,
-    InvalidEmailMessage)
+    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageSet,
+    IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.config import as_timedelta
 
@@ -608,10 +609,10 @@ class UserToUserEmail(Storm):
         Store.of(sender).add(self)
 
 
-class UserContactBy:
-    """See `IUserContactBy`."""
+class DirectEmailAuthorization:
+    """See `IDirectEmailAuthorization`."""
 
-    implements(IUserContactBy)
+    implements(IDirectEmailAuthorization)
 
     def __init__(self, sender):
         """Create a `UserContactBy` instance.
@@ -645,7 +646,7 @@ class UserContactBy:
 
     @property
     def is_allowed(self):
-        """See `IUserContactBy`."""
+        """See `IDirectEmailAuthorization`."""
         # Users are only allowed to send X number of messages in a certain
         # period of time.  Both the number of messages and the time period
         # are configurable.
