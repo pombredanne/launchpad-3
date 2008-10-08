@@ -1,7 +1,7 @@
 
 The canonical.database.adapter module provides a Storm store that can
 prevent SQL statements from being executed if a request takes longer
-than length of time to execute, and uses canonical.config for
+than a configured length of time to execute.  It uses canonical.config for
 configuration parameters.
 
 Imports and test setup:
@@ -142,7 +142,6 @@ timeout being reported by PostgreSQL is actually working:
     TimeoutError: ...SELECT pg_sleep(0.2)...
     >>> clear_request_started()
 
-
 Turn off the timemachine so nobody hurts themselves:
 
     >>> import time
@@ -200,14 +199,16 @@ another query:
     TimeoutError: ...SELECT 1...
 
 
-When a RequestExpired exception is raised, the current database
-transaction will be doomed, and future queries will fail:
+When a RequestExpired exception is raised, the current
+transaction will be doomed:
 
     >>> clear_request_started()
-    >>> store.execute('SELECT 1', noresult=True)
+    >>> transaction.get().isDoomed()
+    True
+    >>> transaction.commit()
     Traceback (most recent call last):
     ...
-    InternalError: current transaction is aborted, commands ignored until end of transaction block
+    DoomedTransaction
     <BLANKLINE>
 
 Cleanup:
@@ -353,4 +354,3 @@ So you need to explicitly set the user back:
 Reset out config:
 
     >>> base_test_data = config.pop('base_test_data')
-

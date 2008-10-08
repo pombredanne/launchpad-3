@@ -23,6 +23,7 @@ from storm.exceptions import TimeoutError
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
+import transaction
 from zope.component import getUtility
 from zope.interface import classImplements, classProvides, implements
 
@@ -318,12 +319,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
                 connection, raw_cursor, statement, params)
         except TimeoutError:
             info = sys.exc_info()
-            # make sure the current transaction can not be committed by
-            # sending a broken SQL statement to the database
-            try:
-                raw_cursor.execute('break this transaction')
-            except psycopg2.DatabaseError:
-                pass
+            transaction.doom()
             OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
@@ -405,5 +401,3 @@ class StoreSelector:
         if flavor == DEFAULT_FLAVOR:
             flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
         return getUtility(IZStorm).get('%s-%s' % (name, flavor))
-
-
