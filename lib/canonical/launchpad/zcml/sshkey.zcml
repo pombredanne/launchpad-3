@@ -5,17 +5,17 @@
     i18n_domain="launchpad">
 
     <!-- SSHKey -->
-    <content class="canonical.launchpad.database.SSHKey">
+    <class class="canonical.launchpad.database.SSHKey">
         <allow interface="canonical.launchpad.interfaces.ISSHKey" />
         <require
             permission="launchpad.Edit"
             set_attributes="keytext comment" />
-    </content>
+    </class>
 
     <!-- SSHKeySet -->
-    <content class="canonical.launchpad.database.SSHKeySet">
+    <class class="canonical.launchpad.database.SSHKeySet">
         <allow interface="canonical.launchpad.interfaces.ISSHKeySet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.SSHKeySet"

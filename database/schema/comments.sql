@@ -187,6 +187,14 @@ COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textu
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 
+
+-- BugNotificationAttachment
+
+COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
+COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached to the sent bug notification. It will be attached as a mime/multipart part, with a content type of message/rfc822.';
+COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
+
+
 -- BugNotificationRecipient
 COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
 COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';
@@ -2106,3 +2114,10 @@ COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this toke
 COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
 COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
 COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
+
+COMMENT ON TABLE UserToUserEmail IS 'A log of all direct user-to-user email contacts that have gone through Launchpad.';
+COMMENT ON COLUMN UserToUserEmail.sender IS 'The person sending this email.';
+COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.';
+COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
+COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
+COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';

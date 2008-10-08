@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.poll import (
+    IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -208,6 +210,15 @@ class LaunchpadObjectFactory(ObjectFactory):
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
         return team
+
+    def makePoll(self, team, name, title, proposition):
+        """Create a new poll which starts tomorrow and lasts for a week."""
+        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
+        datecloses = dateopens + timedelta(days=7)
+        return getUtility(IPollSet).new(
+            team, name, title, proposition, dateopens, datecloses,
+            PollSecrecy.SECRET, allowspoilt=True,
+            poll_type=PollAlgorithm.SIMPLE)
 
     def makeTranslationGroup(
         self, owner, name=None, title=None, summary=None):
