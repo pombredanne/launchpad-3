@@ -5,10 +5,10 @@
   i18n_domain="launchpad">
 
   <!-- TemporaryBlobStorage -->
-  <content class="canonical.launchpad.database.TemporaryBlobStorage">
+  <class class="canonical.launchpad.database.TemporaryBlobStorage">
     <allow
       interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
-  </content>
+  </class>
 
   <browser:generalform
     name="+storeblob"
@@ -24,10 +24,10 @@
   </browser:generalform>
 
   <!-- TemporaryStorageManager -->
-  <content class="canonical.launchpad.database.TemporaryStorageManager">
+  <class class="canonical.launchpad.database.TemporaryStorageManager">
     <allow
       interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.TemporaryStorageManager"

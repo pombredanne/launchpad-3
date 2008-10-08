@@ -41,7 +41,7 @@
     permission="zope.Public"
     />
 
-  <content class="canonical.launchpad.database.Person">
+  <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -79,7 +79,7 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser.person"
@@ -714,6 +714,13 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    name="+mailing-list-subscribers"
+    template="../templates/team-mailinglist-subscribers.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     class="canonical.launchpad.browser.TeamMapData"
     template="../templates/team-map-data.pt"
@@ -901,9 +908,9 @@
     />
 
   <!-- PersonSet -->
-  <content class="canonical.launchpad.database.PersonSet">
+  <class class="canonical.launchpad.database.PersonSet">
      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.PersonSet"

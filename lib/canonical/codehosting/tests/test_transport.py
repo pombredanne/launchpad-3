@@ -8,12 +8,13 @@ import unittest
 
 from bzrlib.tests import test_transport_implementations
 from bzrlib.transport import chroot, get_transport, Transport
-from bzrlib.transport.memory import MemoryTransport
+from bzrlib.transport.local import LocalTransport
+from bzrlib.urlutils import local_path_to_url
 
 from canonical.codehosting.branchfs import LaunchpadInternalServer
 from canonical.codehosting.branchfsclient import BlockingProxy
-from canonical.codehosting.tests.helpers import (
-    FakeLaunchpad, TestResultWrapper)
+from canonical.codehosting.inmemory import InMemoryFrontend
+from canonical.codehosting.tests.helpers import TestResultWrapper
 
 
 class TestingServer(LaunchpadInternalServer):
@@ -28,11 +29,18 @@ class TestingServer(LaunchpadInternalServer):
 
         We register ourselves with the scheme lp-testing=${id(self)}:///
         using the `FakeLaunchpad` authserver client and backed onto a
-        MemoryTransport.
+        LocalTransport.
         """
+        frontend = InMemoryFrontend()
+        branchfs = frontend.getFilesystemEndpoint()
+        branch = frontend.getLaunchpadObjectFactory().makeBranch()
+        self._branch_path = branch.unique_name
+        # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
+        # MemoryTransport, but a bug in Bazaar's implementation makes it
+        # unreliable for tests that involve particular errors.
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(FakeLaunchpad()), MemoryTransport())
+            BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
         self._chroot_servers = []
 
     def _transportFactory(self, url):
@@ -48,10 +56,8 @@ class TestingServer(LaunchpadInternalServer):
                 "Don't know how to create non-root transport. Not needed for "
                 "testing.")
         root_transport = LaunchpadInternalServer._transportFactory(self, url)
-        # We clone to this particular URL because FakeLaunchpad's constructor
-        # creates a branch with this URL.  This is an instance of the Mystery
-        # Guest test anti-pattern.
-        bzrdir_transport = root_transport.clone('~testuser/firefox/qux/.bzr')
+        bzrdir_transport = root_transport.clone(
+            self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
         chroot_server.setUp()

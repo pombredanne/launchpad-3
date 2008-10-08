@@ -11,7 +11,7 @@ __all__ = ['DistributionMirrorEditView',
 from datetime import datetime
 import pytz
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.event import notify
 from zope.interface import implements
 

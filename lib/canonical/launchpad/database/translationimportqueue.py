@@ -10,10 +10,11 @@ __all__ = [
 
 import tarfile
 import os.path
+import posixpath
 import datetime
 import re
 import pytz
-from StringIO import StringIO
+from cStringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
@@ -709,7 +710,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None):
+        potemplate=None, filename_filter=None):
         """See ITranslationImportQueue."""
         # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
         # workaround for bug 44773 (Python's gzip support sometimes fails to
@@ -737,6 +738,8 @@ class TranslationImportQueue:
             # Not a tarball, we ignore it.
             return num_files
 
+        translation_importer = getUtility(ITranslationImporter)
+
         try:
             tarball = tarfile.open('', mode, StringIO(content))
         except tarfile.ReadError:
@@ -745,28 +748,38 @@ class TranslationImportQueue:
             return num_files
 
         for tarinfo in tarball:
-            filename = tarinfo.name
-            # XXX: JeroenVermeulen 2007-06-18 bug=121798:
-            # Work multi-format support in.
-            # For now we're only interested in PO and POT files.  We skip
-            # "dotfiles," i.e. files whose names start with a dot, and we
-            # ignore anything that isn't a file (such as directories,
-            # symlinks, and above all, device files which could cause some
-            # serious security headaches).
-            looks_useful = (
-                tarinfo.isfile() and
-                not filename.startswith('.') and
-                is_gettext_name(filename))
-            if looks_useful:
-                file_content = tarball.extractfile(tarinfo).read()
-                if len(file_content) > 0:
-                    self.addOrUpdateEntry(
-                        tarinfo.name, file_content, is_published, importer,
-                        sourcepackagename=sourcepackagename,
-                        distroseries=distroseries,
-                        productseries=productseries,
-                        potemplate=potemplate)
-                    num_files += 1
+            if not tarinfo.isfile():
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                continue
+
+            filename = posixpath.normpath(tarinfo.name)
+            if filename_filter:
+                filename = filename_filter(filename)
+            if filename is None or filename == '':
+                continue
+
+            if posixpath.basename(filename).startswith('.'):
+                # Dotfile.  Probably an editor backup or somesuch.
+                continue
+
+            base, ext = posixpath.splitext(filename)
+            if ext not in translation_importer.supported_file_extensions:
+                # Doesn't look like a supported translation file type.
+                continue
+
+            file_content = tarball.extractfile(tarinfo).read()
+
+            if len(file_content) == 0:
+                # Empty.  Ignore.
+                continue
+
+            self.addOrUpdateEntry(
+                filename, file_content, is_published, importer,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries, productseries=productseries,
+                potemplate=potemplate)
+            num_files += 1
 
         tarball.close()
 
