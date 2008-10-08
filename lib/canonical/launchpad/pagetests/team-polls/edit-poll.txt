@@ -3,7 +3,7 @@
 All attributes of a poll can be changed as long as the poll has not opened
 yet.
 
-First we create a new poll to use throghout this test.
+First we create a new poll to use throughout this test.
 
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> from zope.component import getUtility
