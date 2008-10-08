@@ -51,8 +51,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
         yield (sourcepackagename, translationdomain)
 
 
-def export(distroseries, component, update, force_utf8, logger,
-           cache_clear_interval):
+def export(distroseries, component, update, force_utf8, logger):
     """Return a pair containing a filehandle from which the distribution's
     translations tarball can be read and the size of the tarball in bytes.
 
@@ -62,9 +61,6 @@ def export(distroseries, component, update, force_utf8, logger,
     :arg force_utf8: Whether the export should have all files exported as
         UTF-8.
     :arg logger: A logger object.
-    :arg cache_clear_interval: Number indicating how often to clear the
-        ORM cache to avoid dangerous buildup.  The cache is cleared after
-        every cache_clear_interval POFiles.
     """
     # We will need when the export started later to add the timestamp for this
     # export inside the exported tarball.
@@ -94,13 +90,12 @@ def export(distroseries, component, update, force_utf8, logger,
         distroseries, date, component, languagepack=True)
 
     # Manual caching.  Fetch POTMsgSets in bulk per template, and cache
-    # them across POFiles if subsequent POFiles happen to be for the
-    # same template.
+    # them across POFiles if subsequent POFiles belong to the same
+    # template.
     cached_potemplate = None
-    cached_potmsgsets = None
+    cached_potmsgsets = []
 
-    # Manual caching.  We can easily afford to cache all languages, and
-    # we might end up flushing them otherwise.
+    # Manual caching.  We can easily afford to cache all languages.
     cached_languages = set()
 
     for index, pofile in enumerate(pofiles):
@@ -110,9 +105,20 @@ def export(distroseries, component, update, force_utf8, logger,
 
         potemplate = pofile.potemplate
         if potemplate != cached_potemplate:
+            # Launchpad's StupidCache caches absolutely everything,
+            # which causes us to run out of memory.  We know at this
+            # point that we don't have useful references to potemplate's
+            # messages anymore, so remove them forcibly from the cache.
+            store = Store.of(potemplate)
+            for potmsgset in cached_potmsgsets:
+                store.invalidate(potmsgset.msgid_singular)
+                store.invalidate(potmsgset)
+
             cached_potemplate = potemplate
             cached_potmsgsets = [
                 potmsgset for potmsgset in potemplate.getPOTMsgSets()]
+
+            gc.collect()
 
         cached_languages.add(pofile.language)
 
@@ -144,14 +150,7 @@ def export(distroseries, component, update, force_utf8, logger,
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
 
-        if number % cache_clear_interval == 0:
-            # XXX JeroenVermeulen 2008-07-28 bug=252545: we go through a
-            # lot of data here, mostly TranslationMessage which aren't
-            # reused across iterations, and it accumulates somewhere
-            # in the object cache.  Invalidate the cache from time to
-            # time, and allow the garbage collector to run.
-            Store.of(pofile).flush()
-            gc.collect()
+        store.invalidate(pofile)
 
     logger.info("Exporting XPI template files.")
     librarian_client = getUtility(ILibrarianClient)
@@ -191,8 +190,7 @@ def export(distroseries, component, update, force_utf8, logger,
 
 
 def export_language_pack(distribution_name, series_name, logger,
-                         component=None, force_utf8=False, output_file=None,
-                         cache_clear_interval=100):
+                         component=None, force_utf8=False, output_file=None):
     """Export a language pack for the given distribution series.
 
     :param distribution_name: Name of the distribution we want to export the
@@ -206,9 +204,6 @@ def export_language_pack(distribution_name, series_name, logger,
         force to use the UTF-8 encoding.
     :param output_file: File path where this export file should be stored,
         instead of using Librarian. If '-' is given, we use standard output.
-    :arg cache_clear_interval: Number indicating how often to clear the
-        ORM cache to avoid dangerous buildup.  The cache is cleared after
-        every cache_clear_interval POFiles.
     :return: The exported language pack or None.
     """
     distribution = getUtility(IDistributionSet)[distribution_name]
@@ -233,8 +228,7 @@ def export_language_pack(distribution_name, series_name, logger,
     # Export the translations to a tarball.
     try:
         filehandle, size = export(
-            distroseries, component, update, force_utf8, logger,
-            cache_clear_interval=cache_clear_interval)
+            distroseries, component, update, force_utf8, logger)
     except:
         # Bare except statements are used in order to prevent premature
         # termination of the script.
