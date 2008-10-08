@@ -89,7 +89,7 @@
       registerLaunchpadFunction(onLoadFunction);
     </script>
 
-    <tal:yui define="yui string:${icingroot}/yui/3.0.0pr1">
+    <tal:yui define="yui string:${icingroot_contrib}/yui/3.0.0pr1">
       <tal:devmode condition="devmode">
         <script type="text/javascript" tal:attributes="src string:${yui}/build/yui/yui.js"></script>
         <script type="text/javascript" tal:attributes="src string:${yui}/build/oop/oop.js"></script>
