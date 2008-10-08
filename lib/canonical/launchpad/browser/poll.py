@@ -22,11 +22,12 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
-    Link, Navigation, stepthrough)
-from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
-    PollSecrecy, validate_date_interval)
+    action, canonical_url, enabled_with_permission, ContextMenu,
+    LaunchpadFormView, Link, Navigation, stepthrough)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.poll import (
+    IPollSubset, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm, PollSecrecy)
+from canonical.launchpad.interfaces.validation import validate_date_interval
 from canonical.launchpad.helpers import shortlist
 
 
@@ -330,22 +331,20 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
 
-class PollAddView(GeneralFormView):
+class PollAddView(LaunchpadFormView):
     """The view class to create a new poll in a given team."""
 
-    def validate(self, form_values):
-        """Verify that the opening date precedes the closing date."""
-        time_starts = form_values['dateopens']
-        time_ends = form_values['datecloses']
-        validate_date_interval(time_starts, time_ends)
+    schema = IPoll
+    field_names = ["name", "title", "proposition", "secrecy", "allowspoilt",
+                   "dateopens", "datecloses"]
 
-    def process(self, name, title, proposition, secrecy, allowspoilt,
-                dateopens, datecloses):
-        pollsubset = IPollSubset(self.context)
-        poll = pollsubset.new(
-            name, title, proposition, dateopens, datecloses,
-            secrecy, allowspoilt)
-        self._nextURL = canonical_url(poll)
+    @action("Continue", name="continue")
+    def continue_action(self, action, data):
+        poll = IPollSubset(self.context).new(
+            data['name'], data['title'], data['proposition'],
+            data['dateopens'], data['datecloses'], data['secrecy'],
+            data['allowspoilt'])
+        self.next_url = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
 
 
