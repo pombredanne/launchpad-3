@@ -2,3 +2,13 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+ * Celebritise gnome-bugzilla
+ * Alter BugzillaLPPlugin.__init__() to accept a list of products as well as
+   bug IDs.
+ * Add a getProductsForBugs() method to BugzillaLPPlugin (return a dict of
+   (bug_id, product) mappings
+ * Alter checkwatches to batch gnome-bugzilla watches:
+  - one batch for the products that we want to sync comments / bugs for.
+    (use BugzillaLPPlugin for this)
+  - one batch for everything else (use regular Bugzilla for this)

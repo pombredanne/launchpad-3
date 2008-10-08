@@ -150,3 +150,14 @@ http://savannah.nognu.org/
     >>> for alias in celebs.savannah_tracker.aliases:
     ...     print alias
     http://savannah.nognu.org/
+
+
+== Gnome Bugzilla ==
+
+There is a 'Gnome Bugzilla' celebrity, which is used to represent the
+Gnome bugzilla instance by the checkwatches script.
+
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName(
+    ...     'gnome-bugzilla')
+    >>> celebs.gnome_bugzilla == gnome_bugzilla
+    True

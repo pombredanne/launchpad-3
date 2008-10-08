@@ -89,6 +89,7 @@ class LaunchpadCelebrities:
     bazaar_experts = CelebrityDescriptor(IPersonSet, 'bazaar-experts')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
+    gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugzilla')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
