@@ -86,11 +86,13 @@ __all__ = [
     ]
 
 import copy
-from datetime import datetime, timedelta
-from operator import attrgetter, itemgetter
 import pytz
 import subprocess
 import urllib
+
+from datetime import datetime, timedelta
+from itertools import chain
+from operator import attrgetter, itemgetter
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -106,6 +108,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.lazr import decorates
+from canonical.lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -139,6 +142,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -167,9 +171,11 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.database.message import UserToUserEmail
 from canonical.launchpad.fields import LocationField
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
+from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
@@ -4904,7 +4910,9 @@ class EmailToPersonView(LaunchpadFormView):
                        title=_('From'),
                        source=SimpleVocabulary(terms),
                        default=terms[0].value)
-        self.form_fields += FormFields(field)
+        # Get the order right; the From field should be first, followed by the
+        # Subject and then Message fields.
+        self.form_fields = FormFields(*chain((field,), self.form_fields))
 
     @property
     def label(self):
@@ -4913,8 +4921,33 @@ class EmailToPersonView(LaunchpadFormView):
     @action(_('Send'), name='send')
     def action_send(self, action, data):
         """Send an email to the user."""
-        self.next_url = self.action_url
+        sender_email = data['field.from_'].email
+        subject = data['subject']
+        message = data['message']
+        recipient_email = self.context.preferredemail.email
+        message = send_direct_contact_email(
+            sender_email, recipient_email, subject, message)
+        contact = UserToUserEmail(message)
+        self.request.response.addInfoNotification(
+            _('Message sent to $name with Message-ID $msgid',
+              mapping=dict(name=self.context.displayname,
+                           msgid=message['message-id'])))
+        self.next_url = canonical_url(self.context)
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def contact_is_allowed(self):
+        """Whether the sender is allowed to send this email or not."""
+        import pdb; pdb.set_trace()
+        return IDirectEmailAuthorization(self.user).is_allowed
+
+    @property
+    def next_try(self):
+        """When can the user try again?"""
+        now = datetime.now()
+        interval = as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return now + interval

@@ -10,10 +10,32 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
-
-      <div metal:use-macro="context/@@launchpad_form/form" />
-
-    </div>
+    <tal:allowed tal:condition="view/contact_is_allowed">
+      <div metal:fill-slot="main">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <p metal:fill-slot="extra_info">
+            You can send an email message to
+            <tal:person
+             tal:content="context/displayname">Anne Person</tal:person>
+            through Launchpad.  The message will be sent to
+            <tal:person
+             tal:content="context/displayname">Anne Person</tal:person>'s
+            preferred email address (even if hidden), and the <em>From:</em>
+            field of the received message will include your address as
+            specified below.  If you do not want
+            <tal:person
+             tal:content="context/displayname">Anne Person</tal:person>
+            to know your email address, hit
+            <a href="" tal:attributes="href view/cancel_url">Cancel</a> now.
+          </p>
+        </div>
+      </div>
+    </tal:allowed>
+    <tal:disallowed tal:condition="not:view/contact_is_allowed">
+      <p>You have reach your quota for direct contact of other Launchpad
+         users.  You can try again on
+        <tal:next_try tal:content="view/next_try/fmt:datetime">X</tal:next_try>
+      </p>
+    </tal:disallowed>
   </body>
 </html>

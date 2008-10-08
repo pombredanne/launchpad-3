@@ -8,10 +8,11 @@ import datetime
 from difflib import unified_diff
 import operator
 
+from email.Header import Header
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
-from email.Utils import formatdate
+from email.Utils import formataddr, formatdate, make_msgid
 
 import re
 import rfc822
@@ -1807,3 +1808,47 @@ def notify_message_held(message_approval, event):
         body = MailWrapper(72).format(
             template % replacements, force_wrap=True)
         simple_sendmail(from_address, address, subject, body)
+
+
+def send_direct_contact_email(sender_email, recipient_email, subject, body):
+    """Send a direct user-to-user email.
+
+    :param sender_email: The email address of the sender.
+    :type sender_email: string
+    :param recipient_email: The email address of the recipient.
+    :type recipient_email:' string
+    :param subject: The Subject header.
+    :type subject: unicode
+    :param body: The message body.
+    :type body: unicode
+    :return: The sent message.
+    :rtype: `email.Message.Message`
+    """
+    # Craft the email message.  Start by checking whether the subject and
+    # message bodies are ASCII or not.
+    try:
+        subject.encode('us-ascii')
+        charset = 'us-ascii'
+    except UnicodeEncodeError:
+        charset = 'utf-8'
+    subject_header = Header(subject.encode(charset), charset)
+    try:
+        body.encode('us-ascii')
+        charset = 'us-ascii'
+    except UnicodeEncodeError:
+        charset = 'utf-8'
+    message = MIMEText(body.encode(charset), _charset=charset)
+    # Get the sender and recipient's real names.
+    person_set = getUtility(IPersonSet)
+    sender = person_set.getByEmail(sender_email)
+    assert sender is not None, 'No person for sender %s' % sender_email
+    recipient = person_set.getByEmail(recipient_email)
+    assert recipient is not None, (
+        'No person for recipient %s' % recipient_email)
+    message['From'] = formataddr((sender.displayname, sender_email))
+    message['To'] = formataddr((recipient.displayname, recipient_email))
+    message['Subject'] = subject_header
+    message['Message-ID'] = make_msgid('launchpad')
+    sendmail(message)
+    return message
+
