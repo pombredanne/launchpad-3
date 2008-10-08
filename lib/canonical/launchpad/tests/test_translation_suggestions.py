@@ -100,7 +100,7 @@ class TestTranslationSuggestions(unittest.TestCase):
             is_imported=False, lock_timestamp=now)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
- 
+
         # When a third project, oof, contains the same translatable
         # string, only the most recent of the identical suggestions is
         # shown.
@@ -111,6 +111,26 @@ class TestTranslationSuggestions(unittest.TestCase):
             self.nl)
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
+
+    def test_RevertingToUpstream(self):
+        # When a msgid string is unique and nobody has submitted any
+        # translations for it, there are no suggestions for translating
+        # it whatsoever.
+        translated_in_launchpad = "Launchpad translation."
+        translated_upstream = "Upstream translation."
+        potmsgset = self.factory.makePOTMsgSet(self.foo_template)
+        suggestion1 = potmsgset.updateTranslation(self.foo_nl,
+            self.foo_template.owner, [translated_in_launchpad],
+            is_imported=False, lock_timestamp=None)
+        suggestion2 = potmsgset.updateTranslation(self.foo_nl,
+            self.foo_template.owner, [translated_upstream],
+            is_imported=True, lock_timestamp=None)
+        current_translation = potmsgset.getCurrentTranslationMessage(
+            self.foo_nl.language)
+        imported_translation = potmsgset.getImportedTranslationMessage(
+            self.foo_nl.language)
+        self.assertEquals(
+            current_translation, imported_translation)
 
 
 def test_suite():
