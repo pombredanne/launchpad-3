@@ -623,3 +623,19 @@ result in no bugs being returned.
 
     >>> len(bugzilla._bugs)
     0
+
+
+== Getting the products for a set of remote bugs ==
+
+BugzillaLPPlugin provides a helper method, getProductsForRemoteBugs(),
+which takes a list of bug IDs or aliases and returns the products to
+which those bugs belong as a dict of (bug_id_or_alias, product)
+mappings.
+
+    >>> product_mappings = bugzilla.getProductsForRemoteBugs([1, 2])
+    CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True})
+
+    >>> for bug_id in sorted(product_mappings):
+    ...     print "%s: %s" % (bug_id, product_mappings[bug_id])
+    1: Marvin
+    2: HeartOfGold
