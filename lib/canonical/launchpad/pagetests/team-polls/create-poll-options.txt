@@ -13,7 +13,7 @@ First we create a new poll to use throughout this test.
     <Poll...
     >>> logout()
 
-Our poll is open, so new options can be added to it.
+Our poll is not yet open, so new options can be added to it.
 
     >>> team_admin_browser = setupBrowser(
     ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
