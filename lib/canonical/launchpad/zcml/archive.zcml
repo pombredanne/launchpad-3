@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- Archive -->
-  <content class="canonical.launchpad.database.Archive">
+  <class class="canonical.launchpad.database.Archive">
     <allow interface="canonical.launchpad.interfaces.IArchive"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <require
@@ -17,7 +17,7 @@
       set_attributes="authorized_size buildd_secret distribution enabled
                       private name require_virtualized"
       />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IArchive"
@@ -155,9 +155,9 @@
 
 
   <!-- ArchiveSet -->
-  <content class="canonical.launchpad.database.ArchiveSet">
+  <class class="canonical.launchpad.database.ArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.ArchiveSet"

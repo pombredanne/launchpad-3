@@ -196,13 +196,13 @@ class RecipientReason:
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
         template_values = {
-            'branch_name': self.branch.displayname,
+            'branch_name': self.branch.bzr_identity,
             'entity_is': 'You are',
             'lc_entity_is': 'you are',
             }
         if self.merge_proposal is not None:
-            source = self.merge_proposal.source_branch.displayname
-            target = self.merge_proposal.target_branch.displayname
+            source = self.merge_proposal.source_branch.bzr_identity
+            target = self.merge_proposal.target_branch.bzr_identity
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
         if self.recipient != self.subscriber:

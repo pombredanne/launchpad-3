@@ -202,6 +202,15 @@ class IProductReleaseEditRestricted(Interface):
         :returns: `IProductReleaseFile` object.
         """
 
+    @export_write_operation()
+    @export_operation_as('delete')
+    def destroySelf():
+        """Delete this product release.
+
+        This method must not be used if this product release has any
+        release files associated with it.
+        """
+
 
 class IProductReleasePublic(Interface):
     """Public `IProductRelease` properties."""

@@ -6,16 +6,16 @@
 
 <facet facet="translations">
 
-    <content class="canonical.launchpad.database.POFile">
+    <class class="canonical.launchpad.database.POFile">
         <allow interface="canonical.launchpad.interfaces.IPOFile" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPOFile" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.POFileTranslator">
+    <class class="canonical.launchpad.database.POFileTranslator">
         <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IPOFile"
@@ -115,9 +115,9 @@
         />
 
     <!-- Dummy PO File -->
-    <content class="canonical.launchpad.database.DummyPOFile">
+    <class class="canonical.launchpad.database.DummyPOFile">
         <allow interface="canonical.launchpad.interfaces.IPOFile" />
-    </content>
+    </class>
 
     <!-- POFileSet -->
     <securedutility

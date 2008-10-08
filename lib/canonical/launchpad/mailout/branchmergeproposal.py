@@ -107,8 +107,8 @@ class BMPMailer(BranchMailer):
         params = BranchMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.displayname,
-            'target_branch': self.merge_proposal.target_branch.displayname,
+            'source_branch': self.merge_proposal.source_branch.bzr_identity,
+            'target_branch': self.merge_proposal.target_branch.bzr_identity,
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',

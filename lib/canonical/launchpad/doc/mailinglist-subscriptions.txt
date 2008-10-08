@@ -46,6 +46,8 @@ will not get deliveries.
      u'no-priv@canonical.com']
     >>> list(list_one.getSubscribedAddresses())
     []
+    >>> list(list_one.getSubscribers())
+    []
 
 Anne subscribes to the mailing list for team one.  Because Anne does not
 provide an email address when she subscribes, her preferred address is used.
@@ -53,6 +55,8 @@ provide an email address when she subscribes, her preferred address is used.
     >>> list_one.subscribe(anne)
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com']
+    >>> sorted(person.displayname for person in list_one.getSubscribers())
+    [u'Anne Person']
 
 Now Bart also subscribes to the mailing list, but he does so with something
 other than his preferred email address.
@@ -63,6 +67,8 @@ other than his preferred email address.
     >>> list_one.subscribe(bart, alternative_email)
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org']
+    >>> sorted(person.displayname for person in list_one.getSubscribers())
+    [u'Anne Person', u'Bart Person']
 
 A team can not subscribe to a mailing list.
 
@@ -165,6 +171,8 @@ team-one's mailing list.
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
+    >>> [person.displayname for person in list_one.getSubscribers()]
+    [u'Anne Person', u'Bart Person', u'Cris Person']
 
 Cris may post to the mailing list using any of her registered and validated
 email addresses.

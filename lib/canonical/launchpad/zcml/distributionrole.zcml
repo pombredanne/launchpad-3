@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
     <!-- DistributionRole-->
-    <content class="canonical.launchpad.database.DistributionRole">
+    <class class="canonical.launchpad.database.DistributionRole">
         <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    </content>
+    </class>
 
 </configure>

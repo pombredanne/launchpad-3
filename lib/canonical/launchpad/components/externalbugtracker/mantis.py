@@ -7,8 +7,8 @@ __all__ = ['Mantis', 'MantisLoginHandler']
 
 import cgi
 import csv
-import ClientCookie
 import urllib
+import urllib2
 
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from urlparse import urlunparse
@@ -23,8 +23,8 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 
 
-class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
-    """Handler for ClientCookie.build_opener to automatically log-in
+class MantisLoginHandler(urllib2.HTTPRedirectHandler):
+    """Handler for urllib2.build_opener to automatically log-in
     to Mantis anonymously if needed.
 
     The ALSA bug tracker is the only tested Mantis installation that
@@ -76,15 +76,6 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
 
         return url
 
-    def redirect_request(self, newurl, req, fp, code, msg, headers):
-        # XXX: Gavin Panella 2007-08-27: The argument order here is
-        # different from that in urllib2.HTTPRedirectHandler.
-        # ClientCookie is meant to mimic urllib2 (and does subclass
-        # it), so this is probably a bug.
-
-        return ClientCookie.HTTPRedirectHandler.redirect_request(
-            self, self.rewrite_url(newurl), req, fp, code, msg, headers)
-
 
 class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
@@ -95,15 +86,15 @@ class Mantis(ExternalBugTracker):
 
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
-    _opener = ClientCookie.build_opener(MantisLoginHandler)
+    _opener = urllib2.build_opener(MantisLoginHandler)
 
     def urlopen(self, request, data=None):
-        # We use ClientCookie to make following cookies transparent.
+        # We use urllib2 to make following cookies transparent.
         # This is required for certain bugtrackers that require
         # cookies that actually do anything (as is the case with
         # Mantis). It's basically a drop-in replacement for
         # urllib2.urlopen() that tracks cookies. We also have a
-        # customised ClientCookie opener to handle transparent
+        # customised urllib2 opener to handle transparent
         # authentication.
         return self._opener.open(request, data)
 

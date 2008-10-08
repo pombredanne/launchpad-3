@@ -124,7 +124,7 @@ class LoomTestMixin:
         return loom_tree
 
 
-class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
+class ServerTestCase(TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
