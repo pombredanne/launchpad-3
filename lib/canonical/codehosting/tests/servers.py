@@ -46,13 +46,13 @@ def make_launchpad_server():
 def make_sftp_server():
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return SFTPCodeHostingServer(branches_root, mirror_root)
+    return SSHCodeHostingServer('sftp', branches_root, mirror_root)
 
 
 def make_bzr_ssh_server():
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return BazaarSSHCodeHostingServer(branches_root, mirror_root)
+    return SSHCodeHostingServer('bzr+ssh', branches_root, mirror_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -202,10 +202,10 @@ class SSHCodeHostingServer(Server):
     def __init__(self, schema, branches_root, mirror_root):
         Server.__init__(self)
         self._schema = schema
-        self._branches_root = branches_root
+        # XXX: JonathanLange 2008-10-08: This is used by createBazaarBranch in
+        # test_acceptance.
         self._mirror_root = mirror_root
-        self._tac_server = CodeHostingTac(
-            self._branches_root, self._mirror_root)
+        self._tac_server = CodeHostingTac(branches_root, mirror_root)
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -251,17 +251,3 @@ class SSHCodeHostingServer(Server):
         if user is None:
             user = 'testuser'
         return '%s://%s@localhost:22222/' % (self._schema, user)
-
-
-class SFTPCodeHostingServer(SSHCodeHostingServer):
-
-    def __init__(self, branches_root, mirror_root):
-        SSHCodeHostingServer.__init__(
-            self, 'sftp', branches_root, mirror_root)
-
-
-class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
-
-    def __init__(self, branches_root, mirror_root):
-        SSHCodeHostingServer.__init__(
-            self, 'bzr+ssh', branches_root, mirror_root)
