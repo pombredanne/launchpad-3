@@ -94,4 +94,4 @@ ALTER TABLE BranchMergeProposal
 ALTER TABLE BranchMergeProposal
   ADD COLUMN merge_diff INTEGER REFERENCES PreviewDiff;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 90, 0);
