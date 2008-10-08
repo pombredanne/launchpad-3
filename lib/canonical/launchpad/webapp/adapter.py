@@ -12,7 +12,6 @@ import traceback
 from time import time
 import warnings
 
-import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
