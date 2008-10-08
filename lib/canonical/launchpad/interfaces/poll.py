@@ -152,8 +152,8 @@ class IPoll(Interface):
         if poll.dateopens >= poll.datecloses:
             raise Invalid(
                 "A poll cannot close at the time (or before) it opens.")
-        now = datetime.now(pytz.timezone('UTC'))
-        start_date = poll.dateopens.astimezone(pytz.timezone('UTC'))
+        now = datetime.now(pytz.UTC)
+        start_date = poll.dateopens.astimezone(pytz.UTC)
         delta = start_date - now
         twelve_hours = 12 * 60 * 60
         if delta.days < 1 and delta.seconds < twelve_hours:

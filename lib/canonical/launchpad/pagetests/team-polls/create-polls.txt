@@ -161,7 +161,9 @@ Now lets try to insert a poll with the name of a existing one.
     There is 1 error.
     dpl-2080 is already in use by another poll in this team.
  
-We can't create a poll with a starting date of today or in the past.
+When creating a new poll, its start date must be at least 12 hours from
+now, so that the user creating it has a chance to add some options before
+the poll opens -- at that point new options cannot be added.
  
     >>> team_admin_browser.getControl('The unique name').value = 'today'
     >>> from datetime import datetime
