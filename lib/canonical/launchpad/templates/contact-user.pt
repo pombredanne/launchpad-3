@@ -13,6 +13,7 @@
     <tal:allowed tal:condition="view/contact_is_allowed">
       <div metal:fill-slot="main">
         <div metal:use-macro="context/@@launchpad_form/form">
+
           <p metal:fill-slot="extra_info">
             You can send an email message to
             <tal:person
