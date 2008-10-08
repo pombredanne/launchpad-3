@@ -297,9 +297,11 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def _getProduct(self, requester, product_path):
         try:
-            owner_name, product_name = product_path.split('/')
+            owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
             # Wrong number of segments -- can't be a product.
+            return
+        if bazaar != '.bzr':
             return
         product = getUtility(IProductSet).getByName(product_name)
         default_branch = product.default_stacked_on_branch

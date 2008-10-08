@@ -960,7 +960,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_translatePath_control_directory(self):
         requester = self.factory.makePerson()
         product, branch = self._makeProductWithDevFocus()
-        path = escape(u'/~%s/%s' % (requester.name, product.name))
+        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         # XXX: Should the stacked-on branch path be escaped?
