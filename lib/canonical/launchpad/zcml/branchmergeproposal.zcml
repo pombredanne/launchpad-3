@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
   <!-- Branch Merge Proposal -->
-  <content class="canonical.launchpad.database.BranchMergeProposal">
+  <class class="canonical.launchpad.database.BranchMergeProposal">
     <allow attributes="address id registrant source_branch target_branch
                        dependent_branch whiteboard queue_status
                        reviewer reviewed_revision_id
@@ -31,10 +31,10 @@
         permission="launchpad.AnyPerson"
         attributes="createComment createCommentFromMessage"
     />
-  </content>
-  <content class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
+  </class>
+  <class class="canonical.launchpad.mailout.branchmergeproposal.RecipientReason">
       <allow attributes="getReason branch mail_header" />
-  </content>
+  </class>
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal

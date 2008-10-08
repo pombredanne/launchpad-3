@@ -842,8 +842,8 @@ The build is only allowed to depend on packages published in 'main':
     main
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getComponentsForBuilding)
-    >>> print getComponentsForBuilding(depwait_build)
+    ...     get_components_for_building)
+    >>> print get_components_for_building(depwait_build)
     ['main']
 
 Thus the 'pmount' dependency remains unsatisfied.
@@ -888,7 +888,7 @@ depend on all components of its distribution PRIMARY archive.
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-    >>> print getComponentsForBuilding(depwait_build)
+    >>> print get_components_for_building(depwait_build)
     ['main']
 
     >>> print pmount_pub.component.name
