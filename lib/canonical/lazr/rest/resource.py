@@ -3,6 +3,7 @@
 """Base classes for HTTP resources."""
 
 __metaclass__ = type
+
 __all__ = [
     'BatchingResourceMixin',
     'Collection',
@@ -19,6 +20,7 @@ __all__ = [
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
     ]
+
 
 import copy
 from cStringIO import StringIO
@@ -254,8 +256,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        adapters = getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)
+        adapters = list(
+            getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
     def toWADL(self, template_name="wadl-resource.pt"):
@@ -465,9 +467,13 @@ class CustomOperationResourceMixin:
         :return: The result of the operation: either a string or an
         object that needs to be serialized to JSON.
         """
-        operation = getMultiAdapter((self.context, self.request),
-                                    IResourceGETOperation,
-                                    name=operation_name)
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
         return operation()
 
     def handleCustomPOST(self, operation_name):
@@ -1095,11 +1101,11 @@ class ServiceRootResource(HTTPResource):
         collection_classes = []
         singular_names = {}
         plural_names = {}
-        for registration in sorted(site_manager.registrations()):
+        for registration in sorted(site_manager.registeredAdapters()):
             provided = registration.provided
             if IInterface.providedBy(provided):
                 if (provided.isOrExtends(IEntry)
-                    and IEntry.implementedBy(registration.value)):
+                    and IEntry.implementedBy(registration.factory)):
                     # The implementedBy check is necessary because
                     # some IEntry adapters aren't classes with
                     # schemas; they're functions. We can ignore these
@@ -1126,15 +1132,15 @@ class ServiceRootResource(HTTPResource):
                            schema.__name__, plural))
                     plural_names[plural] = schema
 
-                    entry_classes.append(registration.value)
+                    entry_classes.append(registration.factory)
                 elif (provided.isOrExtends(ICollection)
-                      and ICollection.implementedBy(registration.value)
+                      and ICollection.implementedBy(registration.factory)
                       and not IScopedCollection.implementedBy(
-                        registration.value)):
+                        registration.factory)):
                     # See comment above re: implementedBy check.
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
-                    collection_classes.append(registration.value)
+                    collection_classes.append(registration.factory)
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
         namespace['context'] = self
@@ -1165,18 +1171,25 @@ class ServiceRootResource(HTTPResource):
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
         # First, collect the top-level collections.
-        for registration in site_manager.registrations():
+        for registration in site_manager.registeredAdapters():
             provided = registration.provided
             if IInterface.providedBy(provided):
+                # XXX sinzui 2008-09-29 bug=276079:
+                # Top-level collections need a marker interface
+                # so that so top-level utilities are explicit.
                 if (provided.isOrExtends(ICollection)
-                     and ICollection.implementedBy(registration.value)):
+                     and ICollection.implementedBy(registration.factory)):
                     try:
                         utility = getUtility(registration.required[0])
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
+                    entry_schema = registration.factory.entry_schema
+                    if isinstance(entry_schema, property):
+                        # It's not a top-level resource.
+                        continue
                     adapter = EntryAdapterUtility.forEntryInterface(
-                        registration.value.entry_schema)
+                        entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         # Now, collect the top-level entries.
@@ -1273,12 +1286,12 @@ class EntryAdapterUtility(RESTUtilityBase):
     @classmethod
     def forEntryInterface(cls, entry_interface):
         """Create an entry adapter utility, given a subclass of IEntry."""
-        registrations = zapi.getGlobalSiteManager().registrations()
+        registrations = zapi.getGlobalSiteManager().registeredAdapters()
         entry_classes = [
-            registration.value for registration in registrations
+            registration.factory for registration in registrations
             if (IInterface.providedBy(registration.provided)
                 and registration.provided.isOrExtends(IEntry)
-                and entry_interface.implementedBy(registration.value))]
+                and entry_interface.implementedBy(registration.factory))]
         assert not len(entry_classes) > 1, (
             "%s provides more than one IEntry subclass." %
             entry_interface.__name__)

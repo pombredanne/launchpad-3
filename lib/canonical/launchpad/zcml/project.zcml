@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
     <!-- Project -->
-    <content class="canonical.launchpad.database.Project">
+    <class class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
@@ -24,7 +24,7 @@
         <require
             permission="launchpad.Admin"
             set_attributes="registrant" />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IProject"
@@ -339,9 +339,9 @@
         permission="launchpad.AnyPerson" />
 
     <!-- ProjectSet-->
-    <content class="canonical.launchpad.database.ProjectSet">
+    <class class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ProjectSet"
@@ -400,9 +400,9 @@
     </browser:pages>
 
     <!-- ProjectSeries -->
-    <content class="canonical.launchpad.database.ProjectSeries">
+    <class class="canonical.launchpad.database.ProjectSeries">
         <allow interface="canonical.launchpad.interfaces.IProjectSeries" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IProjectSeries"

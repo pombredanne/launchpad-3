@@ -7,15 +7,9 @@ and they are usually translated differently.
 
 == Helper imports ==
 
-    >>> from zope.app import datetimeutils
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, IProductSet)
-    >>> from canonical.launchpad.database import (
-    ...     POTemplateSubset, SourcePackageName)
-    >>> from canonical.launchpad.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
+    >>> from canonical.launchpad.database import POTemplateSubset
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')

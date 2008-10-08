@@ -12,7 +12,7 @@
         />
 
     <!-- Bug -->
-    <content class="canonical.launchpad.database.Bug">
+    <class class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
         <allow attributes="id private bugtasks affected_pillars
                            permits_expiration can_expire
@@ -62,7 +62,7 @@
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
             />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IBug"
@@ -158,9 +158,9 @@
 
 
     <!-- BugSet -->
-    <content class="canonical.launchpad.database.BugSet">
+    <class class="canonical.launchpad.database.BugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugSet"
@@ -180,9 +180,9 @@
         />
 
     <!-- BugDelta -->
-    <content class="canonical.launchpad.components.bug.BugDelta">
+    <class class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
-    </content>
+    </class>
 
   </facet>
 

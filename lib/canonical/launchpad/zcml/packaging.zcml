@@ -6,18 +6,18 @@
     i18n:domain="launchpad">
 
     <!-- Packaging -->
-    <content class="canonical.launchpad.database.Packaging">
+    <class class="canonical.launchpad.database.Packaging">
         <allow interface="canonical.launchpad.interfaces.IPackaging" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IPackaging"
         />
-    </content>
+    </class>
 
     <!-- PackagingUtil -->
-    <content class="canonical.launchpad.database.PackagingUtil">
+    <class class="canonical.launchpad.database.PackagingUtil">
         <allow interface="canonical.launchpad.interfaces.IPackagingUtil" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.PackagingUtil"

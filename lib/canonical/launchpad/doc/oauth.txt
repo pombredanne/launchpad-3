@@ -46,7 +46,9 @@ consumer sends the user to the Launchpad authorization page.
 === Creating request tokens ===
 
 The request tokens are created using IOAuthConsumer.newRequestToken().
-
+    # XXX EdwinGrubbs 2008-10-03 bug=277756
+    # Tests could be simplified with helper methods for creating tokens
+    # in different states.
     >>> request_token = consumer.newRequestToken()
     >>> verifyObject(IOAuthRequestToken, request_token)
     True
@@ -100,7 +102,7 @@ to things linked to that context (Product, Project, Distribution,
 DistroSourcePackage).
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IProjectSet, ISourcePackageNameSet)
+    ...     IDistributionSet, IProductSet, IProjectSet)
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> request_token2 = consumer.newRequestToken()
     >>> request_token2.review(
@@ -250,6 +252,18 @@ tokens.
     >>> syncUpdate(access_token)
     >>> access_token.person.oauth_access_tokens.count()
     3
+
+It's also possible to retrieve the user's non-expired request tokens.
+
+    >>> unclaimed_request_token = consumer.newRequestToken()
+    >>> unclaimed_request_token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> salgado.oauth_request_tokens.count()
+    5
+    >>> salgado.oauth_request_tokens[0].date_expires = (
+    ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
+    >>> syncUpdate(unclaimed_request_token)
+    >>> salgado.oauth_request_tokens.count()
+    4
 
 
 == Nonces and timestamps ==

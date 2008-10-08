@@ -13,8 +13,9 @@ __all__ = [
     'ITeamInvitationEvent',
     ]
 
-from zope.app.event.interfaces import (
-    IObjectModifiedEvent, IObjectEvent, IObjectCreatedEvent)
+from zope.lifecycleevent.interfaces import (
+    IObjectModifiedEvent, IObjectCreatedEvent)
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute
 
 

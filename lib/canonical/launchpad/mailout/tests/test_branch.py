@@ -49,7 +49,7 @@ class TestRecipientReason(TestCaseWithFactory):
     def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        login_person(merge_proposal.registrant)
+        login(merge_proposal.registrant.preferredemail.email)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         return vote_reference, subscriber
@@ -67,15 +67,15 @@ class TestRecipientReason(TestCaseWithFactory):
         vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of foo into bar.',
+            'You are requested to review the proposed merge of lp://dev/~person-name5/product-name11/branch7 into lp://dev/~person-name16/product-name11/branch18.',
             reason.getReason())
 
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, '', merge_proposal)
-        self.assertEqual('You are subscribed to branch foo.',
+            subscription, subscription.person, merge_proposal, '')
+        self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
     def test_getReasonTeam(self):
@@ -85,8 +85,8 @@ class TestRecipientReason(TestCaseWithFactory):
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, '', bmp)
-        self.assertEqual('Your team Qux is subscribed to branch foo.',
+            subscription, team_member, bmp, '')
+        self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
 def test_suite():
