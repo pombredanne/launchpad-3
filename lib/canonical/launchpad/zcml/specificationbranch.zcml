@@ -5,12 +5,12 @@
     i18n_domain="launchpad">
 
   <!-- ISpecificationBranch -->
-  <content class="canonical.launchpad.database.SpecificationBranch">
+  <class class="canonical.launchpad.database.SpecificationBranch">
     <allow interface="canonical.launchpad.interfaces.ISpecificationBranch" />
     <require
         permission="launchpad.AnyPerson"
         set_attributes="summary" />
-  </content>
+  </class>
 
   <subscriber
       for="canonical.launchpad.interfaces.ISpecificationBranch

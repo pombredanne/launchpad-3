@@ -143,3 +143,18 @@ to include his full name.  His contact is still recorded correctly.
     <Person at ... dave (Dave)>
     >>> entry.recipient
     <Person at ... elly (Elly)>
+
+
+== Adapters ==
+
+As noticed above, we can adapt from an IPerson to an IUserContactBy.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> adapted = IUserContactBy(anne)
+    >>> verifyObject(adapted, IUserContactBy)
+    True
+
+But adapting from other types fails.
+
+    >>> print IUserContactBy(anne.preferredemail)
+    None
