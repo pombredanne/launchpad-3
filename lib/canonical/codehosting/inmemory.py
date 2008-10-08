@@ -419,7 +419,6 @@ class FakeBranchFilesystem:
             owner_name, product_name = product_path.split('/')
         except ValueError:
             # Wrong number of segments -- can't be a product.
-            print "Wrong number of segments -- can't be a product."
             return
         product = self._product_set.getByName(product_name)
         default_branch = product.default_stacked_on_branch
@@ -435,7 +434,7 @@ class FakeBranchFilesystem:
             # Is it a branch?
             branch = self._branch_set._find(unique_name=first)
             if branch is not None:
-                if not branch._canRead(requester_id):
+                if not self._canRead(requester_id, branch):
                     break
                 elif branch.branch_type == BranchType.REMOTE:
                     break
