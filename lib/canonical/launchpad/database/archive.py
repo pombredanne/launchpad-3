@@ -681,16 +681,15 @@ class Archive(SQLBase):
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if not dependency.is_ppa:
-            raise ArchiveDependencyError(
-                "Archive dependencies only applies to PPAs.")
-        else:
+        if dependency.purpose != ArchivePurpose.PRIMARY:
             if pocket is not PackagePublishingPocket.RELEASE:
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to RELEASE pocket.")
+                    "Only primary archive supports other pockets than "
+                    "RELEASE.")
             if component.id is not getUtility(IComponentSet)['main'].id:
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to 'main' component.")
+                    "Only primary archive supports other components than "
+                    "'main'.")
 
         if self.getArchiveDependency(dependency, pocket, component):
             raise ArchiveDependencyError(
