@@ -3,15 +3,15 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-  <content class="canonical.launchpad.database.Diff">
+  <class class="canonical.launchpad.database.Diff">
     <allow interface="canonical.launchpad.interfaces.IDiff" />
-  </content>
-  <content class="canonical.launchpad.database.StaticDiff">
+  </class>
+  <class class="canonical.launchpad.database.StaticDiff">
     <allow interface="canonical.launchpad.interfaces.IStaticDiff" />
-  </content>
-  <content class="canonical.launchpad.database.StaticDiffJob">
+  </class>
+  <class class="canonical.launchpad.database.StaticDiffJob">
     <allow interface="canonical.launchpad.interfaces.IStaticDiffJob" />
-  </content>
+  </class>
   <securedutility
       class="canonical.launchpad.database.StaticDiffJobSource"
       provides="canonical.launchpad.interfaces.IStaticDiffJobSource" >
