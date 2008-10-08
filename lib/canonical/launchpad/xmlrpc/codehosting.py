@@ -300,7 +300,6 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             owner_name, product_name = product_path.split('/')
         except ValueError:
             # Wrong number of segments -- can't be a product.
-            print "Wrong number of segments -- can't be a product."
             return
         product = getUtility(IProductSet).getByName(product_name)
         default_branch = product.default_stacked_on_branch
