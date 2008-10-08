@@ -155,9 +155,8 @@ http://savannah.nognu.org/
 == Gnome Bugzilla ==
 
 There is a 'Gnome Bugzilla' celebrity, which is used to represent the
-Gnome bugzilla instance by the checkwatches script.
+Gnome Bugzilla instance by the checkwatches script.
 
-    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName(
-    ...     'gnome-bugzilla')
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugs')
     >>> celebs.gnome_bugzilla == gnome_bugzilla
     True

@@ -3,7 +3,7 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
- * Celebritise gnome-bugzilla
+ * DONE Celebritise gnome-bugs
  * Alter BugzillaLPPlugin.__init__() to accept a list of products as well as
    bug IDs.
  * Add a getProductsForBugs() method to BugzillaLPPlugin (return a dict of
