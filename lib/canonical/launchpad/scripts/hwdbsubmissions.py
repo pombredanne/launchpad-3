@@ -1641,32 +1641,38 @@ class ProcessingLoop(object):
         self.max_submissions = max_submissions
         self.valid_submissions = 0
         self.invalid_submissions = 0
-        self.last_batch = False
+        self.finished = False
+
+    def _validateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.PROCESSED
+        self.valid_submissions += 1
+
+    def _invalidateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.INVALID
+        self.invalid_submissions += 1
 
     def isDone(self):
         """See `ITunableLoop`."""
-        if self.max_submissions is not None:
-            if self.max_submissions <= (
-                self.valid_submissions + self.invalid_submissions):
-                return True
-        return self.last_batch
+        return self.finished
 
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
-        submissions = list(getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size])
-        if len(submissions) < chunk_size:
-            self.last_batch = True
+        # chunk_size is a float; we compare it below with an int value,
+        # which can lead to unexpected results. Since it is also used as
+        # a limit for an SQL query, convert it into an integer.
+        chunk_size = int(chunk_size)
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
+        if submissions.count() < chunk_size:
+            self.finished = True
         for submission in submissions:
             try:
                 parser = SubmissionParser(self.logger)
                 success = parser.processSubmission(submission)
                 if success:
-                    submission.status = HWSubmissionProcessingStatus.PROCESSED
-                    self.valid_submissions += 1
+                    self._validateSubmission(submission)
                 else:
-                    submission.status = HWSubmissionProcessingStatus.INVALID
-                    self.invalid_submissions += 1
+                    self._invalidateSubmission(submission)
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch these exceptions.
                 raise
@@ -1681,8 +1687,17 @@ class ProcessingLoop(object):
                 error_utility.raising(info, request)
                 self.logger.error('%s (%s)' % (message, request.oopsid))
 
-                submission.status = HWSubmissionProcessingStatus.INVALID
-                self.invalid_submissions += 1
+                self.transaction.abort()
+                self._invalidateSubmission(submission)
+                # Ensure that this submission is marked as bad, even if
+                # further submissions in this batch raise an exception.
+                self.transaction.commit()
+
+            if self.max_submissions is not None:
+                if self.max_submissions <= (
+                    self.valid_submissions + self.invalid_submissions):
+                    self.finished = True
+                    break
         self.transaction.commit()
 
 def process_pending_submissions(transaction, logger, max_submissions=None):
@@ -1692,7 +1707,13 @@ def process_pending_submissions(transaction, logger, max_submissions=None):
     mark them as either PROCESSED or INVALID.
     """
     loop = ProcessingLoop(transaction, logger, max_submissions)
-    loop_tuner = LoopTuner(loop, 2, maximum_chunk_size=50)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
     loop_tuner.run()
     logger.info(
         'Processed %i valid and %i invalid HWDB submissions'
