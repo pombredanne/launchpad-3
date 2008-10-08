@@ -295,9 +295,9 @@ statistics were updated accordingly.
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last current translation was submitted.
 
-    >>> from zope.app import datetimeutils
+    >>> from zope import datetime as zope_datetime
     >>> old_timestamp_text = '2006-11-28T12:30:00+00:00'
-    >>> old_timestamp = datetimeutils.parseDatetimetz(old_timestamp_text)
+    >>> old_timestamp = zope_datetime.parseDatetimetz(old_timestamp_text)
 
 We can see here that translation in pomsgset is newer than old_timestamp.
 

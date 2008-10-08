@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- DistributionSourcePackage -->
-  <content class="canonical.launchpad.database.DistributionSourcePackage">
+  <class class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
@@ -38,7 +38,7 @@
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
       />
-  </content>
+  </class>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"

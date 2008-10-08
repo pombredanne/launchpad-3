@@ -44,6 +44,7 @@ __all__ = [
     'quote',
     'quote_like',
     'quoteIdentifier',
+    'quote_identifier',
     'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
@@ -488,7 +489,7 @@ def sqlvalues(*values, **kwvalues):
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
 
 
-def quoteIdentifier(identifier):
+def quote_identifier(identifier):
     r'''Quote an identifier, such as a table name.
 
     In SQL, identifiers are quoted using " rather than ' which is reserved
@@ -506,6 +507,9 @@ def quoteIdentifier(identifier):
     "\"""
     '''
     return '"%s"' % identifier.replace('"','""')
+
+
+quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
 def flush_database_updates():
@@ -585,11 +589,14 @@ def begin():
     """Begins a transaction."""
     transaction.begin()
 
+
 def rollback():
     transaction.abort()
 
+
 def commit():
     transaction.commit()
+
 
 def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connection to the MAIN MASTER database.
@@ -601,6 +608,14 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
+    con_str = connect_string(user, dbname)
+    con = psycopg2.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
+
+
+def connect_string(user, dbname=None):
+    """Return a PostgreSQL connection string."""
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
@@ -620,11 +635,7 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    con_str = ' '.join([con_str] + con_str_overrides)
-
-    con = psycopg2.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
+    return ' '.join([con_str] + con_str_overrides)
 
 
 class cursor:

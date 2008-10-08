@@ -270,6 +270,7 @@ You can search for whether the product is marked reviewed or not.
 
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
+    rosetta
     alsa-utils
     python-gnome2-dev
     unassigned
@@ -315,6 +316,7 @@ This OR the licenses search field must match.
     applets
     jokosher
     launchpad
+    rosetta
     firefox
     thunderbird
     netapplet

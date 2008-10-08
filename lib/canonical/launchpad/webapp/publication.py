@@ -24,7 +24,7 @@ from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryView
+from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -54,6 +54,7 @@ __all__ = [
     'LaunchpadBrowserPublication'
     ]
 
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -67,7 +68,7 @@ class LoginRoot:
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
             root_object = getUtility(ILaunchpadRoot)
-            view = queryView(root_object, name, request)
+            view = queryMultiAdapter((root_object, request), name=name)
             return view
         else:
             return self
@@ -328,6 +329,15 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
 
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
+
         return mapply(ob, request.getPositionalArguments(), request)
 
     def afterCall(self, request, ob):
@@ -358,6 +368,9 @@ class LaunchpadBrowserPublication(
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 
