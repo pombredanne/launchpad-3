@@ -5,10 +5,10 @@
   i18n_domain="launchpad">
 
   <!-- DistroArchSeriesBinaryPackage -->
-  <content class="canonical.launchpad.database.DistroArchSeriesBinaryPackage">
+  <class class="canonical.launchpad.database.DistroArchSeriesBinaryPackage">
     <allow
       interface="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackage" />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackage"

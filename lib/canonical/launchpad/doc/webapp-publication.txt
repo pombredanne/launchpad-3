@@ -1105,6 +1105,22 @@ Doomed transactions are aborted.
     >>> del txn.abort # Clean up test fixture.
 
 
+== Requests on Python C Methods succeed ==
+
+Rarely but occasionally, it is possible to traverse to a Python C method.
+For instance, an XMLRPC proxy might allow a traversal to __repr__.
+`callObject` handles these methods itself, since Zope's
+`zope.publisher.publish.mapply` cannot.
+
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> publication.callObject(request, {}.__repr__)
+    '{}'
+    >>> import zope.security.checker
+    >>> publication.callObject(
+    ...     request, zope.security.checker.ProxyFactory({}).__repr__)
+    '{}'
+
+
 == HEAD requests have empty body ==
 
 The publication implementation also makes sure that no body is

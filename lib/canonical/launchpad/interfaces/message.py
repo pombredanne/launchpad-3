@@ -5,11 +5,11 @@ __metaclass__ = type
 
 __all__ = [
     'DuplicateMessageId',
+    'IDirectEmailAuthorization',
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
-    'IUserContactBy',
     'IUserToUserEmail',
     'IndexedMessage',
     'InvalidEmailMessage',
@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Attribute, Interface, implements
 from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
@@ -235,16 +235,16 @@ class IUserToUserEmail(Interface):
         required=True, readonly=True)
 
 
-class IUserContactBy(Interface):
+class IDirectEmailAuthorization(Interface):
     """Can a Launchpad user contact another Launchpad user?"""
 
-    is_allowed = Attribute(
-        """Is the sender allowed to send a message to a Launchpad user?
-
-        :return: True if the sender is allowed to send a message to a
-            Launchpad user, otherwise false.
-        :rtype: bool
-        """)
+    is_allowed = Bool(
+        title=_(
+            'Is the sender allowed to send a message to a Launchpad user?'),
+        description=_(
+            'True if the sender allowed to send a message to another '
+            'Launchpad user.'),
+        readonly=True)
 
 
 class UnknownSender(NotFoundError):

@@ -16,7 +16,7 @@ from time import time
 from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.session.interfaces import ISession, IClientIdManager
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zisinstance
 
