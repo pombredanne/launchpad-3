@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Attribute, Interface, implements
 from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
@@ -238,13 +238,13 @@ class IUserToUserEmail(Interface):
 class IUserContactBy(Interface):
     """Can a Launchpad user contact another Launchpad user?"""
 
-    is_allow = Attribute(
-        """Is the sender allowed to send a message to a Launchpad user?
-
-        :return: True if the sender is allowed to send a message to a
-            Launchpad user, otherwise false.
-        :rtype: bool
-        """)
+    is_allowed = Bool(
+        title=_(
+            'Is the sender allowed to send a message to a Launchpad user?'),
+        description=_(
+            'True if the sender allowed to send a message to another '
+            'Launchpad user.'),
+        readonly=True)
 
 
 class UnknownSender(NotFoundError):
