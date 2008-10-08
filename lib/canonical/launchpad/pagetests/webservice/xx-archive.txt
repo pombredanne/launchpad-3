@@ -33,16 +33,18 @@ at "ubuntutest":
     http://.../debian
     http://.../gentoo
 
-    >>> ubuntu = distros['entries'][2]
+    >>> ubuntutest = distros['entries'][2]
+    >>> ubuntu = distros['entries'][0]
 
 "ubuntutest" has a "main_archive" which is always present:
 
-    >>> print ubuntu['main_archive_link']
+    >>> print ubuntutest['main_archive_link']
     http://.../ubuntutest/+archive/primary
 
 The archive has the following attributes:
 
-    >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
+    >>> main_archive = webservice.get(
+    ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(main_archive)
     description: None
     distribution_link: u'http://.../ubuntutest'
@@ -54,10 +56,10 @@ The archive has the following attributes:
 
 A distribution can also provide a list of all its archives:
 
-    >>> print ubuntu['archives_collection_link']
+    >>> print ubuntutest['archives_collection_link']
     http://.../ubuntutest/archives
     >>> archives = webservice.get(
-    ...     ubuntu['archives_collection_link']).jsonBody()
+    ...     ubuntutest['archives_collection_link']).jsonBody()
     >>> print_self_link_of_entries(archives)
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
     http://api.launchpad.dev/beta/ubuntutest/+archive/primary
@@ -140,3 +142,199 @@ And one for an individual:
     self_link:
         u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
     source_package_name: None
+
+
+== Archive Permission Custom Operations ==
+
+Permission collections can be retrieved with custom operations on the
+archive.
+
+getPermissionsForPerson returns all the permissions that a user has.
+
+    >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
+    >>> permissions = webservice.named_get(
+    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
+    ...     person=ubuntu_team['self_link']).jsonBody()
+
+    >>> def show_permission_entries(permissions):
+    ...     for entry in sorted(permissions['entries']):
+    ...         print entry['permission']
+    ...         print entry['person_link']
+    ...         print entry['component_name']
+    ...         print entry['source_package_name']
+
+    >>> show_permission_entries(permissions)
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+getUploadersForPackage returns all the permissions where someone can
+upload a particular package.
+
+    >>> def show_mozilla_permissions():
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...         source_package_name='mozilla-firefox').jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+
+newPackageUploader() is a factory function that adds a new permission for
+a person to upload a package.
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
+    ...     person=name12['self_link'],
+    ...     source_package_name='mozilla-firefox')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12.mozilla-firefox
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~name12 None mozilla-firefox
+
+deletePackageUploader() removes that permission:
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deletePackageUploader', {},
+    ...     person=name12['self_link'],
+    ...     source_package_name='mozilla-firefox')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+
+getUploadersForComponent returns all the permissions where someone can
+upload to a particular component:
+
+    >>> def show_component_permissions(component=None):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...         component_name=component).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_component_permissions("main")
+    Archive Upload Rights ...~ubuntu-team main None
+
+If you don't specify the component, you get all the uploaders for
+all components.
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+newComponentUploader adds a new permission for a person to upload to a
+component.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'],
+    ...     component_name='restricted')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12.restricted
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team restricted None
+    Archive Upload Rights ...~name12 restricted None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+deleteComponentUploader() removes that permission:
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deleteComponentUploader', {},
+    ...     person=name12['self_link'],
+    ...     component_name='restricted')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team restricted None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+getQueueAdminsForComponent returns all the permissions where someone
+can administer distroseries queues in a particular component.
+
+    >>> def show_admins_for_component(component):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getQueueAdminsForComponent',
+    ...         component_name=component).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_admins_for_component("main")
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~ubuntu-team main None
+
+getComponentsForQueueAdmin returns all the permissions relating to components
+where the user is able to administer distroseries queues.
+
+    >>> def show_components_for_admin(person):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getComponentsForQueueAdmin',
+    ...         person=person['self_link']).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_components_for_admin(name12)
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None
+
+newQueueAdmin adds a new permission for a person to administer distroseries
+queues in a particular component.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
+    ...     person=name12['self_link'],
+    ...     component_name='partner')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
+
+    >>> show_components_for_admin(name12) 
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 partner None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None
+
+deleteQueueAdmin removes that permission.
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deleteQueueAdmin', {},
+    ...     person=name12['self_link'],
+    ...     component_name='partner')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_components_for_admin(name12) 
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None

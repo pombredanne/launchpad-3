@@ -5,19 +5,19 @@
     i18n_domain="launchpad">
 
     <!-- BountySubscription -->
-    <content class="canonical.launchpad.database.BountySubscription">
+    <class class="canonical.launchpad.database.BountySubscription">
         <allow interface="canonical.launchpad.interfaces.IBountySubscription" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IBountySubscription"
         />
-    </content>
+    </class>
 
     <!-- BountySubscriptionSet -->
-    <content class="canonical.launchpad.database.BountySubscriptionSet">
+    <class class="canonical.launchpad.database.BountySubscriptionSet">
         <allow
           interface="canonical.launchpad.interfaces.IBountySubscriptionSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BountySubscriptionSet"

@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- SourcePackage -->
-  <content class="canonical.launchpad.database.SourcePackage">
+  <class class="canonical.launchpad.database.SourcePackage">
     <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -21,7 +21,7 @@
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
       />
-  </content>
+  </class>
 
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"

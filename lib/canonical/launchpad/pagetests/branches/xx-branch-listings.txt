@@ -192,6 +192,28 @@ If the user does not have any branches, then we say so.
     There are no branches related to No Privileges Person today.
 
 
+Subscribed branch listings shouldn't show an option for sorting by "most
+interesting" and should default to sort by project name.
+
+    >>> browser.open('http://code.launchpad.dev/~name12/+subscribedbranches')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/~launchpad/gnome-terminal/launchpad ...
+    lp://dev/~name12/+junk/junk.dev ...
+
+    >>> filter_control = browser.getControl(name='field.sort_by')
+    >>> filter_control
+    <ListControl name='field.sort_by' type='select'>
+    >>> filter_control.displayValue
+    ['by project name']
+    >>> filter_control.displayOptions
+    ['by project name', 'by lifecycle status', 'by branch name',
+    'by registrant name', 'most recently changed first',
+    'least recently changed first', 'newest first', 'oldest first']
+
+
+
 == Branch Badge Decoration ==
 
 We display badges for associated bugs.

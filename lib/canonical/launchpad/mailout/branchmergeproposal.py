@@ -70,10 +70,10 @@ class RecipientReason:
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
-        source = self.merge_proposal.source_branch.displayname
-        target = self.merge_proposal.target_branch.displayname
+        source = self.merge_proposal.source_branch.bzr_identity
+        target = self.merge_proposal.target_branch.bzr_identity
         template_values = {
-            'branch_name': self.branch.displayname,
+            'branch_name': self.branch.bzr_identity,
             'entity_is': 'You are',
             'merge_proposal': (
                 'the proposed merge of %s into %s' % (source, target))
@@ -169,8 +169,8 @@ class BMPMailer(BaseMailer):
         params = BaseMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.displayname,
-            'target_branch': self.merge_proposal.target_branch.displayname,
+            'source_branch': self.merge_proposal.source_branch.bzr_identity,
+            'target_branch': self.merge_proposal.target_branch.bzr_identity,
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',

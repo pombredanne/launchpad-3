@@ -126,7 +126,7 @@ default the latest five are returned.
     ...     print project
     Bazaar
     Derby
-    Jokosher
+    Launchpad Translations
     Mega Money Maker
     Redfish
 
@@ -138,8 +138,8 @@ returned.
     >>> for project in sorted(projects):
     ...     print project
     Derby
+    Launchpad Translations
     Mega Money Maker
-    Redfish
 
 
 == Translatable Products ==
