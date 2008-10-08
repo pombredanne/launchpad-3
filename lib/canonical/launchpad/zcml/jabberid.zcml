@@ -4,17 +4,17 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.JabberID">
+    <class class="canonical.launchpad.database.JabberID">
         <allow interface="canonical.launchpad.interfaces.IHasOwner" />
         <allow attributes="id person jabberid" />
         <require permission="launchpad.Edit"
                  set_schema="canonical.launchpad.interfaces.IJabberID"
                  attributes="destroySelf" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.JabberIDSet">
+    <class class="canonical.launchpad.database.JabberIDSet">
         <allow interface="canonical.launchpad.interfaces.IJabberIDSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.JabberIDSet"

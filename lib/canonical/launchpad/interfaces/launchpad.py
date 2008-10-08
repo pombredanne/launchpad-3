@@ -122,7 +122,7 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-
+    lp_translations = Attribute("The Launchpad Translations product.")
 
 class ICrowd(Interface):
 

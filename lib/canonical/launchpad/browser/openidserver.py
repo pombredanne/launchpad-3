@@ -16,7 +16,7 @@ from time import time
 from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.session.interfaces import ISession, IClientIdManager
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zisinstance
 
@@ -31,7 +31,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
+    OpenIDPersistentIdentity, CurrentOpenIDEndPoint)
 from canonical.launchpad.interfaces.person import (
     IPersonSet, PersonVisibility)
 from canonical.launchpad.interfaces.logintoken import (
@@ -47,7 +47,6 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
@@ -87,7 +86,7 @@ class OpenIDMixin:
     def __init__(self, context, request):
         super(OpenIDMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIDStoreFactory)
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.server_url = CurrentOpenIDEndPoint.getServiceURL()
         self.openid_server = Server(store_factory(), self.server_url)
 
     @property
@@ -424,7 +423,7 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
         return (self.openid_request.idSelect() or
-                OpenIDPersistentIdentity.supportsURL(identity))
+                CurrentOpenIDEndPoint.supportsURL(identity))
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""

@@ -8,7 +8,7 @@ import urllib
 from datetime import datetime
 
 from zope.component import getUtility
-from zope.app.session.interfaces import ISession
+from zope.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile

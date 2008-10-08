@@ -5,7 +5,7 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.Entitlement">
+  <class class="canonical.launchpad.database.Entitlement">
     <require
         permission="launchpad.View"
         interface="canonical.launchpad.interfaces.IEntitlement"
@@ -14,12 +14,12 @@
         permission="launchpad.Admin"
         set_schema="canonical.launchpad.interfaces.IEntitlement"
         />
-  </content>
+  </class>
 
   <!-- EntitlementSet -->
-  <content class="canonical.launchpad.database.EntitlementSet">
+  <class class="canonical.launchpad.database.EntitlementSet">
     <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.EntitlementSet"

@@ -13,7 +13,7 @@ from email.Utils import make_msgid
 from logging import getLogger
 
 from zope.app import zapi
-from zope.app.mail.interfaces import IMailer
+from zope.sendmail.interfaces import IMailer
 from zope.interface import implements
 
 COMMASPACE = ', '

@@ -24,7 +24,7 @@
         template="../templates/bugtask-macros-cve.pt" />
 
     <!-- IBugTask -->
-    <content class="canonical.launchpad.database.BugTask">
+    <class class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_incomplete date_inprogress
                            date_left_new date_triaged date_fix_committed
@@ -64,7 +64,7 @@
             permission="launchpad.AnyPerson"
             attributes="offerMentoring retractMentoring"
             />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTask"
@@ -175,21 +175,21 @@
         template="../templates/bug-mark-as-affecting-user.pt" />
 
     <!-- NullBugTask -->
-    <content class="canonical.launchpad.database.bugtask.NullBugTask">
+    <class class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IBugTask" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBugTask" />
-    </content>
+    </class>
 
     <!-- BugTaskSet -->
-    <content class="canonical.launchpad.database.BugTaskSet">
+    <class class="canonical.launchpad.database.BugTaskSet">
       <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
       <allow
           interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-    </content>
+    </class>
 
     <securedutility
         provides="canonical.launchpad.interfaces.IBugTaskSet"
@@ -408,9 +408,9 @@
       />
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
+    <class class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
-    </content>
+    </class>
 
   </facet>
 

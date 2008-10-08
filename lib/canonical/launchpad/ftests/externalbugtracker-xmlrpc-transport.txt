@@ -21,6 +21,16 @@ in environments where http connections are made over a proxy.
     >>> transport.opener.handlers
     [<urllib2.ProxyHandler instance ...]
 
+UrlLib2Transport also accepts a CookieJar an optional parameter upon
+creation. This allows us to share a CookieJar - and therefore the cookie
+it contains - between different transports or URL openers.
+
+    >>> from cookielib import CookieJar
+    >>> jar = CookieJar()
+    >>> transport = UrlLib2Transport('http://example.com', jar)
+    >>> transport.cookie_processor.cookiejar == jar
+    True
+
 We patch the opener to return a fixed response without actually opening
 a connection.
 
@@ -181,3 +191,4 @@ request will be a GET request with no payload.
 
     >>> print redirected_request.data
     None
+
