@@ -10,7 +10,7 @@ import unittest
 from canonical.testing import LaunchpadFunctionalLayer
 import pytz
 
-from canonical.launchpad.database import CodeMailJobSource, Job
+from canonical.launchpad.database import CodeMailJobSource, Job, LeaseHeld
 from canonical.launchpad.interfaces import ICodeMailJob, JobStatus
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -91,6 +91,13 @@ class TestCodeMailJob(TestCaseWithFactory):
         self.assertEqual(JobStatus.FAILED, mail_job3.job.status)
         self.assertIsNot(None, mail_job1.job.lease_expires)
 
+    def test_runAll_with_held_lease(self):
+        mail_job1 = self.makeExampleMail()
+        def raise_lease_held():
+            raise LeaseHeld
+        mail_job1.job.acquireLease = raise_lease_held
+        CodeMailJobSource.runAll()
+        self.assertEqual(JobStatus.WAITING, mail_job1.job.status)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

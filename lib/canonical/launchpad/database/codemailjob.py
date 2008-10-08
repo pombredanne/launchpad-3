@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.database.job import Job
+from canonical.launchpad.database.job import Job, LeaseHeld
 from canonical.launchpad.interfaces import (
     ICodeMailJob, ICodeMailJobSource, JobStatus)
 from canonical.launchpad.mailout import append_footer
@@ -137,7 +137,15 @@ class CodeMailJobSource:
 
     @classmethod
     def runAll(klass):
+        final_jobs = []
         for job in klass.findRunnableJobs():
+            try:
+                job.job.acquireLease()
+            except LeaseHeld:
+                continue
+            else:
+                final_jobs.append(job)
+        for job in final_jobs:
             try:
                 job.run()
             except:
