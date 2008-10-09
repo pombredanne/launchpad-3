@@ -329,7 +329,7 @@
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-dependency.pt"
     />
 
@@ -341,7 +341,7 @@
     label="Remove a dependency"
     fields="dependency"
     keyword_arguments="dependency"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
   </browser:generalform>
 
