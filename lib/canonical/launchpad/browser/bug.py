@@ -290,7 +290,7 @@ class BugContextMenu(ContextMenu):
                 icon = None
             else:
                 text = "This bug does not affect me"
-                icon = 'hot-bug'
+                icon = 'flame-icon'
             return Link('+affectsmetoo', text, icon=icon, enabled=True)
         else:
             return Link('', '', enabled=False)

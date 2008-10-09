@@ -37,7 +37,7 @@ has marked the bug as affecting him.
 
    >>> print find_tags_by_class(
    ...     user_browser.contents, 'menu-link-affectsmetoo')[0]['style']
-   background: url(/@@/hot-bug) center left no-repeat...
+   background: url(/@@/flame-icon) center left no-repeat...
 
    >>> user_browser.getLink('This bug does not affect me').click()
 
