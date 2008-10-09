@@ -7,3 +7,5 @@
   - one batch for the products that we want to sync comments / bugs for.
     (use BugzillaLPPlugin for this)
   - one batch for everything else (use regular Bugzilla for this)
+ * Ensure that BugzillaLPPlugin will only be used for the Gnome Bugzilla
+   if it actually has the plugin installed.
