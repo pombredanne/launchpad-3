@@ -240,8 +240,7 @@
       <tr>
         <td>flame-icon</td>
         <td><img alt="" src="/@@/flame-icon" /></td>
-        <td>Currently used to show a top-affecting user bug. May be used for other things 
-            in the future.</td>
+        <td>Currently used to show a bug affecting many users.</td>
       </tr>
       <tr>
         <td>flame-large</td>
