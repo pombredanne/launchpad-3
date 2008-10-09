@@ -433,6 +433,22 @@ class BranchPullQueueTest(TestCaseWithFactory):
             (branch.id, branch.getPullURL(), branch.unique_name,
              '/' + default_branch.unique_name), info)
 
+    def test_getBranchPullInfo_private_branch(self):
+        # We don't want to stack mirrored branches onto private branches:
+        # mirrored branches are public by their nature. This, if the default
+        # stacked-on branch for the project is private and the branch is
+        # MIRRORED then we don't include the default stacked-on branch's
+        # details in the tuple.
+        default_branch = self.factory.makeBranch(private=True)
+        product = removeSecurityProxy(default_branch).product
+        product.development_focus.user_branch = default_branch
+        mirrored_branch = self.factory.makeBranch(
+            BranchType.MIRRORED, product=product)
+        info = self.storage._getBranchPullInfo(mirrored_branch)
+        self.assertEqual(
+            (mirrored_branch.id, mirrored_branch.getPullURL(),
+             mirrored_branch.unique_name, ''), info)
+
     def test_getBranchPullInfo_junk(self):
         # _getBranchPullInfo returns (id, url, unique_name, '') for junk
         # branches.

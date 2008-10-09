@@ -5,14 +5,14 @@
     i18n_domain="launchpad">
 
     <!-- PackageRelationship -->
-    <content class="canonical.launchpad.browser.PackageRelationship">
+    <class class="canonical.launchpad.browser.PackageRelationship">
       <allow interface="canonical.launchpad.interfaces.IPackageRelationship"/>
-    </content>
+    </class>
 
     <!-- PackageRelationshipSet -->
-    <content class="canonical.launchpad.browser.PackageRelationshipSet">
+    <class class="canonical.launchpad.browser.PackageRelationshipSet">
       <allow interface="canonical.launchpad.interfaces.IPackageRelationshipSet"/>
-    </content>
+    </class>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPackageRelationshipSet"

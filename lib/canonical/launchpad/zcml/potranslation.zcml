@@ -4,8 +4,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.POTranslation">
+    <class class="canonical.launchpad.database.POTranslation">
       <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
-    </content>
+    </class>
 
 </configure>

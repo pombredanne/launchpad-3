@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
   <!-- BranchRef -->
-  <content class="canonical.launchpad.browser.branchref.BranchRef">
+  <class class="canonical.launchpad.browser.branchref.BranchRef">
     <allow interface="canonical.launchpad.interfaces.IBranchRef" />
-  </content>
+  </class>
 
   <browser:url
       for="canonical.launchpad.interfaces.IBranchRef"
@@ -20,8 +20,8 @@
 
   <!-- static content view -->
 
-  <content class="canonical.launchpad.browser.branchref.StaticContentView">
+  <class class="canonical.launchpad.browser.branchref.StaticContentView">
     <allow attributes="browserDefault __call__" />
-  </content>
+  </class>
 
 </configure>

@@ -3,7 +3,7 @@
 """
 The One True Way to send mail from the Launchpad application.
 
-Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
+Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
 IMailSentEvent or IMailErrorEvent to record status.
 
 TODO: We should append a signature to messages sent through
@@ -169,7 +169,7 @@ def sendmail(message, to_addrs=None):
     If to_addrs is None, the message will be sent to all the addresses
     specified in the To: and CC: headers.
 
-    Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
+    Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
     Returns the Message-Id

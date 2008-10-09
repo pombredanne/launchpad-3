@@ -5,14 +5,14 @@
     i18n_domain="launchpad">
 
   <!-- DistroSeriesLanguage and Dummy -->
-  <content class="canonical.launchpad.database.DistroSeriesLanguage">
+  <class class="canonical.launchpad.database.DistroSeriesLanguage">
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage" />
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.DummyDistroSeriesLanguage">
+  <class class="canonical.launchpad.database.DummyDistroSeriesLanguage">
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage"
       />
-  </content>
+  </class>
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistroSeriesLanguage"

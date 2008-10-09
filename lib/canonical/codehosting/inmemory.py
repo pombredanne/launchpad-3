@@ -252,7 +252,10 @@ class FakeBranchPuller:
         if branch.product is not None:
             series = branch.product.development_focus
             user_branch = series.user_branch
-            if user_branch is not None:
+            if (user_branch is not None
+                and not (
+                    user_branch.private
+                    and branch.branch_type == BranchType.MIRRORED)):
                 default_branch = '/' + user_branch.unique_name
         return (
             branch.id, branch.getPullURL(), branch.unique_name,
