@@ -50,7 +50,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
 from zope.formlib import form
@@ -1176,9 +1176,14 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
 
 class ProductChangeTranslatorsView(ProductEditView):
-    label = "Change translation group"
+    label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
+    @cachedproperty
+    def answersUrl(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers', view_name='+addquestion')
 
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
@@ -1214,8 +1219,7 @@ class ProductAdminView(ProductEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
     def validate(self, data):
@@ -1675,6 +1679,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
+    show_set_development_focus = True
+
     def initialize(self):
         ProductBranchListingView.initialize(self)
         self.product = self.context
@@ -1763,6 +1769,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
+        if not check_permission('launchpad.View', dev_focus_branch):
+            dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
@@ -1770,6 +1778,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
+                check_permission('launchpad.View', branch) and
                 show_branch(branch)):
                 result.append(branch)
         return result

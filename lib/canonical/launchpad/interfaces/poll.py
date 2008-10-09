@@ -17,14 +17,18 @@ __all__ = [
     'OptionIsNotFromSimplePoll'
     ]
 
-# Imports from zope
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from zope.interface import Interface, Attribute
+from datetime import datetime
+import pytz
+
 from zope.component import getUtility
+from zope.interface import Attribute, Interface
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import ITeam
+from canonical.launchpad.interfaces.person import ITeam
 from canonical.launchpad.fields import ContentNameField
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
@@ -137,6 +141,24 @@ class IPoll(Interface):
         title=_('The secrecy of the Poll.'), required=True,
         readonly=False, vocabulary=PollSecrecy,
         default=PollSecrecy.SECRET)
+
+    @invariant
+    def saneDates(poll):
+        """Ensure the poll's dates are sane.
+
+        A poll's end date must be after its start date and its start date must
+        be at least 12h from now.
+        """
+        if poll.dateopens >= poll.datecloses:
+            raise Invalid(
+                "A poll cannot close at the time (or before) it opens.")
+        now = datetime.now(pytz.UTC)
+        start_date = poll.dateopens.astimezone(pytz.UTC)
+        delta = start_date - now
+        twelve_hours = 12 * 60 * 60
+        if delta.days < 1 and delta.seconds < twelve_hours:
+            raise Invalid(
+                "A poll cannot open less than 12 hours after it's created.")
 
     def isOpen(when=None):
         """Return True if this Poll is still open.
@@ -425,7 +447,8 @@ class IVote(Interface):
         readonly=False)
 
     token = Text(
-        title=_('The token we give to the user.'), required=True, readonly=True)
+        title=_('The token we give to the user.'),
+        required=True, readonly=True)
 
 
 class OptionIsNotFromSimplePoll(Exception):

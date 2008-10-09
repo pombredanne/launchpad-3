@@ -34,7 +34,7 @@ import os
 from subprocess import Popen, PIPE
 
 from zope.component import getUtility
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -646,8 +646,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                     "that selecting a specification here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
-            render_context=self.render_context,
-            custom_widget=self.custom_widgets['superseded_by'])
+            render_context=self.render_context)
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):

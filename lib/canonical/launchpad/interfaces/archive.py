@@ -25,12 +25,15 @@ from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry, exported, export_read_operation,
+    export_factory_operation, export_write_operation, operation_parameters,
+    operation_returns_collection_of)
 
 
 class ArchiveDependencyError(Exception):
@@ -310,29 +313,209 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
-    def canUpload(user, component_or_package=None):
-        """Check to see if user is allowed to upload to component.
+    def getPermissions(person, item, perm_type):
+        """Get the `IArchivePermission` record with the supplied details.
 
-        :param user: An `IPerson` whom should be checked for authentication.
+        :param person: An `IPerson`
+        :param item: An `IComponent`, `ISourcePackageName`
+        :param perm_type: An ArchivePermissionType enum,
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPermissionsForPerson(person):
+        """Return the `IArchivePermission` records applicable to the person.
+
+        :param person: An `IPerson`
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForPackage(source_package_name):
+        """Return `IArchivePermission` records for the package's uploaders.
+
+        :param source_package_name: An `ISourcePackageName` or textual name
+            for the source package.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        component_name=TextLine(title=_("Component Name"), required=False))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForComponent(component_name=None):
+        """Return `IArchivePermission` records for the component's uploaders.
+
+        :param component_name: An `IComponent` or textual name for the
+            component.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        component_name=TextLine(title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getQueueAdminsForComponent(component_name):
+        """Return `IArchivePermission` records for authorised queue admins.
+
+        :param component_name: An `IComponent` or textual name for the
+            component.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getComponentsForQueueAdmin(person):
+        """Return `IArchivePermission` for the person's queue admin components
+
+        :param person: An `IPerson`
+        :return: A list of `IArchivePermission` records.
+        """
+
+    def canUpload(person, component_or_package=None):
+        """Check to see if person is allowed to upload to component.
+
+        :param person: An `IPerson` whom should be checked for authentication.
         :param component_or_package: The context `IComponent` or an
             `ISourcePackageName` for the check.  This parameter is
             not required if the archive is a PPA.
 
-        :return: True if 'user' is allowed to upload to the specified
+        :return: True if 'person' is allowed to upload to the specified
             component or package name.
         :raise TypeError: If component_or_package is not one of
             `IComponent` or `ISourcePackageName`.
 
         """
 
-    def canAdministerQueue(user, component):
-        """Check to see if user is allowed to administer queue items.
+    def canAdministerQueue(person, component):
+        """Check to see if person is allowed to administer queue items.
 
-        :param user: An `IPerson` whom should be checked for authenticate.
+        :param person: An `IPerson` whom should be checked for authenticate.
         :param component: The context `IComponent` for the check.
 
-        :return: True if 'user' is allowed to administer the package upload
+        :return: True if 'person' is allowed to administer the package upload
         queue for items with 'component'.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newPackageUploader(person, source_package_name):
+        """Add permisson for a person to upload a package to this archive.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param source_package_name: An `ISourcePackageName` or textual package
+            name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newComponentUploader(person, component_name):
+        """Add permission for a person to upload to a component.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newQueueAdmin(person, component_name):
+        """Add permission for a person to administer a distroseries queue.
+
+        The supplied person will gain permission to administer the
+        distroseries queue for packages in the supplied component.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    @export_write_operation()
+    def deletePackageUploader(person, source_package_name):
+        """Revoke permission for the person to upload the package.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param source_package_name: An `ISourcePackageName` or textual package
+            name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    @export_write_operation()
+    def deleteComponentUploader(person, component_name):
+        """Revoke permission for the person to upload to the component.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    @export_write_operation()
+    def deleteQueueAdmin(person, component_name):
+        """Revoke permission for the person to administer distroseries queues.
+
+        The supplied person will lose permission to administer the
+        distroseries queue for packages in the supplied component.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param component: An `IComponent` or textual component name.
+        """
+
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        archive context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc';
+         * Binary files: '.deb' and '.udeb';
+         * Source changesfile: '_source.changes';
+         * Package diffs: '.diff.gz';
+
+        :param filename: exactly filename to be looked up.
+
+        :raises AssertionError if the given filename contains a unsupported
+            filename and/or extension, see the list above.
+        :raises NotFoundError if no file could not be found.
+
+        :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
 
@@ -356,11 +539,6 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
-
-
-# Avoid circular import.
-from canonical.launchpad.interfaces.distribution import IDistribution
-IArchive['distribution'].schema = IDistribution
 
 
 class IArchiveSourceSelectionForm(Interface):
@@ -519,3 +697,35 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+
+# MONKEY PATCH TIME!
+# Fix circular dependency issues.
+from canonical.launchpad.interfaces.distribution import IDistribution
+IArchive['distribution'].schema = IDistribution
+
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermission)
+IArchive['getPermissionsForPerson'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getUploadersForPackage'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getUploadersForComponent'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getQueueAdminsForComponent'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['getComponentsForQueueAdmin'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].value_type.schema = IArchivePermission
+IArchive['newPackageUploader'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].schema = IArchivePermission
+IArchive['newComponentUploader'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].schema = IArchivePermission
+IArchive['newQueueAdmin'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'return_type'].schema = IArchivePermission

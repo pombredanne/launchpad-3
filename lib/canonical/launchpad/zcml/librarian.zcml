@@ -4,13 +4,13 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.LibraryFileAlias">
+  <class class="canonical.launchpad.database.LibraryFileAlias">
     <allow interface="canonical.launchpad.interfaces.ILibraryFileAlias" />
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.LibraryFileContent">
+  <class class="canonical.launchpad.database.LibraryFileContent">
     <allow interface="canonical.launchpad.interfaces.ILibraryFileContent" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.LibraryFileAliasSet"
@@ -37,5 +37,10 @@
     for="canonical.launchpad.interfaces.ILibraryFileAlias"
     class="canonical.launchpad.browser.LibraryFileAliasMD5View"
     />
+
+  <!-- StreamOrRedirectLibraryFileAliasView -->
+  <class class="canonical.launchpad.browser.librarian.StreamOrRedirectLibraryFileAliasView">
+    <allow attributes="browserDefault __call__" />
+  </class>
 
 </configure>

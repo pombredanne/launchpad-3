@@ -266,12 +266,19 @@ class IBug(ICanBeMentored):
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
 
-    messages = exported(
+    messages = CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage))
+
+    indexed_messages = exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Reference(schema=IMessage)))
+            value_type=Reference(schema=IMessage)),
+        exported_as='messages')
 
     followup_subject = Attribute("The likely subject of the next message.")
 

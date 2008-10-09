@@ -75,9 +75,9 @@
 
 
     <!-- ShipItApplication -->
-    <content class="canonical.launchpad.systemhomes.ShipItApplication">
+    <class class="canonical.launchpad.systemhomes.ShipItApplication">
         <allow interface="canonical.launchpad.interfaces.IShipItApplication" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.systemhomes.ShipItApplication"
@@ -264,12 +264,12 @@
 
 
     <!-- ShippingRequest -->
-    <content class="canonical.launchpad.database.ShippingRequest">
+    <class class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IShippingRequest" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IShippingRequest"
@@ -311,9 +311,9 @@
         />
 
     <!-- ShippingRequestSet -->
-    <content class="canonical.launchpad.database.ShippingRequestSet">
+    <class class="canonical.launchpad.database.ShippingRequestSet">
         <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ShippingRequestSet"
@@ -343,12 +343,12 @@
 
 
     <!-- StandardShipItRequest -->
-    <content class="canonical.launchpad.database.StandardShipItRequest">
+    <class class="canonical.launchpad.database.StandardShipItRequest">
         <allow interface="canonical.launchpad.interfaces.IStandardShipItRequest" />
         <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IStandardShipItRequest" />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
@@ -381,9 +381,9 @@
 
 
     <!-- StandardShipItRequestSet -->
-    <content class="canonical.launchpad.database.StandardShipItRequestSet">
+    <class class="canonical.launchpad.database.StandardShipItRequestSet">
         <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.StandardShipItRequestSet"
@@ -425,18 +425,18 @@
 
 
     <!-- RequestedCDs -->
-    <content class="canonical.launchpad.database.RequestedCDs">
+    <class class="canonical.launchpad.database.RequestedCDs">
         <allow interface="canonical.launchpad.interfaces.IRequestedCDs" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
-    </content>
+    </class>
 
 
     <!-- Shipment -->
-    <content class="canonical.launchpad.database.Shipment">
+    <class class="canonical.launchpad.database.Shipment">
         <allow interface="canonical.launchpad.interfaces.IShipment" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ShipmentSet"
@@ -446,12 +446,12 @@
 
 
     <!-- ShippingRun -->
-    <content class="canonical.launchpad.database.ShippingRun">
+    <class class="canonical.launchpad.database.ShippingRun">
         <allow interface="canonical.launchpad.interfaces.IShippingRun" />
         <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShippingRun" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ShippingRunSet"
@@ -460,12 +460,12 @@
     </securedutility>
 
     <!-- ShipItReport -->
-    <content class="canonical.launchpad.database.ShipItReport">
+    <class class="canonical.launchpad.database.ShipItReport">
         <allow interface="canonical.launchpad.interfaces.IShipItReport" />
         <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShipItReport" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.ShipItReportSet"

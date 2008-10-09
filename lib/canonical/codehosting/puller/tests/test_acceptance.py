@@ -28,8 +28,7 @@ from canonical.codehosting.branchfs import get_puller_server
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, IProductSet, IScriptActivitySet)
+from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 
@@ -201,17 +200,6 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
-    def _getProductWithStacking(self):
-        # Only products that are explicitly specified in
-        # allow_default_stacking will have values for default stacked-on. Here
-        # we look up one of those products in the sample data. Normally, we'd
-        # edit the configuration, but this has to work across process
-        # boundaries.
-        from canonical.launchpad.database.product import (
-            get_allowed_default_stacking_names)
-        product_name = get_allowed_default_stacking_names()[0]
-        return getUtility(IProductSet).getByName(product_name)
-
     def _makeDefaultStackedOnBranch(self):
         """Make a default stacked-on branch.
 
@@ -223,7 +211,7 @@ class TestBranchPuller(PullerBranchTestCase):
         :return: `IBranch`.
         """
         # Make the branch.
-        product = self._getProductWithStacking()
+        product = self.factory.makeProduct()
         default_branch = self.factory.makeBranch(product=product)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)

@@ -12,7 +12,6 @@ import traceback
 from time import time
 import warnings
 
-import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
@@ -23,14 +22,17 @@ from storm.exceptions import TimeoutError
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
+import transaction
 from zope.component import getUtility
 from zope.interface import classImplements, classProvides, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
+from canonical.lazr.utils import safe_hasattr
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+
 
 __all__ = [
     'DisconnectionError',
@@ -277,6 +279,8 @@ class LaunchpadSessionDatabase(Postgres):
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
+        if safe_hasattr(raw_connection, 'auto_close'):
+            raw_connection.auto_close = False
         raw_connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         _reset_dirty_commit_flags(*flags)
         return raw_connection
@@ -314,12 +318,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
                 connection, raw_cursor, statement, params)
         except TimeoutError:
             info = sys.exc_info()
-            # make sure the current transaction can not be committed by
-            # sending a broken SQL statement to the database
-            try:
-                raw_cursor.execute('break this transaction')
-            except psycopg2.DatabaseError:
-                pass
+            transaction.doom()
             OpStats.stats['timeouts'] += 1
             try:
                 raise info[0], info[1], info[2]
@@ -401,5 +400,3 @@ class StoreSelector:
         if flavor == DEFAULT_FLAVOR:
             flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
         return getUtility(IZStorm).get('%s-%s' % (name, flavor))
-
-

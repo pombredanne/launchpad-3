@@ -69,7 +69,7 @@ import transaction
 
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, getGlobalSiteManager
+from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -154,7 +154,8 @@ def is_ca_available():
 def disconnect_stores():
     """Disconnect Storm stores."""
     zstorm = getUtility(IZStorm)
-    stores = [store for name, store in zstorm.iterstores()]
+    stores = [
+        store for name, store in zstorm.iterstores() if name != 'session']
 
     # If we have any stores, abort the transaction and close them.
     if stores:
@@ -711,6 +712,29 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
                 "Test didn't reset default timeout function.")
         set_default_timeout_function(None)
 
+    # A database connection to the session database, created by the first
+    # call to resetSessionDb.
+    _raw_sessiondb_connection = None
+
+    @classmethod
+    @profiled
+    def resetSessionDb(cls):
+        """Reset the session database.
+
+        Layers that need session database isolation call this explicitly
+        in the testSetUp().
+        """
+        if LaunchpadLayer._raw_sessiondb_connection is None:
+            from storm.uri import URI
+            from canonical.launchpad.webapp.adapter import (
+                LaunchpadSessionDatabase)
+            launchpad_session_database = LaunchpadSessionDatabase(
+                URI('launchpad-session:'))
+            LaunchpadLayer._raw_sessiondb_connection = (
+                launchpad_session_database.raw_connect())
+        LaunchpadLayer._raw_sessiondb_connection.cursor().execute(
+            "DELETE FROM SessionData")
+
 
 class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
@@ -1012,7 +1036,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+        provideUtility(TestMailBox(), IMailBox)
 
     @classmethod
     @profiled
@@ -1143,7 +1167,15 @@ class MockHTTPTask:
         # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
-        self.bytes_written = int(response.getHeader('Content-length'))
+        # When streaming files (see lib/zope/publisher/httpresults.txt)
+        # the 'Content-Length' header is missing. When it happens we set
+        # 'bytes_written' to an obviously invalid value. This variable is
+        # used for logging purposes, see webapp/servers.py.
+        content_length = response.getHeader('Content-Length')
+        if content_length is not None:
+            self.bytes_written = int(content_length)
+        else:
+            self.bytes_written = -1
         self.request_data.headers = self.request.headers
         self.request_data.first_line = first_line
 
@@ -1208,6 +1240,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def startStory(cls):
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
+        LaunchpadLayer.resetSessionDb()
         PageTestLayer.resetBetweenTests(False)
 
     @classmethod
@@ -1473,7 +1506,7 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
@@ -1500,7 +1533,7 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
@@ -1527,7 +1560,7 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled

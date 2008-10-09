@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.DistroSeries">
+  <class class="canonical.launchpad.database.DistroSeries">
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
@@ -48,7 +48,7 @@
         permission="launchpad.AnyPerson"
         attributes="addBugSubscription addSubscription
                     removeBugSubscription" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistroSeriesSet"

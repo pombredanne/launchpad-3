@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- DistributionSourcePackageRelease -->
-  <content class="canonical.launchpad.database.DistributionSourcePackageRelease">
+  <class class="canonical.launchpad.database.DistributionSourcePackageRelease">
     <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageRelease" />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"

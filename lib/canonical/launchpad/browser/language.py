@@ -15,7 +15,7 @@ __all__ = [
 
 import operator
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form

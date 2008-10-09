@@ -243,7 +243,7 @@ It is possible to get a batched list of all the projects.
     >>> project_collection['resource_type_link']
     u'http://.../#projects'
     >>> project_collection['total_size']
-    22
+    23
 
     >>> project_entries = sorted(
     ...     project_collection['entries'], key=itemgetter('display_name'))
@@ -294,7 +294,7 @@ The latest projects registered can be retrieved.
     ...     print project['display_name']
     Bazaar
     Derby
-    Jokosher
+    Launchpad Translations
     Mega Money Maker
     Redfish
 
@@ -483,6 +483,16 @@ The milestone name can only contain letters, numbers, "-", "+", and ".".
     ...
     Invalid name...
 
+Invalid data will return a Bad Request error.
+
+    >>> response = webservice.named_post(
+    ...     firefox_1_0['self_link'], 'newMilestone', {},
+    ...     name='buggy', date_targeted=u'2005-10-36',
+    ...     description='Very buggy.')
+    >>> print response
+    HTTP/1.1 400 Bad Request
+    ...
+    date_targeted: Value doesn't look like a date.
 
 = Project release =
 
@@ -575,6 +585,13 @@ host.
     >>> print_self_link_of_entries(releases)
     http://api.launchpad.dev/beta/firefox/1.0/1.0.0
     http://.../firefox/1.0/rc1
+
+They can be deleted with the 'delete' operation.
+
+    >>> results = webservice.named_post('/firefox/1.0/rc1', 'delete')
+    >>> print results
+    HTTP/1.1 200 Ok
+    ...
 
 
 == Project release file entry ==

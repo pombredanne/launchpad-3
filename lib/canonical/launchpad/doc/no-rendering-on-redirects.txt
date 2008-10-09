@@ -5,7 +5,7 @@ to another page, since it doesn't make any sense. For this we have a
 mix-in class we can use, NoRenderingOnRedirect, which defines a
 __call__ method.
 
-    >>> from zope.app.publisher.browser import BrowserView
+    >>> from zope.publisher.browser import BrowserView
     >>> from canonical.launchpad.webapp.generalform import (
     ...     NoRenderingOnRedirect)
     >>> class TestPage(BrowserView, NoRenderingOnRedirect):
