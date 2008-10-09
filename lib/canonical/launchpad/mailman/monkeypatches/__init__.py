@@ -4,6 +4,7 @@ import os
 
 from canonical.lazr.config import as_host_port
 
+
 HERE = os.path.dirname(__file__)
 
 
