@@ -13,9 +13,10 @@ from datetime import datetime, timedelta
 from zope.component import getUtility
 from zope.interface import implements
 from zope.session.interfaces import (
-    ISessionDataContainer, ISessionData, ISessionPkgData)
+    ISessionDataContainer, ISessionData, ISessionPkgData, IClientIdManager)
 
 from storm.zope.interfaces import IZStorm
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 
 SECONDS = 1
@@ -117,9 +118,14 @@ class PGSessionData(PGSessionBase):
     def _ensureClientId(self):
         if self._have_ensured_client_id:
             return
+        # we want to make sure the cookie and the database both know about
+        # our cookie.  We're doing it lazily to try and keep anonymous users
+        # from having a session.
         self.store.execute(
             "SELECT ensure_session_client_id(?)", (self.client_id,),
             noresult=True)
+        getUtility(IClientIdManager).setRequestId(
+            get_current_browser_request(), self.client_id)
         self._have_ensured_client_id = True
 
     def __getitem__(self, product_id):

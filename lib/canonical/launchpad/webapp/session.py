@@ -38,6 +38,7 @@ def get_cookie_domain(request_domain):
             return dotted_domain
     return None
 
+ANNOTATION_KEY = 'canonical.launchpad.webapp.session.sid'
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
@@ -48,6 +49,22 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # It should be larger than our session expiry time.
         self.cookieLifetime = 1 * YEARS
         self._secret = None
+
+    def getClientId(self, request):
+        sid = self.getRequestId(request)
+        if sid is None:
+            # Our session data container (see pgsession.py in the same
+            # directory) explicitly calls setRequestId the first time a
+            # __setitem__ is called. Therefore, we only generate one here,
+            # and do not set it. This keeps the session id out of anonymous
+            # sessions.  Unfortunately, it is also Rube-Goldbergian: we should
+            # consider switching to our own session/cookie machinery that
+            # suits us better.
+            sid = request.annotations.get(ANNOTATION_KEY)
+            if sid is None:
+                sid = self.generateUniqueId()
+                request.annotations[ANNOTATION_KEY] = sid
+        return sid
 
     def _get_secret(self):
         # Because our CookieClientIdManager is not persistent, we need to

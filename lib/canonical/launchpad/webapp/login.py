@@ -8,7 +8,7 @@ import urllib
 from datetime import datetime
 
 from zope.component import getUtility
-from zope.session.interfaces import ISession
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -382,23 +382,19 @@ def logoutPerson(request):
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()
         request.setPrincipal(principal)
+        # We want to clear the session cookie so anonymous users can get
+        # cached pages again. We need to do this after setting the session
+        # values (e.g., ``authdata['personid'] = None``, above), because that
+        # code will itself try to set the cookie in the browser.
+        session_cookiename = getUtility(IClientIdManager).namespace
+        request.response.expireCookie(session_cookiename)
         notify(LoggedOutEvent(request))
 
 
 class CookieLogoutPage:
 
     def logout(self):
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        if previous_login is not None:
-            authdata['personid'] = None
-            authdata['logintime'] = datetime.utcnow()
-            notify(LoggedOutEvent(self.request))
-        else:
-            # There is no cookie-based login currently.
-            # So, don't attempt to log out.  Just redirect
-            pass
+        logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'You have been logged out')
             )
