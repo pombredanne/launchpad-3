@@ -95,19 +95,17 @@ def get_sources_list_for_building(build):
     :return: a deb sources_list entries (lines).
     """
     deps = []
-    archive_dependencies = list(build.archive.dependencies)
 
-    # Consider primary archive dependencies.
-    primary_dependencies = [
-        archive_dependency for archive_dependency in archive_dependencies
-        if archive_dependency.dependency.purpose == ArchivePurpose.PRIMARY]
-    if len(primary_dependencies) == 0:
+    # Consider primary archive dependencies override. Add the default
+    # primary archive dependencies if it's not present.
+    if build.archive.getArchiveDependency(
+        build.distribution.main_archive) is None:
         primary_dependencies = _get_default_primary_dependencies(build)
         deps.extend(primary_dependencies)
 
     # Consider user-selected archive dependencies.
     primary_component = get_primary_current_component(build)
-    for archive_dependency in archive_dependencies:
+    for archive_dependency in build.archive.dependencies:
         # Undefined component dependency means that the it should be
         # restricted to the component this source was published in
         # primary archive.
