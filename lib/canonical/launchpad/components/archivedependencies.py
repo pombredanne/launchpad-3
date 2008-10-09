@@ -192,7 +192,7 @@ def _get_default_primary_dependencies(build):
 
     :param build: the `IBuild` context;
 
-    :return a list containing the the default dependencies to primary
+    :return: a list containing the the default dependencies to primary
         archive.
     """
     if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
