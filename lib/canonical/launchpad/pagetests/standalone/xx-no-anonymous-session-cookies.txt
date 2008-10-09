@@ -12,7 +12,9 @@ the underlying mechanize browser.
     >>> import pytz
     >>> class Cookies(DictMixin):
     ...     """Cookies for testbrowser.  Currently does not implement setting.
-    ...     Trying to get this idea accepted upstream for zope.testbrowser."""
+    ...     This idea has been accepted into zope.testbrowser, upstream, so
+    ...     this code will be removed once that change has landed and we are
+    ...     able to use it."""
     ...     def __init__(self, testbrowser):
     ...         self.testbrowser = testbrowser
     ...     @property
@@ -69,8 +71,8 @@ Now let's log in and show that the session cookie is set.
     >>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
     >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Log In').click()
-    >>> 'Foo Bar' in browser.contents
-    True
+    >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
+    Foo Bar &bull;
     >>> len(cookies)
     1
     >>> cookies.keys()

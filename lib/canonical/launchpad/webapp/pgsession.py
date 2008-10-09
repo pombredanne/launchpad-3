@@ -118,9 +118,9 @@ class PGSessionData(PGSessionBase):
     def _ensureClientId(self):
         if self._have_ensured_client_id:
             return
-        # we want to make sure the cookie and the database both know about
-        # our cookie.  We're doing it lazily to try and keep anonymous users
-        # from having a session.
+        # we want to make sure the browser cookie and the database both know
+        # about our client id. We're doing it lazily to try and keep anonymous
+        # users from having a session.
         self.store.execute(
             "SELECT ensure_session_client_id(?)", (self.client_id,),
             noresult=True)
