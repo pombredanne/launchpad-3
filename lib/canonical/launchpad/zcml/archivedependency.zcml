@@ -5,8 +5,8 @@
   i18n_domain="launchpad">
 
   <!-- ArchiveDependency -->
-  <content class="canonical.launchpad.database.ArchiveDependency">
+  <class class="canonical.launchpad.database.ArchiveDependency">
     <allow interface="canonical.launchpad.interfaces.IArchiveDependency"/>
-  </content>
+  </class>
 
 </configure>

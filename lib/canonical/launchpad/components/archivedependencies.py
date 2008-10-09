@@ -6,8 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'component_dependencies',
-    'getComponentsForBuilding',
-    'getSourcesListForBuilding',
+    'get_components_for_building',
+    'get_primary_current_component',
+    'get_sources_list_for_building',
     'pocket_dependencies',
     ]
 
@@ -54,7 +55,7 @@ pocket_dependencies = {
     }
 
 
-def getComponentsForBuilding(build):
+def get_components_for_building(build):
     """Return the components allowed to be used in the build context.
 
     :param build: a context `IBuild`.
@@ -69,13 +70,13 @@ def getComponentsForBuilding(build):
     return component_dependencies[build.current_component.name]
 
 
-def getSourcesListForBuilding(build):
+def get_sources_list_for_building(build):
     """Return the sources_list entries required to build the given item.
 
     :param build: a context `IBuild`.
     :return: a deb sources_list entries (lines).
     """
-    ogre_components = getComponentsForBuilding(build)
+    ogre_components = get_components_for_building(build)
 
     deps = []
 
@@ -93,12 +94,12 @@ def getSourcesListForBuilding(build):
         if build.archive.private:
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.SECURITY]
+            primary_components = component_dependencies[
+                get_primary_current_component(build)]
         else:
             primary_pockets = pocket_dependencies[
                 PackagePublishingPocket.UPDATES]
-
-        # Partner and PPA may also depend on any component.
-        primary_components = component_dependencies['multiverse']
+            primary_components = component_dependencies['multiverse']
 
         deps.append(
             (build.archive, PackagePublishingPocket.RELEASE,
@@ -122,18 +123,36 @@ def getSourcesListForBuilding(build):
 
     sources_list_lines = []
     for archive, pocket, components in deps:
-        has_published_binaries = _hasPublishedBinaries(
+        has_published_binaries = _has_published_binaries(
             archive, build.distroarchseries, pocket)
         if not has_published_binaries:
             continue
-        sources_list_line = _getBinarySourcesListLine(
+        sources_list_line = _get_binary_sources_list_line(
             archive, build.distroarchseries, pocket, components)
         sources_list_lines.append(sources_list_line)
 
     return sources_list_lines
 
 
-def _hasPublishedBinaries(archive, distroarchseries, pocket):
+def get_primary_current_component(build):
+    """Return the component name of the primary archive ancestry.
+
+    If no ancestry could be found, default to 'universe'.
+    """
+    primary_archive = build.archive.distribution.main_archive
+    ancestries = primary_archive.getPublishedSources(
+        name=build.sourcepackagerelease.name,
+        distroseries=build.distroseries, exact_match=True)
+
+    # XXX cprov 20080923 bug=246200: This count should be replaced
+    # by bool() (__non_zero__) when storm implementation gets fixed.
+    if ancestries.count() > 0:
+        return ancestries[0].component.name
+
+    return 'universe'
+
+
+def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
     # The primary archive dependencies are always relevant.
     if archive.purpose == ArchivePurpose.PRIMARY:
@@ -147,7 +166,8 @@ def _hasPublishedBinaries(archive, distroarchseries, pocket):
     return published_binaries.count() > 0
 
 
-def _getBinarySourcesListLine(archive, distroarchseries, pocket, components):
+def _get_binary_sources_list_line(archive, distroarchseries, pocket,
+                                  components):
     """Return the correponding binary sources_list line."""
     # Encode the private PPA repository password in the
     # sources_list line. Note that the buildlog will be
