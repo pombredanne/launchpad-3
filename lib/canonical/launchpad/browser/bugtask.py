@@ -806,7 +806,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     @property
     def affects_form_value(self):
-        """ """ # TODO
+        """The value to use in the inline me too form."""
         affected = self.context.bug.isUserAffected(self.user)
         if affected is None or not affected:
             return 'YES'
