@@ -94,6 +94,14 @@ def _check_translation_perms(permission, translators, person):
     return False
 
 
+def _person_has_not_licensed_translations(person):
+    """Whether a person has not agreed to BSD license for their translations."""
+    if (person.translations_relicensing_agreement is not None and
+        person.translations_relicensing_agreement is False):
+        return True
+    else:
+        return False
+
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
@@ -128,9 +136,8 @@ def _can_edit_translations(pofile, person):
             return True
 
     # If a person has decided not to license their translations under BSD
-    # license, they can't edit translations.
-    if (person.translations_relicensing_agreement is not None and
-        person.translations_relicensing_agreement is False):
+    # license they can't edit translations.
+    if _person_has_not_licensed_translations(person):
         return False
 
     # Finally, check whether the user is member of the translation team or
@@ -153,9 +160,8 @@ def _can_add_suggestions(pofile, person):
         return False
 
     # If a person has decided not to license their translations under BSD
-    # license, they can't edit translations.
-    if (person.translations_relicensing_agreement is not None and
-        person.translations_relicensing_agreement is False):
+    # license they can't edit translations.
+    if _person_has_not_licensed_translations(person):
         return False
 
     if _can_edit_translations(pofile, person):

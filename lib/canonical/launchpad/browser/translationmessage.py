@@ -434,11 +434,12 @@ class BaseTranslationView(LaunchpadView):
         if (self.request.method == 'POST'):
             if self.user is None:
                 raise UnexpectedFormData, (
-                    'Anonymous users cannot do POST submissions.')
+                    'Anonymous users or users who are not accepting our '
+                    'licensing terms cannot do POST submissions.')
             if (self.user.translations_relicensing_agreement is not None and
                 not self.user.translations_relicensing_agreement):
                 raise UnexpectedFormData, (
-                    'Users who are not agreeing to licensing terms '
+                    'Users who do not agree to licensing terms '
                     'cannot do POST submissions.')
             try:
                 # Try to get the timestamp when the submitted form was

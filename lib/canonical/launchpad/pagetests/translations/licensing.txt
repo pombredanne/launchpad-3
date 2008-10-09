@@ -61,7 +61,8 @@ Karl is also denied submitting a POST request.
     ... """)
     HTTP/1.1 500 Internal Server Error
     ...
-    ...UnexpectedFormData: Anonymous users cannot do POST submissions...
+    ...UnexpectedFormData: Anonymous users or users who are not accepting
+    our licensing terms cannot do POST submissions...
 
 Karl changes his mind. He returns to the licensing page.
 
