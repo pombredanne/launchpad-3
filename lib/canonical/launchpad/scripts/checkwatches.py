@@ -261,7 +261,7 @@ class BugWatchUpdater(object):
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
 
-    def _getExternalBugTracker(self, bug_tracker):
+    def _getExternalBugTracker(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         remotesystem = externalbugtracker.get_external_bugtracker(
             bug_tracker)
@@ -282,7 +282,8 @@ class BugWatchUpdater(object):
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
         try:
-            remotesystem = self._getExternalBugTracker(bug_tracker)
+            remotesystem = self._getExternalBugTracker(
+                bug_tracker, bug_watches_to_update)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
             # We update all the bug watches to reflect the fact that
             # this error occurred. We also update their last checked
