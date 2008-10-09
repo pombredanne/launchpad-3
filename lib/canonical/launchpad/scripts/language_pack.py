@@ -95,9 +95,6 @@ def export(distroseries, component, update, force_utf8, logger):
     cached_potemplate = None
     cached_potmsgsets = []
 
-    # Manual caching.  We can easily afford to cache all languages.
-    cached_languages = set()
-
     for index, pofile in enumerate(pofiles):
         number = index + 1
         logger.debug("Exporting PO file %d (%d/%d)" %
@@ -119,8 +116,6 @@ def export(distroseries, component, update, force_utf8, logger):
                 potmsgset for potmsgset in potemplate.getPOTMsgSets()]
 
             gc.collect()
-
-        cached_languages.add(pofile.language)
 
         domain = potemplate.translation_domain.encode('ascii')
         language_code = pofile.language.code.encode('ascii')
