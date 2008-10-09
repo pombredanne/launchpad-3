@@ -16,6 +16,7 @@ import transaction
 
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib import errors
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
@@ -200,7 +201,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
-    def _makeDefaultStackedOnBranch(self):
+    def _makeDefaultStackedOnBranch(self, private=False):
         """Make a default stacked-on branch.
 
         This creates a database branch on a product that allows default
@@ -212,7 +213,8 @@ class TestBranchPuller(PullerBranchTestCase):
         """
         # Make the branch.
         product = self.factory.makeProduct()
-        default_branch = self.factory.makeBranch(product=product)
+        default_branch = self.factory.makeBranch(
+            product=product, private=private)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
@@ -250,6 +252,33 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertEqual(
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
+
+    def test_stack_mirrored_branch_onto_private(self):
+        # If the default stacked-on branch in private then mirrored branches
+        # aren't stacked when they are mirrored.
+        default_branch = self._makeDefaultStackedOnBranch(private=True)
+        db_branch = self.factory.makeBranch(
+            BranchType.MIRRORED, product=default_branch.product)
+
+        tree = self.make_branch_and_tree('.', format='1.6')
+        tree.commit('rev1')
+
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('mirror')
+        self.assertRanSuccessfully(command, retcode, output, error)
+
+        # To open this branch, we're going to need to use the Launchpad vfs.
+        server = get_puller_server()
+        server.setUp()
+        self.addCleanup(server.tearDown)
+
+        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
+        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
+        mirrored_branch = Branch.open(mirrored_url)
+        self.assertRaises(
+            errors.NotStacked, mirrored_branch.get_stacked_on_url)
 
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
