@@ -805,6 +805,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return message % days_to_expiration
 
     @property
+    def user_is_affected(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.bug.isUserAffected(self.user)
+
+    @property
     def affects_form_value(self):
         """The value to use in the inline me too form."""
         affected = self.context.bug.isUserAffected(self.user)

@@ -281,19 +281,8 @@ class BugContextMenu(ContextMenu):
 
     def affectsmetoo(self):
         """Return the 'This bug affects me too' link."""
-        user = getUtility(ILaunchBag).user
-        enabled = user is not None
-        if enabled:
-            affected = self.context.bug.isUserAffected(user)
-            if affected is None or affected == False:
-                text = "This bug affects me too"
-                icon = None
-            else:
-                text = "This bug does not affect me"
-                icon = 'flame-icon'
-            return Link('+affectsmetoo', text, icon=icon, enabled=True)
-        else:
-            return Link('', '', enabled=False)
+        enabled = getUtility(ILaunchBag).user is not None
+        return Link('+affectsmetoo', 'change', enabled=enabled)
 
 
 class MaloneView(LaunchpadFormView):

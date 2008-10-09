@@ -141,10 +141,17 @@
                   type="hidden"
                   name="field.actions.change"
                   value="" />
-              <tal:affectsmetoo
+              <tal:affected condition="view/user_is_affected">
+                <img width="14" height="14" src="/@@/flame-icon" alt="" />
+                This bug affects me too
+              </tal:affected>
+              <tal:affected condition="not: view/user_is_affected">
+                This bug doesn't affect me
+              </tal:affected>
+              (<tal:affectsmetoo
                   define="link context_menu/affectsmetoo"
                   condition="link/enabled"
-                  replace="structure link/render" />
+                  replace="structure link/render" />)
               <tal:nothing condition="nothing">
                 The following is a trick to allow users to mark
                 themselves as affected by a bug with only one click.
