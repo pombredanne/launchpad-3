@@ -254,7 +254,7 @@ class TestBranchPuller(PullerBranchTestCase):
             mirrored_branch.get_stacked_on_url())
 
     def test_stack_mirrored_branch_onto_private(self):
-        # If the default stacked-on branch in private then mirrored branches
+        # If the default stacked-on branch is private then mirrored branches
         # aren't stacked when they are mirrored.
         default_branch = self._makeDefaultStackedOnBranch(private=True)
         db_branch = self.factory.makeBranch(
