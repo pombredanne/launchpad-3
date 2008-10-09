@@ -32,8 +32,7 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import (
-    block_implicit_flushes, quote, SQLBase, sqlvalues)
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
