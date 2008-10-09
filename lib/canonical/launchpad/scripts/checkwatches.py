@@ -263,10 +263,19 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        remotesystem = externalbugtracker.get_external_bugtracker(
-            bug_tracker)
-        remotesystem = remotesystem.getExternalBugTrackerToUse()
-        return [(remotesystem, bug_watches)]
+        trackers_and_watches = []
+        # We special-case the Gnome Bugzilla.
+        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+        if bug_tracker == gnome_bugzilla and bug_tracker.has_lp_plugin:
+            pass
+            # do_stuff()
+        else:
+            remotesystem = externalbugtracker.get_external_bugtracker(
+                bug_tracker)
+            remotesystem = remotesystem.getExternalBugTrackerToUse()
+            trackers_and_watches.append((remotesystem, bug_watches))
+
+        return trackers_and_watches
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""

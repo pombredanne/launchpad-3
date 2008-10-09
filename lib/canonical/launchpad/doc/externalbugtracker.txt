@@ -65,7 +65,7 @@ BugWatchUpdater calls externalbugtracker.get_external_bugtracker(),
 follwed by ExternalBugTracker.getExternalBugTrackerToUse() to get the
 correct ExternalBugTracker for a given BugTracker. It does this via the
 private _getExternalBugTrackersAndWatches() method, which returns a set of
-(ExternalBugTracker, [BugWatch]) tuples.
+(ExternalBugTracker, bug_watches) tuples.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
@@ -81,16 +81,23 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...         print "Getting external bugtracker to use..."
     ...         return Bugzilla(self.baseurl)
 
-    # We'll monkey-patch the BUG_TRACKER_CLASSES list to make sure that
-    # we don't try to connect to a remote server.
-    >>> try:
-    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
-    ...         NonConnectingBugzilla)
-    ...     trackers_and_watches = (
-    ...         bug_watch_updater._getExternalBugTrackersAndWatches(
-    ...             standard_bugzilla, []))
-    ... finally:
-    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = Bugzilla
+We'll create a helper method to allow us to avoid having to connect to a
+remote server.
+
+    >>> def get_trackers_and_watches(bugtracker, watches):
+    ...     try:
+    ...         BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
+    ...             NonConnectingBugzilla)
+    ...         trackers_and_watches = (
+    ...             bug_watch_updater._getExternalBugTrackersAndWatches(
+    ...                 bugtracker, watches))
+    ...     finally:
+    ...         BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = Bugzilla
+    ...
+    ...     return trackers_and_watches
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     standard_bugzilla, [])
     Getting external bugtracker to use...
 
     >>> chosen_bugtracker, watches = trackers_and_watches[0]
@@ -105,14 +112,42 @@ parameter. For most calls, this remains unaltered and only one
     ...     factory.makeBugWatch(bugtracker=standard_bugzilla)
     ...         for useless_int in range(10)]
 
-    >>> try:
-    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
-    ...         NonConnectingBugzilla)
-    ...     trackers_and_watches = (
-    ...         bug_watch_updater._getExternalBugTrackersAndWatches(
-    ...             standard_bugzilla, bug_watches))
-    ... finally:
-    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = Bugzilla
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     standard_bugzilla, bug_watches)
+    Getting external bugtracker to use...
+
+    >>> chosen_bugtracker, watches = trackers_and_watches[0]
+    >>> isinstance(chosen_bugtracker, Bugzilla)
+    True
+
+    >>> watches == bug_watches
+    True
+
+The only bug tracker for which _getExternalBugTrackersAndWatches() will
+return more than one (ExternalBugTracker, bug_watches) tuple: the Gnome
+Bugzilla. This is because the Gnome Bugzilla is a special case.
+
+Bugzilla allows users to track bugs in more than one product. Launchpad
+supports this functionality through the BugzillaLPPlugin
+ExternalBugTracker subclass. Since the Gnome Bugzilla contains a very
+large number of bugs we only want to synchronise comments and bugs for
+some products. For the others, we want to use the standard
+ExternalBugTracker functionality, without tapping into the functionality
+offered by the Bugzilla Launchpad plugin.
+
+The Gnome Bugzilla is a celebrity in Launchpad.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBugzillaXMLRPCTransport, TestInternalXMLRPCTransport)
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+
+If the gnome_bugzilla doesn't have the Launchpad plugin installed, it
+will behave exactly the same as any other bug tracker.
+
+    >>> gnome_bugzilla.has_lp_plugin = False
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
     Getting external bugtracker to use...
 
     >>> chosen_bugtracker, watches = trackers_and_watches[0]

@@ -1496,7 +1496,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary,
-baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'AGnother GnomeGBug GTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, NULL);
+baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'AGnother GnomeGBug GTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
