@@ -61,22 +61,41 @@ original instance is to return itself.
     >>> chosen_bugtracker is external_bugtracker
     True
 
-BugWatchUpdater.updateBugWatches will call this method and replace the
-ExternalBugTracker used, before calling getCurrentDBTime(), and all the
-other methods.
+BugWatchUpdater calls externalbugtracker.get_external_bugtracker(),
+follwed by ExternalBugTracker.getExternalBugTrackerToUse() to get the
+correct ExternalBugTracker for a given BugTracker. It does this via the
+private _getExternalBugTracker() method.
 
-    >>> class MoreSpecificExternalBugTracker(TestExternalBugTracker):
-    ...     def getCurrentDBTime(self):
-    ...         print "Using more specific ExternalBugTracker implementation."
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
+    >>> from canonical.launchpad.interfaces.bugtracker import (
+    ...     BugTrackerType)
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
 
-    >>> class GeneralExternalBugTracker:
+    >>> factory = LaunchpadObjectFactory()
+    >>> standard_bugzilla = factory.makeBugTracker()
+
+    >>> class NonConnectingBugzilla(Bugzilla):
     ...     def getExternalBugTrackerToUse(self):
-    ...         return MoreSpecificExternalBugTracker('http://example.com')
+    ...         print "Getting external bugtracker to use..."
+    ...         return Bugzilla(self.baseurl)
 
-    >>> bug_watch_updater.updateBugWatches(GeneralExternalBugTracker(), [])
-    COMMIT
-    Using more specific ExternalBugTracker implementation.
-    BEGIN
+    # We'll monkey-patch the BUG_TRACKER_CLASSES list to make sure that
+    # we don't try to connect to a remote server.
+    >>> try:
+    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
+    ...         NonConnectingBugzilla)
+    ...     chosen_bugtracker = bug_watch_updater._getExternalBugTracker(
+    ...         standard_bugzilla)
+    ... finally:
+    ...     BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = Bugzilla
+    Getting external bugtracker to use...
+
+    >>> isinstance(chosen_bugtracker, Bugzilla)
+    True
+
+The Gnome Bugzilla bug tracker is a special case. As such, checkwatches
+treats it slightly differently.
 
 
 === Checking the server DB time ===

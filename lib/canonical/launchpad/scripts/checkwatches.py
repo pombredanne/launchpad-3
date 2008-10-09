@@ -263,7 +263,10 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTracker(self, bug_tracker):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(bug_tracker)
+        remotesystem = externalbugtracker.get_external_bugtracker(
+            bug_tracker)
+        remotesystem = remotesystem.getExternalBugTrackerToUse()
+        return remotesystem
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
@@ -342,7 +345,6 @@ class BugWatchUpdater(object):
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
-        remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = remotesystem.baseurl
