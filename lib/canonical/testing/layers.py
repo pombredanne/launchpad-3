@@ -69,7 +69,7 @@ import transaction
 
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, getGlobalSiteManager
+from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -1036,7 +1036,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+        provideUtility(TestMailBox(), IMailBox)
 
     @classmethod
     @profiled
