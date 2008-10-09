@@ -62,7 +62,7 @@ def guess_librarian_encoding(filename, mimetype):
     :param filename: string containing the filename to be guessed;
     :param mimetype: string containing the stored mimetype;
 
-    :return a tuple containing the appropriate 'encoding' and 'mimetype'
+    :return: a tuple containing the appropriate 'encoding' and 'mimetype'
         that should be used to serve the file.
     """
     if filename.endswith('txt.gz'):

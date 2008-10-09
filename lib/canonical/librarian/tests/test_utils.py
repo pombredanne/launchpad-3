@@ -9,7 +9,7 @@ class LibrarianUtils(unittest.TestCase):
     """Librarian utilities functions."""
 
     def test_guess_librarian_encoding(self):
-        """Diffs and buillogs are served differently than the other files.
+        """Diffs and buillogs are served differently from the other files.
 
         Package Diffs ('.diff.gz') and buildlogs ('.txt.gz') should be
         served using mimetype 'text/plain' and encoding 'gzip'.

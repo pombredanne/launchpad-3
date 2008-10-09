@@ -221,23 +221,28 @@ Sample Person can't access the file.
     ...
     Unauthorized
 
-'No Privileges' users, the PPA owner, can download the DSC file.
+The 'No Privileges' user, the PPA owner, can download the DSC file.
 
     >>> no_priv_browser.open(file_lp_url)
 
 And its informations match the library file.
 
-    >>> no_priv_browser.contents == file_content
-    True
+    >>> print file_content
+    I do not care about sources.
+    >>> print file_size
+    28
+    >>> print file_mimetype
+    application/text
 
-    >>> no_priv_browser.headers['content-length'] == file_size
-    True
-
-    >>> no_priv_browser.headers['content-type'] == file_mimetype
-    True
+    >>> print no_priv_browser.contents
+    I do not care about sources.
+    >>> print no_priv_browser.headers['content-length']
+    28
+    >>> print no_priv_browser.headers['content-type']
+    application/text
 
 Gzipped package diffs ('.diff.gz') and buildlogs ('.txt.gz') are
-treated differently than the other files. Since we want their contents
+treated differently from the other files. Since we want their contents
 to be rendered inline by the browsers we override their 'content-encoding'
 and 'content-type' to 'gzip' and 'text/plain', respectively.
 
@@ -262,15 +267,18 @@ but 'content-type' and 'content-encoding' are modified.
 
     >>> no_priv_browser.open(buildlog_lp_url)
 
-    >>> no_priv_browser.contents == buildlog_content
-    True
+    >>> print buildlog_content
+    bogus buildlog
+    >>> print buildlog_size
+    14
 
-    >>> no_priv_browser.headers['content-length'] == buildlog_size
-    True
+    >>> print no_priv_browser.contents
+    bogus buildlog
+    >>> print no_priv_browser.headers['content-length']
+    14
 
     >>> print no_priv_browser.headers['content-type']
     text/plain
-
     >>> print no_priv_browser.headers['content-encoding']
     gzip
 
@@ -278,15 +286,18 @@ The same happens for package diffs.
 
     >>> no_priv_browser.open(diff_lp_url)
 
-    >>> no_priv_browser.contents == diff_content
-    True
+    >>> print diff_content
+    bogus diff
+    >>> print diff_size
+    10
 
-    >>> no_priv_browser.headers['content-length'] == diff_size
-    True
+    >>> print no_priv_browser.contents
+    bogus diff
+    >>> print no_priv_browser.headers['content-length']
+    10
 
     >>> print no_priv_browser.headers['content-type']
     text/plain
-
     >>> print no_priv_browser.headers['content-encoding']
     gzip
 
