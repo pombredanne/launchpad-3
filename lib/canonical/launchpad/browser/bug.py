@@ -285,7 +285,7 @@ class BugContextMenu(ContextMenu):
         enabled = user is not None
         if enabled:
             affected = self.context.bug.isUserAffected(user)
-            if affected is None or not affected:
+            if affected is None or affected == False:
                 text = "This bug affects me too"
                 icon = None
             else:
