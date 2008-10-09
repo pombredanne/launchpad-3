@@ -383,6 +383,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="zope.interface.Interface"
+      name="+test-webservice-js"
+      template="../templates/test-webservice-js.pt"
+      permission="zope.Public"
+      />
+
+
 </facet>
 
 <adapter
