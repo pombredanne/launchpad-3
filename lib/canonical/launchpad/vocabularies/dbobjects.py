@@ -1552,10 +1552,11 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         # XXX intellectronica 2007-07-05: is 100 a reasonable count before
         # starting to warn?
         speclist = shortlist(specs, 100)
+        all_blocked = self.context.all_blocked
         return [spec for spec in speclist
                 if (spec != self.context and
                     spec.target == self.context.target
-                    and spec not in self.context.all_blocked)]
+                    and spec.id not in all_blocked)]
 
     def _doSearch(self, query):
         """Return terms where query is in the text of name
@@ -1593,14 +1594,21 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL])
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
         return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        return obj in self._all_specs()
+        # Don't use self._all_specs, since it will call
+        # self._filter_specs(all_specs) which will cause all the specs
+        # to be loaded, whereas obj in all_specs will query a single object.
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
+        return obj in all_specs and len(self._filter_specs([obj])) > 0
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):

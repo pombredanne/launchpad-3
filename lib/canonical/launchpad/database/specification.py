@@ -16,6 +16,7 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IBugLinkTarget,
     IDistroSeries,
@@ -618,23 +619,44 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return sorted(shortlist(deps),
                     key=lambda s: (s.definition_status, s.priority, s.title))
 
-    def _find_all_blocked(self, blocked):
-        """This adds all blockers of this spec (and their blockers) to
-        blocked.
-
-        The function is called recursively, as part of self.all_blocked.
-        """
-        for blocker in self.blocked_specs:
-            if blocker not in blocked:
-                blocked.add(blocker)
-                blocker._find_all_blocked(blocked)
-
-    @property
+    @cachedproperty
     def all_blocked(self):
-        blocked = set()
-        self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.definition_status,
-                                              s.priority, s.title))
+        store = Store.of(self)
+        try:
+            store.execute(
+                'CREATE TEMP TABLE temp_blocked (id INTEGER UNIQUE)')
+            store.execute(
+                'CREATE TEMP TABLE temp_current (id INTEGER UNIQUE)')
+            store.execute(
+                'CREATE TEMP TABLE temp_previous (id INTEGER UNIQUE)')
+            store.execute('INSERT INTO temp_previous VALUES(%s)'
+                          % sqlvalues(self.id))
+            while True:
+                result = store.execute('''
+                    INSERT INTO temp_current
+                    SELECT specification
+                    FROM SpecificationDependency sd,
+                            temp_previous
+                    WHERE sd.dependency = temp_previous.id
+                        AND sd.specification NOT IN (
+                            SELECT id
+                            FROM temp_blocked)
+                    ''')
+                if result._raw_cursor.rowcount == 0:
+                    return set(
+                        row[0] for row in
+                        store.execute('SELECT id FROM temp_blocked'))
+                store.execute('DELETE FROM temp_previous')
+                store.execute(
+                    'INSERT INTO temp_previous SELECT id FROM temp_current')
+                store.execute(
+                    'INSERT INTO temp_blocked SELECT id FROM temp_current')
+                store.execute('DELETE FROM temp_current')
+        finally:
+            store.execute('DROP TABLE temp_blocked')
+            store.execute('DROP TABLE temp_current')
+            store.execute('DROP TABLE temp_previous')
+
 
     # branches
     def getBranchLink(self, branch):
