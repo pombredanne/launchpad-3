@@ -805,7 +805,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         return message % days_to_expiration
 
     @property
-    def user_is_affected(self):
+    def current_user_is_affected(self):
         """Is the current user marked as affected by this bug?"""
         return self.context.bug.isUserAffected(self.user)
 

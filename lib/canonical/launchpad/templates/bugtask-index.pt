@@ -141,11 +141,11 @@
                   type="hidden"
                   name="field.actions.change"
                   value="" />
-              <tal:affected condition="view/user_is_affected">
+              <tal:affected condition="view/current_user_is_affected">
                 <img width="14" height="14" src="/@@/flame-icon" alt="" />
                 This bug affects me too
               </tal:affected>
-              <tal:affected condition="not: view/user_is_affected">
+              <tal:affected condition="not: view/current_user_is_affected">
                 This bug doesn't affect me
               </tal:affected>
               (<tal:affectsmetoo
