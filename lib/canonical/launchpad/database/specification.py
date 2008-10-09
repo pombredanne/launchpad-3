@@ -620,7 +620,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
                     key=lambda s: (s.definition_status, s.priority, s.title))
 
     @cachedproperty
-    def all_blocked(self):
+    def cached_all_blocked_ids(self):
+        """See `ISpecification`."""
+        # This is a very efficient algorithm for traversing the dependency
+        # hierarchy which is used by SpecificationDepCandidatesVocabulary.
         store = Store.of(self)
         try:
             store.execute(
@@ -657,6 +660,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
             store.execute('DROP TABLE temp_current')
             store.execute('DROP TABLE temp_previous')
 
+    def _find_all_blocked(self, blocked):
+        """This adds all blockers of this spec (and their blockers) to
+        blocked.
+
+        The function is called recursively, as part of self.all_blocked.
+        """
+        for blocker in self.blocked_specs:
+            if blocker not in blocked:
+                blocked.add(blocker)
+                blocker._find_all_blocked(blocked)
+
+    @property
+    def all_blocked(self):
+        """See `ISpecification`."""
+        blocked = set()
+        self._find_all_blocked(blocked)
+        return sorted(blocked, key=lambda s: (s.definition_status,
+                                              s.priority, s.title))
 
     # branches
     def getBranchLink(self, branch):

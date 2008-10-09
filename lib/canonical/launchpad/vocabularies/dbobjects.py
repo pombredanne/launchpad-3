@@ -1434,7 +1434,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
+                    if (spec.id in
+                        launchbag.specification.cached_all_blocked_ids):
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
 
@@ -1552,11 +1553,10 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         # XXX intellectronica 2007-07-05: is 100 a reasonable count before
         # starting to warn?
         speclist = shortlist(specs, 100)
-        all_blocked = self.context.all_blocked
         return [spec for spec in speclist
                 if (spec != self.context and
                     spec.target == self.context.target
-                    and spec.id not in all_blocked)]
+                    and spec.id not in self.context.cached_all_blocked_ids)]
 
     def _doSearch(self, query):
         """Return terms where query is in the text of name
@@ -1602,7 +1602,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        # Don't use self._all_specs, since it will call
+        # We don't use self._all_specs here, since it will call
         # self._filter_specs(all_specs) which will cause all the specs
         # to be loaded, whereas obj in all_specs will query a single object.
         all_specs = self.context.target.specifications(
