@@ -17,7 +17,7 @@ __all__ = [
     'OptionIsNotFromSimplePoll'
     ]
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
@@ -153,10 +153,9 @@ class IPoll(Interface):
             raise Invalid(
                 "A poll cannot close at the time (or before) it opens.")
         now = datetime.now(pytz.UTC)
+        twelve_hours_ahead = now + timedelta(hours=12)
         start_date = poll.dateopens.astimezone(pytz.UTC)
-        delta = start_date - now
-        twelve_hours = 12 * 60 * 60
-        if delta.days < 1 and delta.seconds < twelve_hours:
+        if start_date < twelve_hours_ahead:
             raise Invalid(
                 "A poll cannot open less than 12 hours after it's created.")
 
