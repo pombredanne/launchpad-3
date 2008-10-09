@@ -69,8 +69,7 @@ set to None.
     ...     component='main',
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     logger=logger,
-    ...     cache_clear_interval=5)
+    ...     logger=logger)
     >>> transaction.commit()
 
 Check that the log looks ok.
@@ -320,8 +319,7 @@ PO files.
     ...     component=None,
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     logger=logger,
-    ...     cache_clear_interval=2)
+    ...     logger=logger)
     >>> transaction.commit()
 
 Check that the log looks ok.
