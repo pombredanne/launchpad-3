@@ -129,7 +129,7 @@ runners:
 	echo "$(PYTHON) $(PWD)/src/zdaemon/zdctl.py \
 	      -S schema.xml \
 	      -C zdaemon.conf -d \$$*" >> bin/zopectl
-	chmod +x bin/zopectl 
+	chmod +x bin/zopectl
 
 test_build: build
 	$(PYTHON) test.py $(TESTFLAGS) $(TESTOPTS)
@@ -186,20 +186,20 @@ bzr_version_info:
 	fi
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
-# properly. We also should really wait until services are running before 
+# properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
-# This is a stripped down version of the "start" target for use on 
+# This is a stripped down version of the "start" target for use on
 # production servers - removes running 'make build' because we already
 # run this as part of our initscripts, so not needed here. Likewise we
-# don't want to run 'make stop' because it takes unnecessary time 
-# even if the service is already stopped, and bzr_version_info is not 
+# don't want to run 'make stop' because it takes unnecessary time
+# even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
-initscript-start: 
+initscript-start:
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
