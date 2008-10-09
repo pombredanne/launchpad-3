@@ -72,7 +72,7 @@ Now let's log in and show that the session cookie is set.
     >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Log In').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
-    Foo Bar &bull;
+    Foo Bar...
     >>> len(cookies)
     1
     >>> cookies.keys()
