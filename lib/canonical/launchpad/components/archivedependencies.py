@@ -70,60 +70,6 @@ def get_components_for_building(build):
     return component_dependencies[build.current_component.name]
 
 
-def get_sources_list_for_building(build):
-    """Return the sources_list entries required to build the given item.
-
-    :param build: a context `IBuild`.
-    :return: a deb sources_list entries (lines).
-    """
-    ogre_components = get_components_for_building(build)
-
-    deps = []
-
-    if (build.archive.purpose == ArchivePurpose.PARTNER or
-        build.archive.purpose == ArchivePurpose.PPA):
-        # Although partner and PPA builds are always in the release
-        # pocket, they depend on the same pockets as though they
-        # were in the updates pocket.
-        #
-        # XXX Julian 2008-03-20
-        # Private PPAs, however, behave as though they are in the
-        # security pocket.  This is a hack to get the security
-        # PPA working as required until cprov lands his changes for
-        # configurable PPA pocket dependencies.
-        if build.archive.private:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.SECURITY]
-            primary_components = component_dependencies[
-                get_primary_current_component(build)]
-        else:
-            primary_pockets = pocket_dependencies[
-                PackagePublishingPocket.UPDATES]
-            primary_components = component_dependencies['multiverse']
-
-        deps.append(
-            (build.archive, PackagePublishingPocket.RELEASE,
-             ogre_components)
-            )
-
-        for archive_dependency in build.archive.dependencies:
-            deps.append(
-                (archive_dependency.dependency,
-                archive_dependency.pocket,
-                ogre_components)
-                )
-    else:
-        primary_pockets = pocket_dependencies[build.pocket]
-        primary_components = ogre_components
-
-    for pocket in primary_pockets:
-        deps.append(
-            (build.distribution.main_archive, pocket, primary_components)
-            )
-
-    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
-
-
 def get_primary_current_component(build):
     """Return the component name of the primary archive ancestry.
 
@@ -140,6 +86,50 @@ def get_primary_current_component(build):
         return ancestries[0].component.name
 
     return 'universe'
+
+
+def get_sources_list_for_building(build):
+    """Return the sources_list entries required to build the given item.
+
+    :param build: a context `IBuild`.
+    :return: a deb sources_list entries (lines).
+    """
+    deps = []
+    archive_dependencies = list(build.archive.dependencies)
+
+    # Consider primary archive dependencies.
+    primary_dependencies = [
+        archive_dependency for archive_dependency in archive_dependencies
+        if archive_dependency.dependency.purpose == ArchivePurpose.PRIMARY]
+    if len(primary_dependencies) == 0:
+        primary_dependencies = _get_default_primary_dependencies(build)
+        deps.extend(primary_dependencies)
+
+    # Consider user-selected archive dependencies.
+    primary_component = get_primary_current_component(build)
+    for archive_dependency in archive_dependencies:
+        # Undefined component dependency means that the it should be
+        # restricted to the component this source was published in
+        # primary archive.
+        if archive_dependency.component is None:
+            components = component_dependencies[primary_component]
+        else:
+            components = component_dependencies[
+                archive_dependency.component.name]
+        # Follow pocket dependencies.
+        for pocket in pocket_dependencies[archive_dependency.pocket]:
+            deps.append(
+                (archive_dependency.dependency, pocket, components)
+                )
+
+    # Add implicit self-dependency for PPA & PARTNER contexts.
+    if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
+        deps.append(
+            (build.archive, PackagePublishingPocket.RELEASE,
+             component_dependencies['main'])
+            )
+
+    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
 
 
 def _has_published_binaries(archive, distroarchseries, pocket):
@@ -175,7 +165,17 @@ def _get_binary_sources_list_line(archive, distroarchseries, pocket,
 
 
 def _get_sources_list_for_dependencies(dependencies, distroarchseries):
-    """ """
+    """Return a list of sources_list lines.
+
+    Process the given list of dependency tuples for the given
+    `DistroArchseries`.
+
+    :param dependencies: list of 3 elements tuples as:
+        (`IArchive`, `PackagePublishingPocket`, list of `IComponent` names)
+    :param distroseries: target `IDistroSeries`;
+
+    :return: a list of sources_list formatted lines.
+    """
     sources_list_lines = []
     for archive, pocket, components in dependencies:
         has_published_binaries = _has_published_binaries(
@@ -188,3 +188,42 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
 
     return sources_list_lines
 
+
+def _get_default_primary_dependencies(build):
+    """Return the default primary dependencies for a given build.
+
+    :param build: the `IBuild` context;
+
+    :return a list containing the the default dependencies to primary
+        archive.
+    """
+    if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
+        # Although partner and PPA builds are always in the release
+        # pocket, they depend on the same pockets as though they
+        # were in the updates pocket.
+        #
+        # XXX Julian 2008-03-20
+        # Private PPAs, however, behave as though they are in the
+        # security pocket.  This is a hack to get the security
+        # PPA working as required until cprov lands his changes for
+        # configurable PPA pocket dependencies.
+        if build.archive.private:
+            primary_pockets = pocket_dependencies[
+                PackagePublishingPocket.SECURITY]
+            primary_components = component_dependencies[
+                get_primary_current_component(build)]
+        else:
+            primary_pockets = pocket_dependencies[
+                PackagePublishingPocket.UPDATES]
+            primary_components = component_dependencies['multiverse']
+    else:
+        primary_pockets = pocket_dependencies[build.pocket]
+        primary_components = get_components_for_building(build)
+
+    primary_dependencies = []
+    for pocket in primary_pockets:
+        primary_dependencies.append(
+            (build.distribution.main_archive, pocket, primary_components)
+            )
+
+    return primary_dependencies
