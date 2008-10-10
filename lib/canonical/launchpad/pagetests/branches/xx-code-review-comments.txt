@@ -70,7 +70,7 @@ shows the entire message.
 If the summary is over three lines, then it ends with an ellipsis.
 
     >>> print_comments(
-    ...     'boardCommentBody', nopriv_browser, index=2) #doctest: -ELLIPSIS
+    ...     'boardCommentBody', eric_browser, index=2) #doctest: -ELLIPSIS
     I like this.
     I wish I had time to review it properly ...
     (show full message)
@@ -112,4 +112,4 @@ in a table at the top of the page.
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer         Review Type    Date Requested    Status
-    Eric the Viking  timeless       ...               Abstained ...second...ago
+    Eric the Viking  timeless       ...               Abstain ...second...ago
