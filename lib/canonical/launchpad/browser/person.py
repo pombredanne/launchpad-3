@@ -8,6 +8,7 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
+    'EmailToPersonView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -85,11 +86,13 @@ __all__ = [
     ]
 
 import copy
-from datetime import datetime, timedelta
-from operator import attrgetter, itemgetter
 import pytz
 import subprocess
 import urllib
+
+from datetime import datetime, timedelta
+from itertools import chain
+from operator import attrgetter, itemgetter
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -105,6 +108,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.lazr import decorates
+from canonical.lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -138,6 +142,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -169,6 +174,7 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.fields import LocationField
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
+from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
@@ -4866,3 +4872,78 @@ class TeamEditLocationView(LaunchpadView):
 def archive_to_person(archive):
     """Adapts an `IArchive` to an `IPerson`."""
     return IPerson(archive.owner)
+
+
+class IEmailToPerson(Interface):
+    """Schema for contacting a user via email through Launchpad."""
+
+    from_ = TextLine(
+        title=_('From'), required=True, readonly=False)
+
+    subject = TextLine(
+        title=_('Subject'), required=True, readonly=False)
+
+    message = Text(
+        title=_('Message'), required=True, readonly=False)
+
+
+class EmailToPersonView(LaunchpadFormView):
+    """The 'Contact this user' page."""
+
+    schema = IEmailToPerson
+    field_names = ['subject', 'message']
+    custom_widget('subject', TextWidget, displayWidth=60)
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The field needing special set up is the 'From' fields, which contains
+        a vocabulary of the user's preferred (first) and validated
+        (subsequent) email addresses.
+        """
+        super(EmailToPersonView, self).setUpFields()
+        usable_addresses = [self.user.preferredemail]
+        usable_addresses.extend(self.user.validatedemails)
+        terms = [SimpleTerm(email, email.email) for email in usable_addresses]
+        field = Choice(__name__='field.from_',
+                       title=_('From'),
+                       source=SimpleVocabulary(terms),
+                       default=terms[0].value)
+        # Get the order right; the From field should be first, followed by the
+        # Subject and then Message fields.
+        self.form_fields = FormFields(*chain((field,), self.form_fields))
+
+    @property
+    def label(self):
+        return 'Contact ' + self.context.displayname
+
+    @action(_('Send'), name='send')
+    def action_send(self, action, data):
+        """Send an email to the user."""
+        sender_email = data['field.from_'].email
+        subject = data['subject']
+        message = data['message']
+        recipient_email = self.context.preferredemail.email
+        message = send_direct_contact_email(
+            sender_email, recipient_email, subject, message)
+        self.request.response.addInfoNotification(
+            _('Message sent to $name',
+              mapping=dict(name=self.context.displayname)))
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def contact_is_allowed(self):
+        """Whether the sender is allowed to send this email or not."""
+        return IDirectEmailAuthorization(self.user).is_allowed
+
+    @property
+    def next_try(self):
+        """When can the user try again?"""
+        last_contact = IDirectEmailAuthorization(self.user).last_contact
+        interval = as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return last_contact + interval

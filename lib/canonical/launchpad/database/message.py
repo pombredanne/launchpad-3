@@ -2,30 +2,43 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Message', 'MessageSet', 'MessageChunk']
+__all__ = [
+    'DirectEmailAuthorization',
+    'Message',
+    'MessageChunk',
+    'MessageSet',
+    'UserToUserEmail',
+    ]
+
 
 import email
+
+from email.Header import make_header, decode_header
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from storm.store import Store
+from storm.locals import And, DateTime, Int, Reference, Store, Storm, Unicode
 
 import pytz
 
+from canonical.config import config
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
-    InvalidEmailMessage, NotFoundError, PersonCreationRationale,
+    ILibraryFileAliasSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UnknownSender)
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, IMessage, IMessageChunk, IMessageSet,
+    IUserToUserEmail, InvalidEmailMessage)
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.lazr.config import as_timedelta
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -34,6 +47,24 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
 MAX_EMAIL_SIZE = 10 * 1024 * 1024
+
+
+def utcdatetime_from_field(field_value):
+    """Turn an RFC 2822 Date: header value into a Python datetime (UTC).
+
+    :param field_value: The value of the Date: header
+    :type field_value: string
+    :return: The corresponding datetime (UTC)
+    :rtype: `datetime.datetime`
+    :raise `InvalidEmailMessage`: when the date string cannot be converted.
+    """
+    try:
+        date_tuple = parsedate_tz(field_value)
+        timestamp = mktime_tz(date_tuple)
+        return datetime.fromtimestamp(timestamp, tz=pytz.timezone('UTC'))
+    except (TypeError, ValueError, OverflowError):
+        raise InvalidEmailMessage('Invalid date %s' % field_value)
+
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -314,14 +345,7 @@ class MessageSet:
         if date_created is not None:
             datecreated = date_created
         else:
-            try:
-                datestr = parsed_message['date']
-                thedate = parsedate_tz(datestr)
-                timestamp = mktime_tz(thedate)
-                datecreated = datetime.fromtimestamp(timestamp,
-                    tz=pytz.timezone('UTC'))
-            except (TypeError, ValueError, OverflowError):
-                raise InvalidEmailMessage('Invalid date %s' % datestr)
+            datecreated = utcdatetime_from_field(parsed_message['date'])
 
         # make sure we don't create an email with a datecreated in the
         # future. also make sure we don't create an ancient one
@@ -516,3 +540,135 @@ class MessageChunk(SQLBase):
                 "Type:       %s\n"
                 "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
                 )
+
+
+class UserToUserEmail(Storm):
+    """See `IUserToUserEmail`."""
+
+    implements(IUserToUserEmail)
+
+    __storm_table__ = 'UserToUserEmail'
+
+    id = Int(primary=True)
+
+    sender_id = Int(name='sender')
+    sender = Reference(sender_id, 'Person.id')
+
+    recipient_id = Int(name='recipient')
+    recipient = Reference(recipient_id, 'Person.id')
+
+    date_sent = DateTime(allow_none=False)
+
+    subject = Unicode(allow_none=False)
+
+    message_id = Unicode(allow_none=False)
+
+    def __init__(self, message):
+        """Create a new user-to-user email entry.
+
+        :param message: the message being sent
+        :type message: `email.message.Message`
+        """
+        super(UserToUserEmail, self).__init__()
+        person_set = getUtility(IPersonSet)
+        # Find the person who is sending this message.
+        realname, address = parseaddr(message['from'])
+        assert address, 'Message has no From: field'
+        sender = person_set.getByEmail(address)
+        assert sender is not None, 'No person for sender email: %s' % address
+        # Find the person who is the recipient.
+        realname, address = parseaddr(message['to'])
+        assert address, 'Message has no To: field'
+        recipient = person_set.getByEmail(address)
+        assert recipient is not None, (
+            'No person for recipient email: %s' % address)
+        # Convert the date string into a UTC datetime.
+        date = message['date']
+        assert date is not None, 'Message has no Date: field'
+        self.date_sent = utcdatetime_from_field(date)
+        # Find the subject and message-id.
+        message_id = message['message-id']
+        assert message_id is not None, 'Message has no Message-ID: field'
+        subject = message['subject']
+        assert subject is not None, 'Message has no Subject: field'
+        # Initialize.
+        self.sender = sender
+        self.recipient = recipient
+        self.message_id = unicode(message_id, 'ascii')
+        self.subject = unicode(make_header(decode_header(subject)))
+        # Add the object to the store of the sender.  Our StormMigrationGuide
+        # recommends against this saying "Note that the constructor should not
+        # usually add the object to a store -- leave that for a FooSet.new()
+        # method, or let it be inferred by a relation."
+        #
+        # On the other hand, we really don't need a UserToUserEmailSet for any
+        # other purpose.  There isn't any other relationship that can be
+        # inferred, so in this case I think it makes fine sense for the
+        # constructor to add self to the store.  Also, this closely mimics
+        # what the SQLObject compatibility layer does.
+        Store.of(sender).add(self)
+
+
+class DirectEmailAuthorization:
+    """See `IDirectEmailAuthorization`."""
+
+    implements(IDirectEmailAuthorization)
+
+    def __init__(self, sender):
+        """Create a `UserContactBy` instance.
+
+        :param sender: The sender we're checking.
+        :type sender: `IPerson`
+        :param after: The cutoff date for throttling.  Primarily used only for
+            testing purposes.
+        :type after: `datetime.datetime`
+        """
+        self.sender = sender
+
+    def _isAllowedAfter(self, after):
+        """Like .is_allowed but used with an explicit cutoff date.
+
+        For testing purposes only.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        :return: True if email is allowed
+        :rtype: bool
+        """
+        # Count the number of messages from the sender since the throttle
+        # date.
+        store = Store.of(self.sender)
+        messages_sent = store.find(
+            UserToUserEmail,
+            And(UserToUserEmail.sender == self.sender,
+                UserToUserEmail.date_sent >= after)).count()
+        return messages_sent < config.launchpad.user_to_user_max_messages
+
+    @property
+    def is_allowed(self):
+        """See `IDirectEmailAuthorization`."""
+        # Users are only allowed to send X number of messages in a certain
+        # period of time.  Both the number of messages and the time period
+        # are configurable.
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return self._isAllowedAfter(after)
+
+    @property
+    def last_contact(self):
+        """See `IDirectEmailAuthorization`."""
+        # This isn't exactly correct in that it doesn't return the nearest
+        # time at which a retry can happen.  To do that, we'd have to get the
+        # last N contacts, and add interval to the earliest of those.  I don't
+        # think it's worth it, as we're still accurate by saying, if the user
+        # tries again in interval after the last contact, it will work.
+        return Store.of(self.sender).find(
+            UserToUserEmail,
+            UserToUserEmail.sender == self.sender
+            ).max(UserToUserEmail.date_sent)
+
+    def record(self, message):
+        """See `IDirectEmailAuthorization`."""
+        contact = UserToUserEmail(message)
+        Store.of(self.sender).add(contact)
