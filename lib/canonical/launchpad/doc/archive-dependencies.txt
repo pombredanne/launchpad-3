@@ -320,10 +320,9 @@ Revert Celso's PPA to its original public state.
 
 == Overriding default primary archive dependencies ==
 
-
-Despite being private or public, default primary primary archive
-dependencies can be overridden by simply creating a
-`ArchiveDependency`record targeted to the primary archive.
+Despite being private or public, default primary archive dependencies
+can be overridden by simply creating a `ArchiveDependency`record
+targeted to the primary archive.
 
 The 'pocket' and 'component' dependency attributes can be adjusted to
 produce the desired build behaviour.
