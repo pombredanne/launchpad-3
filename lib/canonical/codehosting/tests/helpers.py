@@ -128,21 +128,6 @@ class ServerTestCase(TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
-    def getDefaultServer(self):
-        raise NotImplementedError("No default server")
-
-    def installServer(self, server):
-        self.server = server
-
-    def setUp(self):
-        super(ServerTestCase, self).setUp()
-
-        if self.server is None:
-            self.installServer(self.getDefaultServer())
-
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
     def __str__(self):
         return self.id()
 
@@ -359,19 +344,18 @@ def clone_test(test, new_id):
 class CodeHostingTestProviderAdapter:
     """Test adapter to run a single test against many codehosting servers."""
 
-    def __init__(self, servers):
-        self._servers = servers
+    def __init__(self, schemas):
+        self._schemas = schemas
 
-    def adaptForServer(self, test, serverFactory):
-        server = serverFactory()
-        new_test = clone_test(test, '%s(%s)' % (test.id(), server._schema))
-        new_test.installServer(server)
+    def adaptForServer(self, test, schema):
+        new_test = clone_test(test, '%s(%s)' % (test.id(), schema))
+        new_test.schema = schema
         return new_test
 
     def adapt(self, test):
         result = unittest.TestSuite()
-        for server in self._servers:
-            new_test = self.adaptForServer(test, server)
+        for schema in self._schemas:
+            new_test = self.adaptForServer(test, schema)
             result.addTest(new_test)
         return result
 

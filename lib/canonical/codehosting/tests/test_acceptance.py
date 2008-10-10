@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import atexit
 from StringIO import StringIO
 import os
 import sys
@@ -22,7 +23,7 @@ from bzrlib.workingtree import WorkingTree
 from canonical.codehosting.tests.helpers import (
     adapt_suite, ServerTestCase)
 from canonical.codehosting.tests.servers import (
-    make_bzr_ssh_server, make_sftp_server)
+    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -30,16 +31,76 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing import LayerInvariantError, ZopelessAppServerLayer
+from canonical.testing.profiled import profiled
+
+
+class SSHServerLayer(ZopelessAppServerLayer):
+
+    _reset_between_tests = True
+    _tac_handler = None
+
+    @classmethod
+    def getTacHandler(cls):
+        if cls._tac_handler is None:
+            cls._tac_handler = CodeHostingTac(
+                config.codehosting.branches_root,
+                config.supermirror.branchesdest)
+        return cls._tac_handler
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        if not SSHServerLayer._reset_between_tests:
+            raise LayerInvariantError(
+                "_reset_between_tests changed before SSHServerLayer "
+                "was actually used.")
+        tac_handler = SSHServerLayer.getTacHandler()
+        tac_handler.setUp()
+        SSHServerLayer._check_and_reset()
+        atexit.register(tac_handler.tearDown)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not SSHServerLayer._reset_between_tests:
+            raise LayerInvariantError(
+                    "_reset_between_tests not reset before SSHServerLayer "
+                    "shutdown")
+        SSHServerLayer._check_and_reset()
+        SSHServerLayer.getTacHandler().tearDown()
+
+    @classmethod
+    @profiled
+    def _check_and_reset(cls):
+        """Reset the storage unless this has been disabled."""
+        if SSHServerLayer._reset_between_tests:
+            SSHServerLayer.getTacHandler().clear()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        SSHServerLayer._check_and_reset()
+        set_up_test_user('testuser', 'testteam')
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        SSHServerLayer._check_and_reset()
 
 
 class SSHTestCase(ServerTestCase):
 
-    layer = ZopelessAppServerLayer
-    server = None
+    layer = SSHServerLayer
+    schema = None
 
     def setUp(self):
+        # Explicitly *don't* up-call for now.
         super(SSHTestCase, self).setUp()
+        tac_handler = SSHServerLayer.getTacHandler()
+        self.server = SSHCodeHostingServer(self.schema, tac_handler)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -137,10 +198,8 @@ class SSHTestCase(ServerTestCase):
 class SmokeTest(SSHTestCase):
     """Smoke test for repository support."""
 
-    def getDefaultServer(self):
-        return make_bzr_ssh_server()
-
     def setUp(self):
+        self.schema = 'bzr+ssh'
         super(SmokeTest, self).setUp()
         self.first_tree = 'first'
         self.second_tree = 'second'
@@ -204,9 +263,6 @@ class AcceptanceTests(SSHTestCase):
         finally:
             captured_stderr, sys.stderr = sys.stderr, real_stderr
         return ret, captured_stderr.getvalue()
-
-    def getDefaultServer(self):
-        return make_sftp_server()
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED, private=False):
@@ -472,9 +528,6 @@ class AcceptanceTests(SSHTestCase):
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the codehosting smartserver."""
 
-    def getDefaultServer(self):
-        return make_bzr_ssh_server()
-
     def makeMirroredBranch(self, person_name, product_name, branch_name):
         ro_branch_url = self.createBazaarBranch(
             person_name, product_name, branch_name)
@@ -586,10 +639,9 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    suite.addTest(make_server_tests(
-        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
 
     suite.addTest(make_server_tests(
-            unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite
