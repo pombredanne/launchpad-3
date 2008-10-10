@@ -244,10 +244,10 @@ The bzr-link formatter uses the bzr identity.
     title="The branch title"><img src="/@@/branch"
     alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
 
-    >>> login_person(fooix.owner)
+    >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.user_branch = branch
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
-    <a href=".../~eric/fooix/bar"
+    <a href=".../~eric/fooix/bar/"
        title="The branch title"><img src="/@@/branch"
        alt=""/>&nbsp;lp://dev/fooix</a>
 
