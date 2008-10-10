@@ -1,15 +1,17 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease']
+__all__ = [
+    'SourcePackageRelease',
+    '_filter_ubuntu_translation_file',
+    ]
 
 import datetime
 import operator
 import pytz
 from StringIO import StringIO
 import re
-import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -49,6 +51,28 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
+
+def _filter_ubuntu_translation_file(filename):
+    """Filter for translation filenames in tarball.
+    
+    Grooms filenames of translation files in tarball, returning None or
+    empty string for files that should be ignored.
+
+    Passed to `ITranslationImportQueue.addOrUpdateEntriesFromTarball`.
+    """
+    source_prefix = 'source/'
+    if not filename.startswith(source_prefix):
+        return None
+
+    filename = filename[len(source_prefix):]
+
+    if filename.startswith('debian/'):
+        # Skip filenames in debian/*.  They're from debconf translations,
+        # which Ubuntu doesn't use.
+        return None
+
+    return filename
 
 
 class SourcePackageRelease(SQLBase):
@@ -564,41 +588,18 @@ class SourcePackageRelease(SQLBase):
         client = getUtility(ILibrarianClient)
 
         tarball_file = client.getFileByAlias(tarball_alias.id)
-        tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
-
-        # Get the list of files to attach.
-        # XXX CarlosPerelloMarin 2008-04-08 bug=213881: This should use
-        # generic translation file format infrastructure, so we don't need to
-        # keep this list of file extensions up to date here.
-        filenames = [
-            name for name in tarball.getnames()
-            if name.startswith('source/') or name.startswith('./source/')
-            if (name.endswith('.pot') or name.endswith('.po') or
-                name.endswith('.xpi'))]
+        tarball = tarball_file.read()
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        translation_import_queue_set = getUtility(ITranslationImportQueue)
+        queue = getUtility(ITranslationImportQueue)
 
-        # Attach all files
-        for filename in filenames:
-            # Fetch the file
-            content = tarball.extractfile(filename).read()
-            if len(content) == 0:
-                # The file is empty, we ignore it.
-                continue
-            if filename.startswith('source/'):
-                # Remove the special 'source/' prefix for the path.
-                filename = filename[len('source/'):]
-            elif filename.startswith('./source/'):
-                # Remove the special './source/' prefix for the path.
-                filename = filename[len('./source/'):]
-            # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                filename, content, is_published, importer,
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.upload_distroseries)
+        queue.addOrUpdateEntriesFromTarball(
+            tarball, is_published, importer,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.upload_distroseries,
+            filename_filter=_filter_ubuntu_translation_file)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""

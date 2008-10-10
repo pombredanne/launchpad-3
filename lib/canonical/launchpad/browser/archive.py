@@ -947,11 +947,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         Ensure we have at least one dependency selected.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
+        self.validate_widgets(data, ['selected_dependencies'])
 
         if len(data.get('selected_dependencies', [])) == 0:
             self.setFieldError(
                 'selected_dependencies', 'No dependencies selected.')
+        return self.errors
 
     @action(_("Remove Dependencies"), name="remove",
             validator="validate_remove")

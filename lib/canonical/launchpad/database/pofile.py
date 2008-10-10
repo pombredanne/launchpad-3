@@ -210,17 +210,6 @@ class POFileMixIn(RosettaStats):
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
 
-    def areMsgIDsNotEnglish(self):
-        """Whether POFile msgid's are not English messages at the same time.
-
-        Happens commonly with "identifier-like" msgids, like in
-        Firefox or OpenOffice.org.
-        """
-        translation_importer = getUtility(ITranslationImporter)
-        format_importer = translation_importer.getTranslationFormatImporter(
-            self.potemplate.source_file_format)
-        return format_importer.uses_source_string_msgids
-
     def _getTranslationSearchQuery(self, pofile, plural_form, text):
         """Query for finding `text` in `plural_form` translations of `pofile`.
         """
@@ -293,14 +282,14 @@ class POFileMixIn(RosettaStats):
             assert len(text) > 1, (
                 "You can not search for strings shorter than 2 characters.")
 
-            if self.areMsgIDsNotEnglish():
+            if self.potemplate.uses_english_msgids:
+                english_match = self._getTemplateSearchQuery(text)
+            else:
                 # If msgids are not in English, use English PO file
                 # to fetch original strings instead.
                 en_pofile = self.potemplate.getPOFileByLang('en')
                 english_match = self._getTranslationSearchQuery(
                     en_pofile, 0, text)
-            else:
-                english_match = self._getTemplateSearchQuery(text)
 
             # Do not look for translations in a DummyPOFile.
             if self.id is not None:

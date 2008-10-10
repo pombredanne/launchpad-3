@@ -5,13 +5,13 @@
     i18n_domain="launchpad">
 
   <!-- IBugBranch -->
-  <content class="canonical.launchpad.database.BugBranch">
+  <class class="canonical.launchpad.database.BugBranch">
     <allow interface="canonical.launchpad.interfaces.IBugBranch" />
     <require
         permission="launchpad.Edit"
         attributes="destroySelf"
         set_attributes="fixed_in_revision_id status whiteboard" />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IBugBranch"
@@ -68,9 +68,9 @@
       template="../templates/bugbranch-inline-edit.pt" />
 
   <!-- BugBranchSet -->
-  <content class="canonical.launchpad.database.BugBranchSet">
+  <class class="canonical.launchpad.database.BugBranchSet">
     <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.BugBranchSet"

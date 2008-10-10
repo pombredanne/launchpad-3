@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
     <!-- Milestone -->
-    <content class="canonical.launchpad.database.Milestone">
+    <class class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
         <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
@@ -22,7 +22,7 @@
             permission="launchpad.AnyPerson"
             attributes="addSubscription addBugSubscription
                         removeBugSubscription" />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -82,8 +82,8 @@
     </securedutility>
 
     <!-- ProjectMilestone -->
-    <content class="canonical.launchpad.database.milestone.ProjectMilestone">
+    <class class="canonical.launchpad.database.milestone.ProjectMilestone">
         <allow interface="canonical.launchpad.interfaces.IProjectMilestone" />
-    </content>
+    </class>
 
 </configure>

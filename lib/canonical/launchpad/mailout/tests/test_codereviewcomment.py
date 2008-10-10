@@ -125,7 +125,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(body.splitlines()[:-3],
                          message.text_contents.splitlines())
         source_branch = mailer.merge_proposal.source_branch
-        branch_name = source_branch.displayname
+        branch_name = source_branch.bzr_identity
         self.assertEqual(body.splitlines()[-3:],
                          ['-- ', canonical_url(mailer.merge_proposal),
                           'You are subscribed to branch %s.' % branch_name])
@@ -163,7 +163,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             body='Hi!\n'
             '-- \n'
             'I am a wacky guy.\n')
-        branch_name = mailer.merge_proposal.source_branch.displayname
+        branch_name = mailer.merge_proposal.source_branch.bzr_identity
         body = mailer._getBody(subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',

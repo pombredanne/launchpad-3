@@ -5,13 +5,13 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.Country">
+    <class class="canonical.launchpad.database.Country">
         <allow interface="canonical.launchpad.interfaces.ICountry" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.database.CountrySet">
+    <class class="canonical.launchpad.database.CountrySet">
         <allow interface="canonical.launchpad.interfaces.ICountrySet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.CountrySet"
@@ -19,8 +19,8 @@
         <allow interface="canonical.launchpad.interfaces.ICountrySet" />
     </securedutility>
 
-    <content class="canonical.launchpad.database.Continent">
+    <class class="canonical.launchpad.database.Continent">
         <allow interface="canonical.launchpad.interfaces.IContinent" />
-    </content>
+    </class>
 
 </configure>

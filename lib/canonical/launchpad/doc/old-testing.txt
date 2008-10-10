@@ -204,7 +204,7 @@ You also have access to the Zope3 component architecture, as registered
 by ftesting.zcml
 
 >>> from zope.app import zapi
->>> from zope.app.mail.interfaces import IMailer
+>>> from zope.sendmail.interfaces import IMailer
 >>> zapi.getUtility(IMailer, 'smtp') is not None
 True
 

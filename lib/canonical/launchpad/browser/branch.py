@@ -27,7 +27,7 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.app.traversing.interfaces import IPathAdapter
+from zope.traversing.interfaces import IPathAdapter
 from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface, implements
@@ -1175,7 +1175,7 @@ class BranchRequestImportView(LaunchpadFormView):
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(
                 structured("The import has already been requested by %s." %
-                           adapter.link('')))
+                           adapter.link(None)))
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
                 self.context.code_import.import_job, self.user)

@@ -14,7 +14,7 @@ from email.Utils import make_msgid
 
 from storm.expr import And
 from storm.store import Store
-from zope.app.event.objectevent import ObjectEvent
+from zope.component.interfaces import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements

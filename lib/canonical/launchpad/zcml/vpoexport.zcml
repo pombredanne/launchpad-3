@@ -10,8 +10,8 @@
         <allow interface="canonical.launchpad.interfaces.IVPOExportSet" />
     </securedutility>
 
-    <content class="canonical.launchpad.database.VPOExport">
+    <class class="canonical.launchpad.database.VPOExport">
         <allow interface="canonical.launchpad.interfaces.IVPOExport"/>
-    </content>
+    </class>
 
 </configure>

@@ -288,8 +288,15 @@ class IPOTemplate(IRosettaStats):
             '''))
 
     date_last_updated = Datetime(
-            title=_('Date for last update'),
-            required=True)
+        title=_('Date for last update'),
+        required=True)
+
+    uses_english_msgids = Bool(
+        title=_("Uses English strings as msgids"), readonly=True,
+        description=_("""
+            Some formats, such as Mozilla's XPI, use symbolic msgids where
+            gettext uses the original English strings to identify messages.
+            """))
 
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
@@ -486,9 +493,15 @@ class IPOTemplateSubset(Interface):
         """
 
     def getPOTemplateByTranslationDomain(translation_domain):
-        """Return the `IPOTemplate` with the given translation_domain or None.
+        """Return the `IPOTemplate` with the given translation_domain.
 
-        The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
+        The `IPOTemplate` is restricted to this concrete
+        `IPOTemplateSubset`.  If multiple templates in the subset match,
+        a warning is logged.
+
+        :return: The single template in this `IPOTemplateSubset` with
+            the given translation_domain, if there is exactly one match.
+            None otherwise.
         """
 
     def getPOTemplateByPath(path):

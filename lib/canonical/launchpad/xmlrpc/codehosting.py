@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BranchFileSystem',
     'BranchPuller',
+    'datetime_from_tuple',
+    'LAUNCHPAD_SERVICES',
     ]
 
 
@@ -65,6 +67,9 @@ class BranchPuller(LaunchpadXMLRPCView):
         else:
             default_branch = branch.product.default_stacked_on_branch
         if default_branch is None:
+            default_branch = ''
+        elif (default_branch.private
+              and branch.branch_type == BranchType.MIRRORED):
             default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name

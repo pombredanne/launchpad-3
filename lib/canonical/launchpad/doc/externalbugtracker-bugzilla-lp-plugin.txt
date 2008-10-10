@@ -111,6 +111,40 @@ login_required() and will retry the method call.
 
     >>> test_transport.print_method_calls = False
 
+If authentication fails, a BugTrackerAuthenticationError will be raised.
+
+    >>> from xmlrpclib import Fault, ProtocolError
+    >>> class TestAuthFailingBugzillaXMLRPCTransport(
+    ...         ZopelessBugzillaXMLRPCTransport):
+    ...     error = Fault(100, "Sorry, you can't log in.")
+    ...
+    ...     def login(self, arguments):
+    ...         raise self.error
+
+    >>> fail_transport = TestAuthFailingBugzillaXMLRPCTransport(
+    ...     'http://example.com/')
+    >>> test_bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/',
+    ...     xmlrpc_transport=fail_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport(quiet=True)
+    ...     )
+
+    >>> test_bugzilla._authenticate()
+    Traceback (most recent call last):
+      ...
+    BugTrackerAuthenticationError: http://example.com:
+    XML-RPC Fault: 100 "Sorry, you can't log in."
+
+This is also true if an error occurs at the protocol level:
+
+    >>> fail_transport.error = ProtocolError(
+    ...     'http://example.com', 500, 'Internal server error', {})
+    >>> test_bugzilla._authenticate()
+    Traceback (most recent call last):
+       ...
+    BugTrackerAuthenticationError: http://example.com:
+    Protocol error: 500 "Internal server error"
+
 
 == Getting the current time ==
 

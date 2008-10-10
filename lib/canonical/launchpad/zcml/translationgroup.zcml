@@ -7,12 +7,12 @@
 <facet facet="translations">
 
     <!-- TranslationGroup -->
-    <content class="canonical.launchpad.database.TranslationGroup">
+    <class class="canonical.launchpad.database.TranslationGroup">
         <allow interface="canonical.launchpad.interfaces.ITranslationGroup" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ITranslationGroup" />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"
