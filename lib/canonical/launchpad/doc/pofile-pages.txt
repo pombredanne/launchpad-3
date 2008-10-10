@@ -342,7 +342,7 @@ Now, we are going to check the alternative language submission.
 #    >>> pofile_view.second_lang_code
 #    'fr'
 
-= POFileUploadView = 
+= POFileUploadView =
 
 Let's check that the upload form sets the right fields.
 
