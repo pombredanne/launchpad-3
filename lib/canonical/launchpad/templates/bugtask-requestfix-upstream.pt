@@ -33,9 +33,8 @@
         tal:define="product_widget nocall:view/widgets/product;
                     product product_widget/getInputValue">
 
-      <div tal:define="widgets view/compulsory_widgets">
-        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
-      </div>
+      <tal:visited_steps
+          replace="structure view/widgets/visited_steps/hidden" />
 
       <div class="field">
 

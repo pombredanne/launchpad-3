@@ -332,7 +332,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             for field_name in self.field_names
             if field_name in self.target_field_names]
         self.bugwatch_widgets = [self.widgets['bug_url']]
-        self.compulsory_widgets = [self.widgets['visited_steps']]
 
     def getTarget(self, data=None):
         """Return the fix target.
