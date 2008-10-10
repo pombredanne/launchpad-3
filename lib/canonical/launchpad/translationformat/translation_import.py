@@ -318,6 +318,7 @@ class TranslationImporter:
         # Do the import and return the errors.
         return file_importer.importFile()
 
+
 class FileImporter(object):
     """Base class for importing translations or translation templates.
 
@@ -429,6 +430,13 @@ class FileImporter(object):
 
             # Add the pomsgset to the list of pomsgsets with errors.
             self._addUpdateError(message, potmsgset, unicode(e))
+
+        just_replaced_msgid = (
+            self.importer.uses_source_string_msgids and
+            self.pofile.language.code == 'en')
+        if just_replaced_msgid:
+            potmsgset.clearCachedSingularText()
+
         return translation_message
 
     def importMessage(self, message):
@@ -593,6 +601,7 @@ class POTFileImporter(FileImporter):
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
+
 
 class POFileImporter(FileImporter):
     """Import a translation file."""

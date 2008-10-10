@@ -19,8 +19,7 @@ from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
-    IRosettaApplication, ILanguageSet, ILaunchpadRoot,
-    IProductSet)
+    ILaunchpadRoot, IRosettaApplication, IProductSet)
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -41,16 +40,28 @@ class HelpTranslateButtonView:
 
 
 class TranslationsMixin:
-    """Translation mixin that provides language handling."""
+    """Provide Translations specific properties."""
 
     @property
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
-        english = getUtility(ILanguageSet)['en']
+        english = getUtility(ILaunchpadCelebrities).english
         languages = helpers.preferred_or_request_languages(self.request)
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages
+
+    @cachedproperty
+    def answers_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers')
+
+    @cachedproperty
+    def answers_question_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers', view_name='+addquestion')
 
 
 class RosettaApplicationView(TranslationsMixin):
