@@ -15,13 +15,14 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-
+    LockFailed, NotBranchError, PermissionDenied, SmartProtocolError,
+    TransportNotPossible)
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, ServerTestCase)
+    adapt_suite, exception_names, LoomTestMixin)
 from canonical.codehosting.tests.servers import (
     CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import branch_id_to_path
@@ -89,7 +90,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
         SSHServerLayer._check_and_reset()
 
 
-class SSHTestCase(ServerTestCase):
+class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     layer = SSHServerLayer
     schema = None
@@ -109,6 +110,38 @@ class SSHTestCase(ServerTestCase):
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
+
+    def __str__(self):
+        return self.id()
+
+    def assertTransportRaises(self, exception, f, *args, **kwargs):
+        """A version of assertRaises() that also catches SmartProtocolError.
+
+        If SmartProtocolError is raised, the error message must
+        contain the exception name.  This is to cover Bazaar's
+        handling of unexpected errors in the smart server.
+        """
+        # XXX: JamesHenstridge 2007-10-08 bug=118736
+        # This helper should not be needed, but some of the exceptions
+        # we raise (such as PermissionDenied) are not yet handled by
+        # the smart server protocol as of bzr-0.91.
+        names = exception_names(exception)
+        try:
+            f(*args, **kwargs)
+        except SmartProtocolError, inst:
+            for name in names:
+                if name in str(inst):
+                    break
+            else:
+                raise self.failureException("%s not raised" % names)
+            return inst
+        except exception, inst:
+            return inst
+        else:
+            raise self.failureException("%s not raised" % names)
+
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
 
     def assertBranchesMatch(self, local_url, remote_url):
         """Assert that two branches have the same last revision."""
