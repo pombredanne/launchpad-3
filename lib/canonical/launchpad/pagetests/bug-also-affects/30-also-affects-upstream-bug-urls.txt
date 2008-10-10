@@ -16,6 +16,16 @@ the URL of the remote bug.
     >>> user_browser.getControl('I have the URL').selected = True
     >>> user_browser.getControl(name='field.bug_url').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
+
+At this point, just in case we change our mind, there is a cancel link
+that points back to the bug page:
+
+    >>> cancel_link = user_browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+
+But we're happy, so we add the bug watch.
+
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/gnome-terminal/+bug/4'
