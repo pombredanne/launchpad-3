@@ -76,6 +76,9 @@ class ExportedFolder:
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
+            # Don't worry about serving  up stuff like ../../../etc/passwd,
+            # because the Zope name traversal will ignore all ./ and ../
+            # elements in it's stack.
             return self.prepareDataForServing(
                 os.path.join(self.folder, *names))
 
