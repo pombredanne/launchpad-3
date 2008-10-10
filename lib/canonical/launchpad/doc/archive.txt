@@ -935,7 +935,7 @@ Non-PPA dependencies can have empty 'component' ...
     >>> primary_component_dep = no_priv.archive.addArchiveDependency(
     ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
 
-However only PRIMARY archive dependencies support other pockets than
+However only PRIMARY archive dependencies support pockets other than
 RELEASE or other components than 'main'.
 
     >>> no_priv.archive.addArchiveDependency(
@@ -943,16 +943,16 @@ RELEASE or other components than 'main'.
     ...     main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only primary archive supports other
-    pockets than RELEASE.
+    ArchiveDependencyError: Non-primary archives only support the
+    RELEASE pocket.
 
     >>> no_priv.archive.addArchiveDependency(
     ...     sabdfl.archive, release_pocket,
     ...     getUtility(IComponentSet)['universe'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only primary archive supports other
-    components than 'main'.
+    ArchiveDependencyError: Non-primary archives only support the
+    'main' component.
 
 'removeArchiveDependency' allow us to purge a recorded
 `ArchiveDependency` corresponding to the given 'dependency', 'pocket'

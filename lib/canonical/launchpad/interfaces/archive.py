@@ -298,15 +298,14 @@ class IArchive(IHasOwner):
     def addArchiveDependency(dependency, pocket, component=None):
         """Record an archive dependency record for the context archive.
 
-        Raises `ArchiveDependencyError` if given 'dependency' does not fit
-        the context archive.
-
         :param dependency: is an `IArchive` object.
         :param pocket: is an `PackagePublishingPocket` enum.
         :param component: is an optional `IComponent` object, if not given
             the archive dependency will be tied to the component used
             for a corresponding source in primary archive.
 
+        :raise: `ArchiveDependencyError` if given 'dependency' does not fit
+            the context archive.
         :return: a `IArchiveDependency` object targeted to the context
             `IArchive` requiring 'dependency' `IArchive`.
         """

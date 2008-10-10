@@ -688,13 +688,11 @@ class Archive(SQLBase):
         if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
                 raise ArchiveDependencyError(
-                    "Only primary archive supports other pockets than "
-                    "RELEASE.")
+                    "Non-primary archives only support the RELEASE pocket.")
             if (component is not None and
                 component.id is not getUtility(IComponentSet)['main'].id):
                 raise ArchiveDependencyError(
-                    "Only primary archive supports other components than "
-                    "'main'.")
+                    "Non-primary archives only support the 'main' component.")
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,

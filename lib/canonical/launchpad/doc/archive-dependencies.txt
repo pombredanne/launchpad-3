@@ -321,16 +321,18 @@ Revert Celso's PPA to its original public state.
 == Overriding default primary archive dependencies ==
 
 
-Despite of being private or public, default primary primary archive
-dependency can be overridden by simply creating a
-`ArchiveDependency`record targetted to the primary archive.
+Despite being private or public, default primary primary archive
+dependencies can be overridden by simply creating a
+`ArchiveDependency`record targeted to the primary archive.
 
-'pocket' and 'component' can be adjusted to produce the desired
-behaviour.
+The 'pocket' and 'component' dependency attributes can be adjusted to
+produce the desired build behaviour.
 
-The default public PPA behaviour is to depend on all pocket
-dependencies of UPDATES and component dependencies of 'multiverse' in
-primary archive.
+The default public PPA build environment regarding primary archive
+access:
+
+ * RELEASE, UPDATES and SECURITY pockets;
+ * main, restricted, universe, multiverse components.
 
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary
@@ -341,8 +343,8 @@ primary archive.
         main restricted universe multiverse
     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
 
-That will remain unchanged when we override the default primary
-archive dependencies with exactly the same values.
+The default build behaviour will remain unchanged when we override the
+default primary archive dependencies with exactly the same values.
 
     >>> default_dependency = cprov.archive.addArchiveDependency(
     ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
@@ -359,10 +361,11 @@ archive dependencies with exactly the same values.
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
-However it can be modified to behave as a embargoed archive, to build
-security updates, only using SECURITY pocket dependencies (RELEASE and
-SECURITY) and following the component dependencies of the component
-where the source was last published in the primary archive.
+The dependency can be modified to behave as an embargoed archive that
+builds security updates. This is done by setting the SECURITY pocket
+dependencies (RELEASE and SECURITY) and following the component
+dependencies of the component where the source was last published in
+the primary archive.
 
     >>> security_dependency = cprov.archive.addArchiveDependency(
     ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
@@ -390,7 +393,7 @@ original ubuntu release.
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
-The PPA can also be configures to extend the ubuntu PROPOSED build
+The PPA can also be configured to extend the ubuntu PROPOSED build
 environment.
 
     >>> proposed_dependency = cprov.archive.addArchiveDependency(
