@@ -2,10 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
- * Alter checkwatches to batch gnome-bugzilla watches:
-  - one batch for the products that we want to sync comments / bugs for.
-    (use BugzillaLPPlugin for this)
-  - one batch for everything else (use regular Bugzilla for this)
- * Ensure that BugzillaLPPlugin will only be used for the Gnome Bugzilla
-   if it actually has the plugin installed.
