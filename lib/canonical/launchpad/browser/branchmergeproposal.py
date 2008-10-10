@@ -498,12 +498,13 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
         reason = RecipientReason.forReviewer(vote_reference, candidate)
-        # If the reviewer is a team, don't send email.  This is to stop the
-        # abuse of a user spamming all members of a team by requesting them to
-        # review a (possibly unrelated) branch.  Ideally we'd come up with a
-        # better solution, but I can't think of one yet.  In all other places
-        # we are emailing subscribers directly rather than people that haven't
-        # subscribed.
+        # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
+        # email.  This is to stop the abuse of a user spamming all members of
+        # a team by requesting them to review a (possibly unrelated) branch.
+        # Ideally we'd come up with a better solution, but I can't think of
+        # one yet.  In all other places we are emailing subscribers directly
+        # rather than people that haven't subscribed.
+        # See bug #281056. (affects IBranchMergeProposal)
         if not candidate.is_team:
             mailer = BMPMailer.forReviewRequest(
                 reason, self.context, self.user)
