@@ -77,6 +77,7 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
