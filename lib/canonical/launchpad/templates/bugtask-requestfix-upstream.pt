@@ -14,9 +14,8 @@
 <div metal:fill-slot="main">
 
   <div id="maincontent">
-    <div id="nonportlets">
 
-      <p tal:content="structure context/fmt:link" />
+    <p tal:content="structure context/fmt:link" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -168,7 +167,6 @@
 
   </div>
 
-    </div>
   </div>
 
   <div id="portlets"
