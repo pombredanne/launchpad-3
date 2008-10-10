@@ -22,6 +22,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    BugzillaLPPlugin)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
@@ -41,6 +43,9 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
+
+
+SYNCABLE_GNOME_PRODUCTS = []
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -263,17 +268,39 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        trackers_and_watches = []
+        remotesystem = externalbugtracker.get_external_bugtracker(
+            bug_tracker)
+        remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
+
         # We special-case the Gnome Bugzilla.
         gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
-        if bug_tracker == gnome_bugzilla and bug_tracker.has_lp_plugin:
-            pass
-            # do_stuff()
+        if (bug_tracker == gnome_bugzilla and
+            isinstance(remotesystem_to_use, BugzillaLPPlugin)):
+
+            lp_plugin_watches = []
+            normal_watches = []
+
+            bug_ids = [bug_watch.remotebug for bug_watch in bug_watches]
+            remote_products = remotesystem_to_use.getProductsForRemoteBugs(
+                bug_ids)
+
+            # For bug watches on remote bugs that are against products
+            # in the SYNCABLE_GNOME_PRODUCTS list - i.e. ones with which
+            # we want to sync comments - we return a BugzillaLPPlugin
+            # instance. Otherwise we return a normal Bugzilla instance.
+            for bug_watch in bug_watches:
+                if (remote_products[bug_watch.remotebug] in
+                    SYNCABLE_GNOME_PRODUCTS):
+                    lp_plugin_watches.append(bug_watch)
+                else:
+                    normal_watches.append(bug_watch)
+
+            trackers_and_watches = [
+                (remotesystem_to_use, lp_plugin_watches),
+                (remotesystem, normal_watches),
+                ]
         else:
-            remotesystem = externalbugtracker.get_external_bugtracker(
-                bug_tracker)
-            remotesystem = remotesystem.getExternalBugTrackerToUse()
-            trackers_and_watches.append((remotesystem, bug_watches))
+            trackers_and_watches = [(remotesystem_to_use, bug_watches)]
 
         return trackers_and_watches
 
