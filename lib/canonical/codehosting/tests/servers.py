@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeHostingTac',
     'SSHCodeHostingServer',
     'make_bzr_ssh_server',
     'make_launchpad_server',
@@ -46,13 +47,15 @@ def make_launchpad_server():
 def make_sftp_server():
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer('sftp', branches_root, mirror_root)
+    return SSHCodeHostingServer(
+        'sftp', CodeHostingTac(branches_root, mirror_root))
 
 
 def make_bzr_ssh_server():
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer('bzr+ssh', branches_root, mirror_root)
+    return SSHCodeHostingServer(
+        'bzr+ssh', CodeHostingTac(branches_root, mirror_root))
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -199,13 +202,13 @@ class CodeHostingTac(TacTestSetup):
 
 class SSHCodeHostingServer(Server):
 
-    def __init__(self, schema, branches_root, mirror_root):
+    def __init__(self, schema, tac_server):
         Server.__init__(self)
         self._schema = schema
         # XXX: JonathanLange 2008-10-08: This is used by createBazaarBranch in
         # test_acceptance.
-        self._mirror_root = mirror_root
-        self._tac_server = CodeHostingTac(branches_root, mirror_root)
+        self._mirror_root = tac_server._mirror_root
+        self._tac_server = tac_server
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
