@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     INotificationRecipientSet, IPersonSet, ISpecification,
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
+from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
@@ -1842,6 +1843,8 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
     person_set = getUtility(IPersonSet)
     sender = person_set.getByEmail(sender_email)
     assert sender is not None, 'No person for sender %s' % sender_email
+    assert IDirectEmailAuthorization(sender).is_allowed, (
+        'Sender has reached quota: %s' % sender.displayname)
     recipient = person_set.getByEmail(recipient_email)
     assert recipient is not None, (
         'No person for recipient %s' % recipient_email)

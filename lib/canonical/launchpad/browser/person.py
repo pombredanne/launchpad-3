@@ -94,6 +94,8 @@ from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
 
+from storm.locals import Store
+
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -4941,13 +4943,20 @@ class EmailToPersonView(LaunchpadFormView):
     @property
     def contact_is_allowed(self):
         """Whether the sender is allowed to send this email or not."""
-        import pdb; pdb.set_trace()
         return IDirectEmailAuthorization(self.user).is_allowed
 
     @property
     def next_try(self):
         """When can the user try again?"""
-        now = datetime.now()
+        # This isn't exactly correct in that it doesn't return the nearest
+        # time at which a retry can happen.  To do that, we'd have to get the
+        # last N contacts, and add interval to the earliest of those.  I don't
+        # think it's worth it, as we're still accurate by saying, if the user
+        # tries again in interval after the last contact, it will work.
+        last_contact = Store.of(self.user).find(
+            UserToUserEmail,
+            UserToUserEmail.sender == self.user
+            ).max(UserToUserEmail.date_sent)
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
-        return now + interval
+        return last_contact + interval
