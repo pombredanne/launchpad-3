@@ -12,10 +12,14 @@ this on.
    >>> logout()
 
 The user goes to the bug's index page, and clicks the edit action link
-'This bug affects me too'.
+near 'This bug affects me too'.
 
    >>> user_browser.open(test_bug_url)
-   >>> user_browser.getLink('This bug affects me too').click()
+   >>> print extract_text(find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetooform'))
+   This bug doesn't affect me...
+
+   >>> user_browser.getLink('change').click()
    >>> print user_browser.url
    http://bugs.launchpad.dev/.../+bug/.../+affectsmetoo
    >>> user_browser.getControl(name='field.affects').value
@@ -25,33 +29,32 @@ The form defaults to 'Yes', and the user submits the form.
 
    >>> user_browser.getControl('Change').click()
 
-The bug page loads again, and now the link text is changed, to make it
+The bug page loads again, and now the text is changed, to make it
 clear to the user that they can change the selection.
 
    >>> print extract_text(find_tags_by_class(
    ...     user_browser.contents, 'menu-link-affectsmetoo')[0])
-   This bug does not affect me
+   change
 
-The link also displays the 'hot bug' icon, to indicate that the user
-has marked the bug as affecting him.
+Next to it, we also see the 'hot bug' icon, to indicate that the user
+has marked the bug as affecting them.
 
-   >>> print find_tags_by_class(
-   ...     user_browser.contents, 'menu-link-affectsmetoo')[0]['style']
-   background: url(/@@/flame-icon) center left no-repeat...
+   >>> print find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetooform').img['src']
+   /@@/flame-icon
 
-   >>> user_browser.getLink('This bug does not affect me').click()
+   >>> user_browser.getLink('change').click()
 
 The user is changing his selection to 'No' and submits the form.
 
    >>> user_browser.getControl(name='field.affects').value = ['NO']
    >>> user_browser.getControl('Change').click()
 
-Back at the bug page, the action text changes once again.
+Back at the bug page, the text changes once again.
 
-   >>> print extract_text(find_tags_by_class(
-   ...     user_browser.contents, 'menu-link-affectsmetoo')[0])
-   This bug affects me too
-
+   >>> print extract_text(find_tag_by_id(
+   ...     user_browser.contents, 'affectsmetooform'))
+   This bug doesn't affect me...
 
 == One-click interaction ==
 
