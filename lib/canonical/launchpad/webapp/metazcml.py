@@ -7,19 +7,17 @@ import inspect
 import zope.app.form.browser.metaconfigure
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
-import zope.component.servicenames
 import zope.configuration.config
-from zope.app.component.fields import LayerField
 from zope.app.component.metaconfigure import (
-    adapter, handler, PublicPermission, utility, view)
+    handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publisher.browser.viewmeta import (
     page as original_page, pages as original_pages)
-from zope.app.security.permission import Permission
 from zope.component import getUtility
+from zope.component.zcml import adapter
 from zope.configuration.fields import (
-    GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
+    GlobalInterface, GlobalObject, MessageID, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest, IDefaultBrowserLayer)
@@ -27,6 +25,7 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.schema import TextLine
 from zope.security.checker import Checker, CheckerPublic
 from zope.security.interfaces import IPermission
+from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 
 from zope.app.component.contentdirective import ClassDirective
@@ -286,7 +285,7 @@ def navigation(_context, module, classes):
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        view(_context, factory, IBrowserRequest, name, for_, layer,
+        view(_context, factory, layer, name, for_,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
         #view(_context, factory, layer, name, for_,
@@ -494,14 +493,13 @@ class IRenamedPageDirective(Interface):
         title=u"Specification of the object that has the renamed page",
         required=True )
 
-    layer = LayerField(
+    layer = GlobalInterface(
         title=u"The layer the renamed page is in.",
         description=u"""
         A skin is composed of layers. It is common to put skin
         specific views in a layer named after the skin. If the 'layer'
         attribute is not supplied, it defaults to 'default'.""",
-        required=False,
-        )
+        required=False)
 
     name = zope.schema.TextLine(
         title=u"The name of the old page.",

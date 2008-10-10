@@ -10,7 +10,7 @@
     -->
     <include file="bug-5133.zcml" />
 
-    <content class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
+    <class class="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
@@ -18,11 +18,11 @@
         />
       <allow
         interface="zope.component.interfaces.IPresentationRequest" />
-    </content>
+    </class>
 
-    <content class="canonical.launchpad.webapp.publisher.RedirectionView">
+    <class class="canonical.launchpad.webapp.publisher.RedirectionView">
       <allow attributes="browserDefault __call__" />
-    </content>
+    </class>
 
     <adapter
         for="zope.publisher.interfaces.http.IHTTPRequest"
@@ -31,9 +31,9 @@
         />
 
     <!-- links -->
-    <content class="canonical.launchpad.webapp.menu.LinkData">
+    <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILinkData"
@@ -47,12 +47,12 @@
         factory="canonical.launchpad.webapp.publication.DefaultPrimaryContext"
         />
 
-    <content class="canonical.launchpad.webapp.menu.MenuLink">
+    <class class="canonical.launchpad.webapp.menu.MenuLink">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.webapp.interfaces.ILink"
             />
-    </content>
+    </class>
 
     <adapter
         for="canonical.launchpad.webapp.interfaces.ILinkData"
@@ -60,12 +60,12 @@
         factory="canonical.launchpad.webapp.menu.FacetLink"
         />
 
-    <content class="canonical.launchpad.webapp.menu.FacetLink">
+    <class class="canonical.launchpad.webapp.menu.FacetLink">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.webapp.interfaces.IFacetLink"
             />
-    </content>
+    </class>
 
     <!-- Launchpad root object -->
     <utility
@@ -458,11 +458,11 @@
     <!-- Session machinery. -->
     <utility
         component="canonical.launchpad.webapp.session.idmanager"
-        provides="zope.app.session.interfaces.IClientIdManager"
+        provides="zope.session.interfaces.IClientIdManager"
         />
     <utility
         component="canonical.launchpad.webapp.pgsession.data_container"
-        provides="zope.app.session.interfaces.ISessionDataContainer"
+        provides="zope.session.interfaces.ISessionDataContainer"
         />
 
     <!-- Storm Store selector. -->
@@ -481,12 +481,12 @@
         permission="zope.Public"
         />
 
-    <content class="canonical.launchpad.webapp.launchbag.LaunchBag">
+    <class class="canonical.launchpad.webapp.launchbag.LaunchBag">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.webapp.interfaces.ILaunchBag"
             />
-    </content>
+    </class>
 
     <browser:page
         for="*"
@@ -514,7 +514,7 @@
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"
-        provides="zope.app.session.interfaces.ISession"
+        provides="zope.session.interfaces.ISession"
         factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
         />
 
@@ -602,11 +602,11 @@
         handler="canonical.launchpad.webapp.sigusr1.end_request"
         />
 
-    <content class="canonical.launchpad.webapp.publication.LoginRoot">
+    <class class="canonical.launchpad.webapp.publication.LoginRoot">
       <allow
         attributes="publishTraverse"
         />
-    </content>
+    </class>
 
     <!-- the URI class -->
     <class class="canonical.launchpad.webapp.uri.URI">

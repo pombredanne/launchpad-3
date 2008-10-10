@@ -54,6 +54,7 @@ __all__ = [
     'LaunchpadBrowserPublication'
     ]
 
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -327,6 +328,15 @@ class LaunchpadBrowserPublication(
         # problems we encode it into ASCII.
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
+
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
 
         return mapply(ob, request.getPositionalArguments(), request)
 

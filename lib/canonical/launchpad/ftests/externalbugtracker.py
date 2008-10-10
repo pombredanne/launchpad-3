@@ -833,6 +833,9 @@ class TestInternalXMLRPCTransport:
     then switches back to the 'checkwatches' user.
     """
 
+    def __init__(self, quiet=False):
+        self.quiet = quiet
+
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
@@ -844,7 +847,10 @@ class TestInternalXMLRPCTransport:
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)
-        print "Using XML-RPC to generate token."
+
+        if not self.quiet:
+            print "Using XML-RPC to generate token."
+
         return token_api.newBugTrackerToken()
 
 

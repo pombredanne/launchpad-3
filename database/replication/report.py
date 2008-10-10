@@ -267,7 +267,7 @@ def main():
     # Set our search path to the schema of the cluster we care about.
     cur.execute(
             "SET search_path TO %s, public"
-            % quote_identifier(CLUSTER_NAMESPACE))
+            % quote_identifier(replication.helpers.CLUSTER_NAMESPACE))
 
     print node_overview_report(cur, options)
     print paths_report(cur, options)

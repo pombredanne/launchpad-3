@@ -63,12 +63,12 @@ class PGSessionDataContainer(PGSessionBase):
     session_pkg_data_table_name = 'SessionPkgData'
 
     def __getitem__(self, client_id):
-        """See zope.app.session.interfaces.ISessionDataContainer"""
+        """See zope.session.interfaces.ISessionDataContainer"""
         self._sweep()
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
-        """See zope.app.session.interfaces.ISessionDataContainer"""
+        """See zope.session.interfaces.ISessionDataContainer"""
         # The SessionData / SessionPkgData objects know how to store
         # themselves.
         pass
@@ -127,7 +127,7 @@ class PGSessionData(PGSessionBase):
         return PGSessionPkgData(self, product_id)
 
     def __setitem__(self, product_id, session_pkg_data):
-        """See zope.app.session.interfaces.ISessionData
+        """See zope.session.interfaces.ISessionData
 
         This is a noop in the RDBMS implementation.
         """
