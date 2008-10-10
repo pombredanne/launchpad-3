@@ -174,6 +174,7 @@ class AlsoAffectsStep(LaunchpadFormView):
 
     @property
     def cancel_url(self):
+        """Return the URL for the current context, i.e. bug."""
         return canonical_url(self.context)
 
 
