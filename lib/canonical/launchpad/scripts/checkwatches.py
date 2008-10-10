@@ -158,9 +158,15 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
-    def __init__(self, txn, log=default_log):
+    def __init__(self, txn, log=default_log, syncable_gnome_products=None):
         self.txn = txn
         self.log = log
+
+        # Override SYNCABLE_GNOME_PRODUCTS if necessary.
+        if syncable_gnome_products is not None:
+            self._syncable_gnome_products = syncable_gnome_products
+        else:
+            self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
@@ -285,12 +291,12 @@ class BugWatchUpdater(object):
                 bug_ids)
 
             # For bug watches on remote bugs that are against products
-            # in the SYNCABLE_GNOME_PRODUCTS list - i.e. ones with which
+            # in the _syncable_gnome_products list - i.e. ones with which
             # we want to sync comments - we return a BugzillaLPPlugin
             # instance. Otherwise we return a normal Bugzilla instance.
             for bug_watch in bug_watches:
                 if (remote_products[bug_watch.remotebug] in
-                    SYNCABLE_GNOME_PRODUCTS):
+                    self._syncable_gnome_products):
                     lp_plugin_watches.append(bug_watch)
                 else:
                     normal_watches.append(bug_watch)

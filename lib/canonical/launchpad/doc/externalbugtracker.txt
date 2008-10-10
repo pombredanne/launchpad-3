@@ -202,11 +202,19 @@ sync comments with, _getExternalBugTrackersAndWatches() will return
 (BugzillaLPPlugin, watches).
 
 The checkwatches module contains a variable, SYNCABLE_GNOME_PRODUCTS,
-which defines the products that we want to sync comments for. We can
-patch this so that it contains one of our test products.
+which defines the products that we want to sync comments for.
+BugWatchUpdater keeps a local copy of this variable, which we can
+override by passing a list of products to the BugWatchUpdater
+constructor.
 
     >>> from canonical.launchpad.scripts import checkwatches
-    >>> checkwatches.SYNCABLE_GNOME_PRODUCTS = ['HeartOfGold']
+    >>> (bug_watch_updater._syncable_gnome_products ==
+    ...     checkwatches.SYNCABLE_GNOME_PRODUCTS)
+    True
+
+    >>> syncable_products = ['HeartOfGold']
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
 
     >>> bug_watches = [
     ...     factory.makeBugWatch(
@@ -252,10 +260,12 @@ Bugzilla instance.
 If we alter the SYNCABLE_GNOME_PRODUCTS list, different batches of bug
 watches will be returned for the different Bugzilla ExternalBugTrackers.
 
-    >>> checkwatches.SYNCABLE_GNOME_PRODUCTS = [
+    >>> syncable_products = [
     ...     'HeartOfGold',
     ...     'InfiniteImprobabilityDrive',
     ...     ]
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
