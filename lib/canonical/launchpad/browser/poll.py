@@ -23,11 +23,10 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
-    LaunchpadFormView, Link, Navigation, stepthrough)
+    LaunchpadEditFormView, LaunchpadFormView, Link, Navigation, stepthrough)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.poll import (
     IPollSubset, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm, PollSecrecy)
-from canonical.launchpad.interfaces.validation import validate_date_interval
 from canonical.launchpad.helpers import shortlist
 
 
@@ -335,29 +334,33 @@ class PollAddView(LaunchpadFormView):
     """The view class to create a new poll in a given team."""
 
     schema = IPoll
-    field_names = ["name", "title", "proposition", "secrecy", "allowspoilt",
-                   "dateopens", "datecloses"]
+    field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
+                   "datecloses"]
 
     @action("Continue", name="continue")
     def continue_action(self, action, data):
+        # XXX: salgado, 2008-10-08: Only secret polls can be created until we
+        # fix https://launchpad.net/bugs/80596.
+        secrecy = PollSecrecy.SECRET
         poll = IPollSubset(self.context).new(
             data['name'], data['title'], data['proposition'],
-            data['dateopens'], data['datecloses'], data['secrecy'],
+            data['dateopens'], data['datecloses'], secrecy,
             data['allowspoilt'])
         self.next_url = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
 
 
-class PollEditView(SQLObjectEditView):
+class PollEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    schema = IPoll
+    label = "Edit poll details"
+    field_names = ["name", "title", "proposition", "allowspoilt", "dateopens",
+                   "datecloses"]
 
-    def validate(self, form_values):
-        """Verify that the opening date precedes the closing date."""
-        time_starts = form_values['dateopens']
-        time_ends = form_values['datecloses']
-        validate_date_interval(time_starts, time_ends)
+    @action("Save", name="save")
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class PollOptionEditView(SQLObjectEditView):
