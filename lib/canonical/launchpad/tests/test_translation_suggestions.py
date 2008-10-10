@@ -129,8 +129,11 @@ class TestTranslationSuggestions(unittest.TestCase):
             self.foo_nl.language)
         imported_translation = potmsgset.getImportedTranslationMessage(
             self.foo_nl.language)
+
         self.assertEquals(
-            current_translation, imported_translation)
+            current_translation, imported_translation,
+            "Imported message should become current if there are no "
+            "previous imported messages.")
 
 
 def test_suite():
