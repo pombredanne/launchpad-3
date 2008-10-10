@@ -16,6 +16,8 @@
   <div id="maincontent">
     <div id="nonportlets">
 
+      <p tal:content="structure context/fmt:link" />
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <metal:extra_info metal:fill-slot="extra_info">

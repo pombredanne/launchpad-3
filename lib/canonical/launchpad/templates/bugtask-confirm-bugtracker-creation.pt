@@ -13,6 +13,8 @@
 
     <div metal:fill-slot="main">
 
+      <p tal:content="structure context/fmt:link" />
+
       <div metal:use-macro="context/@@launchpad_form/form">
         <p metal:fill-slot="extra_info" class="informational message">
           The bug tracker with the given URL is not registered in
