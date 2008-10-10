@@ -314,7 +314,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
              'REJECTED', 'SUPERSEDED'], user)
 
     def test_createStatusVocabulary_non_reviewer(self):
-        # Neither the source branch owner nor the registrant should not be
+        # Neither the source branch owner nor the registrant should be
         # able to approve or reject their own code (assuming they don't have
         # rights on the target branch).
         status_options = [
@@ -351,7 +351,7 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
         self.assertAllStatusesAvailable(user=self.proposal.target_branch.owner)
 
     def test_createStatusVocabulary_rejected(self):
-        # Options for rejected proposals are the same irrespective or user.
+        # Options for rejected proposals are the same regardless of user.
         self.proposal.rejectBranch(
             self.proposal.target_branch.owner, 'some-revision')
         status_options = ['REJECTED', 'SUPERSEDED']

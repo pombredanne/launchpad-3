@@ -447,7 +447,6 @@ class BranchMergeProposal(SQLBase):
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence', limit=10)
 
-    # TODO: claim a team vote reference.
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""

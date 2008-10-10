@@ -37,6 +37,7 @@ class BranchMergeProposalListingItem:
     def vote_summary(self):
         """A short summary of the votes."""
         votes = []
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         for vote in CodeReviewVote.items:
             vote_count = self.summary.get(vote, 0)
             if vote_count > 0:

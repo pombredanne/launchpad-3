@@ -61,6 +61,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         # The comment count is shown.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             'Comments:&nbsp;1',
             self._get_vote_summary(proposal))
@@ -70,6 +71,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(
             proposal, vote=CodeReviewVote.APPROVE, comment=None)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteAPPROVE">Approve:&nbsp;1</span>',
             self._get_vote_summary(proposal))
@@ -78,6 +80,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         # A vote with a comment counts as a vote and a comment.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteAPPROVE">Approve:&nbsp;1</span>, '
             'Comments:&nbsp;1',
@@ -87,6 +90,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         # Shown as Disapprove: <count>.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteDISAPPROVE">Disapprove:&nbsp;1</span>, '
             'Comments:&nbsp;1',
@@ -96,6 +100,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         # Shown as Abstain: <count>.
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteABSTAIN">Abstain:&nbsp;1</span>, '
             'Comments:&nbsp;1',
@@ -106,6 +111,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         self._createComment(proposal, vote=CodeReviewVote.DISAPPROVE)
         self._createComment(proposal, vote=CodeReviewVote.APPROVE)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteAPPROVE">Approve:&nbsp;1</span>, '
             '<span class="voteDISAPPROVE">Disapprove:&nbsp;1</span>, '
@@ -130,6 +136,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
             proposal, vote=CodeReviewVote.ABSTAIN, comment=None)
         self._createComment(
             proposal, vote=CodeReviewVote.APPROVE, comment=None)
+        # XXX: rockstar - 9 Oct 2009 - HTML in python is bad. See bug #281063.
         self.assertEqual(
             '<span class="voteAPPROVE">Approve:&nbsp;3</span>, '
             '<span class="voteABSTAIN">Abstain:&nbsp;1</span>, '

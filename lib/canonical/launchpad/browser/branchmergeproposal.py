@@ -958,6 +958,7 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
 
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
+        # See bug #281060.
         if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.context.setAsWorkInProgress()
         elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
@@ -1049,6 +1050,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         self.reviewer = self.user.name
+        # claim_review is set in situations where a user is reviewing on
+        # behalf of a team.
         claim_review = self.request.form.get('claim')
         if claim_review and self.users_vote_ref is None:
             team = getUtility(IPersonSet).getByName(claim_review)
@@ -1081,10 +1084,9 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
             vote_ref = self.context.getUsersVoteReference(
                 reviewer, review_type)
             if vote_ref is not None:
-                # Claim this vote reference.  Normally the reviewer is not
-                # editable at all, but here we are going to remove the
-                # security proxy as it is the simplest way to handle a complex
-                # case.
+                # Claim this vote reference, i.e. say that the individual
+                # self. user is doing this review ond behalf of the 'reviewer'
+                # team.
                 removeSecurityProxy(vote_ref).reviewer = self.user
 
         comment = self.context.createComment(
