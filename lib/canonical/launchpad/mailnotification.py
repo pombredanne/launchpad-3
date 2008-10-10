@@ -1843,7 +1843,8 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
     person_set = getUtility(IPersonSet)
     sender = person_set.getByEmail(sender_email)
     assert sender is not None, 'No person for sender %s' % sender_email
-    assert IDirectEmailAuthorization(sender).is_allowed, (
+    authorization = IDirectEmailAuthorization(sender)
+    assert authorization.is_allowed, (
         'Sender has reached quota: %s' % sender.displayname)
     recipient = person_set.getByEmail(recipient_email)
     assert recipient is not None, (
@@ -1852,6 +1853,9 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
     message['To'] = formataddr((recipient.displayname, recipient_email))
     message['Subject'] = subject_header
     message['Message-ID'] = make_msgid('launchpad')
+    # Record the contact.  Send the message first though so it gets a Date
+    # header.  Yeah, we could add one ourselves I guess.
     sendmail(message)
+    authorization.record(message)
     return message
 

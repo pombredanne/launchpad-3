@@ -94,8 +94,6 @@ from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
 
-from storm.locals import Store
-
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -173,7 +171,6 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
-from canonical.launchpad.database.message import UserToUserEmail
 from canonical.launchpad.fields import LocationField
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
@@ -4929,11 +4926,9 @@ class EmailToPersonView(LaunchpadFormView):
         recipient_email = self.context.preferredemail.email
         message = send_direct_contact_email(
             sender_email, recipient_email, subject, message)
-        contact = UserToUserEmail(message)
         self.request.response.addInfoNotification(
-            _('Message sent to $name with Message-ID $msgid',
-              mapping=dict(name=self.context.displayname,
-                           msgid=message['message-id'])))
+            _('Message sent to $name',
+              mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -4948,15 +4943,7 @@ class EmailToPersonView(LaunchpadFormView):
     @property
     def next_try(self):
         """When can the user try again?"""
-        # This isn't exactly correct in that it doesn't return the nearest
-        # time at which a retry can happen.  To do that, we'd have to get the
-        # last N contacts, and add interval to the earliest of those.  I don't
-        # think it's worth it, as we're still accurate by saying, if the user
-        # tries again in interval after the last contact, it will work.
-        last_contact = Store.of(self.user).find(
-            UserToUserEmail,
-            UserToUserEmail.sender == self.user
-            ).max(UserToUserEmail.date_sent)
+        last_contact = IDirectEmailAuthorization(self.user).last_contact
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return last_contact + interval

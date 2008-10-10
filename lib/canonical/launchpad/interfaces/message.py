@@ -246,6 +246,18 @@ class IDirectEmailAuthorization(Interface):
             'Launchpad user.'),
         readonly=True)
 
+    last_contact = Datetime(
+        title=_('The last contact record for a sender.'),
+        readonly=True,
+        )
+
+    def record(message):
+        """Record that the message was sent.
+
+        :param message: The email message that was sent.
+        :type message: `email.Message.Message`
+        """
+
 
 class UnknownSender(NotFoundError):
     """Raised if we cannot lookup an email message's sender in the database"""

@@ -569,7 +569,6 @@ class UserToUserEmail(Storm):
         :param message: the message being sent
         :type message: `email.message.Message`
         """
-        person_set = getUtility(IPersonSet)
         super(UserToUserEmail, self).__init__()
         person_set = getUtility(IPersonSet)
         # Find the person who is sending this message.
@@ -655,3 +654,21 @@ class DirectEmailAuthorization:
         after = now - as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return self._isAllowedAfter(after)
+
+    @property
+    def last_contact(self):
+        """See `IDirectEmailAuthorization`."""
+        # This isn't exactly correct in that it doesn't return the nearest
+        # time at which a retry can happen.  To do that, we'd have to get the
+        # last N contacts, and add interval to the earliest of those.  I don't
+        # think it's worth it, as we're still accurate by saying, if the user
+        # tries again in interval after the last contact, it will work.
+        return Store.of(self.sender).find(
+            UserToUserEmail,
+            UserToUserEmail.sender == self.sender
+            ).max(UserToUserEmail.date_sent)
+
+    def record(self, message):
+        """See `IDirectEmailAuthorization`."""
+        contact = UserToUserEmail(message)
+        Store.of(self.sender).add(contact)
