@@ -96,6 +96,12 @@ registered in Launchpad, the user will be prompted to register it first.
     The bug tracker with the given URL is not registered in Launchpad.
     Would you like to register it now?
 
+As before, if we change our mind, we can back out if we want.
+
+    >>> cancel_link = user_browser.getLink('Cancel')
+    >>> cancel_link.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+
 Now the user confirms he wants us to register the bug tracker for him and we
 do that before creating the new bug watch.
 
