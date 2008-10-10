@@ -68,6 +68,9 @@ class BranchPuller(LaunchpadXMLRPCView):
             default_branch = branch.product.default_stacked_on_branch
         if default_branch is None:
             default_branch = ''
+        elif (default_branch.private
+              and branch.branch_type == BranchType.MIRRORED):
+            default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name
         return (

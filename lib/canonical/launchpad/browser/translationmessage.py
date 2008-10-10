@@ -41,7 +41,8 @@ from canonical.launchpad.browser.potemplate import POTemplateFacets
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOFileAlternativeLanguage, ITranslationMessage,
     ITranslationMessageSet, ITranslationMessageSuggestions,
-    TranslationConflict, TranslationConstants, UnexpectedFormData)
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
     Link, urlparse)
@@ -433,7 +434,13 @@ class BaseTranslationView(LaunchpadView):
         if (self.request.method == 'POST'):
             if self.user is None:
                 raise UnexpectedFormData, (
-                    'Anonymous users cannot do POST submissions.')
+                    'Anonymous users or users who are not accepting our '
+                    'licensing terms cannot do POST submissions.')
+            if (self.user.translations_relicensing_agreement is not None and
+                not self.user.translations_relicensing_agreement):
+                raise UnexpectedFormData, (
+                    'Users who do not agree to licensing terms '
+                    'cannot do POST submissions.')
             try:
                 # Try to get the timestamp when the submitted form was
                 # created. We use it to detect whether someone else updated
@@ -1174,10 +1181,11 @@ class CurrentTranslationMessageView(LaunchpadView):
                     'Suggestions', local, index))
             externally_used_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Used in', externally_used, index))
+                    'Used in', externally_used, index, legal_warning=True))
             externally_suggested_suggestions = (
                 self._buildTranslationMessageSuggestions(
-                    'Suggested in', externally_suggested, index))
+                    'Suggested in', externally_suggested, index,
+                    legal_warning=True))
             alternate_language_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     alt_title, alt_submissions, index))
@@ -1192,7 +1200,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                 len(externally_suggested_suggestions.submissions) +
                 len(alternate_language_suggestions.submissions))
 
-    def _buildTranslationMessageSuggestions(self, title, suggestions, index):
+    def _buildTranslationMessageSuggestions(self, title, suggestions, index,
+                                            legal_warning=False):
         """Build filtered list of submissions to be shown in the view.
 
         `title` is the title for the suggestion type, `suggestions` is
@@ -1202,7 +1211,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             title, self.context,
             suggestions[:self.max_entries],
             self.user_is_official_translator, self.form_is_writeable,
-            index, self.seen_translations)
+            index, self.seen_translations, legal_warning=legal_warning)
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
@@ -1413,7 +1422,7 @@ class TranslationMessageSuggestions:
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,
-                 plural_form, seen_translations=None):
+                 plural_form, seen_translations=None, legal_warning=False):
         self.title = title
         self.potmsgset = translation.potmsgset
         self.pofile = translation.pofile
@@ -1450,6 +1459,8 @@ class TranslationMessageSuggestions:
                 'pofile': submission.pofile,
                 'person': submission.submitter,
                 'date_created': submission.date_created,
+                'legal_warning': legal_warning and (
+                    submission.origin == RosettaTranslationOrigin.SCM),
                 'suggestion_html_id':
                     self.potmsgset.makeHTMLID('%s_suggestion_%s_%s' % (
                         submission.pofile.language.code, submission.id,
