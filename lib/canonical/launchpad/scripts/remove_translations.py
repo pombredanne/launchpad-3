@@ -187,7 +187,7 @@ class RemoveTranslations(LaunchpadScript):
         ExtendedOption(
             '-x', '--reject-license', action='store_true',
             dest='reject_license',
-            help="Match submitters who rejected license."),
+            help="Match submitters who rejected the license agreement."),
         ExtendedOption(
             '-i', '--id', action='append', dest='ids', type='int',
             help="ID of message to delete.  May be specified multiple "
@@ -293,15 +293,20 @@ class RemoveTranslations(LaunchpadScript):
         remove_translations(logger=self.logger,
             submitter=self.options.submitter,
             reject_license=self.options.reject_license,
-            reviewer=self.options.reviewer, ids=self.options.ids,
+            reviewer=self.options.reviewer,
+            ids=self.options.ids,
             potemplate=self.options.potemplate,
             language_code=self.options.language,
             not_language=self.options.not_language,
             is_current=self.options.is_current,
             is_imported=self.options.is_imported,
-            msgid_singular=self.options.msgid, origin=self.options.origin)
+            msgid_singular=self.options.msgid,
+            origin=self.options.origin)
 
-        if not self.options.dry_run:
+        if self.options.dry_run:
+            if self.txn is not None:
+                self.txn.abort()
+        else:
             self.txn.commit()
 
 
@@ -391,8 +396,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
     from_text = ', '.join(joins)
     where_text = ' AND\n    '.join(conditions)
 
-    # Keep track of messages we're going to delete, and any is_imported
-    # messages that they may have been overriding.
+    # Keep track of messages we're going to delete.
     # Don't bother indexing this.  We'd more likely end up optimizing
     # away the operator's "oh-shit-ctrl-c" time than helping anyone.
     query = """
@@ -403,6 +407,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         """ % (from_text, where_text)
     cur.execute(query)
 
+    # Note which messages are masked by the messages we're going to
+    # delete.  We'll be making those the current ones.
     query = """
         UPDATE temp_doomed_message
         SET imported_message = Imported.id
@@ -414,11 +420,28 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             Imported.pofile = Doomed.pofile AND
             -- Came from published source.
             Imported.is_imported IS TRUE AND
-            -- Was overridden by the message we're about to delete.
+            -- Was masked by the message we're about to delete.
             Doomed.is_current IS TRUE AND
             Imported.id <> Doomed.id
             """
     cur.execute(query)
+
+    if logger is not None and logger.getEffectiveLevel() <= logging.DEBUG:
+        # Dump sample of doomed messages for debugging purposes.
+        cur.execute("""
+            SELECT *
+            FROM temp_doomed_message
+            ORDER BY id
+            LIMIT 20
+            """)
+        rows = cur.fetchall()
+        if cur.rowcount > 0:
+            logger.debug("Sample of messages to be deleted follows.")
+            logger.debug("%10s %10s" % ("[message]", "[unmasks]"))
+            for (doomed, unmasked) in rows:
+                if unmasked is None:
+                    unmasked = '--'
+                logger.debug("%10s %10s" % (doomed, unmasked))
 
     cur.execute("""
         DELETE FROM TranslationMessage

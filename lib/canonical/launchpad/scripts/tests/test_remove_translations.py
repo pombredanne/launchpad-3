@@ -45,7 +45,7 @@ class TestRemoveTranslationsConstraints(TestCase):
         # actually do that here, but we'll go through all the motions.
         self.layer.switchDbUser('postgres')
 
-    def _test_options(self, opts):
+    def _check_options(self, opts):
         """Get `_check_constraints_safety`'s answer for given options."""
         return make_script(opts)._check_constraints_safety()
 
@@ -72,57 +72,58 @@ class TestRemoveTranslationsConstraints(TestCase):
 
     def test_RemoveBySubmitter(self):
         # Removing all translations by one submitter is allowed.
-        approval, message = self._test_options('--submitter=1')
+        approval, message = self._check_options('--submitter=1')
         self.assertTrue(approval)
 
     def test_RemoveByReviewer(self):
         # Removing all translations by one reviewer is allowed.
-        approval, message = self._test_options('--reviewer=1')
+        approval, message = self._check_options('--reviewer=1')
         self.assertTrue(approval)
 
     def test_RemoveById(self):
         # Removing by ids is allowed.
-        approval, message = self._test_options(['--id=1', '--id=2', '--id=3'])
+        approval, message = self._check_options(
+            ['--id=1', '--id=2', '--id=3'])
         self.assertTrue(approval)
 
     def test_RemoveByPOFile(self):
         # Removing all translations for a template is not allowed by default.
         opts = ['--potemplate=1']
-        approval, message = self._test_options(opts)
+        approval, message = self._check_options(opts)
         self.assertFalse(approval)
 
         # The --force option overrides the safety check.
         opts.append('--force')
-        approval, message = self._test_options(opts)
+        approval, message = self._check_options(opts)
         self.assertIn("Safety override in effect", message)
         self.assertTrue(approval)
 
-    def test_remove_unlicensed(self):
+    def test_remove_by_license_rejection(self):
         # Can't just remove _all_ translations by people who rejected
         # the licensing agreement.
-        approval, message = self._test_options(['--reject-license'])
+        approval, message = self._check_options(['--reject-license'])
         self.assertFalse(approval)
 
         # We can do that for the non-imported ones, however...
-        approval, message = self._test_options([
+        approval, message = self._check_options([
             '--reject-license', '--is-imported=False'])
-
         self.assertTrue(approval)
+
         # ...though not for the imported ones.
-        approval, message = self._test_options([
+        approval, message = self._check_options([
             '--reject-license', '--is-imported=True'])
         self.assertFalse(approval)
 
         # Similar for ones submitted directly in Launchpad.
-        approval, message = self._test_options([
+        approval, message = self._check_options([
             '--reject-license', '--origin=ROSETTAWEB'])
         self.assertTrue(approval)
-        approval, message = self._test_options([
+        approval, message = self._check_options([
             '--reject-license', '--origin=SCM'])
         self.assertFalse(approval)
 
         # We can bypass the check using --force.
-        approval, message = self._test_options([
+        approval, message = self._check_options([
             '--reject-license', '--force'])
         self.assertTrue(approval)
 
@@ -475,14 +476,14 @@ class TestRemoveTranslations(TestCase):
 
         self._checkInvariant()
 
-    def test_remove_unlicensed(self):
+    def test_remove_by_license_rejection(self):
         # Remove translations submitted by users who rejected the
         # licensing agreement.
         refusenik = self.factory.makePerson()
         TranslationRelicensingAgreement(
             person=refusenik, allow_relicensing=False)
 
-        new_nl_message, new_de_message = self._makeMessages(
+        self._makeMessages(
             "Don't download this song", "Niet delen", "Nicht teilen",
             submitter=refusenik)
 
@@ -505,25 +506,27 @@ class TestRemoveTranslations(TestCase):
         answer = TranslationRelicensingAgreement(
             person=self.nl_message.submitter, allow_relicensing=True)
 
-        self._remove(reject_license=True)
-
-        self._checkInvariant()
-
-        answer.destroySelf()
+        try:
+            self._remove(reject_license=True)
+            self._checkInvariant()
+        finally:
+            # Clean up.
+            answer.destroySelf()
 
     def test_remove_unlicensed_restriction(self):
         # When removing unlicensed translations, other restrictions
         # still apply.
-        answer = TranslationRelicensingAgreement(
-            person=self.nl_message.submitter, allow_relicensing=False)
         self.nl_message.is_imported = True
         self.de_message.is_imported = True
+        answer = TranslationRelicensingAgreement(
+            person=self.nl_message.submitter, allow_relicensing=False)
 
-        self._remove(reject_license=True, is_imported=False)
-
-        self._checkInvariant()
-
-        answer.destroySelf()
+        try:
+            self._remove(reject_license=True, is_imported=False)
+            self._checkInvariant()
+        finally:
+            # Clean up.
+            answer.destroySelf()
 
 
 class TestRemoveTranslationsUnmasking(TestCase):
@@ -555,42 +558,50 @@ class TestRemoveTranslationsUnmasking(TestCase):
 
     def test_unmask_imported_message(self):
         # Basic use case: imported message is unmasked.
-        imported = self._setTranslation('imported', is_imported=True)
-        current = self._setTranslation('current', is_imported=False)
-        self.assertFalse(imported.is_current)
-        self.assertTrue(imported.is_imported)
-        self.assertTrue(current.is_current)
-        self.assertFalse(current.is_imported)
-        Store.of(current).flush()
+        cleanups = []
+        try:
+            imported = self._setTranslation('imported', is_imported=True)
+            cleanups.append(imported)
+            current = self._setTranslation('current', is_imported=False)
+            cleanups.append(current)
+            self.assertFalse(imported.is_current, "Broken test setup.")
+            self.assertTrue(imported.is_imported, "Broken test setup.")
+            self.assertTrue(current.is_current, "Broken test setup.")
+            self.assertFalse(current.is_imported, "Broken test setup.")
+            Store.of(current).flush()
 
-        remove_translations(ids=[current.id])
+            remove_translations(ids=[current.id])
 
-        sync(imported)
-        self.assertTrue(imported.is_imported)
-        self.assertTrue(imported.is_current)
-
-        # Clean up.
-        remove_translations(ids=[imported.id])
+            sync(imported)
+            self.assertTrue(imported.is_imported)
+            self.assertTrue(imported.is_current)
+        finally:
+            # Clean up.
+            remove_translations(ids=[message.id for message in cleanups])
 
     def test_unmask_right_message(self):
         # Unmasking picks the right message, and doesn't try to violate
         # the unique constraint on is_imported.
-        inactive = self._setTranslation('inactive')
-        imported = self._setTranslation('imported', is_imported=True)
-        current = self._setTranslation('current', is_imported=False)
-        self.assertFalse(inactive.is_current)
-        self.assertFalse(inactive.is_imported)
-        Store.of(current).flush()
+        cleanups = []
+        try:
+            inactive = self._setTranslation('inactive')
+            cleanups.append(inactive)
+            imported = self._setTranslation('imported', is_imported=True)
+            cleanups.append(imported)
+            current = self._setTranslation('current', is_imported=False)
+            self.assertFalse(inactive.is_current, "Broken test setup.")
+            self.assertFalse(inactive.is_imported, "Broken test setup.")
+            Store.of(current).flush()
 
-        remove_translations(ids=[current.id])
+            remove_translations(ids=[current.id])
 
-        sync(imported)
-        sync(inactive)
-        self.assertTrue(imported.is_current)
-        self.assertFalse(inactive.is_current)
-
-        # Clean up.
-        remove_translations(ids=[imported.id, inactive.id])
+            sync(imported)
+            sync(inactive)
+            self.assertTrue(imported.is_current)
+            self.assertFalse(inactive.is_current)
+        finally:
+            # Clean up.
+            remove_translations(ids=[message.id for message in cleanups])
 
 
 def test_suite():
