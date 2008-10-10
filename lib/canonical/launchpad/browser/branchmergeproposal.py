@@ -956,6 +956,8 @@ class BranchMergeProposalChangeStatusView(MergeProposalEditView):
         if new_status == curr_status:
             return
 
+        # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
+        # would be better as a dict mapping.
         if new_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.context.setAsWorkInProgress()
         elif new_status == BranchMergeProposalStatus.NEEDS_REVIEW:
