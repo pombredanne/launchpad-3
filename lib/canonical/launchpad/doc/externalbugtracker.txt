@@ -102,8 +102,8 @@ remote server.
     ...     standard_bugzilla, [])
     Getting external bugtracker to use...
 
-    >>> assert len(trackers_and_watches) == 1, (
-    ...     "There should be only one (ExternalBugTracker, watches) tuple.")
+    >>> len(trackers_and_watches)
+    1
 
     >>> chosen_bugtracker, watches = trackers_and_watches[0]
     >>> isinstance(chosen_bugtracker, Bugzilla)
@@ -121,8 +121,8 @@ parameter. For most calls, this remains unaltered and only one
     ...     standard_bugzilla, bug_watches)
     Getting external bugtracker to use...
 
-    >>> assert len(trackers_and_watches) == 1, (
-    ...     "There should be only one (ExternalBugTracker, watches) tuple.")
+    >>> len(trackers_and_watches)
+    1
 
     >>> chosen_bugtracker, watches = trackers_and_watches[0]
     >>> isinstance(chosen_bugtracker, Bugzilla)
@@ -157,8 +157,8 @@ doesn't have the Launchpad plugin installed.
     ...     gnome_bugzilla, bug_watches)
     Getting external bugtracker to use...
 
-    >>> assert len(trackers_and_watches) == 1, (
-    ...     "There should be only one (ExternalBugTracker, watches) tuple.")
+    >>> len(trackers_and_watches)
+    1
 
     >>> chosen_bugtracker, watches = trackers_and_watches[0]
     >>> isinstance(chosen_bugtracker, Bugzilla)
@@ -261,8 +261,8 @@ watches will be returned for the different Bugzilla ExternalBugTrackers.
     ...     gnome_bugzilla, bug_watches)
     Getting external bugtracker to use...
 
-    >>> assert len(trackers_and_watches) == 2, (
-    ...     "There should be two (ExternalBugTracker, watches) tuples.")
+    >>> len(trackers_and_watches)
+    2
 
     >>> bugzilla_lp_plugin, lp_plugin_watches = trackers_and_watches[0]
     >>> normal_bugzilla, normal_watches = trackers_and_watches[1]
