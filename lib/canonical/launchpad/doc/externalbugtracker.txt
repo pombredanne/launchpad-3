@@ -145,8 +145,6 @@ offered by the Bugzilla Launchpad plugin.
 
 The Gnome Bugzilla is a celebrity in Launchpad.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestBugzillaXMLRPCTransport, TestInternalXMLRPCTransport)
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
 
@@ -408,7 +406,7 @@ watches, the getModifiedRemoteBugs() method won't be called.
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet, IBugWatchSet, IPersonSet)
+    ...     IBugSet, IBugWatchSet, IPersonSet)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
