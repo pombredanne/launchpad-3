@@ -8,6 +8,7 @@ from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
 from canonical.librarian.db import read_transaction, write_transaction
+from canonical.librarian.utils import guess_librarian_encoding
 
 
 defaultResource = static.Data("""
@@ -102,25 +103,8 @@ class LibraryFileAliasResource(resource.Resource):
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
-
-            # Files with the following extensions will be served as
-            # 'Content-Encoding: gzip' and 'Content-Type: text/plain',
-            # which indicates to browsers that, after being unzipped,
-            # their contents can be rendered inline.
-            #
-            #  * 'txt.gz': gzipped sources buildlogs;
-            #  * 'diff.gz': gzipped sources diffs;
-            #
-            if filename.endswith(".txt.gz"):
-                encoding = "gzip"
-                mimetype = "text/plain"
-            elif filename.endswith(".diff.gz"):
-                encoding = "gzip"
-                mimetype = "text/plain"
-            else:
-                encoding = None
-            return File(mimetype.encode('ascii'),
-                        encoding,
+            encoding, mimetype = guess_librarian_encoding(filename, mimetype)
+            return File(mimetype, encoding,
                         self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
