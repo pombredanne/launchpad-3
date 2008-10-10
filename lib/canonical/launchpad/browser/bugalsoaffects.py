@@ -172,6 +172,10 @@ class AlsoAffectsStep(LaunchpadFormView):
         self.actions = actions
         return super(AlsoAffectsStep, self).render()
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
