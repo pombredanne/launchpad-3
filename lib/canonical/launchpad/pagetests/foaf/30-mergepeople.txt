@@ -120,29 +120,6 @@ dupe account. And now the merge is completed successfully.
     True
 
 
-# XXX StuartBishop 2006-06-06: 
-# Removed because things are still failing for me, so this is just
-# another variable to worry about. Or maybe it needs to be called more
-# often or something --
-#
-# XXX kiko 2006-05-15: 
-# Hack to start a new transaction and clear caches etc. This should
-# not be necessary, but it currently is.
-# 
-#     >>> def new_transaction():
-#     ...     import time
-#     ...     time.sleep(2)
-#     ...     import gc
-#     ...     while gc.collect():
-#     ...       pass
-#     ...     import transaction
-#     ...     import canonical.database.sqlbase
-#     ...     transaction.abort()
-#     ...     canonical.database.sqlbase.flush_database_caches()
-#     ...     transaction.begin()
-# 
-#     >>> new_transaction()
-
 If the account we were trying to merge had a single email address, the
 process would be a little simpler.
 

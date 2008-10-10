@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- Location -->
-  <content class="canonical.launchpad.database.PersonLocation">
+  <class class="canonical.launchpad.database.PersonLocation">
     <require
       permission="zope.Public"
       attributes="visible" />
@@ -13,6 +13,6 @@
       permission="launchpad.View"
       attributes="latitude longitude time_zone last_modified_by
                   date_last_modified person" />
-  </content>
+  </class>
 
 </configure>

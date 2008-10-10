@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Database class for table ArchivePermission."""
 
@@ -25,6 +25,9 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
+
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class ArchivePermission(SQLBase):
@@ -133,6 +136,18 @@ class ArchivePermissionSet:
                 ISourcePackageNameSet)[sourcepackagename]
         return sourcepackagename
 
+    def permissionsForPerson(self, archive, person):
+        """See `IArchivePermissionSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            ArchivePermission, """
+            ArchivePermission.archive = %s AND
+            EXISTS (SELECT TeamParticipation.person
+                    FROM TeamParticipation
+                    WHERE TeamParticipation.person = %s AND
+                          TeamParticipation.team = ArchivePermission.person)
+            """ % sqlvalues(archive, person))
+
     def _componentsFor(self, archive, person, permission_type):
         """Helper function to get ArchivePermission objects."""
         return ArchivePermission.select("""
@@ -206,6 +221,10 @@ class ArchivePermissionSet:
     def newPackageUploader(self, archive, person, sourcepackagename):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, sourcepackagename)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person,
             sourcepackagename=sourcepackagename,
@@ -214,6 +233,10 @@ class ArchivePermissionSet:
     def newComponentUploader(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.UPLOAD, component)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.UPLOAD)
@@ -221,6 +244,10 @@ class ArchivePermissionSet:
     def newQueueAdmin(self, archive, person, component):
         """See `IArchivePermissionSet`."""
         component = self._nameToComponent(component)
+        existing = self.checkAuthenticated(
+            person, archive, ArchivePermissionType.QUEUE_ADMIN, component)
+        if existing.count() != 0:
+            return existing[0]
         return ArchivePermission(
             archive=archive, person=person, component=component,
             permission=ArchivePermissionType.QUEUE_ADMIN)

@@ -24,7 +24,7 @@ import pytz
 import random
 import re
 
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -2053,7 +2053,7 @@ class Person(
         query = ['POFileTranslator.person = %s' % sqlvalues(self),
                  'POFileTranslator.pofile = POFile.id',
                  'POFile.language = Language.id',
-                 "Language.code != 'en'"]
+                 "Language.code <> 'en'"]
         history = POFileTranslator.select(
             ' AND '.join(query),
             prejoins=[

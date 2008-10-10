@@ -5,12 +5,12 @@
   i18n_domain="launchpad">
 
   <!-- Sprint -->
-  <content class="canonical.launchpad.database.Sprint">
+  <class class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />
-  </content>
+  </class>
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
@@ -175,9 +175,9 @@
 
 
   <!-- SprintSet -->
-  <content class="canonical.launchpad.database.SprintSet">
+  <class class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.SprintSet"

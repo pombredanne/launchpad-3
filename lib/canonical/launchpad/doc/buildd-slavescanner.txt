@@ -1141,8 +1141,8 @@ that the mangling tools will run over the built packages.
     OkSlave BUILDING
     Archives:
      deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu hoary main
-     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary main universe
+     deb http://ftpmaster.internal/ubuntu hoary-security main universe
     Suite: hoary
     Archive Purpose: PRIMARY
     Archive Private: True

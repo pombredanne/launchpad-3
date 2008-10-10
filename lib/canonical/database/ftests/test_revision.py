@@ -6,10 +6,11 @@ __metaclass__ = type
 __all__ = []
 
 from glob import glob
-import os
 import os.path
 import re
 import unittest
+
+import psycopg2
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -98,6 +99,25 @@ class TestRevision(unittest.TestCase):
         self.failUnlessRaises(
                 InvalidDatabaseRevision, confirm_dbrevision, self.cur
                 )
+
+    def test_assert_patch_applied(self):
+        # assert_patch_applied() is a stored procedure that raises
+        # an exception if the given patch has not been applied to the
+        # database. It is used in slonik scripts to catch and abort
+        # on a bad patch.
+        self.cur.execute("""
+            INSERT INTO LaunchpadDatabaseRevision VALUES (999,999,999)
+            """)
+
+        # First statement doesn't raise an exception, as according to
+        # the LaunchpadDatabaseRevision table the patch has been applied.
+        self.cur.execute("SELECT assert_patch_applied(999,999,999)")
+
+        # This second statement raises an exception, as no such patch
+        # has been applied.
+        self.failUnlessRaises(
+                psycopg2.Error, self.cur.execute,
+                "SELECT assert_patch_applied(1,999,999)")
 
 
 def test_suite():
