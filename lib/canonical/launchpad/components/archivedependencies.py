@@ -1,6 +1,27 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""ArchiveDependencies model."""
+"""Archive dependencies helper function.
+
+This module contains the static maps representing the 'layered' component
+and pocket dependencies and helper function to handler `ArchiveDependency`
+records.
+
+ * component_dependencies: static map of component dependencies
+ * pocket_dependencies: static map of pocket dependencies
+
+Auxiliary functions exposed for testing purposes:
+
+ * get_components_for_building: return the corresponding component
+       dependencies for a build, this result is known as 'ogre_components';
+ * get_primary_current_component: return the component name where the
+       building source is published in the primary archive.
+
+`sources_list` content generation.
+
+ * get_sources_list_for_building: return a list of `sources_list` lines
+       that should be used to build the given `IBuild`.
+
+"""
 
 __metaclass__ = type
 
@@ -124,7 +145,7 @@ def get_sources_list_for_building(build):
     if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
         deps.append(
             (build.archive, PackagePublishingPocket.RELEASE,
-             component_dependencies['main'])
+             get_components_for_building(build))
             )
 
     return _get_sources_list_for_dependencies(deps, build.distroarchseries)

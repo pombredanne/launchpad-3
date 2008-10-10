@@ -327,11 +327,9 @@ targeted to the primary archive.
 The 'pocket' and 'component' dependency attributes can be adjusted to
 produce the desired build behaviour.
 
-The default public PPA build environment regarding primary archive
-access:
-
- * RELEASE, UPDATES and SECURITY pockets;
- * main, restricted, universe, multiverse components.
+By default, public PPAs depend on all of the pocket dependencies of
+UPDATES, and all of the primary archive's 'multiverse' component
+dependencies.
 
     >>> print_building_sources_list(a_build)
     deb http://ftpmaster.internal/ubuntu hoary
