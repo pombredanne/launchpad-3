@@ -353,9 +353,9 @@ class DecoratedCodeReviewVoteReference:
     decorates(ICodeReviewVoteReference)
 
     status_text_map = {
-        CodeReviewVote.DISAPPROVE: _('Disapproved'),
-        CodeReviewVote.APPROVE: _('Approved'),
-        CodeReviewVote.ABSTAIN: _('Abstained'),
+        CodeReviewVote.DISAPPROVE: CodeReviewVote.DISAPPROVE.title,
+        CodeReviewVote.APPROVE: CodeReviewVote.APPROVE.title,
+        CodeReviewVote.ABSTAIN: CodeReviewVote.ABSTAIN.title,
         CodeReviewVote.NEEDS_FIXING: CodeReviewVote.NEEDS_FIXING.title,
         CodeReviewVote.RESUBMIT: CodeReviewVote.RESUBMIT.title,
         }
