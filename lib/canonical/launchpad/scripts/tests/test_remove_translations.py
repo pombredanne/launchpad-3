@@ -298,7 +298,7 @@ class TestRemoveTranslations(TestCase):
             self._getContents(self.de_pofile),
             ["Diese Nachricht soll nicht erloescht werden."])
 
-    def _remove(self, **kwargs):
+    def _removeMessages(self, **kwargs):
         """Front-end for `remove_translations`.  Flushes changes first."""
         Store.of(self.potemplate).flush()
         return remove_translations(**kwargs)
@@ -306,7 +306,7 @@ class TestRemoveTranslations(TestCase):
     def test_RemoveNone(self):
         # If no messages match the given constraints, nothing is
         # deleted.
-        rowcount = self._remove(
+        rowcount = self._removeMessages(
             submitter=1, ids=[self.de_message.id], language_code='br')
         self.assertEqual(rowcount, 0)
         self._checkInvariant()
@@ -325,7 +325,8 @@ class TestRemoveTranslations(TestCase):
                 "Double Dutch",
                 ])
 
-        rowcount = self._remove(ids=[new_nl_message1.id, new_nl_message2.id])
+        rowcount = self._removeMessages(
+            ids=[new_nl_message1.id, new_nl_message2.id])
 
         self.assertEqual(rowcount, 2)
         self._checkInvariant()
@@ -342,7 +343,7 @@ class TestRemoveTranslations(TestCase):
         # on reviewer instead.
         new_nl_message.reviewer = self.potemplate.owner
 
-        rowcount = self._remove(submitter=carlos)
+        rowcount = self._removeMessages(submitter=carlos)
 
         self._checkInvariant()
 
@@ -355,7 +356,7 @@ class TestRemoveTranslations(TestCase):
         new_nl_message.reviewer = carlos
         new_de_message.reviewer = carlos
 
-        rowcount = self._remove(reviewer=carlos)
+        rowcount = self._removeMessages(reviewer=carlos)
 
         self._checkInvariant()
 
@@ -377,7 +378,8 @@ class TestRemoveTranslations(TestCase):
             lock_timestamp=datetime.now(timezone('UTC')))
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
-        rowcount = self._remove(ids=ids, potemplate=self.potemplate.id)
+        rowcount = self._removeMessages(
+            ids=ids, potemplate=self.potemplate.id)
 
         self._checkInvariant()
         self.assertEqual(self._getContents(unrelated_nl_pofile), ["Foe"])
@@ -389,7 +391,8 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Bar')
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Cafe')
 
-        self._remove(ids=[message.id, self.de_message.id], language_code='nl')
+        self._removeMessages(
+            ids=[message.id, self.de_message.id], language_code='nl')
 
         self._checkInvariant()
 
@@ -399,7 +402,7 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Hi')
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Hoi')
 
-        self._remove(
+        self._removeMessages(
             ids=[message.id, self.de_message.id], language_code='de',
             not_language=True)
 
@@ -412,7 +415,7 @@ class TestRemoveTranslations(TestCase):
         self.nl_message.is_current = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_current=True)
+        self._removeMessages(ids=ids, is_current=True)
 
         self.nl_message.is_current = True
         self._checkInvariant()
@@ -425,7 +428,7 @@ class TestRemoveTranslations(TestCase):
         new_de_message.is_current = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_current=False)
+        self._removeMessages(ids=ids, is_current=False)
 
         self._checkInvariant()
 
@@ -437,7 +440,7 @@ class TestRemoveTranslations(TestCase):
         new_de_message.is_imported = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_imported=True)
+        self._removeMessages(ids=ids, is_imported=True)
 
         self._checkInvariant()
 
@@ -448,7 +451,7 @@ class TestRemoveTranslations(TestCase):
         self.nl_message.is_imported = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_imported=False)
+        self._removeMessages(ids=ids, is_imported=False)
 
         self.nl_message.is_imported = False
         self._checkInvariant()
@@ -458,7 +461,7 @@ class TestRemoveTranslations(TestCase):
         (new_nl_message, new_de_message) = self._makeMessages(
             "save", "bewaren", "speichern")
 
-        self._remove(msgid_singular="save")
+        self._removeMessages(msgid_singular="save")
 
         self._checkInvariant()
 
@@ -471,7 +474,7 @@ class TestRemoveTranslations(TestCase):
         self.assertEqual(new_nl_message.origin, RosettaTranslationOrigin.SCM)
         self.assertEqual(new_de_message.origin, RosettaTranslationOrigin.SCM)
 
-        self._remove(
+        self._removeMessages(
             potemplate=self.potemplate, origin=RosettaTranslationOrigin.SCM)
 
         self._checkInvariant()
@@ -487,7 +490,7 @@ class TestRemoveTranslations(TestCase):
             "Don't download this song", "Niet delen", "Nicht teilen",
             submitter=refusenik)
 
-        self._remove(reject_license=True)
+        self._removeMessages(reject_license=True)
 
         self._checkInvariant()
 
@@ -495,7 +498,7 @@ class TestRemoveTranslations(TestCase):
         # Removing translations whose submitters rejected our
         # translations license does not affect translations by those who
         # haven't answered the question yet.
-        self._remove(reject_license=True)
+        self._removeMessages(reject_license=True)
 
         self._checkInvariant()
 
@@ -507,7 +510,7 @@ class TestRemoveTranslations(TestCase):
             person=self.nl_message.submitter, allow_relicensing=True)
 
         try:
-            self._remove(reject_license=True)
+            self._removeMessages(reject_license=True)
             self._checkInvariant()
         finally:
             # Clean up.
@@ -522,7 +525,7 @@ class TestRemoveTranslations(TestCase):
             person=self.nl_message.submitter, allow_relicensing=False)
 
         try:
-            self._remove(reject_license=True, is_imported=False)
+            self._removeMessages(reject_license=True, is_imported=False)
             self._checkInvariant()
         finally:
             # Clean up.
