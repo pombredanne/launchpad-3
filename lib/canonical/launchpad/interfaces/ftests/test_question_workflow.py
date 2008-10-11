@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.authorization import clear_cache
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
@@ -884,9 +885,12 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.question.target.addAnswerContact(self.answerer)
+        clear_cache() # clear authorization cache for check_permission
+        # this is a test to prove that the getattr succeeds
         getattr(self.question, 'reject')
 
         login_person(self.admin)
+        # this is a test to prove that the getattr succeeds
         getattr(self.question, 'reject')
 
 

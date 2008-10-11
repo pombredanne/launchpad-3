@@ -15,6 +15,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interaction import Participation
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -31,7 +32,7 @@ def make_connection(options):
         kws['host'] = options.db_host
 
     return MySQLdb.connect(**kws)
-        
+
 def main(argv):
     parser = optparse.OptionParser(
         description="This script imports bugs from a Bugzilla into Launchpad.")
@@ -60,7 +61,7 @@ def main(argv):
 
     # logging options
     logger_options(parser, logging.INFO)
-    
+
     options, args = parser.parse_args(argv[1:])
     if options.status is not None:
         options.status = options.status.split(',')
@@ -71,10 +72,13 @@ def main(argv):
 
     # don't send email
     config.zopeless.send_email = False
-    
+
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    login('bug-importer@launchpad.net')
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login('bug-importer@launchpad.net', Participation())
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)

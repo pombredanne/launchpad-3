@@ -139,9 +139,14 @@ def execute_zcml_for_scripts(use_web_security=False):
     # This is a convenient hack to set up a zope interaction, before we get
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
-    # PermissiveSecurityPolicy set up in script.zcml.
+    # PermissiveSecurityPolicy set up in script.zcml. The wisdom of using a
+    # test fixture for production should perhaps also be reconsidered.
     from canonical.launchpad.ftests import login
-    login('launchpad.anonymous')
+    # The Participation is used to specify that we do not want a
+    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
+    # particular, need to be careful, because of code in canonical_url.
+    from canonical.launchpad.webapp.interaction import Participation
+    login('launchpad.anonymous', Participation())
 
 
 def db_options(parser):

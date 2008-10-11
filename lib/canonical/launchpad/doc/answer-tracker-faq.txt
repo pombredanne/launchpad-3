@@ -188,7 +188,14 @@ But if we make him an answer contact, he will:
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
     >>> firefox.addAnswerContact(no_priv)
     True
-    >>> check_permission('launchpad.Edit', firefox_faq)
+    >>> check_permission('launchpad.Edit', firefox_faq) # cache not cleared
+    False
+
+Well, he will after we clear the request's authorization cache
+
+    >>> from canonical.launchpad.webapp.authorization import clear_cache
+    >>> clear_cache()
+    >>> check_permission('launchpad.Edit', firefox_faq) # cache cleared
     True
 
 
