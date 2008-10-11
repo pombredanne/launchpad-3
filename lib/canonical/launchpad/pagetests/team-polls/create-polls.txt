@@ -35,9 +35,6 @@ create a new poll.
     >>> team_admin_browser.title
     'New poll for team Ubuntu Team'
 
-    >>> 'Create a new poll for team' in team_admin_browser.contents
-    True
-
 First we try to create a poll with a invalid name to
 test the name field validator.
 
@@ -48,9 +45,6 @@ test the name field validator.
     >>> proposition = 'Who is going to be the next president?'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = "Secret Votes (It's impossible to track a person's vote)"
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(
@@ -59,8 +53,9 @@ test the name field validator.
     ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> "Invalid name 'election_2100'" in team_admin_browser.contents
-    True
+    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    There is 1 error.
+    Invalid name 'election_2100'. Names must start with a letter...
 
 We fix the name, but swap the dates. Again a nice error message.
 
@@ -72,8 +67,9 @@ We fix the name, but swap the dates. Again a nice error message.
     ...     name='field.datecloses').value = '2100-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> "This event can't start after it ends" in team_admin_browser.contents
-    True
+    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    There is 1 error.
+    A poll cannot close at the time (or before) it opens.
 
 Now we get it right.
 
@@ -99,11 +95,6 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
     >>> proposition = 'The next debian project leader'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = (
-    ...     "Semi-secret Votes (Only team administrators can see a person's "
-    ...     "vote)")
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(
@@ -145,11 +136,6 @@ Now lets try to insert a poll with the name of a existing one.
     >>> proposition = 'The next debian project leader'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = (
-    ...     "Semi-secret Votes (Only team administrators can see a person's "
-    ...     "vote)")
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(
@@ -158,6 +144,19 @@ Now lets try to insert a poll with the name of a existing one.
     ...     name='field.datecloses').value = '2035-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl('Continue').click()
 
-    >>> message = 'dpl-2080 is already in use by another poll in this team'
-    >>> message in team_admin_browser.contents
-    True
+    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    There is 1 error.
+    dpl-2080 is already in use by another poll in this team.
+ 
+When creating a new poll, its start date must be at least 12 hours from
+now, so that the user creating it has a chance to add some options before
+the poll opens -- at that point new options cannot be added.
+ 
+    >>> team_admin_browser.getControl('The unique name').value = 'today'
+    >>> from datetime import datetime
+    >>> today = datetime.today().strftime('%Y-%m-%d')
+    >>> team_admin_browser.getControl(name='field.dateopens').value = today
+    >>> team_admin_browser.getControl('Continue').click()
+    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    There is 1 error.
+    A poll cannot open less than 12 hours after it's created.

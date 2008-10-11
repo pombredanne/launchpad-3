@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -121,7 +121,7 @@ class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
                           "and how it is organised and coordinated.")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_(
                 "The date this project group was created in Launchpad."),
