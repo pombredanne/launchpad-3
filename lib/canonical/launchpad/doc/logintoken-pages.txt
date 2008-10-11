@@ -39,11 +39,16 @@ a new password.
     ...         'field.password_dupe': 'test1',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> from zope.security.management import (
+    ...     endInteraction, newInteraction, restoreInteraction)
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
     >>> old_password == no_priv_account.password
     False
+    >>> restoreInteraction()
 
 If the user submits the wrong email address for the token, an error is
 stored. The password is not reset.
@@ -61,6 +66,8 @@ stored. The password is not reset.
     ...         'field.password_dupe': 'test2',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
@@ -69,6 +76,7 @@ stored. The password is not reset.
 
     >>> old_password == no_priv_account.password
     True
+    >>> restoreInteraction()
 
 
 === Reactivating an account using reset password ===
@@ -103,6 +111,8 @@ password is reset, and the account status is set ACTIVE.
     ...         'field.password_dupe': 'test3',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
@@ -113,6 +123,7 @@ password is reset, and the account status is set ACTIVE.
     <DBItem AccountStatus.ACTIVE, ...>
     >>> former_user.is_valid_person
     True
+    >>> restoreInteraction()
 
 
 == Claiming a profile ==
@@ -159,6 +170,8 @@ indicate if his email address can be shown to other Launchpad users.
     ...         'field.password_dupe': 'test4',
     ...         'field.actions.confirm': 'Continue',
     ...         })
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> claimprofile_view = getMultiAdapter(
     ...     (login_token, request), name="+claimprofile")
     >>> claimprofile_view.initialize()
@@ -180,6 +193,7 @@ The user's Person, EmailAddress, and Account objects are updated.
     u'Activated by claim profile.'
     >>> matsubara.is_valid_person
     True
+    >>> restoreInteraction()
 
 
 == Creating a new account from an existing profile ==
@@ -221,6 +235,8 @@ the Person object.
     ...         'field.password_dupe': 'test5',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> claimprofile_view = getMultiAdapter(
     ...     (login_token, request), name="+newaccount")
     >>> claimprofile_view.initialize()
@@ -242,6 +258,7 @@ The existing Account, Person and EmailAddress are updated.
     u'Activated by new account.'
     >>> andrelop.is_valid_person
     True
+    >>> restoreInteraction()
 
 
 == Validating GPG keys ==
@@ -273,6 +290,8 @@ perform the last step of the workflow for adding a GPG key.
     ...     SERVER_URL='http://launchpad.dev',
     ...     PATH_INFO='/token/%s/+validategpg' % login_token.token,
     ...     method='POST', form={'field.actions.continue': 'Continue'})
+    >>> endInteraction()
+    >>> newInteraction(request)
     >>> validategpg_view = getMultiAdapter(
     ...     (login_token, request), name="+validategpg")
     >>> print validategpg_view.user
@@ -282,6 +301,7 @@ perform the last step of the workflow for adding a GPG key.
     ...     notification.message
     ...     for notification in validategpg_view.request.notifications)
     The key 1024D/DFD20543 was successfully validated...
+    >>> restoreInteraction()
 
     # Tear down the stub keyserver.
     >>> z.tearDown()
