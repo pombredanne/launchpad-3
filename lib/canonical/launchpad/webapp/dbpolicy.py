@@ -14,6 +14,7 @@ from zope.session.interfaces import ISession
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.launchpad.layers import FeedsLayer, WebServiceLayer
 from canonical.launchpad.webapp import LaunchpadView
@@ -90,7 +91,9 @@ class LaunchpadDatabasePolicy:
         if (not self.read_only
             and not WebServiceLayer.providedBy(self.request)
             and not FeedsLayer.providedBy(self.request)
-            and not IXMLRPCRequest.providedBy(self.request)):
+            and not IXMLRPCRequest.providedBy(self.request)
+            and not IUnauthenticatedPrincipal.providedBy(
+                self.request.principal)):
             # A non-readonly request has been made. Store this fact in
             # the session. Precision is hard coded at 1 minute (so we
             # don't update the timestamp if it is # no more than 1 minute
@@ -130,4 +133,3 @@ class WhichDbView(LaunchpadView):
                 </body>
                 </html>
                 """ % dbname).strip()
-

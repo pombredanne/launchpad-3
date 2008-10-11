@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import cgi
 import urllib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
@@ -67,6 +67,23 @@ class UnauthorizedView(SystemErrorView):
                     break
                 target = urlappend(target, nextstep)
             target = urlappend(target, '+login' + query_string)
+            # As a rule, we do not want to send a cookie to an unauthenticated
+            # user, because it breaks cacheing; and we do not want to create a
+            # session for an unauthenticated user, because it unnecessarily
+            # consumes valuable database resources. We have an assertion to
+            # ensure this. However, this code uses notifications to pass a
+            # message to the unauthenticated user, and notifications use
+            # sessions to work. While either of those decisions should perhaps
+            # be reconsidered, for now we perform a dance to assert that we
+            # want to break the rules. First we set the session cookie; then
+            # we assert that we only want it to last for 10 minutes, so that,
+            # if the user does not log in, they can go back to getting cached
+            # pages.  Only after the session cookie is set is it safe to use
+            # the ``addNoticeNotification`` method.
+            client_id_manager = getUtility(IClientIdManager)
+            client_id_manager.setRequestId(
+                self.request, client_id_manager.getClientId(self.request))
+            expireSessionCookie(self.request, client_id_manager)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))
@@ -371,6 +388,18 @@ def logInPerson(request, principal, email):
     notify(CookieAuthLoggedInEvent(request, email))
 
 
+def expireSessionCookie(request, client_id_manager=None,
+                        delta=timedelta(minutes=10)):
+    if client_id_manager is None:
+        client_id_manager = getUtility(IClientIdManager)
+    session_cookiename = client_id_manager.namespace
+    value = request.response.getCookie(session_cookiename)['value']
+    expiration = (datetime.utcnow() + delta).strftime(
+        '%a, %d %b %Y %H:%M:%S GMT')
+    request.response.setCookie(
+        session_cookiename, value, expires=expiration)
+
+
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
@@ -385,9 +414,15 @@ def logoutPerson(request):
         # We want to clear the session cookie so anonymous users can get
         # cached pages again. We need to do this after setting the session
         # values (e.g., ``authdata['personid'] = None``, above), because that
-        # code will itself try to set the cookie in the browser.
-        session_cookiename = getUtility(IClientIdManager).namespace
-        request.response.expireCookie(session_cookiename)
+        # code will itself try to set the cookie in the browser.  We need to
+        # provide a bit of time before the cookie clears (10 minutes at the
+        # moment) so that, if code wants to send a notification (such as "your
+        # account has been deactivated"), the session will still be available
+        # long enough to give the message to the now-unauthenticated user.
+        # The time period could probably be 5 or 10 seconds, if everyone were
+        # on NTP, but...they're not, so we use a pretty high fudge factor of
+        # ten minutes.
+        expireSessionCookie(request)
         notify(LoggedOutEvent(request))
 
 
