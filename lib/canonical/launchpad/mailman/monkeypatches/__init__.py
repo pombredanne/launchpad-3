@@ -39,7 +39,7 @@ def monkey_patch(mailman_path, config):
     # will get appended to Mailman's sys.path.
     import canonical
     from canonical.launchpad.mailman.config import configure_siteowner
-    launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
+    launchpad_top = os.path.dirname(HERE)
     # Read the email footer template for all Launchpad messages.
     from canonical.launchpad.helpers import get_email_template
     footer = get_email_template('mailinglist-footer.txt')

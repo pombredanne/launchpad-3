@@ -2,7 +2,7 @@
 
 Launchpad uses a custom set of message templates that it installs
 in mailman/templates/site. The installation conforms to the standard
-way of defining templates that apply to all lists manged by the
+way of defining templates that apply to all lists managed by the
 instance of mailman. The site template directory contains only the
 templates that are different from the default mailman templates.
 
