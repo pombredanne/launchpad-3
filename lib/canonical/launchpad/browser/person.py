@@ -102,6 +102,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.session.interfaces import IClientIdManager
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -179,7 +180,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.login import logoutPerson, expireSessionCookie
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -1514,6 +1515,22 @@ class PersonClaimView(LaunchpadFormView):
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
+        # As a rule, we do not want to send a cookie to an unauthenticated
+        # user, because it breaks cacheing; and we do not want to create a
+        # session for an unauthenticated user, because it unnecessarily
+        # consumes valuable database resources. We have an assertion to ensure
+        # this. However, this code uses notifications to pass a message to the
+        # unauthenticated user, and notifications use sessions to work. While
+        # either of those decisions should perhaps be reconsidered, for now we
+        # perform a dance to assert that we want to break the rules. First we
+        # set the session cookie; then we assert that we only want it to last
+        # for 10 minutes, so that, if the user does not log in, they can go
+        # back to getting cached pages. Only after the session cookie is set
+        # is it safe to use the ``addNoticeNotification`` method.
+        client_id_manager = getUtility(IClientIdManager)
+        client_id_manager.setRequestId(
+            self.request, client_id_manager.getClientId(self.request))
+        expireSessionCookie(self.request, client_id_manager)
         self.request.response.addInfoNotification(_(
             "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "

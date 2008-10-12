@@ -40,12 +40,25 @@ Store by default.
     >>> print whichdb(browser)
     MASTER
 
-Once a POST request has been made, further GET and HEAD requests
-from the same client continue to use the MAIN MASTER Store by
-default for 5 minutes. This ensures that a user will see any
-changes they have made immediately, even though the slave
-databases may lag some time behind the master database.
+This is an unauthenticated browser.  These typically have no session, unless
+special dispensation has been made. Without a session, subsequent requests
+will then immediately return to using the SLAVE.
 
+    >>> browser.open('http://launchpad.dev/+whichdb')
+    >>> print whichdb(browser)
+    SLAVE
+
+However, if the request has a session (that is, is authenticated; or is
+unauthenticated, but under special dispensation to have a session), once a
+POST request has been made, further GET and HEAD requests from the same client
+continue to use the MAIN MASTER Store by default for 5 minutes. This ensures
+that a user will see any changes they have made immediately, even though the
+slave databases may lag some time behind the master database.
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.getControl('Do Post').click()
+    >>> print whichdb(browser)
+    MASTER
     >>> browser.open('http://launchpad.dev/+whichdb')
     >>> print whichdb(browser)
     MASTER

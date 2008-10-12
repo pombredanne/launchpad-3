@@ -10,7 +10,7 @@ __all__ = [
 from datetime import datetime, timedelta
 from textwrap import dedent
 
-from zope.session.interfaces import ISession
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -91,25 +91,34 @@ class LaunchpadDatabasePolicy:
         if (not self.read_only
             and not WebServiceLayer.providedBy(self.request)
             and not FeedsLayer.providedBy(self.request)
-            and not IXMLRPCRequest.providedBy(self.request)
-            and not IUnauthenticatedPrincipal.providedBy(
-                self.request.principal)):
-            # A non-readonly request has been made. Store this fact in
-            # the session. Precision is hard coded at 1 minute (so we
-            # don't update the timestamp if it is # no more than 1 minute
-            # out of date to avoid unnecessary and expensive write
-            # operations).
-            # Webservice and XMLRPC clients may not support cookies,
-            # so don't mess with their session.
-            # Feeds are always read only, and since they run over http,
-            # browsers won't send their session key that was set over https,
-            # so we don't want to access the session which will overwrite
-            # the cookie and log the user out.
-            session_data = ISession(self.request)['lp.dbpolicy']
-            last_write = session_data.get('last_write', None)
-            now = _now()
-            if last_write is None or last_write < now - timedelta(minutes=1):
-                session_data['last_write'] = now
+            and not IXMLRPCRequest.providedBy(self.request)):
+            # we need to further distinguish whether it's safe to write to
+            # the session, which will be true if the principal is
+            # authenticated or if there is already a session cookie hanging
+            # around.
+            if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+                cookie_name = getUtility(IClientIdManager).namespace
+                session_available = (
+                    cookie_name in self.request.cookies or
+                    self.request.response.getCookie(cookie_name) is not None)
+            else:
+                session_available = True
+            if session_available:
+                # A non-readonly request has been made. Store this fact in the
+                # session. Precision is hard coded at 1 minute (so we don't
+                # update the timestamp if it is # no more than 1 minute out of
+                # date to avoid unnecessary and expensive write operations).
+                # Webservice and XMLRPC clients may not support cookies, so
+                # don't mess with their session. Feeds are always read only,
+                # and since they run over http, browsers won't send their
+                # session key that was set over https, so we don't want to
+                # access the session which will overwrite the cookie and log
+                # the user out.
+                session_data = ISession(self.request)['lp.dbpolicy']
+                last_write = session_data.get('last_write', None)
+                now = _now()
+                if last_write is None or last_write < now - timedelta(minutes=1):
+                    session_data['last_write'] = now
         # For the webapp, it isn't necessary to reset the default store as
         # it will just be selected the next request. However, changing the
         # default store in the middle of a pagetest can break things.
