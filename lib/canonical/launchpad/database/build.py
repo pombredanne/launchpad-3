@@ -672,8 +672,7 @@ class Build(SQLBase):
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         if file_object is not None and file_object.filename == filename:
             return file_object
