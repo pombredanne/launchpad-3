@@ -1182,10 +1182,14 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
         Admins and Translations admins have access, as does the owner of
         the translation group (if applicable).
         """
-        translation_group = self.obj.distribution.translationgroup
+        distribution = self.obj.distribution
+        translation_group = distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User is part of the 'driver' team for the distribution.
+            (distribution.drivers is not None and
+             user.inTeam(distribution.drivers[0])) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))

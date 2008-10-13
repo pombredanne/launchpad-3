@@ -135,6 +135,9 @@ translations.
     >>> can_download_translations(gussie_browser)
     True
 
+    >>> ubuntu_member_browser = setupBrowser(auth='Basic cprov@ubuntu.com:cprov')
+    >>> can_download_translations(ubuntu_member_browser)
+    True
 
 == Making the request ==
 
