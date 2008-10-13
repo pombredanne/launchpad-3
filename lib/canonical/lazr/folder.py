@@ -77,8 +77,8 @@ class ExportedFolder:
         else:
             # Actually serve up the resource.
             # Don't worry about serving  up stuff like ../../../etc/passwd,
-            # because the Zope name traversal will ignore all ./ and ../
-            # elements in it's stack.
+            # because the Zope name traversal will sanitize './' and '../'
+            # before setting the value of self.names.
             return self.prepareDataForServing(
                 os.path.join(self.folder, *names))
 
