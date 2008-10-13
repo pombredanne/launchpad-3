@@ -17,6 +17,7 @@ from email.Header import make_header, decode_header
 from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -670,22 +671,33 @@ class DirectEmailAuthorization:
         after = now - as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         throttlers = self._getThrottlers(after)
-        # We now have the set of emails that would throttle delivery.  Slice
-        # this to just the last N entries (where N = the configuration
-        # throttle variable -- it will be the full set unless the max has been
-        # changed recently).  The retry time will the have to be after the
-        # first of those entries.  If for some reason we got here and there
-        # are fewer than the max entries in this list, just return the last
-        # entry.  If it's empty, well, just return today.
-        affecters = list(throttlers)
+        # We now have the set of emails that would throttle delivery.  If the
+        # configuration variable has changed, this could produce more or less
+        # than the now-allowed number of throttlers.  We should never get here
+        # if it's less because the contact would have been allowed.
+        #
+        # If it's more, then we really want to count back from the sorted end,
+        # because when /that/ contact record expires, they'll be able to
+        # resend.  Here are two examples.
+        #
+        # affecters = A B C
+        # max allowed = 3
+        # index = len(affecters) - 3 == 0 == A
+        # when A's date < the interval, they can try again
+        #
+        # affecters = A B C D E F G
+        # max allowed (now) = 3
+        # index = len(affecters) - 3 = 4 == E (counting from zero)
+        # when E's date < than the interval, they can try again
+        affecters = sorted(throttlers, key=attrgetter('date_sent'))
         max_throttlers = config.launchpad.user_to_user_max_messages
-        if len(affecters) == 0:
-            return now
-        elif len(affecters) < max_throttlers:
-            return affecters[-1].date_sent
-        else:
-            # Count from zero.
-            return affecters[max_throttlers - 1].date_sent
+        expiry = len(affecters) - max_throttlers
+        if expiry < 0:
+            # There were fewer affecters than are now allowed, so they can
+            # retry immediately.  Remember that the caller adds the interval
+            # back, so this would give us 'now'.
+            return after
+        return affecters[expiry].date_sent
 
     def record(self, message):
         """See `IDirectEmailAuthorization`."""
