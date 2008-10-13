@@ -28,7 +28,7 @@ import urllib
 
 import simplejson
 
-from zope.app.datetimeutils import DateTimeError, DateTimeParser
+from zope.datetime import DateTimeError, DateTimeParser
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound

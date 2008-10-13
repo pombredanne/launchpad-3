@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Question views."""
 
@@ -49,7 +49,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
-    ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
     QuestionSort, NotFoundError, UnexpectedFormData)
@@ -234,7 +234,7 @@ class QuestionLanguageVocabularyFactory:
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        english = getUtility(ILanguageSet)['en']
+        english = getUtility(ILaunchpadCelebrities).english
         if english in languages:
             languages.remove(english)
         languages.insert(0, english)
@@ -250,7 +250,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([getUtility(ILanguageSet)['en']])
+            supported_languages = set([english])
 
         terms = []
         for lang in languages:

@@ -804,6 +804,20 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
         return message % days_to_expiration
 
+    @property
+    def current_user_is_affected(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.bug.isUserAffected(self.user)
+
+    @property
+    def affects_form_value(self):
+        """The value to use in the inline me too form."""
+        affected = self.context.bug.isUserAffected(self.user)
+        if affected is None or affected == False:
+            return 'YES'
+        else:
+            return 'NO'
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""

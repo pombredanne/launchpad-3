@@ -11,16 +11,16 @@
 >
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:portlets fill-slot="portlets">
     <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+  </metal:portlets>
 
   <div metal:fill-slot="main">
 
     <h1>Poll options</h1>
 
     <tal:block condition="context/getAllOptions">
-      <table class="listing">
+      <table class="listing" id="options">
         <thead>
           <tr>
             <th>Name</th>

@@ -49,6 +49,7 @@ At the top level we provide a collection of bugs.
    (u'tags', []),
    (u'title', u'Make Jokosher use autoaudiosink'),
    (u'users_affected_count', 0),
+   (u'users_unaffected_count', 0),
    (u'who_made_private_link', None)]
 
 Bugs are indexed by number beneath the top-level collection.
@@ -710,16 +711,18 @@ setting the tags_combinator parameter to 'All'.
 
 It is possible to mark a bug as affecting the user using the web service.
 
-    >>> webservice.named_post(
+    >>> print webservice.named_post(
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
-    False
+    None
     >>> webservice.named_post(
-    ...     bug_one['self_link'], 'markUserAffected').jsonBody()
+    ...     bug_one['self_link'], 'markUserAffected',
+    ...     affected=True).jsonBody()
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
     True
     >>> webservice.named_post(
-    ...     bug_one['self_link'], 'unmarkUserAffected').jsonBody()
+    ...     bug_one['self_link'], 'markUserAffected',
+    ...     affected=False).jsonBody()
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
     False

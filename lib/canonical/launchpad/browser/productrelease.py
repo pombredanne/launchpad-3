@@ -18,7 +18,7 @@ import mimetypes
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
-from zope.app.form.browser import TextWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -26,11 +26,11 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
 from canonical.launchpad.interfaces.productseries import IProductSeriesSet
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
-    canonical_url, custom_widget, enabled_with_permission, stepthrough)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, stepthrough)
 
 
 class ProductReleaseNavigation(Navigation):
@@ -92,11 +92,18 @@ class ProductReleaseAddView(AddView):
         notify(ObjectCreatedEvent(newrelease))
 
 
-class ProductReleaseEditView(SQLObjectEditView):
+class ProductReleaseEditView(LaunchpadEditFormView):
     """Edit view for ProductRelease objects"""
 
-    def changed(self):
-        self.request.response.redirect('.')
+    schema = IProductRelease
+    label = "Edit project release details"
+    field_names = ["summary", "description", "changelog", "codename"]
+    custom_widget('summary', TextAreaWidget, width=62, height=5)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class ProductReleaseRdfView(object):

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database class to handle translation export view."""
@@ -12,12 +12,19 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.database.sqlbase import quote, sqlvalues, cursor
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
+
 
 class VPOExportSet:
     """Retrieve collections of `VPOExport` objects."""
@@ -86,13 +93,8 @@ class VPOExportSet:
         cur = cursor()
         cur.execute(query)
 
-        while True:
-            row = cur.fetchone()
-
-            if row is not None:
-                yield VPOExport(*row)
-            else:
-                break
+        for row in cur.fetchall():
+            yield VPOExport(*row)
 
     def get_pofile_rows(self, pofile):
         """See `IVPOExportSet`."""
@@ -114,87 +116,85 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def _get_distroseries_pofiles(self, series, date=None, component=None,
-                                  languagepack=None):
-        """Return a SQL query of PO files which would be contained in an
-        export of a distribution series.
-
-        The filtering is done based on the 'series', last modified 'date',
-        archive 'component' and if it belongs to a 'languagepack'
-        """
-        join = '''
-            FROM POFile
-            JOIN POTemplate ON POTemplate.id = POFile.potemplate
-            JOIN DistroSeries ON DistroSeries.id = POTemplate.distroseries
-            '''
-
-        where = '''
-            WHERE
-                DistroSeries.id = %s AND
-                POTemplate.iscurrent IS TRUE
-              ''' % sqlvalues(series)
-
-        if date is not None:
-            join += '''
-                  JOIN TranslationMessage ON
-                    TranslationMessage.pofile = POFile.id AND
-                    TranslationMessage.is_current IS TRUE'''
-
-            where += '''
-                AND (TranslationMessage.date_reviewed > %s OR
-                     POTemplate.date_last_updated > %s)''' % sqlvalues(
-                    date, date)
-
-        if component is not None:
-            join += '''
-            JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distroseries=DistroSeries.id
-            JOIN SourcePackageRelease ON
-                SourcePackagePublishingHistory.sourcepackagerelease=
-                     SourcePackageRelease.id
-                  JOIN Component ON
-                    SourcePackagePublishingHistory.component=Component.id
-            '''
-
-            where += '''
-            AND SourcePackageRelease.sourcepackagename =
-                POTemplate.sourcepackagename AND
-            Component.name = %s AND
-            SourcePackagePublishingHistory.dateremoved is NULL AND
-            SourcePackagePublishingHistory.archive = %s
-            ''' % sqlvalues(component, series.main_archive)
-
-        if languagepack:
-            where += ' AND POTemplate.languagepack'
-
-        return join + where
-
     def get_distroseries_pofiles(self, series, date=None, component=None,
-        languagepack=None):
-        """See `IVPOExport`."""
-        query_parts = [
-            'SELECT DISTINCT POFile.id',
-            self._get_distroseries_pofiles(
-                series, date, component, languagepack),
-            "ORDER BY POFile.id",
+                                 languagepack=None):
+        """See `IVPOExport`.
+
+        Selects `POFiles` based on the 'series', last modified 'date',
+        archive 'component', and whether it belongs to a 'languagepack'
+        """
+        tables = [
+            POTemplate,
+            DistroSeries,
             ]
 
-        cur = cursor()
-        cur.execute('\n'.join(query_parts))
-        for (id,) in cur.fetchall():
-            yield POFile.get(id)
+        conditions = [
+            'POTemplate.id = POFile.potemplate',
+            'POTemplate.distroseries = %s' % quote(series),
+            'DistroSeries.id = %s' % quote(series),
+            'POTemplate.iscurrent IS TRUE',
+            ]
+
+        if date is not None:
+            conditions.append("""
+                (
+                    POTemplate.date_last_updated > %s OR
+                    EXISTS (
+                        SELECT *
+                        FROM TranslationMessage
+                        WHERE
+                            TranslationMessage.pofile = POFile.id AND
+                            TranslationMessage.is_current AND
+                            TranslationMessage.date_reviewed > %s
+                    )
+                )
+                """ % sqlvalues(date, date))
+
+        if component is not None:
+            tables.append(SourcePackagePublishingHistory)
+            conditions.append(
+                'SourcePackagePublishingHistory.distroseries = %s'
+                % quote(series))
+
+            tables.append(SourcePackageRelease)
+            conditions.append("""
+                SourcePackagePublishingHistory.sourcepackagerelease =
+                     SourcePackageRelease.id
+                """)
+
+            tables.append(Component)
+            conditions.append(
+                "SourcePackagePublishingHistory.component = Component.id")
+
+            conditions.append("""
+                SourcePackageRelease.sourcepackagename =
+                    POTemplate.sourcepackagename
+                """)
+
+            conditions.append('Component.name = %s' % quote(component))
+
+            conditions.append(
+                "SourcePackagePublishingHistory.dateremoved IS NULL")
+
+            conditions.append(
+                "SourcePackagePublishingHistory.archive = %s"
+                % quote(series.main_archive))
+
+        if languagepack:
+            conditions.append('POTemplate.languagepack IS TRUE')
+
+        query = POFile.select(' AND '.join(conditions), clauseTables=tables)
+        # Order by POTemplate.  Caching in the export scripts can be
+        # much more effective when consecutive POFiles belong to the
+        # same POTemplate, e.g. they'll have the same POTMsgSets.
+        return query.distinct().orderBy([
+            'POFile.potemplate', 'POFile.language', 'POFile.variant'])
 
     def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
         """See `IVPOExport`."""
-        query = self._get_distroseries_pofiles(
-            series, date, component, languagepack)
-
-        final_query = 'SELECT COUNT(DISTINCT POFile.id)\n' + query
-        cur = cursor()
-        cur.execute(final_query)
-        value = cur.fetchone()
-        return value[0]
+        return self.get_distroseries_pofiles(
+            series, date, component, languagepack).count()
 
 
 class VPOExport:

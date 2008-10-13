@@ -2,10 +2,7 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON_VERSION=2.4
-# XXX sinzui 2008-04-15:
-# Filter all deprecation warnings during the transition period to
-# Zope 3.4. We want to remove the DeprecationWarning when we are done.
-PYTHON=python${PYTHON_VERSION} -Wi::DeprecationWarning
+PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:$(shell pwd)/lib/mailman:${PYTHONPATH}
 VERBOSITY=-vv
@@ -193,6 +190,16 @@ bzr_version_info:
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > ${LPCONFIG}-nohup.out 2>&1 &
+
+# This is a stripped down version of the "start" target for use on 
+# production servers - removes running 'make build' because we already
+# run this as part of our initscripts, so not needed here. Likewise we
+# don't want to run 'make stop' because it takes unnecessary time 
+# even if the service is already stopped, and bzr_version_info is not 
+# needed either because it's run as part of 'make build'.
+initscript-start: 
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
