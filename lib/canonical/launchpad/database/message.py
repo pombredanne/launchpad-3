@@ -625,6 +625,17 @@ class DirectEmailAuthorization:
         """
         self.sender = sender
 
+    def _getThrottlers(self, after):
+        """Return a result set of entries affecting throttling decisions.
+
+        :param after: Explicit cut off date.
+        :type after: `datetime.datetime`
+        """
+        return Store.of(self.sender).find(
+            UserToUserEmail,
+            And(UserToUserEmail.sender == self.sender,
+                UserToUserEmail.date_sent >= after))
+
     def _isAllowedAfter(self, after):
         """Like .is_allowed but used with an explicit cutoff date.
 
@@ -638,10 +649,7 @@ class DirectEmailAuthorization:
         # Count the number of messages from the sender since the throttle
         # date.
         store = Store.of(self.sender)
-        messages_sent = store.find(
-            UserToUserEmail,
-            And(UserToUserEmail.sender == self.sender,
-                UserToUserEmail.date_sent >= after)).count()
+        messages_sent = self._getThrottlers(after).count()
         return messages_sent < config.launchpad.user_to_user_max_messages
 
     @property
@@ -658,15 +666,26 @@ class DirectEmailAuthorization:
     @property
     def last_contact(self):
         """See `IDirectEmailAuthorization`."""
-        # This isn't exactly correct in that it doesn't return the nearest
-        # time at which a retry can happen.  To do that, we'd have to get the
-        # last N contacts, and add interval to the earliest of those.  I don't
-        # think it's worth it, as we're still accurate by saying, if the user
-        # tries again in interval after the last contact, it will work.
-        return Store.of(self.sender).find(
-            UserToUserEmail,
-            UserToUserEmail.sender == self.sender
-            ).max(UserToUserEmail.date_sent)
+        now = datetime.now(pytz.timezone('UTC'))
+        after = now - as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        throttlers = self._getThrottlers(after)
+        # We now have the set of emails that would throttle delivery.  Slice
+        # this to just the last N entries (where N = the configuration
+        # throttle variable -- it will be the full set unless the max has been
+        # changed recently).  The retry time will the have to be after the
+        # first of those entries.  If for some reason we got here and there
+        # are fewer than the max entries in this list, just return the last
+        # entry.  If it's empty, well, just return today.
+        affecters = list(throttlers)
+        max_throttlers = config.launchpad.user_to_user_max_messages
+        if len(affecters) == 0:
+            return now
+        elif len(affecters) < max_throttlers:
+            return affecters[-1].date_sent
+        else:
+            # Count from zero.
+            return affecters[max_throttlers - 1].date_sent
 
     def record(self, message):
         """See `IDirectEmailAuthorization`."""
