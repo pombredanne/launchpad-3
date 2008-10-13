@@ -281,10 +281,8 @@ class BugContextMenu(ContextMenu):
 
     def affectsmetoo(self):
         """Return the 'This bug affects me too' link."""
-        user = getUtility(ILaunchBag).user
-        enabled = user is not None
-        text = "Does this bug affect you?"
-        return Link('+affectsmetoo', text, icon='edit', enabled=enabled)
+        enabled = getUtility(ILaunchBag).user is not None
+        return Link('+affectsmetoo', 'change', enabled=enabled)
 
 
 class MaloneView(LaunchpadFormView):
@@ -782,7 +780,8 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        if self.context.bug.isUserAffected(self.user):
+        affected = self.context.bug.isUserAffected(self.user)
+        if affected or affected is None:
             affects = BugAffectingUserChoice.YES
         else:
             affects = BugAffectingUserChoice.NO
@@ -792,9 +791,6 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Mark the bug according to the selection."""
-        bug = self.context.bug
-        if data['affects'] == BugAffectingUserChoice.YES:
-            bug.markUserAffected(self.user)
-        else:
-            bug.unmarkUserAffected(self.user)
-        self.request.response.redirect(canonical_url(bug))
+        self.context.bug.markUserAffected(
+            self.user, data['affects'] == BugAffectingUserChoice.YES)
+        self.request.response.redirect(canonical_url(self.context.bug))
