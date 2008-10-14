@@ -206,7 +206,7 @@ class SFTracker2ExtractBugTrackerAndBugTest(SFExtractBugTrackerAndBugTest):
 
     bugtracker_type = BugTrackerType.SOURCEFORGE
     bug_url = (
-        'http://sourceforge.net/tracker2/index.php'
+        'http://sourceforge.net/tracker2/'
         '?func=detail&aid=1568562&group_id=84122&atid=575154')
     base_url = 'http://sourceforge.net/'
     bug_id = '1568562'
