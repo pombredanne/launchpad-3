@@ -229,10 +229,11 @@ The text can also be base64 decoded.
     u'This should be added to the description.\n\nAnother line.'
 
 
-=== Other inline parts ===
+==== Other inline parts ====
 
 If there are more than one inline part, those will be added as comments
-to the bug.
+to the bug. The comments are simple ext strings, accessible through the
+comments attribute.
 
     >>> debug_data = """MIME-Version: 1.0 
     ... Content-type: multipart/mixed; boundary=boundary
@@ -255,40 +256,21 @@ to the bug.
     ...
     ... This should be added as another comment.
     ...
+    ... Line 2.
+    ...
     ... --boundary--
     ... """
-    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
-    >>> transaction.commit()
+    >>> parser = FileBugDataParser(StringIO(debug_data))
+    >>> data = parser.parse()
+    >>> len(data.comments)
+    2
+    >>> data.comments[0]
+    u'This should be added as a comment.'
+    >>> data.comments[1]
+    u'This should be added as another comment.\n\nLine 2.'
 
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
-    True
-    >>> filebug_view.validate(bug_data) is None
-    True
-    >>> filebug_view.submit_bug_action.success(bug_data)
 
-    >>> filebug_view.added_bug.title
-    u'Test Title'
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
-    Test description.
-    <BLANKLINE>
-    This should be added to the description.
 
-    >>> for comment in filebug_view.added_bug.messages[1:]:
-    ...     print "Comment by %s: %s" % (
-    ...         comment.owner.displayname, comment.text_contents)
-    Comment by No Privileges Person: This should be added as a comment.
-    Comment by No Privileges Person: This should be added as another comment.
-
-Notifications were added to inform the user about what happened.
-
-    >>> for notification in filebug_view.request.response.notifications:
-    ...     print notification.message
-    Thank you for your bug report.
-    Additional information was added to the bug description.
-    A comment with additional information was added to the bug report.
-    A comment with additional information was added to the bug report.
 
 === Attachments ===
 

@@ -160,9 +160,11 @@ class FileBugDataParser:
                 part_file.close()
                 inline_content = inline_content.decode(charset)
 
-                # The first inline part is extra description.
                 if data.extra_description is None:
+                    # The first inline part is extra description.
                     data.extra_description = inline_content
+                else:
+                    data.comments.append(inline_content)
             elif disposition == 'attachment':
                 attachment = dict(
                     filename='XXX',
