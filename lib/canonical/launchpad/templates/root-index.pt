@@ -73,16 +73,17 @@
         <h2>What&#8217;s new?</h2>
         <ul>
          <li class="news">
-            <a href="http://news.launchpad.net/?p=123">
-              <strong>Where's Waldo?</strong><br />
-              And Sarah, Amit, Enrique, Ursula... Pin-point your location with
-              new profile page maps.
+            <a href="http://news.launchpad.net/?p=151">
+              <strong>Branch uploads: fast as lightning</strong><br />
+              If Launchpad already hosts a project's trunk, pushing up another
+              branch is now significantly faster!
             </a>
          </li>
          <li class="news">
-            <a href="http://news.launchpad.net/?p=124">
-              <strong>Karma for code review</strong><br />
-              Vote and comment on proposed code merges to earn karma!
+            <a href="http://news.launchpad.net/?p=157">
+              <strong>This bug is hot!</strong><br />
+              Help projects understand how important a bug is with the new "me
+              too" feature.
             </a>
          </li>
          <li class="news">
@@ -100,7 +101,7 @@
          </li>
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-09-17.
+          Updated 2008-10-15.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
