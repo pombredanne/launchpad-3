@@ -132,7 +132,8 @@ class FileBugDataParser:
             part_headers = self.readHeaders()
             content_encoding = part_headers.get('Content-Transfer-Encoding')
             if content_encoding is not None and content_encoding != 'base64':
-                raise AssertionError("Only knows how to handle base64.")
+                raise AssertionError(
+                    "Unknown encoding: %r." % content_encoding)
             line = self.readLine()
             content = ''
             while not line.startswith(boundary):

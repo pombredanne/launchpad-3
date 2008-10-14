@@ -184,7 +184,7 @@ The first inline part is special. Instead of being treated as a comment,
 it gets appended to the bug description. It's available through the
 extra_description attribute.
 
-    >>> debug_data = """MIME-Version: 1.0 
+    >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -202,6 +202,31 @@ extra_description attribute.
     >>> data.extra_description
     u'This should be added to the description.\n\nAnother line.'
 
+
+The text can also be base64 decoded.
+
+    >>> encoded_text = """VGhpcyBzaG91bGQgYmUgYWRkZWQgdG8g
+    ... dGhlIGRlc2NyaXB0aW9uLgoKQW5vdGhl
+    ... ciBsaW5lLg=="""
+    >>> encoded_text.decode('base64')
+    'This should be added to the description.\n\nAnother line.'
+
+    >>> debug_data = """MIME-Version: 1.0
+    ... Content-type: multipart/mixed; boundary=boundary
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ... Content-transfer-encoding: base64
+    ...
+    ... %s
+    ...
+    ... --boundary--
+    ... """ % encoded_text
+    >>> parser = FileBugDataParser(StringIO(debug_data))
+    >>> data = parser.parse()
+    >>> data.extra_description
+    u'This should be added to the description.\n\nAnother line.'
 
 
 === Other inline parts ===
