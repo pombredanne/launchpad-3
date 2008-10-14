@@ -21,6 +21,7 @@ import cgi
 from cStringIO import StringIO
 import tempfile
 import urllib
+from email import message_from_string
 
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
@@ -58,6 +59,102 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.webapp.menu import structured
 
 
+class FileBugDataParser:
+
+    def __init__(self, blob_file):
+        self.blob_file = blob_file
+        self.headers = {}
+        self._buffer = ''
+        self.extra_description = None
+        self.comments = []
+        self.attachments = []
+        self.BUFFER_SIZE = 8192
+
+    def _consumeBytes(self, end_string):
+        while end_string not in self._buffer:
+            data = self.blob_file.read(self.BUFFER_SIZE)
+            self._buffer += data
+            if len(data) < self.BUFFER_SIZE:
+                # End of file.
+                if end_string not in self._buffer:
+                    # If the end string isn't present, we return
+                    # everything.
+                    buffer = self._buffer
+                    self._buffer = ''
+                    return buffer
+                break
+        end_index = self._buffer.index(end_string)
+        bytes = self._buffer[:end_index]
+        self._buffer = self._buffer[end_index+len(end_string):]
+        return bytes
+
+    def readHeaders(self):
+        header_text = self._consumeBytes('\n\n')
+        # Use the email package to return a dict-like object of the
+        # headers, so we don't have to parse the text ourselves.
+        return message_from_string(header_text)
+
+    def readLine(self):
+        return self._consumeBytes('\n')
+
+    def _setDataFromHeaders(self, data, headers):
+        if 'Subject' in headers:
+            data.initial_summary = unicode(headers['Subject'])
+        if 'Tags' in headers:
+            tags_string = unicode(headers['Tags'])
+            data.initial_tags = tags_string.lower().split()
+
+
+    def parse(self):
+        self.headers = self.readHeaders()
+        data = FileBugData()
+        self._setDataFromHeaders(data, headers)
+
+        content_type = self.headers['Content-Type']
+        main, param = content_type.split('; ')
+        assert param.startswith('boundary="')
+        boundary = "--" + param[len('boundary="'):-1]
+        line = self.readLine()
+        while not line.startswith(boundary + '--'):
+            import os
+            import tempfile
+            part_file_fd, part_file_name = tempfile.mkstemp()
+            part_headers = self.readHeaders()
+            assert part_headers['Content-Transfer-Encoding'] == 'base64'
+            line = self.readLine()
+            content = ''
+            while not line.startswith(boundary):
+                # Decode the file.
+                line = self.readLine()
+                content +=  line.decode('base64')
+                if len(content) >= 16384:
+                    os.write(part_file_fd, content)
+                    content = ''
+            if content:
+                os.write(part_file_fd, content)
+            os.close(part_file_fd)
+            disposition = part_headers['Content-Disposition']
+            if disposition == 'inline':
+                if self.extra_description is None:
+                    self.extra_description = open(part_file_name, 'r').read()
+            elif disposition == 'attachment':
+                attachment = dict(
+                    filename='XXX',
+                    content_type=part_headers['Content-type'],
+                    content=open(part_file_name))
+                if 'Content-Description' in part_headers:
+                    attachment['description'] = (
+                        part_headers['Content-Description'])
+                else:
+                    attachment['description'] = attachment['filename']
+                self.attachments.append(attachment)
+            else:
+                # If the message include other disposition types,
+                # simply ignore them. We don't want to break just
+                # because some extra information is included.
+                continue
+        return data
+
 class FileBugData:
     """Extra data to be added to the bug."""
 
@@ -82,15 +179,18 @@ class FileBugData:
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
         """
-        tempdir = tempfile.mkdtemp()
-        parser = FileFeedParser(tempdir)
-        parser.feed(raw_mime_msg)
-        mime_msg = parser.close()
-        if mime_msg.is_multipart():
-            self.initial_summary = mime_msg.get('Subject')
-            tags = mime_msg.get('Tags', '')
+        blob_parser = BlobParser(raw_mime_msg)
+        blob_parser.parse()
+        #tempdir = tempfile.mkdtemp()
+        #parser = FileFeedParser(tempdir)
+        #parser.feed(raw_mime_msg)
+        #mime_msg = parser.close()
+        #if mime_msg.is_multipart():
+        if True:
+            self.initial_summary = blob_parser.headers.get('Subject')
+            tags = blob_parser.headers.get('Tags', '')
             self.initial_tags = tags.lower().split()
-            private = mime_msg.get('Private')
+            private = blob_parser.headers.get('Private')
             if private:
                 if private.lower() == 'yes':
                     self.private = True
@@ -100,41 +200,22 @@ class FileBugData:
                     # If the value is anything other than yes or no we just
                     # ignore it as we cannot currently give the user an error
                     pass
-            subscribers = mime_msg.get('Subscribers', '')
+            subscribers = blob_parser.headers.get('Subscribers', '')
             self.subscribers = subscribers.split()
-            for part in mime_msg.get_payload():
-                disposition_header = part.get('Content-Disposition', 'inline')
-                # Get the type, excluding any parameters.
-                disposition_type = disposition_header.split(';')[0]
-                disposition_type = disposition_type.strip()
-                if disposition_type == 'inline':
-                    assert part.get_content_type() == 'text/plain', (
-                        "Inline parts have to be plain text.")
-                    charset = part.get_content_charset()
-                    assert charset, (
-                        "A charset has to be specified for text parts.")
-                    part_text = part.get_payload(decode=True).decode(charset)
-                    part_text = part_text.rstrip()
-                    if self.extra_description is None:
-                        self.extra_description = part_text
-                    else:
-                        self.comments.append(part_text)
-                elif disposition_type == 'attachment':
-                    attachment = dict(
-                        filename=part.get_filename().strip("'"),
-                        content_type=part['Content-type'],
-                        content=StringIO(part.get_payload(decode=True)))
-                    if part.get('Content-Description'):
-                        attachment['description'] = (
-                            part['Content-Description'])
-                    else:
-                        attachment['description'] = attachment['filename']
-                    self.attachments.append(attachment)
-                else:
-                    # If the message include other disposition types,
-                    # simply ignore them. We don't want to break just
-                    # because some extra information is included.
-                    continue
+            self.extra_description = blob_parser.extra_description
+            for comment in blob_parser.comments:
+                assert part.get_content_type() == 'text/plain', (
+                    "Inline parts have to be plain text.")
+                charset = part.get_content_charset()
+                assert charset, (
+                    "A charset has to be specified for text parts.")
+                # TODO: fix
+                part_text = part.get_payload(decode=True).decode(charset)
+                part_text = part_text.rstrip()
+                self.comments.append(part_text)
+
+            for attachment in blob_parser.attachments:
+                self.attachment.append(attachment)
 
 
 
