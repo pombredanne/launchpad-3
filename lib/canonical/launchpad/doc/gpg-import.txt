@@ -39,10 +39,27 @@ Let's recover some coherent data and verify if it works as expected:
     >>> filepath = os.path.join(gpgkeysdir, 'test@canonical.com.pub')
     >>> pubkey = open(filepath).read()
     >>> key = gpghandler.importPublicKey(pubkey)
+
     >>> verifyObject(IPymeKey, key)
     True
+
     >>> key.fingerprint
     'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+
+    >>> print key.secret
+    False
+
+    >>> print key.can_encrypt
+    True
+
+    >>> print key.can_sign
+    True
+
+    >>> print key.can_certify
+    True
+
+    >>> print key.can_authenticate
+    False
 
 Now, try to import a secret key, which will cause a
 SecretGPGKeyImportDetected exception to be raised.
@@ -106,6 +123,9 @@ supporting only ASCII-armored secret keys.
 
     >>> print key.fingerprint
     A419AE861E88BC9E04B9C26FBA2B9389DFD20543
+
+    >>> print key.secret
+    True
 
     >>> print key.can_encrypt
     True

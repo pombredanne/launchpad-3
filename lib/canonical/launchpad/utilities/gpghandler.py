@@ -447,6 +447,7 @@ class PymeKey:
         self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo].title
         self.keyid = self.fingerprint[-8:]
         self.expired = key.expired
+        self.secret = key.secret
         self.owner_trust = key.owner_trust
         self.can_encrypt = key.can_encrypt
         self.can_sign = key.can_sign
