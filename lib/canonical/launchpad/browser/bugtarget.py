@@ -149,6 +149,8 @@ class FileBugDataParser:
                 os.write(part_file_fd, content)
             os.close(part_file_fd)
             disposition = part_headers['Content-Disposition']
+            disposition = disposition.split(';')[0]
+            disposition = disposition.strip()
             if disposition == 'inline':
                 assert part_headers.get_content_type() == 'text/plain', (
                     "Inline parts have to be plain text.")
@@ -167,15 +169,15 @@ class FileBugDataParser:
                     data.comments.append(inline_content)
             elif disposition == 'attachment':
                 attachment = dict(
-                    filename='XXX',
-                    content_type=part_headers['Content-type'],
+                    filename=unicode(part_headers.get_filename().strip("'")),
+                    content_type=unicode(part_headers['Content-type']),
                     content=open(part_file_name))
                 if 'Content-Description' in part_headers:
-                    attachment['description'] = (
+                    attachment['description'] = unicode(
                         part_headers['Content-Description'])
                 else:
                     attachment['description'] = attachment['filename']
-                self.attachments.append(attachment)
+                data.attachments.append(attachment)
             else:
                 # If the message include other disposition types,
                 # simply ignore them. We don't want to break just
