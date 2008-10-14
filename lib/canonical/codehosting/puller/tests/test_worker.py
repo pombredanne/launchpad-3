@@ -237,7 +237,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
     def testDoesntSendStackedInfoUnstackableFormat(self):
-        # Mirroring an unstackable branch doesn't send the stacked-on location
+        # Mirroring an unstackable branch sends '' as the stacked-on location
         # to the master.
         source_branch = self.make_branch('source-branch')
         protocol_output = StringIO()
@@ -245,10 +245,12 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output))
         to_mirror.mirrorWithoutChecks()
-        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id), ''],
+            get_netstrings(protocol_output.getvalue()))
 
     def testDoesntSendStackedInfoNotStacked(self):
-        # Mirroring a non-stacked branch doesn't send the stacked-on location
+        # Mirroring a non-stacked branch sends '' as the stacked-on location
         # to the master.
         source_branch = self.make_branch(
             'source-branch', format='development')
@@ -257,7 +259,9 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output))
         to_mirror.mirrorWithoutChecks()
-        self.assertEqual([], get_netstrings(protocol_output.getvalue()))
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id), ''],
+            get_netstrings(protocol_output.getvalue()))
 
     def testSendsStackedInfo(self):
         # Mirroring a stacked branch sends the stacked-on location to the

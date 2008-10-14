@@ -429,12 +429,12 @@ class BranchMirrorer(object):
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
                 errors.UnstackableBranchFormat):
-            pass
+            stacked_on_url = None
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
-        else:
-            if stacked_on_url is not None:
-                self.protocol.setStackedOn(stacked_on_url)
+        if stacked_on_url is None:
+            stacked_on_url = ''
+        self.protocol.setStackedOn(stacked_on_url)
         dest_branch.pull(source_branch, overwrite=True)
 
     def mirror(self, source_branch, destination_url):
