@@ -158,6 +158,19 @@ this point, so invalid values get ignored.
     None
 
 
+==== Subscribers ====
+
+The Subscribers header is turned into a list of strings, available
+through the subscribers attribute. The strings get lowercased
+automatically.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(data, {'Subscribers': 'sub-one SUB-TWO'})
+    >>> sorted(data.subscribers)
+    [u'sub-one', u'sub-two']
+
+
+
 
 
 == Adding extra info to filed bugs ==

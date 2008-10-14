@@ -113,7 +113,9 @@ class FileBugDataParser:
                 # If the value is anything other than yes or no we just
                 # ignore it as we cannot currently give the user an error
                 pass
-
+        if 'Subscribers' in headers:
+            subscribers_string = unicode(headers['Subscribers'])
+            data.subscribers = subscribers_string.lower().split()
 
     def parse(self):
         self.headers = self.readHeaders()
