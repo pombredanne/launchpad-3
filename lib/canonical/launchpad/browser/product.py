@@ -91,6 +91,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -1175,15 +1176,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             return canonical_url(getUtility(IProductSet))
 
 
-class ProductChangeTranslatorsView(ProductEditView):
+class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
-
-    @cachedproperty
-    def answersUrl(self):
-        return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
-            rootsite='answers', view_name='+addquestion')
 
 class ProductAdminView(ProductEditView):
     label = "Administer project details"

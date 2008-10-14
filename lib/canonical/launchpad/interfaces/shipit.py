@@ -941,12 +941,37 @@ class InterestedInSupportVocabulary(EnumeratedType):
     YES = Item("Yes, please contact me about support")
 
 
+class PlatformVocabulary(EnumeratedType):
+    ASSEMBLED = Item("Assembled servers")
+    DELL = Item("Dell servers")
+    FUJITSU_RISC = Item("Fujitsu Siemens RISC server")
+    FUJITSU_X86 = Item("Fujitsu Siemens x86 servers")
+    HP_X86 = Item("HP/Compaq x86 servers")
+    HP_ALPHA = Item("HP/Compaq Alpha servers")
+    IA64 = Item("IA64 Servers")
+    IBM_X86 = Item("IBM x86 servers")
+    IBM_PPC = Item("IBM PowerPC servers")
+    IBM_MAINFRAME = Item("IBM Mainframes")
+    INTEL_SERVER = Item("Intel Servers")
+    THINKSERVER = Item("Lenovo ThinkServers")
+    LOCAL_BUILDER = Item("Local system builder servers")
+    NEC = Item("NEC servers")
+    SUN_X86_64 = Item("SUN x86_64 servers")
+    SUN_SPARC = Item("SUN Sparc servers")
+    PC = Item("Tower/Desktop PC")
+
+
 class ShipItSurveySchema(Interface):
 
     environment = Set(
         title=_('Where do you plan to use Ubuntu Server Edition?'),
         description=_('Please tick both if applicable.'),
         value_type=Choice(vocabulary=EnvironmentVocabulary), required=False)
+
+    platform = Set(
+        title=_('Which type of hardware do you run Linux servers on?'),
+        description=_('Tick all that apply.'),
+        value_type=Choice(vocabulary=PlatformVocabulary), required=False)
 
     employee_number = Choice(
         title=_('How many employees work in your organization?'),
