@@ -98,7 +98,7 @@ headers, untils it sees a blank line.
     False
 
 
-== Parsing of the data ==
+== Parsing the data ==
 
 The parse() method returns a FileBugData object, with the information
 from the message as attributes.
@@ -109,6 +109,9 @@ from the message as attributes.
 The headers are processed by the _setDataFromHeaders() method. It
 accepts a FileBugData object and a dictionary of the headers.
 
+
+==== Subject ====
+
 The Subject header is available in the initial_summary attribute.
 
     >>> from canonical.launchpad.browser.bugtarget import FileBugData
@@ -118,13 +121,43 @@ The Subject header is available in the initial_summary attribute.
     >>> data.initial_summary
     u'Bug Subject'
 
+
+==== Tags ====
+
 The Tags headers is translated into a list of strings as the
 initial_tags attributes. The tags are translated to lower case
 automatically.
 
+    >>> data = FileBugData()
     >>> parser._setDataFromHeaders(data, {'Tags': 'Tag-One Tag-Two'})
     >>> sorted(data.initial_tags)
     [u'tag-one', u'tag-two']
+
+
+==== Private ====
+
+The Private header gets translated into a boolean, as the private
+attribute. The values "yes" and "no" are accepted, which get translated
+into True and False.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(data, {'Private': 'yes'})
+    >>> data.private
+    True
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(data, {'Private': 'no'})
+    >>> data.private
+    False
+
+We're in no position of presenting a good error message to the user at
+this point, so invalid values get ignored.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(data, {'Private': 'not-valid'})
+    >>> print data.private
+    None
+
+
 
 
 == Adding extra info to filed bugs ==

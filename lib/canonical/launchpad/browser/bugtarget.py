@@ -103,6 +103,16 @@ class FileBugDataParser:
         if 'Tags' in headers:
             tags_string = unicode(headers['Tags'])
             data.initial_tags = tags_string.lower().split()
+        if 'Private' in headers:
+            private = headers['Private']
+            if private.lower() == 'yes':
+                data.private = True
+            elif private.lower() == 'no':
+                data.private = False
+            else:
+                # If the value is anything other than yes or no we just
+                # ignore it as we cannot currently give the user an error
+                pass
 
 
     def parse(self):
@@ -190,16 +200,6 @@ class FileBugData:
             self.initial_summary = blob_parser.headers.get('Subject')
             tags = blob_parser.headers.get('Tags', '')
             self.initial_tags = tags.lower().split()
-            private = blob_parser.headers.get('Private')
-            if private:
-                if private.lower() == 'yes':
-                    self.private = True
-                elif private.lower() == 'no':
-                    self.private = False
-                else:
-                    # If the value is anything other than yes or no we just
-                    # ignore it as we cannot currently give the user an error
-                    pass
             subscribers = blob_parser.headers.get('Subscribers', '')
             self.subscribers = subscribers.split()
             self.extra_description = blob_parser.extra_description
