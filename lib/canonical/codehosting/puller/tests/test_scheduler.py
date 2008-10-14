@@ -728,6 +728,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         def check_authserver_called(ignored):
             self.assertEqual(
                 [('startMirroring', self.db_branch.id),
+                 ('setStackedOn', 77, ''),
                  ('mirrorComplete', self.db_branch.id, revision_id)],
                 self.client.calls)
             return ignored
