@@ -437,8 +437,11 @@ class BranchMirrorer(object):
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
             if stacked_on_url is None:
+                # We use stacked_on_url == '' to mean "no stacked on location"
+                # because XML-RPC doesn't support None.
                 stacked_on_url = ''
-            self.protocol.setStackedOn(stacked_on_url)
+            if self.protocol is not None:
+                self.protocol.setStackedOn(stacked_on_url)
             dest_branch.pull(source_branch, overwrite=True)
         finally:
             dest_branch.unlock()
