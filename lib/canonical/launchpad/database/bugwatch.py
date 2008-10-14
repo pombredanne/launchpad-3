@@ -449,7 +449,7 @@ class BugWatchSet(BugSetBase):
         # We're only interested in URLs that look like they come from a
         # *Forge bugtracker.
         sf_path_re = re.compile(
-            '^\/(support\/tracker\.php|tracker2?\/?(index\.php)?)$')
+            '^\/(support\/tracker\.php|tracker2?\/(index\.php)?)$')
         if (sf_path_re.match(path) is None):
             return None
         if not query.get('aid'):
