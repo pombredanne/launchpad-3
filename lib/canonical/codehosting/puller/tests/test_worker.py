@@ -79,6 +79,18 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
             get_vfs_format_classes(remote_branch))
 
 
+class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
+    """A branch policy that returns a pre-configurable stack-on URL."""
+
+    def __init__(self, stack_on_url):
+        AcceptAnythingPolicy.__init__(self)
+        self.stack_on_url = stack_on_url
+
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
+        return self.stack_on_url
+
+
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
@@ -174,15 +186,11 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # not support stacking, the destination branch does not support
         # stacking.
         stack_on = self.make_branch('default-stack-on')
-        class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
-            def getStackedOnURLForDestinationBranch(self, source_branch,
-                                                    destination_url):
-                return stack_on.base
         source_branch = self.make_branch('source-branch', format='pack-0.92')
         self.assertFalse(source_branch._format.supports_stacking())
         to_mirror = self.makePullerWorker(
             source_branch.base, self.get_url('destdir'),
-            policy=PrearrangedStackedBranchPolicy())
+            policy=PrearrangedStackedBranchPolicy(stack_on.base))
         to_mirror.mirrorWithoutChecks()
         dest = bzrlib.branch.Branch.open(self.get_url('destdir'))
         self.assertFalse(dest._format.supports_stacking())
@@ -252,8 +260,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual([], get_netstrings(protocol_output.getvalue()))
 
     def testSendsStackedInfo(self):
-        # Mirroring a non-stacked branch doesn't send the stacked-on location
-        # to the master.
+        # Mirroring a stacked branch sends the stacked-on location to the
+        # master.
         base_branch = self.make_branch('base_branch', format='development')
         stacked_branch = self.make_branch(
             'stacked-branch', format='development')
@@ -266,6 +274,23 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(
             ['setStackedOn', str(to_mirror.branch_id),
              stacked_branch.get_stacked_on_url()],
+            get_netstrings(protocol_output.getvalue()))
+
+    def testSendsStackedInfoBasedOnDestinationURL(self):
+        # The stacked-on location sent to the master is the stacked-on
+        # location of the _destination_ branch not the source branch in the
+        # case that they are different.
+        base_branch = self.make_branch('base_branch', format='development')
+        stacked_branch = self.make_branch(
+            'stacked-branch', format='development')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            stacked_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output),
+            policy=PrearrangedStackedBranchPolicy(base_branch.base))
+        to_mirror.mirrorWithoutChecks()
+        self.assertEqual(
+            ['setStackedOn', str(to_mirror.branch_id), base_branch.base],
             get_netstrings(protocol_output.getvalue()))
 
 

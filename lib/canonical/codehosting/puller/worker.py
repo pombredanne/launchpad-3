@@ -245,7 +245,7 @@ class BranchMirrorer(object):
     Public methods are `open` and `mirror`.
     """
 
-    def __init__(self, policy, log=None):
+    def __init__(self, policy, protocol=None, log=None):
         """Construct a branch opener with 'policy'.
 
         :param policy: A `BranchPolicy` that tells us what URLs are valid and
@@ -255,6 +255,7 @@ class BranchMirrorer(object):
             log messages are discarded.
         """
         self.policy = policy
+        self.protocol = protocol
         if log is not None:
             self.log = log
         else:
@@ -431,6 +432,9 @@ class BranchMirrorer(object):
             pass
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
+        else:
+            if stacked_on_url is not None:
+                self.protocol.setStackedOn(stacked_on_url)
         dest_branch.pull(source_branch, overwrite=True)
 
     def mirror(self, source_branch, destination_url):
@@ -582,7 +586,7 @@ class PullerWorker:
             log = self.protocol.log
         else:
             log = None
-        return BranchMirrorer(policy, log)
+        return BranchMirrorer(policy, self.protocol, log)
 
     def __init__(self, src, dest, branch_id, unique_name, branch_type,
                  default_stacked_on_url, protocol, branch_mirrorer=None,
@@ -654,9 +658,6 @@ class PullerWorker:
         server.setUp()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
-            stacked_on_url = get_stacked_on_url(source_branch)
-            if stacked_on_url is not None:
-                self.protocol.setStackedOn(stacked_on_url)
             return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
             server.tearDown()
