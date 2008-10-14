@@ -18,7 +18,8 @@ __all__ = [
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -209,7 +210,7 @@ class IProductPublic(
                 development. Don't repeat anything from the Summary.""")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')

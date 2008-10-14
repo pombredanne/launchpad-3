@@ -336,8 +336,8 @@ class POTemplate(SQLBase, RosettaStats):
             # Only count the number of POTMsgSet that are current.
             clauses.append('POTMsgSet.sequence > 0')
 
-        return POTMsgSet.select(" AND ".join(clauses),
-                                orderBy='sequence')
+        query = POTMsgSet.select(" AND ".join(clauses), orderBy='sequence')
+        return query.prejoin(['msgid_singular', 'msgid_plural'])
 
     def getPOTMsgSetsCount(self, current=True):
         """See `IPOTemplate`."""

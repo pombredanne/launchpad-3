@@ -75,14 +75,10 @@
             />
     </browser:pages>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.PollEditView"
-        schema="canonical.launchpad.interfaces.IPoll"
-        fields="name title proposition secrecy allowspoilt
-                dateopens datecloses"
-        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/poll-edit.pt"
         />
