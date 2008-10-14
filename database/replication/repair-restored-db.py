@@ -25,13 +25,17 @@ import replication.helpers
 
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.database.sqlbase import (
+    connect, sqlvalues, quote, quoteIdentifier)
 from canonical.launchpad.scripts import db_options, logger_options, logger
 
 def main():
     parser = OptionParser()
     db_options(parser)
     logger_options(parser)
+
+    parser.set_defaults(dbuser='slony')
+
     options, args = parser.parse_args()
 
     log = logger(options)
@@ -45,12 +49,17 @@ def main():
     cur = con.cursor()
 
     # Determine the node id the database thinks it is.
-    cur.execute("SELECT _sl.getlocalnodeid('_sl')")
+    cmd = "SELECT %s.getlocalnodeid(%s)" % (
+        replication.helpers.CLUSTER_NAMESPACE,
+        quote(replication.helpers.CLUSTER_NAMESPACE))
+    cur.execute(cmd)
     node_id = cur.fetchone()[0]
     log.debug("Node Id is %d" % node_id)
 
     # Get a list of set ids in the database.
-    cur.execute("SELECT DISTINCT set_id FROM _sl.sl_set")
+    cur.execute(
+        "SELECT DISTINCT set_id FROM %s.sl_set"
+        % replication.helpers.CLUSTER_NAMESPACE)
     set_ids = set(row[0] for row in cur.fetchall())
     log.debug("Set Ids are %s" % repr(set_ids))
 
@@ -67,16 +76,17 @@ def main():
         connection_string.host = options.dbhost
 
     script = [
-        "cluster name = sl;",
-        "node 1 admin conninfo = '%s';" % connection_string,
+        "cluster name = %s;" % replication.helpers.CLUSTERNAME,
+        "node %d admin conninfo = '%s';" % (node_id, connection_string),
         ]
     for set_id in set_ids:
         script.append(
             "repair config (set id=%d, event node=%d, execute only on=%d);"
             % (set_id, node_id, node_id))
     script.append("uninstall node (id=%d);" % node_id)
+    for line in script:
+        log.debug(line)
     script = '\n'.join(script)
-    print script
 
     replication.helpers.execute_slonik(script, auto_preamble=False)
 
