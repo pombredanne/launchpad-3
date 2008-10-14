@@ -30,6 +30,17 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 
+signing_only_param = """
+<GnupgKeyParms format="internal">
+  Key-Type: RSA
+  Key-Usage: sign
+  Key-Length: 1024
+  Name-Real: %(name)s
+  Expire-Date: 0
+</GnupgKeyParms>
+"""
+
+
 class GPGHandler:
     """See IGPGHandler."""
 
@@ -251,6 +262,21 @@ class GPGHandler:
         assert key.exists_in_local_keyring
         return key
 
+    def generateKey(self, name):
+        """See `IGPGHandler`."""
+        context = gpgme.Context()
+        secret_keys = list(context.keylist(None, True))
+        assert len(secret_keys) == 0, 'Keyring already contain secret keys.'
+
+        context.genkey(signing_only_param % {'name': name})
+
+        secret_keys = list(context.keylist(None, True))
+        assert len(secret_keys) == 1, 'Secret key generation failed.'
+
+        key = PymeKey.newFromGpgmeKey(secret_keys[0])
+        assert key.exists_in_local_keyring
+        return key
+
     def importKeyringFile(self, filepath):
         """See IGPGHandler.importKeyringFile."""
         ctx = gpgme.Context()
@@ -333,7 +359,6 @@ class GPGHandler:
             host = config.gpghandler.host
         return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
                                                urllib.urlencode(params))
-
 
     def _getKeyIndex(self, fingerprint):
         """See IGPGHandler for further information."""

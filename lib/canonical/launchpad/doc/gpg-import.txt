@@ -61,6 +61,8 @@ Let's recover some coherent data and verify if it works as expected:
     >>> print key.can_authenticate
     False
 
+Public keys can be exported in ASCII-armored format.
+
     >>> print key.export()
     -----BEGIN PGP PUBLIC KEY BLOCK-----
     ...
@@ -145,11 +147,84 @@ supporting only ASCII-armored secret keys.
     >>> print key.can_authenticate
     False
 
+Secret keys can be exported in ASCII-armored format.
+
     >>> print key.export()
     -----BEGIN PGP PRIVATE KEY BLOCK-----
     ...
     -----END PGP PRIVATE KEY BLOCK-----
     <BLANKLINE>
+
+
+Generating new keys
+====================
+
+IGPGHandler support GPG key generation. However a secret key can only
+be generated in a keyring that doesn't contain any other secret
+key. If it happens an AssertionError is raised.
+
+    >>> new_key = gpghandler.generateKey('Testing')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Keyring already contain secret keys.
+
+Reset the local keyring.
+
+    >>> gpghandler.resetLocalState()
+
+Now a new key can be generated.
+
+    >>> new_key = gpghandler.generateKey('Testing')
+
+The secret key is returned. Currently, generateKey() only generates
+sign-only keys, i.e. they can sign content but cannot encrypt.
+
+    >>> print new_key.secret
+    True
+
+XXX cprov 20081014: 'can_encrypt' and 'can_sign' are probably broken
+for secret keys. See also pygpgme/gpgme/tests/test_genkey.py
+
+    >>> print key.can_encrypt
+    True
+
+    >>> print key.can_sign
+    True
+
+    >>> print key.can_certify
+    True
+
+    >>> print key.can_authenticate
+    False
+
+The generated key contains a single UID and only its 'name' term is
+set.
+
+    >>> [uid] = new_key.uids
+    >>> print uid.name
+    Testing
+
+    >>> uid.comment
+    ''
+
+    >>> uid.email
+    ''
+
+The public key is also availble.
+
+    >>> pub_key = gpghandler.retrieveKey(new_key.fingerprint)
+
+    >>> print pub_key.secret
+    False
+
+    >>> print pub_key.uids[0].name
+    Testing
+
+    >>> print pub_key.can_encrypt
+    False
+
+    >>> print pub_key.can_sign
+    True
 
 
 Keyserver URLs

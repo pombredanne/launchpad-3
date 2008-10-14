@@ -114,6 +114,20 @@ class IGPGHandler(Interface):
         :return: a `PymeKey` object referring to the secret key imported.
         """
 
+    def generateKey(name):
+        """Generate a new GPG key with the given name.
+
+        It currently only generates sign-only 1024 bits RSA keys.
+
+        :param name: string to be included in the key paramenters, 'comment'
+            and 'email' will be empty.
+
+        :raise: AssertionError if there is already a secret key in the
+            keyring or if the key generation has failed.
+
+        :return: a `PymeKey` object for the just-generated secret key.
+        """
+
     def importKeyringFile(filepath):
         """Import the keyring filepath into the local key database.
 
