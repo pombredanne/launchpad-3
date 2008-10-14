@@ -95,7 +95,7 @@ class FileBugDataParser:
         return message_from_string(header_text)
 
     def readLine(self):
-        return self._consumeBytes('\n')
+        return self._consumeBytes('\n') + '\n'
 
     def _setDataFromHeaders(self, data, headers):
         if 'Subject' in headers:
@@ -155,7 +155,7 @@ class FileBugDataParser:
                 assert charset, (
                     "A charset has to be specified for text parts.")
                 part_file = open(part_file_name, 'r')
-                inline_content = part_file.read()
+                inline_content = part_file.read().rstrip()
                 part_file.close()
                 inline_content = inline_content.decode(charset)
 
@@ -179,6 +179,7 @@ class FileBugDataParser:
                 # because some extra information is included.
                 continue
         return data
+
 
 class FileBugData:
     """Extra data to be added to the bug."""

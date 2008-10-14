@@ -59,15 +59,16 @@ returned.
 
 === readLine() ===
 
-readLine() is a helper method to read a single line of the file.
+readLine() is a helper method to read a single line of the file. It
+makes sure that the returned line ends with \n.
 
     >>> parser = FileBugDataParser(StringIO('123\n456\n789'))
     >>> parser.readLine()
-    '123'
+    '123\n'
     >>> parser.readLine()
-    '456'
+    '456\n'
     >>> parser.readLine()
-    '789'
+    '789\n'
 
 
 === readHeaders() ====
@@ -192,12 +193,14 @@ extra_description attribute.
     ...
     ... This should be added to the description.
     ...
+    ... Another line.
+    ...
     ... --boundary--
     ... """
     >>> parser = FileBugDataParser(StringIO(debug_data))
     >>> data = parser.parse()
     >>> data.extra_description
-    u'This should be added to the description.'
+    u'This should be added to the description.\n\nAnother line.'
 
 
 
