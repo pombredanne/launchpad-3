@@ -199,11 +199,6 @@ class FileBugData:
         #mime_msg = parser.close()
         #if mime_msg.is_multipart():
         if True:
-            self.initial_summary = blob_parser.headers.get('Subject')
-            tags = blob_parser.headers.get('Tags', '')
-            self.initial_tags = tags.lower().split()
-            subscribers = blob_parser.headers.get('Subscribers', '')
-            self.subscribers = subscribers.split()
             self.extra_description = blob_parser.extra_description
             for comment in blob_parser.comments:
                 assert part.get_content_type() == 'text/plain', (
