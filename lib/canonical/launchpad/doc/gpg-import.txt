@@ -7,8 +7,8 @@ check for all error conditions that we do, but we can't assume the
 keyserver is a trusted data source, so we have to do that.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject 
-   
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
     >>> from canonical.launchpad.interfaces import (
     ...      IGPGHandler, IPymeKey)
     >>> gpghandler = getUtility(IGPGHandler)
@@ -80,8 +80,8 @@ Apparently GPGME is able to import an incomplete public key:
     True
     >>> key.fingerprint
     'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
- 
-But we get an error if the damage is big: 
+
+But we get an error if the damage is big:
 (what probably happened in bug #2547)
 
     >>> key = gpghandler.importPublicKey(pubkey[:-400])
@@ -90,12 +90,42 @@ But we get an error if the damage is big:
     GPGKeyNotFoundError: ...
 
 
+Secret keys
+============
+
+Secret keys can be imported using IGPGHandler.importSecretKey() which
+does exactly the same job performed by importPublicKey() but
+supporting only ASCII-armored secret keys.
+
+    >>> filepath = os.path.join(gpgkeysdir, 'test@canonical.com.sec')
+    >>> seckey = open(filepath).read()
+    >>> key = gpghandler.importSecretKey(seckey)
+
+    >>> verifyObject(IPymeKey, key)
+    True
+
+    >>> print key.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
+
+    >>> print key.can_encrypt
+    True
+
+    >>> print key.can_sign
+    True
+
+    >>> print key.can_certify
+    True
+
+    >>> print key.can_authenticate
+    False
+
+
 Keyserver URLs
 ==============
 
 The gpghandler can also provide us with convenient links to the
 keyserver web interface. By default the action is to display the index
-page. Notice that the fingerprint must be the 40-byte fingerprint, 
+page. Notice that the fingerprint must be the 40-byte fingerprint,
 to avoid the retrieval of more than one key.
 
     >>> fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"

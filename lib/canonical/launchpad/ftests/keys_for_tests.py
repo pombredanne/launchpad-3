@@ -81,18 +81,9 @@ def import_secret_test_key(keyfile='test@canonical.com.sec'):
 
     :param keyfile: The name of the file to be imported.
     """
-    # We import the secret key manually here because this is the only place
-    # where we import a secret key and thus we don't need an API for this
-    # on GPGHandler.
-
-    # Make sure that gpg-agent doesn't interfere.
-    if 'GPG_AGENT_INFO' in os.environ:
-        del os.environ['GPG_AGENT_INFO']
+    gpghandler = getUtility(IGPGHandler)
     seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
-    context = gpgme.Context()
-    context.armor = True
-    newkey = StringIO(seckey)
-    result = context.import_(newkey)
+    key = gpghandler.importSecretKey(seckey)
 
 def test_pubkey_file_from_email(email_addr):
     """Get the file name for a test pubkey by email address."""

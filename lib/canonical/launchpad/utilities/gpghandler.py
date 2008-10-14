@@ -15,20 +15,19 @@ import subprocess
 import atexit
 from StringIO import StringIO
 
-from zope.interface import implements
-
 import gpgme
 import gpgme.editutil
 
-from canonical.config import config
+from zope.interface import implements
 
+from canonical.config import config
+from canonical.launchpad.interfaces.gpg import GPGKeyAlgorithm
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, GPGVerificationError, IGPGHandler, IPymeKey,
+    IPymeSignature, IPymeUserId, MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
-
-from canonical.launchpad.interfaces import (
-    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError,
-    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected,
-    GPGKeyAlgorithm)
 
 
 class GPGHandler:
@@ -221,6 +220,37 @@ class GPGHandler:
         assert key.exists_in_local_keyring
         return key
 
+    def importSecretKey(self, content):
+        """See `IGPGHandler`."""
+        assert isinstance(content, str)
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
+
+        context = gpgme.Context()
+        context.armor = True
+        newkey = StringIO(content)
+        result = context.import_(newkey)
+
+        secret_imports = [
+            fpr for fpr, res, status in result.imports
+            if status & gpgme.IMPORT_SECRET]
+        if len(secret_imports) != 1:
+            raise MoreThanOneGPGKeyFound(
+                'Found %d secret GPG keys when importing %s'
+                % (len(secret_imports), content))
+
+        fingerprint, res, status = result.imports[0]
+        try:
+            key = context.get_key(fingerprint, True)
+        except gpgme.GpgmeError:
+            return None
+
+        key = PymeKey.newFromGpgmeKey(key)
+        assert key.exists_in_local_keyring
+        return key
+
     def importKeyringFile(self, filepath):
         """See IGPGHandler.importKeyringFile."""
         ctx = gpgme.Context()
@@ -282,7 +312,8 @@ class GPGHandler:
             result, pubkey = self._getPubKey(fingerprint)
             if not result:
                 if "Connection refused" in pubkey:
-                    raise AssertionError("The keyserver is not running, help!")
+                    raise AssertionError(
+                        "The keyserver is not running, help!")
                 else:
                     raise GPGKeyNotFoundError(fingerprint, pubkey)
 
