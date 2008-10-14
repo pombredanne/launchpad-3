@@ -61,6 +61,12 @@ Let's recover some coherent data and verify if it works as expected:
     >>> print key.can_authenticate
     False
 
+    >>> print key.export()
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    ...
+    -----END PGP PUBLIC KEY BLOCK-----
+    <BLANKLINE>
+
 Now, try to import a secret key, which will cause a
 SecretGPGKeyImportDetected exception to be raised.
 
@@ -138,6 +144,12 @@ supporting only ASCII-armored secret keys.
 
     >>> print key.can_authenticate
     False
+
+    >>> print key.export()
+    -----BEGIN PGP PRIVATE KEY BLOCK-----
+    ...
+    -----END PGP PRIVATE KEY BLOCK-----
+    <BLANKLINE>
 
 
 Keyserver URLs

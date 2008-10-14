@@ -477,6 +477,23 @@ class PymeKey:
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)
 
+    def export(self):
+        """See `PymeKey`."""
+        if self.secret:
+            # XXX cprov 20081014: gpgme_op_export() only supports public keys.
+            # See http://www.fifi.org/cgi-bin/info2www?(gpgme)Exporting+Keys
+            p = subprocess.Popen(
+                ['gpg', '--export-secret-keys', '-a', self.fingerprint],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return p.stdout.read()
+
+        context = gpgme.Context()
+        context.armor = True
+        keydata = StringIO()
+        context.export(self.fingerprint, keydata)
+
+        return keydata.getvalue()
+
 
 class PymeUserId:
     """See IPymeUserId"""

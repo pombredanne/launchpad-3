@@ -199,6 +199,16 @@ class IPymeKey(Interface):
     def setOwnerTrust(value):
         """Set the owner_trust value for this key."""
 
+    def export():
+        """Export the context key in ASCII-armored mode.
+
+        Both, public and secret keys are supported, although secret keys are
+        exported by calling `gpg` process while public ones use the native
+        gpgme API.
+
+        :return: a string containing the exported key.
+        """
+
 
 class IPymeUserId(Interface):
     """pyME user ID"""
