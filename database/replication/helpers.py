@@ -108,7 +108,7 @@ def sync(timeout):
     return execute_slonik("", sync=timeout)
 
 
-def execute_slonik(script, sync=None, exit_on_fail=True):
+def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
     """Use the slonik command line tool to run a slonik script.
 
     :param script: The script as a string. Preamble should not be included.
@@ -119,20 +119,24 @@ def execute_slonik(script, sync=None, exit_on_fail=True):
     :param exit_on_fail: If True, on failure of the slonik script
                          sys.exit is invoked using the slonik return code.
 
+    :param auto_preamble: If True, the generated preamble will be
+                          automatically included.
+
     :returns: True if the script completed successfully. False if
               exit_on_fail is False and the script failed for any reason.
     """
 
     # Add the preamble and optional sync to the script.
+    if auto_preamble:
+        script = preamble() + script
+
     if sync is not None:
-        script = preamble() + script + """
+        script = script + """
             sync (id = @master_node);
             wait for event (
                 origin = ALL, confirmed = ALL,
                 wait on = @master_node, timeout = %d);
             """ % sync
-    else:
-        script = preamble() + script
 
     # Copy the script to a NamedTemporaryFile rather than just pumping it
     # to slonik via stdin. This way it can be examined if slonik appears
