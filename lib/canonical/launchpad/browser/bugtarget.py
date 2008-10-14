@@ -118,37 +118,50 @@ class FileBugDataParser:
             data.subscribers = subscribers_string.lower().split()
 
     def parse(self):
-        self.headers = self.readHeaders()
+        headers = self.readHeaders()
         data = FileBugData()
         self._setDataFromHeaders(data, headers)
 
-        content_type = self.headers['Content-Type']
-        main, param = content_type.split('; ')
-        assert param.startswith('boundary="')
-        boundary = "--" + param[len('boundary="'):-1]
+        # The headers is a Message instance.
+        boundary = "--" + headers.get_param("boundary")
         line = self.readLine()
         while not line.startswith(boundary + '--'):
             import os
             import tempfile
             part_file_fd, part_file_name = tempfile.mkstemp()
             part_headers = self.readHeaders()
-            assert part_headers['Content-Transfer-Encoding'] == 'base64'
+            content_encoding = part_headers.get('Content-Transfer-Encoding')
+            if content_encoding is not None and content_encoding != 'base64':
+                raise AssertionError("Only knows how to handle base64.")
             line = self.readLine()
             content = ''
             while not line.startswith(boundary):
                 # Decode the file.
-                line = self.readLine()
-                content +=  line.decode('base64')
+                if content_encoding is not None:
+                    line = line.decode(content_encoding)
+                content +=  line
                 if len(content) >= 16384:
                     os.write(part_file_fd, content)
                     content = ''
+                line = self.readLine()
             if content:
                 os.write(part_file_fd, content)
             os.close(part_file_fd)
             disposition = part_headers['Content-Disposition']
             if disposition == 'inline':
-                if self.extra_description is None:
-                    self.extra_description = open(part_file_name, 'r').read()
+                assert part_headers.get_content_type() == 'text/plain', (
+                    "Inline parts have to be plain text.")
+                charset = part_headers.get_content_charset()
+                assert charset, (
+                    "A charset has to be specified for text parts.")
+                part_file = open(part_file_name, 'r')
+                inline_content = part_file.read()
+                part_file.close()
+                inline_content = inline_content.decode(charset)
+
+                # The first inline part is extra description.
+                if data.extra_description is None:
+                    data.extra_description = inline_content
             elif disposition == 'attachment':
                 attachment = dict(
                     filename='XXX',

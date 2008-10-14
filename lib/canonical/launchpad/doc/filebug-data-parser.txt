@@ -170,25 +170,18 @@ automatically.
     [u'sub-one', u'sub-two']
 
 
+=== Message Parts ===
+
+Different parts of the message gets treated differently. In short, we
+look at the Content-Disposition header. If it's inline, it's a comment,
+if it's attachment, it's an attachment.
 
 
+==== Inline parts ====
 
-== Adding extra info to filed bugs ==
-
-It's possible for bug reporting tools to upload a file with debug
-information to Launchpad, and pass that information to the filebug page.
-When the data is uploaded a token is returned, which is appended to the
-+filebug URL, resulting in a URL like '/.../+filebug/12345abcde'. The
-+filebug view's publishTraverse method looks up the correct data from
-using the token.
-
-The uploaded debug information should be MIME multipart message, where
-the Content-Disposition header tells Launchpad what to do with the
-different parts.
-
-=== First inline part ==
-
-The first inline part will be appended to the bug description.
+The first inline part is special. Instead of being treated as a comment,
+it gets appended to the bug description. It's available through the
+extra_description attribute.
 
     >>> debug_data = """MIME-Version: 1.0 
     ... Content-type: multipart/mixed; boundary=boundary
@@ -201,42 +194,12 @@ The first inline part will be appended to the bug description.
     ...
     ... --boundary--
     ... """
-
-    >>> import transaction
-    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
-    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
-
-We need to commit the transaction since the data will be stored in the
-Librarian.
-
-    >>> transaction.commit()
-
-Now, if we pass the token to the filebug view, the extra_data
-attribute will be set with the actual data.
-
-    >>> request = LaunchpadTestRequest()
-    >>> filebug_view = create_view(ubuntu_firefox, request)
-    >>> filebug_view.publishTraverse(request, token) is filebug_view
-    True
-    >>> filebug_view.extra_data.extra_description
+    >>> parser = FileBugDataParser(StringIO(debug_data))
+    >>> data = parser.parse()
+    >>> data.extra_description
     u'This should be added to the description.'
 
-    >>> filebug_view.validate(bug_data) is None
-    True
-    >>> filebug_view.submit_bug_action.success(bug_data)
-    >>> filebug_view.added_bug.title
-    u'Test Title'
-    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
-    Test description.
-    <BLANKLINE>
-    This should be added to the description.
 
-A notification was added to inform the user about what happened.
-
-    >>> for notification in filebug_view.request.response.notifications:
-    ...     print notification.message
-    Thank you for your bug report.
-    Additional information was added to the bug description.
 
 === Other inline parts ===
 
