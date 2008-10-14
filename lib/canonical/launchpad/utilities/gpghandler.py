@@ -265,15 +265,16 @@ class GPGHandler:
     def generateKey(self, name):
         """See `IGPGHandler`."""
         context = gpgme.Context()
-        secret_keys = list(context.keylist(None, True))
+
+        secret_keys = list(self.localKeys(secret=True))
         assert len(secret_keys) == 0, 'Keyring already contain secret keys.'
 
         context.genkey(signing_only_param % {'name': name})
 
-        secret_keys = list(context.keylist(None, True))
+        secret_keys = list(self.localKeys(secret=True))
         assert len(secret_keys) == 1, 'Secret key generation failed.'
 
-        key = PymeKey.newFromGpgmeKey(secret_keys[0])
+        key = secret_keys[0]
         assert key.exists_in_local_keyring
         return key
 
@@ -317,12 +318,12 @@ class GPGHandler:
 
         return cipher.getvalue()
 
-    def localKeys(self):
+    def localKeys(self, filter=None, secret=False):
         """Get an iterator of the keys this gpg handler
         already knows about.
         """
         ctx = gpgme.Context()
-        for key in ctx.keylist():
+        for key in ctx.keylist(filter, secret):
             yield PymeKey.newFromGpgmeKey(key)
 
     def retrieveKey(self, fingerprint):

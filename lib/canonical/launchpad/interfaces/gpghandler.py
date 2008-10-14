@@ -170,8 +170,17 @@ class IGPGHandler(Interface):
         Existing key objects will not reflect the new trust value.
         """
 
-    def localKeys():
-        """Return an iterator of all keys locally known about."""
+    def localKeys(filter=None, secret=False):
+        """Return an iterator of all keys locally known about.
+
+        :param filter: optional string used to filter the results. By default
+            gpgme tries to match '<name> [comment] [email]', the full
+            fingerprint or the key ID (fingerprint last 8 digits);
+        :param secret: optional boolean, restrict the domain to secret or
+            public keys available in the keyring. Defaults to False.
+
+        :return: a `PymeKey` generator with the matching keys.
+        """
 
     def resetLocalState():
         """Reset the local state.
