@@ -27,7 +27,7 @@ BUFFER_SIZE variable.
 
     >>> parser.BUFFER_SIZE = 3
 
-There a helper method, _consumeBytes(), which will read from the file
+There is helper method, _consumeBytes(), which will read from the file
 until a certain delimiter string is encountered.
 
     >>> parser._consumeBytes('4')
@@ -62,6 +62,7 @@ Subsequent reads will result in the empty string.
     ''
     >>> parser._consumeBytes('0')
     ''
+
 
 === readLine() ===
 
