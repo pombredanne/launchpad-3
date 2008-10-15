@@ -665,7 +665,7 @@ class DirectEmailAuthorization:
         return self._isAllowedAfter(after)
 
     @property
-    def last_contact(self):
+    def throttle_date(self):
         """See `IDirectEmailAuthorization`."""
         now = datetime.now(pytz.timezone('UTC'))
         after = now - as_timedelta(

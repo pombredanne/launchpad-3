@@ -246,8 +246,8 @@ class IDirectEmailAuthorization(Interface):
             'Launchpad user.'),
         readonly=True)
 
-    last_contact = Datetime(
-        title=_('The last contact record for a sender.'),
+    throttle_date = Datetime(
+        title=_('The earliest date used to throttle senders.'),
         readonly=True,
         )
 
