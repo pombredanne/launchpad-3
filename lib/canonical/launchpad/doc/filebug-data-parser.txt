@@ -363,3 +363,34 @@ Binary files are base64 encoded. They are decoded automatically.
     >>> contents.read()
     '\x00\x00\x00\x00\x00\n\x01\x01\x01\x01\x01'
     >>> contents.close()
+
+
+== Cleanup ==
+
+All the parsed message parts are kept in temporary files, and they need
+to be removed when the data from the parser has been read. The paths to
+the used temporary files are held in the _used_temporary_files
+attribute.
+
+    >>> parser = used_parsers.pop()
+    >>> len(parser._used_temporary_files) > 0
+    True
+
+They can be removed by calling the removeTemporaryFiles() method.
+
+    >>> import os
+    >>> import tempfile
+    >>> file_fd, file_path = tempfile.mkstemp()
+    >>> file_path
+    >>> os.close(file_fd)
+    >>> os.path.exists(file_path)
+    True
+    >>> parser._used_temporary_files.append(file_path)
+    >>> parser.removeTemporaryFiles()
+    >>> len(parser._used_temporary_files)
+    0
+    >>> os.path.exists(file_path)
+    False
+
+    >>> for parser in used_parsers:
+    ...     parser.removeTemporaryFiles()

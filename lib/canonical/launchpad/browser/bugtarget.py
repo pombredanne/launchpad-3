@@ -19,9 +19,10 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
+from email import message_from_string
+import os
 import tempfile
 import urllib
-from email import message_from_string
 
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
@@ -69,6 +70,7 @@ class FileBugDataParser:
         self.comments = []
         self.attachments = []
         self.BUFFER_SIZE = 8192
+        self._used_temporary_files = []
 
     def _consumeBytes(self, end_string):
         while end_string not in self._buffer:
@@ -126,9 +128,8 @@ class FileBugDataParser:
         boundary = "--" + headers.get_param("boundary")
         line = self.readLine()
         while not line.startswith(boundary + '--'):
-            import os
-            import tempfile
             part_file_fd, part_file_name = tempfile.mkstemp()
+            self._used_temporary_files.append(part_file_name)
             part_headers = self.readHeaders()
             content_encoding = part_headers.get('Content-Transfer-Encoding')
             if content_encoding is not None and content_encoding != 'base64':
@@ -184,6 +185,11 @@ class FileBugDataParser:
                 # because some extra information is included.
                 continue
         return data
+
+    def removeTemporaryFiles(self):
+        for temporary_file_path in self._used_temporary_files:
+            os.remove(temporary_file_path)
+        self._used_temporary_files = []
 
 
 class FileBugData:
