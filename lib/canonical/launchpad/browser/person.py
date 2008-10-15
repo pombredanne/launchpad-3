@@ -4943,7 +4943,7 @@ class EmailToPersonView(LaunchpadFormView):
     @property
     def next_try(self):
         """When can the user try again?"""
-        last_contact = IDirectEmailAuthorization(self.user).last_contact
+        throttle_date = IDirectEmailAuthorization(self.user).throttle_date
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
-        return last_contact + interval
+        return throttle_date + interval
