@@ -38,7 +38,6 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
-from canonical.launchpad.browser.fp import FileFeedParser
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
