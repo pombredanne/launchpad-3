@@ -58,6 +58,9 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
+from canonical.launchpad.scripts.packagecopier import (
+    CannotCopy, check_copy, do_copy)
+
 
 class Archive(SQLBase):
     implements(IArchive, IHasOwner, IHasBuildRecords)
@@ -842,6 +845,28 @@ class Archive(SQLBase):
             raise NotFoundError(filename)
 
         return archive_file
+
+    def syncSources(self, sources, to_pocket, to_series=None,
+                    include_binaries=False):
+        """See `IArchive`."""
+        # First, validate the copy.
+        broken_copies = []
+        for source in sources:
+            try:
+                check_copy(
+                    source, self, to_series, to_pocket, include_binaries)
+            except CannotCopy, reason:
+                broken_copies.append("%s (%s)" % (source.displayname, reason))
+
+        if len(broken_copies) != 0:
+            raise CannotCopy("\n".join(broken_copies))
+
+        # Perform the copy.
+        copies = do_copy(
+            sources, self, to_series, to_pocket, include_binaries)
+
+        if len(copies) == 0:
+            raise CannotCopy("Packages already copied.")
 
 
 class ArchiveSet:

@@ -518,6 +518,23 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    def syncSources(sources, to_pocket, to_series=None,
+                    include_binaries=False):
+        """Synchronise (copy) the sources specified into this archive.
+
+        :param sources: a list of `ISourcePackagePublishingHistory`
+        :param: pocket: the target `PackagePublishingPocket`
+        :param: series: the target `IDistroSeries`, if None is given the same
+            current source distroseries will be used as the destination
+        :param: include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source
+
+        :return: a list of `ISourcePackagePublishingHistory` and
+            `BinaryPackagePublishingHistory` corresponding to the copied
+            publications.
+        """
+
 
 class IPPA(IArchive):
     """Marker interface so traversal works differently for PPAs."""

@@ -1589,3 +1589,28 @@ If there is a matching archive it is returned.
     ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one
+
+
+== Synchronising sources from other archives ==
+
+IArchive.syncSources is a convenience wrapper around the copying code
+in canonical.launchpad.scripts.packagecopier.  It allows the caller to
+provide a list of publications that can be copied to the context archive.
+
+    >>> cprov_pmount = cprov.archive.getPublishedSources(name="pmount")
+    >>> sabdfl_pmount = sabdfl.archive.getPublishedSources(name="pmount")
+    >>> sabdfl_pmount.count()
+    0
+    >>> sabdfl.archive.syncSources(cprov_pmount,
+    ...     PackagePublishingPocket.RELEASE, include_binaries=True)
+    >>> sabdfl_pmount.count()
+    1
+
+Repeating this copy gives an error because we copied the binaries:
+
+    >>> sabdfl.archive.syncSources(cprov_pmount,
+    ...     PackagePublishingPocket.RELEASE)
+    Traceback (most recent call last):
+    ...
+    CannotCopy: pmount 0.1-1 in warty
+    (same version already has published binaries in the destination archive)
