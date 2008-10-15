@@ -61,6 +61,11 @@ from canonical.launchpad.webapp.menu import structured
 
 
 class FileBugDataParser:
+    """Parser for a message containing extra bug information.
+
+    Applications like Apport upload such messages, before filing the
+    bug.
+    """
 
     def __init__(self, blob_file):
         self.blob_file = blob_file
@@ -73,6 +78,12 @@ class FileBugDataParser:
         self._used_temporary_files = []
 
     def _consumeBytes(self, end_string):
+        """Read bytes from the message up to the end_string.
+
+        The end_string is included in the output.
+
+        If end-of-file is reached, '' is returned.
+        """
         while end_string not in self._buffer:
             data = self.blob_file.read(self.BUFFER_SIZE)
             self._buffer += data
@@ -91,18 +102,21 @@ class FileBugDataParser:
         return bytes
 
     def readHeaders(self):
+        """Read the next set of headers of the message."""
         header_text = self._consumeBytes('\n\n')
         # Use the email package to return a dict-like object of the
         # headers, so we don't have to parse the text ourselves.
         return message_from_string(header_text)
 
     def readLine(self):
+        """Read a line of the message."""
         data = self._consumeBytes('\n')
         if data == '':
             raise AssertionError('End of file reached.')
         return data
 
     def _setDataFromHeaders(self, data, headers):
+        """Set the data attributes from the message headers."""
         if 'Subject' in headers:
             data.initial_summary = unicode(headers['Subject'])
         if 'Tags' in headers:
@@ -123,6 +137,20 @@ class FileBugDataParser:
             data.subscribers = subscribers_string.lower().split()
 
     def parse(self):
+        """Parse the message and  return a FileBugData instance.
+
+            * The Subject header is the initial bug summary.
+            * The Tags header specifies the initial bug tags.
+            * The Private header sets the visibility of the bug.
+            * The Subscribers header specifies additional initial subscribers
+            * The first inline part will be added to the description.
+            * All other inline parts will be added as separate comments.
+            * All attachment parts will be added as attachment.
+
+        When parsing each part of the message is stored in a temporary
+        file on the file system. After using the returned data,
+        removeTemporaryFiles() must be called.
+        """
         headers = self.readHeaders()
         data = FileBugData()
         self._setDataFromHeaders(data, headers)
@@ -145,6 +173,8 @@ class FileBugDataParser:
                 if content_encoding is not None:
                     line = line.decode(content_encoding)
                 content +=  line
+                # Use a bit of a buffer before saving to the disk, to
+                # avoid too many writes. The more writes, the slower it is.
                 if len(content) >= 16384:
                     os.write(part_file_fd, content)
                     content = ''
@@ -190,6 +220,11 @@ class FileBugDataParser:
         return data
 
     def removeTemporaryFiles(self):
+        """Remove all the temporary files used when parsing.
+
+        This should be done after the information in the FileBugData
+        instance has been used.
+        """
         for temporary_file_path in self._used_temporary_files:
             os.remove(temporary_file_path)
         self._used_temporary_files = []
@@ -207,41 +242,6 @@ class FileBugData:
         self.extra_description = None
         self.comments = []
         self.attachments = []
-
-    def setFromRawMessage(self, raw_mime_msg):
-        """Set the extra file bug data from a MIME multipart message.
-
-            * The Subject header is the initial bug summary.
-            * The Tags header specifies the initial bug tags.
-            * The Private header sets the visibility of the bug.
-            * The Subscribers header specifies additional initial subscribers
-            * The first inline part will be added to the description.
-            * All other inline parts will be added as separate comments.
-            * All attachment parts will be added as attachment.
-        """
-        blob_parser = BlobParser(raw_mime_msg)
-        blob_parser.parse()
-        #tempdir = tempfile.mkdtemp()
-        #parser = FileFeedParser(tempdir)
-        #parser.feed(raw_mime_msg)
-        #mime_msg = parser.close()
-        #if mime_msg.is_multipart():
-        if True:
-            self.extra_description = blob_parser.extra_description
-            for comment in blob_parser.comments:
-                assert part.get_content_type() == 'text/plain', (
-                    "Inline parts have to be plain text.")
-                charset = part.get_content_charset()
-                assert charset, (
-                    "A charset has to be specified for text parts.")
-                # TODO: fix
-                part_text = part.get_payload(decode=True).decode(charset)
-                part_text = part_text.rstrip()
-                self.comments.append(part_text)
-
-            for attachment in blob_parser.attachments:
-                self.attachment.append(attachment)
-
 
 
 class FileBugViewBase(LaunchpadFormView):
