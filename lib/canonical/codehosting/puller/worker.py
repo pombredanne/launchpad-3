@@ -421,30 +421,24 @@ class BranchMirrorer(object):
         This method assumes that 'source_branch' and 'dest_branch' both have
         the same format.
         """
-        # Lock the branch now, because we don't want set_stacked_on_url and
-        # the pull to take separate locks.
-        dest_branch.lock_write()
+        # Make sure the mirrored branch is stacked the same way as the
+        # source branch.
+        stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
+            source_branch, dest_branch.base)
         try:
-            # Make sure the mirrored branch is stacked the same way as the
-            # source branch.
-            stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
-                source_branch, dest_branch.base)
-            try:
-                dest_branch.set_stacked_on_url(stacked_on_url)
-            except (errors.UnstackableRepositoryFormat,
-                    errors.UnstackableBranchFormat):
-                stacked_on_url = None
-            except errors.NotBranchError:
-                raise StackedOnBranchNotFound()
-            if stacked_on_url is None:
-                # We use stacked_on_url == '' to mean "no stacked on location"
-                # because XML-RPC doesn't support None.
-                stacked_on_url = ''
-            if self.protocol is not None:
-                self.protocol.setStackedOn(stacked_on_url)
-            dest_branch.pull(source_branch, overwrite=True)
-        finally:
-            dest_branch.unlock()
+            dest_branch.set_stacked_on_url(stacked_on_url)
+        except (errors.UnstackableRepositoryFormat,
+                errors.UnstackableBranchFormat):
+            stacked_on_url = None
+        except errors.NotBranchError:
+            raise StackedOnBranchNotFound()
+        if stacked_on_url is None:
+            # We use stacked_on_url == '' to mean "no stacked on location"
+            # because XML-RPC doesn't support None.
+            stacked_on_url = ''
+        if self.protocol is not None:
+            self.protocol.setStackedOn(stacked_on_url)
+        dest_branch.pull(source_branch, overwrite=True)
 
     def mirror(self, source_branch, destination_url):
         """Mirror 'source_branch' to 'destination_url'."""
