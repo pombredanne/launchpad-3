@@ -12,14 +12,14 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:portlets fill-slot="portlets">
     <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+  </metal:portlets>
 
   <div metal:fill-slot="main">
 
     <tal:block condition="context/isNotYetOpened">
-      <div metal:use-macro="context/@@launchpad_addform/addform">
+      <div metal:use-macro="context/@@launchpad_form/form">
 
         <h1 metal:fill-slot="heading">
           Add a poll option
