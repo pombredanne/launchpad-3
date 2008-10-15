@@ -16,9 +16,12 @@ __all__ = [
 
 __metaclass__ = type
 
+import os
+
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from canonical.launchpad.interfaces.product import IProduct
@@ -240,5 +243,32 @@ class HWDBApplication:
 
 
 class WebServiceApplication(ServiceRootResource):
-    """See IWebServiceApplication."""
+    """See IWebServiceApplication.
+
+    This implementation adds a 'cached_wadl' attribute.  If set, it will be
+    served by `toWADL` rather than calculating the toWADL result.
+
+    On import, the class tries to load a file to populate this attribute.  By
+    doing it on import, this makes it easy to clear, as is needed by
+    utilities/create-lp-wadl.py.
+
+    If the attribute is not set, toWADL will set the attribute on the class
+    once it is calculated.
+    """
     implements(IWebServiceApplication)
+
+    _wadl_filename = os.path.join(
+        os.path.dirname(os.path.normpath(__file__)),
+        'apidoc', 'wadl-%s.xml' % config.instance_name)
+
+    if os.path.exists(_wadl_filename):
+        cached_wadl = open(_wadl_filename).read()
+    else:
+        cached_wadl = None
+
+    def toWADL(self):
+        if self.cached_wadl is not None:
+            return self.cached_wadl
+        res = super(WebServiceApplication, self).toWADL()
+        self.__class__.cached_wadl = res
+        return res
