@@ -184,6 +184,12 @@ The first inline part is special. Instead of being treated as a comment,
 it gets appended to the bug description. It's available through the
 extra_description attribute.
 
+    >>> used_parsers = []
+    >>> def parse_message(message):
+    ...     parser = FileBugDataParser(StringIO(message))
+    ...     used_parsers.append(parser)
+    ...     return parser.parse()
+
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
@@ -197,8 +203,7 @@ extra_description attribute.
     ...
     ... --boundary--
     ... """
-    >>> parser = FileBugDataParser(StringIO(debug_data))
-    >>> data = parser.parse()
+    >>> data = parse_message(debug_data)
     >>> data.extra_description
     u'This should be added to the description.\n\nAnother line.'
 
@@ -223,8 +228,7 @@ The text can also be base64 decoded.
     ...
     ... --boundary--
     ... """ % encoded_text
-    >>> parser = FileBugDataParser(StringIO(debug_data))
-    >>> data = parser.parse()
+    >>> data = parse_message(debug_data)
     >>> data.extra_description
     u'This should be added to the description.\n\nAnother line.'
 
@@ -260,8 +264,7 @@ comments attribute.
     ...
     ... --boundary--
     ... """
-    >>> parser = FileBugDataParser(StringIO(debug_data))
-    >>> data = parser.parse()
+    >>> data = parse_message(debug_data)
     >>> len(data.comments)
     2
     >>> data.comments[0]
@@ -295,8 +298,7 @@ be specified using a Content-description header, but it's not required.
     ... This is another attachment, with a description.
     ... --boundary--
     ... """
-    >>> parser = FileBugDataParser(StringIO(debug_data))
-    >>> data = parser.parse()
+    >>> data = parse_message(debug_data)
     >>> len(data.attachments)
     2
     >>> first_attachment, second_attachment = data.attachments
@@ -353,8 +355,7 @@ Binary files are base64 encoded. They are decoded automatically.
     ... %s
     ... --boundary--
     ... """ % binary_data.encode('base64')
-    >>> parser = FileBugDataParser(StringIO(debug_data))
-    >>> data = parser.parse()
+    >>> data = parse_message(debug_data)
     >>> len(data.attachments)
     1
 
