@@ -815,8 +815,7 @@ class Archive(SQLBase):
                 PackageUpload.changesfileID == LibraryFileAlias.id,
                 )
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         def do_query():
             result = store.find((LibraryFileAlias), *(base_clauses + clauses))
