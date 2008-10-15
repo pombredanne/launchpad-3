@@ -86,7 +86,7 @@ class FileBugDataParser:
                     return buffer
                 break
         end_index = self._buffer.index(end_string)
-        bytes = self._buffer[:end_index]
+        bytes = self._buffer[:end_index+len(end_string)]
         self._buffer = self._buffer[end_index+len(end_string):]
         return bytes
 
@@ -97,7 +97,10 @@ class FileBugDataParser:
         return message_from_string(header_text)
 
     def readLine(self):
-        return self._consumeBytes('\n') + '\n'
+        data = self._consumeBytes('\n')
+        if data == '':
+            raise AssertionError('End of file reached.')
+        return data
 
     def _setDataFromHeaders(self, data, headers):
         if 'Subject' in headers:

@@ -31,10 +31,10 @@ There a helper method, _consumeBytes(), which will read from the file
 until a certain delimiter string is encountered.
 
     >>> parser._consumeBytes('4')
-    '123'
+    '1234'
 
 In order to find the delimiter string, it had to read '123456' into
-the buffer. The delimiter string is discarded, but the rest of the
+the buffer. Up to the delimiter string is read, but the rest of the
 string is kept in the buffer.
 
     >>> parser._buffer
@@ -43,7 +43,7 @@ string is kept in the buffer.
 The delimiter string isn't limited to one character.
 
     >>> parser._consumeBytes('67')
-    '5'
+    '567'
 
     >>> parser._buffer
     '89'
@@ -56,11 +56,16 @@ returned.
     >>> parser._buffer
     ''
 
+Subsequent reads will result in the empty string.
+
+    >>> parser._consumeBytes('0')
+    ''
+    >>> parser._consumeBytes('0')
+    ''
 
 === readLine() ===
 
-readLine() is a helper method to read a single line of the file. It
-makes sure that the returned line ends with \n.
+readLine() is a helper method to read a single line of the file.
 
     >>> parser = FileBugDataParser(StringIO('123\n456\n789'))
     >>> parser.readLine()
@@ -68,7 +73,16 @@ makes sure that the returned line ends with \n.
     >>> parser.readLine()
     '456\n'
     >>> parser.readLine()
-    '789\n'
+    '789'
+
+If we try to read past the end of the file an AssertionError will be
+raised. This is to ensure that invalid messages won't cause an infinite
+loop, or something like that.
+
+    >>> parser.readLine()
+    Traceback (most recent call last):
+    ...
+    AssertionError: End of file reached.
 
 
 === readHeaders() ====
@@ -239,7 +253,7 @@ If there are more than one inline part, those will be added as comments
 to the bug. The comments are simple ext strings, accessible through the
 comments attribute.
 
-    >>> debug_data = """MIME-Version: 1.0 
+    >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -279,7 +293,7 @@ All the parts that have a 'Content-disposition: attachment' header
 will get added as attachments to the bug. The attachment description can
 be specified using a Content-description header, but it's not required.
 
-    >>> debug_data = """MIME-Version: 1.0 
+    >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -344,7 +358,7 @@ The contents of the attachments are stored in a file.
 Binary files are base64 encoded. They are decoded automatically.
 
     >>> binary_data = '\n'.join(['\x00'*5, '\x01'*5])
-    >>> debug_data = """MIME-Version: 1.0 
+    >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -365,6 +379,30 @@ Binary files are base64 encoded. They are decoded automatically.
     >>> contents.close()
 
 
+== Invalid messages ==
+
+If someone gives an invalid message, for example one that doesn't have
+an end boundary, and AssertionError will be raised. This is mainly to
+assert that nothing bad will happen if we can't parse the message. We
+don't care about giving the user a good error message, since the format
+is well-known.
+
+    >>> debug_data = """MIME-Version: 1.0
+    ... Content-type: multipart/mixed; boundary=boundary
+    ...
+    ... --boundary
+    ... Content-disposition: attachment; filename='attachment1'
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This is an attachment.
+    ...
+    ... Another line."""
+    >>> data = parse_message(debug_data)
+    Traceback (most recent call last):
+    ...
+    AssertionError: End of file reached.
+
+
 == Cleanup ==
 
 All the parsed message parts are kept in temporary files, and they need
@@ -381,7 +419,6 @@ They can be removed by calling the removeTemporaryFiles() method.
     >>> import os
     >>> import tempfile
     >>> file_fd, file_path = tempfile.mkstemp()
-    >>> file_path
     >>> os.close(file_fd)
     >>> os.path.exists(file_path)
     True
