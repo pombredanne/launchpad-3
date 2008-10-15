@@ -631,7 +631,11 @@ class FileBugViewBase(LaunchpadFormView):
         extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
         if extra_bug_data is not None:
             self.extra_data_token = name
-            self.extra_data.setFromRawMessage(extra_bug_data.blob)
+            extra_bug_data.file_alias.open()
+            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
+            self.extra_data = self.data_parser.parse()
+            extra_bug_data.file_alias.close()
+            # XXX: delete the temp files
         else:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
