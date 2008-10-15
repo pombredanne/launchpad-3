@@ -1597,20 +1597,28 @@ IArchive.syncSources is a convenience wrapper around the copying code
 in canonical.launchpad.scripts.packagecopier.  It allows the caller to
 provide a list of publications that can be copied to the context archive.
 
-    >>> cprov_pmount = cprov.archive.getPublishedSources(name="pmount")
-    >>> sabdfl_pmount = sabdfl.archive.getPublishedSources(name="pmount")
-    >>> sabdfl_pmount.count()
-    0
-    >>> sabdfl.archive.syncSources(cprov_pmount,
-    ...     PackagePublishingPocket.RELEASE, include_binaries=True)
-    >>> sabdfl_pmount.count()
+    >>> cprov_cdrkit = cprov.archive.getPublishedSources(name="cdrkit")
+    >>> sabdfl_cdrkit = sabdfl.archive.getPublishedSources(name="cdrkit")
+    >>> sabdfl_cdrkit.count()
     1
+    >>> sabdfl.archive.syncSources(cprov_cdrkit,
+    ...     PackagePublishingPocket.RELEASE)
+    >>> sabdfl_cdrkit.count()
+    2
 
-Repeating this copy gives an error because we copied the binaries:
+Repeating this source copy gives an error:
 
-    >>> sabdfl.archive.syncSources(cprov_pmount,
+    >>> sabdfl.archive.syncSources(cprov_cdrkit,
     ...     PackagePublishingPocket.RELEASE)
     Traceback (most recent call last):
     ...
-    CannotCopy: pmount 0.1-1 in warty
-    (same version already has published binaries in the destination archive)
+    CannotCopy: Packages already copied.
+
+Repeating this copy with binaries also gives an error:
+
+    >>> sabdfl.archive.syncSources(cprov_cdrkit,
+    ...     PackagePublishingPocket.RELEASE, include_binaries=True)
+    Traceback (most recent call last):
+    ...
+    CannotCopy: cdrkit 1.0 in hoary (source has no binaries to be copied)
+    ...
