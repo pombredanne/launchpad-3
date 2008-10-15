@@ -147,6 +147,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
 
     # Run slonik
     log.debug("Executing slonik script %s" % script_on_disk.name)
+    #log.debug(script) # We need a log level < DEBUG :-(
     returncode = subprocess.call(['slonik', script_on_disk.name])
 
     if returncode != 0:
