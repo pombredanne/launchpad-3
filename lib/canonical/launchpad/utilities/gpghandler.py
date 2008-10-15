@@ -318,6 +318,38 @@ class GPGHandler:
 
         return cipher.getvalue()
 
+    def signContent(self, content, key_fingerprint, password='', mode=None):
+        """See IGPGHandler."""
+        if not isinstance(content, str):
+            raise TypeError('Content should be a string.')
+
+        if mode is None:
+            mode = gpgme.SIG_MODE_CLEAR
+
+        # Find the key and make it the only one allowed to sign content
+        # during this session.
+        context = gpgme.Context()
+        context.armor = True
+
+        key = context.get_key(key_fingerprint.encode('ascii'), True)
+        context.signers = [key]
+
+        # Set up containers.
+        plaintext = StringIO(content)
+        signature = StringIO()
+
+        def passphrase_cb(uid_hint, passphrase_info, prev_was_bad, fd):
+            os.write(fd, '%s\n' % password)
+        context.passphrase_cb = passphrase_cb
+
+        # Sign the text.
+        try:
+            result = context.sign(plaintext, signature, mode)
+        except gpgme.GpgmeError:
+            return None
+
+        return signature.getvalue()
+
     def localKeys(self, filter=None, secret=False):
         """Get an iterator of the keys this gpg handler
         already knows about.

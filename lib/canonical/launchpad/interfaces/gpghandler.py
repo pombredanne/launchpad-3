@@ -148,6 +148,20 @@ class IGPGHandler(Interface):
         :return: the encrypted content or None if failed.
         """
 
+    def signContent(content, key_fingerprint, password='', mode=None):
+        """Signs content with a given GPG fingerprint.
+
+        :param content: the content to sign.
+        :param key_fingerprint: the fingerprint of the key to use when
+            signing the content.
+        :param password: optional password to the key identified by
+            key_fingerprint, the default value is '',
+        :param mode: optional he type of GPG signature to produce, the
+            default mode is gpgme.SIG_MODE_CLEAR (clearsigned signatures)
+
+        :return: The ASCII-armored signature for the content.
+        """
+
     def retrieveKey(fingerprint):
         """Retrieve the key information from the local keyring.
 
