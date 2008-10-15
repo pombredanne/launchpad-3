@@ -65,10 +65,10 @@
           <th>Icon:</th>
           <td><tal:icon replace="structure context/image:icon" /></td>
         </tr>
-        <tr tal:condition="context/allwikis">
+        <tr tal:condition="context/wiki_names">
           <th>Wiki:</th>
           <td>
-            <span tal:repeat="wiki context/allwikis">
+            <span tal:repeat="wiki context/wiki_names">
               <a tal:content="wiki/url"
                  tal:attributes="href wiki/url"
                >WikiName</a><tal:block condition="not: repeat/wiki/end">,

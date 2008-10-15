@@ -553,7 +553,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
     inactivegpgkeys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
-    allwikis = exported(
+    wiki_names = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
                         value_type=Reference(schema=IWikiName)),

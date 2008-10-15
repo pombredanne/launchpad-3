@@ -30,7 +30,7 @@
     <form name="edit_wikiname" action="" method="POST">
     <table id="wikinames">
 
-      <tal:block condition="context/allwikis">
+      <tal:block condition="context/wiki_names">
 
         <tr><td colspan="2"><h2>Wiki names</h2></td></tr>
 
@@ -39,7 +39,7 @@
           <td><label>Wiki name:</label></td>
         </tr>
 
-        <tr tal:repeat="wiki context/allwikis">
+        <tr tal:repeat="wiki context/wiki_names">
           <td>
             <input type="text" style="margin-bottom: 0.5em;"
                    tal:attributes="name string:wiki_${wiki/id};
