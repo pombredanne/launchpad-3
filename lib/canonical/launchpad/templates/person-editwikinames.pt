@@ -10,18 +10,10 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Your wiki names</h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
+    <h1>Your wiki names</h1>
 
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message/escapedtext"
