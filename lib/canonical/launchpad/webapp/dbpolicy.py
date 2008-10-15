@@ -117,7 +117,9 @@ class LaunchpadDatabasePolicy:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
                 now = _now()
-                if last_write is None or last_write < now - timedelta(minutes=1):
+                if (last_write is None or
+                    last_write < now - timedelta(minutes=1)):
+                    # set value
                     session_data['last_write'] = now
         # For the webapp, it isn't necessary to reset the default store as
         # it will just be selected the next request. However, changing the

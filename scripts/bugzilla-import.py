@@ -9,7 +9,6 @@ import MySQLdb
 
 import _pythonpath
 
-from zope.component import getUtility
 from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
@@ -35,7 +34,8 @@ def make_connection(options):
 
 def main(argv):
     parser = optparse.OptionParser(
-        description="This script imports bugs from a Bugzilla into Launchpad.")
+        description=
+        "This script imports bugs from a Bugzilla into Launchpad.")
 
     parser.add_option('--component', metavar='COMPONENT', action='append',
                       help='Limit to this bugzilla component',
