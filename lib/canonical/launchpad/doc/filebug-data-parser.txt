@@ -293,7 +293,6 @@ be specified using a Content-description header, but it's not required.
     ... Content-type: text/plain; charset=ISO-8859-1
     ...
     ... This is another attachment, with a description.
-    ...
     ... --boundary--
     ... """
     >>> parser = FileBugDataParser(StringIO(debug_data))
@@ -327,3 +326,15 @@ instead.
 
     >>> first_attachment['description']
     u'attachment1'
+
+The contents of the attachments are stored in a file.
+
+    >>> first_file = first_attachment['content']
+    >>> first_file.read()
+    'This is an attachment.\n\nAnother line.\n\n'
+    >>> first_file.close()
+
+    >>> second_file = second_attachment['content']
+    >>> second_file.read()
+    'This is another attachment, with a description.\n'
+    >>> second_file.close()
