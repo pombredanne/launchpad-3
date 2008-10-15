@@ -1168,7 +1168,7 @@ class HALDevice:
         """Return the device bus as specified by HAL.
 
         Older versions of HAL stored this value in the property
-        info.bus; newer versions tore it in info.subsystem.
+        info.bus; newer versions store it in info.subsystem.
         """
         # Note that info.bus is gone for all devices except the
         # USB bus. For USB devices, the property info.bus returns more
@@ -1183,7 +1183,8 @@ class HALDevice:
             return result
         return self.getProperty('info.subsystem')
 
-    def getRealBus(self):
+    @property
+    def real_bus(self):
         """Return the bus this device connects to on the host side.
 
         :return: A bus as enumerated in HWBus or None, if the bus
@@ -1332,8 +1333,8 @@ class HALDevice:
                     return False
             return True
         elif bus == 'scsi':
-            # Ensure consistency with HALDevice.getRealBus()
-            return self.getRealBus() is not None
+            # Ensure consistency with HALDevice.real_bus
+            return self.real_bus is not None
         else:
             return True
 
@@ -1516,7 +1517,7 @@ class HALDevice:
 
         The SCSI vendor name is right-padded with spaces to 8 bytes.
         """
-        bus = self.raw_bus # xxx is this correct??? not getRealBus?
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
         if format is None:
             return self.vendor_id
@@ -1532,7 +1533,7 @@ class HALDevice:
 
         The SCSI product name is right-padded with spaces to 16 bytes.
         """
-        bus = self.raw_bus # xxx is this correct??? not getRealBus?
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
         if format is None:
             return self.product_id
@@ -1566,7 +1567,7 @@ class HALDevice:
         PCCard devices, because we can get them from independent
         sources. See l/c/l/doc/hwdb-device-tables.txt.
         """
-        bus = self.getRealBus()
+        bus = self.real_bus
         if (self.vendor is not None and
             bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
             hw_vendor_id_set = getUtility(IHWVendorIDSet)
@@ -1578,7 +1579,7 @@ class HALDevice:
                 if hw_vendor_name is None:
                     hw_vendor_name = hw_vendor_name_set.create(self.vendor)
                 hw_vendor_id_set.create(
-                    self.getRealBus(), self.vendor_id, hw_vendor_name)
+                    self.real_bus, self.vendor_id, hw_vendor_name)
 
     def createDBData(self, submission, parent_submission_device):
         """Create HWDB records for this HAL device and its children.
@@ -1601,7 +1602,7 @@ class HALDevice:
                                      'for real devices only.')
         if not self.has_reliable_data:
             return
-        bus = self.getRealBus()
+        bus = self.real_bus
         vendor_id = self.vendor_id_for_db
         product_id = self.product_id_for_db
         product_name = self.product

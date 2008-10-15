@@ -357,9 +357,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
 
 
     def testHALDeviceGetRealBus(self):
-        """Test of HALDevice.getRealBus, generic case.
+        """Test of HALDevice.real_bus, generic case.
 
-        For most buses as "seen" by HAL, HALDevice.getRealBus returns a
+        For most buses as "seen" by HAL, HALDevice.real_bus returns a
         unique HWBus value.
         """
         for hal_bus, real_bus in (('usb_device', HWBus.USB),
@@ -387,13 +387,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             parser = SubmissionParser(self.log)
             parser.buildDeviceList(parsed_data)
             test_device = parser.hal_devices[UDI_TEST_DEVICE]
-            test_bus = test_device.getRealBus()
+            test_bus = test_device.real_bus
             self.assertEqual(test_bus, real_bus,
-                             'Unexpected result of HALDevice.getRealBus for '
+                             'Unexpected result of HALDevice.real_bus for '
                              'HAL bus %s: %s.' % (hal_bus, test_bus.title))
 
     def testHALDeviceGetRealBusSystem(self):
-        """Test of HALDevice.getRealBus, for the tested machine itself."""
+        """Test of HALDevice.real_bus, for the tested machine itself."""
 
         devices = [
             {
@@ -414,16 +414,16 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
         test_device = parser.hal_devices[self.UDI_COMPUTER]
-        test_bus = test_device.getRealBus()
+        test_bus = test_device.real_bus
         self.assertEqual(test_bus, HWBus.SYSTEM,
-                         'Unexpected result of HALDevice.getRealBus for '
+                         'Unexpected result of HALDevice.real_bus for '
                          'a system: %s' % test_bus.title)
 
     def testHALDeviceGetRealBusScsiUsb(self):
-        """Test of HALDevice.getRealBus for info.bus=='scsi' and a USB device.
+        """Test of HALDevice.real_bus for info.bus=='scsi' and a USB device.
 
         Memory sticks, card readers and USB->IDE/SATA adapters use SCSI
-        emulation; HALDevice.getRealBus treats these devices as "black boxes",
+        emulation; HALDevice.real_bus treats these devices as "black boxes",
         and thus returns None.
         """
         devices = [
@@ -476,12 +476,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
 
         usb_fake_scsi_disk = parser.hal_devices[
             self.UDI_USB_STORAGE_SCSI_DEVICE]
-        self.assertEqual(usb_fake_scsi_disk.getRealBus(), None,
-            'Unexpected result of HALDevice.getRealBus for the fake SCSI '
+        self.assertEqual(usb_fake_scsi_disk.real_bus, None,
+            'Unexpected result of HALDevice.real_bus for the fake SCSI '
             'disk HAL node of a USB storage device bus.')
 
     def testHALDeviceGetRealBusScsiPci(self):
-        """Test of HALDevice.getRealBus for info.bus=='scsi'.
+        """Test of HALDevice.real_bus for info.bus=='scsi'.
 
         Many non-SCSI devices support the SCSI command, and the Linux
         kernel can treat them like SCSI devices. The real bus of these
@@ -546,14 +546,14 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             devices[0]['properties']['pci.device_subclass'] = (
                 device_subclass, 'int')
             fake_scsi_disk = parser.hal_devices[self.UDI_SATA_DISK]
-            found_bus = fake_scsi_disk.getRealBus()
+            found_bus = fake_scsi_disk.real_bus
             self.assertEqual(found_bus, expected_bus,
-                'Unexpected result of HWDevice.getRealBus for PCI storage '
+                'Unexpected result of HWDevice.real_bus for PCI storage '
                 'class device, subclass %i: %r.' % (device_subclass,
                                                     found_bus))
 
     def testHALDeviceGetRealBusScsiDeviceWithoutGrandparent(self):
-        """Test of HALDevice.getRealBus for a device without a grandparent."""
+        """Test of HALDevice.real_bus for a device without a grandparent."""
         devices = [
             # A SCSI host conrtoller.
             {
@@ -582,16 +582,16 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.submission_key = 'Test SCSI disk without a grandparent'
         parser.buildDeviceList(parsed_data)
         scsi_disk = parser.hal_devices[self.UDI_SCSI_DISK]
-        bus = scsi_disk.getRealBus()
+        bus = scsi_disk.real_bus
         self.assertEqual(bus, None,
-            'Unexpected result of HALDevice.getRealBus for a SCSI device '
+            'Unexpected result of HALDevice.real_bus for a SCSI device '
             'without a grandparent. Expected None, got %r' % bus)
         self.assertWarningMessage(parser.submission_key,
             'Found SCSI device without a grandparent: %s.'
              % self.UDI_SCSI_DISK)
 
     def testHALDeviceGetRealBusScsiDeviceWithoutParent(self):
-        """Test of HALDevice.getRealBus for a device without a parent."""
+        """Test of HALDevice.real_bus for a device without a parent."""
         devices = [
             {
                 'id': 3,
@@ -612,16 +612,16 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.submission_key = 'Test SCSI disk without a parent'
         parser.buildDeviceList(parsed_data)
         scsi_disk = parser.hal_devices[self.UDI_SCSI_DISK]
-        bus = scsi_disk.getRealBus()
+        bus = scsi_disk.real_bus
         self.assertEqual(bus, None,
-            'Unexpected result of HALDevice.getRealBus for a SCSI device '
+            'Unexpected result of HALDevice.real_bus for a SCSI device '
             'without a parent. Expected None, got %r' % bus)
         self.assertWarningMessage(parser.submission_key,
             'Found SCSI device without a parent: %s.'
              % self.UDI_SCSI_DISK)
 
     def testHALDeviceGetRealBusScsiDeviceWithBogusPciGrandparent(self):
-        """Test of HALDevice.getRealBus for a device with a bogus grandparent.
+        """Test of HALDevice.real_bus for a device with a bogus grandparent.
 
         The PCI device class must be PCI_CLASS_STORAGE.
         """
@@ -667,9 +667,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Test SCSI disk with invalid controller device class')
         parser.buildDeviceList(parsed_data)
         scsi_disk = parser.hal_devices[self.UDI_SATA_DISK]
-        bus = scsi_disk.getRealBus()
+        bus = scsi_disk.real_bus
         self.assertEqual(bus, None,
-            'Unexpected result of HALDevice.getRealBus for a SCSI device '
+            'Unexpected result of HALDevice.real_bus for a SCSI device '
             'without a parent. Expected None, got %r' % bus)
         self.assertWarningMessage(parser.submission_key,
             'A (possibly fake) SCSI device %s is connected to PCI device '
@@ -677,7 +677,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
              % (self.UDI_SATA_DISK, self.UDI_SATA_CONTROLLER))
 
     def testHALDeviceGetRealBusPci(self):
-        """Test of HALDevice.getRealBus for info.bus=='pci'.
+        """Test of HALDevice.real_bus for info.bus=='pci'.
 
         If info.bus == 'pci', we may have a real PCI device or a PCCard.
         """
@@ -743,16 +743,16 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             parsed_data['hardware']['hal']['devices'] = devices
             parser.buildDeviceList(parsed_data)
             tested_hal_device = parser.hal_devices[self.UDI_PCCARD_DEVICE]
-            found_bus = tested_hal_device.getRealBus()
+            found_bus = tested_hal_device.real_bus
             expected_bus = expected_result_for_parent_device[
                 parent_device['udi']]
             self.assertEqual(found_bus, expected_bus,
-                             'Unexpected result of HWDevice.getRealBus for a '
+                             'Unexpected result of HWDevice.real_bus for a '
                              'PCI or PCCard device: Expected %r, got %r.'
                              % (expected_bus, found_bus))
 
     def testHALDeviceGetRealBusUnknown(self):
-        """Test of HALDevice.getRealBus for unknown values of info.bus."""
+        """Test of HALDevice.real_bus for unknown values of info.bus."""
         devices = [
             {
                 'id': 1,
@@ -773,9 +773,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.submission_key = 'Test of unknown bus name'
         parser.buildDeviceList(parsed_data)
-        found_bus = parser.hal_devices[self.UDI_PCCARD_DEVICE].getRealBus()
+        found_bus = parser.hal_devices[self.UDI_PCCARD_DEVICE].real_bus
         self.assertEqual(found_bus, None,
-                         'Unexpected result of HWDevice.getRealBus for an '
+                         'Unexpected result of HWDevice.real_bus for an '
                          'unknown bus name: Expected None, got %r.'
                          % found_bus)
         self.assertWarningMessage(
@@ -2252,7 +2252,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SYSTEM, 'Lenovo')
         hw_device_set = getUtility(IHWDeviceSet)
         hw_device = hw_device_set.getByDeviceID(
-            hal_device.getRealBus(), hal_device.vendor_id,
+            hal_device.real_bus, hal_device.vendor_id,
             hal_device.product_id)
         self.assertEqual(hw_device.bus_vendor, vendor_id,
             'Expected vendor ID (HWBus.SYSTEM, Lenovo) as the vendor ID, '
