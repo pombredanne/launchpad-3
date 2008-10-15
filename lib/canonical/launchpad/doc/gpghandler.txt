@@ -173,20 +173,7 @@ Secret keys can be exported in ASCII-armored format.
 
 == Generating new keys ==
 
-IGPGHandler support GPG key generation. However a secret key can only
-be generated in a keyring that doesn't contain any other secret
-key. If it happens an AssertionError is raised.
-
-    >>> new_key = gpghandler.generateKey('Testing')
-    Traceback (most recent call last):
-    ...
-    AssertionError: Keyring already contain secret keys.
-
-Reset the local keyring.
-
-    >>> gpghandler.resetLocalState()
-
-Now a new key can be generated.
+IGPGHandler support GPG key generation.
 
     >>> new_key = gpghandler.generateKey('Testing')
 

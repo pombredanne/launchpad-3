@@ -266,13 +266,16 @@ class GPGHandler:
         """See `IGPGHandler`."""
         context = gpgme.Context()
 
-        secret_keys = list(self.localKeys(secret=True))
-        assert len(secret_keys) == 0, 'Keyring already contain secret keys.'
+        result = context.genkey(signing_only_param % {'name': name})
+        assert result.primary == 1, 'Secret key generation failed.'
+        assert result.sub == 0, (
+            'Only sign-only RSA keys are safe to be generated')
 
-        context.genkey(signing_only_param % {'name': name})
-
-        secret_keys = list(self.localKeys(secret=True))
-        assert len(secret_keys) == 1, 'Secret key generation failed.'
+        secret_keys = list(self.localKeys(result.fpr, secret=True))
+        if len(secret_keys) != 1:
+            raise MoreThanOneGPGKeyFound(
+                'Found %d secret GPG keys for %s' % (
+                    len(secret_keys), result.fpr))
 
         key = secret_keys[0]
         assert key.exists_in_local_keyring
