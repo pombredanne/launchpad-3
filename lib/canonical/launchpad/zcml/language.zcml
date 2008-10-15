@@ -7,12 +7,12 @@
 <facet facet="translations">
 
     <!-- Language -->
-    <content class="canonical.launchpad.database.Language">
+    <class class="canonical.launchpad.database.Language">
         <allow interface="canonical.launchpad.interfaces.ILanguage"/>
         <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.ILanguage" />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"

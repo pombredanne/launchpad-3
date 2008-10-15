@@ -5,13 +5,13 @@
   i18n_domain="launchpad">
 
   <!-- SprintAttendance -->
-  <content class="canonical.launchpad.database.SprintAttendance">
+  <class class="canonical.launchpad.database.SprintAttendance">
     <allow interface="canonical.launchpad.interfaces.ISprintAttendance" />
     <require
       permission="launchpad.Edit"
       set_attributes="time_starts time_ends"
       />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintAttendance"

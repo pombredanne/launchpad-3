@@ -32,13 +32,13 @@
       <table>
         <tbody>
 
-          <tr>
+          <tr tal:define="changesfile context/changesfile">
             <th>Changes file:</th>
-            <td tal:condition="context/changesfile">
-              <a tal:attributes="href context/changesfile/http_url"
-                 tal:content="context/changesfile/filename">CHANGESFILE</a>
+            <td tal:condition="changesfile">
+              <a tal:attributes="href string:+files/${changesfile/filename}"
+                 tal:content="changesfile/filename">CHANGESFILE</a>
             </td>
-            <td tal:condition="not:context/changesfile">
+            <td tal:condition="not:changesfile">
               <em>not available</em>
             </td>
           </tr>
@@ -147,22 +147,23 @@
             </tr>
           </tal:built>
 
-          <tr>
+          <tr tal:define="buildlog context/buildlog">
             <th>Build log:</th>
-            <td tal:condition="context/buildlog">
-              <a tal:attributes="href context/buildlog/http_url"
-                 tal:content="context/buildlog/filename">BUILDLOG</a>
+            <td tal:condition="buildlog">
+              <a tal:attributes="href string:+files/${buildlog/filename}"
+                 tal:content="buildlog/filename">BUILDLOG</a>
             </td>
-            <td tal:condition="not: context/buildlog">
+            <td tal:condition="not:buildlog">
               <em>not available</em>
             </td>
           </tr>
 
-          <tr tal:condition="context/upload_log">
+          <tr tal:define="upload_log context/upload_log"
+              tal:condition="upload_log">
             <th>Upload log:</th>
             <td>
-              <a tal:attributes="href context/upload_log/http_url"
-                 tal:content="context/upload_log/filename">UPLOADLOG</a>
+              <a tal:attributes="href string:+files/${upload_log/filename}"
+                 tal:content="upload_log/filename">UPLOADLOG</a>
             </td>
           </tr>
 

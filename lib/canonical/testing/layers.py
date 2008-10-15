@@ -69,7 +69,7 @@ import transaction
 
 import zope.app.testing.functional
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, getGlobalSiteManager
+from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -1036,7 +1036,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+        provideUtility(TestMailBox(), IMailBox)
 
     @classmethod
     @profiled
@@ -1167,7 +1167,15 @@ class MockHTTPTask:
         # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
-        self.bytes_written = int(response.getHeader('Content-length'))
+        # When streaming files (see lib/zope/publisher/httpresults.txt)
+        # the 'Content-Length' header is missing. When it happens we set
+        # 'bytes_written' to an obviously invalid value. This variable is
+        # used for logging purposes, see webapp/servers.py.
+        content_length = response.getHeader('Content-Length')
+        if content_length is not None:
+            self.bytes_written = int(content_length)
+        else:
+            self.bytes_written = -1
         self.request_data.headers = self.request.headers
         self.request_data.first_line = first_line
 

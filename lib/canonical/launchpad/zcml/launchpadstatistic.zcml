@@ -5,9 +5,9 @@
   i18n_domain="launchpad">
 
   <!-- LaunchpadStatistic -->
-  <content class="canonical.launchpad.database.LaunchpadStatistic">
+  <class class="canonical.launchpad.database.LaunchpadStatistic">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatistic" />
-  </content>
+  </class>
 
 
   <!-- LaunchpadStatisticSet -->

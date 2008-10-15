@@ -180,16 +180,23 @@ scan_branches: rewritemap
 sync_branches: pull_branches scan_branches
 
 bzr_version_info:
-	rm -f bzr-version-info.py bzr-version-info.pyc
-	if which bzr > /dev/null  && test -x `which bzr`; \
-		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
-	fi
+	scripts/update-bzr-version-info.sh
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before 
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > ${LPCONFIG}-nohup.out 2>&1 &
+
+# This is a stripped down version of the "start" target for use on 
+# production servers - removes running 'make build' because we already
+# run this as part of our initscripts, so not needed here. Likewise we
+# don't want to run 'make stop' because it takes unnecessary time 
+# even if the service is already stopped, and bzr_version_info is not 
+# needed either because it's run as part of 'make build'.
+initscript-start: 
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 

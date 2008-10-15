@@ -124,7 +124,7 @@ class LoomTestMixin:
         return loom_tree
 
 
-class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
+class ServerTestCase(TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
@@ -262,10 +262,14 @@ class FakeLaunchpad:
             if user_info['name'] == user:
                 user_id = id
         if user_id is None:
-            return ''
+            raise Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "No such person: %r" % (user,))
         product_id = self.fetchProductID(product)
         if product_id is None:
-            return ''
+            raise Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "Cannot create branches in non-existent products.")
         user = self.getUser(user_id)
         if product_id == '' and 'team' in user['name']:
             raise Fault(PERMISSION_DENIED_FAULT_CODE,

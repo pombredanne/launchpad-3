@@ -26,6 +26,7 @@ __all__ = [
     'UbuntuIcingFolder',
     ]
 
+
 import cgi
 import urllib
 import operator
@@ -34,13 +35,13 @@ import time
 from datetime import timedelta, datetime
 from urlparse import urlunsplit
 
-from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
+from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.app.traversing.interfaces import ITraversable
+from zope.traversing.interfaces import ITraversable
 
 import canonical.launchpad.layers
 from canonical.config import config
@@ -155,9 +156,9 @@ class MenuBox(LaunchpadView):
     no applicationmenu items.
 
     If there is at least one item, the template is rendered.
-    """
 
-    usedfor = dict  # Really a TALES CONTEXTS object.
+    The context may be another view, or a content object.
+    """
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
@@ -169,7 +170,7 @@ class MenuBox(LaunchpadView):
         facet = menuapi.selectedfacetname()
         if facet not in ('unknown', 'bounties'):
             # XXX sinzui 2008-06-23 bug=242453:
-            # Why are we getting unknown? Bouties are borked. We need
+            # Why are we getting unknown? Bounties are borked. We need
             # to end the facet hacks to get a clear state for the menus.
             application_links = getattr(menuapi, facet).values()
         else:
@@ -566,9 +567,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('faq')
     def redirect_faq(self):
-        """Redirect /faq to help.launchpad.net/FAQ site."""
+        """Redirect /faq to launchpad-project/+faqs."""
         return self.redirectSubTree(
-            'https://help.launchpad.net/FAQ', status=301)
+            'https://answers.launchpad.net/launchpad-project/+faqs',
+            status=301)
 
     @stepto('feedback')
     def redirect_feedback(self):

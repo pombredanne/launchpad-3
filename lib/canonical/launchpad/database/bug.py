@@ -16,7 +16,7 @@ import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
 
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
@@ -26,7 +26,6 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
 from storm.store import Store
-from storm.expr import And
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
@@ -222,6 +221,7 @@ class Bug(SQLBase):
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
+    users_unaffected_count = IntCol(notNull=True, default=0)
 
     @property
     def indexed_messages(self):
@@ -1124,19 +1124,23 @@ class Bug(SQLBase):
         return bugtasks_by_package
 
     def _getAffectedUser(self, user):
-       """Return the `IBugAffectsPerson` for a user, or None
+        """Return the `IBugAffectsPerson` for a user, or None
 
-       :param user: An `IPerson` that may be affected by the bug.
-       :return: An `IBugAffectsPerson` or None.
-       """
-       return Store.of(self).find(
-           BugAffectsPerson,
-           And(BugAffectsPerson.bug == self,
-               BugAffectsPerson.person == user)).one()
+        :param user: An `IPerson` that may be affected by the bug.
+        :return: An `IBugAffectsPerson` or None.
+        """
+        return Store.of(self).find(
+            BugAffectsPerson,
+            And(BugAffectsPerson.bug == self,
+                BugAffectsPerson.person == user)).one()
 
     def isUserAffected(self, user):
         """See `IBug`."""
-        return bool(self._getAffectedUser(user))
+        bap = self._getAffectedUser(user)
+        if bap is not None:
+            return bap.affected
+        else:
+            return None
 
     def _flushAndInvalidate(self):
         """Flush all changes to the store and re-read `self` from the DB."""
@@ -1144,30 +1148,16 @@ class Bug(SQLBase):
         store.flush()
         store.invalidate(self)
 
-    def markUserAffected(self, user):
+    def markUserAffected(self, user, affected=True):
         """See `IBug`."""
-        if not self.isUserAffected(user):
-            # Mark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            BugAffectsPerson(bug=self, person=user)
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
+        bap = self._getAffectedUser(user)
+        if bap is None:
+            BugAffectsPerson(bug=self, person=user, affected=affected)
             self._flushAndInvalidate()
-
-    def unmarkUserAffected(self, user):
-        """See `IBug`."""
-        bugAffectsPerson = self._getAffectedUser(user)
-        if bugAffectsPerson is not None:
-            # Unmark the user as affected by this bug.
-            # A trigger on insert will increment `users_affected_count`.
-            bugAffectsPerson.destroySelf()
-            # Flush and invalidate, so that the new BugAffectsPerson
-            # will be inserted into the DB and the change to
-            # users_affected_count (which is maintained by a trigger)
-            # will be reflected.
-            self._flushAndInvalidate()
+        else:
+            if bap.affected != affected:
+                bap.affected = affected
+                self._flushAndInvalidate()
 
 
 class BugSet:
@@ -1262,6 +1252,9 @@ class BugSet:
             raise AssertionError(
                 'Method createBug requires a comment, msg, or description.')
 
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
+
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
@@ -1282,7 +1275,8 @@ class BugSet:
             rfc822msgid = make_msgid('malonedeb')
             params.msg = Message(
                 subject=params.title, distribution=params.distribution,
-                rfc822msgid=rfc822msgid, owner=params.owner)
+                rfc822msgid=rfc822msgid, owner=params.owner,
+                datecreated=params.datecreated)
             MessageChunk(
                 message=params.msg, sequence=1, content=params.comment,
                 blob=None)
@@ -1290,9 +1284,6 @@ class BugSet:
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
             params.description = params.msg.text_contents
-
-        if not params.datecreated:
-            params.datecreated = UTC_NOW
 
         extra_params = {}
         if params.private:
@@ -1368,3 +1359,4 @@ class BugAffectsPerson(SQLBase):
     """A bug is marked as affecting a user."""
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    affected = BoolCol(notNull=True, default=True)
