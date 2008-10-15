@@ -28,8 +28,8 @@
           translations for
           <tal:product replace="context/title">Launchpad</tal:product>.
           If you need a new translation group instead,
-          <a tal:attributes="href view/answersUrl">submit a question</a>
-          to the Launchpad Translations team.
+          <a tal:attributes="href view/answers_question_url"
+            >submit a question</a> to the Launchpad Translations team.
         </p>
       </div>
     </div>
