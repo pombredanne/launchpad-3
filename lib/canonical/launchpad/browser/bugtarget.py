@@ -251,6 +251,7 @@ class FileBugViewBase(LaunchpadFormView):
     extra_data_token = None
     advanced_form = False
     frontpage_form = False
+    data_parser = None
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -272,6 +273,8 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
+        if self.data_parser is not None:
+            self.data_parser.removeTemporaryFiles()
 
     @property
     def field_names(self):
@@ -635,7 +638,6 @@ class FileBugViewBase(LaunchpadFormView):
             self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
             self.extra_data = self.data_parser.parse()
             extra_bug_data.file_alias.close()
-            # XXX: delete the temp files
         else:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
