@@ -338,3 +338,27 @@ The contents of the attachments are stored in a file.
     >>> second_file.read()
     'This is another attachment, with a description.\n'
     >>> second_file.close()
+
+Binary files are base64 encoded. They are decoded automatically.
+
+    >>> binary_data = '\n'.join(['\x00'*5, '\x01'*5])
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ...
+    ... --boundary
+    ... Content-disposition: attachment; filename='attachment1'
+    ... Content-type: application/octet-stream
+    ... Content-transfer-encoding: base64
+    ...
+    ... %s
+    ... --boundary--
+    ... """ % binary_data.encode('base64')
+    >>> parser = FileBugDataParser(StringIO(debug_data))
+    >>> data = parser.parse()
+    >>> len(data.attachments)
+    1
+
+    >>> contents = data.attachments[0]['content']
+    >>> contents.read()
+    '\x00\x00\x00\x00\x00\n\x01\x01\x01\x01\x01'
+    >>> contents.close()
