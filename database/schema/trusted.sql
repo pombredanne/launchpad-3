@@ -979,3 +979,22 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
+
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION WHEN undefined_table THEN
+        RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+
