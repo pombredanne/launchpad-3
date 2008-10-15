@@ -1,5 +1,21 @@
-OpenPGP Import
-==============
+= GPGHandler =
+
+`IGPGHandler` is a utility designed to handle OpenPGP (GPG) operations.
+
+The following operation are supported:
+
+ * Importing public and secret keys;
+ * Generating a new key;
+ * Finding local keys;
+ * Retrieving public keys from the keyserver;
+ * Verifying signatures (see gpg-signatures.txt);
+ * Encrypting contents (see gpg-encrypt.txt);
+ * Importing keyring files;
+ * Obtaining keyserver URLs for public keys;
+ * Sanitizing fingerprints.
+
+
+== Importing public OpenPGP keys ==
 
 The importPublicKey method is exposed by IGPGHandler but it's only used
 internally by the retrieveKey method.  Ideally, we shouldn't need to
@@ -115,8 +131,7 @@ But we get an error if the damage is big:
     GPGKeyNotFoundError: ...
 
 
-Secret keys
-============
+== Importing secret OpenPGP keys ==
 
 Secret keys can be imported using IGPGHandler.importSecretKey() which
 does exactly the same job performed by importPublicKey() but
@@ -156,8 +171,7 @@ Secret keys can be exported in ASCII-armored format.
     <BLANKLINE>
 
 
-Generating new keys
-====================
+== Generating new keys ==
 
 IGPGHandler support GPG key generation. However a secret key can only
 be generated in a keyring that doesn't contain any other secret
@@ -227,8 +241,7 @@ The public key is also availble.
     True
 
 
-Keyserver URLs
-==============
+== Keyserver URLs ==
 
 The gpghandler can also provide us with convenient links to the
 keyserver web interface. By default the action is to display the index
@@ -251,8 +264,7 @@ keyserver web interface.
     'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=index'
 
 
-Fingerprint sanitizing
-======================
+== Fingerprint sanitizing ==
 
 The GPG handler offers a convenience method to sanitize key
 fingerprints:
