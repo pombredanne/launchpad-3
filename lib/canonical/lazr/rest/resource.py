@@ -52,6 +52,7 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url, BatchNavigator, and event code should be moved into lazr.
+from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import canonical_url
@@ -1094,7 +1095,21 @@ class ServiceRootResource(HTTPResource):
         self.request.response.setHeader('Content-Type', media_type)
         return result
 
+    # if this Python file is truly generic, then this cache is a hack. If it
+    # is part of launchpad, then it is reasonable.
+    _wadl_filename = os.path.join(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.normpath(__file__)))),
+        'launchpad', 'apidoc', 'wadl-%s.xml' % config.instance_name)
+
+    if os.path.exists(_wadl_filename):
+        cached_wadl = open(_wadl_filename).read()
+    else:
+        cached_wadl = None
+
     def toWADL(self):
+        if self.cached_wadl is not None:
+            return self.cached_wadl
         # Find all resource types.
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
@@ -1147,7 +1162,9 @@ class ServiceRootResource(HTTPResource):
         namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        return template.pt_render(namespace)
+        res = template.pt_render(namespace)
+        self.__class__.cached_wadl = res
+        return res
 
     def toDataForJSON(self):
         """Return a map of links to top-level collection resources.
@@ -1367,4 +1384,3 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type)
-
