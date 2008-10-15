@@ -40,7 +40,7 @@ class HelpTranslateButtonView:
 
 
 class TranslationsMixin:
-    """Translation mixin that provides language handling."""
+    """Provide Translations specific properties."""
 
     @property
     def translatable_languages(self):
@@ -50,6 +50,18 @@ class TranslationsMixin:
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages
+
+    @cachedproperty
+    def answers_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers')
+
+    @cachedproperty
+    def answers_question_url(self):
+        return canonical_url(
+            getUtility(ILaunchpadCelebrities).lp_translations,
+            rootsite='answers', view_name='+addquestion')
 
 
 class RosettaApplicationView(TranslationsMixin):
