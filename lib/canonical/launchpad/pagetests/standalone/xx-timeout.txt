@@ -13,13 +13,11 @@ TimeoutError.
 First we create a view that will provoke a TimeoutError, a view for the
 exception, and a time machine.
 
-    >>> import transaction
     >>> from zope.publisher.browser import BrowserView
     >>> from zope.publisher.interfaces.browser import (
     ...     IBrowserRequest, IBrowserView, IBrowserPublisher)
     >>> from zope.interface import Interface, implements
     >>> from zope.security.checker import CheckerPublic, MultiChecker
-    >>> from zope.testbrowser.testing import Browser
     >>> import zope.component
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.interfaces import (
