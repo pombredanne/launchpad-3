@@ -28,11 +28,11 @@ from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport, TestNotApplicable, TestSkipped
 from bzrlib.errors import SmartProtocolError
 
-from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces.codehosting import (
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
@@ -124,7 +124,7 @@ class LoomTestMixin:
         return loom_tree
 
 
-class ServerTestCase(TrialTestCase, TestCaseWithTransport, LoomTestMixin):
+class ServerTestCase(TestCaseWithTransport, LoomTestMixin):
 
     server = None
 
@@ -262,10 +262,14 @@ class FakeLaunchpad:
             if user_info['name'] == user:
                 user_id = id
         if user_id is None:
-            return ''
+            raise Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "No such person: %r" % (user,))
         product_id = self.fetchProductID(product)
         if product_id is None:
-            return ''
+            raise Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "Cannot create branches in non-existent products.")
         user = self.getUser(user_id)
         if product_id == '' and 'team' in user['name']:
             raise Fault(PERMISSION_DENIED_FAULT_CODE,

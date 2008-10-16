@@ -615,7 +615,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how',
+                  LaunchpadRadioWidget, _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -842,8 +843,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         existing_product = form.FormField(
             Choice(__name__='existing_product',
                    title=_("Existing project"), required=True,
-                   vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['existing_product'])
+                   vocabulary=SimpleVocabulary(terms)))
         self.form_fields += form.Fields(existing_product)
         if 'field.existing_product' not in self.request.form:
             # This is the first time the form is being submitted, so the
@@ -919,4 +919,3 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         if set_bugtracker:
             data['product'].bugtracker = view.task_added.bugwatch.bugtracker
         self.next_url = canonical_url(view.task_added)
-

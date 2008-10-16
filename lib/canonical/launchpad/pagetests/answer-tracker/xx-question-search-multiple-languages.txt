@@ -178,12 +178,13 @@ this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
 Catalan questions, so no Catalan checkbox is displayed.
 
+    >>> from canonical.launchpad.testing.pages import strip_label
+
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = browser.getControl(name='field.language')
     >>> for label in sorted(language_control.displayOptions):
-    ...     # Print the label without the leading non-breaking space.
-    ...     label[1:]
+    ...     strip_label(label)
     'English (en)'
     'Spanish (es)'
     >>> sorted(browser.getControl(name='field.language').options)
@@ -226,8 +227,7 @@ English, and can use it to locate English questions.
     >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = daf_browser.getControl(name='field.language')
     >>> for label in language_control.displayOptions:
-    ...     # Print the label without the leading non-breaking space.
-    ...     label[1:]
+    ...     strip_label(label)
     'English (en)'
 
     >>> daf_browser.getControl(name='field.language').options
@@ -281,8 +281,7 @@ the preceding page.
     hidden
 
     >>> labels = user_browser.getControl(name='field.status').displayValue
-    >>> # Print the label without the leading non-breaking space.
-    >>> [label[1:] for label in labels]
+    >>> [strip_label(label) for label in labels]
     ['Open']
 
     >>> content = find_main_content(user_browser.contents)

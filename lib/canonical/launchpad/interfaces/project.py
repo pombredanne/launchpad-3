@@ -12,14 +12,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
@@ -52,7 +52,7 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
                IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
                IHasSpecifications, IHasSprints, IHasTranslationGroup,
@@ -121,7 +121,7 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
                           "and how it is organised and coordinated.")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_(
                 "The date this project group was created in Launchpad."),
@@ -245,6 +245,14 @@ class IProject(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
             title=_('List of active projects for this project group.'),
             value_type=Reference(Interface)),
         exported_as="projects")
+
+    bug_reporting_guidelines = Text(
+        title=(
+            u"If I\N{right single quotation mark}m reporting a bug, "
+            u"I should include, if possible"),
+        description=(
+            u"These guidelines will be shown to anyone reporting a bug."),
+        required=False, max_length=50000)
 
     def getProduct(name):
         """Get a product with name `name`."""

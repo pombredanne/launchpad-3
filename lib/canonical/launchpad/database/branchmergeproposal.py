@@ -12,7 +12,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from storm.store import Store
-from zope.app.event.objectevent import ObjectEvent
+from zope.component.interfaces import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -235,8 +235,11 @@ class BranchMergeProposal(SQLBase):
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-        self.date_review_requested = UTC_NOW
+        # Don't reset the date_review_requested if we are already in the
+        # review state.
+        if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
+            self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
@@ -341,6 +344,8 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(
             BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
+        # Remove from the queue.
+        self.queue_position = None
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -349,6 +354,8 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
+        # Remove from the queue.
+        self.queue_position = None
 
         if merged_revno is not None:
             branch_revision = BranchRevision.selectOneBy(

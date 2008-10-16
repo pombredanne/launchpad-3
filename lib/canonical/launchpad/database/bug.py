@@ -16,7 +16,7 @@ import re
 from cStringIO import StringIO
 from email.Utils import make_msgid
 
-from zope.app.content_types import guess_content_type
+from zope.contenttype import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
@@ -24,16 +24,18 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
-    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
-    IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
-    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, BugTrackerType, IndexedMessage,
+    DistroSeriesStatus, IBug, IBugAttachmentSet, IBugBecameQuestionEvent,
+    IBugBranch, IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet,
+    ICveSet, IDistribution, IDistroSeries, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IPersonSet, IProduct, IProductSeries,
+    IQuestionTarget, ISourcePackage, IStructuralSubscriptionTarget,
+    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.helpers import shortlist
@@ -63,6 +65,8 @@ from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -99,41 +103,41 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(maincontext_clause, user,
-                            count_subcontext_clause=None):
+def get_bug_tags_open_count(context_condition, user):
     """Return all the used bug tags with their open bug count.
 
-    maincontext_clause is a SQL condition clause, limiting the used tags
-    to a specific context.
-    count_subcontext_clause is a SQL condition clause, limiting the open bug
-    count to a more limited context, for example a source package.
+    :param context_condition: A Storm SQL expression, limiting the
+        used tags to a specific context. Only the BugTask table may be
+        used to choose the context.
+    :param user: The user performing the search.
 
-    Both SQL clauses may only use the BugTask table to choose the context.
+    :return: A list of tuples, (tag name, open bug count).
     """
-    from_tables = ['BugTag', 'BugTask', 'Bug']
-    count_conditions = ['BugTask.status IN (%s)' % ','.join(
-        sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))]
-    if count_subcontext_clause:
-        count_conditions.append(count_subcontext_clause)
-    select_columns = [
-        'BugTag.tag',
-        'COUNT (CASE WHEN %s THEN Bug.id ELSE NULL END)' %
-            ' AND '.join(count_conditions),
+    open_statuses_condition = In(
+        BugTask.status, sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))
+    columns = [
+        BugTag.tag,
+        Count(),
         ]
-    conditions = [
-        'BugTag.bug = BugTask.bug',
-        'Bug.id = BugTag.bug',
-        '(%s)' % maincontext_clause]
+    tables = [
+        BugTag,
+        LeftJoin(Bug, Bug.id == BugTag.bugID),
+        LeftJoin(
+            BugTask,
+            And(BugTask.bugID == Bug.id, open_statuses_condition)),
+        ]
+    where_conditions = [
+        open_statuses_condition,
+        context_condition,
+        ]
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        conditions.append(privacy_filter)
-
-    cur = cursor()
-    cur.execute(_bug_tag_query_template % dict(
-            columns=', '.join(select_columns),
-            tables=', '.join(from_tables),
-            condition=' AND '.join(conditions)))
-    return shortlist([(row[0], row[1]) for row in cur.fetchall()])
+        where_conditions.append(SQLRaw(privacy_filter))
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    result = store.execute(Select(
+        columns=columns, where=And(*where_conditions), tables=tables,
+        group_by=BugTag.tag, order_by=BugTag.tag))
+    return shortlist([(row[0], row[1]) for row in result.get_all()])
 
 
 class BugTag(SQLBase):
@@ -216,6 +220,16 @@ class Bug(SQLBase):
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
+    users_affected_count = IntCol(notNull=True, default=0)
+    users_unaffected_count = IntCol(notNull=True, default=0)
+
+    @property
+    def indexed_messages(self):
+        """See `IMessageTarget`."""
+        inside = self.bugtasks[0]
+        return [
+            IndexedMessage(message, inside, index)
+            for index, message in enumerate(self.messages)]
 
     @property
     def displayname(self):
@@ -1109,6 +1123,42 @@ class Bug(SQLBase):
             bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
         return bugtasks_by_package
 
+    def _getAffectedUser(self, user):
+        """Return the `IBugAffectsPerson` for a user, or None
+
+        :param user: An `IPerson` that may be affected by the bug.
+        :return: An `IBugAffectsPerson` or None.
+        """
+        return Store.of(self).find(
+            BugAffectsPerson,
+            And(BugAffectsPerson.bug == self,
+                BugAffectsPerson.person == user)).one()
+
+    def isUserAffected(self, user):
+        """See `IBug`."""
+        bap = self._getAffectedUser(user)
+        if bap is not None:
+            return bap.affected
+        else:
+            return None
+
+    def _flushAndInvalidate(self):
+        """Flush all changes to the store and re-read `self` from the DB."""
+        store = Store.of(self)
+        store.flush()
+        store.invalidate(self)
+
+    def markUserAffected(self, user, affected=True):
+        """See `IBug`."""
+        bap = self._getAffectedUser(user)
+        if bap is None:
+            BugAffectsPerson(bug=self, person=user, affected=affected)
+            self._flushAndInvalidate()
+        else:
+            if bap.affected != affected:
+                bap.affected = affected
+                self._flushAndInvalidate()
+
 
 class BugSet:
     """See BugSet."""
@@ -1202,6 +1252,9 @@ class BugSet:
             raise AssertionError(
                 'Method createBug requires a comment, msg, or description.')
 
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
+
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
@@ -1222,7 +1275,8 @@ class BugSet:
             rfc822msgid = make_msgid('malonedeb')
             params.msg = Message(
                 subject=params.title, distribution=params.distribution,
-                rfc822msgid=rfc822msgid, owner=params.owner)
+                rfc822msgid=rfc822msgid, owner=params.owner,
+                datecreated=params.datecreated)
             MessageChunk(
                 message=params.msg, sequence=1, content=params.comment,
                 blob=None)
@@ -1230,9 +1284,6 @@ class BugSet:
         # Extract the details needed to create the bug and optional msg.
         if not params.description:
             params.description = params.msg.text_contents
-
-        if not params.datecreated:
-            params.datecreated = UTC_NOW
 
         extra_params = {}
         if params.private:
@@ -1302,3 +1353,10 @@ class BugSet:
                 owner=params.owner, status=params.status)
 
         return bug
+
+
+class BugAffectsPerson(SQLBase):
+    """A bug is marked as affecting a user."""
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    affected = BoolCol(notNull=True, default=True)

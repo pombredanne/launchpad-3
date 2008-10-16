@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
   <!-- Branch -->
-  <content class="canonical.launchpad.database.Branch">
+  <class class="canonical.launchpad.database.Branch">
     <require
         permission="launchpad.View"
         attributes="id branch_type name title summary url whiteboard
@@ -15,7 +15,7 @@
                     last_mirrored_id last_mirror_attempt mirror_failures
                     pull_disabled next_mirror_time last_scanned
                     last_scanned_id revision_count warehouse_url bug_branches
-                    related_bugs related_bug_tasks spec_links revision_history
+                    related_bugs spec_links revision_history
                     subscriptions subscribers date_created date_last_modified
                     latest_revisions landing_targets landing_candidates
                     dependent_branches addLandingTarget getMergeQueue
@@ -28,7 +28,8 @@
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
                     requestMirror startMirroring mirrorComplete mirrorFailed
-                    branch_format repository_format control_format stacked_on"
+                    branch_format repository_format control_format stacked_on
+                    createBranchRevisionFromIDs"
                     />
     <require
         permission="launchpad.Edit"
@@ -44,7 +45,7 @@
     <require
         permission="launchpad.AnyPerson"
         set_attributes="date_last_modified whiteboard"/>
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
@@ -278,14 +279,14 @@
       permission="zope.Public" />
 
   <!-- BranchSet -->
-  <content class="canonical.launchpad.database.BranchSet">
+  <class class="canonical.launchpad.database.BranchSet">
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
-  </content>
+  </class>
 
   <!-- BranchVisibilityPolicy -->
-  <content class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
+  <class class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy" />
-  </content>
+  </class>
 
   <browser:page
       name="+branchvisibility"
@@ -312,9 +313,9 @@
       template="../templates/branch-visibility-edit.pt" />
 
   <!-- BranchDelta -->
-  <content class="canonical.launchpad.components.branch.BranchDelta">
+  <class class="canonical.launchpad.components.branch.BranchDelta">
     <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.BranchSet"

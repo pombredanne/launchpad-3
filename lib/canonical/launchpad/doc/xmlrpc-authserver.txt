@@ -11,15 +11,15 @@ of our private XMLRPC instance.
     >>> verifyObject(IAuthServerApplication, private_root.authserver)
     True
 
-The AuthServerAPIView provides the IUserDetailsStorageV2 XML-RPC API:
+The AuthServerAPIView provides the IAuthServer XML-RPC API:
 
     >>> from zope.publisher.xmlrpc import TestRequest
-    >>> from canonical.authserver.interfaces import IUserDetailsStorageV2
+    >>> from canonical.launchpad.interfaces.authserver import IAuthServer
     >>> from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
 
     >>> authserver_api = AuthServerAPIView(
     ...     private_root.authserver, TestRequest())
-    >>> verifyObject(IUserDetailsStorageV2, authserver_api)
+    >>> verifyObject(IAuthServer, authserver_api)
     True
 
 That interface allows the Moin wiki to access user information:

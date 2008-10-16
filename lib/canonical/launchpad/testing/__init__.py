@@ -3,10 +3,13 @@
 
 import unittest
 
+from storm.store import Store
+
 import zope.event
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -20,14 +23,16 @@ class TestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
-        # Python 2.4 shenanigans. These are both implemented by unittest with
-        # double underscores in Python 2.4. There are no direct
-        # implementations of these methods in this class. We use the double
-        # underscore syntax without expansion because this class has the same
-        # __name__ as its base class. In Python 2.5 these elements have single
-        # underscores.
-        self._testMethodName = self.__testMethodName
-        self._exc_info = self.__exc_info
+
+    def __str__(self):
+        """Return the fully qualified Python name of the test.
+
+        Zope uses this method to determine how to print the test in the
+        runner. We use the test's id in order to make the test easier to find,
+        and also so that modifications to the id will show up. This is
+        particularly important with bzrlib-style test multiplication.
+        """
+        return self.id()
 
     def _runCleanups(self, result):
         """Run the cleanups that have been added with addCleanup.
@@ -44,7 +49,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 ok = False
         return ok
 
@@ -101,11 +106,10 @@ class TestCase(unittest.TestCase):
         # better location not clear. Used primarily for testing ORM objects,
         # which ought to use factory.
         sql_object = removeSecurityProxy(sql_object)
-        sql_object.syncUpdate()
         sql_class = type(sql_object)
-        found_object = sql_class.selectOne(
-            ('id=%s AND ' + attribute_name + '=%s')
-            % sqlvalues(sql_object.id, date))
+        store = Store.of(sql_object)
+        found_object = store.find(
+            sql_class, **({'id': sql_object.id, attribute_name: date}))
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
@@ -140,18 +144,28 @@ class TestCase(unittest.TestCase):
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
 
+    def pushConfig(self, section, **kwargs):
+        """Push some key-value pairs into a section of the config.
+
+        The config values will be restored during test tearDown.
+        """
+        name = self.factory.getUniqueString()
+        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        config.push(name, "\n[%s]\n%s\n" % (section, body))
+        self.addCleanup(config.pop, name)
+
     def run(self, result=None):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self._testMethodName)
+        testMethod = getattr(self, self.__testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 self._runCleanups(result)
                 return
 
@@ -160,11 +174,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self._exc_info())
+                result.addFailure(self, self.__exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -172,22 +186,28 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self._exc_info())
+                result.addError(self, self.__exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
         finally:
             result.stopTest(self)
 
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.factory = ObjectFactory()
+
 
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
+        TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
 
     def tearDown(self):
         logout()
+        TestCase.tearDown(self)
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.

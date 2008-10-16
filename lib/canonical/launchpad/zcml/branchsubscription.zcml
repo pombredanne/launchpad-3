@@ -5,13 +5,13 @@
     i18n_domain="launchpad">
 
   <!-- BranchSubscription -->
-  <content class="canonical.launchpad.database.BranchSubscription">
+  <class class="canonical.launchpad.database.BranchSubscription">
     <allow interface="canonical.launchpad.interfaces.IBranchSubscription" />
     <require
         permission="zope.Public"
         set_schema="canonical.launchpad.interfaces.IBranchSubscription"
         />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IBranchSubscription"

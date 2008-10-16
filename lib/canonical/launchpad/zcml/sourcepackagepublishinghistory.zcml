@@ -7,9 +7,9 @@
 <facet facet="overview">
 
   <!-- SourcePackagePublishingHistory -->
-  <content class="canonical.launchpad.database.SourcePackagePublishingHistory">
+  <class class="canonical.launchpad.database.SourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
-  </content>
+  </class>
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
@@ -27,6 +27,10 @@
       name="+listing-summary"
       template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
       />
+    <browser:page
+      name="publishinghistory-macros"
+      template="../templates/publishinghistory-macros.pt" />
+
     <browser:page
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
@@ -48,20 +52,20 @@
   </browser:pages>
 
   <!-- SourcePackageFilePublishing -->
-  <content class="canonical.launchpad.database.SourcePackageFilePublishing">
+  <class class="canonical.launchpad.database.SourcePackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing" />
     <!-- XXX cprov 2006-06-14: Missing security adapter. -->
-  </content>
+  </class>
 
   <!-- SecureSourcePackagePublishingHistory -->
-  <content class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
+  <class class="canonical.launchpad.database.SecureSourcePackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory"/>
     <allow interface="canonical.launchpad.interfaces.IArchiveSafePublisher" />
     <require
       permission="launchpad.Admin"
       set_schema="canonical.launchpad.interfaces.ISecureSourcePackagePublishingHistory" />
-  </content>
+  </class>
 
   <!-- PublishingSet -->
   <class class="canonical.launchpad.database.publishing.PublishingSet">

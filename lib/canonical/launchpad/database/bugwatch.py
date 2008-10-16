@@ -16,6 +16,8 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
+from storm.store import Store
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -231,6 +233,14 @@ class BugWatch(SQLBase):
             remote_comment_id=comment_id)
         return bug_message
 
+    def getImportedBugMessages(self):
+        """See `IBugWatch`."""
+        store = Store.of(self)
+        # If a comment is linked to a bug watch, it means it's imported.
+        return store.find(
+            BugMessage,
+            BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
@@ -437,9 +447,13 @@ class BugWatchSet(BugSetBase):
         SourceForge instance in Launchpad).
         """
         # We're only interested in URLs that look like they come from a
-        # *Forge bugtracker.
-        if (not path.startswith('/support/tracker.php') and
-            not path.startswith('/tracker/index.php')):
+        # *Forge bugtracker. The valid URL schemes are:
+        # * /support/tracker.php
+        # * /tracker/(index.php) (index.php part is optional)
+        # * /tracker2/(index.php) (index.php part is optional)
+        sf_path_re = re.compile(
+            '^\/(support\/tracker\.php|tracker2?\/(index\.php)?)$')
+        if (sf_path_re.match(path) is None):
             return None
         if not query.get('aid'):
             return None

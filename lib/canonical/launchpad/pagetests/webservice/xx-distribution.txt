@@ -21,14 +21,16 @@ And for every distribution we publish most of its attributes.
     active: True
     active_milestones_collection_link: http://.../ubuntu/active_milestones
     all_milestones_collection_link: http://.../ubuntu/all_milestones
+    archives_collection_link: http://.../ubuntu/archives
     date_created: 2006-10-16T18:31:43.415195+00:00
-    description: Ubuntu is a new approach to Linux Distribution...
+    description: Ubuntu is a new approach...
     display_name: Ubuntu
     domain_name: ubuntulinux.org
     driver_link: None
     homepage_content: None
     icon_link: http://.../ubuntu/icon
     logo_link: http://.../ubuntu/logo
+    main_archive_link: http://.../ubuntu/+archive/primary
     mugshot_link: http://.../ubuntu/mugshot
     name: ubuntu
     owner_link: http://.../~ubuntu-team

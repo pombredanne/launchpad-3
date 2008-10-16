@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
   <!-- CodeReviewComment -->
-  <content class="canonical.launchpad.database.CodeReviewComment">
+  <class class="canonical.launchpad.database.CodeReviewComment">
     <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"/>
-  </content>
+  </class>
   <subscriber
       for="canonical.launchpad.interfaces.ICodeReviewComment
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"

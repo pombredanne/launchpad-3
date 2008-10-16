@@ -445,6 +445,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'get_bugs',
             'login',
             'time',
+            'set_link',
             ],
         'Test': ['login_required']
         }
@@ -453,6 +454,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     auth_required_methods = [
         'add_comment',
         'login_required',
+        'set_link',
         ]
 
     expired_cookie = None
@@ -706,6 +708,26 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # cause it to explode.
         return [{'comment_id': comment_id}]
 
+    def set_link(self, arguments):
+        """Set the Launchpad bug ID for a given Bugzilla bug.
+
+        :returns: The current Launchpad bug ID for the Bugzilla bug or
+            0 if one is not set.
+        """
+        bug_id = int(arguments['id'])
+        launchpad_id = arguments['launchpad_id']
+
+        # Extract the current launchpad_id from the bug, then update
+        # that field.
+        bug = self.bugs[bug_id]
+        old_launchpad_id = bug['internals'].get('launchpad_id', 0)
+        bug['internals']['launchpad_id'] = launchpad_id
+
+        # We need to return a list here because xmlrpclib will try to
+        # expand sequences of length 1, which will fail horribly when
+        # the sequence is in fact a dict.
+        return [{'launchpad_id': old_launchpad_id}]
+
 
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
@@ -811,6 +833,9 @@ class TestInternalXMLRPCTransport:
     then switches back to the 'checkwatches' user.
     """
 
+    def __init__(self, quiet=False):
+        self.quiet = quiet
+
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
@@ -822,7 +847,10 @@ class TestInternalXMLRPCTransport:
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)
-        print "Using XML-RPC to generate token."
+
+        if not self.quiet:
+            print "Using XML-RPC to generate token."
+
         return token_api.newBugTrackerToken()
 
 

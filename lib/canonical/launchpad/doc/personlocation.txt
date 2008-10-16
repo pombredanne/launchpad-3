@@ -150,12 +150,12 @@ mapped_participants or unmapped_participants (although its members do).
     ...         print member.name
     ubuntu-team
     >>> len(guadamen.mapped_participants)
-    1
+    2
     >>> for mapped in guadamen.mapped_participants:
     ...     if mapped.teamowner is not None:
     ...         print mapped.name
     >>> guadamen.unmapped_participants.count()
-    2
+    7
     >>> for unmapped in guadamen.unmapped_participants:
     ...     if unmapped.teamowner is not None:
     ...         print unmapped.name

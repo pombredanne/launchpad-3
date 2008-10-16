@@ -258,6 +258,35 @@ class RevisionSet:
             parent_ids=bzr_revision.parent_ids,
             properties=bzr_revision.properties)
 
+    @staticmethod
+    def onlyPresent(revids):
+        """See `IRevisionSet`."""
+        if not revids:
+            return set()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute(
+            """
+            CREATE TEMPORARY TABLE Revids
+            (revision_id text)
+            """)
+        data = []
+        for revid in revids:
+            data.append('(%s)' % sqlvalues(revid))
+        data = ', '.join(data)
+        store.execute(
+            "INSERT INTO Revids (revision_id) VALUES %s" % data)
+        result = store.execute(
+            """
+            SELECT Revids.revision_id
+            FROM Revids, Revision
+            WHERE Revids.revision_id = Revision.revision_id
+            """)
+        present = set()
+        for row in result.get_all():
+            present.add(row[0])
+        store.execute("DROP TABLE Revids")
+        return present
+
     def checkNewVerifiedEmail(self, email):
         """See `IRevisionSet`."""
         from zope.security.proxy import removeSecurityProxy
@@ -278,18 +307,23 @@ class RevisionSet:
             """ % quote(branch_ids),
             clauseTables=['Branch'], prejoins=['revision_author'])
 
-    def getRecentRevisionsForProduct(self, product, days):
+    @staticmethod
+    def getRecentRevisionsForProduct(product, days):
         """See `IRevisionSet`."""
-        cut_off_date = datetime.now(pytz.UTC) - timedelta(days=days)
-        return Revision.select("""
-            Revision.id in (
-                SELECT br.revision
-                FROM BranchRevision br, Branch b
-                WHERE br.branch = b.id
-                AND b.product = %s)
-            AND Revision.revision_date >= %s
-            """ % sqlvalues(product, cut_off_date),
-            prejoins=['revision_author'])
+        # Here to stop circular imports.
+        from canonical.launchpad.database.branch import Branch
+        from canonical.launchpad.database.branchrevision import BranchRevision
+
+        return Store.of(product).find(
+            (Revision, RevisionAuthor),
+            revision_time_limit(days),
+            Revision.revision_author == RevisionAuthor.id,
+            Exists(
+                Select(True,
+                       And(BranchRevision.revision == Revision.id,
+                           BranchRevision.branch == Branch.id,
+                           Branch.product == product),
+                       (Branch, BranchRevision))))
 
     @staticmethod
     def getRevisionsNeedingKarmaAllocated():

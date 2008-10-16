@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
@@ -34,7 +34,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
@@ -399,19 +399,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self, type=LanguagePackType.DELTA,
             updates=self.language_pack_base, orderBy='-date_exported')
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self), user)
+        """See `IHasBugs`."""
+        return get_bug_tags_open_count(BugTask.distroseries == self, user)
 
     @property
     def has_any_specifications(self):
@@ -559,12 +557,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the distribution that are visible and not English
         langidset = set(
             language.id for language in Language.select('''
-                Language.visible = TRUE AND
+                Language.visible IS TRUE AND
                 Language.id = POFile.language AND
-                Language.code != 'en' AND
+                Language.code <> 'en' AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distroseries = %s AND
-                POTemplate.iscurrent = TRUE
+                POTemplate.iscurrent IS TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,
@@ -1649,19 +1647,3 @@ class DistroSeriesSet:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
             return DistroSeries.select(where_clause)
-
-    def new(self, distribution, name, displayname, title, summary,
-            description, version, parent_series, owner):
-        """See `IDistroSeriesSet`."""
-        return DistroSeries(
-            distribution=distribution,
-            name=name,
-            displayname=displayname,
-            title=title,
-            summary=summary,
-            description=description,
-            version=version,
-            status=DistroSeriesStatus.EXPERIMENTAL,
-            parent_series=parent_series,
-            owner=owner)
-

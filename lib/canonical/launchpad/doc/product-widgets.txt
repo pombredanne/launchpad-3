@@ -234,11 +234,7 @@ in the License enum.
 
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
-    >>> len(soup.table('input'))
-    22 
-    >>> len(License)
-    32
-    >>> len(soup.table('input')) + 10 == len(License)
+    >>> len(soup.table('input')) == len(License)
     True
     >>> soup.a['href']
     u'https://help.launchpad.net/Legal/ProjectLicensing'
@@ -274,5 +270,5 @@ output should have one checked input.
     >>> html = license_widget()
     >>> soup = BeautifulSoup(html)
     >>> soup.findAll('input', checked='checked')
-    [<...checked="checked"...value="GNU_GPL_V2" />, 
+    [<...checked="checked"...value="GNU_GPL_V2" />,
     <...checked="checked"...value="GNU_LGPL_V2_1" />]

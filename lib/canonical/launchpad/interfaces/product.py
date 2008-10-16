@@ -7,8 +7,10 @@ __metaclass__ = type
 
 __all__ = [
     'IProduct',
-    'IProductSet',
+    'IProductEditRestricted',
+    'IProductPublic',
     'IProductReviewSearch',
+    'IProductSet',
     'License',
     'LicenseStatus',
     ]
@@ -16,7 +18,8 @@ __all__ = [
 import sets
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Object, Set, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 
 
@@ -78,59 +81,45 @@ class LicenseStatus(DBEnumeratedType):
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
-    # XXX: EdwinGrubbs 2008-04-11 bug=216040
-    # The deprecated licenses can be removed in the next cycle.
-
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "Affero GPL")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
-    _DEPRECATED_CDDL = DBItem(60, "CDDL")
-    _DEPRECATED_CECILL = DBItem(70, "CeCILL License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    _DEPRECATED_EIFFEL = DBItem(110, "Eiffel Forum License")
-    _DEPRECATED_GNAT = DBItem(120, "GNAT Modified GPL")
     GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
     GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
     GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
     GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
-    _DEPRECATED_IBM = DBItem(140, "IBM Public License")
     MIT = DBItem(160, "MIT / X / Expat License")
     MPL = DBItem(170, "Mozilla Public License")
-    _DEPRECATED_OPEN_CONTENT = DBItem(180, "Open Content License")
     OPEN_SOFTWARE = DBItem(190, "Open Software License")
     PERL = DBItem(200, "Perl License")
     PHP = DBItem(210, "PHP License")
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
-    _DEPRECATED_QPL = DBItem(240, "Q Public License")
-    _DEPRECATED_SUN_PUBLIC = DBItem(250, "SUN Public License")
-    _DEPRECATED_W3C = DBItem(260, "W3C License")
-    _DEPRECATED_ZLIB = DBItem(270, "zlib/libpng License")
     ZPL = DBItem(280, "Zope Public License")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-               IHasBranchVisibilityPolicy, IHasDrivers,
-               IHasExternalBugTracker, IHasIcon, IHasLogo,
-               IHasMentoringOffers, IHasMilestones, IHasMugshot,
-               IMakesAnnouncements, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget, IPillar):
-    """A Product.
+class IProductEditRestricted(Interface):
+    """IProduct properties which require launchpad.Edit permission."""
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
-    For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others.
-    """
-    export_as_webservice_entry('project')
+    def newSeries(owner, name, summary, branch=None):
+        """Creates a new ProductSeries for this product."""
+
+
+class IProductPublic(
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -221,7 +210,7 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
                 development. Don't repeat anything from the Summary.""")))
 
     datecreated = exported(
-        TextLine(
+        Datetime(
             title=_('Date Created'),
             description=_("The date this project was created in Launchpad.")),
         exported_as='date_created')
@@ -468,9 +457,6 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
-
     def getSeries(name):
         """Returns the series for this product that has the name given, or
         None."""
@@ -495,6 +481,17 @@ class IProduct(IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
 
     def userCanEdit(user):
         """Can the user edit this product?"""
+
+class IProduct(IProductEditRestricted, IProductPublic):
+    """A Product.
+
+    The Launchpad Registry describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
+    """
+
+    export_as_webservice_entry('project')
 
 # Fix cyclic references.
 IProject['products'].value_type = Reference(IProduct)
@@ -554,6 +551,7 @@ class IProductSet(Interface):
         displayname='display_name', project='project_group',
         homepageurl='home_page_url', screenshotsurl='screenshots_url',
         freshmeatproject='freshmeat_project', wikiurl='wiki_url',
+        downloadurl='download_url',
         sourceforgeproject='sourceforge_project',
         programminglang='programming_lang')
     @export_factory_operation(

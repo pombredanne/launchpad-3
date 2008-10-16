@@ -1091,7 +1091,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         if self.uses_launchpad_bugtracker:
             return 'Launchpad'
         elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link()
+            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
         else:
             return 'None specified'
 
@@ -1109,5 +1109,5 @@ class BugTargetBugTagsView(LaunchpadView):
         bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
         return [
             {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
-            for tag, count in bug_tag_counts if count > 0]
+            for tag, count in bug_tag_counts]
 

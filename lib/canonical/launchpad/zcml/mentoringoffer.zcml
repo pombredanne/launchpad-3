@@ -8,9 +8,9 @@
 <facet facet="overview">
 
   <!-- MentoringOffer -->
-  <content class="canonical.launchpad.database.MentoringOffer">
+  <class class="canonical.launchpad.database.MentoringOffer">
     <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
-  </content>
+  </class>
 
 
   <!-- IHasMentoringOffers -->

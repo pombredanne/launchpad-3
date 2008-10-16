@@ -5,10 +5,13 @@
   i18n_domain="launchpad">
 
   <!-- Distribution -->
-  <content class="canonical.launchpad.database.Distribution">
-    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+  <class class="canonical.launchpad.database.Distribution">
+    <allow interface="canonical.launchpad.interfaces.IDistributionPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <require
+      permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.IDistributionEditRestricted"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
@@ -60,7 +63,7 @@
     <require
         permission="launchpad.Edit"
         attributes="setBugSupervisor" />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IDistribution"
@@ -493,9 +496,9 @@
     />
 
   <!-- DistributionSet -->
-  <content class="canonical.launchpad.database.DistributionSet">
+  <class class="canonical.launchpad.database.DistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistributionSet"

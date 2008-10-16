@@ -5,10 +5,10 @@
   i18n_domain="launchpad">
 
   <!-- DistroSeriesBinaryPackage -->
-  <content class="canonical.launchpad.database.DistroSeriesBinaryPackage">
+  <class class="canonical.launchpad.database.DistroSeriesBinaryPackage">
     <allow
       interface="canonical.launchpad.interfaces.IDistroSeriesBinaryPackage" />
-  </content>
+  </class>
 
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"

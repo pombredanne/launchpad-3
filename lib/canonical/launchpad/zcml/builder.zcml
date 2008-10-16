@@ -66,14 +66,14 @@
     />
 
     <!-- Builder -->
-    <content class="canonical.launchpad.database.Builder">
+    <class class="canonical.launchpad.database.Builder">
         <allow interface="canonical.launchpad.interfaces.IBuilder"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBuilder"
         />
-    </content>
+    </class>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBuilder"
@@ -165,14 +165,14 @@
         />
 
     <!-- BuildQueue -->
-    <content class="canonical.launchpad.database.BuildQueue">
+    <class class="canonical.launchpad.database.BuildQueue">
        <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
        <!-- XXX cprov 2005-10-20 bug=3580: We need a autobuild celebrity. -->
        <!-- Grant permissions to write on BuildQueue and Build. -->
        <require
             permission="zope.Public"
             set_attributes="lastscore builder buildstart logtail"/>
-    </content>
+    </class>
 
     <!-- BuildQueueSet -->
     <securedutility

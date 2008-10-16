@@ -210,10 +210,10 @@ class WadlResourceAdapterAPI(RESTUtilityBase):
         # we need to locate the model class that our 'adapter' is
         # adapting.
         registrations = [
-            reg for reg in getGlobalSiteManager().registrations()
+            reg for reg in getGlobalSiteManager().registeredAdapters()
             if (IInterface.providedBy(reg.provided)
                 and reg.provided.isOrExtends(self.adapter_interface)
-                and reg.value == self.adapter)]
+                and reg.factory == self.adapter)]
         # If there's more than one model class (because the 'adapter' was
         # registered to adapt more than one model class to ICollection or
         # IEntry), we don't know which model class to search for named

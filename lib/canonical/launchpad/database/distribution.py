@@ -28,7 +28,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -343,10 +343,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See BugTargetBase."""
         return "BugTask.distribution = %d" % self.id
 
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+    def _customizeSearchParams(self, search_params):
+        """Customize `search_params` for this distribution."""
         search_params.setDistribution(self)
-        return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See `IBugTarget`."""
@@ -354,8 +353,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            "BugTask.distribution = %s" % sqlvalues(self), user)
+        return get_bug_tags_open_count(BugTask.distribution == self, user)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1150,9 +1148,46 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # Otherwise we defer to the caller.
             return None
 
-    def getPackagesAndPublicUpstreamBugCounts(self, limit=50):
+    @property
+    def upstream_report_excluded_packages(self):
+        """See `IDistribution`."""
+        # If the current distribution is Ubuntu, return a specific set
+        # of excluded packages. Otherwise return an empty list.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if self == ubuntu:
+            excluded_packages = [
+                'apport',
+                'casper',
+                'displayconfig-gtk',
+                'gnome-app-install',
+                'software-properties',
+                'synaptic',
+                'ubiquity',
+                'ubuntu-meta',
+                'update-manager',
+                'usplash',
+                ]
+        else:
+            excluded_packages = []
+
+        return excluded_packages
+
+    def getPackagesAndPublicUpstreamBugCounts(self, limit=50,
+                                              exclude_packages=None):
         """See `IDistribution`."""
         from canonical.launchpad.database.product import Product
+
+        if exclude_packages is None or len(exclude_packages) == 0:
+            # If exclude_packages is None or an empty list we set it to
+            # be a list containing a single empty string. This is so
+            # that we can quote() it properly for the query below ('NOT
+            # IN ()' is not valid SQL).
+            exclude_packages = ['']
+        else:
+            # Otherwise, listify exclude_packages so that we're not
+            # trying to quote() a security proxy object.
+            exclude_packages = list(exclude_packages)
+
         # This method collects three open bug counts for
         # sourcepackagenames in this distribution first, and then caches
         # product information before rendering everything into a list of
@@ -1189,6 +1224,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND Bugtask.status IN %(unresolved)s
                 AND Bug.private = 'F'
                 AND Bug.duplicateof IS NULL
+                AND spn.name NOT IN %(excluded_packages)s
             GROUP BY SPN.id, SPN.name
             HAVING COUNT(DISTINCT Bugtask.bug) > 0
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
@@ -1196,7 +1232,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
-               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
+               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES),
+               'excluded_packages': quote(exclude_packages),
+                })
         counts = cur.fetchall()
         cur.close()
         if not counts:
@@ -1275,6 +1313,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.owner) or user.inTeam(admins)
+
+    def newSeries(self, name, displayname, title, summary,
+                  description, version, parent_series, owner):
+        """See `IDistribution`."""
+        return DistroSeries(
+            distribution=self,
+            name=name,
+            displayname=displayname,
+            title=title,
+            summary=summary,
+            description=description,
+            version=version,
+            status=DistroSeriesStatus.EXPERIMENTAL,
+            parent_series=parent_series,
+            owner=owner)
 
 
 class DistributionSet:

@@ -15,14 +15,18 @@ from urlparse import urlparse
 import transaction
 
 from bzrlib.branch import Branch, BzrBranchFormat7
-from bzrlib.bzrdir import format_registry
+from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib import errors
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.codehosting.branchfs import get_puller_server
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
@@ -46,17 +50,26 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, source_path, branch):
-        """Assert that 'branch' was mirrored succesfully."""
-        # Make sure that we are testing the actual data.
-        removeSecurityProxy(branch).sync()
-        self.assertEqual(None, branch.mirror_status_message)
-        self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
-        self.assertEqual(0, branch.mirror_failures)
-        hosted_branch = Branch.open(source_path)
-        mirrored_branch = Branch.open(self.getMirroredPath(branch))
+    def assertMirrored(self, source_path, db_branch, destination_path=None):
+        """Assert that 'db_branch' was mirrored succesfully.
+
+        :param source_path: The URL of the branch that was mirrored.
+        :param db_branch: The `IBranch` representing the branch that was
+            mirrored.
+        :param destination_path: If specified, the URL to examine for the
+            destination branch. If unspecified, look directly at the mirrored
+            area on the filesystem.
+        """
+        self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
-            hosted_branch.last_revision(), branch.last_mirrored_id)
+            db_branch.last_mirror_attempt, db_branch.last_mirrored)
+        self.assertEqual(0, db_branch.mirror_failures)
+        hosted_branch = Branch.open(source_path)
+        if destination_path is None:
+            destination_path = self.getMirroredPath(db_branch)
+        mirrored_branch = Branch.open(destination_path)
+        self.assertEqual(
+            hosted_branch.last_revision(), db_branch.last_mirrored_id)
         self.assertEqual(
             hosted_branch.last_revision(), mirrored_branch.last_revision())
 
@@ -109,8 +122,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
 
-    def test_mirrorAHostedBranch(self):
-        """Run the puller on a populated hosted branch pull queue."""
+    def test_mirror_hosted_branch(self):
+        # Run the puller on a populated hosted branch pull queue.
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
@@ -122,7 +135,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_reMirrorAHostedBranch(self):
+    def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
         # First we push up and mirror the branch in one format.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
@@ -149,8 +162,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertIsInstance(
             mirrored_branch.repository._format, RepositoryFormatKnitPack5)
 
-    def test_mirrorAHostedLoomBranch(self):
-        """Run the puller over a branch with looms enabled."""
+    def test_mirror_hosted_loom_branch(self):
+        # Run the puller over a branch with looms enabled.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         loom_tree = self.makeLoomBranchAndTree('loom')
         self.pushToBranch(db_branch, loom_tree)
@@ -160,8 +173,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_mirrorAPrivateBranch(self):
-        """Run the puller with a private branch in the queue."""
+    def test_mirror_private_branch(self):
+        # Run the puller with a private branch in the queue.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.pushToBranch(db_branch)
         db_branch.requestMirror()
@@ -171,8 +184,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(db_branch), db_branch)
 
-    def test_mirrorAMirroredBranch(self):
-        """Run the puller on a populated mirrored branch pull queue."""
+    def test_mirror_mirrored_branch(self):
+        # Run the puller on a populated mirrored branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
         tree = self.make_branch_and_tree('.')
         tree.commit('rev1')
@@ -188,6 +201,85 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests leaving dangling threads.
         self.assertMirrored(tree.basedir, db_branch)
 
+    def _makeDefaultStackedOnBranch(self, private=False):
+        """Make a default stacked-on branch.
+
+        This creates a database branch on a product that allows default
+        stacking, makes it the default stacked-on branch for that product,
+        then creates a Bazaar branch for it. The Bazaar branch goes directly
+        into the mirrored area and has a stackable format.
+
+        :return: `IBranch`.
+        """
+        # Make the branch.
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeBranch(
+            product=product, private=private)
+        # Make it the default stacked-on branch.
+        series = removeSecurityProxy(product.development_focus)
+        series.user_branch = default_branch
+        # Put a Bazaar branch into the mirrored area.
+        default_branch_path = self.getMirroredPath(default_branch)
+        ensure_base(get_transport(default_branch_path))
+        BzrDir.create_branch_convenience(
+            default_branch_path, format=format_registry.get('1.6')())
+        return default_branch
+
+    def test_stack_mirrored_branch(self):
+        # Pulling a mirrored branch stacks that branch on the default stacked
+        # branch of the product if such a thing exists.
+        default_branch = self._makeDefaultStackedOnBranch()
+        db_branch = self.factory.makeBranch(
+            BranchType.MIRRORED, product=default_branch.product)
+
+        tree = self.make_branch_and_tree('.', format='1.6')
+        tree.commit('rev1')
+
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('mirror')
+        self.assertRanSuccessfully(command, retcode, output, error)
+
+        # To open this branch, we're going to need to use the Launchpad vfs.
+        server = get_puller_server()
+        server.setUp()
+        self.addCleanup(server.tearDown)
+
+        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
+        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
+        mirrored_branch = Branch.open(mirrored_url)
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
+
+    def test_stack_mirrored_branch_onto_private(self):
+        # If the default stacked-on branch is private then mirrored branches
+        # aren't stacked when they are mirrored.
+        default_branch = self._makeDefaultStackedOnBranch(private=True)
+        db_branch = self.factory.makeBranch(
+            BranchType.MIRRORED, product=default_branch.product)
+
+        tree = self.make_branch_and_tree('.', format='1.6')
+        tree.commit('rev1')
+
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('mirror')
+        self.assertRanSuccessfully(command, retcode, output, error)
+
+        # To open this branch, we're going to need to use the Launchpad vfs.
+        server = get_puller_server()
+        server.setUp()
+        self.addCleanup(server.tearDown)
+
+        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
+        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
+        mirrored_branch = Branch.open(mirrored_url)
+        self.assertRaises(
+            errors.NotStacked, mirrored_branch.get_stacked_on_url)
+
     def _getImportMirrorPort(self):
         """Return the port used to serve imported branches, as specified in
         config.launchpad.bzr_imports_root_url.
@@ -200,8 +292,8 @@ class TestBranchPuller(PullerBranchTestCase):
             % (config.launchpad.bzr_imports_root_url,))
         return int(port)
 
-    def test_mirrorAnImportedBranch(self):
-        """Run the puller on a populated imported branch pull queue."""
+    def test_mirror_imported_branch(self):
+        # Run the puller on a populated imported branch pull queue.
         # Create the branch in the database.
         db_branch = self.factory.makeBranch(BranchType.IMPORTED)
         db_branch.requestMirror()
@@ -224,13 +316,13 @@ class TestBranchPuller(PullerBranchTestCase):
         # closes.
         self.assertMirrored(branch_path, db_branch)
 
-    def test_mirrorEmpty(self):
-        """Run the puller on an empty pull queue."""
+    def test_mirror_empty(self):
+        # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller("upload")
         self.assertRanSuccessfully(command, retcode, output, error)
 
-    def test_recordsScriptActivity(self):
-        """A record gets created in the ScriptActivity table."""
+    def test_records_script_activity(self):
+        # A record gets created in the ScriptActivity table.
         script_activity_set = getUtility(IScriptActivitySet)
         self.assertIs(
             script_activity_set.getLastActivity("branch-puller-hosted"),

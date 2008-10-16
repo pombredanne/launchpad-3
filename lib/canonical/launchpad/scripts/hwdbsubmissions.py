@@ -7,14 +7,19 @@ data and for the community test submissions.
 """
 
 
-__all__ = ['SubmissionParser']
+__all__ = [
+           'SubmissionParser',
+           'process_pending_submissions',
+          ]
 
 
+import bz2
 from cStringIO import StringIO
 from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
+import sys
 
 try:
     import xml.elementtree.cElementTree as etree
@@ -27,13 +32,19 @@ except ImportError:
 import pytz
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.lazr.xml import RelaxNGValidator
 
 from canonical.config import config
 from canonical.launchpad.interfaces.hwdb import (
-    HWBus, IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
-    IHWSubmissionDeviceSet, IHWVendorIDSet, IHWVendorNameSet)
+    HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
+    IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
+    IHWVendorNameSet)
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -941,6 +952,43 @@ class SubmissionParser:
             return None
         return kernel_package_name
 
+    def processSubmission(self, submission):
+        """Process a submisson.
+
+        :return: True, if the submission could be sucessfully processed,
+            otherwise False.
+        :param submission: An IHWSubmission instance.
+        """
+        raw_submission = submission.raw_submission
+        raw_submission.open()
+        submission_data = raw_submission.read()
+        raw_submission.close()
+        # We assume that the data has been sent bzip2-compressed,
+        # but this is not checked when the data is submitted.
+        expanded_data = None
+        try:
+            expanded_data = bz2.decompress(submission_data)
+        except IOError:
+            # An IOError is raised, if the data is not BZip2-compressed.
+            # We assume in this case that valid uncompressed data has been
+            # submitted. If this assumption is wrong, parseSubmission()
+            # or checkConsistency() will complain, hence we don't check
+            # anything else here.
+            pass
+        if expanded_data is not None:
+            submission_data = expanded_data
+
+        parsed_data = self.parseSubmission(
+            submission_data, submission.submission_key)
+        if parsed_data is None:
+            return False
+        self.parsed_data = parsed_data
+        if not self.checkConsistency(parsed_data):
+            return False
+        self.buildDeviceList(parsed_data)
+        root_device = self.hal_devices[ROOT_UDI]
+        root_device.createDBData(submission, None)
+        return True
 
 class HALDevice:
     """The representation of a HAL device node."""
@@ -1580,3 +1628,93 @@ class HALDevice:
             else:
                 sub_device.createDBDriverData(submission, db_device,
                                               submission_device)
+
+
+class ProcessingLoop(object):
+    """An `ITunableLoop` for processing HWDB submissions."""
+
+    implements(ITunableLoop)
+
+    def __init__(self, transaction, logger, max_submissions):
+        self.transaction = transaction
+        self.logger = logger
+        self.max_submissions = max_submissions
+        self.valid_submissions = 0
+        self.invalid_submissions = 0
+        self.finished = False
+
+    def _validateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.PROCESSED
+        self.valid_submissions += 1
+
+    def _invalidateSubmission(self, submission):
+        submission.status = HWSubmissionProcessingStatus.INVALID
+        self.invalid_submissions += 1
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        return self.finished
+
+    def __call__(self, chunk_size):
+        """Process a batch of yet unprocessed HWDB submissions."""
+        # chunk_size is a float; we compare it below with an int value,
+        # which can lead to unexpected results. Since it is also used as
+        # a limit for an SQL query, convert it into an integer.
+        chunk_size = int(chunk_size)
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED)[:chunk_size]
+        if submissions.count() < chunk_size:
+            self.finished = True
+        for submission in submissions:
+            try:
+                parser = SubmissionParser(self.logger)
+                success = parser.processSubmission(submission)
+                if success:
+                    self._validateSubmission(submission)
+                else:
+                    self._invalidateSubmission(submission)
+            except (KeyboardInterrupt, SystemExit):
+                # We should never catch these exceptions.
+                raise
+            except Exception, error:
+                info = sys.exc_info()
+                message = (
+                    'Exception while processing HWDB submission %s'
+                    % submission.submission_key)
+                properties = [('error-explanation', message)]
+                request = ScriptRequest(properties)
+                error_utility = ErrorReportingUtility()
+                error_utility.raising(info, request)
+                self.logger.error('%s (%s)' % (message, request.oopsid))
+
+                self.transaction.abort()
+                self._invalidateSubmission(submission)
+                # Ensure that this submission is marked as bad, even if
+                # further submissions in this batch raise an exception.
+                self.transaction.commit()
+
+            if self.max_submissions is not None:
+                if self.max_submissions <= (
+                    self.valid_submissions + self.invalid_submissions):
+                    self.finished = True
+                    break
+        self.transaction.commit()
+
+def process_pending_submissions(transaction, logger, max_submissions=None):
+    """Process pending submissions.
+
+    Parse pending submissions, store extracted data in HWDB tables and
+    mark them as either PROCESSED or INVALID.
+    """
+    loop = ProcessingLoop(transaction, logger, max_submissions)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
+    loop_tuner.run()
+    logger.info(
+        'Processed %i valid and %i invalid HWDB submissions'
+        % (loop.valid_submissions, loop.invalid_submissions))

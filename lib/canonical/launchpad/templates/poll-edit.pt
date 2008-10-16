@@ -12,21 +12,21 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
+  <metal:portlets fill-slot="portlets">
     <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+  </metal:portlets>
 
   <div metal:fill-slot="main">
 
     <div tal:condition="context/isNotYetOpened">
-      <div metal:use-macro="context/@@launchpad_editform/editform">
+      <div metal:use-macro="context/@@launchpad_form/form">
         <h1 metal:fill-slot="heading">
           Edit poll &#8220;<span tal:replace="context/title" />&#8221;
         </h1>
       </div>
     </div>
 
-    <div tal:condition="not: context/isNotYetOpened">
+    <div tal:condition="not: context/isNotYetOpened" id="not-editable">
       <h1>This poll can't be edited</h1>
 
       <p>Only polls that are not yet opened can be edited. As soon as a poll

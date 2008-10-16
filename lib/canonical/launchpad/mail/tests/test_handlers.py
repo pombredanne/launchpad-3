@@ -204,7 +204,7 @@ class TestCodeHandler(TestCaseWithFactory):
                          '-- \n'
                          '%s\n'
                          'You are subscribed to branch %s.' %
-                         (canonical_url(bmp), bmp.source_branch.unique_name))
+                         (canonical_url(bmp), bmp.source_branch.bzr_identity))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
     def test_getVoteNoCommand(self):

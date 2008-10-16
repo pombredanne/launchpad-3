@@ -17,7 +17,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.event import notify
@@ -35,7 +35,7 @@ from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
 from canonical.launchpad.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+    DistroSeriesStatus, IDistroSeries)
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from canonical.launchpad.interfaces.language import ILanguageSet
@@ -477,8 +477,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
                    title=_('Status'),
                    vocabulary=status_vocabulary,
                    description=_("Select the the distroseries status."),
-                   required=True),
-            custom_widget=self.custom_widgets['status'])
+                   required=True))
 
     @action("Change")
     def change_action(self, action, data):
@@ -514,14 +513,13 @@ class DistroSeriesAddView(AddView):
 
         assert owner is not None
 
-        distroseries = getUtility(IDistroSeriesSet).new(
+        distroseries = self.context.newSeries(
             name = data['name'],
             displayname = data['displayname'],
             title = data['title'],
             summary = data['summary'],
             description = data['description'],
             version = data['version'],
-            distribution = self.context,
             parent_series = data['parent_series'],
             owner = owner
             )

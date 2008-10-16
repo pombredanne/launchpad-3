@@ -24,7 +24,7 @@ from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility, queryView
+from zope.component import getUtility, queryMultiAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -54,6 +54,7 @@ __all__ = [
     'LaunchpadBrowserPublication'
     ]
 
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -67,7 +68,7 @@ class LoginRoot:
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
             root_object = getUtility(ILaunchpadRoot)
-            view = queryView(root_object, name, request)
+            view = queryMultiAdapter((root_object, request), name=name)
             return view
         else:
             return self
@@ -86,11 +87,10 @@ class LaunchpadBrowserPublication(
 
     root_object_interface = ILaunchpadRoot
 
-    db_policy = None
-
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
+        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -152,8 +152,8 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.db_policy = IDatabasePolicy(request)
-        self.db_policy.beforeTraversal()
+        self.thread_locals.db_policy = IDatabasePolicy(request)
+        self.thread_locals.db_policy.beforeTraversal()
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -329,6 +329,15 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
 
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
+
         return mapply(ob, request.getPositionalArguments(), request)
 
     def afterCall(self, request, ob):
@@ -351,14 +360,17 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.db_policy is not None:
-            self.db_policy.afterCall()
-            self.db_policy = None
+        if self.thread_locals.db_policy is not None:
+            self.thread_locals.db_policy.afterCall()
+            self.thread_locals.db_policy = None
 
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
+        elif txn.isDoomed():
+            txn.abort() # Sends an abort to the database, even though
+            # transaction is still doomed.
         else:
             txn.commit()
 

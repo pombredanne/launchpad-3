@@ -31,7 +31,6 @@ that person's canonical URL.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../~salgado
-  ...
 
 Data is served encoded in UTF-8; a good client will automatically
 convert it into Unicode.
@@ -128,9 +127,9 @@ Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
   ...     "/~admins?ws.op=no_such_operation")
-  HTTP/1.1 404 Not Found
+  HTTP/1.1 400 Bad Request
   ...
-
+  No such operation: no_such_operation
 
 == Modification ==
 

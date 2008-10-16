@@ -8,6 +8,7 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'ObjectFactory',
     'time_counter',
     ]
 
@@ -22,21 +23,21 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
     CodeImportResultStatus, CodeImportReviewStatus,
     CodeReviewNotificationLevel, CreateBugParams, DistroSeriesStatus,
     EmailAddressStatus, IBranchSet, IBugSet, IBugWatchSet,
-    ICodeImportMachineSet, ICodeImportEventSet, ICodeImportResultSet,
-    ICodeImportSet, ICountrySet, IDistributionSet, IDistroSeriesSet,
-    IEmailAddressSet, ILibraryFileAliasSet, IPersonSet, IPOTemplateSet,
-    IProductSet, IProjectSet, IRevisionSet, IShippingRequestSet,
-    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
-    License, PersonCreationRationale, RevisionControlSystems,
-    ShipItFlavour, ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError,
-    )
+    ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
+    ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
+    IStandardShipItRequestSet, ITranslationGroupSet, License,
+    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -47,11 +48,12 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.poll import (
+    IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -85,13 +87,8 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 _DEFAULT = object()
 
 
-class LaunchpadObjectFactory:
-    """Factory methods for creating Launchpad objects.
-
-    All the factory methods should be callable with no parameters.
-    When this is done, the returned object should have unique references
-    for any other required objects.
-    """
+class ObjectFactory:
+    """Factory methods for creating basic Python objects."""
 
     def __init__(self):
         # Initialise the unique identifier.
@@ -125,6 +122,15 @@ class LaunchpadObjectFactory:
         if host is None:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
+
+
+class LaunchpadObjectFactory(ObjectFactory):
+    """Factory methods for creating Launchpad objects.
+
+    All the factory methods should be callable with no parameters.
+    When this is done, the returned object should have unique references
+    for any other required objects.
+    """
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -205,6 +211,15 @@ class LaunchpadObjectFactory:
                 getUtility(IEmailAddressSet).new(email, team))
         return team
 
+    def makePoll(self, team, name, title, proposition):
+        """Create a new poll which starts tomorrow and lasts for a week."""
+        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
+        datecloses = dateopens + timedelta(days=7)
+        return getUtility(IPollSet).new(
+            team, name, title, proposition, dateopens, datecloses,
+            PollSecrecy.SECRET, allowspoilt=True,
+            poll_type=PollAlgorithm.SIMPLE)
+
     def makeTranslationGroup(
         self, owner, name=None, title=None, summary=None):
         """Create a new, arbitrary `TranslationGroup`."""
@@ -258,7 +273,11 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString()
         if summary is None:
             summary = self.getUniqueString()
-        return product.newSeries(owner=owner, name=name, summary=summary)
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        return naked_product.newSeries(owner=owner, name=name,
+                                       summary=summary)
 
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
@@ -433,7 +452,8 @@ class LaunchpadObjectFactory:
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -452,7 +472,8 @@ class LaunchpadObjectFactory:
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -523,7 +544,7 @@ class LaunchpadObjectFactory:
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -531,7 +552,8 @@ class LaunchpadObjectFactory:
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
@@ -575,7 +597,7 @@ class LaunchpadObjectFactory:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
         if msgid is None:
-            msgid = make_msgid('launchpad')
+            msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
@@ -692,12 +714,7 @@ class LaunchpadObjectFactory:
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None,
-                                    source_product_series_id=0):
-        # XXX: MichaelHudson 2008-05-19 bug=231819: The
-        # source_product_series_id attribute is to do with the new system
-        # looking in legacy locations for foreign trees and can be deleted
-        # when the new system has been running for a while.
+                                    cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
@@ -715,8 +732,7 @@ class LaunchpadObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            source_product_series_id)
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
@@ -744,7 +760,7 @@ class LaunchpadObjectFactory:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        rfc822msgid = make_msgid("launchpad")
+        rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)
         MessageChunk(message=message, sequence=1, content=content)
@@ -766,7 +782,10 @@ class LaunchpadObjectFactory:
             product = self.makeProduct()
         if name is None:
             name = self.getUniqueString()
-        series = product.newSeries(
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_product = removeSecurityProxy(product)
+        series = naked_product.newSeries(
             product.owner, name, self.getUniqueString(), user_branch)
         if import_branch is not None:
             series.import_branch = import_branch
@@ -829,8 +848,10 @@ class LaunchpadObjectFactory:
         if name is None:
             name = self.getUniqueString()
 
-        return getUtility(IDistroSeriesSet).new(
-            distribution=distribution,
+        # We don't want to login() as the person used to create the product,
+        # so we remove the security proxy before creating the series.
+        naked_distribution = removeSecurityProxy(distribution)
+        return naked_distribution.newSeries(
             version="%s.0" % self.getUniqueInteger(),
             name=name,
             displayname=self.getUniqueString(),
@@ -839,7 +860,8 @@ class LaunchpadObjectFactory:
             parent_series=parent_series, owner=distribution.owner)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
-                       sourcepackagename=None, owner=None):
+                       sourcepackagename=None, owner=None, name=None,
+                       translation_domain=None):
         """Make a new translation template."""
         if productseries is None and distroseries is None:
             # No context for this template; set up a productseries.
@@ -851,8 +873,10 @@ class LaunchpadObjectFactory:
         subset = templateset.getSubset(
             distroseries, sourcepackagename, productseries)
 
-        name = self.getUniqueString()
-        translation_domain = self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if translation_domain is None:
+            translation_domain = self.getUniqueString()
 
         if owner is None:
             if productseries is None:
@@ -900,3 +924,15 @@ class LaunchpadObjectFactory:
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeUniqueRFC822MsgId(self):
+        """Make a unique RFC 822 message id.
+
+        The created message id is guaranteed not to exist in the
+        `Message` table already.
+        """
+        msg_id = make_msgid('launchpad')
+        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+            msg_id = make_msgid('launchpad')
+        return msg_id
+

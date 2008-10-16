@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -51,7 +52,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
-from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -59,7 +61,7 @@ from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -191,6 +193,11 @@ class EditOAuthAccessToken(AuthorizationBase):
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
+class EditOAuthRequestToken(EditOAuthAccessToken):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthRequestToken
+
+
 class EditBugNominationStatus(AuthorizationBase):
     permission = 'launchpad.Driver'
     usedfor = IBugNomination
@@ -227,12 +234,10 @@ class EditPackaging(EditByRegistryExpertsOrOwnersOrAdmins):
 class EditProductReleaseFile(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductReleaseFile
+
     def checkAuthenticated(self, user):
-        if (user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
-            user.inTeam(self.obj.productrelease.productseries.owner) or
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
-            return True
-        return False
+        return EditProductRelease(self.obj.productrelease).checkAuthenticated(
+            user)
 
 
 class AdminDistributionMirrorByDistroOwnerOrMirrorAdminsOrAdmins(
@@ -741,7 +746,8 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
     fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
-    please consult with SABDFL before modifying these permissions.
+    please consult with Kiko and MDZ on the mailing list before modifying
+    these permissions.
     """
     permission = 'launchpad.Edit'
     usedfor = IDistroSeries
@@ -1720,6 +1726,11 @@ class ViewHWSubmission(AuthorizationBase):
         return not self.obj.private
 
 
+class EditHWSubmission(AdminByAdminsTeam):
+    permission = 'launchpad.Edit'
+    usedfor = IHWSubmission
+
+
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -1847,3 +1858,26 @@ class ViewEmailAddress(AuthorizationBase):
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))
+
+
+class EditArchivePermissionSet(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchivePermissionSet
+
+    def checkAuthenticated(self, user):
+        """Users must be an admin or a member of the tech board."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if user.inTeam(celebrities.admin):
+            return True
+
+        techboard = getUtility(IPersonSet).getByName("techboard")
+        if techboard is None:
+            # We expect techboard to be present but it's not.  Log an
+            # OOPS.
+            error = AssertionError(
+                "'techboard' team is missing, has it been renamed?")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return user.inTeam(techboard)

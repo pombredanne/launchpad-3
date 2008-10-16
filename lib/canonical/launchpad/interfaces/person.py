@@ -183,21 +183,21 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_LAUNCHPAD = DBItem(8, """
-        Created by the owner himself, coming from Launchpad.
+        Created by the owner, coming from Launchpad.
 
         Somebody was navigating through Launchpad and at some point decided to
         create an account.
         """)
 
     OWNER_CREATED_SHIPIT = DBItem(9, """
-        Created by the owner himself, coming from Shipit.
+        Created by the owner, coming from Shipit.
 
         Somebody went to one of the shipit sites to request Ubuntu CDs and was
         directed to Launchpad to create an account.
         """)
 
     OWNER_CREATED_UBUNTU_WIKI = DBItem(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
+        Created by the owner, coming from the Ubuntu wiki.
 
         Somebody went to the Ubuntu wiki and was directed to Launchpad to
         create an account.
@@ -211,14 +211,14 @@ class PersonCreationRationale(DBEnumeratedType):
         """)
 
     OWNER_CREATED_UBUNTU_SHOP = DBItem(12, """
-        Created by the owner himself, coming from the Ubuntu Shop.
+        Created by the owner, coming from the Ubuntu Shop.
 
         Somebody went to the Ubuntu Shop and was directed to Launchpad to
         create an account.
         """)
 
     OWNER_CREATED_UNKNOWN_TRUSTROOT = DBItem(13, """
-        Created by the owner himself, coming from unknown OpenID consumer.
+        Created by the owner, coming from unknown OpenID consumer.
 
         Somebody went to an OpenID consumer we don't know about and was
         directed to Launchpad to create an account.
@@ -520,11 +520,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
+    oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    openid_identifier = TextLine(
-        title=_("Key used to generate opaque OpenID identities."),
-        readonly=True, required=False)
+    sshkeys = Attribute(_('List of SSH keys'))
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -570,15 +568,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    branches = Attribute(
-        "All branches related to this person. They might be registered, "
-        "authored or subscribed by this person.")
-    authored_branches = Attribute("The branches whose author is this person.")
-    registered_branches = Attribute(
-        "The branches whose owner is this person and which either have no"
-        "author or an author different from this person.")
-    subscribed_branches = Attribute(
-        "Branches to which this person " "subscribes.")
     myactivememberships = exported(
         CollectionField(
             title=_("All TeamMemberships for Teams this Person is an "
@@ -1583,6 +1572,9 @@ class IPersonSet(Interface):
     @collection_default_content()
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
+
+    def isNameBlacklisted(self, name):
+        """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
