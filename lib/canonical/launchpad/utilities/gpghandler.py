@@ -265,6 +265,11 @@ class GPGHandler:
     def generateKey(self, name):
         """See `IGPGHandler`."""
         context = gpgme.Context()
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
+
         result = context.genkey(signing_only_param % {'name': name})
 
         # Right, it might seem paranoid to have this many assertions,
@@ -346,6 +351,10 @@ class GPGHandler:
         # Set up containers.
         plaintext = StringIO(content)
         signature = StringIO()
+
+        # Make sure that gpg-agent doesn't interfere.
+        if 'GPG_AGENT_INFO' in os.environ:
+            del os.environ['GPG_AGENT_INFO']
 
         def passphrase_cb(uid_hint, passphrase_info, prev_was_bad, fd):
             os.write(fd, '%s\n' % password)
