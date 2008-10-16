@@ -265,20 +265,26 @@ class GPGHandler:
     def generateKey(self, name):
         """See `IGPGHandler`."""
         context = gpgme.Context()
-
         result = context.genkey(signing_only_param % {'name': name})
-        assert result.primary == 1, 'Secret key generation failed.'
-        assert result.sub == 0, (
+
+        # Right, it might seem paranoid to have this many assertions,
+        # but we have to take key generation very serious.
+        assert result.primary, 'Secret key generation failed.'
+        assert not result.sub, (
             'Only sign-only RSA keys are safe to be generated')
 
         secret_keys = list(self.localKeys(result.fpr, secret=True))
-        if len(secret_keys) != 1:
-            raise MoreThanOneGPGKeyFound(
-                'Found %d secret GPG keys for %s' % (
-                    len(secret_keys), result.fpr))
+
+        assert len(secret_keys) == 1, 'Found %d secret GPG keys for %s' % (
+            len(secret_keys), result.fpr)
 
         key = secret_keys[0]
-        assert key.exists_in_local_keyring
+
+        assert key.fingerprint == result.fpr, (
+            'The key in the local keyring does not match the one generated.')
+        assert key.exists_in_local_keyring, (
+            'The key does not seem to exist in the local keyring.')
+
         return key
 
     def importKeyringFile(self, filepath):

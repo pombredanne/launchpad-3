@@ -178,24 +178,28 @@ IGPGHandler support GPG key generation.
     >>> new_key = gpghandler.generateKey('Testing')
 
 The secret key is returned. Currently, generateKey() only generates
-sign-only keys, i.e. they can sign content but cannot encrypt.
+password-less sign-only keys, i.e. they can sign content but cannot
+encrypt.
 
     >>> print new_key.secret
     True
 
-XXX cprov 20081014: 'can_encrypt' and 'can_sign' are probably broken
-for secret keys. See also pygpgme/gpgme/tests/test_genkey.py
+    >>> print new_key.algorithm
+    R
 
-    >>> print key.can_encrypt
+    >>> print new_key.keysize
+    1024
+
+    >>> print new_key.can_sign
     True
 
-    >>> print key.can_sign
+    >>> print new_key.can_encrypt
+    False
+
+    >>> print new_key.can_certify
     True
 
-    >>> print key.can_certify
-    True
-
-    >>> print key.can_authenticate
+    >>> print new_key.can_authenticate
     False
 
 The generated key contains a single UID and only its 'name' term is
@@ -217,6 +221,12 @@ The public key is also availble.
 
     >>> print pub_key.secret
     False
+
+    >>> print pub_key.algorithm
+    R
+
+    >>> print pub_key.keysize
+    1024
 
     >>> print pub_key.uids[0].name
     Testing
