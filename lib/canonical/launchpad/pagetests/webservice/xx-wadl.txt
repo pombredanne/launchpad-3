@@ -229,7 +229,7 @@ resources serve, and any custom methods invokable on those
 resources. It's a big document.
 
 Because it is so big, it is cached.  Because it only changes when the
-Launchpad software changes, it is cached it a file.  Right now, our
+Launchpad software changes, it is cached to a file.  Right now, our
 webservice will return a special test file:
 canonical/launchpad/apidoc/wadl-testrunner.xml.  It was loaded on module
 import using the canonical.config.config.instance_name, so a development
@@ -251,7 +251,7 @@ instance will use the file canonical/launchpad/apidoc/wadl-development.xml.
     <BLANKLINE>
 
 Let's use the real contents, though.  To do this, we need to do what
-utilities/create-lp-wadl.py does: clear out the cache on the cache.
+utilities/create-lp-wadl.py does: clear out the cache on the class.
 
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
     >>> WebServiceApplication.cached_wadl = None

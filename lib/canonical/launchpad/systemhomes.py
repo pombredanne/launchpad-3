@@ -96,12 +96,12 @@ class MaloneApplication:
         self.title = 'Malone: the Launchpad bug tracker'
 
     def searchTasks(self, search_params):
-        """See IMaloneApplication."""
+        """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
-        """See IMaloneApplication."""
+        """See `IMaloneApplication`."""
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
             security_related=security_related, private=private, tags=tags)
@@ -181,12 +181,12 @@ class RosettaApplication:
 
     @property
     def languages(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         return getUtility(ILanguageSet)
 
     @property
     def language_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('language_count')
 
@@ -197,43 +197,43 @@ class RosettaApplication:
 
     @property
     def translation_groups(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         return getUtility(ITranslationGroupSet)
 
     def translatable_products(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         products = getUtility(IProductSet)
         return products.getTranslatables()
 
     def featured_products(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         projects = getUtility(ITranslationsOverview)
         for project in projects.getMostTranslatedPillars():
             yield { 'pillar' : project['pillar'],
                     'font_size' : project['weight'] * 10 }
 
     def translatable_distroseriess(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         distroseriess = getUtility(IDistroSeriesSet)
         return distroseriess.translatables()
 
     def potemplate_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('potemplate_count')
 
     def pofile_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('pofile_count')
 
     def pomsgid_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('pomsgid_count')
 
     def translator_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
 
@@ -243,7 +243,7 @@ class HWDBApplication:
 
 
 class WebServiceApplication(ServiceRootResource):
-    """See IWebServiceApplication.
+    """See `IWebServiceApplication`.
 
     This implementation adds a 'cached_wadl' attribute.  If set, it will be
     served by `toWADL` rather than calculating the toWADL result.
@@ -267,8 +267,9 @@ class WebServiceApplication(ServiceRootResource):
         cached_wadl = None
 
     def toWADL(self):
+        """See `IWebServiceApplication`."""
         if self.cached_wadl is not None:
             return self.cached_wadl
-        res = super(WebServiceApplication, self).toWADL()
-        self.__class__.cached_wadl = res
-        return res
+        wadl = super(WebServiceApplication, self).toWADL()
+        self.__class__.cached_wadl = wadl
+        return wadl
