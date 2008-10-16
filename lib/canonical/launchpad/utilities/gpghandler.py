@@ -20,7 +20,7 @@ import atexit
 from StringIO import StringIO
 
 import gpgme
-import gpgme.editutil
+from gpgme import editutil as gpgme_editutil
 
 from zope.interface import implements
 
@@ -549,7 +549,7 @@ class PymeKey:
         # edit the owner trust value on the key
         ctx = gpgme.Context()
         key = ctx.get_key(self.fingerprint.encode('ascii'), False)
-        gpgme.editutil.edit_trust(ctx, key, value)
+        gpgme_editutil.edit_trust(ctx, key, value)
         # set the cached copy of owner_trust
         self.owner_trust = value
 
