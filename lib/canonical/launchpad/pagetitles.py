@@ -1080,6 +1080,8 @@ productseries_index = ContextTitle('Overview of %s')
 productseries_packaging = ContextDisplayName(
     'Packaging of %s in distributions')
 
+productseries_review = ContextTitle('Review %s')
+
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
