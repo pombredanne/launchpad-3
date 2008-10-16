@@ -7,9 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodeHostingTac',
     'SSHCodeHostingServer',
-    'make_bzr_ssh_server',
     'make_launchpad_server',
-    'make_sftp_server',
     ]
 
 
@@ -42,20 +40,6 @@ from canonical.codehosting.tests.helpers import FakeLaunchpad
 def make_launchpad_server():
     user_id = 1
     return FakeLaunchpadServer(user_id)
-
-
-def make_sftp_server():
-    branches_root = config.codehosting.branches_root
-    mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer(
-        'sftp', CodeHostingTac(branches_root, mirror_root))
-
-
-def make_bzr_ssh_server():
-    branches_root = config.codehosting.branches_root
-    mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer(
-        'bzr+ssh', CodeHostingTac(branches_root, mirror_root))
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
