@@ -274,7 +274,7 @@ def calculate_replication_set(cur, seeds):
 
     # We can't easily convert the sequence name to (namespace, name) tuples,
     # so we might as well convert the tables to dot notation for consistancy.
-    tables = set(fqn(namespace, tablename) for namespace,tablename in tables)
+    tables = set(fqn(namespace, tablename) for namespace, tablename in tables)
 
     return tables, sequences
 
