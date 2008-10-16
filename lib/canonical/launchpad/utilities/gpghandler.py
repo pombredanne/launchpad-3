@@ -2,9 +2,13 @@
 
 __metaclass__ = type
 
-__all__ = ['GPGHandler', 'PymeSignature', 'PymeKey', 'PymeUserId']
+__all__ = [
+    'GPGHandler',
+    'PymeKey',
+    'PymeSignature',
+    'PymeUserId',
+    ]
 
-# standard
 import os
 import tempfile
 import shutil

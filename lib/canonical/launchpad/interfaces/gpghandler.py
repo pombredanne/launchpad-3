@@ -4,20 +4,21 @@
 from zope.interface import Interface, Attribute
 
 __all__ = [
+    'GPGKeyNotFoundError',
+    'GPGVerificationError',
     'IGPGHandler',
     'IPymeSignature',
     'IPymeKey',
     'IPymeUserId',
-    'GPGVerificationError',
     'MoreThanOneGPGKeyFound',
-    'GPGKeyNotFoundError',
     'SecretGPGKeyImportDetected',
     ]
 
 
 class MoreThanOneGPGKeyFound(Exception):
-    """More than one GPG key was found and we don't know which one to
-    import.
+    """More than one GPG key was found.
+
+    And we don't know which one to import.
     """
 
 
