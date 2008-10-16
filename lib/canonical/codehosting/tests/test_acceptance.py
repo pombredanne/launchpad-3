@@ -110,10 +110,10 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
         contain the exception name.  This is to cover Bazaar's
         handling of unexpected errors in the smart server.
         """
-        # XXX: JamesHenstridge 2007-10-08 bug=118736
-        # This helper should not be needed, but some of the exceptions
-        # we raise (such as PermissionDenied) are not yet handled by
-        # the smart server protocol as of bzr-0.91.
+        # XXX: JonathanLange 2008-10-16 bug=246792: This helper should not be
+        # needed, but some of the exceptions we raise (such as
+        # PermissionDenied) are not yet handled by the smart server protocol
+        # as of Bazaar 1.7.
         names = exception_names(exception)
         try:
             f(*args, **kwargs)
