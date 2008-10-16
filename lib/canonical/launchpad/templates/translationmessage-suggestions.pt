@@ -61,7 +61,13 @@
   </tr>
   <tr class="discreet secondary"
     tal:attributes="id string:msgset_${context/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
-    <td class="icon left right" />
+    <td class="icon left right">
+      <tal:legal-warning condition="submission/legal_warning">
+        <a href="http://help.launchpad.net/Translations/ReusingPackagedTranslations"
+           class="legal-warning">
+          <img alt="Legal warning" title="Do not use this translation before checking for license compatibility" src="/@@/warning" /></a>
+      </tal:legal-warning>
+    </td>
     <td style="overflow: auto;"
         tal:condition="python:context.isFromSamePOFile(submission)">
       Suggested by
