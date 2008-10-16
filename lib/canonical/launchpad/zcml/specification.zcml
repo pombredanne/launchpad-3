@@ -345,17 +345,12 @@
     template="../templates/specification-removedep.pt">
   </browser:generalform>
 
-  <browser:addform
+  <browser:page
     name="+linksprint"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SpecificationSprintAddView"
-    label="Propose specification for meeting agenda"
-    fields="sprint"
-    keyword_arguments="sprint"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-linksprint.pt">
-  </browser:addform>
+    template="../templates/specification-linksprint.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISpecification"
