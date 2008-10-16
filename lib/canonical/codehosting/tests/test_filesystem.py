@@ -102,6 +102,10 @@ class TestFilesystem(TestCaseWithTransport):
 
     def test_make_team_junk_branch_directory(self):
         # Teams do not have +junk products
+        # XXX: JonathanLange 2008-08-16: We don't need to test this here,
+        # since it's already tested at the XMLRPC server level. We should
+        # delete this test once we add tests for fault-to-bzr-error
+        # translation.
         team = self.factory.makeTeam(self.requester)
         transport = self.getTransport()
         self.assertRaises(
@@ -188,8 +192,7 @@ class TestFilesystem(TestCaseWithTransport):
 
     def test_backup_bzr_directory_inside_branch(self):
         # Bazaar sometimes needs to create backup.bzr directories directly
-        # underneath the branch directory. This is alternative name for the
-        # backup.bzr directory.
+        # underneath the branch directory.
         product = self.factory.makeProduct()
         branch_path = '~%s/%s/%s' % (
             self.requester.name, product.name, self.factory.getUniqueString())
@@ -225,7 +228,7 @@ class TestFilesystem(TestCaseWithTransport):
 
     def test_rename_to_non_bzr_directory_fails(self):
         # Users cannot create an allowed directory (e.g. '.bzr' or
-        # '.bzr.backup') and then rename it to something that's not allowed
+        # 'backup.bzr') and then rename it to something that's not allowed
         # (e.g. 'republic').
         product = self.factory.makeProduct()
         branch_path = '~%s/%s/%s' % (
