@@ -13,6 +13,8 @@ TimeoutError.
 First we create a view that will provoke a TimeoutError, a view for the
 exception, and a time machine.
 
+    >>> from textwrap import dedent
+    >>> from zope.testbrowser.testing import Browser
     >>> from zope.publisher.browser import BrowserView
     >>> from zope.publisher.interfaces.browser import (
     ...     IBrowserRequest, IBrowserView, IBrowserPublisher)
@@ -24,8 +26,10 @@ exception, and a time machine.
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> from canonical.config import config
     >>> from storm.exceptions import TimeoutError
-    >>> old_timeout = config.database.db_statement_timeout
-    >>> config.database.db_statement_timeout = 5000
+    >>> config.push('set_timeout', dedent('''
+    ...     [database]
+    ...     db_statement_timeout = 5000
+    ...     '''))
     >>> _now = 0
     >>> def fake_time():
     ...     return float(_now)
@@ -48,17 +52,19 @@ exception, and a time machine.
     ...                     config.database.db_statement_timeout_precision)
     ...         store.execute('SELECT TRUE', noresult=True)
     ...
-    >>> timeout_in_exception_view = False
+    >>> timeout_in_exception_view = None
     >>> class DoomedExceptionView(DoomedView):
     ...     def __call__(self):
+    ...         global timeout_in_exception_view
     ...         store = zope.component.getUtility(IStoreSelector).get(
     ...             MAIN_STORE, MASTER_FLAVOR)
     ...         try:
     ...             store.execute('SELECT TRUE', noresult=True)
     ...         except TimeoutError:
-    ...             global timeout_in_exception_view
     ...             timeout_in_exception_view = True
     ...             raise
+    ...         else:
+    ...             timeout_in_exception_view = False
     ...
     >>> sm = zope.component.getSiteManager()
     >>> sm.registerAdapter(
@@ -70,6 +76,8 @@ exception, and a time machine.
 
 Now we actually demonstrate the behavior.  The view did raise a TimeoutError.
 
+    >>> browser = Browser()
+    >>> browser.handleErrors = False
     >>> browser.open('http://launchpad.dev/doom_test')
     Traceback (most recent call last):
     ...
@@ -77,7 +85,7 @@ Now we actually demonstrate the behavior.  The view did raise a TimeoutError.
 
 The exception view did not.
 
-    >>> timeout_in_exception_view
+    >>> print timeout_in_exception_view
     False
 
 All that's left is to clean up after ourselves.
@@ -90,6 +98,6 @@ All that's left is to clean up after ourselves.
     ...     DoomedExceptionView, required=(TimeoutError, IBrowserRequest),
     ...     provided=IBrowserView, name='index.html')
     True
-    >>> config.database.db_statement_timeout = old_timeout
+    >>> ignore = config.pop('set_timeout')
     >>> import time
     >>> canonical.launchpad.webapp.adapter.time = time.time
