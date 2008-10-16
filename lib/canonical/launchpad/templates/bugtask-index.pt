@@ -25,10 +25,12 @@
       </p>
       <div class="object identifier">
 
-          <tal:icon replace="structure context/image:icon" />
-          Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
-          condition="context/bug/name">
-          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:
+          <a tal:attributes="href context/bug/fmt:url">
+            <tal:icon replace="structure context/image:icon" />
+            Bug #<span tal:content="context/bug/id"
+            >12345</span><tal:nickname
+                          condition="context/bug/name">
+          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>:</a>
 
       </div>
       <tal:privacy replace="structure context/bug/@@+portlet-privacy" />
@@ -101,17 +103,21 @@
           method="POST"
           >
 
-        This bug is not recorded as needing to be fixed in
-        <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-           tal:content="context/bugtargetdisplayname">Mozilla Firefox</a>.
+        This bug isn't linked to
+        <strong><a
+           tal:attributes="href string:${context/target/fmt:url}/+bugs"
+           tal:content="context/bugtargetdisplayname"
+           >Mozilla Firefox</a></strong>.  Would you like to report it here as
+           well?<br/>
 
         <tal:loggedin condition="request/lp:person">
 
-          <input
+          <center><input
               type="submit"
               name="reportbug"
-              value="Also Needs Fixing Here"
-              />
+              value=""
+              tal:attributes="value string:Yes, report in ${context/bugtargetdisplayname}"
+              /></center>
         </tal:loggedin>
         <tal:notloggedin condition="not:request/lp:person">
           If you want to report it in <tal:block
