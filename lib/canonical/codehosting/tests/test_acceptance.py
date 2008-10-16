@@ -38,7 +38,6 @@ from canonical.testing.profiled import profiled
 
 class SSHServerLayer(ZopelessAppServerLayer):
 
-    _reset_between_tests = True
     _tac_handler = None
 
     @classmethod
@@ -52,42 +51,33 @@ class SSHServerLayer(ZopelessAppServerLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        if not SSHServerLayer._reset_between_tests:
-            raise LayerInvariantError(
-                "_reset_between_tests changed before SSHServerLayer "
-                "was actually used.")
         tac_handler = SSHServerLayer.getTacHandler()
         tac_handler.setUp()
-        SSHServerLayer._check_and_reset()
+        SSHServerLayer._reset()
         atexit.register(tac_handler.tearDown)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        if not SSHServerLayer._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests not reset before SSHServerLayer "
-                    "shutdown")
-        SSHServerLayer._check_and_reset()
+        SSHServerLayer._reset()
         SSHServerLayer.getTacHandler().tearDown()
 
     @classmethod
     @profiled
-    def _check_and_reset(cls):
+    def _reset(cls):
         """Reset the storage unless this has been disabled."""
-        if SSHServerLayer._reset_between_tests:
-            SSHServerLayer.getTacHandler().clear()
+        SSHServerLayer.getTacHandler().clear()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        SSHServerLayer._check_and_reset()
+        SSHServerLayer._reset()
         set_up_test_user('testuser', 'testteam')
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        SSHServerLayer._check_and_reset()
+        SSHServerLayer._reset()
 
 
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
@@ -96,7 +86,6 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
     scheme = None
 
     def setUp(self):
-        # Explicitly *don't* up-call for now.
         super(SSHTestCase, self).setUp()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
