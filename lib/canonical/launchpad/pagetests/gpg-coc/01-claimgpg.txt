@@ -3,7 +3,7 @@
 
 == Setup ==
 
-    >>> import email, re
+    >>> import email
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.zeca.ftests.harness import ZecaTestSetup
 

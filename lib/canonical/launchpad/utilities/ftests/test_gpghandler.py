@@ -5,7 +5,6 @@ import unittest
 
 from zope.component import getUtility
 
-import canonical.base
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
