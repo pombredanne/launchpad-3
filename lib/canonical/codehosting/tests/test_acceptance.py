@@ -65,7 +65,7 @@ class SSHServerLayer(ZopelessAppServerLayer):
     @classmethod
     @profiled
     def _reset(cls):
-        """Reset the storage unless this has been disabled."""
+        """Reset the storage."""
         SSHServerLayer.getTacHandler().clear()
 
     @classmethod
