@@ -196,14 +196,16 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     implements(IBranchFileSystem)
 
-    def createBranch(self, login_id, personName, productName, branchName):
+    def createBranch(self, login_id, branch_path):
         """See `IBranchFileSystem`."""
         def create_branch(requester):
+            personName, productName, branchName = branch_path.split('/')
+            personName = personName[1:]
             owner = getUtility(IPersonSet).getByName(personName)
             if owner is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "User/team %r does not exist." % personName)
+                    "User/team '%s' does not exist." % personName)
 
             if productName == '+junk':
                 product = None
@@ -212,7 +214,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 if product is None:
                     return Fault(
                         NOT_FOUND_FAULT_CODE,
-                        "Project %r does not exist." % productName)
+                        "Project '%s' does not exist." % productName)
 
             try:
                 branch = getUtility(IBranchSet).new(

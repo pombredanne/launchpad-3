@@ -328,8 +328,9 @@ class FakeBranchFilesystem:
         self._product_set = product_set
         self._factory = factory
 
-    def createBranch(self, requester_id, owner_name, product_name,
-                     branch_name):
+    def createBranch(self, requester_id, branch_path):
+        owner_name, product_name, branch_name = branch_path.split('/')
+        owner_name = owner_name[1:]
         owner = self._person_set.getByName(owner_name)
         if owner is None:
             return Fault(
