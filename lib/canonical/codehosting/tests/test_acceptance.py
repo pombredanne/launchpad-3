@@ -93,13 +93,13 @@ class SSHServerLayer(ZopelessAppServerLayer):
 class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     layer = SSHServerLayer
-    schema = None
+    scheme = None
 
     def setUp(self):
         # Explicitly *don't* up-call for now.
         super(SSHTestCase, self).setUp()
         tac_handler = SSHServerLayer.getTacHandler()
-        self.server = SSHCodeHostingServer(self.schema, tac_handler)
+        self.server = SSHCodeHostingServer(self.scheme, tac_handler)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
@@ -232,7 +232,7 @@ class SmokeTest(SSHTestCase):
     """Smoke test for repository support."""
 
     def setUp(self):
-        self.schema = 'bzr+ssh'
+        self.scheme = 'bzr+ssh'
         super(SmokeTest, self).setUp()
         self.first_tree = 'first'
         self.second_tree = 'second'

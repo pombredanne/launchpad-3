@@ -305,18 +305,18 @@ def clone_test(test, new_id):
 class CodeHostingTestProviderAdapter:
     """Test adapter to run a single test against many codehosting servers."""
 
-    def __init__(self, schemas):
-        self._schemas = schemas
+    def __init__(self, schemes):
+        self._schemes = schemes
 
-    def adaptForServer(self, test, schema):
-        new_test = clone_test(test, '%s(%s)' % (test.id(), schema))
-        new_test.schema = schema
+    def adaptForServer(self, test, scheme):
+        new_test = clone_test(test, '%s(%s)' % (test.id(), scheme))
+        new_test.scheme = scheme
         return new_test
 
     def adapt(self, test):
         result = unittest.TestSuite()
-        for schema in self._schemas:
-            new_test = self.adaptForServer(test, schema)
+        for scheme in self._schemes:
+            new_test = self.adaptForServer(test, scheme)
             result.addTest(new_test)
         return result
 
