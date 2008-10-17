@@ -518,22 +518,51 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
-    def syncSources(sources, to_pocket, to_series=None,
-                    include_binaries=False):
-        """Synchronise (copy) the sources specified into this archive.
+    def syncSources(source_names, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
+        """Synchronise (copy) named sources into this archive from another.
 
-        :param sources: a list of `ISourcePackagePublishingHistory`
-        :param: pocket: the target `PackagePublishingPocket`
-        :param: series: the target `IDistroSeries`, if None is given the same
-            current source distroseries will be used as the destination
-        :param: include_binaries: optional boolean, controls whether or not
+        This method takes string-based paramters and is intended for use
+        in the API.
+
+        :param source_names: a list of string names of packages to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
-            copied along with the source
+            copied along with the source.
 
-        :return: a list of `ISourcePackagePublishingHistory` and
-            `BinaryPackagePublishingHistory` corresponding to the copied
-            publications.
+        :raises SourceNotFound: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+
+        :return: a list of string names of packages that could be copied.
         """
+
+    def syncSource(source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False):
+        """Synchronise (copy) a single named source into this archive.
+
+        This method takes string-based paramters and is intended for use
+        in the API.
+
+        :param source_name: a string name of the package to copy.
+        :param version: the version of the package to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+
+        :raises SourceNotFound: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+        """
+
 
 
 class IPPA(IArchive):

@@ -47,19 +47,37 @@ from canonical.launchpad.interfaces.archivepermission import (
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.scripts.packagecopier import (
+    CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.lazr.rest.declarations import webservice_error
 
-from canonical.launchpad.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+
+class PocketNotFound(Exception):
+    """Invalid pocket."""
+    webservice_error(400) #Bad request.
+
+
+class DistroSeriesNotFound(Exception):
+    """Invalid distroseries."""
+    webservice_error(400) #Bad request.
+
+
+class SourceNotFound(Exception):
+    """Invalid source name."""
+    webservice_error(400) #Bad request.
 
 
 class Archive(SQLBase):
@@ -846,15 +864,69 @@ class Archive(SQLBase):
 
         return archive_file
 
-    def syncSources(self, sources, to_pocket, to_series=None,
-                    include_binaries=False):
+    def syncSources(self, source_names, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
         """See `IArchive`."""
-        # First, validate the copy.
+        # Find and validate the source package names in source_names.
+        sources = []
+        name_utility = getUtility(ISourcePackageNameSet)
+        for name in source_names:
+            try:
+                source_package_name = name_utility[name]
+            except NotFoundError, e:
+                # Webservice-friendly exception.
+                raise SourceNotFound(e)
+            sources.append(from_archive.getPublishedSources(name=name)[0])
+
+        return self._copySources(
+            sources, to_pocket, to_series, include_binaries)
+
+    def syncSource(self, source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        # Find and validate the source package version required.
+        try:
+            source_package_name = getUtility(
+                ISourcePackageNameSet)[source_name]
+        except NotFoundError, e:
+            # Webservice-friendly exception.
+            raise SourceNotFound(e)
+
+        source = from_archive.getPublishedSources(
+            name=source_name, version=version)
+
+        self._copySources(source, to_pocket, to_series, include_binaries)
+
+    def _copySources(self, sources, to_pocket, to_series=None,
+                     include_binaries=False):
+        """Private helper function to copy sources to this archive.
+        
+        It takes a list of SourcePackagePublishingHistory but the other args
+        are strings.
+        """
+        # Convert the to_pocket string to its enum.
+        try:
+            pocket = PackagePublishingPocket.items[to_pocket.upper()]
+        except KeyError, error:
+            raise PocketNotFound(error)
+
+        # Now convert the to_series string to a real distroseries.
+        if to_series is not None:
+            result = getUtility(IDistroSeriesSet).findByName(to_series)
+            if result.count() == 0:
+                raise DistroSeriesNotFound(to_series)
+            if result.count() != 1:
+                raise DistroSeriesNotFound("%s is ambiguous" % to_series)
+            series = result[0]
+        else:
+            series = None
+
+        # Validate the copy.
         broken_copies = []
         for source in sources:
             try:
                 check_copy(
-                    source, self, to_series, to_pocket, include_binaries)
+                    source, self, series, pocket, include_binaries)
             except CannotCopy, reason:
                 broken_copies.append("%s (%s)" % (source.displayname, reason))
 
@@ -863,10 +935,15 @@ class Archive(SQLBase):
 
         # Perform the copy.
         copies = do_copy(
-            sources, self, to_series, to_pocket, include_binaries)
+            sources, self, series, pocket, include_binaries)
 
         if len(copies) == 0:
             raise CannotCopy("Packages already copied.")
+
+        # Return a list of string names of packages that were copied.
+        return [
+            copy.sourcepackagerelease.sourcepackagename.name
+            for copy in copies]
 
 
 class ArchiveSet:
