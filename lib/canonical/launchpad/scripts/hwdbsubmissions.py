@@ -553,7 +553,7 @@ class SubmissionParser:
             software_data[node.tag] = result
         # The nodes <packages> and <xorg> are optional. Ensure that
         # we have dummy entries in software_data for these nodes, if
-        # the nodes do appear in a submission in order to avoid
+        # the nodes do not appear in a submission in order to avoid
         # KeyErrors elsewhere in this module.
         for node_name in ('packages', 'xorg'):
             if node_name not in software_data:

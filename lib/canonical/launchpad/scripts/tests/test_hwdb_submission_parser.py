@@ -618,32 +618,26 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         self.assertRaises(ValueError, SubmissionParser()._parseXOrg, node)
 
-    def testSoftwareSection(self):
+    def testSoftwareSectiontest_parseSoftware(self):
         """Test SubmissionParser._parseSoftware
 
         Ensure that all sub-parsers are properly called.
         """
         test = self
-        def _parseLSBRelease(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lsbrelease')
-            return 'parsed lsb release'
+        class TestSubmissionParser(SubmissionParser):
+            def _parseLSBRelease(self, node):
+                test.assertEqual(node.tag, 'lsbrelease')
+                return 'parsed lsb release'
 
-        def _parsePackages(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'packages')
-            return 'parsed packages'
+            def _parsePackages(self, node):
+                test.assertEqual(node.tag, 'packages')
+                return 'parsed packages'
 
-        def _parseXOrg(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'xorg')
-            return 'parsed xorg'
+            def _parseXOrg(self, node):
+                test.assertEqual(node.tag, 'xorg')
+                return 'parsed xorg'
 
-        parser = SubmissionParser()
-        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
-        parser._parsePackages = lambda node: _parsePackages(parser, node)
-        parser._parseXOrg = lambda node: _parseXOrg(parser, node)
-        parser._setSoftwareSectionParsers()
+        parser = TestSubmissionParser()
 
         node = etree.fromstring("""
             <software>
@@ -659,7 +653,7 @@ class TestHWDBSubmissionParser(TestCase):
                           'xorg': 'parsed xorg'},
                          'Invalid parsing result for <software>')
 
-    def testSoftwareSectionNoXorgNode(self):
+    def test_parseSoftware_without_xorg_node(self):
         """Test SubmissionParser._parseSoftware
 
         Ensure that _parseSoftware creates an entry in its
@@ -667,20 +661,16 @@ class TestHWDBSubmissionParser(TestCase):
         contains this node.
         """
         test = self
-        def _parseLSBRelease(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lsbrelease')
-            return 'parsed lsb release'
+        class TestSubmissionParser(SubmissionParser):
+            def _parseLSBRelease(self, node):
+                test.assertEqual(node.tag, 'lsbrelease')
+                return 'parsed lsb release'
 
-        def _parsePackages(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'packages')
-            return 'parsed packages'
+            def _parsePackages(self, node):
+                test.assertEqual(node.tag, 'packages')
+                return 'parsed packages'
 
-        parser = SubmissionParser()
-        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
-        parser._parsePackages = lambda node: _parsePackages(parser, node)
-        parser._setSoftwareSectionParsers()
+        parser = TestSubmissionParser()
 
         node = etree.fromstring("""
             <software>
@@ -698,7 +688,7 @@ class TestHWDBSubmissionParser(TestCase):
             },
             'Invalid parsing result for <software> without <xorg> sub-node')
 
-    def testSoftwareSectionNoPackagesNode(self):
+    def test_parseSoftware_without_packages_node(self):
         """Test SubmissionParser._parseSoftware
 
         Ensure that _parseSoftware creates an entry in its
@@ -706,20 +696,16 @@ class TestHWDBSubmissionParser(TestCase):
         contains this node.
         """
         test = self
-        def _parseLSBRelease(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'lsbrelease')
-            return 'parsed lsb release'
+        class TestSubmissionParser(SubmissionParser):
+            def _parseLSBRelease(self, node):
+                test.assertEqual(node.tag, 'lsbrelease')
+                return 'parsed lsb release'
 
-        def _parseXOrg(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'xorg')
-            return 'parsed xorg'
+            def _parseXOrg(self, node):
+                test.assertEqual(node.tag, 'xorg')
+                return 'parsed xorg'
 
-        parser = SubmissionParser()
-        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
-        parser._parseXOrg = lambda node: _parseXOrg(parser, node)
-        parser._setSoftwareSectionParsers()
+        parser = TestSubmissionParser()
 
         node = etree.fromstring("""
             <software>
@@ -728,7 +714,6 @@ class TestHWDBSubmissionParser(TestCase):
             </software>
             """)
         result = parser._parseSoftware(node)
-        print result
         self.assertEqual(
             result,
             {
