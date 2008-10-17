@@ -328,6 +328,17 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
+    def checkTranslationsViewable():
+        """Raise `TranslationUnavailable` if translations are hidden.
+
+        Checks the `hide_all_translations` flag.  If it is set, these
+        translations are not to be shown to the public.  In that case an
+        appropriate message is composed based on the series' `status`,
+        and a `TranslationUnavailable` exception is raised.
+
+        Simply returns if translations are not hidden.
+        """
+
     def getUnlinkedTranslatableSourcePackages():
         """Return a list of source packages that can be translated in
         this distribution series but which lack Packaging links.

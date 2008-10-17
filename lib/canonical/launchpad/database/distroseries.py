@@ -22,6 +22,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -646,6 +647,32 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Unknown architecture %s for %s %s' % (
                 archtag, self.distribution.name, self.name))
         return item
+
+    def checkTranslationsViewable(self):
+        """See `IDistroSeries`."""
+        if not self.hide_all_translations:
+            # Yup, viewable.
+            return
+
+        if self.status == DistroSeriesStatus.FUTURE:
+            raise TranslationUnavailable("""
+                Translations for this release series are not available yet.
+                """)
+        elif self.status == DistroSeriesStatus.DEVELOPMENT:
+            raise TranslationUnavailable("""
+                Translations for this release series are still being set up.
+                Please come back soon.
+                """)
+        elif self.status == DistroSeriesStatus.OBSOLETE:
+            raise TranslationUnavailable("""
+                This release series is obsolete.  Its translations are no
+                longer available.
+                """)
+        else:
+            raise TranslationUnavailable("""
+                Translations for this release series are temporarily
+                unavailable.  Please come back soon.
+                """)
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
