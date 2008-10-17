@@ -20,7 +20,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.schema.interfaces import ITextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -518,6 +520,20 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    @operation_parameters(
+        source_names=List(
+            title=_("Source package names"),
+            value_type=TextLine()),
+        from_archive=Reference(schema=Interface),
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @operation_returns_collection_of(ITextLine)
+    @export_write_operation()
     def syncSources(source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
@@ -541,6 +557,18 @@ class IArchive(IHasOwner):
         :return: a list of string names of packages that could be copied.
         """
 
+    @operation_parameters(
+        source_name=TextLine(title=_("Source package name")),
+        version=Int(title=_("Version")),
+        from_archive=Reference(schema=Interface),
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
     def syncSource(source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
@@ -775,3 +803,9 @@ IArchive['newComponentUploader'].queryTaggedValue(
 IArchive['newQueueAdmin'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].schema = IArchivePermission
+IArchive['syncSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['from_archive'].schema = IArchive
+IArchive['syncSource'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['from_archive'].schema = IArchive
