@@ -180,10 +180,7 @@ scan_branches: rewritemap
 sync_branches: pull_branches scan_branches
 
 bzr_version_info:
-	rm -f bzr-version-info.py bzr-version-info.pyc
-	if which bzr > /dev/null  && test -x `which bzr`; \
-		then PYTHONPATH= bzr version-info --format=python > bzr-version-info.py 2>/dev/null; \
-	fi
+	scripts/update-bzr-version-info.sh
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
