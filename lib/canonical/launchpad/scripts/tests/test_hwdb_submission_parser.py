@@ -24,6 +24,69 @@ from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
 from canonical.testing import BaseLayer
 
 
+class SubmissionParserTestParseSoftware(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class can be used to test the regular case of
+    submission data.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftware, self).__init__(logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parsePackages(self, node):
+        self.test.assertEqual(node.tag, 'packages')
+        return 'parsed packages'
+
+    def _parseXOrg(self, node):
+        self.test.assertEqual(node.tag, 'xorg')
+        return 'parsed xorg'
+
+
+class SubmissionParserTestParseSoftwareNoXorgNode(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class is intended to test submission data that does not contain
+    a <xorg> node.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftwareNoXorgNode, self).__init__(
+            logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parsePackages(self, node):
+        self.test.assertEqual(node.tag, 'packages')
+        return 'parsed packages'
+
+
+class SubmissionParserTestParseSoftwareNoPackagesNode(SubmissionParser):
+    """A Variant used to test SubmissionParser._parseSoftware.
+
+    This class is intended to test submission data that does not contain
+    a <packages> node.
+    """
+    def __init__(self, test, logger=None):
+        super(SubmissionParserTestParseSoftwareNoPackagesNode, self).__init__(
+            logger)
+        self.test = test
+
+    def _parseLSBRelease(self, node):
+        self.test.assertEqual(node.tag, 'lsbrelease')
+        return 'parsed lsb release'
+
+    def _parseXOrg(self, node):
+        self.test.assertEqual(node.tag, 'xorg')
+        return 'parsed xorg'
+
+
 class TestHWDBSubmissionParser(TestCase):
     """Tests of the HWDB submission parser."""
 
@@ -623,21 +686,7 @@ class TestHWDBSubmissionParser(TestCase):
 
         Ensure that all sub-parsers are properly called.
         """
-        test = self
-        class TestSubmissionParser(SubmissionParser):
-            def _parseLSBRelease(self, node):
-                test.assertEqual(node.tag, 'lsbrelease')
-                return 'parsed lsb release'
-
-            def _parsePackages(self, node):
-                test.assertEqual(node.tag, 'packages')
-                return 'parsed packages'
-
-            def _parseXOrg(self, node):
-                test.assertEqual(node.tag, 'xorg')
-                return 'parsed xorg'
-
-        parser = TestSubmissionParser()
+        parser = SubmissionParserTestParseSoftware(self)
 
         node = etree.fromstring("""
             <software>
@@ -660,17 +709,7 @@ class TestHWDBSubmissionParser(TestCase):
         result for <xorg> even if the submitted data does not
         contains this node.
         """
-        test = self
-        class TestSubmissionParser(SubmissionParser):
-            def _parseLSBRelease(self, node):
-                test.assertEqual(node.tag, 'lsbrelease')
-                return 'parsed lsb release'
-
-            def _parsePackages(self, node):
-                test.assertEqual(node.tag, 'packages')
-                return 'parsed packages'
-
-        parser = TestSubmissionParser()
+        parser = SubmissionParserTestParseSoftwareNoXorgNode(self)
 
         node = etree.fromstring("""
             <software>
@@ -695,17 +734,7 @@ class TestHWDBSubmissionParser(TestCase):
         result for <packages> even if the submitted data does not
         contains this node.
         """
-        test = self
-        class TestSubmissionParser(SubmissionParser):
-            def _parseLSBRelease(self, node):
-                test.assertEqual(node.tag, 'lsbrelease')
-                return 'parsed lsb release'
-
-            def _parseXOrg(self, node):
-                test.assertEqual(node.tag, 'xorg')
-                return 'parsed xorg'
-
-        parser = TestSubmissionParser()
+        parser = SubmissionParserTestParseSoftwareNoPackagesNode(self)
 
         node = etree.fromstring("""
             <software>

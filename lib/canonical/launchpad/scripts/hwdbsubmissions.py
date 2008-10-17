@@ -88,7 +88,7 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'scsi': '%-16s',
     }
 
-class SubmissionParser:
+class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
     def __init__(self, logger=None):
