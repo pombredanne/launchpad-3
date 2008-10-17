@@ -606,7 +606,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None):
+    def makeSpecification(self, product=None, title=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -614,9 +614,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(ISpecificationSet).new(
             name=self.getUniqueString('name'),
-            title=self.getUniqueString('title'),
+            title=title,
             specurl=None,
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,

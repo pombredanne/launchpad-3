@@ -4,9 +4,9 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
   <div id="working-on"
-       tal:define="bugtasks view/getBugsInProgress;
-                   specs context/assigned_specs_in_progress"
-       tal:condition="bugtasks|specs|nothing">
+       tal:define="bugtasks view/assigned_bugs_in_progress;
+                   specs view/assigned_specs_in_progress"
+       tal:condition="view/has_assigned_bugs_or_specs_in_progress|nothing">
     <div class="section">
       <div class="portlet">
         <h2>Working on&#8230;</h2>
