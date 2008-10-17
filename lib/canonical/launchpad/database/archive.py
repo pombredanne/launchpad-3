@@ -876,6 +876,8 @@ class Archive(SQLBase):
             except NotFoundError, e:
                 # Webservice-friendly exception.
                 raise SourceNotFound(e)
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
             sources.append(from_archive.getPublishedSources(name=name)[0])
 
         return self._copySources(
