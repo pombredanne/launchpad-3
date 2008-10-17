@@ -1649,7 +1649,13 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        return self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.series_branch
+        if dev_focus_branch is None:
+            return None
+        elif check_permission('launchpad.View', dev_focus_branch):
+            return dev_focus_branch
+        else:
+            return None
 
     @property
     def no_branch_message(self):
@@ -1819,7 +1825,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.product.development_focus.series_branch is not None
+        return self.development_focus_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:
