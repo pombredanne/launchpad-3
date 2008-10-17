@@ -618,68 +618,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return sorted(shortlist(deps),
                     key=lambda s: (s.definition_status, s.priority, s.title))
 
-    @cachedproperty
-    def cached_all_blocked_ids(self):
-        """See `ISpecification`."""
-        # This is a very efficient algorithm for traversing the dependency
-        # hierarchy which is used by SpecificationDepCandidatesVocabulary.
-        # Each loop processes the next level of the hierarchy, so the depth
-        # of the hierarchy has a greater effect on the processing time.
-        store = Store.of(self)
-        try:
-            # temp_blocked stores all the specs that this algorithm finds
-            # that are blocked by this spec.
-            store.execute(
-                'CREATE TEMP TABLE temp_blocked (id INTEGER UNIQUE)')
-            # temp_current holds the specs that are in the next level of the
-            # hierarchy.
-            store.execute(
-                'CREATE TEMP TABLE temp_current (id INTEGER UNIQUE)')
-            # temp_previous holds the specs from the previous level of the
-            # hierarchy.
-            store.execute(
-                'CREATE TEMP TABLE temp_previous (id INTEGER UNIQUE)')
-            store.execute('INSERT INTO temp_previous VALUES(%d)' % self.id)
-            while True:
-                # Find the next level of the hierachy. If the spec
-                # already exists in temp_blocked, we have already processed
-                # it, so we don't have to add it to temp_current again.
-                result = store.execute('''
-                    INSERT INTO temp_current
-                    SELECT specification
-                    FROM SpecificationDependency sd,
-                            temp_previous
-                    WHERE sd.dependency = temp_previous.id
-                        AND sd.specification NOT IN (
-                            SELECT id
-                            FROM temp_blocked)
-                    ''')
-                # If no specs are found in the next level of the hierarchy,
-                # we are done. We cannot use len(result) since the INSERT
-                # is not returning any rows. The rowcount will indicate
-                # how many rows were inserted.
-                if result._raw_cursor.rowcount == 0:
-                    return set(
-                        row[0] for row in
-                        store.execute('SELECT id FROM temp_blocked'))
-                # temp_previous already exists in temp_blocked from the last
-                # loop, so replace its contents with temp_current.
-                # Add the contents of temp_current to temp_blocked, and
-                # clear out temp_current to get ready for the next loop.
-                store.execute('DELETE FROM temp_previous')
-                store.execute(
-                    'INSERT INTO temp_previous SELECT id FROM temp_current')
-                store.execute(
-                    'INSERT INTO temp_blocked SELECT id FROM temp_current')
-                store.execute('DELETE FROM temp_current')
-        finally:
-            # Since temp tables exist as long as the db session (connection)
-            # does, we need to drop the tables, so that the next transaction
-            # on the same connection can create them again.
-            store.execute('DROP TABLE temp_blocked')
-            store.execute('DROP TABLE temp_current')
-            store.execute('DROP TABLE temp_previous')
-
     def _find_all_blocked(self, blocked):
         """This adds all blockers of this spec (and their blockers) to
         blocked.
@@ -691,7 +629,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 blocked.add(blocker)
                 blocker._find_all_blocked(blocked)
 
-    @property
+    @cachedproperty
     def all_blocked(self):
         """See `ISpecification`."""
         blocked = set()

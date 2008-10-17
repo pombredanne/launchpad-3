@@ -1434,8 +1434,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if (spec.id in
-                        launchbag.specification.cached_all_blocked_ids):
+                    if spec in launchbag.specification.all_blocked:
                         continue
                 yield SimpleTerm(spec, spec.name, spec.title)
 
@@ -1556,7 +1555,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return [spec for spec in speclist
                 if (spec != self.context and
                     spec.target == self.context.target
-                    and spec.id not in self.context.cached_all_blocked_ids)]
+                    and spec not in self.context.all_blocked)]
 
     def _doSearch(self, query):
         """Return terms where query is in the text of name
