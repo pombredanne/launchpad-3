@@ -1373,6 +1373,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
 
+
 /* --- Blueprints --- */
 
 body.tab-specifications #applications {

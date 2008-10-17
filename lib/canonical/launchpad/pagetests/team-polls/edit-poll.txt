@@ -26,10 +26,10 @@ Now we'll try to change its name to something that is already in use.
 
     >>> team_admin_browser.getControl(
     ...     'The unique name of this poll').value = 'never-closes'
-    >>> team_admin_browser.getControl('Change').click()
+    >>> team_admin_browser.getControl('Save').click()
 
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
-    There is a problem with the information you entered.
+    There is 1 error.
     ...never-closes is already in use by another poll in this team.
 
 Entering an end date that precedes the start date returns a nice error
@@ -41,10 +41,11 @@ message.
     ...     name='field.dateopens').value = '3000-11-01 00:00:00+00:00'
     >>> team_admin_browser.getControl(
     ...     name='field.datecloses').value = '3000-01-01 00:00:00+00:00'
-    >>> team_admin_browser.getControl('Change').click()
+    >>> team_admin_browser.getControl('Save').click()
 
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
-    This event can't start after it ends.
+    There is 1 error.
+    A poll cannot close at the time (or before) it opens.
 
 We successfully change the polls name
 
@@ -54,7 +55,7 @@ We successfully change the polls name
     ...     name='field.dateopens').value = '3000-01-01 00:00:00+00:00'
     >>> team_admin_browser.getControl(
     ...     name='field.datecloses').value = '3000-11-01 00:00:00+00:00'
-    >>> team_admin_browser.getControl('Change').click()
+    >>> team_admin_browser.getControl('Save').click()
 
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/election-3000'

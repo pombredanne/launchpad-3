@@ -567,9 +567,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('faq')
     def redirect_faq(self):
-        """Redirect /faq to help.launchpad.net/FAQ site."""
+        """Redirect /faq to launchpad-project/+faqs."""
         return self.redirectSubTree(
-            'https://help.launchpad.net/FAQ', status=301)
+            'https://answers.launchpad.net/launchpad-project/+faqs',
+            status=301)
 
     @stepto('feedback')
     def redirect_feedback(self):
