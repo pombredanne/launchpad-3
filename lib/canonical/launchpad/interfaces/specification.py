@@ -741,9 +741,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
         "All the dependencies, including dependencies of dependencies.")
-    cached_all_blocked_ids = Attribute(
-        "IDs of all specs blocked on this, "
-        "and those blocked on the blocked ones.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
     branch_links = Attribute('The entries that link the branches to the spec')
