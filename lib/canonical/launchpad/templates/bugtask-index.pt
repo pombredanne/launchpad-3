@@ -105,7 +105,7 @@
 
         This bug isn't linked to
         <strong><a
-           tal:attributes="href string:${context/target/fmt:url}/+bugs"
+           tal:attributes="href string:${context/target/fmt:url}"
            tal:content="context/bugtargetdisplayname"
            >Mozilla Firefox</a></strong>.  Would you like to report it here as
            well?<br/>
