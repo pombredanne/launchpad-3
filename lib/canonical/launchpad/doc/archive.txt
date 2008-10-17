@@ -1684,6 +1684,6 @@ Copy 1.0 explicitly:
 
     >>> sabdfl.archive.syncSource("package3", "1.0", cprov.archive, "release")
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
-    >>> print sabdfl_two.sourcepackagerelease.version
+    >>> print sabdfl_three.sourcepackagerelease.version
     1.0
 
