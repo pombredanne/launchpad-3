@@ -418,7 +418,7 @@ class FakeBranchFilesystem:
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
-    def _getProduct(self, requester, product_path):
+    def _getProduct(self, requester, product_path, trailing_path):
         try:
             owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
@@ -433,7 +433,8 @@ class FakeBranchFilesystem:
         if not self._canRead(requester, default_branch):
             return
         return (CONTROL_TRANSPORT,
-                {'default_stack_on': '/' + default_branch.unique_name}, '')
+                {'default_stack_on': '/' + default_branch.unique_name},
+                '/'.join([bazaar, trailing_path]))
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
@@ -456,7 +457,7 @@ class FakeBranchFilesystem:
                          }, second)
 
             # Is it a product?
-            product = self._getProduct(requester_id, first)
+            product = self._getProduct(requester_id, first, second)
             if product:
                 return product
         return faults.PathTranslationError(path)

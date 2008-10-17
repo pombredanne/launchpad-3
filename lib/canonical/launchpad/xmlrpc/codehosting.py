@@ -300,7 +300,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
              'writable': self._canWriteToBranch(requester, branch)},
             trailing_path)
 
-    def _getProduct(self, requester, product_path):
+    def _getProduct(self, requester, product_path, trailing_path):
         try:
             owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
@@ -317,7 +317,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         except Unauthorized:
             return
         return (
-            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name}, '')
+            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name},
+            '/'.join([bazaar, trailing_path]))
 
     def translatePath(self, requester_id, path):
         """See `IBranchFileSystem`."""
@@ -335,7 +336,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                         break
                     return branch
                 # Is it a product control directory?
-                product = self._getProduct(requester, first)
+                product = self._getProduct(requester, first, second)
                 if product is not None:
                     return product
             # XXX: Should we use the unescaped path in the error? Unescaped is
