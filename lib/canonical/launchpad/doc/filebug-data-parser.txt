@@ -5,6 +5,7 @@ information added to the bug report that the user will file. The
 information is uploaded as a MIME multipart message, where the different
 headers tells Launchpad what kind of information it is.
 
+
 == FileBugDataParser Internals ==
 
 FileBugDataParser is used to parse the MIME message with the information
@@ -402,33 +403,3 @@ is well-known.
     Traceback (most recent call last):
     ...
     AssertionError: End of file reached.
-
-
-== Cleanup ==
-
-All the parsed message parts are kept in temporary files, and they need
-to be removed when the data from the parser has been read. The paths to
-the used temporary files are held in the _used_temporary_files
-attribute.
-
-    >>> parser = used_parsers.pop()
-    >>> len(parser._used_temporary_files) > 0
-    True
-
-They can be removed by calling the removeTemporaryFiles() method.
-
-    >>> import os
-    >>> import tempfile
-    >>> file_fd, file_path = tempfile.mkstemp()
-    >>> os.close(file_fd)
-    >>> os.path.exists(file_path)
-    True
-    >>> parser._used_temporary_files.append(file_path)
-    >>> parser.removeTemporaryFiles()
-    >>> len(parser._used_temporary_files)
-    0
-    >>> os.path.exists(file_path)
-    False
-
-    >>> for parser in used_parsers:
-    ...     parser.removeTemporaryFiles()

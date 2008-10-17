@@ -20,7 +20,6 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from email import message_from_string
-import os
 import tempfile
 import urllib
 
@@ -74,7 +73,6 @@ class FileBugDataParser:
         self.comments = []
         self.attachments = []
         self.BUFFER_SIZE = 8192
-        self._used_temporary_files = []
 
     def _consumeBytes(self, end_string):
         """Read bytes from the message up to the end_string.
@@ -158,8 +156,7 @@ class FileBugDataParser:
         boundary = "--" + headers.get_param("boundary")
         line = self.readLine()
         while not line.startswith(boundary + '--'):
-            part_file_fd, part_file_name = tempfile.mkstemp()
-            self._used_temporary_files.append(part_file_name)
+            part_file = tempfile.TemporaryFile()
             part_headers = self.readHeaders()
             content_encoding = part_headers.get('Content-Transfer-Encoding')
             if content_encoding is not None and content_encoding != 'base64':
@@ -175,12 +172,13 @@ class FileBugDataParser:
                 # Use a bit of a buffer before saving to the disk, to
                 # avoid too many writes. The more writes, the slower it is.
                 if len(content) >= 16384:
-                    os.write(part_file_fd, content)
+                    part_file.write(content)
                     content = ''
                 line = self.readLine()
             if content:
-                os.write(part_file_fd, content)
-            os.close(part_file_fd)
+                part_file.write(content)
+            # Prepare the file for reading.
+            part_file.seek(0)
             disposition = part_headers['Content-Disposition']
             disposition = disposition.split(';')[0]
             disposition = disposition.strip()
@@ -190,7 +188,6 @@ class FileBugDataParser:
                 charset = part_headers.get_content_charset()
                 assert charset, (
                     "A charset has to be specified for text parts.")
-                part_file = open(part_file_name, 'r')
                 inline_content = part_file.read().rstrip()
                 part_file.close()
                 inline_content = inline_content.decode(charset)
@@ -204,7 +201,7 @@ class FileBugDataParser:
                 attachment = dict(
                     filename=unicode(part_headers.get_filename().strip("'")),
                     content_type=unicode(part_headers['Content-type']),
-                    content=open(part_file_name))
+                    content=part_file)
                 if 'Content-Description' in part_headers:
                     attachment['description'] = unicode(
                         part_headers['Content-Description'])
@@ -217,16 +214,6 @@ class FileBugDataParser:
                 # because some extra information is included.
                 continue
         return data
-
-    def removeTemporaryFiles(self):
-        """Remove all the temporary files used when parsing.
-
-        This should be done after the information in the FileBugData
-        instance has been used.
-        """
-        for temporary_file_path in self._used_temporary_files:
-            os.remove(temporary_file_path)
-        self._used_temporary_files = []
 
 
 class FileBugData:
@@ -273,8 +260,6 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
-        if self.data_parser is not None:
-            self.data_parser.removeTemporaryFiles()
 
     @property
     def field_names(self):
