@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -72,6 +72,7 @@ from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, RedirectionView)
 from canonical.launchpad.webapp.opstats import OpStats
+from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
 
 from canonical.lazr.timeout import set_default_timeout_function
 
@@ -880,7 +881,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
 
 
 http = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -894,7 +895,7 @@ pmhttp = wsgi.ServerType(
     True)
 
 debughttp = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8082,
@@ -902,7 +903,7 @@ debughttp = wsgi.ServerType(
     requestFactory=DebugLayerRequestFactory)
 
 privatexmlrpc = wsgi.ServerType(
-    WSGIHTTPServer,
+    ZServerTracelogServer, # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
