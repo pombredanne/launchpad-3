@@ -618,7 +618,7 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         self.assertRaises(ValueError, SubmissionParser()._parseXOrg, node)
 
-    def testSoftwareSectiontest_parseSoftware(self):
+    def test_parseSoftware(self):
         """Test SubmissionParser._parseSoftware
 
         Ensure that all sub-parsers are properly called.
