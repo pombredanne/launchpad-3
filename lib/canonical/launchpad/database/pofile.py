@@ -95,7 +95,8 @@ def _check_translation_perms(permission, translators, person):
 
 
 def _person_has_not_licensed_translations(person):
-    """Whether a person has not agreed to BSD license for their translations."""
+    """Whether a person has not agreed to BSD license for their translations.
+    """
     if (person.translations_relicensing_agreement is not None and
         person.translations_relicensing_agreement is False):
         return True
