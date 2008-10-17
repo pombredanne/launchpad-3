@@ -16,6 +16,7 @@
       <p tal:content="python: context.args[0]">
         Translations for this release series are temporarily unavailable.
         Please come back soon.
+      </p>
     </div>
   </body>
 </html>

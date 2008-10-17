@@ -51,7 +51,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             sourcepackagename=self.context.sourcepackagename)
 
         if not check_permission('launchpad.Admin', sourcepackage_pots):
-            self.context.distroseries.checkTranslationsAvailable()
+            self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
 
