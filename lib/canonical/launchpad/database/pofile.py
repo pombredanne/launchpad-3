@@ -448,7 +448,7 @@ class POFile(SQLBase, POFileMixIn):
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
             # Contributions' header; see bug #133817 for details.
-            names.extend([u'',
+            names.extend([u' ',
                           u'Launchpad Contributions:'])
             names.extend([
                 contributor.displayname
