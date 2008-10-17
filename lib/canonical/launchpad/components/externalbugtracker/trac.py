@@ -432,7 +432,7 @@ class TracLPPlugin(Trac):
             comment['timestamp'], pytz.timezone('UTC'))
         message = getUtility(IMessageSet).fromText(
             subject='', content=comment['comment'],
-            datecreated=comment_datecreated)
+            datecreated=comment_datecreated, owner=poster)
 
         return message
 
