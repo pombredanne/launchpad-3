@@ -700,6 +700,36 @@ class Archive(SQLBase):
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
 
+    def getPermissions(self, user, item, perm_type):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.checkAuthenticated(user, self, perm_type, item)
+
+    def getPermissionsForPerson(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForPerson(self, person)
+
+    def getUploadersForPackage(self, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPackage(self, source_package_name)
+
+    def getUploadersForComponent(self, component_name=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForComponent(self, component_name)
+
+    def getQueueAdminsForComponent(self, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.queueAdminsForComponent(self, component_name)
+
+    def getComponentsForQueueAdmin(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.componentsForQueueAdmin(self, person)
+
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
         if self.is_ppa:
@@ -715,10 +745,42 @@ class Archive(SQLBase):
 
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.checkAuthenticated(
-            user, self, permission, component)
+        permissions = self.getPermissions(user, component, permission)
         return permissions.count() > 0
+
+    def newPackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackageUploader(
+            self, person, source_package_name)
+
+    def newComponentUploader(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newComponentUploader(
+            self, person, component_name)
+
+    def newQueueAdmin(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newQueueAdmin(self, person, component_name)
+
+    def deletePackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePackageUploader(
+            self, person, source_package_name)
+
+    def deleteComponentUploader(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteComponentUploader(
+            self, person, component_name)
+
+    def deleteQueueAdmin(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteQueueAdmin(self, person, component_name)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
@@ -753,8 +815,7 @@ class Archive(SQLBase):
                 PackageUpload.changesfileID == LibraryFileAlias.id,
                 )
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         def do_query():
             result = store.find((LibraryFileAlias), *(base_clauses + clauses))

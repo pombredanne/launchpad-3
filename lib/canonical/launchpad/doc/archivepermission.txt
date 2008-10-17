@@ -113,6 +113,14 @@ passing a type that it does not know about results in a TypeError:
 IArchivePermissionSet also has some helpers to make it very easy to
 check permissions.
 
+permissionsForPerson() returns all the permission records for the supplied
+person:
+
+    >>> permissions = permission_set.permissionsForPerson(
+    ...     ubuntu.main_archive,  ubuntu_team)
+    >>> permissions.count()
+    8
+
 uploadersForComponent() returns ArchivePermission records where a person
 or team has permission to upload to the supplied component:
 
@@ -301,6 +309,14 @@ specific package:
     mozilla-firefox
     alsa-utils
 
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newPackageUploader(
+    ...     ubuntu.main_archive, carlos, "alsa-utils")
+    >>> new_permission.id == dup_permission.id
+    True
+
 deletePackageUploader() removes it:
 
     >>> permission_set.deletePackageUploader(
@@ -318,6 +334,14 @@ specific component:
     restricted
     main
     multiverse
+
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newComponentUploader(
+    ...     ubuntu.main_archive, sabdfl, "multiverse")
+    >>> new_permission.id == dup_permission.id
+    True
 
 deleteComponentUploader() removes it:
 
@@ -337,6 +361,14 @@ specific component in the distroseries queues:
     ubuntu-team
     name12
     carlos
+
+Calling again with the same parameters simply returns the existing
+permission.
+
+    >>> dup_permission = permission_set.newQueueAdmin(
+    ...     ubuntu.main_archive, carlos, "main")
+    >>> new_permission.id == dup_permission.id
+    True
 
 deleteQueueAdmin() removes it:
 

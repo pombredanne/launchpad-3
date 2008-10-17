@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import (
     LaunchpadView, RedirectionView, stepthrough)
-from canonical.librarian.utils import filechunks
+from canonical.librarian.utils import filechunks, guess_librarian_encoding
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -104,9 +104,13 @@ class StreamOrRedirectLibraryFileAliasView(LaunchpadView):
                 os.environ['http_proxy'] = original_proxy
                 urllib2.install_opener(urllib2.build_opener())
 
-        self.request.response.setHeader(
-            'Content-Type', self.context.mimetype)
+        # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
+        # stored as part of a file's metadata this logic will be replaced.
+        encoding, mimetype = guess_librarian_encoding(
+            self.context.filename, self.context.mimetype)
 
+        self.request.response.setHeader('Content-Encoding', encoding)
+        self.request.response.setHeader('Content-Type', mimetype)
         return tmp_file
 
     def browserDefault(self, request):

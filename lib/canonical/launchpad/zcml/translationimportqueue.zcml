@@ -7,7 +7,7 @@
 <facet facet="translations">
 
     <!-- TranslationImportQueue -->
-    <content class="canonical.launchpad.database.TranslationImportQueueEntry">
+    <class class="canonical.launchpad.database.TranslationImportQueueEntry">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
             />
@@ -15,7 +15,7 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
             />
-    </content>
+    </class>
 
     <browser:navigation
         module="canonical.launchpad.browser"

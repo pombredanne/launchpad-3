@@ -7,12 +7,12 @@
 <facet facet="bounties">
 
   <!-- Bounty -->
-  <content class="canonical.launchpad.database.Bounty">
+  <class class="canonical.launchpad.database.Bounty">
     <allow interface="canonical.launchpad.interfaces.IBounty" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.IBounty" />
-  </content>
+  </class>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBounty"
@@ -94,9 +94,9 @@
 
 
     <!-- BountySet -->
-    <content class="canonical.launchpad.database.BountySet">
+    <class class="canonical.launchpad.database.BountySet">
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BountySet"

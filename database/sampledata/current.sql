@@ -695,6 +695,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, '123/sabdfl');
@@ -1391,6 +1397,13 @@ ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
@@ -4566,6 +4579,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active, alias_
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (37, 'redfish', 22, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (38, 'derby', 23, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (39, 'mega-money-maker', 24, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (40, 'rosetta', 25, NULL, NULL, true, NULL);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -7368,6 +7382,7 @@ INSERT INTO product (id, project, owner, name, displayname, title, summary, desc
     * Derby is easy to install, deploy, and use.
 ', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 1);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant) VALUES (24, NULL, 243623, 'mega-money-maker', 'Mega Money Maker', 'Sample Commercial Project', 'Proprietary project', NULL, '2008-06-27 14:51:47.366199', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 26, NULL, NULL, NULL, NULL, false, false, false, 'All rights reserved.  Not free.', false, false, NULL, NULL, false, false, 243623);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, official_codehosting, license_approved, registrant) VALUES (25, NULL, 16, 'rosetta', 'Launchpad Translations', 'The translations part of Launchpad', 'Here you can translate your project into other spoken languages.', NULL, '2008-10-02 10:12:40.909504', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 27, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, false, 16);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7627,6 +7642,7 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL, 2);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (25, 23, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-11-19 12:44:30.603892', NULL, 1, NULL, NULL, 2);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (26, 24, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-06-27 14:51:47.366199', NULL, 243623, NULL, NULL, 2);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, owner, user_branch, date_published_sync, status) VALUES (27, 25, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-10-02 10:12:40.909504', NULL, 16, NULL, NULL, 2);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -9783,6 +9799,13 @@ INSERT INTO translator (id, translationgroup, language, translator, datecreated)
 
 
 ALTER TABLE translator ENABLE TRIGGER ALL;
+
+
+ALTER TABLE usertouseremail DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE usertouseremail ENABLE TRIGGER ALL;
 
 
 ALTER TABLE vote DISABLE TRIGGER ALL;
