@@ -619,7 +619,7 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertRaises(ValueError, SubmissionParser()._parseXOrg, node)
 
     def testSoftwareSection(self):
-        """Test SubissionParser._parseSoftware
+        """Test SubmissionParser._parseSoftware
 
         Ensure that all sub-parsers are properly called.
         """
@@ -657,7 +657,87 @@ class TestHWDBSubmissionParser(TestCase):
                          {'lsbrelease': 'parsed lsb release',
                           'packages': 'parsed packages',
                           'xorg': 'parsed xorg'},
-                         'Invalid parsing result for <softwar>')
+                         'Invalid parsing result for <software>')
+
+    def testSoftwareSectionNoXorgNode(self):
+        """Test SubmissionParser._parseSoftware
+
+        Ensure that _parseSoftware creates an entry in its
+        result for <xorg> even if the submitted data does not
+        contains this node.
+        """
+        test = self
+        def _parseLSBRelease(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'lsbrelease')
+            return 'parsed lsb release'
+
+        def _parsePackages(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'packages')
+            return 'parsed packages'
+
+        parser = SubmissionParser()
+        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
+        parser._parsePackages = lambda node: _parsePackages(parser, node)
+        parser._setSoftwareSectionParsers()
+
+        node = etree.fromstring("""
+            <software>
+                <lsbrelease/>
+                <packages/>
+            </software>
+            """)
+        result = parser._parseSoftware(node)
+        self.assertEqual(
+            result,
+            {
+                'lsbrelease': 'parsed lsb release',
+                'packages': 'parsed packages',
+                'xorg': {},
+            },
+            'Invalid parsing result for <software> without <xorg> sub-node')
+
+    def testSoftwareSectionNoPackagesNode(self):
+        """Test SubmissionParser._parseSoftware
+
+        Ensure that _parseSoftware creates an entry in its
+        result for <packages> even if the submitted data does not
+        contains this node.
+        """
+        test = self
+        def _parseLSBRelease(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'lsbrelease')
+            return 'parsed lsb release'
+
+        def _parseXOrg(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'xorg')
+            return 'parsed xorg'
+
+        parser = SubmissionParser()
+        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
+        parser._parseXOrg = lambda node: _parseXOrg(parser, node)
+        parser._setSoftwareSectionParsers()
+
+        node = etree.fromstring("""
+            <software>
+                <lsbrelease/>
+                <xorg/>
+            </software>
+            """)
+        result = parser._parseSoftware(node)
+        print result
+        self.assertEqual(
+            result,
+            {
+                'lsbrelease': 'parsed lsb release',
+                'packages': {},
+                'xorg': 'parsed xorg',
+            },
+            'Invalid parsing result for <software> without <packages> '
+            'sub-node')
 
     def testMultipleChoiceQuestion(self):
         """The <questions> node is converted into a Python dictionary."""

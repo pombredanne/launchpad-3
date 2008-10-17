@@ -551,6 +551,13 @@ class SubmissionParser:
             parser = self._parse_software_section[node.tag]
             result = parser(node)
             software_data[node.tag] = result
+        # The nodes <packages> and <xorg> are optional. Ensure that
+        # we have dummy entries in software_data for these nodes, if
+        # the nodes do appear in a submission in order to avoid
+        # KeyErrors elsewhere in this module.
+        for node_name in ('packages', 'xorg'):
+            if node_name not in software_data:
+                software_data[node_name] = {}
         return software_data
 
     def _parseQuestions(self, questions_node):
