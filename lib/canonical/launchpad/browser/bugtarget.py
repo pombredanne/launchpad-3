@@ -163,20 +163,12 @@ class FileBugDataParser:
                 raise AssertionError(
                     "Unknown encoding: %r." % content_encoding)
             line = self.readLine()
-            content = ''
             while not line.startswith(boundary):
                 # Decode the file.
                 if content_encoding is not None:
                     line = line.decode(content_encoding)
-                content +=  line
-                # Use a bit of a buffer before saving to the disk, to
-                # avoid too many writes. The more writes, the slower it is.
-                if len(content) >= 16384:
-                    part_file.write(content)
-                    content = ''
+                part_file.write(line)
                 line = self.readLine()
-            if content:
-                part_file.write(content)
             # Prepare the file for reading.
             part_file.seek(0)
             disposition = part_headers['Content-Disposition']
