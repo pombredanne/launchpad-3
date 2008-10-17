@@ -445,11 +445,14 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
+            SPACE = u' '
             if text is not None:
+                if text == u'':
+                    text = SPACE
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
             # Contributions' header; see bug #133817 for details.
-            names.extend([u' ',
+            names.extend([SPACE,
                           u'Launchpad Contributions:'])
             names.extend([
                 contributor.displayname
