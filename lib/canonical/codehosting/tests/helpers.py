@@ -219,11 +219,11 @@ class FakeLaunchpad:
             2: dict(name='thunderbird'),
             }
         self._branch_set = {}
-        self.createBranch(None, 'testuser', 'firefox', 'baz')
-        self.createBranch(None, 'testuser', 'firefox', 'qux')
-        self.createBranch(None, 'testuser', '+junk', 'random')
-        self.createBranch(None, 'testteam', 'firefox', 'qux')
-        self.createBranch(None, 'name12', '+junk', 'junk.dev')
+        self.createBranch(None, '~testuser/firefox/baz')
+        self.createBranch(None, '~testuser/firefox/qux')
+        self.createBranch(None, '~testuser/+junk/random')
+        self.createBranch(None, '~testteam/firefox/qux')
+        self.createBranch(None, '~name12/+junk/junk.dev')
         self._request_mirror_log = []
 
     def _lookup(self, item_set, item_id):
@@ -249,12 +249,14 @@ class FakeLaunchpad:
                 "The crappy mock authserver doesn't know how to translate: %r"
                 % (product_name,))
 
-    def createBranch(self, login_id, user, product, branch_name):
+    def createBranch(self, login_id, branch_path):
         """See `IHostedBranchStorage.createBranch`.
 
         Also see the description of 'failing_branch_name' in the class
         docstring.
         """
+        user, product, branch_name = branch_path.split('/')
+        user = user[1:]
         if self.failing_branch_name == branch_name:
             raise Fault(self.failing_branch_code, self.failing_branch_string)
         user_id = None
