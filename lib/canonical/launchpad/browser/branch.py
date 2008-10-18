@@ -32,7 +32,7 @@ from zope.component import getUtility, queryAdapter
 from zope.formlib import form
 from zope.interface import Interface, implements
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, Text, TextLine
+from zope.schema import Choice, Text
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -40,13 +40,12 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.lazr import decorates
 from canonical.lazr.enum import EnumeratedType, Item
-from canonical.lazr.interface import use_template
+from canonical.lazr.interface import copy_field, use_template
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden,
@@ -69,6 +68,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
@@ -188,10 +189,12 @@ class BranchNavigationMenu(NavigationMenu):
             self.branch = context
         elif IBranchMergeProposal.providedBy(context):
             self.branch = context.source_branch
+            self.disabled = True
         elif IBranchSubscription.providedBy(context):
             self.branch = context.branch
         elif ICodeReviewComment.providedBy(context):
             self.branch = context.branch_merge_proposal.source_branch
+            self.disabled = True
         else:
             raise AssertionError(
                 'Bad context type for branch navigation menu.')
@@ -202,7 +205,7 @@ class BranchNavigationMenu(NavigationMenu):
 
     def merges(self):
         url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merging')
+        return Link(url, 'Merge Proposals')
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
@@ -1057,13 +1060,10 @@ class RegisterProposalSchema(Interface):
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
 
-    review_candidate = PublicPersonChoice(
-        title=_('Reviewer'), required=False,
-        description=_('A person or team who you want to review this.'),
-        vocabulary='ValidPersonOrTeam')
+    reviewer = copy_field(
+        ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = TextLine(
-        title=_('Review Type'), required=False)
+    review_type = copy_field(ICodeReviewVoteReference['review_type'])
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1082,7 +1082,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         dev_focus_branch = self.context.product.development_focus.user_branch
         if dev_focus_branch is not None:
             reviewer = dev_focus_branch.code_reviewer
-        return {'review_candidate': reviewer}
+        return {'reviewer': reviewer}
 
     @property
     def cancel_url(self):
@@ -1108,7 +1108,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
                 needs_review=True)
-            reviewer = data.get('review_candidate')
+            reviewer = data.get('reviewer')
             if reviewer is not None:
                 proposal.nominateReviewer(
                     reviewer, self.user, data.get('review_type'))
