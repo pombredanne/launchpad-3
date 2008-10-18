@@ -296,6 +296,9 @@ class FakeBranchPuller:
         branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
+        if stacked_on_location == '':
+            branch.stacked_on = None
+            return True
         stacked_on_location = stacked_on_location.rstrip('/')
         for stacked_on_branch in self._branch_set:
             if stacked_on_location == stacked_on_branch.url:

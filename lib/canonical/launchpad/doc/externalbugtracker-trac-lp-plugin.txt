@@ -456,6 +456,12 @@ the original comment.
     >>> print message_one.text_contents
     Hello, world!
 
+The owner of the comment is set to the Person passed to
+getMessageForComment().
+
+    >>> print message_one.owner.displayname
+    Sample Person
+
 
 == Pushing comments ==
 
