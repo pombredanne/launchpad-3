@@ -24,13 +24,14 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer)
+    LaunchpadServer, make_control_transport)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.transport import AsyncVirtualTransport
 from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.testing import TestCase
 from canonical.testing import TwistedLayer
 
 
@@ -39,6 +40,25 @@ def branch_to_path(branch, add_slash=True):
     if add_slash:
         path += '/'
     return path
+
+
+class TestControlTransport(TestCase):
+    """Tests for the control transport factory."""
+
+    def test_control_conf_read_only(self):
+        transport = make_control_transport(default_stack_on='/~foo/bar/baz')
+        self.assertRaises(
+            errors.TransportNotPossible,
+            transport.put_bytes, '.bzr/control.conf', 'data')
+
+    def test_control_conf_with_stacking(self):
+        transport = make_control_transport(default_stack_on='/~foo/bar/baz')
+        control_conf = transport.get_bytes('.bzr/control.conf')
+        self.assertEqual('default_stack_on = /~foo/bar/baz\n', control_conf)
+
+    def test_control_conf_with_no_stacking(self):
+        transport = make_control_transport('')
+        self.assertEqual([], transport.list_dir('.'))
 
 
 class MixinBaseLaunchpadServerTests:

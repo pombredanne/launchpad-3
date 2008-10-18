@@ -100,6 +100,18 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
+def make_control_transport(default_stack_on):
+    memory_server = MemoryServer()
+    memory_server.setUp()
+    transport = get_transport(memory_server.get_url())
+    if default_stack_on == '':
+        return transport
+    format = BzrDirFormat.get_default_format()
+    bzrdir = format.initialize_on_transport(transport)
+    bzrdir.get_config().set_default_stack_on(default_stack_on)
+    return get_transport('readonly+' + transport.base)
+
+
 class BranchNotFound(BzrError):
     """Raised when on translating a virtual path for a non-existent branch."""
 
@@ -357,15 +369,7 @@ class _BaseLaunchpadServer(Server):
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        transport = get_transport(memory_server.get_url())
-        if stack_on_url == '':
-            return transport
-        format = BzrDirFormat.get_default_format()
-        bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(stack_on_url)
-        return get_transport('readonly+' + transport.base)
+        return make_control_transport(stack_on_url)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
