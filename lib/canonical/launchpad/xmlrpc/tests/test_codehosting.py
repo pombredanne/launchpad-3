@@ -350,6 +350,14 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage.setStackedOn(stacked_branch.id, url)
         self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
 
+    def test_setStackedOnNothing(self):
+        # If setStackedOn is passed an empty string as a stacked-on location,
+        # the branch is marked as not being stacked on any branch.
+        stacked_on_branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
+        self.storage.setStackedOn(stacked_branch.id, '')
+        self.assertIs(stacked_branch.stacked_on, None)
+
     def test_setStackedOnBranchNotFound(self):
         # If setStackedOn can't find a branch for the given location, it will
         # return a Fault.

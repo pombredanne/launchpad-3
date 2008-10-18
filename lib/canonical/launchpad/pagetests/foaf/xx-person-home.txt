@@ -50,6 +50,7 @@ But Foo Bar can:
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'contact-details'))
     Email: test@canonical.com
+    (Contact this user)
            testing@canonical.com
     ...
 
