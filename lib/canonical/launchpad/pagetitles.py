@@ -444,6 +444,8 @@ codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
 
+contact_user = 'Contact this user'
+
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
