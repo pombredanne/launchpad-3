@@ -990,8 +990,11 @@ $$
         SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
         RETURN v_lag;
     -- Slony-I not installed here - non-replicated setup.
-    EXCEPTION WHEN undefined_table THEN
-        RETURN NULL;
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
     END;
 $$;
 
