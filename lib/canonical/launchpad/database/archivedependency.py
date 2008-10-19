@@ -41,4 +41,4 @@ class ArchiveDependency(SQLBase):
         dbName='pocket', notNull=True, schema=PackagePublishingPocket)
 
     component = ForeignKey(
-        foreignKey='Component', dbName='component', notNull=True)
+        foreignKey='Component', dbName='component')

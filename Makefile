@@ -22,6 +22,7 @@ MINS_TO_SHUTDOWN=15
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 XSLTPROC=xsltproc
+WADL_FILE = ./lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
@@ -39,8 +40,9 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-apidoc: compile
+$(WADL_FILE): bzr-version-info.py compile
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
+		tee $(WADL_FILE) | \
 		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
 		> ./lib/canonical/launchpad/apidoc/index.html
 
@@ -113,7 +115,7 @@ pagetests: build
 
 inplace: build
 
-build: bzr_version_info compile apidoc
+build: support_files compile
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
@@ -150,7 +152,7 @@ run: inplace stop
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,google-webservice -C $(CONFFILE)
 
-start-gdb: inplace stop bzr_version_info
+start-gdb: inplace stop support_files
 	rm -f thread*.request
 	$(APPSERVER_ENV) nohup gdb -x run.gdb --args $(PYTHON) -t $(STARTSCRIPT) \
 		-r librarian,google-webservice -C $(CONFFILE) \
@@ -162,7 +164,7 @@ run_all: inplace stop sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 		 -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
-pull_branches: bzr_version_info
+pull_branches: support_files
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
@@ -179,14 +181,16 @@ scan_branches: rewritemap
 
 sync_branches: pull_branches scan_branches
 
-bzr_version_info:
+bzr-version-info.py:
 	scripts/update-bzr-version-info.sh
+
+support_files: $(WADL_FILE) bzr-version-info.py
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
-start: inplace stop bzr_version_info
+start: inplace stop support_files
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
@@ -298,4 +302,3 @@ tags:
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
 		sync_branches check_loggerhead_on_merge reload-apache \
 		check_launchpad_storm_on_merge
-
