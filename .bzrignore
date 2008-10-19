@@ -29,4 +29,5 @@ database/sampledata/newsampledata.sql
 database/sampledata/lintdata.sql
 lib/canonical/launchpad/apidoc/index.html
 xxx-report.*
+lib/canonical/launchpad/apidoc/wadl-development.xml
 trace.log
