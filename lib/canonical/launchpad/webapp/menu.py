@@ -356,6 +356,7 @@ class NavigationMenu(MenuBase):
     _baseclassname = 'NavigationMenu'
 
     title = None
+    disabled = False
 
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
