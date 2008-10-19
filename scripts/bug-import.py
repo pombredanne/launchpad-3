@@ -3,6 +3,7 @@
 
 import logging
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from zope.component import getUtility
@@ -41,11 +42,15 @@ class BugImportScript(LaunchpadScript):
         if len(self.args) != 1:
             self.parser.error('Please specify a bug XML file to import')
         bugs_filename = self.args[0]
-        
+
         # don't send email
-        config.zopeless.send_email = False
+        send_email_data = """
+            [zopeless]
+            send_email: False
+            """
+        config.push('send_email_data', send_email_data)
         self.login('bug-importer@launchpad.net')
-        
+
         product = getUtility(IProductSet).getByName(self.options.product)
         if product is None:
             self.parser.error('Product %s does not exist'
@@ -55,6 +60,7 @@ class BugImportScript(LaunchpadScript):
                                self.options.cache_filename,
                                verify_users=self.options.verify_users)
         importer.importBugs(self.txn)
+        config.pop('send_email_data')
 
 
 if __name__ == '__main__':

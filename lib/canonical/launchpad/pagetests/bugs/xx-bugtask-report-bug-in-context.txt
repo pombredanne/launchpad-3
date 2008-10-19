@@ -7,11 +7,12 @@ Fixing Here' button.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/3')
     >>> notice = find_tags_by_class(user_browser.contents, 'error message')
-    >>> extract_text(notice[0])
-    u'This bug is not recorded as needing to be fixed
-      in...mozilla-firefox (Ubuntu).'
+    >>> print extract_text(notice[0])
+    This bug isn't linked to mozilla-firefox (Ubuntu).
+    Would you like to report it here as well?
 
-    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.getControl(
+    ...     'Yes, report in mozilla-firefox (Ubuntu)').click()
     >>> get_feedback_messages(user_browser.contents)
     [u'Thank you for your bug report.']
 
@@ -19,6 +20,7 @@ If No Privileges Person tries to report it again, he sees a nice error
 message.
 
     >>> user_browser.goBack(1)
-    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.getControl(
+    ...     'Yes, report in mozilla-firefox (Ubuntu)').click()
     >>> get_feedback_messages(user_browser.contents)
     [u'The bug is already reported in this context.']
