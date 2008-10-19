@@ -40,7 +40,7 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-$(WADL_FILE): bzr-version-info.py
+$(WADL_FILE): bzr-version-info.py compile
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
 		tee $(WADL_FILE) | \
 		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
@@ -115,7 +115,7 @@ pagetests: build
 
 inplace: build
 
-build: compile support_files
+build: support_files compile
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
