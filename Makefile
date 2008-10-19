@@ -22,7 +22,7 @@ MINS_TO_SHUTDOWN=15
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 XSLTPROC=xsltproc
-WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
+WADL_FILE = ./lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
@@ -115,7 +115,7 @@ pagetests: build
 
 inplace: build
 
-build: support_files compile
+build: compile support_files
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
