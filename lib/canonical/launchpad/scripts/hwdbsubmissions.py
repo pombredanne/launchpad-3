@@ -1298,7 +1298,7 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.getProperty('info.bus')
-        if bus in (None, 'usb'):
+        if bus in (None, 'usb', 'ssb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1312,6 +1312,10 @@ class HALDevice:
             #
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
+            #
+            # info.bus == 'ssb' is used for "aspects" of Broadcom
+            # Ethernet and WLAN devices, but like 'usb', they do not
+            # represent separate devices.
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.
