@@ -16,9 +16,12 @@ __all__ = [
 
 __metaclass__ = type
 
+import os
+
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
 from canonical.launchpad.interfaces.product import IProduct
@@ -93,12 +96,12 @@ class MaloneApplication:
         self.title = 'Malone: the Launchpad bug tracker'
 
     def searchTasks(self, search_params):
-        """See IMaloneApplication."""
+        """See `IMaloneApplication`."""
         return getUtility(IBugTaskSet).search(search_params)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
-        """See IMaloneApplication."""
+        """See `IMaloneApplication`."""
         params = CreateBugParams(
             title=title, comment=description, owner=owner,
             security_related=security_related, private=private, tags=tags)
@@ -178,12 +181,12 @@ class RosettaApplication:
 
     @property
     def languages(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         return getUtility(ILanguageSet)
 
     @property
     def language_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('language_count')
 
@@ -194,43 +197,43 @@ class RosettaApplication:
 
     @property
     def translation_groups(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         return getUtility(ITranslationGroupSet)
 
     def translatable_products(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         products = getUtility(IProductSet)
         return products.getTranslatables()
 
     def featured_products(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         projects = getUtility(ITranslationsOverview)
         for project in projects.getMostTranslatedPillars():
             yield { 'pillar' : project['pillar'],
                     'font_size' : project['weight'] * 10 }
 
     def translatable_distroseriess(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         distroseriess = getUtility(IDistroSeriesSet)
         return distroseriess.translatables()
 
     def potemplate_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('potemplate_count')
 
     def pofile_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('pofile_count')
 
     def pomsgid_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('pomsgid_count')
 
     def translator_count(self):
-        """See IRosettaApplication."""
+        """See `IRosettaApplication`."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
 
@@ -240,5 +243,33 @@ class HWDBApplication:
 
 
 class WebServiceApplication(ServiceRootResource):
-    """See IWebServiceApplication."""
+    """See `IWebServiceApplication`.
+
+    This implementation adds a 'cached_wadl' attribute.  If set, it will be
+    served by `toWADL` rather than calculating the toWADL result.
+
+    On import, the class tries to load a file to populate this attribute.  By
+    doing it on import, this makes it easy to clear, as is needed by
+    utilities/create-lp-wadl.py.
+
+    If the attribute is not set, toWADL will set the attribute on the class
+    once it is calculated.
+    """
     implements(IWebServiceApplication)
+
+    _wadl_filename = os.path.join(
+        os.path.dirname(os.path.normpath(__file__)),
+        'apidoc', 'wadl-%s.xml' % config.instance_name)
+
+    if os.path.exists(_wadl_filename):
+        cached_wadl = open(_wadl_filename).read()
+    else:
+        cached_wadl = None
+
+    def toWADL(self):
+        """See `IWebServiceApplication`."""
+        if self.cached_wadl is not None:
+            return self.cached_wadl
+        wadl = super(WebServiceApplication, self).toWADL()
+        self.__class__.cached_wadl = wadl
+        return wadl

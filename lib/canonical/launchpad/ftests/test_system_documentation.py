@@ -867,6 +867,8 @@ special = {
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'filebug-data-parser.txt': LayeredDocFileSuite(
+        '../doc/filebug-data-parser.txt')
     }
 
 
