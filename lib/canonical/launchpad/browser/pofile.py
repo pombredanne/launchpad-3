@@ -525,7 +525,7 @@ class POFileTranslateView(BaseTranslationView):
             }
 
         if self.show not in count_functions:
-             self.show = self.DEFAULT_SHOW
+            self.show = self.DEFAULT_SHOW
 
         self.shown_count = count_functions[self.show]()
 
