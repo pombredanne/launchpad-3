@@ -483,12 +483,13 @@ class TestRemoveTranslations(TestCase):
         # Remove translations submitted by users who rejected the
         # licensing agreement.
         refusenik = self.factory.makePerson()
-        TranslationRelicensingAgreement(
-            person=refusenik, allow_relicensing=False)
 
         self._makeMessages(
             "Don't download this song", "Niet delen", "Nicht teilen",
             submitter=refusenik)
+
+        TranslationRelicensingAgreement(
+            person=refusenik, allow_relicensing=False)
 
         self._removeMessages(reject_license=True)
 
