@@ -198,7 +198,7 @@ start: inplace stop support_files
 # production servers - removes running 'make build' because we already
 # run this as part of our initscripts, so not needed here. Likewise we
 # don't want to run 'make stop' because it takes unnecessary time
-# even if the service is already stopped, and support_files is not
+# even if the service is already stopped, and bzr_version_info is not
 # needed either because it's run as part of 'make build'.
 initscript-start:
 	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
