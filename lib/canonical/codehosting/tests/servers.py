@@ -5,10 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeHostingTac',
     'SSHCodeHostingServer',
-    'make_bzr_ssh_server',
     'make_launchpad_server',
-    'make_sftp_server',
     ]
 
 
@@ -29,18 +28,6 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
-
-
-def make_sftp_server():
-    branches_root = config.codehosting.branches_root
-    mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer('sftp', branches_root, mirror_root)
-
-
-def make_bzr_ssh_server():
-    branches_root = config.codehosting.branches_root
-    mirror_root = config.supermirror.branchesdest
-    return SSHCodeHostingServer('bzr+ssh', branches_root, mirror_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -126,15 +113,18 @@ class CodeHostingTac(TacTestSetup):
         # Where the pidfile, logfile etc will go.
         self._server_root = tempfile.mkdtemp()
 
-    def setUpRoot(self):
+    def clear(self):
+        """Clear the branch areas."""
         if os.path.isdir(self._branches_root):
             shutil.rmtree(self._branches_root)
         os.makedirs(self._branches_root, 0700)
         if os.path.isdir(self._mirror_root):
             shutil.rmtree(self._mirror_root)
         os.makedirs(self._mirror_root, 0700)
+
+    def setUpRoot(self):
+        self.clear()
         set_up_host_keys_for_testing()
-        set_up_test_user('testuser', 'testteam')
 
     def tearDownRoot(self):
         shutil.rmtree(self._branches_root)
@@ -160,13 +150,13 @@ class CodeHostingTac(TacTestSetup):
 
 class SSHCodeHostingServer(Server):
 
-    def __init__(self, schema, branches_root, mirror_root):
+    def __init__(self, schema, tac_server):
         Server.__init__(self)
         self._schema = schema
         # XXX: JonathanLange 2008-10-08: This is used by createBazaarBranch in
         # test_acceptance.
-        self._mirror_root = mirror_root
-        self._tac_server = CodeHostingTac(branches_root, mirror_root)
+        self._mirror_root = tac_server._mirror_root
+        self._tac_server = tac_server
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -197,14 +187,12 @@ class SSHCodeHostingServer(Server):
         ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
 
     def setUp(self):
-        self._tac_server.setUp()
         self._real_home, self._fake_home = self.setUpFakeHome()
         self._old_vendor_manager = self.forceParamiko()
 
     def tearDown(self):
         self.closeAllConnections()
         os.environ['HOME'] = self._real_home
-        self._tac_server.tearDown()
         shutil.rmtree(self._fake_home)
         ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
 
