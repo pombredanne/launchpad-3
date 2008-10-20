@@ -153,6 +153,8 @@
       <p>Just enter your address below and we will send you
         <tal:option repeat="sole_option view/standard_options">
           <strong tal:content="sole_option/description">1 Ubuntu CD</strong>
+          <input type="hidden" name="ordertype"
+                 tal:attributes="value sole_option/id" />
         </tal:option> of the
         <strong tal:content="view/series/title">Hardy</strong> release.
       </p>
