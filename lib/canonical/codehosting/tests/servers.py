@@ -20,9 +20,7 @@ import tempfile
 from zope.component import getUtility
 
 from bzrlib.transport import get_transport, ssh, Server
-from bzrlib.transport.memory import MemoryServer, MemoryTransport
 
-from twisted.internet import defer
 from twisted.python.util import sibpath
 
 from canonical.codehosting import get_rocketfuel_root
@@ -31,16 +29,6 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
-
-from canonical.codehosting.branchfs import LaunchpadServer
-from canonical.codehosting.branchfsclient import BlockingProxy
-
-from canonical.codehosting.tests.helpers import FakeLaunchpad
-
-
-def make_launchpad_server():
-    user_id = 1
-    return FakeLaunchpadServer(user_id)
 
 
 def make_sftp_server():
@@ -125,33 +113,6 @@ def set_up_test_user(test_user, test_team):
         '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
         'gw==', 'testuser')
     commit()
-
-
-class FakeLaunchpadServer(LaunchpadServer):
-
-    def __init__(self, user_id):
-        authserver = FakeLaunchpad()
-        server = MemoryServer()
-        server.setUp()
-        # The backing transport is supplied during FakeLaunchpadServer.setUp.
-        mirror_transport = get_transport(server.get_url())
-        LaunchpadServer.__init__(
-            self, BlockingProxy(authserver), user_id, MemoryTransport(),
-            mirror_transport)
-        self._schema = 'lp'
-
-    def getTransport(self, path=None):
-        if path is None:
-            path = ''
-        transport = get_transport(self.get_url()).clone(path)
-        return transport
-
-    def setUp(self):
-        LaunchpadServer.setUp(self)
-
-    def tearDown(self):
-        LaunchpadServer.tearDown(self)
-        return defer.succeed(None)
 
 
 class CodeHostingTac(TacTestSetup):

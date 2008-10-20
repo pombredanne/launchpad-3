@@ -11,7 +11,6 @@ __all__ = [
     'CodeHostingRepositoryTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
-    'FakeLaunchpad',
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'ServerTestCase',
@@ -31,14 +30,11 @@ from bzrlib.errors import SmartProtocolError
 from canonical.codehosting.branchfs import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.interfaces.codehosting import (
-    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.testing import TwistedLayer
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
-from twisted.web.xmlrpc import Fault
 
 
 class AvatarTestCase(TrialTestCase):
@@ -189,161 +185,6 @@ def deferToThread(f):
         t.start()
         return d
     return mergeFunctionMetadata(f, decorated)
-
-
-class FakeLaunchpad:
-    """Stub RPC interface to Launchpad.
-
-    If the 'failing_branch_name' attribute is set and createBranch() is called
-    with its value for the branch_name parameter, a Fault will be raised with
-    code and message taken from the 'failing_branch_code' and
-    'failing_branch_string' attributes respectively.
-    """
-
-    failing_branch_name = None
-    failing_branch_code = None
-    failing_branch_string = None
-
-    def __init__(self):
-        self._person_set = {
-            1: dict(name='testuser', displayname='Test User',
-                    emailaddresses=['spiv@test.com'], wikiname='TestUser',
-                    teams=[1, 2]),
-            2: dict(name='testteam', displayname='Test Team', teams=[]),
-            3: dict(name='name12', displayname='Other User',
-                    emailaddresses=['test@test.com'], wikiname='OtherUser',
-                    teams=[3]),
-            }
-        self._product_set = {
-            1: dict(name='firefox'),
-            2: dict(name='thunderbird'),
-            }
-        self._branch_set = {}
-        self.createBranch(None, 'testuser', 'firefox', 'baz')
-        self.createBranch(None, 'testuser', 'firefox', 'qux')
-        self.createBranch(None, 'testuser', '+junk', 'random')
-        self.createBranch(None, 'testteam', 'firefox', 'qux')
-        self.createBranch(None, 'name12', '+junk', 'junk.dev')
-        self._request_mirror_log = []
-
-    def _lookup(self, item_set, item_id):
-        row = dict(item_set[item_id])
-        row['id'] = item_id
-        return row
-
-    def _insert(self, item_set, item_dict):
-        new_id = max(item_set.keys() + [0]) + 1
-        item_set[new_id] = item_dict
-        return new_id
-
-    def getDefaultStackedOnBranch(self, login_id, product_name):
-        if product_name == '+junk':
-            return ''
-        elif product_name == 'evolution':
-            # This has to match the sample data. :(
-            return '/~vcs-imports/evolution/main'
-        elif product_name == 'firefox':
-            return ''
-        else:
-            raise ValueError(
-                "The crappy mock authserver doesn't know how to translate: %r"
-                % (product_name,))
-
-    def createBranch(self, login_id, user, product, branch_name):
-        """See `IHostedBranchStorage.createBranch`.
-
-        Also see the description of 'failing_branch_name' in the class
-        docstring.
-        """
-        if self.failing_branch_name == branch_name:
-            raise Fault(self.failing_branch_code, self.failing_branch_string)
-        user_id = None
-        for id, user_info in self._person_set.iteritems():
-            if user_info['name'] == user:
-                user_id = id
-        if user_id is None:
-            raise Fault(
-                PERMISSION_DENIED_FAULT_CODE,
-                "No such person: %r" % (user,))
-        product_id = self.fetchProductID(product)
-        if product_id is None:
-            raise Fault(
-                PERMISSION_DENIED_FAULT_CODE,
-                "Cannot create branches in non-existent products.")
-        user = self.getUser(user_id)
-        if product_id == '' and 'team' in user['name']:
-            raise Fault(PERMISSION_DENIED_FAULT_CODE,
-                        'Cannot create team-owned +junk branches.')
-        new_branch = dict(
-            name=branch_name, user_id=user_id, product_id=product_id)
-        for branch in self._branch_set.values():
-            if branch == new_branch:
-                raise ValueError("Already have branch: %r" % (new_branch,))
-        return self._insert(self._branch_set, new_branch)
-
-    def fetchProductID(self, name):
-        """See IHostedBranchStorage.fetchProductID."""
-        if name == '+junk':
-            return ''
-        for product_id, product_info in self._product_set.iteritems():
-            if product_info['name'] == name:
-                return product_id
-        return None
-
-    def getBranchInformation(self, login_id, user_name, product_name,
-                             branch_name):
-        for branch_id, branch in self._branch_set.iteritems():
-            owner = self._lookup(self._person_set, branch['user_id'])
-            if branch['product_id'] == '':
-                product = '+junk'
-            else:
-                product = self._product_set[branch['product_id']]['name']
-            if ((owner['name'], product, branch['name'])
-                == (user_name, product_name, branch_name)):
-                if login_id == LAUNCHPAD_SERVICES:
-                    return branch_id, 'r'
-                logged_in_user = self._lookup(self._person_set, login_id)
-                if owner['id'] in logged_in_user['teams']:
-                    return branch_id, 'w'
-                else:
-                    return branch_id, 'r'
-        return '', ''
-
-    def getUser(self, loginID):
-        """See IUserDetailsStorage.getUser."""
-        matching_user_id = None
-        for user_id, user_dict in self._person_set.iteritems():
-            loginIDs = [user_id, user_dict['name']]
-            loginIDs.extend(user_dict.get('emailaddresses', []))
-            if loginID in loginIDs:
-                matching_user_id = user_id
-                break
-        if matching_user_id is None:
-            return ''
-        user_dict = self._lookup(self._person_set, matching_user_id)
-        user_dict['teams'] = [
-            self._lookup(self._person_set, id) for id in user_dict['teams']]
-        return user_dict
-
-    def getBranchesForUser(self, personID):
-        """See IHostedBranchStorage.getBranchesForUser."""
-        product_branches = {}
-        for branch_id, branch in self._branch_set.iteritems():
-            if branch['user_id'] != personID:
-                continue
-            product_branches.setdefault(
-                branch['product_id'], []).append((branch_id, branch['name']))
-        result = []
-        for product, branches in product_branches.iteritems():
-            if product == '':
-                result.append(('', '', branches))
-            else:
-                result.append(
-                    (product, self._product_set[product]['name'], branches))
-        return result
-
-    def requestMirror(self, loginID, branchID):
-        self._request_mirror_log.append((loginID, branchID))
 
 
 def clone_test(test, new_id):
