@@ -58,8 +58,6 @@ class ByteStorageResource(HTTPResource):
 
     def do_PUT(self, type, representation, filename):
         """See `IByteStorageResource`."""
-        print "Representation: " + representation
-        print len(representation)
         try:
             self.context.field.validate(representation)
         except ValidationError, e:
