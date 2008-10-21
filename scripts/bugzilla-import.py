@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 
 import sys
@@ -75,6 +75,7 @@ def main(argv):
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
+    # XXX gary 21-Oct-2008 bug 285808
     # We should reconsider using a ftest helper for production code.  For now,
     # we explicitly keep the code from using a test request by using a basic
     # participation.

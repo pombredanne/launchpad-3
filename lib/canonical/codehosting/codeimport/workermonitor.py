@@ -113,6 +113,7 @@ def read_only_transaction(function):
     The transaction is always aborted."""
     def transacted(*args, **kwargs):
         begin()
+        # XXX gary 20-Oct-2008 bug 285808
         # We should reconsider using a ftest helper for production code. For
         # now, we explicitly keep the code from using a test request by using
         # a basic participation.
@@ -132,6 +133,7 @@ def writing_transaction(function):
     aborted if it raises an exception."""
     def transacted(*args, **kwargs):
         begin()
+        # XXX gary 20-Oct-2008 bug 285808
         # We should reconsider using a ftest helper for production code. For
         # now, we explicitly keep the code from using a test request by using
         # a basic participation.

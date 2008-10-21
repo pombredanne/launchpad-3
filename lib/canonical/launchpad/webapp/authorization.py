@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -219,4 +219,7 @@ def clear_cache():
     """
     for p in getInteraction().participations:
         if IApplicationRequest.providedBy(p):
+            # LaunchpadBrowserRequest provides a ``clearSecurityPolicyCache``
+            # method, but it is not in an interface, and not implemented by
+            # all classes that implement IApplicationRequest.
             del p.annotations[LAUNCHPAD_SECURITY_POLICY_CACHE_KEY]

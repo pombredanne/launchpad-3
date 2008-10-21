@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Library functions for use in all scripts.
 
 """
@@ -140,8 +140,10 @@ def execute_zcml_for_scripts(use_web_security=False):
     # This is a convenient hack to set up a zope interaction, before we get
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
-    # PermissiveSecurityPolicy set up in script.zcml. The wisdom of using a
-    # test fixture for production should perhaps also be reconsidered.
+    # PermissiveSecurityPolicy set up in script.zcml.
+    # XXX gary 20-Oct-2008 bug 285808
+    # The wisdom of using a test fixture for production should be
+    # reconsidered.
     from canonical.launchpad.ftests import login
     # The Participation is used to specify that we do not want a
     # LaunchpadTestRequest, which ftests normally use. shipit scripts, in

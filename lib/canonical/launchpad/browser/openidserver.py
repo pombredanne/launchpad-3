@@ -47,7 +47,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    logInPerson, logoutPerson, expireSessionCookie)
+    logInPerson, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -112,27 +112,11 @@ class OpenIDMixin:
 
     def getSession(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
-            client_id_manager = getUtility(IClientIdManager)
-            if (self.request.response.getCookie(client_id_manager.namespace)
-                is None):
-                # As a rule, we do not want to send a cookie to an
-                # unauthenticated user, because it breaks cacheing; and we do
-                # not want to create a session for an unauthenticated user,
-                # because it unnecessarily consumes valuable database
-                # resources. We have an assertion to ensure this. However, the
-                # openid server requires sessions for unauthenticated uses to
-                # work. Therefore, we perform a dance to assert that we want
-                # to break the rules. First we set the session cookie; then we
-                # assert that we only want it to last for 60 minutes (the same
-                # amount of time as the sweep, below), so that, if the user
-                # does not log in, they can eventually go back to getting
-                # cached pages. Only after the session cookie is set is it
-                # safe to set session values.
-                client_id_manager = getUtility(IClientIdManager)
-                client_id_manager.setRequestId(
-                    self.request, client_id_manager.getClientId(self.request))
-                expireSessionCookie(self.request, client_id_manager,
-                                    delta=timedelta(minutes=60))
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it
+            # safe to set session values.
+            allowUnauthenticatedSession(self.request,
+                                        duration=timedelta(minutes=60))
         return ISession(self.request)[SESSION_PKG_KEY]
 
     @staticmethod

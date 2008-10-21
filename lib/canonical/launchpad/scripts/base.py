@@ -144,8 +144,10 @@ class LaunchpadScript:
     def login(self, user):
         """Super-convenience method that avoids the import."""
         # This import is actually quite expensive, and causes us to
-        # import circularly in pathological cases.  The wisdom of using a
-        # test fixture for production should perhaps also be reconsidered.
+        # import circularly in pathological cases.
+        # XXX gary 20-Oct-2008 bug 285808
+        # The wisdom of using a test fixture for production should be
+        # reconsidered.
         from canonical.launchpad.ftests import login
         # The Participation is used to specify that we do not want a
         # LaunchpadTestRequest, which ftests normally use.  shipit scripts,

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
@@ -67,23 +67,10 @@ class UnauthorizedView(SystemErrorView):
                     break
                 target = urlappend(target, nextstep)
             target = urlappend(target, '+login' + query_string)
-            # As a rule, we do not want to send a cookie to an unauthenticated
-            # user, because it breaks cacheing; and we do not want to create a
-            # session for an unauthenticated user, because it unnecessarily
-            # consumes valuable database resources. We have an assertion to
-            # ensure this. However, this code uses notifications to pass a
-            # message to the unauthenticated user, and notifications use
-            # sessions to work. While either of those decisions should perhaps
-            # be reconsidered, for now we perform a dance to assert that we
-            # want to break the rules. First we set the session cookie; then
-            # we assert that we only want it to last for 10 minutes, so that,
-            # if the user does not log in, they can go back to getting cached
-            # pages.  Only after the session cookie is set is it safe to use
-            # the ``addNoticeNotification`` method.
-            client_id_manager = getUtility(IClientIdManager)
-            client_id_manager.setRequestId(
-                self.request, client_id_manager.getClientId(self.request))
-            expireSessionCookie(self.request, client_id_manager)
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it safe
+            # to use the ``addNoticeNotification`` method.
+            allowUnauthenticatedSession(self.request)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))
@@ -398,6 +385,23 @@ def expireSessionCookie(request, client_id_manager=None,
         '%a, %d %b %Y %H:%M:%S GMT')
     request.response.setCookie(
         session_cookiename, value, expires=expiration)
+
+
+def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
+    # As a rule, we do not want to send a cookie to an unauthenticated user,
+    # because it breaks cacheing; and we do not want to create a session for
+    # an unauthenticated user, because it unnecessarily consumes valuable
+    # database resources. We have an assertion to ensure this. However,
+    # sometimes we want to break the rules. To do this, first we set the
+    # session cookie; then we assert that we only want it to last for a given
+    # duration, so that, if the user does not log in, they can go back to
+    # getting cached pages. Only after an unauthenticated user's session
+    # cookie is set is it safe to write to it.
+    client_id_manager = getUtility(IClientIdManager)
+    if request.response.getCookie(client_id_manager.namespace) is None:
+        client_id_manager.setRequestId(
+            request, client_id_manager.getClientId(request))
+        expireSessionCookie(request, client_id_manager, duration)
 
 
 def logoutPerson(request):

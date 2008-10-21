@@ -1034,7 +1034,8 @@ class HALDevice:
         """The UDI of the parent device."""
         return self.getProperty('info.parent')
 
-    # Translation of the HAL info.bus property to HWBus enumerated buses.
+    # Translation of the HAL info.bus/info.subsystem property to HWBus
+    # enumerated buses.
     hal_bus_hwbus = {
         'pcmcia': HWBus.PCMCIA,
         'usb_device': HWBus.USB,
@@ -1062,7 +1063,7 @@ class HALDevice:
         }
 
     def translateScsiBus(self):
-        """Return the real bus of a device where info.bus=='scsi'.
+        """Return the real bus of a device where raw_bus=='scsi'.
 
         The kernel uses the SCSI layer to access storage devices
         connected via the USB, IDE, SATA buses. See `is_real_device`
@@ -1083,7 +1084,7 @@ class HALDevice:
                 'Found SCSI device without a grandparent: %s.' % self.udi)
             return None
 
-        grandparent_bus = grandparent.getProperty('info.bus')
+        grandparent_bus = grandparent.raw_bus
         if grandparent_bus == 'pci':
             if (grandparent.getProperty('pci.device_class')
                 != PCI_CLASS_STORAGE):
@@ -1107,8 +1108,8 @@ class HALDevice:
             #   interface class 8, interface subclass 6
             #   (see http://www.usb.org/developers/devclass_docs
             #   /usb_msc_overview_1.2.pdf)
-            # - HAL node for the (fake) SCSI host. info.bus n/a
-            # - HAL node for the (fake) SCSI device. info.bus == 'scsi'
+            # - HAL node for the (fake) SCSI host. raw_bus is None
+            # - HAL node for the (fake) SCSI device. raw_bus == 'scsi'
             # - HAL node for the mass storage device
             #
             # Physically, the storage device can be:
@@ -1162,13 +1163,34 @@ class HALDevice:
         'scsi': translateScsiBus,
         }
 
-    def getBus(self):
+    @property
+    def raw_bus(self):
+        """Return the device bus as specified by HAL.
+
+        Older versions of HAL stored this value in the property
+        info.bus; newer versions store it in info.subsystem.
+        """
+        # Note that info.bus is gone for all devices except the
+        # USB bus. For USB devices, the property info.bus returns more
+        # detailed data: info.subsystem has the value 'usb' for all
+        # HAL nodes belonging to USB devices, while info.bus has the
+        # value 'usb_device' for the root node of a USB device, and the
+        # value 'usb' for sub-nodes of a USB device. We use these
+        # different value to to find the root USB device node, hence
+        # try to read info.bus first.
+        result = self.getProperty('info.bus')
+        if result is not None:
+            return result
+        return self.getProperty('info.subsystem')
+
+    @property
+    def real_bus(self):
         """Return the bus this device connects to on the host side.
 
         :return: A bus as enumerated in HWBus or None, if the bus
             cannot be determined.
         """
-        device_bus = self.getProperty('info.bus')
+        device_bus = self.raw_bus
         result = self.hal_bus_hwbus.get(device_bus)
         if result is not None:
             return result
@@ -1296,7 +1318,7 @@ class HALDevice:
                 # XXX Abel Deuring 2008-04-28 Bug=237039: This ignores other
                 # possible bridges, like ISA->USB..
                 parent = self.parent
-                parent_bus = parent.getProperty('info.bus')
+                parent_bus = parent.raw_bus
                 parent_class = parent.getProperty('pci.device_class')
                 parent_subclass = parent.getProperty('pci.device_subclass')
                 if (parent_bus == 'pci'
@@ -1311,8 +1333,8 @@ class HALDevice:
                     return False
             return True
         elif bus == 'scsi':
-            # Ensure consistency with HALDevice.getBus()
-            return self.getBus() is not None
+            # Ensure consistency with HALDevice.real_bus
+            return self.real_bus is not None
         else:
             return True
 
@@ -1338,7 +1360,7 @@ class HALDevice:
                 # devices are at present simply dropped from the list of
                 # devices. Otherwise, we'd pollute the HWDB with
                 # unreliable data. Bug 237044.
-                if sub_device.getProperty('info.bus') != 'ieee1394':
+                if sub_device.raw_bus != 'ieee1394':
                     result.append(sub_device)
             else:
                 result.extend(sub_device.getRealChildren())
@@ -1381,7 +1403,7 @@ class HALDevice:
         "IEEE 802.11b". See for example
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
 
     def getVendorOrProduct(self, type_):
@@ -1395,10 +1417,10 @@ class HALDevice:
         assert type_ in ('vendor', 'product'), (
             'Unexpected value of type_: %r' % type_)
 
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         if self.udi == ROOT_UDI:
             # HAL sets info.product to "Computer", provides no property
-            # info.vendor and info.bus is "unknown", hence the logic
+            # info.vendor and raw_bus is "unknown", hence the logic
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
@@ -1454,7 +1476,7 @@ class HALDevice:
         """
         assert type_ in ('vendor', 'product'), (
             'Unexpected value of type_: %r' % type_)
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         if self.udi == ROOT_UDI:
             # HAL does not provide IDs for a system itself, we use the
             # vendor resp. product name instead.
@@ -1495,7 +1517,7 @@ class HALDevice:
 
         The SCSI vendor name is right-padded with spaces to 8 bytes.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
         if format is None:
             return self.vendor_id
@@ -1511,7 +1533,7 @@ class HALDevice:
 
         The SCSI product name is right-padded with spaces to 16 bytes.
         """
-        bus = self.getProperty('info.bus')
+        bus = self.raw_bus
         format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
         if format is None:
             return self.product_id
@@ -1545,7 +1567,7 @@ class HALDevice:
         PCCard devices, because we can get them from independent
         sources. See l/c/l/doc/hwdb-device-tables.txt.
         """
-        bus = self.getBus()
+        bus = self.real_bus
         if (self.vendor is not None and
             bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
             hw_vendor_id_set = getUtility(IHWVendorIDSet)
@@ -1557,7 +1579,7 @@ class HALDevice:
                 if hw_vendor_name is None:
                     hw_vendor_name = hw_vendor_name_set.create(self.vendor)
                 hw_vendor_id_set.create(
-                    self.getBus(), self.vendor_id, hw_vendor_name)
+                    self.real_bus, self.vendor_id, hw_vendor_name)
 
     def createDBData(self, submission, parent_submission_device):
         """Create HWDB records for this HAL device and its children.
@@ -1580,7 +1602,7 @@ class HALDevice:
                                      'for real devices only.')
         if not self.has_reliable_data:
             return
-        bus = self.getBus()
+        bus = self.real_bus
         vendor_id = self.vendor_id_for_db
         product_id = self.product_id_for_db
         product_name = self.product

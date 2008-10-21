@@ -92,7 +92,7 @@ class LaunchpadDatabasePolicy:
             and not WebServiceLayer.providedBy(self.request)
             and not FeedsLayer.providedBy(self.request)
             and not IXMLRPCRequest.providedBy(self.request)):
-            # we need to further distinguish whether it's safe to write to
+            # We need to further distinguish whether it's safe to write to
             # the session, which will be true if the principal is
             # authenticated or if there is already a session cookie hanging
             # around.

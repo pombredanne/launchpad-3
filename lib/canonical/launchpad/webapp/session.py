@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Support for browser-cookie sessions."""
 
 __metaclass__ = type
@@ -53,6 +53,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
     def getClientId(self, request):
         sid = self.getRequestId(request)
         if sid is None:
+            # XXX gary 21-Oct-2008 bug 285803
             # Our session data container (see pgsession.py in the same
             # directory) explicitly calls setRequestId the first time a
             # __setitem__ is called. Therefore, we only generate one here,

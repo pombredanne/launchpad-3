@@ -56,10 +56,10 @@ that a user will see any changes they have made immediately, even though the
 slave databases may lag some time behind the master database.
 
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
-    >>> browser.getControl('Do Post').click()
+    >>> browser.getControl('Do Post').click() # POST request
     >>> print whichdb(browser)
     MASTER
-    >>> browser.open('http://launchpad.dev/+whichdb')
+    >>> browser.open('http://launchpad.dev/+whichdb') # GET request
     >>> print whichdb(browser)
     MASTER
 

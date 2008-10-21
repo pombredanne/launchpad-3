@@ -4,7 +4,7 @@
 
 This API and idea has been accepted into zope.testbrowser, upstream, so this
 code will be removed from here once that change has landed and we are able to
-use it.
+use it.  https://bugs.edge.launchpad.net/zope3/+bug/286842
 """
 
 __metaclass__ = type
