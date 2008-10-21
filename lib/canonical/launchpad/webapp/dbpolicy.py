@@ -74,8 +74,14 @@ class LaunchpadDatabasePolicy:
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
                 now = _now()
-            # 'recently' is hardcoded at 5 minutes.
-            if last_write is None or last_write < now - timedelta(minutes=5):
+            # 'recently' is  2 minutes plus the replication lag.
+            recently = timedelta(minutes=2)
+            lag = self.getReplicationLag(MAIN_STORE)
+            if lag is None:
+                recently = timedelta(minutes=2)
+            else:
+                recently = timedelta(minutes=2) + lag
+            if last_write is None or last_write < now - recently:
                 da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
             else:
                 da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
@@ -111,6 +117,15 @@ class LaunchpadDatabasePolicy:
         # it will just be selected the next request. However, changing the
         # default store in the middle of a pagetest can break things.
         da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+
+    def getReplicationLag(self, name):
+        """Return the replication delay for the named replication set.
+       
+        :returns: timedelta, or None if this isn't a replicated environment,
+        """
+        # sl_status only gives meaningful results on the origin node.
+        store = da.StoreSelector.get(name, MASTER_FLAVOR)
+        return store.execute("SELECT replication_lag()").get_one()[0]
 
 
 class WhichDbView(LaunchpadView):
