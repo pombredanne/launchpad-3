@@ -35,7 +35,7 @@ Now  with a POST, we try to Add the spec to the Guacamole sprint.
 
   >>> sprint_field = browser.getControl(name='field.sprint')
   >>> sprint_field.value = ['uds-guacamole']
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Continue').click()
   >>> browser.url # we should have been redirected to the spec page
   'http://.../firefox/+spec/canvas'
 
@@ -72,7 +72,7 @@ classes don't know about their own permissions and security).
   >>> browser.getLink('Propose for meeting agenda').click()
   >>> sprint_field = browser.getControl(name='field.sprint')
   >>> sprint_field.value = ['paris']
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Continue').click()
   >>> 'paris' in browser.contents
   True
   >>> 'Approved for the meeting agenda' in browser.contents

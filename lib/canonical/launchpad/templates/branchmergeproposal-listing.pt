@@ -14,14 +14,11 @@
       <tr>
         <th>Branch Merge Proposal</th>
         <th>Requested By</th>
-        <th tal:condition="context/show_column/date_review_requested|nothing">
-          Date Review Requested
-        </th>
         <th tal:condition="context/show_column/date_reviewed|nothing">
           Date Reviewed
         </th>
         <th tal:condition="context/show_column/vote_summary|nothing">
-          Vote Summary
+          Activity
         </th>
       </tr>
     </thead>
@@ -29,21 +26,18 @@
       <tr tal:repeat="proposal context/proposals">
         <td>
           <a tal:attributes="href proposal/fmt:url">
-            <tal:source-branch replace="proposal/source_branch/bzr_identity"/>
+            <strong>
+              <tal:source-branch replace="proposal/source_branch/bzr_identity"/>
+            </strong>
             &rArr;
             <tal:source-branch replace="proposal/target_branch/bzr_identity"/>
           </a>
         </td>
-        <td tal:content="structure proposal/registrant/fmt:link" />
-
-        <td tal:condition="context/show_column/date_review_requested|nothing">
-          <span class="sortkey"
-                tal:condition="not:context/multiple_pages"
-                tal:content="proposal/date_review_requested/fmt:datetime">
-            2005-02-12 13:45 EST
-          </span>
-          <tal:date replace="proposal/date_review_requested/fmt:approximatedate"/>
+        <td>
+          <tal:registrant content="structure proposal/registrant/fmt:link" />
+          <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
         </td>
+
         <td tal:condition="context/show_column/date_reviewed|nothing">
           <span class="sortkey"
                 tal:condition="not:context/multiple_pages"
@@ -53,7 +47,7 @@
           <tal:date replace="proposal/date_reviewed/fmt:approximatedate"/>
         </td>
         <td tal:condition="context/show_column/vote_summary|nothing"
-            tal:content="proposal/vote_summary">
+            tal:content="structure proposal/vote_summary">
           Vote Summary
         </td>
       </tr>

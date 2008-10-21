@@ -5,7 +5,7 @@ Any logged in user can propose specs to be discussed in a sprint.
   ...     '+spec/media-integrity-check/+linksprint')
 
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
-  >>> user_browser.getControl('Add').click()
+  >>> user_browser.getControl('Continue').click()
   >>> meeting_link = user_browser.getLink('uds-guacamole')
   >>> meeting_link is not None
   True
@@ -14,7 +14,7 @@ Any logged in user can propose specs to be discussed in a sprint.
   ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/kde-desktopfile-langpacks/+linksprint')
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
-  >>> user_browser.getControl('Add').click()
+  >>> user_browser.getControl('Continue').click()
   >>> meeting_link = user_browser.getLink('uds-guacamole')
   >>> meeting_link is not None
   True

@@ -138,15 +138,17 @@ class BranchPuller(LaunchpadXMLRPCView):
         # method should be able to see all branches and set stacking
         # information on any of them.
         branch_set = removeSecurityProxy(getUtility(IBranchSet))
-        stacked_on_branch = None
-        if stacked_on_location.startswith('/'):
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
+        if stacked_on_location == '':
+            stacked_on_branch = None
         else:
-            stacked_on_branch = branch_set.getByUrl(
-                stacked_on_location.rstrip('/'))
-        if stacked_on_branch is None:
-            return faults.NoSuchBranch(stacked_on_location)
+            if stacked_on_location.startswith('/'):
+                stacked_on_branch = branch_set.getByUniqueName(
+                    stacked_on_location.strip('/'))
+            else:
+                stacked_on_branch = branch_set.getByUrl(
+                    stacked_on_location.rstrip('/'))
+            if stacked_on_branch is None:
+                return faults.NoSuchBranch(stacked_on_location)
         stacked_branch = branch_set.get(branch_id)
         if stacked_branch is None:
             return faults.NoBranchWithID(branch_id)

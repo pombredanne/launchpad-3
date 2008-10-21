@@ -353,6 +353,14 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage.setStackedOn(stacked_branch.id, url)
         self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
 
+    def test_setStackedOnNothing(self):
+        # If setStackedOn is passed an empty string as a stacked-on location,
+        # the branch is marked as not being stacked on any branch.
+        stacked_on_branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
+        self.storage.setStackedOn(stacked_branch.id, '')
+        self.assertIs(stacked_branch.stacked_on, None)
+
     def test_setStackedOnBranchNotFound(self):
         # If setStackedOn can't find a branch for the given location, it will
         # return a Fault.
@@ -514,6 +522,18 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
+
+    def test_createBranch_team_junk(self):
+        # createBranch cannot create +junk branches on teams -- it raises
+        # PermissionDenied.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner)
+        name = self.factory.getUniqueString()
+        fault = self.branchfs.createBranch(
+            owner.id, '~%s/+junk/%s' % (team.name, name))
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE,
+            'Cannot create team-owned junk branches.', fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
