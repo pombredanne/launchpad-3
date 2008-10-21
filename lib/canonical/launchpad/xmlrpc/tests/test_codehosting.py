@@ -353,6 +353,14 @@ class BranchPullerTest(TestCaseWithFactory):
         self.storage.setStackedOn(stacked_branch.id, url)
         self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
 
+    def test_setStackedOnNothing(self):
+        # If setStackedOn is passed an empty string as a stacked-on location,
+        # the branch is marked as not being stacked on any branch.
+        stacked_on_branch = self.factory.makeBranch()
+        stacked_branch = self.factory.makeBranch(stacked_on=stacked_on_branch)
+        self.storage.setStackedOn(stacked_branch.id, '')
+        self.assertIs(stacked_branch.stacked_on, None)
+
     def test_setStackedOnBranchNotFound(self):
         # If setStackedOn can't find a branch for the given location, it will
         # return a Fault.
@@ -514,6 +522,18 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(name, branch.name)
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
+
+    def test_createBranch_team_junk(self):
+        # createBranch cannot create +junk branches on teams -- it raises
+        # PermissionDenied.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner)
+        name = self.factory.getUniqueString()
+        fault = self.branchfs.createBranch(
+            owner.id, '~%s/+junk/%s' % (team.name, name))
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE,
+            'Cannot create team-owned junk branches.', fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.
@@ -981,7 +1001,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # XXX: YES
         self.assertEqual(
             (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr'),
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
             translation)
 
     def test_translatePath_control_conf(self):
@@ -1003,27 +1023,27 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # don't even bother translating control directory paths.
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
-        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         self.assertNotFound(requester, path)
 
     def test_translatePath_control_directory_invisble_branch(self):
         requester = self.factory.makePerson()
         product, branch = self._makeProductWithDevFocus(private=True)
-        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         self.assertNotFound(requester, path)
 
     def test_translatePath_control_directory_private_branch(self):
         product, branch = self._makeProductWithDevFocus(private=True)
         branch = removeSecurityProxy(branch)
         requester = branch.owner
-        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
         # XXX: Should the stacked-on branch path be escaped?
         # XXX: YES
         self.assertEqual(
             (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr'),
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
             translation)
 
     def test_translatePath_control_directory_other_owner(self):
@@ -1037,7 +1057,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # XXX: YES
         self.assertEqual(
             (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr'),
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
             translation)
 
 

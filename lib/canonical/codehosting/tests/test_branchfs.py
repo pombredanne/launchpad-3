@@ -61,6 +61,21 @@ class TestControlTransport(TestCase):
         self.assertEqual([], transport.list_dir('.'))
 
 
+class TestBranchIDToPath(unittest.TestCase):
+    """Tests for branch_id_to_path."""
+
+    def test_branch_id_to_path(self):
+        # branch_id_to_path converts an integer branch ID into a path of four
+        # segments, with each segment being a hexadecimal number.
+        self.assertEqual('00/00/00/00', branch_id_to_path(0))
+        self.assertEqual('00/00/00/01', branch_id_to_path(1))
+        arbitrary_large_id = 6731
+        assert "%x" % arbitrary_large_id == '1a4b', (
+            "The arbitrary large id is not what we expect (1a4b): %s"
+            % (arbitrary_large_id))
+        self.assertEqual('00/00/1a/4b', branch_id_to_path(6731))
+
+
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
 

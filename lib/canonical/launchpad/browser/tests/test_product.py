@@ -72,6 +72,17 @@ class TestProductCodeIndexView(TestCaseWithFactory):
 
         self.assertProductBranchSummaryDoesNotHaveBrowseLink(product)
 
+    def test_product_code_page_visible_with_private_dev_focus(self):
+        # If a user cannot see the product's development focus branch but can
+        # see at least one branch for the product they can still see the
+        # +code-index page.
+        product, branch = self.makeProductAndDevelopmentFocusBranch(
+            private=True)
+        url = canonical_url(product, rootsite='code')
+        self.factory.makeBranch(product=product)
+        # This is just "assertNotRaises"
+        self.getUserBrowser(canonical_url(product, rootsite='code'))
+
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         view = getMultiAdapter(

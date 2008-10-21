@@ -662,39 +662,37 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency, pocket, component):
+    def getArchiveDependency(self, dependency):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency, pocket=pocket,
-            component=component)
+            archive=self, dependency=dependency)
 
-    def removeArchiveDependency(self, dependency, pocket, component):
+    def removeArchiveDependency(self, dependency):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency, pocket, component)
+        dependency = self.getArchiveDependency(dependency)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency, pocket, component):
+    def addArchiveDependency(self, dependency, pocket, component=None):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if not dependency.is_ppa:
+        a_dependency = self.getArchiveDependency(dependency)
+        if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Archive dependencies only applies to PPAs.")
-        else:
+                "Only one dependency record per archive is supported.")
+
+        if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to RELEASE pocket.")
-            if component.id is not getUtility(IComponentSet)['main'].id:
+                    "Non-primary archives only support the RELEASE pocket.")
+            if (component is not None and
+                component.id is not getUtility(IComponentSet)['main'].id):
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to 'main' component.")
-
-        if self.getArchiveDependency(dependency, pocket, component):
-            raise ArchiveDependencyError(
-                "This dependency is already recorded.")
+                    "Non-primary archives only support the 'main' component.")
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
