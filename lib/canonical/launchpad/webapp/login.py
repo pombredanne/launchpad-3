@@ -397,6 +397,8 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
     # duration, so that, if the user does not log in, they can go back to
     # getting cached pages. Only after an unauthenticated user's session
     # cookie is set is it safe to write to it.
+    if not IUnauthenticatedPrincipal.providedBy(request.principal):
+        return
     client_id_manager = getUtility(IClientIdManager)
     if request.response.getCookie(client_id_manager.namespace) is None:
         client_id_manager.setRequestId(
