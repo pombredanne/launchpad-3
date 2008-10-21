@@ -88,7 +88,7 @@ DB_FORMAT_FOR_PRODUCT_ID = {
     'scsi': '%-16s',
     }
 
-class SubmissionParser:
+class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
     def __init__(self, logger=None):
@@ -551,6 +551,13 @@ class SubmissionParser:
             parser = self._parse_software_section[node.tag]
             result = parser(node)
             software_data[node.tag] = result
+        # The nodes <packages> and <xorg> are optional. Ensure that
+        # we have dummy entries in software_data for these nodes, if
+        # the nodes do not appear in a submission in order to avoid
+        # KeyErrors elsewhere in this module.
+        for node_name in ('packages', 'xorg'):
+            if node_name not in software_data:
+                software_data[node_name] = {}
         return software_data
 
     def _parseQuestions(self, questions_node):
@@ -1291,7 +1298,7 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.getProperty('info.bus')
-        if bus in (None, 'usb'):
+        if bus in (None, 'usb', 'ssb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1305,6 +1312,10 @@ class HALDevice:
             #
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
+            #
+            # info.bus == 'ssb' is used for "aspects" of Broadcom
+            # Ethernet and WLAN devices, but like 'usb', they do not
+            # represent separate devices.
             #
             # The computer itself is the only HAL device without the
             # info.bus property that we treat as a real device.

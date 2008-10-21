@@ -5,6 +5,7 @@ import logging
 import optparse
 import sys
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from zope.component import getUtility
@@ -41,7 +42,11 @@ def main(argv):
     logger(options, 'canonical.launchpad.scripts.sftracker')
 
     # don't send email
-    config.zopeless.send_email = False
+    send_email_data = """
+        [zopeless]
+        send_email: False
+        """
+    config.push('send_email_data', send_email_data)
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
@@ -56,6 +61,7 @@ def main(argv):
     importer = TrackerImporter(product, options.verify_users)
 
     importer.importTracker(ztm, tracker)
+    config.pop('send_email_data')
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

@@ -846,14 +846,22 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         """Test of HALDevice.is_real_device: ignored values of info.bus.
 
         A HAL device is considered to not be a real device, if its
-        info.bus proerty is 'usb'.
+        info.bus proerty is 'usb' or 'ssb'.
         """
+        UDI_SSB = '/org/freedesktop/Hal/devices/ssb__null__0'
         devices = [
             {
                 'id': 1,
                 'udi': self.UDI_USB_HUB_IF0,
                 'properties': {
                     'info.bus': ('usb', 'str'),
+                    },
+                },
+            {
+                'id': 2,
+                'udi': UDI_SSB,
+                'properties': {
+                    'info.bus': ('ssb', 'str'),
                     },
                 },
             ]
@@ -872,6 +880,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         device = parser.hal_devices[self.UDI_USB_HUB_IF0]
         self.failIf(device.is_real_device,
                     'Device with info.bus=usb treated as a real device')
+        device = parser.hal_devices[UDI_SSB]
+        self.failIf(device.is_real_device,
+                    'Device with info.bus=ssb treated as a real device')
 
     def testHALDeviceRealDeviceScsiDevicesPciController(self):
         """Test of HALDevice.is_real_device: info.bus == 'scsi'.

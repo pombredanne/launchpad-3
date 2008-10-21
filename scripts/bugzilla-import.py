@@ -1,12 +1,12 @@
 #!/usr/bin/python2.4
 # Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
-
 import sys
 import logging
 import optparse
 import MySQLdb
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from canonical.config import config
@@ -34,8 +34,8 @@ def make_connection(options):
 
 def main(argv):
     parser = optparse.OptionParser(
-        description=
-        "This script imports bugs from a Bugzilla into Launchpad.")
+        description=("This script imports bugs from a Bugzilla "
+                     "into Launchpad."))
 
     parser.add_option('--component', metavar='COMPONENT', action='append',
                       help='Limit to this bugzilla component',
@@ -71,7 +71,11 @@ def main(argv):
     logger(options, 'canonical.launchpad.scripts.bugzilla')
 
     # don't send email
-    config.zopeless.send_email = False
+    send_email_data = """
+        [zopeless]
+        send_email: False
+        """
+    config.push('send_email_data', send_email_data)
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
@@ -90,6 +94,7 @@ def main(argv):
                   status=options.status)
 
     bz.processDuplicates(ztm)
+    config.pop('send_email_data')
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
