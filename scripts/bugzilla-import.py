@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 import sys
 import logging
@@ -14,6 +14,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interaction import Participation
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -30,7 +31,7 @@ def make_connection(options):
         kws['host'] = options.db_host
 
     return MySQLdb.connect(**kws)
-        
+
 def main(argv):
     parser = optparse.OptionParser(
         description=("This script imports bugs from a Bugzilla "
@@ -78,7 +79,11 @@ def main(argv):
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    login('bug-importer@launchpad.net')
+    # XXX gary 21-Oct-2008 bug 285808
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login('bug-importer@launchpad.net', Participation())
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)
