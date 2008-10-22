@@ -85,6 +85,9 @@ class NotificationResponse:
     >>> request = NotificationRequest()
     >>> request.response = response
     >>> response._request = request
+    >>> request.principal = None # full IRequests are zope.security
+    ... # participations, and NotificationResponse.redirect expects a
+    ... # principal, as in the full IRequest interface.
 
     >>> len(response.notifications)
     0
