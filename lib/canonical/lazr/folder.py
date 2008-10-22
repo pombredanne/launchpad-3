@@ -69,13 +69,16 @@ class ExportedFolder:
             names = names[1:]
 
         if not names:
-            # Just the icing directory, so make this a 404.
+            # Just the root directory, so make this a 404.
             raise NotFound(self, '')
         elif len(names) > 1 and not self.export_subdirectories:
             # Too many path elements, so make this a 404.
             raise NotFound(self, self.names[-1])
         else:
             # Actually serve up the resource.
+            # Don't worry about serving  up stuff like ../../../etc/passwd,
+            # because the Zope name traversal will sanitize './' and '../'
+            # before setting the value of self.names.
             return self.prepareDataForServing(
                 os.path.join(self.folder, *names))
 
@@ -85,7 +88,8 @@ class ExportedFolder:
         try:
             fileobj = File(filename, name)
         except IOError, ioerror:
-            if ioerror.errno in (errno.ENOENT, errno.EISDIR):
+            expected = (errno.ENOENT, errno.EISDIR, errno.ENOTDIR)
+            if ioerror.errno in expected:
                 # No such file or is a directory.
                 raise NotFound(self, name)
             else:

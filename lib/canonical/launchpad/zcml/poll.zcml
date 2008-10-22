@@ -83,22 +83,13 @@
         template="../templates/poll-edit.pt"
         />
 
-    <browser:addform
+    <browser:page
         name="+newoption"
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.PollOptionAddView"
-        schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name title"
-        label="Create new poll option"
         permission="launchpad.Edit"
         template="../templates/poll-newoption.pt"
-        >
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:addform>
-
+        />
 
     <!-- PollOption -->
     <class class="canonical.launchpad.database.PollOption">
@@ -117,22 +108,13 @@
         path_expression="string:+option/${id}"
         attribute_to_parent="poll" />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPollOption"
         class="canonical.launchpad.browser.poll.PollOptionEditView"
-        schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name title"
-        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
-        >
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:editform>
-
+        />
 
     <!-- Vote -->
     <!-- Can't require launchpad.Edit to set_attributes because in most cases
