@@ -100,6 +100,14 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
+def make_branch_transport(backing_transport, id, writable):
+    transport = backing_transport.clone(branch_id_to_path(id))
+    ensure_base(transport)
+    if not writable:
+        transport = get_transport('readonly+' + transport.base)
+    return transport
+
+
 def make_control_transport(default_stack_on):
     memory_server = MemoryServer()
     memory_server.setUp()

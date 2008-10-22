@@ -24,7 +24,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer, make_control_transport)
+    LaunchpadServer, make_branch_transport, make_control_transport)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
@@ -59,6 +59,36 @@ class TestControlTransport(TestCase):
     def test_control_conf_with_no_stacking(self):
         transport = make_control_transport('')
         self.assertEqual([], transport.list_dir('.'))
+
+
+class TestBranchTransport(TestCase):
+    """Tests for the branch transport factory."""
+
+    def setUp(self):
+        super(TestBranchTransport, self).setUp()
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.backing_transport = get_transport(memory_server.get_url())
+
+    def test_writable_false_implies_readonly(self):
+        transport = make_branch_transport(
+            self.backing_transport, id=5, writable=False)
+        self.assertRaises(
+            errors.TransportNotPossible, transport.put_bytes,
+            '.bzr/README', 'data')
+
+    def test_writable_implies_writable(self):
+        transport = make_branch_transport(
+            self.backing_transport, id=5, writable=True)
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_gets_id_directory(self):
+        transport = make_branch_transport(
+            self.backing_transport, id=5, writable=True)
+        transport.mkdir('.bzr')
+        self.assertEqual(
+            ['.bzr'], self.backing_transport.list_dir('00/00/00/05'))
 
 
 class TestBranchIDToPath(unittest.TestCase):
