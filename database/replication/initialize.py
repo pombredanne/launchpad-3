@@ -16,7 +16,7 @@ import sys
 import helpers
 
 from canonical.config import config
-from canonical.database.sqlbase import connect
+from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.database.postgresql import (
         all_sequences_in_schema, all_tables_in_schema, ConnectionString
         )
@@ -223,6 +223,7 @@ def main():
     # Generate lists of sequences and tables for our replication sets.
     log.debug("Connecting as %s" % options.dbuser)
     con = connect(options.dbuser)
+    con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
     authdb_tables, authdb_sequences = helpers.calculate_replication_set(
