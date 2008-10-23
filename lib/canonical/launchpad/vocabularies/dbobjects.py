@@ -1398,6 +1398,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
 
+        # Prefetch products and distributions for rendering
+        # milestones: optimization to reduce the number of queries.
         product_ids = set(
             removeSecurityProxy(milestone).productID
             for milestone in visible_milestones)
