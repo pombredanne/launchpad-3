@@ -100,24 +100,26 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
-def make_branch_transport(backing_transport, id, writable):
-    transport = backing_transport.clone(branch_id_to_path(id))
-    ensure_base(transport)
-    if not writable:
-        transport = get_transport('readonly+' + transport.base)
-    return transport
+class TransportFactory:
 
-
-def make_control_transport(default_stack_on):
-    memory_server = MemoryServer()
-    memory_server.setUp()
-    transport = get_transport(memory_server.get_url())
-    if default_stack_on == '':
+    def make_branch_transport(self, backing_transport, id, writable):
+        transport = backing_transport.clone(branch_id_to_path(id))
+        ensure_base(transport)
+        if not writable:
+            transport = get_transport('readonly+' + transport.base)
         return transport
-    format = BzrDirFormat.get_default_format()
-    bzrdir = format.initialize_on_transport(transport)
-    bzrdir.get_config().set_default_stack_on(default_stack_on)
-    return get_transport('readonly+' + transport.base)
+
+
+    def make_control_transport(self, default_stack_on):
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        transport = get_transport(memory_server.get_url())
+        if default_stack_on == '':
+            return transport
+        format = BzrDirFormat.get_default_format()
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(default_stack_on)
+        return get_transport('readonly+' + transport.base)
 
 
 class BranchNotFound(BzrError):
@@ -298,7 +300,7 @@ class LaunchpadBranch:
 
         :raise BranchNotFound: if the branch does not exist.
         :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
-
+v
         :return: A path relative to the base directory where all branches
             are stored. This path will look like '00/AB/02/43/.bzr/foo', where
             'AB0243' is the database ID of the branch expressed in hex and
@@ -377,7 +379,7 @@ class _BaseLaunchpadServer(Server):
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return make_control_transport(stack_on_url)
+        return TransportFactory().make_control_transport(stack_on_url)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.

@@ -24,7 +24,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer, make_branch_transport, make_control_transport)
+    LaunchpadServer, TransportFactory)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
@@ -42,49 +42,48 @@ def branch_to_path(branch, add_slash=True):
     return path
 
 
-class TestControlTransport(TestCase):
+class TestTransportFactory(TestCase):
     """Tests for the control transport factory."""
 
+    def setUp(self):
+        super(TestTransportFactory, self).setUp()
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.backing_transport = get_transport(memory_server.get_url())
+        self.factory = TransportFactory()
+
     def test_control_conf_read_only(self):
-        transport = make_control_transport(default_stack_on='/~foo/bar/baz')
+        transport = self.factory.make_control_transport(
+            default_stack_on='/~foo/bar/baz')
         self.assertRaises(
             errors.TransportNotPossible,
             transport.put_bytes, '.bzr/control.conf', 'data')
 
     def test_control_conf_with_stacking(self):
-        transport = make_control_transport(default_stack_on='/~foo/bar/baz')
+        transport = self.factory.make_control_transport(
+            default_stack_on='/~foo/bar/baz')
         control_conf = transport.get_bytes('.bzr/control.conf')
         self.assertEqual('default_stack_on = /~foo/bar/baz\n', control_conf)
 
     def test_control_conf_with_no_stacking(self):
-        transport = make_control_transport('')
+        transport = self.factory.make_control_transport('')
         self.assertEqual([], transport.list_dir('.'))
 
-
-class TestBranchTransport(TestCase):
-    """Tests for the branch transport factory."""
-
-    def setUp(self):
-        super(TestBranchTransport, self).setUp()
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        self.backing_transport = get_transport(memory_server.get_url())
-
     def test_writable_false_implies_readonly(self):
-        transport = make_branch_transport(
+        transport = self.factory.make_branch_transport(
             self.backing_transport, id=5, writable=False)
         self.assertRaises(
             errors.TransportNotPossible, transport.put_bytes,
             '.bzr/README', 'data')
 
     def test_writable_implies_writable(self):
-        transport = make_branch_transport(
+        transport = self.factory.make_branch_transport(
             self.backing_transport, id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(['.bzr'], transport.list_dir('.'))
 
     def test_gets_id_directory(self):
-        transport = make_branch_transport(
+        transport = self.factory.make_branch_transport(
             self.backing_transport, id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(
