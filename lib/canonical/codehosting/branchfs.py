@@ -107,7 +107,11 @@ class TransportFactory:
         self.mirrored_transport = mirrored_transport
 
     def make_branch_transport(self, id, writable):
-        transport = self.hosted_transport.clone(branch_id_to_path(id))
+        if writable:
+            transport = self.hosted_transport
+        else:
+            transport = self.mirrored_transport
+        transport = transport.clone(branch_id_to_path(id))
         ensure_base(transport)
         if not writable:
             transport = get_transport('readonly+' + transport.base)

@@ -91,6 +91,14 @@ class TestTransportFactory(TestCase):
         self.assertEqual(
             ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
 
+    def test_read_only_returns_mirrored(self):
+        self.mirrored_transport.mkdir_multi(
+            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
+        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
+        transport = self.factory.make_branch_transport(id=5, writable=False)
+        data = transport.get_bytes(".bzr/README")
+        self.assertEqual("Hello", data)
+
 
 class TestBranchIDToPath(unittest.TestCase):
     """Tests for branch_id_to_path."""
