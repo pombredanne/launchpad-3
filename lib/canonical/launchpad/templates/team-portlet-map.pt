@@ -9,21 +9,19 @@
   <tal:can_view condition="context/required:launchpad.View"
                 define="link context/menu:overview/map;
                         unmapped_count context/unmapped_participants/count;">
+    <tal:block condition="unmapped_count">
+      <strong><tal:count replace="unmapped_count" /> members</strong> have not 
+      set their location. <a tal:attributes="href link/target">Do it for 
+      them!</a>
+    </tal:block>
     <tal:map condition="view/mapped_participants">
-      <div id="team_map_div" style="height: 200px; border: 1px;"></div>
+      <div id="team_map_div" style="height: 200px; border: 1px; margin-top: 4px;"></div>
       <tal:mapscript replace="structure view/map_portlet_html" />
-      <p tal:condition="link/enabled" tal:content="structure link/render" />
     </tal:map>
 
     <a tal:condition="not: view/mapped_participants"
        tal:attributes="href link/target"
       ><img src="/+icing/portlet-map-unknown.png" /></a>
-
-    <p tal:condition="unmapped_count">
-      <tal:count replace="unmapped_count" /> members have not set their
-      location.  Would you like to <a tal:attributes="href link/target">do it
-      for them?</a>
-    </p>
   </tal:can_view>
 
 </div>
