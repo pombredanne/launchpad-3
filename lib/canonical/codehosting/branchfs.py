@@ -102,13 +102,16 @@ def is_lock_directory(absolute_path):
 
 class TransportFactory:
 
-    def make_branch_transport(self, backing_transport, id, writable):
-        transport = backing_transport.clone(branch_id_to_path(id))
+    def __init__(self, hosted_transport, mirrored_transport):
+        self.hosted_transport = hosted_transport
+        self.mirrored_transport = mirrored_transport
+
+    def make_branch_transport(self, id, writable):
+        transport = self.hosted_transport.clone(branch_id_to_path(id))
         ensure_base(transport)
         if not writable:
             transport = get_transport('readonly+' + transport.base)
         return transport
-
 
     def make_control_transport(self, default_stack_on):
         memory_server = MemoryServer()
@@ -300,7 +303,7 @@ class LaunchpadBranch:
 
         :raise BranchNotFound: if the branch does not exist.
         :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
-v
+
         :return: A path relative to the base directory where all branches
             are stored. This path will look like '00/AB/02/43/.bzr/foo', where
             'AB0243' is the database ID of the branch expressed in hex and
@@ -379,7 +382,8 @@ class _BaseLaunchpadServer(Server):
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return TransportFactory().make_control_transport(stack_on_url)
+        return TransportFactory(
+            None, None).make_control_transport(stack_on_url)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.

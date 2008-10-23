@@ -49,8 +49,13 @@ class TestTransportFactory(TestCase):
         super(TestTransportFactory, self).setUp()
         memory_server = MemoryServer()
         memory_server.setUp()
-        self.backing_transport = get_transport(memory_server.get_url())
-        self.factory = TransportFactory()
+        base_transport = get_transport(memory_server.get_url())
+        base_transport.mkdir('hosted')
+        base_transport.mkdir('mirrored')
+        self.hosted_transport = base_transport.clone('hosted')
+        self.mirrored_transport = base_transport.clone('mirrored')
+        self.factory = TransportFactory(
+            self.hosted_transport, self.mirrored_transport)
 
     def test_control_conf_read_only(self):
         transport = self.factory.make_control_transport(
@@ -70,24 +75,21 @@ class TestTransportFactory(TestCase):
         self.assertEqual([], transport.list_dir('.'))
 
     def test_writable_false_implies_readonly(self):
-        transport = self.factory.make_branch_transport(
-            self.backing_transport, id=5, writable=False)
+        transport = self.factory.make_branch_transport(id=5, writable=False)
         self.assertRaises(
             errors.TransportNotPossible, transport.put_bytes,
             '.bzr/README', 'data')
 
     def test_writable_implies_writable(self):
-        transport = self.factory.make_branch_transport(
-            self.backing_transport, id=5, writable=True)
+        transport = self.factory.make_branch_transport(id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(['.bzr'], transport.list_dir('.'))
 
     def test_gets_id_directory(self):
-        transport = self.factory.make_branch_transport(
-            self.backing_transport, id=5, writable=True)
+        transport = self.factory.make_branch_transport(id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(
-            ['.bzr'], self.backing_transport.list_dir('00/00/00/05'))
+            ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
 
 
 class TestBranchIDToPath(unittest.TestCase):
