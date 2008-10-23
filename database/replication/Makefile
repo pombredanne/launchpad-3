@@ -39,8 +39,11 @@ stagingsetup:
 	# Create the DB with the desired default tablespace.
 	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
 	    lpmain_staging_new
-	# Restore the DB schema.
-	pg_restore --dbname=lpmain_staging_new --exit-on-error ${STAGING_DUMP}
+	# Restore the DB schema. Don't restore permissions - it will blow
+	# up when roles don't exist in this cluster, and we rebuild it later
+	# with security.py anyway.
+	pg_restore --dbname=lpmain_staging_new \
+	    --no-acl --exit-on-error ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -51,7 +54,7 @@ stagingsetup:
 	# Analyze the new replica so performance doesn't suck until autovacuum
 	# gets around to it.
 	psql -d lpmain_staging_slave_new -c 'analyze;'
-	# Upgrade the _new databases.
+	# Upgrade the _new databases and rebuild acls.
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/upgrade.py
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/fti.py
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/security.py \
