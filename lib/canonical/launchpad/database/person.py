@@ -1688,6 +1688,9 @@ class Person(
         # fetches the rows when they're needed.
         for location in locations:
             location.person._location = location
+        # Cache the ValidPersonCache query for all mapped participants.
+        list(ValidPersonCache.select("id in (%s)" % sqlvalues(
+                 set(location.person for location in locations))))
         return [location.person for location in locations]
 
     @property
