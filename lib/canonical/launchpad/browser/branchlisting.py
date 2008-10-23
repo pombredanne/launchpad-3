@@ -66,6 +66,14 @@ class BranchListingItem(BranchBadges):
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
 
+
+    # XXX: FIXME:
+
+    # We need to override the bzr_identity method here to avoid the database
+    # class looking for the associated product series.  We already know this
+    # here, and should make a private method on the class that we can call
+    # from both places to actually do the rendering.
+
     @property
     def since_updated(self):
         """How long since the branch was last updated."""
