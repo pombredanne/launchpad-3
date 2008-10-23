@@ -1158,12 +1158,12 @@ class QuestionTargetMixin:
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
         """Return the Persons or Teams who are AnswerContacts."""
-        answer_contacts = AnswerContact.select(
-            " AND ".join(constraints), clauseTables=clause_tables,
-            distinct=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+        # Avoid a circular import of Person; which imports the mixin.
+        from canonical.launchpad.database.person import Person
+        return Person.select(
+            " AND ".join(constraints),
+            clauseTables=clause_tables + ['AnswerContact'],
+            orderBy=['displayname'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -1180,6 +1180,7 @@ class QuestionTargetMixin:
             constraints.append(constraint)
 
         constraints.append("""
+            Person.id = AnswerContact.person AND
             AnswerContact.person = PersonLanguage.person AND
             PersonLanguage.Language = Language.id""")
         # XXX sinzui 2007-07-12 bug=125545:
