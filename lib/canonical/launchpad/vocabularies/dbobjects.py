@@ -78,6 +78,7 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
@@ -1396,6 +1397,16 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+
+        product_ids = set(
+            removeSecurityProxy(milestone).productID
+            for milestone in visible_milestones)
+        distro_ids = set(
+            removeSecurityProxy(milestone).distributionID
+            for milestone in visible_milestones)
+        list(Product.select("id IN %s" % sqlvalues(product_ids)))
+        list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
+
         return sorted(visible_milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
