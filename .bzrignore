@@ -9,6 +9,8 @@ configs/+config-overrides.zcml
 sourcecode/*
 ./botmaster
 ./tags
+database/replication/lpslon_*.log
+database/replication/preamble.sk
 database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 thread*.request
