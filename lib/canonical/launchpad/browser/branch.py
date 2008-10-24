@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'PersonBranchAddView',
     'ProductBranchAddView',
+    'BranchAdvancedEditView',
     'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
@@ -833,6 +834,30 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # We don't care about whether the URL is set for REMOTE branches,
             # and the URL field is not shown for IMPORT or HOSTED branches.
             pass
+
+
+class BranchAdvancedEditView(LaunchpadEditFormView):
+    """The view to set the more advanced branch settings.
+
+    Like the review team.
+    """
+
+    schema = IBranch
+    field_names = ['reviewer']
+
+    @action('Save', name='save')
+    def save_action(self, action, data):
+        """Save the values."""
+        if self.updateContextFromData(data):
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
