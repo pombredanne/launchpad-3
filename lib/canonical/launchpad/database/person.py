@@ -1688,10 +1688,12 @@ class Person(
         # fetches the rows when they're needed.
         for location in locations:
             location.person._location = location
+        participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
-        list(ValidPersonCache.select("id in (%s)" % sqlvalues(
-                 set(location.person for location in locations))))
-        return [location.person for location in locations]
+        if len(participants) > 0:
+            sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
+            list(ValidPersonCache.select(sql))
+        return list(participants)
 
     @property
     def unmapped_participants(self):
