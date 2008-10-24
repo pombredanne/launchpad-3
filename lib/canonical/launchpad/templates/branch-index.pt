@@ -180,6 +180,10 @@
         <th>Stacked on:</th>
         <td tal:content="structure context/stacked_on/fmt:link" />
       </tr>
+      <tr id="reviewer" tal:condition="context/reviewer">
+        <th>Branch reviewers:</th>
+        <td tal:content="structure context/reviewer/fmt:link" />
+      </tr>
       </tbody>
   </table>
   <tal:branch-errors tal:replace="structure context/@@+messages" />
