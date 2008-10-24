@@ -243,8 +243,8 @@ clean:
 	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
-	rm $(WADL_FILE)
-	rm bzr-version-info.py
+	-rm $(WADL_FILE)
+	-rm bzr-version-info.py
 
 realclean: clean
 	rm -f TAGS tags
