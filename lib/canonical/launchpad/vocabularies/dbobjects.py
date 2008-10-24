@@ -1406,8 +1406,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
             for milestone in visible_milestones)
-        list(Product.select("id IN %s" % sqlvalues(product_ids)))
-        list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
+        if len(product_ids) > 0:
+            list(Product.select("id IN %s" % sqlvalues(product_ids)))
+        if len(distro_ids) > 0:
+            list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
 
         return sorted(visible_milestones, key=attrgetter('displayname'))
 
