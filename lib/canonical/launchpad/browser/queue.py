@@ -302,10 +302,10 @@ class QueueItemsView(LaunchpadView):
         queue_set = getUtility(IPackageUploadSet)
 
         if accept:
-            header = 'Accepting Results:<br>'
+            header = 'Accepting Results:\n'
             action = "accept"
         elif reject:
-            header = 'Rejecting Results:<br>'
+            header = 'Rejecting Results:\n'
             action = "reject"
 
         success = []
@@ -367,8 +367,16 @@ class QueueItemsView(LaunchpadView):
                 else:
                     success.append('OK: %s' % queue_item.displayname)
 
-        report = '%s<br>%s' % (header, ', '.join(success + failure))
-        return report
+        for message in success:
+            self.request.response.addInfoNotification(message)
+        for message in failure:
+            self.request.response.addErrorNotification(message)
+        # Greasy hack!  Is there a better way of setting GET data in the
+        # response?
+        # (This is needed to make the user see the same queue page
+        # after the redirection)
+        url = str(self.request.URL) + "?queue_state=%s" % self.state.value
+        self.request.response.redirect(url)
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""

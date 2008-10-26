@@ -262,9 +262,9 @@ nascentupload-announcements.txt).
 Forcing a duplicated submission on a queue item is recognised:
 
   >>> upload_manager_browser.reload()
-  >>> message = 'FAILED: bar (The source bar - 1.0-1 is already accepted'
-  >>> message in upload_manager_browser.contents
-  True
+  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  ...     print message
+  FAILED: bar (The source bar - 1.0-1 is already accepted
 
 No emails are sent in this case:
 
@@ -281,7 +281,6 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
-  Accepting Results:
   OK: mozilla-firefox
 
 The item is moved to the ACCEPTED queue:
@@ -320,7 +319,6 @@ Accept "cnews" source:
     >>> upload_manager_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(upload_manager_browser.contents):
     ...     print message
-    Accepting Results:
     OK: cnews
 
 And the page is still on the Unapproved list:
@@ -370,10 +368,11 @@ And now accepts the checked items:
 He sees the informational message that confirms the details of what was
 overridden:
 
-  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  >>> for message in sorted(get_feedback_messages(
+  ...     upload_manager_browser.contents)):
   ...     print message
-  Accepting Results:
-  OK: netapplet(restricted/admin), OK: pmount(restricted/admin/extra)
+  OK: netapplet(restricted/admin)
+  OK: pmount(restricted/admin/extra)
 
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -423,7 +422,6 @@ Rejecting 'alsa-utils' source:
   >>> upload_manager_browser.getControl(name="Reject").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
-  Rejecting Results:
   OK: alsa-utils
 
   >>> print_queue(upload_manager_browser.contents)

@@ -22,18 +22,6 @@
                  message view/performQueueAction;
                  error view/error|nothing">
 
-  <p class="informational message"
-     tal:condition="message"
-     tal:content="structure message">
-     This call to view/performQueueAction actually parses the form and does
-     the database queries based on actions posted (packages accepted or
-     rejected), and shows the status of those actions here.
-  </p>
-
-  <p class="error message"
-      tal:condition="error"
-      tal:content="error"/>
-
   <div class="queue_list" tal:condition="not: error">
 
     <tal:batch define="batch view/decoratedQueueBatch|nothing">
