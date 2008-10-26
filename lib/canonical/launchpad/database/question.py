@@ -1131,10 +1131,16 @@ class QuestionTargetMixin:
     @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))
+        constraints = []
+        targets = self.getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "AnswerContact." + column + " IS NULL"
+            else:
+                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+        return list(self._selectPersonFromAnswerContacts(constraints, []))
 
     @property
     def direct_answer_contacts(self):
@@ -1158,11 +1164,12 @@ class QuestionTargetMixin:
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
         """Return the Persons or Teams who are AnswerContacts."""
+        constraints.append("""Person.id = AnswerContact.person""")
+        clause_tables.append('AnswerContact')
         # Avoid a circular import of Person; which imports the mixin.
         from canonical.launchpad.database.person import Person
         return Person.select(
-            " AND ".join(constraints),
-            clauseTables=clause_tables + ['AnswerContact'],
+            " AND ".join(constraints), clauseTables=clause_tables,
             orderBy=['displayname'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
@@ -1180,7 +1187,6 @@ class QuestionTargetMixin:
             constraints.append(constraint)
 
         constraints.append("""
-            Person.id = AnswerContact.person AND
             AnswerContact.person = PersonLanguage.person AND
             PersonLanguage.Language = Language.id""")
         # XXX sinzui 2007-07-12 bug=125545:
