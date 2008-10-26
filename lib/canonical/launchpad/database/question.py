@@ -1166,7 +1166,7 @@ class QuestionTargetMixin:
         """Return the Persons or Teams who are AnswerContacts."""
         constraints.append("""Person.id = AnswerContact.person""")
         clause_tables.append('AnswerContact')
-        # Avoid a circular import of Person; which imports the mixin.
+        # Avoid a circular import of Person, which imports the mixin.
         from canonical.launchpad.database.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
