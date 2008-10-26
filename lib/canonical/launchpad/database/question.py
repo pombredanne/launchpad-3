@@ -14,7 +14,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
 import pytz
 
 from email.Utils import make_msgid
