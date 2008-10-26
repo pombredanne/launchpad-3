@@ -7,13 +7,13 @@ __metaclass__ = type
 __all__ = [
     'PersonBranchAddView',
     'ProductBranchAddView',
-    'BranchAdvancedEditView',
     'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
+    'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -227,7 +227,7 @@ class BranchContextMenu(ContextMenu):
              'browse_revisions',
              'subscription', 'add_subscriber', 'associations',
              'register_merge', 'landing_candidates', 'merge_queue',
-             'link_bug', 'link_blueprint', 'edit_import'
+             'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
              ]
 
     def whiteboard(self):
@@ -238,6 +238,11 @@ class BranchContextMenu(ContextMenu):
     def edit(self):
         text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reviewer(self):
+        text = 'Set branch reviewer'
+        return Link('+reviewer', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def delete_branch(self):
@@ -836,22 +841,41 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             pass
 
 
-class BranchAdvancedEditView(LaunchpadEditFormView):
-    """The view to set the more advanced branch settings.
+class BranchReviewerEditSchema(Interface):
+    """The schema to edit the branch reviewer."""
 
-    Like the review team.
-    """
+    reviewer = copy_field(IBranch['reviewer'], required=True)
 
-    schema = IBranch
-    field_names = ['reviewer']
+
+class BranchReviewerEditView(LaunchpadEditFormView):
+    """The view to set the review team."""
+
+    schema = BranchReviewerEditSchema
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BranchReviewerEditSchema: self.context}
+
+    @property
+    def initial_values(self):
+        return {'reviewer': self.context.code_reviewer}
 
     @action('Save', name='save')
     def save_action(self, action, data):
         """Save the values."""
-        if self.updateContextFromData(data):
-            # Only specify that the context was modified if there
-            # was in fact a change.
-            self.context.date_last_modified = UTC_NOW
+        reviewer = data['reviewer']
+        if reviewer == self.context.code_reviewer:
+            # No change, so don't update last modified.
+            return
+
+        if reviewer == self.context.owner:
+            # Clear the reviewer if set to the same as the owner.
+            self.context.reviewer = None
+        else:
+            self.context.reviewer = reviewer
+
+        self.context.date_last_modified = UTC_NOW
 
     @property
     def next_url(self):
