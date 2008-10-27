@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Choice, Int, List, Object, Text, TextLine)
+    Bool, Choice, Int, List, Object, Text, TextLine)
 from zope.schema.interfaces import IObject
 from zope.component import getUtility
 
@@ -210,6 +210,11 @@ class IBugTracker(Interface):
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
+    enabled = exported(
+        Bool(
+            title=_("Launchpad should sync with this bug tracker."),
+            required=True,
+            default=True))
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""

@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+    BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
@@ -157,6 +157,7 @@ class BugTracker(SQLBase):
         'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
+    enabled = BoolCol(notNull=True, default=True)
 
     @property
     def latestwatches(self):
