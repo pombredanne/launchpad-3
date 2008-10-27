@@ -33,7 +33,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
-from canonical.launchpad.components.branch import bazaar_identity
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationException, BranchCreationForbidden,
@@ -48,7 +47,8 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
     IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     NotFoundError, RepositoryFormat)
-from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branch import (
+    bazaar_identity, IBranchNavigationMenu)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision

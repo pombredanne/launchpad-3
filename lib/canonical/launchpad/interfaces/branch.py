@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BadBranchSearchContext',
+    'bazaar_identity',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -1315,3 +1316,41 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+def bazaar_identity(branch, associated_series, is_dev_focus):
+    """Return the shortest lp: style branch identity."""
+    use_series = None
+    lp_prefix = config.codehosting.bzr_lp_prefix
+    # XXX: TimPenhey 2008-05-06 bug=227602
+    # Since at this stage the launchpad name resolution is not
+    # authenticated, we can't resolve series branches that end
+    # up pointing to private branches, so don't show short names
+    # for the branch if it is private.
+
+    # It is possible for +junk branches to be related to a product
+    # series.  However we do not show the shorter name for these
+    # branches as it would be giving extra authority to them.  When
+    # the owner of these branches realises that they want other people
+    # to be able to commit to them, the branches will need to have a
+    # team owner.  When this happens, they will no longer be able to
+    # stay as junk branches, and will need to be associated with a
+    # product.  In this way +junk branches associated with product
+    # series should be self limiting.  We are not looking to enforce
+    # extra strictness in this case, but instead let it manage itself.
+    if not branch.private and branch.product is not None:
+        if is_dev_focus:
+            return lp_prefix + branch.product.name
+
+        for series in associated_series:
+            if (use_series is None or
+                series.datecreated > use_series.datecreated):
+                use_series = series
+    # If there is no series, use the prefix with the unique name.
+    if use_series is None:
+        return lp_prefix + branch.unique_name
+    else:
+        return "%(prefix)s%(product)s/%(series)s" % {
+            'prefix': lp_prefix,
+            'product': use_series.product.name,
+            'series': use_series.name}

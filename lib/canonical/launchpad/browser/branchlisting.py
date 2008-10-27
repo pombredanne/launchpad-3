@@ -27,8 +27,8 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, PersonRevisionsFeedLink,
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
-from canonical.launchpad.components.branch import bazaar_identity
 from canonical.launchpad.interfaces import (
+    bazaar_identity,
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
     BranchListingSort,
