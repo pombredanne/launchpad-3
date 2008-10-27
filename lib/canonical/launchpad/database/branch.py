@@ -33,6 +33,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.components.branch import bazaar_identity
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationException, BranchCreationForbidden,
@@ -258,43 +259,13 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        use_series = None
-        lp_prefix = config.codehosting.bzr_lp_prefix
-        # XXX: TimPenhey 2008-05-06 bug=227602
-        # Since at this stage the launchpad name resolution is not
-        # authenticated, we can't resolve series branches that end
-        # up pointing to private branches, so don't show short names
-        # for the branch if it is private.
-
-        # It is possible for +junk branches to be related to a product
-        # series.  However we do not show the shorter name for these
-        # branches as it would be giving extra authority to them.  When
-        # the owner of these branches realises that they want other people
-        # to be able to commit to them, the branches will need to have a
-        # team owner.  When this happens, they will no longer be able to
-        # stay as junk branches, and will need to be associated with a
-        # product.  In this way +junk branches associated with product
-        # series should be self limiting.  We are not looking to enforce
-        # extra strictness in this case, but instead let it manage itself.
-        if not self.private and self.product is not None:
-            for series in self.associatedProductSeries():
-                # If the branch is associated with the development focus
-                # then we'll use that, otherwise use the series with the
-                # latest date_created.
-                if series == self.product.development_focus:
-                    return lp_prefix + self.product.name
-                else:
-                    if (use_series is None or
-                        series.datecreated > use_series.datecreated):
-                        use_series = series
-        # If there is no series, use the prefix with the unique name.
-        if use_series is None:
-            return lp_prefix + self.unique_name
+        if self.product is not None:
+            series_branch = self.product.development_focus.series_branch
+            is_dev_focus = (series_branch == self)
         else:
-            return "%(prefix)s%(product)s/%(series)s" % {
-                'prefix': lp_prefix,
-                'product': use_series.product.name,
-                'series': use_series.name}
+            is_dev_focus = False
+        return bazaar_identity(
+            self, self.associatedProductSeries(), is_dev_focus)
 
     @property
     def related_bugs(self):
