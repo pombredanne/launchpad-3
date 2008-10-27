@@ -39,6 +39,7 @@ a new password.
     ...         'field.password_dupe': 'test1',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> login(ANONYMOUS, request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
@@ -61,6 +62,7 @@ stored. The password is not reset.
     ...         'field.password_dupe': 'test2',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> login(ANONYMOUS, request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
@@ -103,6 +105,7 @@ password is reset, and the account status is set ACTIVE.
     ...         'field.password_dupe': 'test3',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> login(ANONYMOUS, request)
     >>> resetpassword_view = getMultiAdapter(
     ...     (login_token, request), name="+resetpassword")
     >>> resetpassword_view.initialize()
@@ -159,6 +162,7 @@ indicate if his email address can be shown to other Launchpad users.
     ...         'field.password_dupe': 'test4',
     ...         'field.actions.confirm': 'Continue',
     ...         })
+    >>> login(ANONYMOUS, request)
     >>> claimprofile_view = getMultiAdapter(
     ...     (login_token, request), name="+claimprofile")
     >>> claimprofile_view.initialize()
@@ -221,6 +225,7 @@ the Person object.
     ...         'field.password_dupe': 'test5',
     ...         'field.actions.continue': 'Continue',
     ...         })
+    >>> login(ANONYMOUS, request)
     >>> claimprofile_view = getMultiAdapter(
     ...     (login_token, request), name="+newaccount")
     >>> claimprofile_view.initialize()
@@ -273,6 +278,7 @@ perform the last step of the workflow for adding a GPG key.
     ...     SERVER_URL='http://launchpad.dev',
     ...     PATH_INFO='/token/%s/+validategpg' % login_token.token,
     ...     method='POST', form={'field.actions.continue': 'Continue'})
+    >>> login(ANONYMOUS, request)
     >>> validategpg_view = getMultiAdapter(
     ...     (login_token, request), name="+validategpg")
     >>> print validategpg_view.user

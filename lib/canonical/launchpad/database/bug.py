@@ -59,7 +59,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
@@ -393,10 +393,15 @@ class Bug(SQLBase):
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscription.select("""
-            Person.id = BugSubscription.person AND
-            BugSubscription.bug = %d""" % self.id,
-            orderBy="displayname", clauseTables=["Person"])
+        result = Store.of(self).using(
+            LeftJoin(BugSubscription, ValidPersonCache,
+                     BugSubscription.person == ValidPersonCache.id),
+            Person).find(
+            (BugSubscription, ValidPersonCache),
+            BugSubscription.person == Person.id,
+            BugSubscription.bug == self).order_by(Person.displayname)
+        return (
+            bug_subscription for (bug_subscription, cache) in result)
 
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
