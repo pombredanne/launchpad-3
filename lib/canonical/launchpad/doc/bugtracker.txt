@@ -295,3 +295,33 @@ We will forge some BugMessage records before trying again:
     * bug: 2
     - remote bug: 42
     - message subject: You are Number 4.
+
+
+== Disabling a bug tracker ==
+
+Bug trackers have an `enabled` attribute that tells Launchpad whether or
+not it can synchronise with the remote bug tracker that they represent.
+This is True by default.
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> new_bugtracker = factory.makeBugTracker()
+
+    >>> print new_bugtracker.enabled
+    True
+
+Enabled can't be altered by a normal user.
+
+    >>> login('test@canonical.com')
+    >>> new_bugtracker.enabled = False
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'enabled', 'launchpad.Admin')
+
+But, as the traceback suggests, it can be altered by an admin.
+
+    >>> login('foo.bar@canonical.com')
+    >>> new_bugtracker.enabled = False
+    >>> print new_bugtracker.enabled
+    False
