@@ -91,7 +91,11 @@ class DistroMirrorProber(LaunchpadCronScript):
         # value through a lot of method/function calls, until it reaches the
         # probe() method.
         if self.options.no_remote_hosts:
-            config.distributionmirrorprober.localhost_only = True
+            localhost_only_conf = """
+                [distributionmirrorprober]
+                localhost_only: True
+                """
+            config.push('localhost_only_conf', localhost_only_conf)
 
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
