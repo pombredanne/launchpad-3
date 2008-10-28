@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     IComponentSet, IDistributionSet, ISectionSet,
     PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.scripts import FakeLogger
-from canonical.launchpad.scripts.ftpmaster import (
+from canonical.launchpad.scripts.changeoverride import (
     ArchiveOverrider, ArchiveOverriderError)
 from canonical.testing import LaunchpadZopelessLayer
 

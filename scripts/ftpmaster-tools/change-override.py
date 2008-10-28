@@ -1,10 +1,12 @@
 #!/usr/bin/python2.4
-
+# Stop lint warning about relative import:
+# pylint: disable-msg=W0403
 """Change the component of a package.
 
 This tool allows you to change the component of a package.  Changes won't
 take affect till the next publishing run.
 """
+
 import _pythonpath
 
 import optparse
@@ -15,7 +17,7 @@ from contrib.glock import GlobalLock
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import (
+from canonical.launchpad.scripts.changeoverride import (
     ArchiveOverrider, ArchiveOverriderError)
 from canonical.lp import initZopeless
 
