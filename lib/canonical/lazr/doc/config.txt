@@ -558,6 +558,20 @@ template section.
     key2 : changed
     key3 : unique
 
+Sections attributes cannot be directly set, nor can they be added to
+shadow the config options. An AttributeError is raised when a callsite
+attempts to mutate the config.
+
+    >>> config['section_3.app_b'].key1 = 'fail'
+    Traceback (most recent call last):
+     ...
+    AttributeError: Config options cannot be set directly.
+
+    >>> config['section_3.app_b'].no_such_attribute = 'fail'
+    Traceback (most recent call last):
+     ...
+    AttributeError: Config options cannot be set directly.
+
 
 == Validating configs ==
 
