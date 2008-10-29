@@ -475,14 +475,25 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
         prober.redirect('http://bar.foo')
         self.failUnless(prober.timeoutCall.resetCalled)
 
-    def _createFactoryAndStubConnectAndTimeoutCall(self):
-        prober = RedirectAwareProberFactory('http://foo.bar')
+    def _createFactoryAndStubConnectAndTimeoutCall(self, url=None):
+        if url is None:
+            url = 'http://foo.bar'
+        prober = RedirectAwareProberFactory(url)
         prober.timeoutCall = FakeTimeOutCall()
         prober.connectCalled = False
         def connect():
             prober.connectCalled = True
         prober.connect = connect
         return prober
+
+    def test_raises_error_if_redirected_to_different_file(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall(
+            'http://foo.bar/baz/boo/package.deb')
+        def failed(error):
+            prober.has_failed = True
+        prober.failed = failed
+        prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
+        self.failUnless(prober.has_failed)
 
     def test_connect_depends_on_localhost_only_config(self):
         # If localhost_only is True and the host to which we would connect is
