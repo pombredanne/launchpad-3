@@ -1770,6 +1770,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from last import attempt.';
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
