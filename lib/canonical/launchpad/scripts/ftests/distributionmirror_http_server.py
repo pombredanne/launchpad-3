@@ -48,7 +48,8 @@ class DistributionMirrorTestHTTPServer(Resource):
             return RedirectingResource(
                 'http://localhost:%s/redirect-infinite-loop' % port)
         elif name == 'redirect-unknown-url-scheme':
-            return RedirectingResource('ssh://localhost/foo')
+            return RedirectingResource(
+                'ssh://localhost/redirect-unknown-url-scheme')
         else:
             return Resource.getChild(self, name, request)
 
