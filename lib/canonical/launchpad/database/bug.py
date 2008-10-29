@@ -402,8 +402,8 @@ class Bug(SQLBase):
             ValidPersonCache,
             ValidPersonCache.id == BugSubscription.personID,
             BugSubscription.bug == self)
-        for valid_person in valid_persons:
-            pass
+        # Suck in all the records so that they're actually cached.
+        list(valid_persons)
         # Do the main query.
         return Store.of(self).find(
             BugSubscription,
