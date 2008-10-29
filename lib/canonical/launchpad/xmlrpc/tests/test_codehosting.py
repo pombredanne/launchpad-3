@@ -9,6 +9,7 @@ import pytz
 import unittest
 
 from bzrlib.tests import adapt_tests, TestScenarioApplier
+from bzrlib.urlutils import escape
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -22,12 +23,14 @@ from canonical.launchpad.interfaces.branch import (
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.launchpad.testing import (
-    LaunchpadObjectFactory, TestCaseWithFactory)
+    LaunchpadObjectFactory, TestCase, TestCaseWithFactory)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc.codehosting import (
-    BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, run_with_login)
+    BranchFileSystem, BranchPuller, LAUNCHPAD_SERVICES, iter_split,
+    run_with_login)
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
@@ -497,7 +500,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
         branch_id = self.branchfs.createBranch(
-            owner.id, owner.name, product.name, name)
+            owner.id, '~%s/%s/%s' % (owner.name, product.name, name))
         login(ANONYMOUS)
         branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
@@ -511,7 +514,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
         branch_id = self.branchfs.createBranch(
-            owner.id, owner.name, '+junk', name)
+            owner.id, '~%s/%s/%s' % (owner.name, '+junk', name))
         login(ANONYMOUS)
         branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
@@ -527,7 +530,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         team = self.factory.makeTeam(owner)
         name = self.factory.getUniqueString()
         fault = self.branchfs.createBranch(
-            owner.id, team.name, '+junk', name)
+            owner.id, '~%s/+junk/%s' % (team.name, name))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE,
             'Cannot create team-owned junk branches.', fault)
@@ -538,7 +541,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "Project 'no-such-product' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, owner.name, 'no-such-product', name)
+            owner.id, '~%s/no-such-product/%s' % (owner.name, name))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -551,7 +554,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = ("%s cannot create branches owned by %s"
                    % (creator.displayname, other_person.displayname))
         fault = self.branchfs.createBranch(
-            creator.id, other_person.name, product.name, name)
+            creator.id, '~%s/%s/%s' % (other_person.name, product.name, name))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
@@ -563,7 +566,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = ("Invalid branch name %r. %s"
                    % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
         fault = self.branchfs.createBranch(
-            owner.id, owner.name, product.name, invalid_name)
+            owner.id, '~%s/%s/%s' % (owner.name, product.name, invalid_name))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
@@ -574,7 +577,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, 'no-one', product.name, name)
+            owner.id, '~no-one/%s/%s' % (product.name, name))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -586,7 +589,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, 'no-one', 'no-product', name)
+            owner.id, '~no-one/no-product/%s' % (name,))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -806,6 +809,274 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
+    def assertCannotTranslate(self, requester, path):
+        """Assert that we cannot translate 'path'."""
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
+    def assertNotFound(self, requester, path):
+        """Assert that the given path cannot be found."""
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Maybe we should distinguish between "I don't know how to
+        # translate /foo" and "there's no branch at /~foo/bar/baz".
+        self.assertFaultEqual(
+            faults.PathTranslationError.error_code,
+            "Could not translate '%s'." % path, fault)
+
+    def test_translatePath_cannot_translate(self):
+        # Sometimes translatePath will not know how to translate a path. When
+        # this happens, it returns a Fault saying so, including the path it
+        # couldn't translate.
+        requester = self.factory.makePerson()
+        path = escape(u'/untranslatable')
+        self.assertCannotTranslate(requester, path)
+
+    def test_translatePath_no_preceding_slash(self):
+        requester = self.factory.makePerson()
+        path = escape(u'invalid')
+        fault = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertFaultEqual(
+            faults.InvalidPath.error_code,
+            "Could not translate '%s'. Can only translate absolute paths."
+            % path, fault)
+
+    def test_translatePath_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_branch_with_trailing_slash(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s/' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_path_in_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s/child' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'child'),
+            translation)
+
+    def test_translatePath_nested_path_in_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        path = escape(u'/%s/a/b' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'a/b'),
+            translation)
+
+    def test_translatePath_preserves_escaping(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        child_path = u'a@b'
+        # This test is only meaningful if the path isn't the same when
+        # escaped.
+        self.assertNotEqual(escape(child_path), child_path.encode('utf-8'))
+        path = escape(u'/%s/%s' % (branch.unique_name, child_path))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT,
+             {'id': branch.id, 'writable': False},
+             escape(child_path)), translation)
+
+    def test_translatePath_no_such_branch(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_private_branch(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeBranch(
+                BranchType.HOSTED, private=True, owner=requester))
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
+
+    def test_translatePath_invisible_branch(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_remote_branch(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.REMOTE)
+        path = escape(u'/%s' % branch.unique_name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_launchpad_services_private(self):
+        branch = removeSecurityProxy(self.factory.makeBranch(private=True))
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
+
+    def test_translatePath_team_owned(self):
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(requester)
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
+            translation)
+
+    def test_translatePath_team_unowned(self):
+        requester = self.factory.makePerson()
+        team = self.factory.makeTeam(self.factory.makePerson())
+        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned_mirrored(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.MIRRORED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_owned_imported(self):
+        requester = self.factory.makePerson()
+        branch = self.factory.makeBranch(BranchType.IMPORTED, owner=requester)
+        path = escape(u'/%s' % branch.unique_name)
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_control_directory(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus()
+        path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        # XXX: YES
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
+            translation)
+
+    def test_translatePath_control_conf(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus()
+        path = escape(
+            u'/~%s/%s/.bzr/control.conf' % (requester.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        # XXX: YES
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name},
+             '.bzr/control.conf'), translation)
+
+    def test_translatePath_control_directory_no_stacked_set(self):
+        # When there's no default stacked-on branch set for the project, we
+        # don't even bother translating control directory paths.
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_control_directory_invisble_branch(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus(private=True)
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_control_directory_private_branch(self):
+        product, branch = self._makeProductWithDevFocus(private=True)
+        branch = removeSecurityProxy(branch)
+        requester = branch.owner
+        path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        # XXX: YES
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
+            translation)
+
+    def test_translatePath_control_directory_other_owner(self):
+        requester = self.factory.makePerson()
+        product, branch = self._makeProductWithDevFocus()
+        owner = self.factory.makePerson()
+        path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
+        translation = self.branchfs.translatePath(requester.id, path)
+        login(ANONYMOUS)
+        # XXX: Should the stacked-on branch path be escaped?
+        # XXX: YES
+        self.assertEqual(
+            (CONTROL_TRANSPORT,
+             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
+            translation)
+
+
+class TestIterateSplit(TestCase):
+    """Tests for iter_split."""
+
+    def test_iter_split(self):
+        # iter_split loops over each way of splitting a string in two using
+        # the given splitter.
+        self.assertEqual([('one', '')], list(iter_split('one', '/')))
+        self.assertEqual([], list(iter_split('', '/')))
+        self.assertEqual(
+            [('one/two', ''), ('one', 'two')],
+            list(iter_split('one/two', '/')))
+        self.assertEqual(
+            [('one/two/three', ''), ('one/two', 'three'),
+             ('one', 'two/three')],
+            list(iter_split('one/two/three', '/')))
+
 
 class LaunchpadDatabaseFrontend:
     """A 'frontend' to Launchpad's branch services.
@@ -867,5 +1138,6 @@ def test_suite():
          ])
     adapt_tests(puller_tests, PullerEndpointScenarioApplier(), suite)
     suite.addTests(
-        map(loader.loadTestsFromTestCase, [TestRunWithLogin]))
+        map(loader.loadTestsFromTestCase,
+            [TestRunWithLogin, TestIterateSplit]))
     return suite

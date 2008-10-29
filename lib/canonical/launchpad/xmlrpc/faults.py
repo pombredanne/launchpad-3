@@ -366,3 +366,26 @@ class NoUrlForBranch(LaunchpadFault):
 
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
+
+
+# XXX: Should this name & text imply "Don't know how to translate" or "Not
+# found" or maybe something else?
+class PathTranslationError(LaunchpadFault):
+    """Raised when a virtual path cannot be translated to a real one."""
+
+    error_code = 290
+    msg_template = "Could not translate '%(path)s'."
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)
+
+
+class InvalidPath(LaunchpadFault):
+    """Raised when `translatePath` is passed something that's not a path."""
+
+    error_code = 300
+    msg_template = (
+        "Could not translate '%(path)s'. Can only translate absolute paths.")
+
+    def __init__(self, path):
+        LaunchpadFault.__init__(self, path=path)

@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_TRANSPORT',
+    'CONTROL_TRANSPORT',
     'IBranchPuller',
     'IBranchPullerApplication',
     'IBranchFileSystem',
@@ -32,6 +34,11 @@ assert not valid_name(LAUNCHPAD_SERVICES), (
 # These are used as permissions for getBranchInformation.
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+# Indicates that a path's real location is on a branch transport.
+BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
+# Indicates that a path points to a control directory.
+CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 
 
 class IBranchPullerApplication(ILaunchpadApplication):
@@ -203,4 +210,16 @@ class IBranchFileSystem(Interface):
 
         :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
+        """
+
+    def translatePath(requester_id, path):
+        """Translate 'path' so that the codehosting transport can access it.
+
+        :param requester_id: the database ID of the person requesting the
+            path translation.
+        :param path: the path being translated. This should be a URL escaped
+            string.
+
+        :returns: `PathTranslationError` if 'path' cannot be translated.
+            (transport_type, transport_parameters, path_in_transport)
         """

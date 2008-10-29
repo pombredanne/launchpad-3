@@ -8,6 +8,7 @@ __all__ = [
     'BranchPuller',
     'datetime_from_tuple',
     'LAUNCHPAD_SERVICES',
+    'iter_split',
     ]
 
 
@@ -15,6 +16,8 @@ import datetime
 from xmlrpclib import Fault
 
 import pytz
+
+from bzrlib.urlutils import unescape
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -25,8 +28,9 @@ from canonical.launchpad.ftests import login_person, logout
 from canonical.launchpad.interfaces.branch import (
     BranchType, BranchCreationException, IBranchSet, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.codehosting import (
-    IBranchFileSystem, IBranchPuller, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.scriptactivity import IScriptActivitySet
@@ -199,14 +203,16 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     implements(IBranchFileSystem)
 
-    def createBranch(self, login_id, personName, productName, branchName):
+    def createBranch(self, login_id, branch_path):
         """See `IBranchFileSystem`."""
         def create_branch(requester):
+            personName, productName, branchName = branch_path.split('/')
+            personName = personName[1:]
             owner = getUtility(IPersonSet).getByName(personName)
             if owner is None:
                 return Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "User/team %r does not exist." % personName)
+                    "User/team '%s' does not exist." % personName)
 
             if productName == '+junk':
                 product = None
@@ -215,7 +221,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 if product is None:
                     return Fault(
                         NOT_FOUND_FAULT_CODE,
-                        "Project %r does not exist." % productName)
+                        "Project '%s' does not exist." % productName)
 
             try:
                 branch = getUtility(IBranchSet).new(
@@ -285,3 +291,76 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             branch.requestMirror()
             return True
         return run_with_login(login_id, request_mirror)
+
+    def _serializeBranch(self, requester, branch, trailing_path):
+        if requester == LAUNCHPAD_SERVICES:
+            branch = removeSecurityProxy(branch)
+        try:
+            branch_id = branch.id
+        except Unauthorized:
+            return None
+        if branch.branch_type == BranchType.REMOTE:
+            return None
+        return (
+            BRANCH_TRANSPORT,
+            {'id': branch_id,
+             'writable': self._canWriteToBranch(requester, branch)},
+            trailing_path)
+
+    def _getProduct(self, requester, product_path, trailing_path):
+        try:
+            owner_name, product_name, bazaar = product_path.split('/')
+        except ValueError:
+            # Wrong number of segments -- can't be a product.
+            return
+        if bazaar != '.bzr':
+            return
+        product = getUtility(IProductSet).getByName(product_name)
+        default_branch = product.default_stacked_on_branch
+        if default_branch is None:
+            return
+        try:
+            unique_name = default_branch.unique_name
+        except Unauthorized:
+            return
+        return (
+            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name},
+            '/'.join([bazaar, trailing_path]))
+
+    def translatePath(self, requester_id, path):
+        """See `IBranchFileSystem`."""
+        def translate_path(requester):
+            if not path.startswith('/'):
+                return faults.InvalidPath(path)
+            stripped_path = path.strip('/')
+            for first, second in iter_split(stripped_path, '/'):
+                # Is it a branch?
+                branch = getUtility(IBranchSet).getByUniqueName(
+                    unescape(first).encode('utf-8'))
+                if branch is not None:
+                    branch = self._serializeBranch(requester, branch, second)
+                    if branch is None:
+                        break
+                    return branch
+                # Is it a product control directory?
+                product = self._getProduct(requester, first, second)
+                if product is not None:
+                    return product
+            # XXX: Should we use the unescaped path in the error? Unescaped is
+            # easier to read.
+            return faults.PathTranslationError(path)
+        return run_with_login(requester_id, translate_path)
+
+
+def iter_split(string, splitter):
+    """Iterate over ways to split 'string' in two with 'splitter'.
+
+    If 'string' is empty, then yield nothing. Otherwise, yield tuples like
+    ('a', 'b/c'), ('a/b', 'c'), ('a/b/c', '') for a string 'a/b/c' and a
+    splitter '/'.
+    """
+    if string == '':
+        return
+    tokens = string.split(splitter)
+    for i in reversed(range(1, len(tokens) + 1)):
+        yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
