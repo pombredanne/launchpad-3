@@ -24,7 +24,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -393,15 +393,23 @@ class Bug(SQLBase):
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        result = Store.of(self).using(
-            LeftJoin(BugSubscription, ValidPersonCache,
-                     BugSubscription.person == ValidPersonCache.id),
-            Person).find(
-            (BugSubscription, ValidPersonCache),
-            BugSubscription.person == Person.id,
-            BugSubscription.bug == self).order_by(Person.displayname)
-        return (
-            bug_subscription for (bug_subscription, cache) in result)
+        # Cache valid persons so that <person>.is_valid_person can
+        # return from the cache. This operation was previously done at
+        # the same time as retrieving the bug subscriptions (as a left
+        # join). However, this ran slowly (far from optimal query
+        # plan), so we're doing it as two queries now.
+        valid_persons = Store.of(self).find(
+            ValidPersonCache,
+            ValidPersonCache.id == BugSubscription.personID,
+            BugSubscription.bug == self)
+        for valid_person in valid_persons:
+            pass
+        # Do the main query.
+        return Store.of(self).find(
+            BugSubscription,
+            BugSubscription.personID == Person.id,
+            BugSubscription.bug == self).order_by(
+            Func('person_sort_key', Person.displayname, Person.name))
 
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
