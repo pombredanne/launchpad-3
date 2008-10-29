@@ -124,3 +124,8 @@ class CachingAuthserverClient:
         return defer.maybeDeferred(
             self._authserver.callRemote, 'requestMirror', self._user_id,
             branch_id)
+
+    def translatePath(self, path):
+        """Translate 'path'."""
+        return defer.maybeDeferred(
+            self._authserver.callRemote, 'translatePath', self._user_id, path)

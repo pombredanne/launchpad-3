@@ -100,6 +100,35 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
+class TransportFactory:
+
+    def __init__(self, hosted_transport, mirrored_transport):
+        self.hosted_transport = hosted_transport
+        self.mirrored_transport = mirrored_transport
+
+    def make_branch_transport(self, id, writable):
+        if writable:
+            transport = self.hosted_transport
+        else:
+            transport = self.mirrored_transport
+        transport = transport.clone(branch_id_to_path(id))
+        ensure_base(transport)
+        if not writable:
+            transport = get_transport('readonly+' + transport.base)
+        return transport
+
+    def make_control_transport(self, default_stack_on):
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        transport = get_transport(memory_server.get_url())
+        if default_stack_on == '':
+            return transport
+        format = BzrDirFormat.get_default_format()
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(default_stack_on)
+        return get_transport('readonly+' + transport.base)
+
+
 class BranchNotFound(BzrError):
     """Raised when on translating a virtual path for a non-existent branch."""
 
@@ -357,15 +386,8 @@ class _BaseLaunchpadServer(Server):
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        transport = get_transport(memory_server.get_url())
-        if stack_on_url == '':
-            return transport
-        format = BzrDirFormat.get_default_format()
-        bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(stack_on_url)
-        return get_transport('readonly+' + transport.base)
+        return TransportFactory(
+            None, None).make_control_transport(stack_on_url)
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
