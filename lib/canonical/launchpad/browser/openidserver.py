@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """OpenID server."""
 
@@ -16,6 +16,7 @@ from time import time
 from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zisinstance
@@ -45,7 +46,8 @@ from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, UnexpectedFormData)
-from canonical.launchpad.webapp.login import logInPerson, logoutPerson
+from canonical.launchpad.webapp.login import (
+    logInPerson, logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -109,6 +111,12 @@ class OpenIDMixin:
         return query
 
     def getSession(self):
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it
+            # safe to set session values.
+            allowUnauthenticatedSession(self.request,
+                                        duration=timedelta(minutes=60))
         return ISession(self.request)[SESSION_PKG_KEY]
 
     @staticmethod

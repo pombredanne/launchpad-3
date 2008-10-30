@@ -185,7 +185,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.login import (
+    logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -1520,6 +1521,10 @@ class PersonClaimView(LaunchpadFormView):
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
+        # A dance to assert that we want to break the rules about no
+        # unauthenticated sessions. Only after this next line is it safe
+        # to use the ``addNoticeNotification`` method.
+        allowUnauthenticatedSession(self.request)
         self.request.response.addInfoNotification(_(
             "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "

@@ -665,5 +665,6 @@ def test_suite():
 
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
-    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
+    # XXX DaniloSegan 2008-10-24: see #288695.
+    #suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite
