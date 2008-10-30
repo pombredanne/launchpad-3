@@ -5,3 +5,4 @@
 
 - for KarmaActionEditView I'll have to write a test -- the only existing one
 is in standalone/xx-karmaaction.txt and doesn't actually test it.
+- ../templates/standardshipitrequest-edit.pt uses a bare SQLObjectEditView, and I'm not sure how easy it's going to be to convert it.

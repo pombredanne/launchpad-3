@@ -1322,12 +1322,6 @@ specification_dependency = 'Create a blueprint dependency'
 
 specification_deptree = 'Complete dependency tree'
 
-specification_milestone = 'Target feature to milestone'
-
-specification_people = 'Change blueprint assignee, drafter, and reviewer'
-
-specification_priority = 'Change blueprint priority'
-
 specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
@@ -1341,8 +1335,6 @@ specification_requestfeedback = 'Request feedback on this blueprint'
 specification_edit = 'Edit blueprint details'
 
 specification_linksprint = 'Put blueprint on sprint agenda'
-
-specification_status = 'Edit blueprint status'
 
 specification_index = ContextTitle(smartquote('Blueprint: "%s"'))
 
