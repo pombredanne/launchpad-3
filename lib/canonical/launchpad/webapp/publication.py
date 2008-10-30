@@ -454,6 +454,18 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        da.clear_request_started()
+        da.set_request_started()
+
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)

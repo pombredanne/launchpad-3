@@ -57,7 +57,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
         self.assertEqual(CodeReviewVote.ABSTAIN, reply.vote)
-        self.assertEqual('My tag', reply.vote_tag)
+        self.assertEqual('my tag', reply.vote_tag)
 
     def test_createReplyCommentNoSubject(self):
         comment = self.bmp.createComment(

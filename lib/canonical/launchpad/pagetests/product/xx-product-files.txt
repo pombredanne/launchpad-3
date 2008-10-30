@@ -491,8 +491,11 @@ use of X-SCHEME we must set 'use_https' to True and remember
 to reset it when we're done.
 
     >>> from canonical.config import config
-    >>> old_use_https = config.vhosts.use_https
-    >>> config.vhosts.use_https = True
+    >>> use_https_true_data = """
+    ...     [vhosts]
+    ...     use_https: True
+    ...     """
+    >>> config.push('use_https_true_data', use_https_true_data)
 
 If the original scheme is https the redirect URL should be https too.
 
@@ -523,7 +526,12 @@ over http.
 
 When 'use_https' is False the result will always be http.
 
-    >>> config.vhosts.use_https = False
+    >>> config_data = config.pop('use_https_true_data')
+    >>> use_https_false_data = """
+    ...     [vhosts]
+    ...     use_https: False
+    ...     """
+    >>> config.push('use_https_false_data', use_https_false_data)
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> link = firefox_owner.getLink('foo.txt')
     >>> url_path = urlparse(link.url)[2]
@@ -547,4 +555,4 @@ When 'use_https' is False the result will always be http.
 
 Return 'use_https' to its original value to not mess up future tests.
 
-    >>> config.vhosts.use_https = old_use_https
+    >>> config_data = config.pop('use_https_false_data')

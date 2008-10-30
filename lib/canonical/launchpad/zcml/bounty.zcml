@@ -77,20 +77,13 @@
         template="../templates/bounty-edit.pt"
         />
 
-  <browser:addform
-    name="+addmessage"
-    for="canonical.launchpad.interfaces.IBounty"
-    schema="canonical.launchpad.interfaces.IMessage"
-    class="canonical.launchpad.browser.MessageAddView"
-    label="Add message or comment"
-    fields="subject content owner"
-    keyword_arguments="subject content owner"
-    permission="launchpad.AnyPerson"
-    template="../templates/message-add.pt">
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    <browser:page
+      name="+addmessage"
+      for="canonical.launchpad.interfaces.IBounty"
+      class="canonical.launchpad.browser.MessageAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/message-add.pt"
+      />
 
 
     <!-- BountySet -->

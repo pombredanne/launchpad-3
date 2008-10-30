@@ -32,12 +32,14 @@
               </tal:is-team>
               <tal:not-team condition="not:context/isTeam">
                 No public address provided.
+                (<a href="+contactuser">Contact this user</a>)
               </tal:not-team>
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
+              (<a href="+contactuser">Contact this user</a>)
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -48,6 +50,9 @@
                 <img src="/@@/mail" alt=""
                   tal:condition="view/email_address_visibility/are_public"/>
                 <tal:email replace="email">foo2@bar.com</tal:email>
+                <tal:contact condition="repeat/email/start">
+                  (<a href="+contactuser">Contact this user</a>)
+                </tal:contact>
                 <br tal:omit-tag="repeat/email/end" />
               </span>
             </tal:emails>

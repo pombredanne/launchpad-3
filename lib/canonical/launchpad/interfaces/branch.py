@@ -577,12 +577,12 @@ class IBranch(IHasOwner):
 
     reviewer = exported(
         PublicPersonChoice(
-            title=_('Reviewer'),
+            title=_('Default Review Team'),
             required=False,
             vocabulary='ValidPersonOrTeam',
             description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for authorising code to be "
-                          "merged.")))
+                          "that is responsible for reviewing proposals and "
+                          "merging into this branch.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")

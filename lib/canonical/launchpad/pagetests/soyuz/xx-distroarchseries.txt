@@ -215,7 +215,7 @@ An administrator can open new distinct architecture, for instance,
     >>> admin_browser.getControl("Processor Family").value = ['amd64']
     >>> admin_browser.getControl("Official Support").selected = True
     >>> admin_browser.getControl("PPA support available").selected = True
-    >>> admin_browser.getControl("Add").click()
+    >>> admin_browser.getControl("Continue").click()
 
 When the new architecture has been created, it is displayed to the
 administrator.
