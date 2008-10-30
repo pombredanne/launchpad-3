@@ -1551,7 +1551,8 @@ class Person(
     @property
     def wiki_names(self):
         """See `IPerson`."""
-        return WikiName.selectBy(person=self, orderBy=['wiki', 'wikiname'])
+        result =  Store.of(self).find(WikiName, WikiName.person == self.id)
+        return result.order_by(WikiName.wiki, WikiName.wikiname)
 
     @property
     def title(self):
