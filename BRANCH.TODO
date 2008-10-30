@@ -2,13 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-- The change in browser/team.py is done because there's no need to sort the
-results of context.unmapped_participants, as that's already sorted.  This
-fixes http://launchpad.net/bugs/286470
-
-- The change in templates/team-map.pt is for fixing
-https://bugs.edge.launchpad.net/launchpad-registry/+bug/286481
-
-- The change in templates/team-portlet-map.pt is to make it clear that you can
-set the location of a team's members from the team's +map page.
