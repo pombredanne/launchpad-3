@@ -910,6 +910,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeTranslationMessage(self, pofile=None, potmsgset=None,
+                               translator=None, reviewer=None,
+                               translation=None):
+        """Make a new `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+        if translator is None:
+            translator = self.makePerson()
+        if translation is None:
+            translation = self.getUniqueString()
+
+        return potmsgset.updateTranslation(pofile, translator, [translation],
+                                           is_imported=False,
+                                           lock_timestamp=None)
+
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
 

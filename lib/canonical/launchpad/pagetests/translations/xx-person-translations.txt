@@ -53,3 +53,25 @@ all translations done by Carlos in this file.
     >>> anon_browser.getLink('alsa-utils in alsa-utils trunk').click()
     >>> anon_browser.title
     'Translations by Carlos...of alsa-utils...'
+
+A person is created with a name containing characters that need escaping
+before being used in query strings.
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> login('carlos@canonical.com')
+    >>> factory = LaunchpadObjectFactory()
+    >>> foobar = factory.makePerson(name='foo+bar', email='blah@test.com')
+    >>> message = factory.makeTranslationMessage(translator=foobar)
+    >>> person_url = canonical_url(foobar, rootsite='translations')
+    >>> logout()
+
+When that person goes to see the translations she has done, she sees
+a correctly encoded link to a filtered PO file page.
+
+    >>> user_browser.open(person_url)
+    >>> table = first_tag_by_class(user_browser.contents, 'listing')
+    >>> tbody = table.find('tbody')
+    >>> link = tbody.find('a')
+    >>> link['href'].split('/')[-1]
+    u'+filter?person=foo%2Bbar'
