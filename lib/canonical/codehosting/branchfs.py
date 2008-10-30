@@ -75,8 +75,8 @@ from canonical.codehosting.transport import (
     get_readonly_transport, SynchronousAdapter, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -105,6 +105,15 @@ class TransportFactory:
     def __init__(self, hosted_transport, mirrored_transport):
         self.hosted_transport = hosted_transport
         self.mirrored_transport = mirrored_transport
+        self._transport_factories = {
+            BRANCH_TRANSPORT: self.make_branch_transport,
+            CONTROL_TRANSPORT: self.make_control_transport,
+            }
+
+    def make_transport(self, transport_tuple):
+        transport_type, data, trailing_path = transport_tuple
+        factory = self._transport_factories[transport_type]
+        return factory(**data), trailing_path
 
     def make_branch_transport(self, id, writable):
         if writable:

@@ -31,6 +31,8 @@ from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.transport import AsyncVirtualTransport
 from canonical.launchpad.interfaces.branch import BranchType
+from canonical.launchpad.interfaces.codehosting import (
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.testing import TestCase
 from canonical.testing import TwistedLayer
 
@@ -98,6 +100,26 @@ class TestTransportFactory(TestCase):
         transport = self.factory.make_branch_transport(id=5, writable=False)
         data = transport.get_bytes(".bzr/README")
         self.assertEqual("Hello", data)
+
+    def test_make_transport_control(self):
+        # make_transport returns a control transport for the tuple.
+        log = []
+        self.factory._transport_factories[CONTROL_TRANSPORT] = (
+            lambda default_stack_on: log.append(default_stack_on))
+        transport, path = self.factory.make_transport(
+            (CONTROL_TRANSPORT, {'default_stack_on': 'foo'}, 'bar/baz'))
+        self.assertEqual('bar/baz', path)
+        self.assertEqual(['foo'], log)
+
+    def test_make_transport_branch(self):
+        # make_transport returns a control transport for the tuple.
+        log = []
+        self.factory._transport_factories[BRANCH_TRANSPORT] = (
+            lambda id, writable: log.append((id, writable)))
+        transport, path = self.factory.make_transport(
+            (BRANCH_TRANSPORT, {'id': 1, 'writable': True}, 'bar/baz'))
+        self.assertEqual('bar/baz', path)
+        self.assertEqual([(1, True)], log)
 
 
 class TestBranchIDToPath(unittest.TestCase):
