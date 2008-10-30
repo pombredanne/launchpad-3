@@ -220,6 +220,10 @@ class IBranchFileSystem(Interface):
         :param path: the path being translated. This should be a URL escaped
             string.
 
-        :returns: `PathTranslationError` if 'path' cannot be translated.
-            (transport_type, transport_parameters, path_in_transport)
+        :raise `PathTranslationError`: if 'path' cannot be translated.
+        :raise `InvalidPath`: if 'path' is known to be invalid.
+
+        :returns: (transport_type, transport_parameters, path_in_transport)
+            where transport_type is one of BRANCH_TRANSPORT or
+            CONTROL_TRANSPORT.
         """
