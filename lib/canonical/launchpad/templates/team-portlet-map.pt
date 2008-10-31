@@ -11,7 +11,7 @@
     <tal:team-has-unmapped-members 
         define="unmapped_count context/unmapped_participants/count"
         condition="unmapped_count">
-      <strong><tal:count replace="unmapped_count" /> members</strong> have not 
+      <strong><tal:count replace="unmapped_count" /> member(s)</strong> have not 
       set their location. <a tal:attributes="href link/target">Do it for 
       them!</a><br />
     </tal:team-has-unmapped-members>
