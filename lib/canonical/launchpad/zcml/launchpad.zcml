@@ -383,6 +383,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="zope.interface.Interface"
+      name="+test-webservice-js"
+      template="../templates/test-webservice-js.pt"
+      permission="zope.Public"
+      />
+
+
 </facet>
 
 <adapter
@@ -467,7 +475,7 @@ these URLs in Apache.
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
-  class="canonical.launchpad.browser.launchpad.ContribIcingFolder"
+  class="canonical.launchpad.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
   />

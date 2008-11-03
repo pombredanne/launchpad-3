@@ -1278,6 +1278,22 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS  {color: black;}
+.mergestatusNEEDS_REVIEW      {color: #f60;}
+.mergestatusCODE_APPROVED     {color: green;}
+.mergestatusREJECTED          {color: red;}
+.mergestatusMERGED            {color: green;}
+.mergestatusMERGE_FAILED      {color: red;}
+.mergestatusQUEUED            {color: black;}
+.mergestatusSUPERSEDED        {color: grey;}
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -1289,6 +1305,19 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.greylink a:link, .greylink a:visited {
+  color: grey;
+}
+
+.commentSuffix {
+  height: 2.5em;
+}
+.commentVote {
+  float: right;
+}
+
+.back-link { margin-top: 3em; }
 
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
@@ -1343,6 +1372,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
 
 /* --- Blueprints --- */
 

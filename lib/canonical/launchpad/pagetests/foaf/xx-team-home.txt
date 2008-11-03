@@ -63,6 +63,7 @@ He can also see the contact email address.
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email: support@ubuntu.com
+    (Contact this user)
 
 As teams do not have OpenID Logins, there is not link in the Contact
 details section for help.
@@ -91,4 +92,3 @@ It is also possible to view the set of mugshots of the people in the team.
     <...
     <h1>Who's in this team?</h1>
     ...
-
