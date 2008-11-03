@@ -437,7 +437,7 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-Now, the statistics note that we have only 1 translation coming from
+Now, the statistics note that we have two translations coming from
 imported files (currentCount), which is the translation we just
 imported, and the other two translation that was coming from imported
 files are now counted as coming from Launchpad translations
@@ -448,7 +448,7 @@ files are now counted as coming from Launchpad translations
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    1
+    2
 
 This time, our notification email reports complete success.
 
@@ -702,7 +702,7 @@ We've imported a new translation for "Foo %s."
     >>> welsh = getUtility(ILanguageSet).getLanguageByCode('cy')
     >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(welsh)
     >>> sorted([foo.msgstr0.translation for foo in foos])
-    [u'Bar', u'Bars', u'blah %i']
+    [u'Bar', u'Bars']
 
 Since this last upload was not the upstream one, however, its credits
 message translations were ignored.
