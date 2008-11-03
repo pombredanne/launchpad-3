@@ -29,7 +29,6 @@ class ChangeOverride(SoyuzScript):
     description = 'OVERRIDE a publication.'
 
     def add_my_options(self):
-
         SoyuzScript.add_transaction_options(self)
         SoyuzScript.add_distro_options(self)
         SoyuzScript.add_package_location_options(self)
@@ -60,13 +59,34 @@ class ChangeOverride(SoyuzScript):
             "location is not available, call PackageCopier.setupLocation() "
             "before dealing with mainTask.")
 
+        self.setupOverrides()
+
+        for package_name in self.args:
+            # Change matching source
+            if (self.options.sourceonly or self.options.binaryandsource or
+                self.options.sourceandchildren):
+                self.processSourceChange(package_name)
+
+            # Change all binaries for matching source
+            if self.options.sourceandchildren:
+                self.processChildrenChange(package_name)
+            # Change only binary matching name
+            elif not self.options.sourceonly:
+                self.processBinaryChange(package_name)
+
+
+    def _validatePublishing(self, currently_published):
+        pass
+
+    def setupOverrides(self):
         if self.options.component is not None:
             try:
                 self.component = getUtility(IComponentSet)[
                     self.options.component]
             except NotFoundError, err:
                 raise SoyuzScriptError(err)
-            self.logger.info("Override Component to: '%s'" % self.component.name)
+            self.logger.info(
+                "Override Component to: '%s'" % self.component.name)
         else:
             self.component = None
 
@@ -86,25 +106,10 @@ class ChangeOverride(SoyuzScript):
                 self.priority = PackagePublishingPriority.items[priority_name]
             except KeyError, err:
                 raise SoyuzScriptError(err)
-            self.logger.info("Override Priority to: '%s'" % self.priority.name)
+            self.logger.info(
+                "Override Priority to: '%s'" % self.priority.name)
         else:
             self.priority = None
-
-        for package_name in self.args:
-            # Change matching source
-            if (self.options.sourceonly or self.options.binaryandsource or
-                self.options.sourceandchildren):
-                self.processSourceChange(package_name)
-            # Change all binaries for matching source
-            if self.options.sourceandchildren:
-                self.processChildrenChange(package_name)
-            # Change only binary matching name
-            elif not self.options.sourceonly:
-                self.processBinaryChange(package_name)
-
-
-    def _validatePublishing(self, currently_published):
-        pass
 
     def processSourceChange(self, package_name):
         """Perform changes in a given source package name.
