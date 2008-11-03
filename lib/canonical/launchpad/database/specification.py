@@ -16,7 +16,6 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IBugLinkTarget,
     IDistroSeries,
@@ -629,7 +628,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 blocked.add(blocker)
                 blocker._find_all_blocked(blocked)
 
-    @cachedproperty
+    @property
     def all_blocked(self):
         """See `ISpecification`."""
         blocked = set()
