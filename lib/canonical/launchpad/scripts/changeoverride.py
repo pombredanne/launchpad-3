@@ -58,6 +58,14 @@ class ChangeOverride(SoyuzScript):
         self.setupOverrides()
 
     def setupOverrides(self):
+        """Convert override options into the corresponding DB values.
+
+        The results are stored as attributes of this object:
+
+         * 'component': IComponent or None;
+         * 'section': ISection or None;
+         * 'priority': PackagePublishingPriority or None.
+        """
         if self.options.component is not None:
             try:
                 self.component = getUtility(IComponentSet)[
@@ -91,10 +99,14 @@ class ChangeOverride(SoyuzScript):
             self.priority = None
 
     def _validatePublishing(self, currently_published):
+        """Do not validate found publications, because it's not necessary."""
         pass
 
     def mainTask(self):
+        """Dispatch override operations according given options.
 
+        Iterate over multiple targets given as command-line arguments.
+        """
         assert self.location, (
             "location is not available, call PackageCopier.setupLocation() "
             "before dealing with mainTask.")

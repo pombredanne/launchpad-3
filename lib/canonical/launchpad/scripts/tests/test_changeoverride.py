@@ -6,16 +6,13 @@ __metaclass__ = type
 import unittest
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.interfaces.section import ISectionSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.changeoverride import (
