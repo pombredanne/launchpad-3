@@ -58,7 +58,6 @@ A person is created with a name containing characters that need escaping
 before being used in query strings.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> from canonical.launchpad.webapp import canonical_url
     >>> login('carlos@canonical.com')
     >>> factory = LaunchpadObjectFactory()
     >>> foobar = factory.makePerson(name='foo+bar', email='blah@test.com')
