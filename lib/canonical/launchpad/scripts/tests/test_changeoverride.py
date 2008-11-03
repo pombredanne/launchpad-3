@@ -59,7 +59,7 @@ class TestChangeOverride(unittest.TestCase):
         self.test_publisher.person = getUtility(
             IPersonSet).getByName("name16")
 
-    def getChanger(self, sourcename='mozilla-firefox', sourceversion=None,
+    def getChanger(self, package_name='mozilla-firefox', package_version=None,
                    distribution='ubuntu', suite='warty',
                    arch_tag=None, component=None, section=None, priority=None,
                    source_and_binary=False, binary_and_source=False,
@@ -85,8 +85,8 @@ class TestChangeOverride(unittest.TestCase):
         if source_only:
             test_args.append('-t')
 
-        if sourceversion is not None:
-            test_args.extend(['-e', sourceversion])
+        if package_version is not None:
+            test_args.extend(['-e', package_version])
 
         if arch_tag is not None:
             test_args.extend(['-a', arch_tag])
@@ -100,7 +100,7 @@ class TestChangeOverride(unittest.TestCase):
         if priority is not None:
             test_args.extend(['-p', priority])
 
-        test_args.append(sourcename)
+        test_args.extend(package_name.split())
 
         changer = ChangeOverride(
             name='change-override', test_args=test_args)
@@ -132,6 +132,91 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(
             PackagePublishingPriority.EXTRA, changer.priority)
 
+
+    def patchedChanger(self, source_only=False, source_and_binary=False,
+                       binary_and_source=False, package_name='foo'):
+        """Return a patched `ChangeOverride` object.
+
+        All operations are modified to allow test tracing.
+        """
+        changer = self.getChanger(
+            component="main", section="base", priority="extra",
+            source_only=source_only, source_and_binary=source_and_binary,
+            binary_and_source=binary_and_source, package_name=package_name)
+
+        # Patched override operations.
+        def fakeProcessSourceChange(name):
+            changer.logger.info("Source change for '%s'" % name)
+
+        def fakeProcessBinaryChange(name):
+            changer.logger.info("Binary change for '%s'" % name)
+
+        def fakeProcessChildrenChange(name):
+            changer.logger.info("Children change for '%s'" % name)
+
+        # Patch the override operations.
+        changer.processSourceChange = fakeProcessSourceChange
+        changer.processBinaryChange = fakeProcessBinaryChange
+        changer.processChildrenChange = fakeProcessChildrenChange
+
+        # Consume the initializaton logging.
+        changer.logger.read()
+
+        return changer
+
+    def test_changeoverride_mode(self):
+        """Check `ChangeOverride` mode.
+
+        Confirm the expected behaviour of the change-override modes:
+
+         * Binary-only: default mode, only override binaries exactly matching
+              the given name;
+         * Source-only: activated via '-t', override only the matching source;
+         * Binary-and-source: activated via '-B', override source and binaries
+              exactly matching the given name.
+         * Source-and-binaries: activated via '-S', override the source
+              matching the given name and the binaries built from it.
+        """
+        changer = self.patchedChanger()
+        changer.mainTask()
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Binary change for 'foo'")
+
+        changer = self.patchedChanger(source_only=True)
+        changer.mainTask()
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Source change for 'foo'")
+
+        changer = self.patchedChanger(binary_and_source=True)
+        changer.mainTask()
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Source change for 'foo'\n"
+            "INFO Binary change for 'foo'")
+
+        changer = self.patchedChanger(source_and_binary=True)
+        changer.mainTask()
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Source change for 'foo'\n"
+            "INFO Children change for 'foo'")
+
+    def test_changeoverride_multiple_targets(self):
+        """`ChangeOverride` can operate on multiple targets.
+
+        It will perform the defined operation for all given command-line
+        arguments.
+        """
+        changer = self.patchedChanger(package_name='foo bar baz')
+        changer.mainTask()
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Binary change for 'foo'\n"
+            "INFO Binary change for 'bar'\n"
+            "INFO Binary change for 'baz'")
+
     def assertCurrentBinary(self, distroarchseries, name, version,
                             component_name, section_name, priority_name):
         """Assert if the current binary publication matches the given data."""
@@ -151,99 +236,104 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(pub.component.name, component_name)
         self.assertEqual(pub.section.name, section_name)
 
-    def test_changeoverride_operations(self):
-        """Check if `IArchivePublisher.changeOverride` is wrapped correctly.
+    def _setupOverridePublishingContext(self):
+        """Setup publishing context.
 
-        Inspect the log to verify if the correct source and/or binaries were
-        picked and correct arguments was passed.
+        'boingo' source and 'boingo-bin' binaries in warty (i386 & hppa).
         """
-        # Setup publishing context.
-        # 'boingo' source and 'boingo-bin' binaries in warty (i386 & hppa).
         source = self.test_publisher.getPubSource(
-            sourcename="boingo", version='1.0', distroseries=self.warty,
-            component='universe', section='web')
+            sourcename="boingo", version='1.0', distroseries=self.warty)
         binaries = self.test_publisher.getPubBinaries(
             'boingo-bin', pub_source=source, distroseries=self.warty)
 
+    def test_changeoverride_operations(self):
+        """Check if `IArchivePublisher.changeOverride` is wrapped correctly.
+
+        `ChangeOverride` allow three types of override operations:
+
+         * Source-only overrides: `processSourceChange`;
+         * Binary-only overrides: `processBinaryChange`;
+         * Source-children overrides: `processChildrenChange`;
+
+        This test check the expected behaviour for each of them.
+        """
+        self._setupOverridePublishingContext()
+
         changer = self.getChanger(
-            suite="warty", component="main", section="base", priority='extra')
+            component="universe", section="web", priority='extra')
         self.assertEqual(
             changer.logger.read(),
-            "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'base'\n"
+            "INFO Override Component to: 'universe'\n"
+            "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'")
 
         # Override the source.
         changer.processSourceChange('boingo')
         self.assertEqual(
             changer.logger.read(),
-            "INFO 'boingo - 1.0/universe/web' source overridden")
+            "INFO 'boingo - 1.0/main/base' source overridden")
         self.assertCurrentSource(
-            self.warty, 'boingo', '1.0', 'main', 'base')
+            self.warty, 'boingo', '1.0', 'universe', 'web')
 
         # Override the binaries.
         changer.processBinaryChange('boingo-bin')
         self.assertEqual(
             changer.logger.read(),
-            "INFO 'boingo-bin-1.0/universe/web/STANDARD' binary "
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
                 "overridden in warty/hppa\n"
-            "INFO 'boingo-bin-1.0/universe/web/STANDARD' binary "
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
                 "overridden in warty/i386")
         self.assertCurrentBinary(
-            self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
+            self.warty_i386, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
-            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
+            self.warty_hppa, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
 
         # Override the source children.
         changer.processChildrenChange('boingo')
         self.assertEqual(
             changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/base/EXTRA' remained the same\n"
-            "INFO 'boingo-bin-1.0/main/base/EXTRA' remained the same")
+            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same")
         self.assertCurrentBinary(
-            self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
+            self.warty_i386, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
-            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
+            self.warty_hppa, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
 
     def test_changeoverride_no_change(self):
         """Override source and/or binary already in the desired state.
 
         Nothing is done and the event is logged.
         """
-        source = self.test_publisher.getPubSource(
-            sourcename="boingo", version='1.0', distroseries=self.warty,
-            component='main', section='web')
-        binaries = self.test_publisher.getPubBinaries(
-            'boingo-bin', pub_source=source, distroseries=self.warty)
+        self._setupOverridePublishingContext()
 
         changer = self.getChanger(
-            suite="warty", component="main", section="web",
+            suite="warty", component="main", section="base",
             priority='standard')
 
         self.assertEqual(
             changer.logger.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'web'\n"
+            "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'STANDARD'")
 
         changer.processSourceChange('boingo')
         self.assertEqual(
             changer.logger.read(),
-            "INFO 'boingo - 1.0/main/web' remained the same")
+            "INFO 'boingo - 1.0/main/base' remained the same")
 
         self.assertCurrentSource(
-            self.warty, 'boingo', '1.0', 'main', 'web')
+            self.warty, 'boingo', '1.0', 'main', 'base')
 
         changer.processBinaryChange('boingo-bin')
         self.assertEqual(
             changer.logger.read(),
-            "INFO 'boingo-bin-1.0/main/web/STANDARD' remained the same\n"
-            "INFO 'boingo-bin-1.0/main/web/STANDARD' remained the same")
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same")
 
         self.assertCurrentBinary(
-            self.warty_i386, 'boingo-bin', '1.0', 'main', 'web', 'STANDARD')
+            self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
         self.assertCurrentBinary(
-            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'web', 'STANDARD')
+            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
 
     def test_overrides_with_changed_archive(self):
         """Overrides resulting in archive changes are not allowed.
@@ -251,8 +341,7 @@ class TestChangeOverride(unittest.TestCase):
         Changing the component to 'partner' will result in the archive
         changing on the publishing record.
         """
-        binaries = self.test_publisher.getPubBinaries(
-            'boingo-bin', distroseries=self.warty)
+        self._setupOverridePublishingContext()
 
         changer = self.getChanger(
             component="partner", section="base", priority="extra")
