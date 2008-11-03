@@ -77,6 +77,7 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
@@ -88,6 +89,25 @@
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
+
+    <tal:yui define="yui string:${icingroot_contrib}/yui/3.0.0pr1">
+      <tal:devmode condition="devmode">
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/yui/yui.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/oop/oop.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/event/event.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/dom/dom.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/node/node.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/io/io.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/json/json.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/attribute/attribute.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/base/base.js"></script>
+        <script type="text/javascript" tal:attributes="src string:${yui}/build/anim/anim.js"></script>
+      </tal:devmode>
+      <tal:production condition="not:devmode">
+          <script type="text/javascript" tal:attributes="src string:${yui}/yui-launchpad.js"></script>
+      </tal:production>
+    </tal:yui>
+
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/json2.js"></script>

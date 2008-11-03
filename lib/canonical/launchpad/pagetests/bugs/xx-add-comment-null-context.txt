@@ -9,7 +9,8 @@ can still access bug #3 in the Evolution context.
     '...Bug #3 is not in Evolution...'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message.renderContents())
-    This bug is not recorded as needing to be fixed in Evolution.
+    This bug isn't linked to Evolution.
+    Would you like to report it here as well?
 
 We can still add a comment to the bug.
 
@@ -20,3 +21,11 @@ We can still add a comment to the bug.
     ...     user_browser.contents, 'boardCommentBody')
     >>> print comment_divs[-1].div.renderContents()
     <p>A new comment.</p>
+
+There's also a button on the page to report the bug in the current location.
+
+    >>> user_browser.getControl('Yes, report in Evolution').click()
+    >>> user_browser.getLink('Bug #3').click()
+    >>> print user_browser.title
+    Bug #3 in mozilla-firefox...
+
