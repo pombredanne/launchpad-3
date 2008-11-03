@@ -189,8 +189,8 @@ to PUBLISHED ones:
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
-    >>> discard = test_publisher.setUpDefaultDistroSeries(ubuntu['breezy-autotest'])
-    >>> discard = test_publisher.getPubSource(
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(ubuntu['breezy-autotest'])
+    >>> ignore = test_publisher.getPubSource(
     ...     sourcename="pendingpackage",
     ...     status=PackagePublishingStatus.PENDING)
     >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
