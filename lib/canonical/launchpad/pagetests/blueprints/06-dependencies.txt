@@ -28,8 +28,8 @@ confirm we can see the page for adding a dependency.
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas/+linkdependency'
 
-This +linkdependency page and the link to it are not accessible by users
-that do not own the project.
+This +linkdependency page and the link to it are only accessible by
+users with launchpad.Edit permission for the blueprint.
 
   >>> user_browser.open(
   ...   'http://blueprints.launchpad.dev/firefox/+spec/canvas')
@@ -92,8 +92,8 @@ expect to be redirected to the blueprint page.
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
-This +removedependency page and the link to it are not accessible by users
-that do not own the project.
+This +removedependency page and the link to it are only accessible by
+users with launchpad.Edit permission for the blueprint.
 
   >>> user_browser.open(
   ...   'http://blueprints.launchpad.dev/firefox/+spec/canvas')
