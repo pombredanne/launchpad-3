@@ -1,5 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-"""ftpmaster facilities tests."""
+"""`ChangeOverride` script class tests."""
 
 __metaclass__ = type
 
@@ -45,7 +45,10 @@ class TestChangeOverride(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """ """
+        """`ChangeOverride` test environment setup.
+
+        Setup a `SoyuzTestPublisher` instance and ubuntu/warty/{i386, hppa}.
+        """
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.warty = self.ubuntu.getSeries('warty')
         self.warty_i386 = self.warty['i386']
@@ -64,9 +67,9 @@ class TestChangeOverride(unittest.TestCase):
                    arch_tag=None, component=None, section=None, priority=None,
                    source_and_binary=False, binary_and_source=False,
                    source_only=False, confirm_all=True):
-        """Return a PackageCopier instance.
+        """Return a `ChangeOverride` instance.
 
-        Allow tests to use a set of default options to ChangeOverride.
+        Allow tests to use a set of default options.
         """
         test_args = [
             '-s', suite,
@@ -139,7 +142,6 @@ class TestChangeOverride(unittest.TestCase):
             "INFO Override Section to: 'base'\n"
             "INFO Override Priority to: 'EXTRA'")
 
-
     def patchedChanger(self, source_only=False, source_and_binary=False,
                        binary_and_source=False, package_name='foo'):
         """Return a patched `ChangeOverride` object.
@@ -166,13 +168,13 @@ class TestChangeOverride(unittest.TestCase):
         changer.processBinaryChange = fakeProcessBinaryChange
         changer.processChildrenChange = fakeProcessChildrenChange
 
-        # Consume the initializaton logging.
+        # Consume the initialisation logging.
         changer.logger.read()
 
         return changer
 
-    def test_changeoverride_mode(self):
-        """Check `ChangeOverride` mode.
+    def test_changeoverride_modes(self):
+        """Check `ChangeOverride` modes.
 
         Confirm the expected behaviour of the change-override modes:
 
@@ -279,11 +281,7 @@ class TestChangeOverride(unittest.TestCase):
 
         changer = self.getChanger(
             component="universe", section="web", priority='extra')
-        self.assertEqual(
-            changer.logger.read(),
-            "INFO Override Component to: 'universe'\n"
-            "INFO Override Section to: 'web'\n"
-            "INFO Override Priority to: 'EXTRA'")
+        changer.logger.read()
 
         # Override the source.
         changer.processSourceChange('boingo')
@@ -321,8 +319,65 @@ class TestChangeOverride(unittest.TestCase):
         self.assertCurrentBinary(
             self.warty_hppa, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
 
+    def test_changeoverride_restricted_by_pocket(self):
+        """`ChangeOverride` operation can be restricted by pocket.
+
+        This behaviour is inherited from `SoyuzScript`.
+        """
+        # Create publications for 'boingo' source and 'boingo-bin' in
+        # warty-security.
+        source = self.test_publisher.getPubSource(
+            sourcename="boingo", version='0.8', distroseries=self.warty,
+            pocket=PackagePublishingPocket.SECURITY)
+        binaries = self.test_publisher.getPubBinaries(
+            'boingo-bin', pub_source=source, distroseries=self.warty,
+            pocket=PackagePublishingPocket.SECURITY)
+
+        # Create the default publishing context as 'noise' in order to
+        # test if `ChangeOverride` filters it out properly.
+        self._setupOverridePublishingContext()
+
+        changer = self.getChanger(
+            suite='warty-security', component="universe", section="web",
+            priority='extra')
+        changer.logger.read()
+
+        # Override the security source and its binaries.
+        changer.processSourceChange('boingo')
+        changer.processChildrenChange('boingo')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo - 0.8/main/base' source overridden\n"
+            "INFO 'boingo-bin-0.8/main/base/STANDARD' binary "
+                "overridden in warty/hppa\n"
+            "INFO 'boingo-bin-0.8/main/base/STANDARD' binary "
+                "overridden in warty/i386")
+
+        # Use a more precise lookup approach to reach and verify the
+        # overridden security publications.
+        security_source = changer.findLatestPublishedSource('boingo')
+        self.assertEqual(
+            security_source.sourcepackagerelease.version, '0.8')
+        self.assertEqual(security_source.status.name, 'PENDING')
+        self.assertEqual(security_source.pocket.name, 'SECURITY')
+        self.assertEqual(security_source.component.name, 'universe')
+        self.assertEqual(security_source.section.name, 'web')
+
+        security_binaries = changer.findLatestPublishedBinaries('boingo-bin')
+        for security_binary in security_binaries:
+            self.assertEqual(
+                security_binary.binarypackagerelease.version, '0.8')
+            self.assertEqual(security_binary.status.name, 'PENDING')
+            self.assertEqual(security_binary.pocket.name, 'SECURITY')
+            self.assertEqual(security_binary.component.name, 'universe')
+            self.assertEqual(security_binary.section.name, 'web')
+            self.assertEqual(security_binary.priority.name, 'EXTRA')
+
     def test_changeoverride_restricted_by_version(self):
-        """`ChangeOverride` operation can be restricted to a version."""
+        """`ChangeOverride` operation can be restricted to a version.
+
+        This behaviour is inherited from `SoyuzScript`.
+        """
         self._setupOverridePublishingContext()
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
@@ -352,8 +407,11 @@ class TestChangeOverride(unittest.TestCase):
         self.assertCurrentBinary(
             self.warty_hppa, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
 
-    def test_changeoverride_restricted_by_version(self):
-        """`ChangeOverride` operation can be restricted to a version."""
+    def test_changeoverride_restricted_by_architecture(self):
+        """`ChangeOverride` operation can be restricted to an architecture.
+
+        This behaviour is inherited from `SoyuzScript`.
+        """
         self._setupOverridePublishingContext()
         changer = self.getChanger(
             component="universe", section="web", priority='extra',
@@ -400,11 +458,7 @@ class TestChangeOverride(unittest.TestCase):
 
         changer = self.getChanger(
             component="main", section="base", priority='standard')
-        self.assertEqual(
-            changer.logger.read(),
-            "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'base'\n"
-            "INFO Override Priority to: 'STANDARD'")
+        changer.logger.read()
 
         changer.processSourceChange('boingo')
         self.assertEqual(
@@ -464,6 +518,7 @@ class TestChangeOverride(unittest.TestCase):
             SoyuzScriptError, changer.processBinaryChange, 'biscuit')
         self.assertRaises(
             SoyuzScriptError, changer.processChildrenChange, 'cookie')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
