@@ -141,7 +141,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             'Your comment was not accepted because the string "badvalue" is'
             ' not a supported voting value.  The following values are'
-            ' supported: abstain, approve, disapprove.',
+            ' supported: abstain, approve, disapprove, needs_fixing, '
+            'resubmit.',
             notification.get_payload(decode=True))
         self.assertEqual(mail['From'], notification['To'])
 
@@ -163,7 +164,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
-        self.assertEqual('EBAILIWICK', bmp.all_comments[0].vote_tag)
+        self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
 
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
@@ -181,7 +182,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         comment = bmp.all_comments[0]
         self.assertEqual(CodeReviewVote.ABSTAIN, comment.vote)
-        self.assertEqual('EBAILIWICK', comment.vote_tag)
+        self.assertEqual('ebailiwick', comment.vote_tag)
         [vote] = list(bmp.votes)
         self.assertEqual(sender, vote.reviewer)
         self.assertEqual(comment, vote.comment)
@@ -202,12 +203,12 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Vote: Abstain EBAILIWICK\n'
+        expected_body = ('Vote: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
                          'You are subscribed to branch %s.' %
-                         (canonical_url(bmp), bmp.source_branch.unique_name))
+                         (canonical_url(bmp), bmp.source_branch.bzr_identity))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
     def test_getVoteNoCommand(self):

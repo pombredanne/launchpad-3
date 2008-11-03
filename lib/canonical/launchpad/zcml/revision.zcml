@@ -1,25 +1,25 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <content class="canonical.launchpad.database.Revision">
+  <class class="canonical.launchpad.database.Revision">
     <allow interface="canonical.launchpad.interfaces.IRevision"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.RevisionAuthor">
+  <class class="canonical.launchpad.database.RevisionAuthor">
     <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.RevisionParent">
+  <class class="canonical.launchpad.database.RevisionParent">
     <allow interface="canonical.launchpad.interfaces.IRevisionParent" />
-  </content>
+  </class>
 
-  <content class="canonical.launchpad.database.RevisionProperty">
+  <class class="canonical.launchpad.database.RevisionProperty">
     <allow interface="canonical.launchpad.interfaces.IRevisionProperty" />
-  </content>
+  </class>
 
   <!-- RevisionSet -->
-  <content class="canonical.launchpad.database.RevisionSet">
+  <class class="canonical.launchpad.database.RevisionSet">
     <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.RevisionSet"

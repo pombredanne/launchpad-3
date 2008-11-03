@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Library functions for use in all scripts.
 
 """
@@ -20,7 +20,7 @@ from textwrap import dedent
 import threading
 
 import zope.app.appsetup
-import zope.app.mail.delivery
+import zope.sendmail.delivery
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
@@ -32,7 +32,8 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log, FakeLogger, QuietFakeLogger)
+    # these are intentional re-exports, apparently, used by *many* files.
+    logger_options, logger, log, FakeLogger, QuietFakeLogger)
 
 # XXX StuartBishop 2005-06-02:
 # We should probably split out all the stuff in this directory that
@@ -128,7 +129,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     def kill_queue_processor_threads():
         for thread in threading.enumerate():
             if isinstance(
-                thread, zope.app.mail.delivery.QueueProcessorThread):
+                thread, zope.sendmail.delivery.QueueProcessorThread):
                 thread.stop()
                 thread.join(30)
                 if thread.isAlive():
@@ -140,8 +141,15 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
+    # XXX gary 20-Oct-2008 bug 285808
+    # The wisdom of using a test fixture for production should be
+    # reconsidered.
     from canonical.launchpad.ftests import login
-    login('launchpad.anonymous')
+    # The Participation is used to specify that we do not want a
+    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
+    # particular, need to be careful, because of code in canonical_url.
+    from canonical.launchpad.webapp.interaction import Participation
+    login('launchpad.anonymous', Participation())
 
 
 def db_options(parser):

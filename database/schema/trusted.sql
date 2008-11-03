@@ -1,4 +1,22 @@
--- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+CREATE OR REPLACE FUNCTION assert_patch_applied(
+    major integer, minor integer, patch integer) RETURNS boolean
+LANGUAGE plpythonu STABLE AS
+$$
+    rv = plpy.execute("""
+        SELECT * FROM LaunchpadDatabaseRevision
+        WHERE major=%d AND minor=%d AND patch=%d
+        """ % (major, minor, patch))
+    if len(rv) == 0:
+        raise Exception(
+            'patch-%d-%02d-%d not applied.' % (major, minor, patch))
+    else:
+        return True
+$$;
+
+COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
+'Raise an exception if the given database patch has not been applied.';
 
 
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
@@ -916,15 +934,43 @@ LANGUAGE plpgsql AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        UPDATE Bug
-        SET users_affected_count = users_affected_count + 1
-        WHERE Bug.id = NEW.bug;
+        IF NEW.affected = TRUE THEN
+            UPDATE Bug
+            SET users_affected_count = users_affected_count + 1
+            WHERE Bug.id = NEW.bug;
+        ELSE
+            UPDATE Bug
+            SET users_unaffected_count = users_unaffected_count + 1
+            WHERE Bug.id = NEW.bug;
+        END IF;
     END IF;
 
     IF TG_OP = 'DELETE' THEN
-        UPDATE Bug
-        SET users_affected_count = users_affected_count - 1
-        WHERE Bug.id = OLD.bug;
+        IF OLD.affected = TRUE THEN
+            UPDATE Bug
+            SET users_affected_count = users_affected_count - 1
+            WHERE Bug.id = OLD.bug;
+        ELSE
+            UPDATE Bug
+            SET users_unaffected_count = users_unaffected_count - 1
+            WHERE Bug.id = OLD.bug;
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.affected <> NEW.affected THEN
+            IF NEW.affected THEN
+                UPDATE Bug
+                SET users_affected_count = users_affected_count + 1,
+                    users_unaffected_count = users_unaffected_count - 1
+                WHERE Bug.id = OLD.bug;
+            ELSE
+                UPDATE Bug
+                SET users_affected_count = users_affected_count - 1,
+                    users_unaffected_count = users_unaffected_count + 1
+                WHERE Bug.id = OLD.bug;
+            END IF;
+        END IF;
     END IF;
 
     RETURN NULL;
@@ -933,3 +979,25 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
+
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+

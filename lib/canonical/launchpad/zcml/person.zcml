@@ -41,7 +41,7 @@
     permission="zope.Public"
     />
 
-  <content class="canonical.launchpad.database.Person">
+  <class class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -79,7 +79,7 @@
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser.person"
@@ -187,6 +187,14 @@
     class="canonical.launchpad.browser.PersonEditLocationView"
     permission="launchpad.EditLocation"
     template="../templates/person-editlocation.pt"
+    />
+
+  <browser:page
+    name="+contactuser"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.EmailToPersonView"
+    permission="launchpad.View"
+    template="../templates/contact-user.pt"
     />
 
   <browser:page
@@ -714,6 +722,13 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    name="+mailing-list-subscribers"
+    template="../templates/team-mailinglist-subscribers.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     class="canonical.launchpad.browser.TeamMapData"
     template="../templates/team-map-data.pt"
@@ -838,16 +853,10 @@
     template="../templates/team-polls.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+newpoll"
     for="canonical.launchpad.interfaces.ITeam"
     class="canonical.launchpad.browser.PollAddView"
-    schema="canonical.launchpad.interfaces.IPoll"
-    fields="name title proposition secrecy allowspoilt
-            dateopens datecloses"
-    keyword_arguments="name title proposition secrecy allowspoilt
-            dateopens datecloses"
-    label="Create a new poll"
     permission="launchpad.Edit"
     template="../templates/team-newpoll.pt"
     />
@@ -901,9 +910,9 @@
     />
 
   <!-- PersonSet -->
-  <content class="canonical.launchpad.database.PersonSet">
+  <class class="canonical.launchpad.database.PersonSet">
      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.PersonSet"

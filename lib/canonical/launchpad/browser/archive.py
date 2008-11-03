@@ -947,11 +947,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         Ensure we have at least one dependency selected.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
+        self.validate_widgets(data, ['selected_dependencies'])
 
         if len(data.get('selected_dependencies', [])) == 0:
             self.setFieldError(
                 'selected_dependencies', 'No dependencies selected.')
+        return self.errors
 
     @action(_("Remove Dependencies"), name="remove",
             validator="validate_remove")
@@ -964,9 +965,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
-            self.context.removeArchiveDependency(
-                dependency, PackagePublishingPocket.RELEASE,
-                getUtility(IComponentSet)['main'])
+            self.context.removeArchiveDependency(dependency)
 
         self.refreshSelectedDependenciesWidget()
 
@@ -1003,9 +1002,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "An archive should not depend on itself.")
             return
 
-        if self.context.getArchiveDependency(
-            dependency_candidate, PackagePublishingPocket.RELEASE,
-            getUtility(IComponentSet)['main']):
+        if self.context.getArchiveDependency(dependency_candidate):
             self.setFieldError('dependency_candidate',
                                "This dependency is already recorded.")
             return

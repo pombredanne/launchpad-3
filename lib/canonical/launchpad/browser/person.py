@@ -8,6 +8,7 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
+    'EmailToPersonView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -85,13 +86,15 @@ __all__ = [
     ]
 
 import copy
-from datetime import datetime, timedelta
-from operator import attrgetter, itemgetter
 import pytz
 import subprocess
 import urllib
 
-from zope.app.error.interfaces import IErrorReportingUtility
+from datetime import datetime, timedelta
+from itertools import chain
+from operator import attrgetter, itemgetter
+
+from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
@@ -105,6 +108,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.lazr import decorates
+from canonical.lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -138,6 +142,9 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.openidserver import (
+    IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -165,10 +172,9 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.fields import LocationField
-from canonical.launchpad.components.openidserver import (
-    OpenIDPersistentIdentity)
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
+from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
@@ -179,7 +185,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.login import (
+    logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -1425,7 +1432,11 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         principal = loginsource.getPrincipalByLogin(
             self.user.preferredemail.email)
         assert principal is not None, "User must be logged in at this point."
-        if not principal.validate(data.get('password')):
+        # The widget will transform '' into a special marker value.
+        password = data.get('password')
+        if password is self.schema['password'].UNCHANGED_PASSWORD:
+            password = u''
+        if not principal.validate(password):
             self.setFieldError('password', 'Incorrect password.')
             return
 
@@ -1510,6 +1521,10 @@ class PersonClaimView(LaunchpadFormView):
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
+        # A dance to assert that we want to break the rules about no
+        # unauthenticated sessions. Only after this next line is it safe
+        # to use the ``addNoticeNotification`` method.
+        allowUnauthenticatedSession(self.request)
         self.request.response.addInfoNotification(_(
             "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
@@ -2349,7 +2364,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def openid_identity_url(self):
         """The identity URL for the person."""
-        return canonical_url(OpenIDPersistentIdentity(self.context))
+        return IOpenIDPersistentIdentity(self.context).openid_identity_url
 
     @property
     def subscription_policy_description(self):
@@ -2665,7 +2680,8 @@ class EmailAddressVisibleState:
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
-    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -4668,6 +4684,7 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
@@ -4693,20 +4710,35 @@ class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
 
     def initialize(self):
-        # Store the (sorted) list of access tokens that are going to be
-        # used in the template.
-        self.tokens = sorted(
-            self.context.oauth_access_tokens,
-            key=lambda token: token.consumer.key)
         if self.request.method == 'POST':
             self.expireToken()
+
+    @property
+    def access_tokens(self):
+        return sorted(
+            self.context.oauth_access_tokens,
+            key=lambda token: token.consumer.key)
+
+    @property
+    def request_tokens(self):
+        return sorted(
+            self.context.oauth_request_tokens,
+            key=lambda token: token.consumer.key)
 
     def expireToken(self):
         """Expire the token with the key contained in the request's form."""
         form = self.request.form
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('consumer_key'))
-        token = consumer.getAccessToken(form.get('token_key'))
+        token_key = form.get('token_key')
+        token_type = form.get('token_type')
+        if token_type == 'access_token':
+            token = consumer.getAccessToken(token_key)
+        elif token_type == 'request_token':
+            token = consumer.getRequestToken(token_key)
+        else:
+            raise UnexpectedFormData("Invalid form value for token_type: %r"
+                                     % token_type)
         if token is not None:
             token.date_expires = datetime.now(pytz.timezone('UTC'))
             self.request.response.addInfoNotification(
@@ -4845,3 +4877,78 @@ class TeamEditLocationView(LaunchpadView):
 def archive_to_person(archive):
     """Adapts an `IArchive` to an `IPerson`."""
     return IPerson(archive.owner)
+
+
+class IEmailToPerson(Interface):
+    """Schema for contacting a user via email through Launchpad."""
+
+    from_ = TextLine(
+        title=_('From'), required=True, readonly=False)
+
+    subject = TextLine(
+        title=_('Subject'), required=True, readonly=False)
+
+    message = Text(
+        title=_('Message'), required=True, readonly=False)
+
+
+class EmailToPersonView(LaunchpadFormView):
+    """The 'Contact this user' page."""
+
+    schema = IEmailToPerson
+    field_names = ['subject', 'message']
+    custom_widget('subject', TextWidget, displayWidth=60)
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The field needing special set up is the 'From' fields, which contains
+        a vocabulary of the user's preferred (first) and validated
+        (subsequent) email addresses.
+        """
+        super(EmailToPersonView, self).setUpFields()
+        usable_addresses = [self.user.preferredemail]
+        usable_addresses.extend(self.user.validatedemails)
+        terms = [SimpleTerm(email, email.email) for email in usable_addresses]
+        field = Choice(__name__='field.from_',
+                       title=_('From'),
+                       source=SimpleVocabulary(terms),
+                       default=terms[0].value)
+        # Get the order right; the From field should be first, followed by the
+        # Subject and then Message fields.
+        self.form_fields = FormFields(*chain((field,), self.form_fields))
+
+    @property
+    def label(self):
+        return 'Contact ' + self.context.displayname
+
+    @action(_('Send'), name='send')
+    def action_send(self, action, data):
+        """Send an email to the user."""
+        sender_email = data['field.from_'].email
+        subject = data['subject']
+        message = data['message']
+        recipient_email = self.context.preferredemail.email
+        message = send_direct_contact_email(
+            sender_email, recipient_email, subject, message)
+        self.request.response.addInfoNotification(
+            _('Message sent to $name',
+              mapping=dict(name=self.context.displayname)))
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def contact_is_allowed(self):
+        """Whether the sender is allowed to send this email or not."""
+        return IDirectEmailAuthorization(self.user).is_allowed
+
+    @property
+    def next_try(self):
+        """When can the user try again?"""
+        throttle_date = IDirectEmailAuthorization(self.user).throttle_date
+        interval = as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return throttle_date + interval

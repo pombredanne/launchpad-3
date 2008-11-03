@@ -193,7 +193,9 @@ branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
 
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
-branchmergeproposal_edit = 'Edit proposal to merge branch'
+branchmergeproposal_edit = ViewLabel()
+
+branchmergeproposal_editstatus = ViewLabel()
 
 branchmergeproposal_enqueue = 'Queue branch for merging'
 
@@ -204,6 +206,8 @@ branchmergeproposal_request_review = ViewLabel()
 branchmergeproposal_resubmit = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_vote = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
 
@@ -443,6 +447,8 @@ codeofconduct_list = 'Ubuntu Codes of Conduct'
 codereviewcomment_index = 'Code review comment'
 
 codereviewcomment_reply = 'Reply to code review comment'
+
+contact_user = 'Contact this user'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -1057,6 +1063,8 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
+productrelease_delete = ContextTitle('Delete %s in Launchpad')
+
 productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
@@ -1417,6 +1425,9 @@ team_leave = ContextBrowsername('Leave %s')
 team_mailinglist = 'Configure mailing list'
 
 team_mailinglist_moderate = 'Moderate mailing list'
+
+team_mailinglist_subscribers = ContextBrowsername(
+    'Mailing list subscribers for the %s team')
 
 team_map = ContextBrowsername('Map of %s participants')
 

@@ -353,6 +353,14 @@ class MailingList(SQLBase):
         return MailingListSubscription.selectOneBy(person=person,
                                                    mailing_list=self)
 
+    def getSubscribers(self):
+        """See `IMailingList`."""
+        store = Store.of(self)
+        results = store.find(Person,
+                             MailingListSubscription.person == Person.id,
+                             MailingListSubscription.mailing_list == self)
+        return results.order_by(Person.displayname)
+
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
         if not self.is_usable:
@@ -395,17 +403,6 @@ class MailingList(SQLBase):
                 '%s does not own the email address: %s' %
                 (person.displayname, address.email))
         subscription.email_address = address
-
-    def _getSubscriptions(self):
-        """Return the IMailingListSubscriptions for this mailing list."""
-        return MailingListSubscription.select(
-            """mailing_list = %s AND
-               TeamParticipation.team = %s AND
-               MailingList.status <> %s AND
-               MailingList.id = MailingListSubscription.mailing_list AND
-               TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
-            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""

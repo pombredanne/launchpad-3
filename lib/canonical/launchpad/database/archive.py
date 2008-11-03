@@ -662,43 +662,71 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency, pocket, component):
+    def getArchiveDependency(self, dependency):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency, pocket=pocket,
-            component=component)
+            archive=self, dependency=dependency)
 
-    def removeArchiveDependency(self, dependency, pocket, component):
+    def removeArchiveDependency(self, dependency):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency, pocket, component)
+        dependency = self.getArchiveDependency(dependency)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency, pocket, component):
+    def addArchiveDependency(self, dependency, pocket, component=None):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if not dependency.is_ppa:
+        a_dependency = self.getArchiveDependency(dependency)
+        if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Archive dependencies only applies to PPAs.")
-        else:
+                "Only one dependency record per archive is supported.")
+
+        if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to RELEASE pocket.")
-            if component.id is not getUtility(IComponentSet)['main'].id:
+                    "Non-primary archives only support the RELEASE pocket.")
+            if (component is not None and
+                component.id is not getUtility(IComponentSet)['main'].id):
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to 'main' component.")
-
-        if self.getArchiveDependency(dependency, pocket, component):
-            raise ArchiveDependencyError(
-                "This dependency is already recorded.")
+                    "Non-primary archives only support the 'main' component.")
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
+
+    def getPermissions(self, user, item, perm_type):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.checkAuthenticated(user, self, perm_type, item)
+
+    def getPermissionsForPerson(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.permissionsForPerson(self, person)
+
+    def getUploadersForPackage(self, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForPackage(self, source_package_name)
+
+    def getUploadersForComponent(self, component_name=None):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.uploadersForComponent(self, component_name)
+
+    def getQueueAdminsForComponent(self, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.queueAdminsForComponent(self, component_name)
+
+    def getComponentsForQueueAdmin(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.componentsForQueueAdmin(self, person)
 
     def canUpload(self, user, component_or_package=None):
         """See `IArchive`."""
@@ -715,10 +743,42 @@ class Archive(SQLBase):
 
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.checkAuthenticated(
-            user, self, permission, component)
+        permissions = self.getPermissions(user, component, permission)
         return permissions.count() > 0
+
+    def newPackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newPackageUploader(
+            self, person, source_package_name)
+
+    def newComponentUploader(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newComponentUploader(
+            self, person, component_name)
+
+    def newQueueAdmin(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.newQueueAdmin(self, person, component_name)
+
+    def deletePackageUploader(self, person, source_package_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deletePackageUploader(
+            self, person, source_package_name)
+
+    def deleteComponentUploader(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteComponentUploader(
+            self, person, component_name)
+
+    def deleteQueueAdmin(self, person, component_name):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.deleteQueueAdmin(self, person, component_name)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
@@ -753,8 +813,7 @@ class Archive(SQLBase):
                 PackageUpload.changesfileID == LibraryFileAlias.id,
                 )
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         def do_query():
             result = store.find((LibraryFileAlias), *(base_clauses + clauses))

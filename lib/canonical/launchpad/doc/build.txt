@@ -80,36 +80,6 @@ It is not necessarily the same as:
 which is the component the source was originally uploaded to, before
 any overriding action.
 
-`IBuild.component_dependencies` is a dictionary mapping the available
-components and a list of components it can depend of.
-
-    >>> def printComponentDependencies(build):
-    ...     print " Component | Dependency"
-    ...     print "-----------+---------------"
-    ...     components = sorted(build.component_dependencies)
-    ...     for component in components:
-    ...         dependencies = " ".join(
-    ...             build.component_dependencies[component])
-    ...	        print '%10s | %s' % (component, dependencies)
-
-    >>> printComponentDependencies(firefox_build)
-     Component | Dependency
-    -----------+---------------
-          main | main
-    multiverse | main restricted universe multiverse
-       partner | partner
-    restricted | main restricted
-      universe | main universe
-
-`IBuild.ogre_components` is the list of allowed components for
-building this source. It simply submits the `IBuild.current_component`
-to the `IBuild.components_dependencies` table.
-
-    >>> print firefox_build.ogre_components
-    ['main']
-
-See further information about 'Ogre Components' in a section below.
-
 The build can report any corresponding uploads using the package_upload
 property:
 
@@ -826,89 +796,6 @@ build is retried.
     upload_22_log.txt
 
 
-== 'Ogre' components ==
-
-The ubuntu 'ogre-model' ensures that build dependencies are
-consistently spread according the source target component, i.e. a
-source published in 'main' component is only allowed to depend on
-binaries also published in 'main', on the other hand a source
-published in 'universe' is allowed to depend on binaries published in
-'main' and 'universe' components.
-
-A proper name for this "model" would be 'cross-component-dependency'.
-
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.database.sqlbase import flush_database_caches
-
-    >>> login('foo.bar@canonical.com')
-
-    >>> build = getUtility(IBuildSet).getByBuildID(12)
-
-    >>> source_pub = hoary.getSourcePackage(
-    ...     'libstdc++').currentrelease.current_published
-
-    >>> ubuntu_components = [
-    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
-
-    >>> def testOgreComponents():
-    ...     print " Component | Ogre-Model"
-    ...     print "-----------+---------------"
-    ...     for component in ubuntu_components:
-    ...         component = getUtility(IComponentSet)[component]
-    ...         source_pub.secure_record.component = component
-    ...         syncUpdate(source_pub.secure_record)
-    ...         flush_database_caches()
-    ...         print '%10s | %s' % (build.current_component.name,
-    ...                              " ".join(build.ogre_components))
-
-    >>> testOgreComponents()
-     Component | Ogre-Model
-    -----------+---------------
-          main | main
-    restricted | main restricted
-      universe | main universe
-    multiverse | main restricted universe multiverse
-       partner | partner
-
-As reported in bug #198936, builds for the BACKPORTS pocket are
-allowed to use any component available, independently of the component they are
-currently published. This special-case is important because it
-avoids changes to accommodate the backported source in the already
-released series.
-
-    >>> release_pocket = build.pocket
-    >>> naked_build = removeSecurityProxy(build)
-    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
-    >>> syncUpdate(build)
-
-Ultimately, it means that a build targeted to the BACKPORTS pocket
-will behave as if it were published in the multiverse component,
-despite the component it is actually published in.
-
-    >>> testOgreComponents()
-     Component | Ogre-Model
-    -----------+---------------
-          main | main restricted universe multiverse
-    restricted | main restricted universe multiverse
-      universe | main restricted universe multiverse
-    multiverse | main restricted universe multiverse
-       partner | main restricted universe multiverse
-
-Restoring the original target component to the source used in this
-section, so there won't be any unexpected effects in subsequent
-tests.
-
-    >>> main_component = getUtility(IComponentSet)['main']
-    >>> source_pub.secure_record.component = main_component
-    >>> syncUpdate(source_pub.secure_record)
-    >>> naked_build = removeSecurityProxy(build)
-    >>> naked_build.pocket = release_pocket
-    >>> syncUpdate(build)
-    >>> flush_database_caches()
-    >>> login(ANONYMOUS)
-
-
 == Updating build-dependencies line ==
 
 The IBuild.dependencies field is only filled when a build job is
@@ -954,7 +841,9 @@ The build is only allowed to depend on packages published in 'main':
     >>> print depwait_build.current_component.name
     main
 
-    >>> print depwait_build.ogre_components
+    >>> from canonical.launchpad.components.archivedependencies import (
+    ...     get_components_for_building)
+    >>> print get_components_for_building(depwait_build)
     ['main']
 
 Thus the 'pmount' dependency remains unsatisfied.
@@ -968,6 +857,8 @@ component, we can see that it will be excluded from the dependencies
 list.
 
     >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> main_component = getUtility(IComponentSet)['main']
     >>> pmount_pub.secure_record.component = main_component
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
@@ -997,7 +888,7 @@ depend on all components of its distribution PRIMARY archive.
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-    >>> print depwait_build.ogre_components
+    >>> print get_components_for_building(depwait_build)
     ['main']
 
     >>> print pmount_pub.component.name

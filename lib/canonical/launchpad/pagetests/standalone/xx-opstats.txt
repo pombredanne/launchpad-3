@@ -66,7 +66,7 @@ are adjusted after the request has been served:
     2XXs: 1
     http requests: 1
     requests: 1
-    
+
 == Number of 404s ==
 
     >>> output = http("GET http://launchpad.dev/non-existant HTTP/1.1\n")
@@ -85,7 +85,7 @@ may also include the odd case where the OOPS system has failed and a
 fallback error page is rendered by Zope3. There doesn't seem to be any
 particular need to differentiate these cases though:
 
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> class ErrorView(object):
     ...     """A broken view"""
     ...     def __call__(self, *args, **kw):
@@ -175,7 +175,6 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     HTTP/1.1 200 Ok
     ...
     Content-Type: text/plain; charset=US-ASCII
-    ...
     <BLANKLINE>
     1XXs:0@...
     2XXs:2@...
@@ -193,4 +192,3 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     xmlrpc_faults:0@...
     xmlrpc_requests:0@...
     <BLANKLINE>
-

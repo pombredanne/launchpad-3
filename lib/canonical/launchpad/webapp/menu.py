@@ -22,7 +22,7 @@ __all__ = [
 import cgi
 import types
 
-from zope.i18n import translate, Message, MessageID
+from zope.i18n import translate, Message
 from zope.interface import implements
 from zope.component import getMultiAdapter
 from zope.security.proxy import (
@@ -356,6 +356,7 @@ class NavigationMenu(MenuBase):
     _baseclassname = 'NavigationMenu'
 
     title = None
+    disabled = False
 
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
@@ -484,7 +485,7 @@ def translate_if_i18n(obj_or_msgid):
 
     Returns any other type of object untouched.
     """
-    if isinstance(obj_or_msgid, (Message, MessageID)):
+    if isinstance(obj_or_msgid, Message):
         return translate(
             obj_or_msgid,
             context=get_current_browser_request())

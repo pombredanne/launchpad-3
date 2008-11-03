@@ -415,6 +415,13 @@ class IMailingList(Interface):
             posted to the mailing list.
         """
 
+    def getSubscribers():
+        """Return the set of subscribers.
+
+        :return: a result set of the subscribers sorted by full name.  These
+        are the people who will receive messages posted to the mailing list.
+        """
+
     def getSenderAddresses():
         """Return the set of all email addresses for members.
 

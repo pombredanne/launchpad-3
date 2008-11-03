@@ -10,8 +10,8 @@
         <allow interface="canonical.launchpad.interfaces.IVPOTExportSet" />
     </securedutility>
 
-    <content class="canonical.launchpad.database.VPOTExport">
+    <class class="canonical.launchpad.database.VPOTExport">
         <allow interface="canonical.launchpad.interfaces.IVPOTExport"/>
-    </content>
+    </class>
 
 </configure>

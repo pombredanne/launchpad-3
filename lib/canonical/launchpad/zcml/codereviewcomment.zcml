@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
   <!-- CodeReviewComment -->
-  <content class="canonical.launchpad.database.CodeReviewComment">
+  <class class="canonical.launchpad.database.CodeReviewComment">
     <allow interface="canonical.launchpad.interfaces.ICodeReviewComment"/>
-  </content>
+  </class>
   <subscriber
       for="canonical.launchpad.interfaces.ICodeReviewComment
            canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
@@ -83,11 +83,5 @@
       class="canonical.launchpad.browser.CodeReviewCommentAddView"
       permission="launchpad.AnyPerson"
       template="../templates/codereviewcomment-reply.pt" />
-  <browser:page
-      name="+comment"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.CodeReviewCommentAddView"
-      facet="branches"
-      permission="launchpad.AnyPerson"
-      template="../templates/codereviewcomment-reply.pt" />
+
 </configure>

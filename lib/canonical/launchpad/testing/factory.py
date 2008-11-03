@@ -25,7 +25,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.database.message import Message
+from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -39,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, ITranslationGroupSet, License,
     PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError)
+    TeamSubscriptionPolicy, UnknownBranchTypeError, IMilestoneSet)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -50,11 +51,12 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.poll import (
+    IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -212,6 +214,15 @@ class LaunchpadObjectFactory(ObjectFactory):
                 getUtility(IEmailAddressSet).new(email, team))
         return team
 
+    def makePoll(self, team, name, title, proposition):
+        """Create a new poll which starts tomorrow and lasts for a week."""
+        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
+        datecloses = dateopens + timedelta(days=7)
+        return getUtility(IPollSet).new(
+            team, name, title, proposition, dateopens, datecloses,
+            PollSecrecy.SECRET, allowspoilt=True,
+            poll_type=PollAlgorithm.SIMPLE)
+
     def makeTranslationGroup(
         self, owner, name=None, title=None, summary=None):
         """Create a new, arbitrary `TranslationGroup`."""
@@ -223,6 +234,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
+
+    def makeMilestone(self, product=None, distribution=None, name=None):
+        if product is None and distribution is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        return Milestone(product=product, distribution=distribution,
+                         name=name)
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
@@ -444,7 +463,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -463,7 +483,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -534,7 +555,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -542,7 +563,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
@@ -939,6 +961,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         msg_id = make_msgid('launchpad')
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
-            msg_id = email.Utils.make_msgid()
+            msg_id = make_msgid('launchpad')
         return msg_id
 

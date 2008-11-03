@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BranchFileSystem',
     'BranchPuller',
+    'datetime_from_tuple',
+    'LAUNCHPAD_SERVICES',
     ]
 
 
@@ -33,6 +35,7 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
@@ -65,6 +68,9 @@ class BranchPuller(LaunchpadXMLRPCView):
         else:
             default_branch = branch.product.default_stacked_on_branch
         if default_branch is None:
+            default_branch = ''
+        elif (default_branch.private
+              and branch.branch_type == BranchType.MIRRORED):
             default_branch = ''
         else:
             default_branch = '/' + default_branch.unique_name
@@ -129,15 +135,17 @@ class BranchPuller(LaunchpadXMLRPCView):
         # method should be able to see all branches and set stacking
         # information on any of them.
         branch_set = removeSecurityProxy(getUtility(IBranchSet))
-        stacked_on_branch = None
-        if stacked_on_location.startswith('/'):
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
+        if stacked_on_location == '':
+            stacked_on_branch = None
         else:
-            stacked_on_branch = branch_set.getByUrl(
-                stacked_on_location.rstrip('/'))
-        if stacked_on_branch is None:
-            return faults.NoSuchBranch(stacked_on_location)
+            if stacked_on_location.startswith('/'):
+                stacked_on_branch = branch_set.getByUniqueName(
+                    stacked_on_location.strip('/'))
+            else:
+                stacked_on_branch = branch_set.getByUrl(
+                    stacked_on_location.rstrip('/'))
+            if stacked_on_branch is None:
+                return faults.NoSuchBranch(stacked_on_location)
         stacked_branch = branch_set.get(branch_id)
         if stacked_branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -175,7 +183,11 @@ def run_with_login(login_id, function, *args, **kwargs):
     requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
-    login_person(requester)
+    # XXX gary 21-Oct-2008 bug 285808
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login_person(requester, Participation())
     try:
         return function(requester, *args, **kwargs)
     finally:
