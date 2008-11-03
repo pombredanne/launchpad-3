@@ -107,6 +107,7 @@ class ILaunchpadCelebrities(Interface):
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
+    english = Attribute("The English language.")
     gnome_bugzilla = Attribute("The Gnome Bugzilla.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
@@ -123,6 +124,7 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
+    lp_translations = Attribute("The Launchpad Translations product.")
 
 
 class ICrowd(Interface):

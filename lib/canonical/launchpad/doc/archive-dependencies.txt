@@ -4,12 +4,30 @@
 is used to provided the contents of 'sources_list' file used to build
 sources in the given IBuildQueue context.
 
-We will use Celso's PPA for testing these mechanisms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> print cprov.archive.title
-    PPA for Celso Providelo
+== Testing scenario setup ==
+
+We use `SoyuzTestPublisher` to generate a source publications and
+build candidates for ubuntu/hoary.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.launchpad.ftests import login
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+
+
+== Static dependency maps ==
 
 `component_dependencies` contains a static map of the default ubuntu
 component dependencies (known as the 'ogre-model').
@@ -59,36 +77,102 @@ pocket dependencies.
      PROPOSED | RELEASE SECURITY UPDATES PROPOSED
     BACKPORTS | RELEASE SECURITY UPDATES BACKPORTS
 
-We use `SoyuzTestPublisher` to generate a build candidate in Celso's
-PPA content.
 
-    >>> from canonical.launchpad.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> from canonical.launchpad.ftests import login
+== 'Ogre' components ==
 
-    >>> login('foo.bar@canonical.com')
+The ubuntu 'ogre-model' ensures that build dependencies are
+consistently spread according the source target component, i.e. a
+source published in 'main' component is only allowed to depend on
+binaries also published in 'main', on the other hand a source
+published in 'universe' is allowed to depend on binaries published in
+'main' and 'universe' components.
 
-    >>> test_publisher = SoyuzTestPublisher()
+A proper name for this "model" would be 'cross-component-dependency'.
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> hoary = ubuntu.getSeries('hoary')
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
 
-    >>> test_publisher.addFakeChroots(hoary)
-    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> ubuntu_components = [
+    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
-    >>> pub_source = test_publisher.getPubSource(archive=cprov.archive)
+    >>> from canonical.launchpad.components.archivedependencies import (
+    ...     get_components_for_building)
+
+    >>> ogre_pub = test_publisher.getPubSource(sourcename='ogre')
+    >>> [ogre_build] = ogre_pub.createMissingBuilds()
+
+    >>> def testOgreComponents():
+    ...     print " Component | Ogre-Model"
+    ...     print "-----------+---------------"
+    ...     for component in ubuntu_components:
+    ...         component = getUtility(IComponentSet)[component]
+    ...         ogre_pub.secure_record.component = component
+    ...         syncUpdate(ogre_pub.secure_record)
+    ...         flush_database_caches()
+    ...         components_term = " ".join(
+    ...             get_components_for_building(ogre_build))
+    ...         print '%10s | %s' % (ogre_build.current_component.name,
+    ...                              components_term)
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main
+    restricted | main restricted
+      universe | main universe
+    multiverse | main restricted universe multiverse
+       partner | partner
+
+As fixed for bug #198936, builds for the BACKPORTS pocket are allowed
+to use any component available, independently of the component they
+are currently published. This special-case is important because it
+avoids changes to accommodate the backported source in the already
+released series.
+
+    >>> from canonical.launchpad.interfaces.publishing import (
+    ...      PackagePublishingPocket)
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> naked_build = removeSecurityProxy(ogre_build)
+    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
+    >>> syncUpdate(ogre_build)
+
+Ultimately, it means that a build targeted to the BACKPORTS pocket
+will behave as if it were published in the multiverse component,
+despite the component it is actually published in.
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main restricted universe multiverse
+    restricted | main restricted universe multiverse
+      universe | main restricted universe multiverse
+    multiverse | main restricted universe multiverse
+       partner | main restricted universe multiverse
+
+
+== Sources.list contents for building ==
+
+We will use Celso's PPA for testing these mechanisms.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> print cprov.archive.title
+    PPA for Celso Providelo
+
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.1', archive=cprov.archive)
     >>> [a_build] = pub_source.createMissingBuilds()
 
-Now we can verify if getSourcesListForBuilding() method returns the
+Now we can verify if get_sources_list_for_building() method returns the
 expected content for building the just-created source.
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getSourcesListForBuilding)
+    ...     get_sources_list_for_building)
 
     >>> def print_building_sources_list(candidate):
-    ...     sources_list = getSourcesListForBuilding(candidate)
+    ...     sources_list = get_sources_list_for_building(candidate)
     ...     for line in sorted(sources_list):
     ...         print line
 
@@ -138,10 +222,6 @@ Similarly, populated PPA dependencies are listed in the building
     ...     binaryname='dep-bin', archive=sabdfl.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
-    >>> from canonical.launchpad.interfaces.publishing import (
-    ...      PackagePublishingPocket)
-
     >>> archive_dependency = cprov.archive.addArchiveDependency(
     ...     sabdfl.archive, PackagePublishingPocket.RELEASE,
     ...     getUtility(IComponentSet)['main'])
@@ -156,23 +236,6 @@ Similarly, populated PPA dependencies are listed in the building
     deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
     deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
 
-When we make Celso's PPA private, it will be referred via the
-private-ppa url including the buildd authentication information.
-Additionally to the existing public PPA dependencies, only the RELEASE and
-SECURITY ubuntu pockets will be considered.
-
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
-
-    >>> print_building_sources_list(a_build)
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
-    	hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
-    	main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
-    	main restricted universe multiverse
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu hoary main
-
 The authentication information gets added for private PPA
 dependencies.
 
@@ -182,79 +245,186 @@ dependencies.
     >>> print_building_sources_list(a_build)
     deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/ubuntu
     	hoary main
-    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
-    	hoary main
     deb http://ftpmaster.internal/ubuntu hoary
     	main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+Good enough, let's delete the archive dependency on Mark's PPA.
+
+    >>> cprov.archive.removeArchiveDependency(sabdfl.archive)
 
 
-== 'Ogre' components ==
+== Private PPA dependencies ==
 
-The ubuntu 'ogre-model' ensures that build dependencies are
-consistently spread according the source target component, i.e. a
-source published in 'main' component is only allowed to depend on
-binaries also published in 'main', on the other hand a source
-published in 'universe' is allowed to depend on binaries published in
-'main' and 'universe' components.
+When we make Celso's PPA private, it will be referred via the
+private-ppa url including the buildd authentication information.
 
-A proper name for this "model" would be 'cross-component-dependency'.
+    >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.database.sqlbase import flush_database_caches
+Additionally to the existing public PPA dependencies, only the RELEASE and
+SECURITY ubuntu pockets will be considered, respecting the
+corresponding ubuntu component override if available.
 
-    >>> login('foo.bar@canonical.com')
-
-    >>> ubuntu_components = [
-    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
+The default component override value is 'universe' and it's used when
+we can't find any suitable ancestry in the primary archive.
 
     >>> from canonical.launchpad.components.archivedependencies import (
-    ...     getComponentsForBuilding)
+    ...     get_primary_current_component)
 
-    >>> def testOgreComponents():
-    ...     print " Component | Ogre-Model"
-    ...     print "-----------+---------------"
-    ...     for component in ubuntu_components:
-    ...         component = getUtility(IComponentSet)[component]
-    ...         pub_source.secure_record.component = component
-    ...         syncUpdate(pub_source.secure_record)
-    ...         flush_database_caches()
-    ...         components_term = " ".join(getComponentsForBuilding(a_build))
-    ...         print '%10s | %s' % (a_build.current_component.name,
-    ...                              components_term)
+    >>> print get_primary_current_component(a_build)
+    universe
 
-    >>> testOgreComponents()
-     Component | Ogre-Model
-    -----------+---------------
-          main | main
-    restricted | main restricted
-      universe | main universe
-    multiverse | main restricted universe multiverse
-       partner | partner
+    >>> print_building_sources_list(a_build)
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
+    	hoary main
+    deb http://ftpmaster.internal/ubuntu hoary main universe
+    deb http://ftpmaster.internal/ubuntu hoary-security main universe
 
-As fixed for bug #198936, builds for the BACKPORTS pocket are allowed
-to use any component available, independently of the component they
-are currently published. This special-case is important because it
-avoids changes to accommodate the backported source in the already
-released series.
+The system immediately recognizes and respects an ancestry tagetted to
+the main component.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_build = removeSecurityProxy(a_build)
-    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
-    >>> syncUpdate(a_build)
+    >>> primary_pub = test_publisher.getPubSource(version='1.0')
+    >>> print get_primary_current_component(a_build)
+    main
 
-Ultimately, it means that a build targeted to the BACKPORTS pocket
-will behave as if it were published in the multiverse component,
-despite the component it is actually published in.
+    >>> print_building_sources_list(a_build)
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
+    	hoary main
+    deb http://ftpmaster.internal/ubuntu hoary main
+    deb http://ftpmaster.internal/ubuntu hoary-security main
 
-    >>> testOgreComponents()
-     Component | Ogre-Model
-    -----------+---------------
-          main | main restricted universe multiverse
-    restricted | main restricted universe multiverse
-      universe | main restricted universe multiverse
-    multiverse | main restricted universe multiverse
-       partner | main restricted universe multiverse
+The same thing happens when the ancestry component is overridden.
 
+    >>> override = primary_pub.changeOverride(
+    ...     new_component=getUtility(IComponentSet)['restricted'])
+
+    >>> print get_primary_current_component(a_build)
+    restricted
+
+    >>> print_building_sources_list(a_build)
+    deb http://buildd:secret@private-ppa.launchpad.dev/cprov/ubuntu
+    	hoary main
+    deb http://ftpmaster.internal/ubuntu hoary main restricted
+    deb http://ftpmaster.internal/ubuntu hoary-security main restricted
+
+Revert Celso's PPA to its original public state.
+
+    >>> cprov.archive.buildd_secret = ''
+    >>> cprov.archive.private = False
+
+
+== Overriding default primary archive dependencies ==
+
+Despite being private or public, default primary archive dependencies
+can be overridden by simply creating a `ArchiveDependency`record
+targeted to the primary archive.
+
+The 'pocket' and 'component' dependency attributes can be adjusted to
+produce the desired build behaviour.
+
+By default, public PPAs depend on all of the pocket dependencies of
+UPDATES, and all of the primary archive's 'multiverse' component
+dependencies.
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+The default build behaviour will remain unchanged when we override the
+default primary archive dependencies with exactly the same values.
+
+    >>> default_dependency = cprov.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
+    ...     getUtility(IComponentSet)['multiverse'])
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+    >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+The dependency can be modified to behave as an embargoed archive that
+builds security updates. This is done by setting the SECURITY pocket
+dependencies (RELEASE and SECURITY) and following the component
+dependencies of the component where the source was last published in
+the primary archive.
+
+    >>> security_dependency = cprov.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.SECURITY)
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+    >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+It's also possible to modify the PPA to act as a super-free and
+pristine build environment based only on what was included in the
+original ubuntu release.
+
+    >>> release_dependency = cprov.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.RELEASE,
+    ...     getUtility(IComponentSet)['restricted'])
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary main restricted
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+    >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+The PPA can also be configured to extend the ubuntu PROPOSED build
+environment.
+
+    >>> proposed_dependency = cprov.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.PROPOSED,
+    ...     getUtility(IComponentSet)['multiverse'])
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-proposed
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+    >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+Similarly an extension of the BACKPORTS environment can be set.
+
+    >>> backports_dependency = cprov.archive.addArchiveDependency(
+    ...     ubuntu.main_archive, PackagePublishingPocket.BACKPORTS,
+    ...     getUtility(IComponentSet)['multiverse'])
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-backports
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
+
+    >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)

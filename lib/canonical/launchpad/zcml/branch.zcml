@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
   <!-- Branch -->
-  <content class="canonical.launchpad.database.Branch">
+  <class class="canonical.launchpad.database.Branch">
     <require
         permission="launchpad.View"
         attributes="id branch_type name title summary url whiteboard
@@ -45,7 +45,7 @@
     <require
         permission="launchpad.AnyPerson"
         set_attributes="date_last_modified whiteboard"/>
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
@@ -132,6 +132,7 @@
         template="../templates/branch-heading.pt" />
   </browser:pages>
 
+  <!-- Temporarily disabling queues
   <browser:page
     name="+merge-queue"
     for="canonical.launchpad.interfaces.IBranch"
@@ -139,6 +140,7 @@
     facet="branches"
     permission="zope.Public"
     template="../templates/branch-merge-queue.pt" />
+  -->
 
   <browser:page
     name="+portlet-subscribers"
@@ -182,6 +184,14 @@
       name="+edit"
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branch-edit.pt" />
+
+  <browser:page
+      name="+reviewer"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchReviewerEditView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-edit.pt" />
@@ -279,14 +289,14 @@
       permission="zope.Public" />
 
   <!-- BranchSet -->
-  <content class="canonical.launchpad.database.BranchSet">
+  <class class="canonical.launchpad.database.BranchSet">
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
-  </content>
+  </class>
 
   <!-- BranchVisibilityPolicy -->
-  <content class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
+  <class class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy" />
-  </content>
+  </class>
 
   <browser:page
       name="+branchvisibility"
@@ -313,9 +323,9 @@
       template="../templates/branch-visibility-edit.pt" />
 
   <!-- BranchDelta -->
-  <content class="canonical.launchpad.components.branch.BranchDelta">
+  <class class="canonical.launchpad.components.branch.BranchDelta">
     <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
-  </content>
+  </class>
 
   <securedutility
       class="canonical.launchpad.database.BranchSet"

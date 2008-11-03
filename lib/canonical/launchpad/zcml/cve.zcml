@@ -7,14 +7,14 @@
   <facet facet="bugs">
 
   <!-- CVE -->
-  <content class="canonical.launchpad.database.Cve">
+  <class class="canonical.launchpad.database.Cve">
     <allow interface="canonical.launchpad.interfaces.ICve" />
     <require permission="launchpad.AnyPerson"
              set_schema="canonical.launchpad.interfaces.ICve" />
     <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
-  </content>
+  </class>
 
   <browser:menus
     module="canonical.launchpad.browser"
@@ -72,9 +72,9 @@
     for="canonical.launchpad.interfaces.ICveSet"
     name="+index" />
 
-  <content class="canonical.launchpad.database.CveSet">
+  <class class="canonical.launchpad.database.CveSet">
     <allow interface="canonical.launchpad.interfaces.ICveSet" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.CveSet"

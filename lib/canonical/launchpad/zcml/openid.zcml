@@ -85,11 +85,11 @@
         />
 
     <!-- OpenID persistent identity URLs -->
-    <content
+    <class
         class="canonical.launchpad.components.openidserver.OpenIDPersistentIdentity">
       <allow
           interface="canonical.launchpad.interfaces.openidserver.IOpenIDPersistentIdentity" />
-    </content>
+    </class>
 
     <adapter
       for="canonical.launchpad.interfaces.account.IAccount"
@@ -162,11 +162,11 @@
         class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
-    <content class="canonical.launchpad.database.OpenIDAuthorization">
+    <class class="canonical.launchpad.database.OpenIDAuthorization">
         <allow
             interface="canonical.launchpad.interfaces.IOpenIDAuthorization"
             />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.OpenIDAuthorizationSet"
@@ -189,14 +189,14 @@
         />
 
     <!-- IOpenIDRPConfig -->
-    <content
+    <class
         class="canonical.launchpad.database.OpenIDRPConfig">
       <allow interface="canonical.launchpad.interfaces.IOpenIDRPConfig" />
       <require
           permission="launchpad.Admin"
           attributes="destroySelf"
           set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
-    </content>
+    </class>
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIDRPConfig"

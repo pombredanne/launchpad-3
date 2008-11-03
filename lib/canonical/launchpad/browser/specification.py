@@ -34,7 +34,7 @@ import os
 from subprocess import Popen, PIPE
 
 from zope.component import getUtility
-from zope.app.error.interfaces import IErrorReportingUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -44,25 +44,19 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
-from canonical.launchpad.interfaces import (
-    IDistribution,
-    ILaunchBag,
-    INewSpecification,
-    INewSpecificationSeriesGoal,
-    INewSpecificationSprint,
-    INewSpecificationTarget,
-    INewSpecificationProjectTarget,
-    IPersonSet,
-    IProduct,
-    ISpecification,
-    ISpecificationBranch,
-    ISpecificationSet,
-    NotFoundError,
-    SpecificationDefinitionStatus,
-    )
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.specification import (
+    INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
+    INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
+    ISpecificationSet, SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
+from canonical.launchpad.interfaces.sprintspecification import (
+    ISprintSpecification)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
@@ -70,9 +64,10 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
-from canonical.launchpad.webapp.authorization import check_permission
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -845,20 +840,19 @@ class SpecGraph:
         return u'\n'.join(L)
 
 
-class SpecificationSprintAddView(SQLObjectAddView):
+class SpecificationSprintAddView(LaunchpadFormView):
 
-    def create(self, sprint):
-        user = getUtility(ILaunchBag).user
-        sprint_link = self.context.linkSprint(sprint, user)
-        return sprint_link
+    schema = ISprintSpecification
+    label = _("Propose specification for meeting agenda")
+    field_names = ["sprint"]
+    # ISprintSpecification.sprint is a read-only field, so we need to set
+    # for_input to True here to ensure it's rendered as an input widget.
+    for_input = True
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
-        return canonical_url(self.context)
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        self.context.linkSprint(data["sprint"], self.user)
+        self.next_url = canonical_url(self.context)
 
 
 class SpecGraphNode:

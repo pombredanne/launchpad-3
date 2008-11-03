@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.ftests import login, login_person, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.authorization import clear_cache
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
@@ -68,7 +69,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
             self.created_event_listener.unregister()
             self.modified_event_listener.unregister()
 
-    def setQuestionStatus(self, question, new_status, comment="Status change."):
+    def setQuestionStatus(self, question, new_status,
+                          comment="Status change."):
         """Utility metho to change a question status.
 
         This logs in as admin, change the status and log back as
@@ -139,7 +141,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         be triggered.
         """
         self.setUpEventListeners()
-        count=0
+        count = 0
         if transition_method_kwargs is None:
             transition_method_kwargs = {}
         if 'datecreated' not in transition_method_kwargs:
@@ -223,7 +225,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         self.assertEquals(expected_status, self.question.status)
 
         if expected_owner == self.question.owner:
-            self.assertEquals(message.datecreated, self.question.datelastquery)
+            self.assertEquals(message.datecreated,
+                              self.question.datelastquery)
         else:
             self.assertEquals(
                 message.datecreated, self.question.datelastresponse)
@@ -260,7 +263,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         self.failUnless(
             ISQLObjectModifiedEvent.providedBy(modified_event),
             failure_msg(
-                "%s doesn't provide ISQLObjectModifiedEvent" % modified_event))
+                "%s doesn't provide ISQLObjectModifiedEvent"
+                % modified_event))
         self.failUnless(
             modified_event.object == self.question,
             failure_msg("ISQLObjectModifiedEvent contains wrong question"))
@@ -324,7 +328,8 @@ class RequestInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_action=QuestionAction.REQUESTINFO,
             expected_status=QuestionStatus.ANSWERED)
         self.checkTransitionEvents(
-            message, ['messages', 'datelastresponse'], QuestionStatus.OPEN.title)
+            message, ['messages', 'datelastresponse'],
+            QuestionStatus.OPEN.title)
 
     def test_requestInfoFromOwnerIsInvalid(self):
         """Test that the question owner cannot use requestInfo."""
@@ -676,11 +681,14 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
     def test_confirmAnswerPermission(self):
         """Test that only the owner can access confirmAnswer()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
+        self.assertRaises(
+            Unauthorized, getattr, self.question, 'confirmAnswer')
         login_person(self.answerer)
-        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
+        self.assertRaises(
+            Unauthorized, getattr, self.question, 'confirmAnswer')
         login_person(self.admin)
-        self.assertRaises(Unauthorized, getattr, self.question, 'confirmAnswer')
+        self.assertRaises(
+            Unauthorized, getattr, self.question, 'confirmAnswer')
 
         login_person(self.owner)
         getattr(self.question, 'confirmAnswer')
@@ -788,16 +796,16 @@ class ExpireQuestionTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the expireQuestion() workflow action method."""
 
     def test_expireQuestionFromInvalidStates(self):
-        """Test that expireQuestion cannot be called when the question status is
-        not one of OPEN or NEEDSINFO.
+        """Test that expireQuestion cannot be called when the question status
+        is not one of OPEN or NEEDSINFO.
         """
         self._testInvalidTransition(
             ['OPEN', 'NEEDSINFO'], self.question.expireQuestion,
             self.answerer, "Too late.", datecreated=self.nowPlus(1))
 
     def test_expireQuestion(self):
-        """Test that expireQuestion() can be called when the question status is
-        OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
+        """Test that expireQuestion() can be called when the question status
+        is OPEN or NEEDSINFO and that it returns a valid IQuestionMessage.
         """
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO],
@@ -812,7 +820,8 @@ class ExpireQuestionTestCase(BaseAnswerTrackerWorkflowTestCase):
     def test_expireQuestionPermission(self):
         """Test that only a logged in user can access expireQuestion()."""
         login(ANONYMOUS)
-        self.assertRaises(Unauthorized, getattr, self.question, 'expireQuestion')
+        self.assertRaises(
+            Unauthorized, getattr, self.question, 'expireQuestion')
 
         login_person(self.answerer)
         getattr(self.question, 'expireQuestion')
@@ -884,9 +893,12 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.question.target.addAnswerContact(self.answerer)
+        clear_cache() # clear authorization cache for check_permission
+        # this is a test to prove that the getattr succeeds
         getattr(self.question, 'reject')
 
         login_person(self.admin)
+        # this is a test to prove that the getattr succeeds
         getattr(self.question, 'reject')
 
 

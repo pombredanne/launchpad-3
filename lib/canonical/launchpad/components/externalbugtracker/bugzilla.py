@@ -23,9 +23,10 @@ from zope.interface import implements
 
 from canonical import encoding
 from canonical.config import config
-from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    LookupTree, UnknownRemoteStatusError, UnparseableBugData,
+from canonical.launchpad.components.externalbugtracker.base import (
+    BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
+    ExternalBugTracker, InvalidBugId, LookupTree,
+    UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.components.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
@@ -397,7 +398,19 @@ class BugzillaLPPlugin(Bugzilla):
 
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
-        user_id = self.xmlrpc_proxy.Launchpad.login({'token': token_text})
+        try:
+            user_id = self.xmlrpc_proxy.Launchpad.login(
+                {'token': token_text})
+        except xmlrpclib.Fault, fault:
+            message = 'XML-RPC Fault: %s "%s"' % (
+                fault.faultCode, fault.faultString)
+            raise BugTrackerAuthenticationError(
+                self.baseurl, message)
+        except xmlrpclib.ProtocolError, error:
+            message = 'Protocol error: %s "%s"' % (
+                error.errcode, error.errmsg)
+            raise BugTrackerAuthenticationError(
+                self.baseurl, message)
 
     def _storeBugs(self, remote_bugs):
         """Store remote bugs in the local `bugs` dict."""

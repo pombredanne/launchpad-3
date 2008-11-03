@@ -20,7 +20,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.lifecycleevent.interfaces import IObjectEvent
+from zope.component.interfaces import IObjectEvent
 from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
@@ -76,7 +76,7 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         """)
 
     CODE_APPROVED = DBItem(3, """
-        Code approved
+        Approved
 
         The changes have been approved for merging.
         """)
@@ -374,7 +374,14 @@ class IBranchMergeProposal(Interface):
         the details are updated.
         """
 
-    def createComment(owner, subject, content=None, vote=None, vote_tag=None,
+    def getUsersVoteReference(user):
+        """Get the existing vote reference for the given user.
+
+        :return: A `CodeReviewVoteReference` or None.
+        """
+
+    def createComment(owner, subject, content=None, vote=None,
+                      review_type=None,
                       parent=None, _date_created=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
@@ -389,12 +396,12 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
-    def createCommentFromMessage(message, vote, vote_tag):
+    def createCommentFromMessage(message, vote, review_type):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
-        :param vote_tag: A string (or None).
+        :param review_type: A string (or None).
         """
 
     def deleteProposal():

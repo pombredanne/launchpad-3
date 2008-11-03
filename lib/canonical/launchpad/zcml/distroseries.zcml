@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.DistroSeries">
+  <class class="canonical.launchpad.database.DistroSeries">
     <allow interface="canonical.launchpad.interfaces.IDistroSeriesPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
@@ -48,7 +48,7 @@
         permission="launchpad.AnyPerson"
         attributes="addBugSubscription addSubscription
                     removeBugSubscription" />
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistroSeriesSet"
@@ -330,22 +330,14 @@
     template="../templates/milestone-add.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner supports_virtualized"
-    arguments="architecturetag processorfamily official owner"
-    keyword_arguments="supports_virtualized"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/distroseries-addport.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

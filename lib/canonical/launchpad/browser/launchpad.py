@@ -6,7 +6,7 @@ __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
     'BrowserWindowDimensions',
-    'ContribIcingFolder',
+    'IcingContribFolder',
     'EdubuntuIcingFolder',
     'Hierarchy',
     'IcingFolder',
@@ -567,9 +567,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('faq')
     def redirect_faq(self):
-        """Redirect /faq to help.launchpad.net/FAQ site."""
+        """Redirect /faq to launchpad-project/+faqs."""
         return self.redirectSubTree(
-            'https://help.launchpad.net/FAQ', status=301)
+            'https://answers.launchpad.net/launchpad-project/+faqs',
+            status=301)
 
     @stepto('feedback')
     def redirect_feedback(self):
@@ -760,8 +761,10 @@ class LaunchpadImageFolder(ExportedImageFolder):
         os.path.dirname(os.path.realpath(__file__)), '../images/')
 
 
-class ContribIcingFolder(ExportedFolder):
+class IcingContribFolder(ExportedFolder):
     """Export the contrib icing."""
+
+    export_subdirectories = True
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')

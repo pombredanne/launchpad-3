@@ -54,6 +54,7 @@ __all__ = [
     'LaunchpadBrowserPublication'
     ]
 
+METHOD_WRAPPER_TYPE = type({}.__setitem__)
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -328,6 +329,15 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.pageid', pageid.encode('ASCII'))
 
+        if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
+            # this is a direct call on a C-defined method such as __repr__ or
+            # dict.__setitem__.  Apparently publishing this is possible and
+            # acceptable, at least in the case of
+            # canonical.launchpad.webapp.servers.PrivateXMLRPCPublication.
+            # mapply cannot handle these methods because it cannot introspect
+            # them.  We'll just call them directly.
+            return ob(*request.getPositionalArguments())
+
         return mapply(ob, request.getPositionalArguments(), request)
 
     def afterCall(self, request, ob):
@@ -443,6 +453,18 @@ class LaunchpadBrowserPublication(
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        da.clear_request_started()
+        da.set_request_started()
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication

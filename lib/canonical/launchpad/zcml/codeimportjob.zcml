@@ -6,9 +6,9 @@
   i18n_domain="launchpad">
 
   <!-- CodeImportJob -->
-  <content class="canonical.launchpad.database.CodeImportJob">
+  <class class="canonical.launchpad.database.CodeImportJob">
     <allow interface="canonical.launchpad.interfaces.ICodeImportJob" />
-  </content>
+  </class>
 
   <!-- CodeImportJobSet -->
 

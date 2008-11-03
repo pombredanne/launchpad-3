@@ -5,14 +5,14 @@
   i18n_domain="launchpad">
 
   <!-- SpecificationSubscription -->
-  <content class="canonical.launchpad.database.SpecificationSubscription">
+  <class class="canonical.launchpad.database.SpecificationSubscription">
     <allow
       interface="canonical.launchpad.interfaces.ISpecificationSubscription" />
     <require
       permission="launchpad.Edit"
       set_attributes="essential"
       />
-  </content>
+  </class>
 
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSubscription"
