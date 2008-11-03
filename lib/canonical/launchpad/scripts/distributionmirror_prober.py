@@ -285,9 +285,10 @@ class RedirectAwareProberFactory(ProberFactory):
         scheme, host, port, new_path = _parse(url)
         if orig_path.split('/')[-1] != new_path.split('/')[-1]:
             # Server redirected us to a file which doesn't seem to be what we
-            # requested.  It's likely to see a stupid server which redirects
+            # requested.  It's likely to be a stupid server which redirects
             # instead of 404ing (https://launchpad.net/bugs/204460).
             self.failed(Failure(RedirectToDifferentFile(orig_path, new_path)))
+            return
 
         try:
             if self.redirection_count >= MAX_REDIRECTS:
