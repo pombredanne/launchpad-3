@@ -9,14 +9,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database.component import ComponentSelection
-from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, ISectionSet,
-    PackagePublishingPocket, PackagePublishingPriority)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingPriority,
+    PackagePublishingStatus)
+from canonical.launchpad.interfaces.section import ISectionSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.changeoverride import (
     ChangeOverride, ArchiveOverriderError)
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -40,11 +45,22 @@ class TestChangeOverride(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        """ """
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.warty = self.ubuntu.getSeries('warty')
+        self.warty_i386 = self.warty['i386']
+        self.warty_hppa = self.warty['hppa']
 
+        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+        self.warty_i386.addOrUpdateChroot(fake_chroot)
+        self.warty_hppa.addOrUpdateChroot(fake_chroot)
+
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.person = getUtility(
+            IPersonSet).getByName("name16")
 
     def getChanger(self, sourcename='mozilla-firefox', sourceversion=None,
-                   distribution='ubuntu', suite='hoary',
+                   distribution='ubuntu', suite='warty',
                    arch_tag=None, component=None, section=None, priority=None,
                    source_and_binary=False, binary_and_source=False,
                    source_only=False, confirm_all=True):
@@ -104,7 +120,7 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(
             self.ubuntu, changer.location.distribution)
         self.assertEqual(
-            self.ubuntu['hoary'], changer.location.distroseries)
+            self.warty, changer.location.distroseries)
         self.assertEqual(
             PackagePublishingPocket.RELEASE, changer.location.pocket)
 
@@ -135,161 +151,118 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(pub.component.name, component_name)
         self.assertEqual(pub.section.name, section_name)
 
-    def test_processSourceChange_success(self):
-        """Check processSourceChange method call.
+    def test_changeoverride_operations(self):
+        """Check if `IArchivePublisher.changeOverride` is wrapped correctly.
 
-        It simply wraps changeOverride method on `IArchivePublisher`, which is
-        already tested in place. Inspect the log to verify if the correct
-        source was picked and correct arguments was passed.
+        Inspect the log to verify if the correct source and/or binaries were
+        picked and correct arguments was passed.
         """
-        self.assertCurrentSource(
-            self.ubuntu.getSeries('warty'), 'mozilla-firefox', '0.9',
-            'main', 'web')
+        # Setup publishing context.
+        # 'boingo' source and 'boingo-bin' binaries in warty (i386 & hppa).
+        source = self.test_publisher.getPubSource(
+            sourcename="boingo", version='1.0', distroseries=self.warty,
+            component='universe', section='web')
+        binaries = self.test_publisher.getPubBinaries(
+            'boingo-bin', pub_source=source, distroseries=self.warty)
 
         changer = self.getChanger(
-            suite="warty", component="main", section="base", priority="extra")
-        changer.processSourceChange('mozilla-firefox')
+            suite="warty", component="main", section="base", priority='extra')
         self.assertEqual(
             changer.logger.read(),
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'base'\n"
-            "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox - 0.9/main/web' source overridden")
+            "INFO Override Priority to: 'EXTRA'")
 
-        self.assertCurrentSource(
-            self.ubuntu.getSeries('warty'), 'mozilla-firefox', '0.9',
-            'main', 'base')
-
-    def test_processBinaryChange_success(self):
-        """Check if processBinaryChange() picks the correct binary.
-
-        It simply wraps changeOverride method on `IArchivePublisher`, which
-        is already tested in place. Inspect the log messages, check if the
-        correct binary was picked and correct argument was passed.
-        """
-        hoary = self.ubuntu.getSeries('hoary')
-        hoary_i386 = hoary['i386']
-        self.assertCurrentBinary(
-            hoary_i386, 'pmount', '0.1-1', 'universe', 'editors', 'IMPORTANT')
-
-        hoary_hppa = hoary['hppa']
-        self.assertCurrentBinary(
-            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
-
-        changer = self.getChanger(
-            component="main", section="devel", priority="extra")
-        changer.processBinaryChange('pmount')
+        # Override the source.
+        changer.processSourceChange('boingo')
         self.assertEqual(
             changer.logger.read(),
-            "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'devel'\n"
-            "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'pmount-2:1.9-1/main/base/EXTRA' binary "
-                "overridden in hoary/hppa\n"
-            "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
-                "overridden in hoary/i386")
+            "INFO 'boingo - 1.0/universe/web' source overridden")
+        self.assertCurrentSource(
+            self.warty, 'boingo', '1.0', 'main', 'base')
 
+        # Override the binaries.
+        changer.processBinaryChange('boingo-bin')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/universe/web/STANDARD' binary "
+                "overridden in warty/hppa\n"
+            "INFO 'boingo-bin-1.0/universe/web/STANDARD' binary "
+                "overridden in warty/i386")
         self.assertCurrentBinary(
-            hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
+            self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
         self.assertCurrentBinary(
-            hoary_hppa, 'pmount', '2:1.9-1', 'main', 'devel', 'EXTRA')
+            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
 
-    def test_processChildrenChange_success(self):
-        """processChildrenChanges, modify the source and its binary children.
+        # Override the source children.
+        changer.processChildrenChange('boingo')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/main/base/EXTRA' remained the same\n"
+            "INFO 'boingo-bin-1.0/main/base/EXTRA' remained the same")
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'EXTRA')
 
-        It simply used the local processChangeSource on a passed name and
-        processChangeBinary on each retrieved binary child.
-        Inspect the log and to ensure we are passing correct arguments and
-        picking the correct source.
+    def test_changeoverride_no_change(self):
+        """Override source and/or binary already in the desired state.
+
+        Nothing is done and the event is logged.
         """
-        warty = self.ubuntu.getSeries('warty')
-        warty_i386 = warty['i386']
-        self.assertCurrentBinary(
-            warty_i386, 'mozilla-firefox', '1.0', 'main', 'base', 'IMPORTANT')
-        self.assertCurrentBinary(
-            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'base',
-            'EXTRA')
-
-        warty_hppa = warty['hppa']
-        self.assertCurrentBinary(
-            warty_hppa, 'mozilla-firefox', '0.9', 'main', 'base', 'EXTRA')
-        self.assertCurrentBinary(
-            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'base',
-            'EXTRA')
+        source = self.test_publisher.getPubSource(
+            sourcename="boingo", version='1.0', distroseries=self.warty,
+            component='main', section='web')
+        binaries = self.test_publisher.getPubBinaries(
+            'boingo-bin', pub_source=source, distroseries=self.warty)
 
         changer = self.getChanger(
-            suite="warty", component="main", section="web", priority="extra")
-        changer.processChildrenChange('mozilla-firefox')
+            suite="warty", component="main", section="web",
+            priority='standard')
+
         self.assertEqual(
             changer.logger.read(),
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'web'\n"
-            "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox-0.9/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO 'mozilla-firefox-1.0/main/base/IMPORTANT' "
-                "binary overridden in warty/i386\n"
-            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
-                "binary overridden in warty/hppa\n"
-            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
-                "binary overridden in warty/i386")
+            "INFO Override Priority to: 'STANDARD'")
 
-        self.assertCurrentBinary(
-            warty_i386, 'mozilla-firefox', '1.0', 'main', 'web', 'EXTRA')
-        self.assertCurrentBinary(
-            warty_i386, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
-        self.assertCurrentBinary(
-            warty_hppa, 'mozilla-firefox', '0.9', 'main', 'web', 'EXTRA')
-        self.assertCurrentBinary(
-            warty_hppa, 'mozilla-firefox-data', '0.9', 'main', 'web', 'EXTRA')
-
-    def test_processSourceChange_no_change(self):
-        """Source override when the source is already in the desired state.
-
-        Nothing is done and the situation is logged.
-        """
-        self.assertCurrentSource(
-            self.ubuntu.getSeries('warty'), 'mozilla-firefox', '0.9',
-            'main', 'web')
-
-        changer = self.getChanger(
-            suite="warty", component="main", section="web", priority="extra")
-        changer.processSourceChange('mozilla-firefox')
+        changer.processSourceChange('boingo')
         self.assertEqual(
             changer.logger.read(),
-            "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'web'\n"
-            "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox - 0.9/main/web' remained the same")
+            "INFO 'boingo - 1.0/main/web' remained the same")
 
         self.assertCurrentSource(
-            self.ubuntu.getSeries('warty'), 'mozilla-firefox', '0.9',
-            'main', 'web')
+            self.warty, 'boingo', '1.0', 'main', 'web')
+
+        changer.processBinaryChange('boingo-bin')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/main/web/STANDARD' remained the same\n"
+            "INFO 'boingo-bin-1.0/main/web/STANDARD' remained the same")
+
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-bin', '1.0', 'main', 'web', 'STANDARD')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'web', 'STANDARD')
 
     def test_overrides_with_changed_archive(self):
-        """Check processSourceChange method call with an archive change.
+        """Overrides resulting in archive changes are not allowed.
 
         Changing the component to 'partner' will result in the archive
-        changing on the publishing record.  This is disallowed.
+        changing on the publishing record.
         """
-        changer = self.getChanger(
-            suite="warty", component="partner", section="base",
-            priority="extra")
-        self.assertRaises(
-            ArchiveOverriderError, changer.processSourceChange,
-            'mozilla-firefox')
+        binaries = self.test_publisher.getPubBinaries(
+            'boingo-bin', distroseries=self.warty)
 
         changer = self.getChanger(
             component="partner", section="base", priority="extra")
-        self.assertRaises(
-            ArchiveOverriderError, changer.processBinaryChange, 'pmount')
 
-        changer = self.getChanger(
-            suite="warty", component="partner", section="web",
-            priority="extra")
         self.assertRaises(
-            ArchiveOverriderError, changer.processChildrenChange,
-            'mozilla-firefox')
+            ArchiveOverriderError, changer.processSourceChange, 'boingo')
+        self.assertRaises(
+            ArchiveOverriderError, changer.processBinaryChange, 'boingo-bin')
+        self.assertRaises(
+            ArchiveOverriderError, changer.processChildrenChange, 'boingo')
 
     def test_target_publication_not_found(self):
         """Raises SoyuzScriptError when a source was not found."""
@@ -298,10 +271,8 @@ class TestChangeOverride(unittest.TestCase):
 
         self.assertRaises(
             SoyuzScriptError, changer.processSourceChange, 'foobar')
-
         self.assertRaises(
             SoyuzScriptError, changer.processBinaryChange, 'biscuit')
-
         self.assertRaises(
             SoyuzScriptError, changer.processChildrenChange, 'cookie')
 
