@@ -329,13 +329,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 whiteboard=whiteboard)
             self._commercial_subscription_cached = subscription
         else:
-            if (current_datetime <= self.commercial_subscription.date_expires):
+            if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
                 self.commercial_subscription.date_expires = (
                     add_months(self.commercial_subscription.date_expires,
                                subscription_months))
             else:
-                # Start the new subscription now and extend for the new period.
+                # Start the new subscription now and extend for the new
+                # period.
                 self.commercial_subscription.date_starts = current_datetime
                 self.commercial_subscription.date_expires = (
                     add_months(current_datetime, subscription_months))
