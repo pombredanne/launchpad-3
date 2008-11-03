@@ -28,8 +28,11 @@ File size and mime type are displayed for each attachment
 A filesize of 2700 byte is displayed in 'KiB'
 
     >>> from canonical.config import config
-    >>> old_value = config.launchpad.max_bug_attachment_size
-    >>> config.launchpad.max_bug_attachment_size = 5000
+    >>> max_size_data = """
+    ...     [launchpad]
+    ...     max_bug_attachment_size: 5000
+    ...     """
+    >>> config.push('max_size_data', max_size_data)
 
     >>> filecontent = '123456789' * 300
     >>> foo_file = StringIO(filecontent)
@@ -53,4 +56,4 @@ A filesize of 2700 byte is displayed in 'KiB'
     description text
     (2.6 KiB, text/plain)
 
-    >>> config.launchpad.max_bug_attachment_size = old_value
+    >>> config_data = config.pop('max_size_data')

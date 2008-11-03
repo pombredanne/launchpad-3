@@ -78,7 +78,7 @@ class PullerWorkerMixin:
         if branch_type is None:
             if policy is None:
                 policy = AcceptAnythingPolicy()
-            opener = BranchMirrorer(policy)
+            opener = BranchMirrorer(policy, protocol)
         else:
             opener = None
         return PullerWorker(

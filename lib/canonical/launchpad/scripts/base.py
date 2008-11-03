@@ -145,8 +145,16 @@ class LaunchpadScript:
         """Super-convenience method that avoids the import."""
         # This import is actually quite expensive, and causes us to
         # import circularly in pathological cases.
+        # XXX gary 20-Oct-2008 bug 285808
+        # The wisdom of using a test fixture for production should be
+        # reconsidered.
         from canonical.launchpad.ftests import login
-        login(user)
+        # The Participation is used to specify that we do not want a
+        # LaunchpadTestRequest, which ftests normally use.  shipit scripts,
+        # in particular, need to be careful, because of code in
+        # canonical_url.
+        from canonical.launchpad.webapp.interaction import Participation
+        login(user, Participation())
 
     #
     # Locking and running methods. Users only call these explicitly if
@@ -278,4 +286,3 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
-

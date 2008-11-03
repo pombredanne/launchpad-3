@@ -6,7 +6,7 @@ __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
     'BrowserWindowDimensions',
-    'ContribIcingFolder',
+    'IcingContribFolder',
     'EdubuntuIcingFolder',
     'Hierarchy',
     'IcingFolder',
@@ -761,8 +761,10 @@ class LaunchpadImageFolder(ExportedImageFolder):
         os.path.dirname(os.path.realpath(__file__)), '../images/')
 
 
-class ContribIcingFolder(ExportedFolder):
+class IcingContribFolder(ExportedFolder):
     """Export the contrib icing."""
+
+    export_subdirectories = True
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
