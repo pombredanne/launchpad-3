@@ -183,6 +183,20 @@ in it, and therefore guessPackageNames will still fail:
     ...
     NotFoundError: u'Package pmount not published in Gentoo'
 
+It will find packages that are at the PENDING publishing state in addition
+to PUBLISHED ones:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> discard = test_publisher.setUpDefaultDistroSeries(ubuntu['breezy-autotest'])
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="pendingpackage",
+    ...     status=PackagePublishingStatus.PENDING)
+    >>> (source, binary) = ubuntu.guessPackageNames("pendingpackage")
+    >>> print source.name
+    pendingpackage
+
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
 
