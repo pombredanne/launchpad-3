@@ -53,30 +53,9 @@ class ChangeOverride(SoyuzScript):
             default=False, action="store_true",
             help="select source packages only")
 
-    def mainTask(self):
-
-        assert self.location, (
-            "location is not available, call PackageCopier.setupLocation() "
-            "before dealing with mainTask.")
-
+    def setupLocation(self):
+        SoyuzScript.setupLocation(self)
         self.setupOverrides()
-
-        for package_name in self.args:
-            # Change matching source
-            if (self.options.sourceonly or self.options.binaryandsource or
-                self.options.sourceandchildren):
-                self.processSourceChange(package_name)
-
-            # Change all binaries for matching source
-            if self.options.sourceandchildren:
-                self.processChildrenChange(package_name)
-            # Change only binary matching name
-            elif not self.options.sourceonly:
-                self.processBinaryChange(package_name)
-
-
-    def _validatePublishing(self, currently_published):
-        pass
 
     def setupOverrides(self):
         if self.options.component is not None:
@@ -110,6 +89,28 @@ class ChangeOverride(SoyuzScript):
                 "Override Priority to: '%s'" % self.priority.name)
         else:
             self.priority = None
+
+    def _validatePublishing(self, currently_published):
+        pass
+
+    def mainTask(self):
+
+        assert self.location, (
+            "location is not available, call PackageCopier.setupLocation() "
+            "before dealing with mainTask.")
+
+        for package_name in self.args:
+            # Change matching source
+            if (self.options.sourceonly or self.options.binaryandsource or
+                self.options.sourceandchildren):
+                self.processSourceChange(package_name)
+
+            # Change all binaries for matching source
+            if self.options.sourceandchildren:
+                self.processChildrenChange(package_name)
+            # Change only binary matching name
+            elif not self.options.sourceonly:
+                self.processBinaryChange(package_name)
 
     def processSourceChange(self, package_name):
         """Perform changes in a given source package name.
@@ -169,8 +170,8 @@ class ChangeOverride(SoyuzScript):
 
         binary_names = set(
             pub.binarypackagerelease.name
-            for pub in source_pub.getPublishedBinaries)
+            for pub in source_pub.getPublishedBinaries())
 
-        for binary_name in binary_names:
+        for binary_name in sorted(binary_names):
             self.processBinaryChange(binary_name)
 
