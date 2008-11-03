@@ -132,6 +132,13 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(
             PackagePublishingPriority.EXTRA, changer.priority)
 
+        # Overrides initialization output.
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO Override Component to: 'main'\n"
+            "INFO Override Section to: 'base'\n"
+            "INFO Override Priority to: 'EXTRA'")
+
 
     def patchedChanger(self, source_only=False, source_and_binary=False,
                        binary_and_source=False, package_name='foo'):
@@ -239,12 +246,23 @@ class TestChangeOverride(unittest.TestCase):
     def _setupOverridePublishingContext(self):
         """Setup publishing context.
 
-        'boingo' source and 'boingo-bin' binaries in warty (i386 & hppa).
+         * 'boingo_1.0' source PENDING in ubuntu/warty;
+         * 'boingo-bin_1.0' binaries PENDING in warty i386 & hppa;
+         * 'boingo-data' binaries PENDING in warty i386 & hppa.
         """
         source = self.test_publisher.getPubSource(
             sourcename="boingo", version='1.0', distroseries=self.warty)
+
         binaries = self.test_publisher.getPubBinaries(
             'boingo-bin', pub_source=source, distroseries=self.warty)
+
+        build = binaries[0].binarypackagerelease.build
+        other_binary = self.test_publisher.uploadBinaryForBuild(
+            build, 'boingo-data')
+        other_binary.version = '0.9'
+        binaries.extend(
+            self.test_publisher.publishBinaryInArchive(
+                other_binary, source.archive))
 
     def test_changeoverride_operations(self):
         """Check if `IArchivePublisher.changeOverride` is wrapped correctly.
@@ -293,11 +311,85 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(
             changer.logger.read(),
             "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
-            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same")
+            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/hppa\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386")
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
+
+    def test_changeoverride_restricted_by_version(self):
+        """`ChangeOverride` operation can be restricted to a version."""
+        self._setupOverridePublishingContext()
+        changer = self.getChanger(
+            component="universe", section="web", priority='extra',
+            package_version='0.9')
+        changer.logger.read()
+
+        # No 'boingo_0.9' source available.
+        self.assertRaises(
+            SoyuzScriptError, changer.processSourceChange, 'boingo')
+        self.assertRaises(
+            SoyuzScriptError, changer.processChildrenChange, 'boingo')
+
+        # No 'boingo-bin_0.9' binary available.
+        self.assertRaises(
+            SoyuzScriptError, changer.processBinaryChange, 'boingo-bin')
+
+        # 'boingo-data_0.9' is available and will be overridden.
+        changer.processBinaryChange('boingo-data')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/hppa\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386")
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
+
+    def test_changeoverride_restricted_by_version(self):
+        """`ChangeOverride` operation can be restricted to a version."""
+        self._setupOverridePublishingContext()
+        changer = self.getChanger(
+            component="universe", section="web", priority='extra',
+            arch_tag='i386')
+        changer.logger.read()
+
+        # Source overrides are not affect by architecture restriction.
+        changer.processSourceChange('boingo')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo - 1.0/main/base' source overridden")
+        self.assertCurrentSource(
+            self.warty, 'boingo', '1.0', 'universe', 'web')
+
+        # Binary overrides are restricted by architecture.
+        changer.processBinaryChange('boingo-bin')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' binary "
+                "overridden in warty/i386")
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
         self.assertCurrentBinary(
-            self.warty_hppa, 'boingo-bin', '1.0', 'universe', 'web', 'EXTRA')
+            self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
+
+        # Source-children overrides are also restricted by architecture.
+        changer.processChildrenChange('boingo')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/universe/web/EXTRA' remained the same\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' binary "
+                "overridden in warty/i386")
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-data', '0.9', 'universe', 'web', 'EXTRA')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-data', '0.9', 'main', 'base', 'STANDARD')
 
     def test_changeoverride_no_change(self):
         """Override source and/or binary already in the desired state.
@@ -307,9 +399,7 @@ class TestChangeOverride(unittest.TestCase):
         self._setupOverridePublishingContext()
 
         changer = self.getChanger(
-            suite="warty", component="main", section="base",
-            priority='standard')
-
+            component="main", section="base", priority='standard')
         self.assertEqual(
             changer.logger.read(),
             "INFO Override Component to: 'main'\n"
@@ -320,7 +410,6 @@ class TestChangeOverride(unittest.TestCase):
         self.assertEqual(
             changer.logger.read(),
             "INFO 'boingo - 1.0/main/base' remained the same")
-
         self.assertCurrentSource(
             self.warty, 'boingo', '1.0', 'main', 'base')
 
@@ -329,11 +418,22 @@ class TestChangeOverride(unittest.TestCase):
             changer.logger.read(),
             "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
             "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same")
-
         self.assertCurrentBinary(
             self.warty_i386, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
         self.assertCurrentBinary(
             self.warty_hppa, 'boingo-bin', '1.0', 'main', 'base', 'STANDARD')
+
+        changer.processChildrenChange('boingo')
+        self.assertEqual(
+            changer.logger.read(),
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO 'boingo-bin-1.0/main/base/STANDARD' remained the same\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' remained the same\n"
+            "INFO 'boingo-data-0.9/main/base/STANDARD' remained the same")
+        self.assertCurrentBinary(
+            self.warty_i386, 'boingo-data', '0.9', 'main', 'base', 'STANDARD')
+        self.assertCurrentBinary(
+            self.warty_hppa, 'boingo-data', '0.9', 'main', 'base', 'STANDARD')
 
     def test_overrides_with_changed_archive(self):
         """Overrides resulting in archive changes are not allowed.
