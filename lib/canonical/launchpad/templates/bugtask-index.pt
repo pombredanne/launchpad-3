@@ -12,7 +12,7 @@
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <p class="object timestamp">
 
-          Reported
+          Bug #<tal:block content="context/bug/id"/> reported
           by <tal:reporter replace="structure context/bug/owner/fmt:link" />
           <span
               tal:attributes="title context/bug/datecreated/fmt:datetime"
