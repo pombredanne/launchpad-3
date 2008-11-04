@@ -912,12 +912,11 @@ class Archive(SQLBase):
 
         # Now convert the to_series string to a real distroseries.
         if to_series is not None:
-            result = getUtility(IDistroSeriesSet).findByName(to_series)
-            if result.count() == 0:
+            result = getUtility(IDistroSeriesSet).queryByName(
+                self.distribution, to_series)
+            if result is None:
                 raise DistroSeriesNotFound(to_series)
-            if result.count() != 1:
-                raise DistroSeriesNotFound("%s is ambiguous" % to_series)
-            series = result[0]
+            series = result
         else:
             series = None
 
