@@ -3052,6 +3052,11 @@ class PersonTranslationView(LaunchpadView):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
 
+    @cachedproperty
+    def person_filter_querystring(self):
+        """Return person's name appropriate for including in links."""
+        return urllib.urlencode({'person': self.context.name})
+
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
 
