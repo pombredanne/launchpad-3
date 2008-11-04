@@ -114,16 +114,71 @@ object.
     >>> print archive_signing_key.archive.title
     PPA for Celso Providelo
 
-Use an `IArchiveSigningKey` to generate and assign a signing_key.
+It also implements `exportPublicKey` and `exportSecretKey` methods
+with receive a `PymeKey` and export it in the appropriate location.
 
-    >>> login('foo.bar@canonical.com')
+We will create MockKey objects implementing only the methods required
+to test the export funtions
+
+    >>> class MockKey:
+    ...     def __init__(self, secret):
+    ...         self.secret = secret
+    ...         self.fingerprint = 'fpr'
+    ...     def export(self):
+    ...         return "Secret %s" % self.secret
+
+`exportPublicKey` raises an error if given a secret key.
+
+    >>> archive_signing_key.exportPublicKey(MockKey(True))
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only public keys should be exported.
+
+Similarly, `exportSecretKey` raises an error if given a public key.
+
+    >>> archive_signing_key.exportSecretKey(MockKey(False))
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only secret keys should be exported.
+
+Now, if given the right type of key, both will result in a exported key
+in the expected path.
+
+    >>> mock_key = MockKey(True)
+    >>> archive_signing_key.exportSecretKey(mock_key)
+
+    >>> import os
+    >>> from canonical.config import config
+
+    >>> secret_export_path = os.path.join(
+    ...     config.personalpackagearchive.signing_keys_root,
+    ...     '%s.gpg' % mock_key.fingerprint)
+
+    >>> print open(secret_export_path).read()
+    Secret True
+
+    >>> archive_signing_key.exportPublicKey(MockKey(False))
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_pub_config = removeSecurityProxy(cprov.archive.getPubConfig())
+    >>> pub_export_path = os.path.join(
+    ...     naked_pub_config.archiveroot, 'key.pub')
+
+    >>> print open(pub_export_path).read()
+    Secret False
+
+Use an `IArchiveSigningKey` to generate and assign a real signing_key.
+
     >>> archive_signing_key.generateSigningKey()
-    >>> login(ANONYMOUS)
 
 The assigned key is a sign-only, password-less 1024-RSA GPG key owner
-by the 'PPA key guard' celebrity.
+by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 
     >>> signing_key = cprov.archive.signing_key
+
+    >>> from canonical.launchpad.interfaces.gpg import IGPGKey
+    >>> verifyObject(IGPGKey, signing_key)
+    True
 
     >>> print signing_key.owner.displayname
     PPA key guard
@@ -143,15 +198,7 @@ by the 'PPA key guard' celebrity.
 The public key can be accessed publically via its export placed in the
 repository root as 'key.pub'.
 
-    >>> import os
-    >>> from canonical.config import config
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_pub_config = removeSecurityProxy(cprov.archive.getPubConfig())
-    >>> pub_export = os.path.join(
-    ...     naked_pub_config.archiveroot, 'key.pub')
-
-    >>> print open(pub_export).read()
+    >>> print open(pub_export_path).read()
     -----BEGIN PGP PUBLIC KEY BLOCK-----
     ...
     -----END PGP PUBLIC KEY BLOCK-----
@@ -161,13 +208,27 @@ On the other hand, the secret key is securily stored in the
 designed configuration path. So only the IGPGHandler itself can access
 it.
 
-    >>> secret_export = os.path.join(
+    >>> secret_export_path = os.path.join(
     ...     config.personalpackagearchive.signing_keys_root,
     ...     '%s.gpg' % signing_key.fingerprint)
 
-    >>> print open(secret_export).read()
+    >>> print open(secret_export_path).read()
     -----BEGIN PGP PRIVATE KEY BLOCK-----
     ...
     -----END PGP PRIVATE KEY BLOCK-----
     <BLANKLINE>
+
+If called against a PPA which already has a 'signing_key'
+`generateSigningKey` will raise an error.
+
+    >>> archive_signing_key.generateSigningKey()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot override signing_keys.
+
+Purge 'signing_keys_root' and the PPA repository root.
+
+    >>> import shutil
+    >>> shutil.rmtree(config.personalpackagearchive.signing_keys_root)
+    >>> shutil.rmtree(config.personalpackagearchive.root)
 

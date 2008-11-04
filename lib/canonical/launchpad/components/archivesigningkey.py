@@ -44,17 +44,7 @@ class ArchiveSigningKey:
         self.archive = archive
 
     def exportSecretKey(self, key):
-        """Export the given secret key into a private location.
-
-        Place a ASCII armored export of the given secret key into the
-        disk location specified in the configurarion. E.g:
-
-        /<ppa.signing_keys_root>/<FINGERPRINT>.gpg
-
-        :param key: a secret `PymeKey` object to be exported.
-
-        :raises: `AssertionError` if the given key is public.
-        """
+        """See `IArchiveSigningKey`."""
         assert key.secret, "Only secret keys should be exported."
 
         export_path = os.path.join(
@@ -63,15 +53,7 @@ class ArchiveSigningKey:
         exportKey(key, export_path)
 
     def exportPublicKey(self, key):
-        """Export the given public key into the corresponding repository.
-
-        Place a ASCII armored export of the given public key into the
-        repository location. E.g: /<ppa_root>/key.gpg
-
-        :param key: a public `PymeKey` object to be exported.
-
-        :raises: `AssertionError` if the given key is secret.
-        """
+        """See `IArchiveSigningKey`."""
         assert not key.secret, "Only public keys should be exported."
 
         # XXX cprov 20081104: Publish configuration has no interface.
@@ -102,8 +84,12 @@ class ArchiveSigningKey:
             key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
 
+        # XXX cprov 20081104: setting 'signing_archive' requires lp.Admin
+        # on IArchive and we better not relax it system-wide.
+        from zope.security.proxy import removeSecurityProxy
+        naked_archive = removeSecurityProxy(self.archive)
         # Assign the public key reference to the context IArchive.
-        self.archive.signing_key = gpg_key
+        naked_archive.signing_key = gpg_key
 
     def signRepository(self):
         """See `IArchiveSigningKey`."""
