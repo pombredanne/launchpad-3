@@ -35,10 +35,10 @@ are there any email addresses.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> def request_person_view(person):
-    ...     """Return a the Person +index view."""
+    >>> def request_person_view(person, name='+index'):
+    ...     """Return a the named Person view."""
     ...     request = LaunchpadTestRequest()
-    ...     view = getMultiAdapter((person, request), name='+index')
+    ...     view = getMultiAdapter((person, request), name=name)
     ...     view.initialize()
     ...     return view
 
@@ -144,6 +144,137 @@ email addresses state is NONE_AVAILABLE.
     None
     >>> view.visible_email_addresses
     []
+
+
+== Things a person is working on ==
+
+PersonView is the base for many views for Person objects. It provides
+several properties to help display things the user is working on.
+
+The +portlet-currentfocus view is responsible for rendering the
+"Working on..." section in the Person profile page (+index). Nothing
+is rendered when the user does not have any assigned bug or specs
+that are not in progress.
+
+    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> user = factory.makePerson(name='ken', password='test')
+    >>> view = request_person_view(user, name='+portlet-currentfocus')
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    False
+    >>> view.assigned_bugs_in_progress.count()
+    0
+    >>> view.assigned_specs_in_progress.count()
+    0
+    >>> print view.render()
+    <BLANKLINE>
+
+Assigned specifications that do not display when they are not in an
+in progress state.
+
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationImplementationStatus)
+
+    >>> login(user.preferredemail.email)
+    >>> product = factory.makeProduct(name="tool", owner=user)
+    >>> spec = factory.makeSpecification(
+    ...     product=product, title='Specs need stories')
+    >>> spec.assignee = user
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    False
+    >>> view.assigned_bugs_in_progress.count()
+    0
+    >>> view.assigned_specs_in_progress.count()
+    0
+
+The specification is displayed only when it is in a in progress state
+(The state may be any from STARTED though DEPLOYMENT). Below the
+list of specifications is a link to show all the specifications that
+the user is working on.
+
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationDefinitionStatus)
+
+    >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
+    >>> newstate = spec.updateLifecycleStatus(user)
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
+    >>> newstate = spec.updateLifecycleStatus(user)
+    >>> view = request_person_view(user, name='+portlet-currentfocus')
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+    >>> view.assigned_bugs_in_progress.count()
+    0
+    >>> view.assigned_specs_in_progress.count()
+    1
+    >>> print view.render()
+    <div id="working-on">...
+    ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
+      need stories</a>...
+    <a href="/~ken/+specs?role=assignee">
+      &raquo; Show all assigned blueprints </a>...
+    </div>...
+
+Assigned bugs do not display when their status is not INPROGRESS.
+
+    >>> bug = factory.makeBug(
+    ...     product=product, title='tool does not work')
+    >>> bug.bugtasks[0].transitionToAssignee(user)
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+    >>> view.assigned_bugs_in_progress.count()
+    0
+    >>> view.assigned_specs_in_progress.count()
+    1
+
+The assigned bug is displayed in the "Working on..." section when
+its status is in INPROGRESS.
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+
+    >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+    >>> view.assigned_bugs_in_progress.count()
+    1
+    >>> view.assigned_specs_in_progress.count()
+    1
+    >>> print view.render()
+    <div id="working-on">...
+    ...<a href="http://bugs.launchpad.dev/tool/+bug/..."...>tool
+      does not work</a>...
+    <a href="http://launchpad.dev/~ken/+assignedbugs?...">
+      &raquo; Show all bugs in progress </a>...
+    ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
+      need stories</a>...
+    <a href="/~ken/+specs?role=assignee">
+      &raquo; Show all assigned blueprints </a>...
+    </div>...
+
+Multiple bugs and specs are displayed.
+
+    >>> another_bug = factory.makeBug(
+    ...     product=product, title='tool does is broken')
+    >>> another_bug.bugtasks[0].transitionToAssignee(user)
+    >>> another_bug.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, user)
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+    >>> view.assigned_bugs_in_progress.count()
+    2
+    >>> view.assigned_specs_in_progress.count()
+    1
+
+But duplicate bugs are never displayed.
+
+    >>> another_bug.duplicateof = bug
+
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+    >>> view.assigned_bugs_in_progress.count()
+    1
+    >>> view.assigned_specs_in_progress.count()
+    1
 
 
 == Person Packages ==

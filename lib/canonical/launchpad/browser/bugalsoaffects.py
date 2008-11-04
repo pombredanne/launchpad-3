@@ -172,6 +172,11 @@ class AlsoAffectsStep(LaunchpadFormView):
         self.actions = actions
         return super(AlsoAffectsStep, self).render()
 
+    @property
+    def cancel_url(self):
+        """Return the URL for the current context, i.e. bug."""
+        return canonical_url(self.context)
+
 
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
@@ -332,7 +337,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             for field_name in self.field_names
             if field_name in self.target_field_names]
         self.bugwatch_widgets = [self.widgets['bug_url']]
-        self.compulsory_widgets = [self.widgets['visited_steps']]
 
     def getTarget(self, data=None):
         """Return the fix target.

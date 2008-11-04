@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, ITranslationGroupSet, License,
     PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError, IMilestoneSet)
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -634,7 +634,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None):
+    def makeSpecification(self, product=None, title=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -642,9 +642,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(ISpecificationSet).new(
             name=self.getUniqueString('name'),
-            title=self.getUniqueString('title'),
+            title=title,
             specurl=None,
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
@@ -928,6 +930,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         if singular is None and plural is None:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
+
+    def makeTranslationMessage(self, pofile=None, potmsgset=None,
+                               translator=None, reviewer=None,
+                               translation=None):
+        """Make a new `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+        if translator is None:
+            translator = self.makePerson()
+        if translation is None:
+            translation = self.getUniqueString()
+
+        return potmsgset.updateTranslation(pofile, translator, [translation],
+                                           is_imported=False,
+                                           lock_timestamp=None)
 
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
