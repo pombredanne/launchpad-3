@@ -1,0 +1,84 @@
+= Archive sigining =
+
+
+`IArchive ` objects may be signed using its a IGPGKey pointed by its
+'signing_key' attribute.
+
+PPAs are created (activated, in production jargon) without a defined
+'signing_key'. A GPG key will be generated later by a auxiliar script
+and attached to the corresponding `IArchive`.
+
+The secret part of the key will be stored in the path pointed by
+`config.personalpackagearchive.sigining_keys_root`, named by their
+fingerprint. E.g.: ABCDEF0123456789ABCDDCBA0000111112345678.key
+
+Once the sigining key is available, the subsequent publications will
+result in a signed repository.
+
+The signed repository will contained a deatached signature of the
+top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
+export of the public GPG key (name 'key.gpg')
+
+
+== Querying 'pending sigining key' PPAs ==
+
+`IArchiveSet.getPPAsPendingSigningKey` allows call-sites to query for
+PPA pending signing key generation.
+
+    >>> from canonical.launchpad.interfaces.archive import IArchiveSet
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> for ppa in archive_set.getPPAsPendingSigningKey():
+    ...     print ppa.title
+    PPA for Celso Providelo
+    PPA for Mark Shuttleworth
+    PPA for No Privileges Person
+
+Disabled PPAs are excluded from the 'PendingSiginingKey' pool:
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv.archive.enabled = False
+    >>> login(ANONYMOUS)
+
+    >>> for ppa in archive_set.getPPAsPendingSigningKey():
+    ...     print ppa.title
+    PPA for Celso Providelo
+    PPA for Mark Shuttleworth
+
+Indeed, Marks's PPA does not have a defined 'sigining_key'.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> print sabdfl.archive.signing_key
+    None
+
+We will select the only available IGPGKey from the sampledata.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> [a_key] = foo_bar.gpgkeys
+    >>> print a_key.displayname
+    1024D/12345678
+
+And use it as the Mark's PPA sigining key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> sabdfl.archive.signing_key = a_key
+    >>> login(ANONYMOUS)
+
+It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
+
+    >>> for ppa in archive_set.getPPAsPendingSigningKey():
+    ...     print ppa.title
+    PPA for Celso Providelo
+
+
+== Generating a PPA signing key ==
+
+As mentioned above, generated sigining_keys will be stored in a
+location defined by the system configuration.
+
+    >>> from canonical.config import config
+    >>> print config.personalpackagearchive.sigining_keys_root
+    /var/tmp/ppa-sigining-keys
