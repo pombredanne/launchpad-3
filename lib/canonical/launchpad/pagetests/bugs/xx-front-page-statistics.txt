@@ -14,7 +14,7 @@ The Bugs front page shows some statistics:
     ...     if text.strip():
     ...         print text
     14 bugs reported across 7 projects
-    including 12 links to 7 bug trackers
+    including 12 links to 8 bug trackers
     4 bugs are shared across multiple projects
     and 2 bugs are related to CVE entries
 
