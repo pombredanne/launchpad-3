@@ -438,7 +438,8 @@ class IProductPublic(
         Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """Redeem a voucher and extend the subscription expiration date.
 
         The voucher must have already been verified to be redeemable.
@@ -448,6 +449,7 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
+        :param current_datetime: Current time.  Will be datetime.now() if not specified.
         :return: None
         """
 

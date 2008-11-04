@@ -1370,4 +1370,3 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type)
-
