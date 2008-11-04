@@ -193,6 +193,11 @@ The specification is displayed only when it is in a in progress state
 list of specifications is a link to show all the specifications that
 the user is working on.
 
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationDefinitionStatus)
+
+    >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
+    >>> newstate = spec.updateLifecycleStatus(user)
     >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
     >>> newstate = spec.updateLifecycleStatus(user)
     >>> view = request_person_view(user, name='+portlet-currentfocus')
@@ -206,7 +211,7 @@ the user is working on.
     <div id="working-on">...
     ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
       need stories</a>...
-    <a href="http://launchpad.dev/~ken/+specs?role=assignee">
+    <a href="/~ken/+specs?role=assignee">
       &raquo; Show all assigned blueprints </a>...
     </div>...
 
@@ -226,6 +231,7 @@ The assigned bug is displayed in the "Working on..." section when
 its status is in INPROGRESS.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
+
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
     >>> view.has_assigned_bugs_or_specs_in_progress
     True
@@ -241,7 +247,7 @@ its status is in INPROGRESS.
       &raquo; Show all bugs in progress </a>...
     ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
       need stories</a>...
-    <a href="http://launchpad.dev/~ken/+specs?role=assignee">
+    <a href="/~ken/+specs?role=assignee">
       &raquo; Show all assigned blueprints </a>...
     </div>...
 
