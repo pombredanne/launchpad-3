@@ -1,21 +1,20 @@
-= Archive sigining =
-
+= Archive signing =
 
 `IArchive ` objects may be signed using its a IGPGKey pointed by its
 'signing_key' attribute.
 
 PPAs are created (activated, in production jargon) without a defined
-'signing_key'. A GPG key will be generated later by a auxiliar script
+'signing_key'. A GPG key will be generated later by a auxiliary script
 and attached to the corresponding `IArchive`.
 
 The secret part of the key will be stored in the path pointed by
 `config.personalpackagearchive.sigining_keys_root`, named by their
 fingerprint. E.g.: ABCDEF0123456789ABCDDCBA0000111112345678.key
 
-Once the sigining key is available, the subsequent publications will
+Once the signing key is available, the subsequent publications will
 result in a signed repository.
 
-The signed repository will contained a deatached signature of the
+The signed repository will contained a de-attached signature of the
 top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
 export of the public GPG key (name 'key.gpg')
 
@@ -35,7 +34,7 @@ PPA pending signing key generation.
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
 
-Disabled PPAs are excluded from the 'PendingSiginingKey' pool:
+Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
@@ -82,3 +81,6 @@ location defined by the system configuration.
     >>> from canonical.config import config
     >>> print config.personalpackagearchive.sigining_keys_root
     /var/tmp/ppa-sigining-keys
+
+
+
