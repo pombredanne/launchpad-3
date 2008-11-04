@@ -630,7 +630,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
-        if media_type != self.JSON_TYPE:
+        if not media_type.startswith(self.JSON_TYPE):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of %s.' % self.JSON_TYPE
         try:
@@ -1367,4 +1367,3 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type)
-

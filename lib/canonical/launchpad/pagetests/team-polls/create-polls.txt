@@ -45,9 +45,6 @@ test the name field validator.
     >>> proposition = 'Who is going to be the next president?'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = "Secret Votes (It's impossible to track a person's vote)"
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(
@@ -98,11 +95,6 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
     >>> proposition = 'The next debian project leader'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = (
-    ...     "Semi-secret Votes (Only team administrators can see a person's "
-    ...     "vote)")
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(
@@ -144,11 +136,6 @@ Now lets try to insert a poll with the name of a existing one.
     >>> proposition = 'The next debian project leader'
     >>> team_admin_browser.getControl(
     ...     'The proposition that is going to be voted').value = proposition
-    >>> secrecy = (
-    ...     "Semi-secret Votes (Only team administrators can see a person's "
-    ...     "vote)")
-    >>> team_admin_browser.getControl(
-    ...     'The secrecy of the Poll').displayValue = [secrecy]
     >>> team_admin_browser.getControl(
     ...     'Users can spoil their votes?').selected = True
     >>> team_admin_browser.getControl(

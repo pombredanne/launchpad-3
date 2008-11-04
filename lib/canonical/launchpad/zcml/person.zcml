@@ -190,6 +190,14 @@
     />
 
   <browser:page
+    name="+contactuser"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.EmailToPersonView"
+    permission="launchpad.View"
+    template="../templates/contact-user.pt"
+    />
+
+  <browser:page
     name="+branding"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBrandingView"
