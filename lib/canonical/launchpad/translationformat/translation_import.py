@@ -387,8 +387,7 @@ class FileImporter(object):
         Perform check if a PO file is available and if the message has any
         translations that can be stored. If an exception is caught, an error
         is added to the list in self.errors but the translations are stored
-        anyway (ignoring further errors) unless the exception was
-        TranslationConflict.
+        anyway (ignoring further errors).
 
         :param message: The message who's translations will be stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
@@ -518,7 +517,7 @@ class FileImporter(object):
         :param message: The current message from the translation file.
         :param potmsgset: The current messageset for this message id.
         """
-        self.addUpdateError(message, potmsgset,
+        self._addUpdateError(message, potmsgset,
             "This message was updated by someone else after you"
             " got the translation file. This translation is now"
             " stored as a suggestion, if you want to set it as"
