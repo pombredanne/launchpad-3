@@ -9,6 +9,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
     'CannotCopy',
+    'DistroSeriesNotFound',
     'IArchive',
     'IArchiveEditDependenciesForm',
     'IArchivePackageCopyingForm',
@@ -18,6 +19,8 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'PocketNotFound',
+    'SourceNotFound',
     ]
 
 from zope.interface import Interface, Attribute
@@ -50,8 +53,26 @@ class ArchiveDependencyError(Exception):
     """
 
 
+# Exceptions used in the webservice that need to be in this file to get
+# picked up therein.
+
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
+    webservice_error(400) #Bad request.
+
+
+class PocketNotFound(Exception):
+    """Invalid pocket."""
+    webservice_error(400) #Bad request.
+
+
+class DistroSeriesNotFound(Exception):
+    """Invalid distroseries."""
+    webservice_error(400) #Bad request.
+
+
+class SourceNotFound(Exception):
+    """Invalid source name."""
     webservice_error(400) #Bad request.
 
 

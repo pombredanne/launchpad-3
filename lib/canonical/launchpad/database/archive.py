@@ -40,8 +40,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
-    IDistributionArchive, IPPA)
+    ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
+    SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
@@ -63,21 +64,6 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.lazr.rest.declarations import webservice_error
-
-
-class PocketNotFound(Exception):
-    """Invalid pocket."""
-    webservice_error(400) #Bad request.
-
-
-class DistroSeriesNotFound(Exception):
-    """Invalid distroseries."""
-    webservice_error(400) #Bad request.
-
-
-class SourceNotFound(Exception):
-    """Invalid source name."""
-    webservice_error(400) #Bad request.
 
 
 class Archive(SQLBase):
