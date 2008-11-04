@@ -79,8 +79,8 @@ As mentioned above, generated sigining_keys will be stored in a
 location defined by the system configuration.
 
     >>> from canonical.config import config
-    >>> print config.personalpackagearchive.sigining_keys_root
-    /var/tmp/ppa-sigining-keys
+    >>> print config.personalpackagearchive.signing_keys_root
+    /var/tmp/ppa-signing-keys
 
 In order to manipulate 'signing_keys' securely the target archive
 object has to be adapted to `IArchiveSigningKey`.
@@ -88,9 +88,18 @@ object has to be adapted to `IArchiveSigningKey`.
     >>> from canonical.launchpad.interfaces.archivesigningkey import (
     ...     IArchiveSigningKey)
 
-We will adapt Celso's PPA.
+We will adapt Celso's PPA after modifing its distribution to allow
+proper publish configuration based on the sampledata.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.distribution = getUtility(
+    ...     IDistributionSet).getByName('ubuntutest')
+    >>> login(ANONYMOUS)
+
     >>> archive_signing_key = IArchiveSigningKey(cprov.archive)
 
 Once adapted `IArchiveSigningKey` is properly implemented.
@@ -99,10 +108,66 @@ Once adapted `IArchiveSigningKey` is properly implemented.
     >>> verifyObject(IArchiveSigningKey, archive_signing_key)
     True
 
-`IArchiveSigningKey` objects contain the corresponding IArchive
+`IArchiveSigningKey` object contain the corresponding IArchive
 object.
 
     >>> print archive_signing_key.archive.title
     PPA for Celso Providelo
 
+Use an `IArchiveSigningKey` to generate and assign a signing_key.
+
+    >>> login('foo.bar@canonical.com')
+    >>> archive_signing_key.generateSigningKey()
+    >>> login(ANONYMOUS)
+
+The assigned key is a sign-only, password-less 1024-RSA GPG key owner
+by the 'PPA key guard' celebrity.
+
+    >>> signing_key = cprov.archive.signing_key
+
+    >>> print signing_key.owner.displayname
+    PPA key guard
+
+    >>> print signing_key.algorithm.description
+    RSA
+
+    >>> print signing_key.keysize
+    1024
+
+    >>> print signing_key.active
+    True
+
+    >>> print signing_key.can_encrypt
+    False
+
+The public key can be accessed publically via its export placed in the
+repository root as 'key.pub'.
+
+    >>> import os
+    >>> from canonical.config import config
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_pub_config = removeSecurityProxy(cprov.archive.getPubConfig())
+    >>> pub_export = os.path.join(
+    ...     naked_pub_config.archiveroot, 'key.pub')
+
+    >>> print open(pub_export).read()
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    ...
+    -----END PGP PUBLIC KEY BLOCK-----
+    <BLANKLINE>
+
+On the other hand, the secret key is securily stored in the
+designed configuration path. So only the IGPGHandler itself can access
+it.
+
+    >>> secret_export = os.path.join(
+    ...     config.personalpackagearchive.signing_keys_root,
+    ...     '%s.gpg' % signing_key.fingerprint)
+
+    >>> print open(secret_export).read()
+    -----BEGIN PGP PRIVATE KEY BLOCK-----
+    ...
+    -----END PGP PRIVATE KEY BLOCK-----
+    <BLANKLINE>
 
