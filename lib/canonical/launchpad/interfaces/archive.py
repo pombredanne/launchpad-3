@@ -532,7 +532,6 @@ class IArchive(IHasOwner):
             description=_("Whether or not to copy binaries already built for"
                           " this source"),
             required=False))
-    @operation_returns_collection_of(ITextLine)
     @export_write_operation()
     def syncSources(source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):

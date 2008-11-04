@@ -1281,6 +1281,9 @@ class EntryAdapterUtility(RESTUtilityBase):
         """
         entry_class = zapi.getGlobalSiteManager().adapters.lookup(
             (entry_interface,), IEntry)
+        assert entry_class is not None, (
+            "Can't find IEntryAdapter for %s"
+                % entry_interface.__class__.__name__)
         return EntryAdapterUtility(entry_class)
 
     @classmethod
