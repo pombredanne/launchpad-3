@@ -168,9 +168,28 @@ leaves.
   >>> for elems in tree.flatten():
   ...     path, result = elems[:-1], elems[-1]
   ...     print ' => '.join(
-  ...         [repr(node.keys) for node in path] + [repr(result)])
+  ...         [repr(node) for node in path] + [repr(result)])
   ('Snack',) => ('Mars Bar', 'Snickers') => 'Bad'
   ('Snack',) => ('Apple', 'Banana') => 'Good'
   ('Lunch', 'Dinner') => ('Fish and chips', "Penne all'arrabbiata") => 'Nice'
   ('Lunch', 'Dinner') => ('Raw liver',) => 'Not so nice'
   () => 'Make up your mind!'
+
+`flatten` does not yield duplicate paths. These would be masked by the
+`find` algorithm, but are not forbidden, so `flatten` removes them.
+
+  >>> duplicate_tree = LookupTree(
+  ...     ('Snack', 'Crisps'),
+  ...     ('Lunch', 'Bread'),
+  ...     ('Snack', 'Mars Bar'),
+  ...     ('Lunch', 'Dinner', 'Soup'),
+  ...     ('Eat more fruit and veg',),
+  ...     )
+  >>> for elems in duplicate_tree.flatten():
+  ...     path, result = elems[:-1], elems[-1]
+  ...     print ' => '.join(
+  ...         [repr(node) for node in path] + [repr(result)])
+  ('Snack',) => 'Crisps'
+  ('Lunch',) => 'Bread'
+  ('Dinner',) => 'Soup'
+  () => 'Eat more fruit and veg'
