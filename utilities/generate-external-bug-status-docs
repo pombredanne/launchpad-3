@@ -29,7 +29,7 @@ def generate_blank_lines(num):
 
 def generate_page_header():
     """Generate the header for the page."""
-    yield '[[Anchor(StatusTables)]]'
+    yield '<<Anchor(StatusTables)>>'
     yield '== Status mapping tables =='
     yield ''
     yield 'Last generated: %s.' % (
@@ -41,7 +41,7 @@ def generate_table_header(typ):
 
     :param typ: A member of `BugTrackerType`.
     """
-    yield '[[Anchor(%s)]]' % (typ.name,)
+    yield '<<Anchor(%s)>>' % (typ.name,)
     yield '=== %s ===' % (typ.title,)
 
 
