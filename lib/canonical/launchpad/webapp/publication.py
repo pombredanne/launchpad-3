@@ -463,8 +463,8 @@ class LaunchpadBrowserPublication(
         """
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
-        # XXX 2008-11-04 gary bug 293614
-        # at the moment, we can only distinguish based on the note: an
+        # XXX: gary 2008-11-04 bug=293614:
+        # At the moment, we can only distinguish based on the note: an
         # undocumented argument of this undocumented method.
         if note in ('application error-handling',
                     'application error-handling side-effect'):
