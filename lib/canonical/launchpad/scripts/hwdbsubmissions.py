@@ -947,16 +947,17 @@ class SubmissionParser(object):
             return None
         kernel_package_name = 'linux-image-' + kernel_version
         packages = self.parsed_data['software']['packages']
-        # The submission is not required to provide any package data.
-        if packages:
-            if kernel_package_name not in packages:
-                self._logWarning(
-                    'Inconsistent kernel version data: According to HAL the '
-                    'kernel is %s, but the submission does not know about a '
-                    'kernel package %s'
-                    % (kernel_version, kernel_package_name),
-                    WARNING_NO_HAL_KERNEL_VERSION)
-                return None
+        # The submission is not required to provide any package data...
+        if packages and kernel_package_name not in packages:
+            # ...but if we have it, we want it to be consistent with
+            # the HAL root node property.
+            self._logWarning(
+                'Inconsistent kernel version data: According to HAL the '
+                'kernel is %s, but the submission does not know about a '
+                'kernel package %s'
+                % (kernel_version, kernel_package_name),
+                WARNING_NO_HAL_KERNEL_VERSION)
+            return None
         return kernel_package_name
 
     def processSubmission(self, submission):

@@ -284,7 +284,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         """Test of SubmissionParser.getKernelPackageName.
 
         Test without any package data. getKernelPackageName returns
-        the property system.kernel.version without any further check.
+        the property system.kernel.version without any further checking.
         """
         parser = SubmissionParser(self.log)
         devices = [
