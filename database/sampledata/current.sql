@@ -683,6 +683,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL, '123/sabdfl');
@@ -1490,7 +1496,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (6, 8, 'email', 'Email bugtracker', 'An example email tracker.', 'mailto:bugs@example.com', 16, NULL, '2006-10-16 18:31:43.19892', NULL, false, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (7, 9, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/', 25, NULL, '2008-02-11 15:25:58.504386', NULL, false, NULL);
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'AGnother GnomeGBug GTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner, contactdetails, date_created, version, block_comment_pushing, has_lp_plugin) VALUES (8, 1, 'gnome-bugs', 'T''other Gnome GBugGTracker', 'This is the Gnome Bugzilla celebrity bug tracker.', 'http://bugzilla.gnome.org/', 16, NULL, '2008-10-08 13:31:00', NULL, false, true);
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
