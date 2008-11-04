@@ -163,7 +163,10 @@ class BugContextMenu(ContextMenu):
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
-        text = 'Mark as duplicate'
+        if self.context.bug.duplicateof:
+            text = 'Change'
+        else:
+            text = 'Mark as duplicate'
         return Link('+duplicate', text)
 
     def addupstream(self):
