@@ -29,7 +29,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.components import treelookup
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus
-from canonical.launchpad.interfaces.bugwatch import BugWatchErrorType
+#from canonical.launchpad.interfaces.bugwatch import BugWatchErrorType
 from canonical.launchpad.interfaces.externalbugtracker import (
     IExternalBugTracker)
 
@@ -314,8 +314,24 @@ class LookupTree(treelookup.LookupTree):
                     all = True
                     yield elem_now
 
+        def flatten_distinct():
+            """Yields distinct paths to results.
+
+            Essentially the same as `LookupTree.flatten`, but does not
+            yield paths that have been seen before. The tree lookup
+            algorithm means that these paths will never be used, so we
+            should not show them in user documentation.
+            """
+            seen_path_keys = set()
+            for elems in self.flatten():
+                path = elems[:-1]
+                path_key = tuple(frozenset(branch.keys) for branch in path)
+                if path_key not in seen_path_keys:
+                    yield elems
+                    seen_path_keys.add(path_key)
+
         last_columns = None
-        for elems in self.flatten():
+        for elems in flatten_distinct():
             path, result = elems[:-1], elems[-1]
             columns = []
             for branch in path:
