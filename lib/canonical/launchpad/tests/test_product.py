@@ -104,7 +104,8 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
-    def testCommercialSubscriptionCache(self):
+    # XXX see bug 293315
+    def disabled_testCommercialSubscriptionCache(self):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
         now = datetime.datetime.now(pytz.UTC)
