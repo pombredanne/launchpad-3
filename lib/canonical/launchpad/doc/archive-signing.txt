@@ -82,5 +82,27 @@ location defined by the system configuration.
     >>> print config.personalpackagearchive.sigining_keys_root
     /var/tmp/ppa-sigining-keys
 
+In order to manipulate 'signing_keys' securely the target archive
+object has to be adapted to `IArchiveSigningKey`.
+
+    >>> from canonical.launchpad.interfaces.archivesigningkey import (
+    ...     IArchiveSigningKey)
+
+We will adapt Celso's PPA.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> archive_signing_key = IArchiveSigningKey(cprov.archive)
+
+Once adapted `IArchiveSigningKey` is properly implemented.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IArchiveSigningKey, archive_signing_key)
+    True
+
+`IArchiveSigningKey` objects contain the corresponding IArchive
+object.
+
+    >>> print archive_signing_key.archive.title
+    PPA for Celso Providelo
 
 

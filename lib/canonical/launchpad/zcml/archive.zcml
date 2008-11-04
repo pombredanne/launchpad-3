@@ -32,6 +32,12 @@
       permission="zope.Public"
       />
 
+  <adapter
+      for="canonical.launchpad.interfaces.archive.IArchive"
+      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
+      />
+
   <browser:menus
     module="canonical.launchpad.browser"
     classes="ArchiveContextMenu"
