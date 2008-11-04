@@ -65,7 +65,7 @@ else
 fi
 
 # Are there patches to the schema or changes to current.sql?
-database_changes=$(echo $files | sed '/patch-\|current/!d')
+database_changes=$(echo $files | sed '/database.*\(patch-\|current\)/!d')
 
 echo "= Launchpad lint ="
 echo ""
