@@ -45,7 +45,7 @@
       locations!
     </div>
 
-    <p>
+    <div>
       <span style="float: left; width: 15em"
             tal:repeat="person view/unmapped_participants">
         <a tal:attributes="
@@ -54,7 +54,7 @@
           ><img src="/@@/edit" />
           <tal:person replace="person/displayname" /></a>
       </span>
-    </p>
+    </div>
   </tal:unmapped>
 
 </div>

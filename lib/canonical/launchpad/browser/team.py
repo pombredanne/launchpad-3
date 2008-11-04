@@ -857,8 +857,7 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def unmapped_participants(self):
         """Participants (ordered by name) with no recorded locations."""
-        return sorted(list(self.context.unmapped_participants),
-                      key=lambda p: p.browsername)
+        return list(self.context.unmapped_participants)
 
     @cachedproperty
     def times(self):
