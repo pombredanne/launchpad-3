@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import ArchivePurpose, CannotCopy
 from canonical.launchpad.interfaces.build import incomplete_building_status
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -28,13 +28,7 @@ from canonical.launchpad.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
-from canonical.lazr.rest.declarations import webservice_error
 from canonical.librarian.utils import copy_and_close
-
-
-class CannotCopy(Exception):
-    """Exception raised when a copy cannot be performed."""
-    webservice_error(400) #Bad request.
 
 
 def is_completely_built(source):

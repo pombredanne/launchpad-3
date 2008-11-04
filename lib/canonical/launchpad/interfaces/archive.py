@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
+    'CannotCopy',
     'IArchive',
     'IArchiveEditDependenciesForm',
     'IArchivePackageCopyingForm',
@@ -35,7 +36,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of)
+    operation_returns_collection_of, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -47,6 +48,11 @@ class ArchiveDependencyError(Exception):
      * It is not a PPA,
      * It is already recorded.
     """
+
+
+class CannotCopy(Exception):
+    """Exception raised when a copy cannot be performed."""
+    webservice_error(400) #Bad request.
 
 
 class IArchive(IHasOwner):
@@ -555,7 +561,7 @@ class IArchive(IHasOwner):
 
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
-        version=Int(title=_("Version")),
+        version=TextLine(title=_("Version")),
         from_archive=Reference(schema=Interface),
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
