@@ -565,6 +565,12 @@ class POTMsgSet(SQLBase):
                     pofile, matching_message, is_imported, submitter)
 
         if is_imported:
+            # If there is no previously existing imported message,
+            # make this one current (revert current to imported).
+            if self.getImportedTranslationMessage(pofile.language,
+                                                  pofile.variant) is None:
+                matching_message.is_current = True
+
             # Note that the message is imported.
             matching_message.is_imported = is_imported
 

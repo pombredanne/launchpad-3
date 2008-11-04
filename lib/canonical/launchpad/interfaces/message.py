@@ -4,24 +4,25 @@
 __metaclass__ = type
 
 __all__ = [
-    'IndexedMessage',
     'DuplicateMessageId',
+    'IDirectEmailAuthorization',
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
     'IMessageSet',
+    'IUserToUserEmail',
+    'IndexedMessage',
     'InvalidEmailMessage',
     'MissingSubject',
     'UnknownSender',
     ]
 
-from zope.interface import Interface, Attribute, implements
-from zope.schema import Bool, Datetime, Int, Text, TextLine
+
+from zope.interface import Attribute, Interface, implements
+from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-#from canonical.launchpad.interfaces.bug import IBug
-#from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
@@ -30,6 +31,7 @@ from canonical.lazr import decorates
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
+
 
 class IMessage(Interface):
     """A message.
@@ -175,6 +177,7 @@ class IMessageSet(Interface):
         to a message appearing after that message.
         """
 
+
 class IIndexedMessage(Interface):
     """An `IMessage` decorated with its index and context."""
     inside = Reference(title=_('Inside'), schema=IBugTask,
@@ -202,6 +205,58 @@ class IMessageChunk(Interface):
     sequence = Int(title=_('Sequence order'), required=True, readonly=True)
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
+
+
+class IUserToUserEmail(Interface):
+    """User to user direct email communications."""
+
+    sender = Object(
+        schema=IPerson,
+        title=_("The message sender"),
+        required=True, readonly=True)
+
+    recipient = Object(
+        schema=IPerson,
+        title=_("The message recipient"),
+        required=True, readonly=True)
+
+    date_sent = Datetime(
+        title=_('Date sent'),
+        description=_(
+            'The date this message was sent from sender to recipient.'),
+        required=True, readonly=True)
+
+    subject = TextLine(
+        title=_('Subject'),
+        required=True, readonly=True)
+
+    message_id = TextLine(
+        title=_('RFC 2822 Message-ID'),
+        required=True, readonly=True)
+
+
+class IDirectEmailAuthorization(Interface):
+    """Can a Launchpad user contact another Launchpad user?"""
+
+    is_allowed = Bool(
+        title=_(
+            'Is the sender allowed to send a message to a Launchpad user?'),
+        description=_(
+            'True if the sender allowed to send a message to another '
+            'Launchpad user.'),
+        readonly=True)
+
+    throttle_date = Datetime(
+        title=_('The earliest date used to throttle senders.'),
+        readonly=True,
+        )
+
+    def record(message):
+        """Record that the message was sent.
+
+        :param message: The email message that was sent.
+        :type message: `email.Message.Message`
+        """
 
 
 class UnknownSender(NotFoundError):

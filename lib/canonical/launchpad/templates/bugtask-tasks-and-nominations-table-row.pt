@@ -102,9 +102,12 @@
       </tal:has_no_watch>
     </td>
 
-      <tal:milestoned condition="context/milestone">
-        <td tal:define="expander_link_text context/milestone/name"
-        ><metal:expander metal:use-macro="template/macros/expander" /></td>
+    <tal:milestoned condition="context/milestone">
+      <td class="icon left right">
+        <metal:expander metal:use-macro="template/macros/expander" />
+      <a tal:attributes="href context/milestone/fmt:url"
+         tal:content="context/milestone/name">1.0</a>
+      </td>
       </tal:milestoned>
       <td tal:condition="not:context/milestone"></td>
     </tal:not-conjoined-task>

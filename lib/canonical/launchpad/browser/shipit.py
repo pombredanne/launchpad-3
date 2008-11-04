@@ -1166,6 +1166,7 @@ class ShipItSurveyView(LaunchpadFormView):
 
     schema = ShipItSurveySchema
     custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('platform', CheckBoxMatrixWidget, column_count=2)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)

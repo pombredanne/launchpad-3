@@ -1176,16 +1176,27 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.ExpensiveRequest'
     usedfor = ISourcePackage
 
+    def _userInAnyOfTheTeams(self, user, archive_permissions):
+        if archive_permissions is None or len(archive_permissions) == 0:
+            return False
+        for permission in archive_permissions:
+            if user.inTeam(permission.person):
+                return True
+        return False
+
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
         Admins and Translations admins have access, as does the owner of
-        the translation group (if applicable).
+        the translation group (if applicable) and distribution uploaders.
         """
-        translation_group = self.obj.distribution.translationgroup
+        distribution = self.obj.distribution
+        translation_group = distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User is part of the 'driver' team for the distribution.
+            (self._userInAnyOfTheTeams(user, distribution.uploaders)) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
