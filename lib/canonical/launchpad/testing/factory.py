@@ -24,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -37,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, ITranslationGroupSet, License,
     PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
-    TeamSubscriptionPolicy, UnknownBranchTypeError)
+    TeamSubscriptionPolicy, UnknownBranchTypeError, IMilestoneSet)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from canonical.launchpad.interfaces.bugtracker import (
     BugTrackerType, IBugTrackerSet)
@@ -231,6 +232,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
+
+    def makeMilestone(self, product=None, distribution=None, name=None):
+        if product is None and distribution is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        return Milestone(product=product, distribution=distribution,
+                         name=name)
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,

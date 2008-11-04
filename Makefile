@@ -40,7 +40,7 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-$(WADL_FILE): bzr-version-info.py compile
+$(WADL_FILE): bzr-version-info.py
 	LPCONFIG=$(LPCONFIG) $(PYTHON) ./utilities/create-lp-wadl.py | \
 		tee $(WADL_FILE) | \
 		$(XSLTPROC) ./lib/launchpadlib/wadl-to-refhtml.xsl - \
@@ -115,7 +115,7 @@ pagetests: build
 
 inplace: build
 
-build: support_files compile
+build: bzr-version-info.py compile $(WADL_FILE)
 
 compile:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
@@ -243,6 +243,8 @@ clean:
 	rm -f thread*.request
 	rm -rf lib/mailman /var/tmp/mailman/* /var/tmp/fatsam.appserver
 	rm -rf $(CODEHOSTING_ROOT)
+	-rm $(WADL_FILE)
+	-rm bzr-version-info.py
 
 realclean: clean
 	rm -f TAGS tags
