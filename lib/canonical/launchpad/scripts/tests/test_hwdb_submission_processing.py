@@ -280,6 +280,40 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
 
+    def testKernelPackageNameNoPackageData(self):
+        """Test of SubmissionParser.getKernelPackageName.
+
+        Test without any package data. getKernelPackageName returns
+        the property system.kernel.version without any further check.
+        """
+        parser = SubmissionParser(self.log)
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'system.kernel.version': (self.KERNEL_VERSION, 'str'),
+                    },
+                },
+            ]
+        parser.parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            'software': {
+                'packages': {},
+                },
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.getKernelPackageName()
+        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
+            'Unexpected result of SubmissionParser.getKernelPackageName, '
+            'test without any package data. Expected None, got %r'
+            % kernel_package)
+
     def testHALDeviceConstructor(self):
         """Test of the HALDevice constructor."""
         properties = {
