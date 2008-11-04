@@ -463,8 +463,13 @@ class LaunchpadBrowserPublication(
         """
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
-        da.clear_request_started()
-        da.set_request_started()
+        # XXX 2008-11-04 gary bug 293614
+        # at the moment, we can only distinguish based on the note: an
+        # undocumented argument of this undocumented method.
+        if note in ('application error-handling',
+                    'application error-handling side-effect'):
+            da.clear_request_started()
+            da.set_request_started()
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication

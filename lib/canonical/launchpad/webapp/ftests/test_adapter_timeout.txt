@@ -10,6 +10,9 @@ a TimeoutError on database use, but that a view on the exception that itself
 accesses the database has a fresh start--it is not polluted by the main view's
 TimeoutError.
 
+It further shows that the OOPS correctly includes the SQL statements that
+timed out.
+
 First we create a view that will provoke a TimeoutError, a view for the
 exception, and a time machine.
 
@@ -87,6 +90,27 @@ The exception view did not.
 
     >>> print timeout_in_exception_view
     False
+
+The OOPS has the SQL from the main view.
+
+    >>> from zope.error.interfaces import IErrorReportingUtility
+    >>> errors = zope.component.getUtility(IErrorReportingUtility)
+    >>> import pprint
+    >>> pprint.pprint(errors.getLastOopsReport().db_statements)
+    ... # doctest: +ELLIPSIS
+    [(0,
+      0,
+      'SELECT key, pickle FROM SessionPkgData WHERE ...'),
+     (0,
+      0,
+      "UPDATE SessionData SET last_accessed = CURRENT_TIMESTAMP WHERE ..."),
+     (0,
+      0,
+      'SELECT replication_lag()'),
+     (0,
+      0,
+      'SELECT secret FROM secret')]
+
 
 All that's left is to clean up after ourselves.
 
