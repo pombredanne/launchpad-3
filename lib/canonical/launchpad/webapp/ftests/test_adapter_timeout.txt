@@ -97,7 +97,6 @@ The OOPS has the SQL from the main view.
     >>> errors = zope.component.getUtility(IErrorReportingUtility)
     >>> import pprint
     >>> pprint.pprint(errors.getLastOopsReport().db_statements)
-    ... # doctest: +ELLIPSIS
     [(0,
       0,
       'SELECT key, pickle FROM SessionPkgData WHERE ...'),
