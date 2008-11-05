@@ -144,6 +144,21 @@ class HTTPResource:
         """See `IHTTPResource`."""
         pass
 
+    def request_method(self, REQUEST=None):
+        """Return the HTTP method of the provided (or current) request.
+
+        This is usually the actual HTTP method, but it might be
+        overridden by a value for X-HTTP-Method-Override.
+        """
+        if (REQUEST == None):
+            request = self.request
+        else:
+            request = REQUEST
+        if request.method == 'POST':
+            return request.headers.get('X-HTTP-Method-Override',
+                                       request.method)
+        return request.method
+
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
 
@@ -517,9 +532,9 @@ class ReadOnlyResource(HTTPResource):
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
         result = ""
-        if self.request.method == "GET":
+        if self.request_method() == "GET":
             result = self.do_GET()
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif self.request_method() == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -536,18 +551,19 @@ class ReadWriteResource(HTTPResource):
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.request_method()
+        if method == "GET":
             result = self.do_GET()
-        elif self.request.method in ["PUT", "PATCH"]:
+        elif method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
                 stream = self.request.bodyStream
                 representation = stream.getCacheStream().read()
-                if self.request.method == "PUT":
+                if method == "PUT":
                     result = self.do_PUT(media_type, representation)
                 else:
                     result = self.do_PATCH(media_type, representation)
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -1071,7 +1087,7 @@ class ServiceRootResource(HTTPResource):
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
-        if REQUEST.method == "GET":
+        if self.request_method(REQUEST) == "GET":
             return self.applyTransferEncoding(self.do_GET())
         else:
             REQUEST.response.setStatus(405)
