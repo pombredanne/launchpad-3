@@ -14,9 +14,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):
@@ -90,8 +92,8 @@ class PackageCloner:
         @param destination_das: the DistroArchSeries to which to copy
             binary packages
         """
-        cur = cursor()
-        cur.execute('''
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
@@ -122,8 +124,14 @@ class PackageCloner:
         @param destination: the location to which the data is
             to be copied.
         """
-        cur = cursor()
-        cur.execute('''
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        query_params =  sqlvalues(
+                destination.distroseries, destination.archive, UTC_NOW,
+                UTC_NOW, destination.pocket, origin.distroseries,
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED,
+                origin.pocket, origin.archive)
+        store.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
                 section, archive, datecreated, datepublished, pocket,
@@ -135,10 +143,5 @@ class PackageCloner:
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
-            ''' % sqlvalues(
-                destination.distroseries, destination.archive, UTC_NOW,
-                UTC_NOW, destination.pocket, origin.distroseries,
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED,
-                origin.pocket, origin.archive))
+            ''' % query_params)
 
