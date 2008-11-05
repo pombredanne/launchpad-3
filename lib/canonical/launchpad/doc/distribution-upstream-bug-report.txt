@@ -415,6 +415,27 @@ Nada!
     >>> print_numbers(view.total)
     0   0   0   0   0.0    0.0   0.0            0  0  0
 
+
+== Sorting the report ==
+
+The upstream report is sortable by each of the columns displayed. We'll
+demonstrate this using the Ubuntu report.
+
+    >>> view = create_view(ubuntu)
+
+The view has a sort_order property. This returns a tuple of (sort_key,
+reversed), where sort_key is a string which can be mapped to one of the
+properties of PackageBugReportData and reversed is a boolean which
+indicates whether the current sort is ascending (reversed=False) or
+descending (reversed=True). By default, the sort_order for any report is
+number of open bugs, descending.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+    >>> view.request
+
+
 PS: This page is actually browser-tested in
 pagetests.distribution-upstream-bug-report. Look there for more details.
 

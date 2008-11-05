@@ -93,24 +93,76 @@
         for information on how to read this report.
       </p>
 
-      <table class="listing sortable" id="upstream-report"
+      <table class="listing" id="upstream-report"
              tal:condition="view/data">
-        <thead>
+        <thead tal:define="links view/sort_order_links">
           <tr>
-            <th>Package</th>
-            <th colspan="2">Project</th>
-            <th>Bug Tracker</th>
-            <th>Upstream Contact</th>
-            <th class="amount default-revsort">Open</th>
-            <th class="amount">Triaged</th>
-            <th class="amount">%</th>
-            <th class="amount">&Delta;</th>
-            <th class="amount">Upstream</th>
-            <th class="amount">%</th>
-            <th class="amount">&Delta;</th>
-            <th class="amount">Watch</th>
-            <th class="amount">%</th>
-            <th class="amount">&Delta;</th>
+            <th>
+              <a tal:attributes="href links/dsp/link">Package</a>
+              <img tal:attributes="src links/dsp/arrow" />
+            </th>
+            <th colspan="2">
+              <a tal:attributes="href links/product/link">Project</a>
+              <img tal:attributes="src links/product/arrow" />
+            </th>
+            <th>
+              <a tal:attributes="href links/bugtracker_name/link"
+              >Bugtracker</a>
+              <img tal:attributes="src links/bugtracker_name/arrow" />
+            </th>
+            <th>
+              <a tal:attributes="href links/bug_supervisor_name/link"
+              >Upstream Contact</a>
+              <img tal:attributes="src links/bug_supervisor_name/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/open_bugs/link">Open</a>
+              <img tal:attributes="src links/open_bugs/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/triaged_bugs/link"
+              >Triaged</a>
+              <img tal:attributes="src links/triaged_bugs/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/triaged_bugs_percentage/link"
+              >%</a>
+              <img tal:attributes="src links/triaged_bugs_percentage/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/triaged_bugs_delta/link"
+              >&Delta;</a>
+              <img tal:attributes="src links/triaged_bugs_delta/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/upstream_bugs/link"
+              >Upstream</a>
+              <img tal:attributes="src links/upstream_bugs/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/upstream_bugs_percentage/link"
+              >%</a>
+              <img tal:attributes="src links/upstream_bugs_percentage/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/upstream_bugs_delta/link"
+              >&Delta;</a>
+              <img tal:attributes="src links/upstream_bugs_delta/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/watched_bugs/link">Watch</a>
+              <img tal:attributes="src links/watched_bugs/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/watched_bugs_percentage/link"
+              >%</a>
+              <img tal:attributes="src links/watched_bugs_percentage/arrow" />
+            </th>
+            <th class="amount">
+              <a tal:attributes="href links/watched_bugs_delta/link"
+              >&Delta;</a>
+              <img tal:attributes="src links/watched_bugs_delta/arrow" />
+            </th>
           </tr>
         </thead>
         <tbody id="upstream-report-content">
@@ -215,7 +267,7 @@
           </tr>
         </tbody>
         <tfoot id="upstream-report-totals">
-          <tr class="sortbottom">
+          <tr>
             <td colspan="5" class="amount"><b>Totals:</b></td>
             <td class="amount"
                 tal:content="view/total/open_bugs" />
