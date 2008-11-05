@@ -1,20 +1,10 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
-"""Create a rebuild archive.
+"""Create a copy archive and populate it with packages.
 
-The command line options supported are as follows:
-
-    -c c | --component c : component from which to copy source packages.
-                         One of: main, restricted, universe, multiverse,
-                         partner.
-    -d d | --distribution d : the distribution for which the rebuild archive
-                         is to be created.
-    -r n | --rebuildarchive n : the name of the rebuild archive to be created.
-    -s s | --suite s   : the suite (distribution series + publishing pocket)
-                         for which the rebuild archive is to be created.
-    -t t | --text t    : the reason for the rebuild
-    -u u | --user u    : the user creating the rebuild archive.
+    Please note: the destination copy archive must not exist yet. Otherwise
+    the script will abort with an error.
 """
 
 

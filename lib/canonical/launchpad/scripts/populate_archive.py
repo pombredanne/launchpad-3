@@ -24,26 +24,19 @@ from canonical.launchpad.validators.name import valid_name
 
 
 class ArchivePopulator(SoyuzScript):
-    """Create a copy archive (if needed) and populate it with packages.
+    """
+    Create a copy archive and populate it with packages.
 
     The logic needed to create a copy archive, populate it with source
     packages and instantiate the builds required.
 
-    Please note: the destination copy archive will only be created if it does
-    not exist yet.
-
-    The command line options supported are as follows:
-
-        -d d | --destination d: where d consists of
-            archive-owner:archive-name:distro:suite
-        -o o | --origin o: where o consists of
-            archive-owner:archive-name:distro:suite
-        -t t | --text t : the destination archive's description (in the case
-            that we need to create it)
-    """
+    Please note: the destination copy archive must not exist yet. Otherwise
+    the script will abort with an error."""
 
     usage = __doc__
-    description = 'Create a copy archive (if needed) and populate it.'
+    description = (
+        'Create a copy archive and populate it with packages and build '
+        'records.')
 
     def populateArchive(self, origin, destination, 
                         dest_archive_desc, arch_tags=None):
@@ -165,20 +158,20 @@ class ArchivePopulator(SoyuzScript):
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
-            help="The architecture tag for which to create rebuilds, "
-                 "repeat for each architecture required.")
+            help="The architecture tag(s) for which to create build "
+                 "records, repeat for each architecture required.")
         self.parser.add_option(
             "-d", "--destination", dest="destination_spec",
             help = (
-                "The destination of the copy operation "
-                "(archive-owner:archive-name:distro:suite). "
-                "Simply omit the data that is not needed."))
+                "The destination of the copy operation, format: "
+                "\"archive-owner:archive-name:distro:suite\". "
+                "Simply omit the items that are not needed."))
         self.parser.add_option(
             "-o", "--origin", dest="origin_spec",
             help = (
-                "The origin of the copy operation "
-                "(archive-owner:archive-name:distro:suite). "
-                "Simply omit the data that is not needed."))
+                "The origin of the copy operation, format: "
+                "\"archive-owner:archive-name:distro:suite\". "
+                "Simply omit the items that are not needed."))
         self.parser.add_option(
             "-t", "--text", dest="dest_archive_desc",
             help="The destination archive's description.")
