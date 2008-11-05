@@ -194,16 +194,13 @@ POST, by setting the X-HTTP-Method-Override header to "PATCH".
   ...
 
 If you try to use X-HTTP-Method-Override when the underlying HTTP
-method is not POST, the header will be ignored and the underlying HTTP
-will be used instead.
+method is not POST, you'll get an error.
 
   >>> print modify_person('salgado',
-  ...     {'display_name' : 'GUILHERME SALGADO X'}, 'GET',
-  ...     {'X-HTTP-Method-Override' : 'PATCH'})
-  HTTP/1.1 200 Ok
+  ...     {}, 'GET', {'X-HTTP-Method-Override' : 'PATCH'})
+  HTTP/1.1 400 Bad Request
   ...
-  Content-Type: application/json
-  ...
+  X-HTTP-Method-Override can only be used with a POST request.
 
 
 Even if a client supports PATCH, sometimes it's easier to GET a
