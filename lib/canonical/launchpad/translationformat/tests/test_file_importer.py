@@ -90,28 +90,31 @@ class FileImporterTestCase(unittest.TestCase):
             potemplate=self.potemplate)
 
         # Add another one, a translation file.
-        self.translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            self.pofile.path, TEST_TRANSLATION_FILE,
-            is_published, importer_person,
-            productseries=self.potemplate.productseries,
-            pofile=self.pofile)
+        self.translation_entry = (
+            self.translation_import_queue.addOrUpdateEntry(
+                self.pofile.path, TEST_TRANSLATION_FILE,
+                is_published, importer_person,
+                productseries=self.potemplate.productseries,
+                pofile=self.pofile))
 
         # Different template for error test.
         self.err_potemplate = factory.makePOTemplate()
         self.err_pofile = factory.makePOFile(
             TEST_LANGUAGE, potemplate=self.err_potemplate)
-        self.err_template_entry = self.translation_import_queue.addOrUpdateEntry(
-            self.err_potemplate.path, TEST_TEMPLATE_FOR_ERROR,
-            is_published, importer_person,
-            productseries=self.err_potemplate.productseries,
-            potemplate=self.err_potemplate)
+        self.err_template_entry = (
+            self.translation_import_queue.addOrUpdateEntry(
+                self.err_potemplate.path, TEST_TEMPLATE_FOR_ERROR,
+                is_published, importer_person,
+                productseries=self.err_potemplate.productseries,
+                potemplate=self.err_potemplate))
 
         # Add another translation file, with error.
-        self.err_translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            self.err_pofile.path, TEST_TRANSLATION_FILE_WITH_ERROR,
-            is_published, importer_person,
-            productseries=self.err_potemplate.productseries,
-            pofile=self.err_pofile)
+        self.err_translation_entry = (
+            self.translation_import_queue.addOrUpdateEntry(
+                self.err_pofile.path, TEST_TRANSLATION_FILE_WITH_ERROR,
+                is_published, importer_person,
+                productseries=self.err_potemplate.productseries,
+                pofile=self.err_pofile))
 
 
         transaction.commit()
@@ -136,7 +139,7 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessRaises( NotImplementedError,
             self.file_importer.importMessage, None)
 
-    def test_fileImporter_importFile(self):
+    def test_fileImporter_importFile_NotImplemented(self):
         # import File calls importMethod which should raise the exception.
         self.failUnlessRaises( NotImplementedError,
             self.file_importer.importFile)
@@ -199,9 +202,6 @@ class FileImporterTestCase(unittest.TestCase):
             (len(self.file_importer.errors) == 0),
             "FileImporter.storeTranslationsInDatabase fails when storing "
             "a message without errors.")
-
-# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase accept a
-#  translation with error.
 
     def test_fileImporter_format_exporter(self):
         # Test if format_exporter behaves like a singleton
@@ -291,7 +291,7 @@ class FileImporterTestCase(unittest.TestCase):
     def test_fileImporter_importFile(self):
         # Use importFile to store a template and a translation.
         # Then try to store more translations, generating errors.
-        
+
         # First import template.
         errors = self.pot_importer.importFile()
         self.failUnlessEqual(len(errors), 0,
@@ -304,11 +304,11 @@ class FileImporterTestCase(unittest.TestCase):
             "be none.")
         # Create new POFileImporter and fiddle with the timestamp.
         po_importer = POFileImporter(
-            self.translation_entry, GettextPOImporter(), None )
-        po_importer.lock_timestamp -= datetime.timedelta(0,60)
+            self.translation_entry, GettextPOImporter(), None)
+        po_importer.lock_timestamp -= datetime.timedelta(0, 60)
         # Try to import this, too.
         errors = self.po_importer.importFile()
-        self.failUnless( 
+        self.failUnless(
             (len(errors) == 1) and (
             errors[0]['error-message'].find(
                 u"updated by someone else after you") != -1 ),
@@ -327,7 +327,7 @@ class FileImporterTestCase(unittest.TestCase):
         err_po_importer = POFileImporter(
             self.err_translation_entry, GettextPOImporter(), None )
         errors = err_po_importer.importFile()
-        self.failUnless( 
+        self.failUnless(
             (len(errors) == 1) and (
             errors[0]['error-message'].find(
                 u"format specifications in 'msgid' and 'msgstr' "
