@@ -14,6 +14,7 @@ __all__ = [
     'IndexedMessage',
     'InvalidEmailMessage',
     'MissingSubject',
+    'QuotaReachedError',
     'UnknownSender',
     ]
 
@@ -205,6 +206,10 @@ class IMessageChunk(Interface):
     sequence = Int(title=_('Sequence order'), required=True, readonly=True)
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
+
+
+class QuotaReachedError(Exception):
+    """The user-to-user contact email quota has been reached for today."""
 
 
 class IUserToUserEmail(Interface):
