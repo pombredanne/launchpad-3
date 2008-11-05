@@ -38,7 +38,7 @@ duplicate bug page:
 
     >>> print find_tag_by_id(
     ...     admin_browser.contents, 'duplicate-of').renderContents()
-    This report is a duplicate of
+    Duplicate of
       <a href="/bugs/8" title="Printing doesn't work">bug #8</a>
 
 But when accessing it as an unprivileged user the title of the private
@@ -47,11 +47,11 @@ bug cannot be found in the messages on the duplicate bug page:
     >>> user_browser.open(admin_browser.url)
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'duplicate-of').renderContents()
-    This report is a duplicate of bug #8
+    Duplicate of bug #8
 
 The same is true when viewing the duplicate bug anonymously:
 
     >>> anon_browser.open(admin_browser.url)
     >>> print find_tag_by_id(
     ...     anon_browser.contents, 'duplicate-of').renderContents()
-    This report is a duplicate of bug #8
+    Duplicate of bug #8

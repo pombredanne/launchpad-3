@@ -105,11 +105,12 @@
       <table style="width: 100%; margin-bottom: 0.33em;">
         <tr>
           <td style="text-align: left; width: 50%;">
-            <tal:markduplicate
-                define="link context_menu/markduplicate"
-                condition="python: link.enabled and not
+            <a
+                tal:define="link context_menu/markduplicate"
+                tal:condition="python: link.enabled and not
                             context.bug.duplicateof"
-                replace="structure link/render" />
+                href="+duplicate">
+               <img src="/@@/bug-dupe-icon" /> Mark as duplicate</a>
             <tal:block
                  tal:condition="context/bug/duplicates"
                  tal:define="number_of_dupes context/bug/duplicates/count"
@@ -130,10 +131,14 @@
                    tal:content="string:bug #${duplicateof/id}">bug #42</a>
                 <span tal:condition="not:duplicateof/required:launchpad.View"
                       tal:replace="string:bug #${duplicateof/id}" />
-            <tal:markduplicate
+            <a
                 define="link context_menu/markduplicate"
                 condition="python: link.enabled"
-                replace="structure link/render" />
+                id="change_duplicate_bug"
+                title="Edit or remove linked duplicate bug"
+                href="+duplicate">
+                <img src="/@@/edit" />
+            </a>
 
             </tal:block>
           </td>
