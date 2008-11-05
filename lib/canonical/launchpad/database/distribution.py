@@ -961,11 +961,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
+                SourcePackagePublishingHistory.status IN %s
                 ''' % sqlvalues(self,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
+                                (PackagePublishingStatus.PUBLISHED,
+                                 PackagePublishingStatus.PENDING)),
                 clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
