@@ -556,6 +556,8 @@ class IArchive(IHasOwner):
                           " this source"),
             required=False))
     @export_write_operation()
+    # Source_names is a string because exporting a SourcePackageName is
+    # rather nonsensical as it only has id and name columns.
     def syncSources(source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
@@ -591,6 +593,11 @@ class IArchive(IHasOwner):
                           " this source"),
             required=False))
     @export_write_operation()
+    # XXX Julian 2008-11-05
+    # This method takes source_name and version as strings because
+    # SourcePackageRelease is not exported on the API yet.  When it is,
+    # we should consider either changing this method or adding a new one
+    # that takes that object instead.
     def syncSource(source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
