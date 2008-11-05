@@ -26,13 +26,13 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    DEBUG   No watches to update on http://bugzilla.gnome.org/
     DEBUG   No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
+    DEBUG   No watches to update on http://bugzilla.gnome.org/
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.

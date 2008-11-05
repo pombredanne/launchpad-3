@@ -31,13 +31,6 @@ The page presents a table with all bugtrackers currently registered:
 
     >>> print_tracker_table(user_browser)
     ------------------------
-    T'other Gnome GBugGTracker
-    http://bugzilla.gnome.org/
-      --> http://bugzilla.gnome.org/
-    &mdash;
-    Bugzilla
-    0
-    ------------------------
     Debian Bug tracker
     http://bugs.debian.org
       --> http://bugs.debian.org
@@ -108,8 +101,6 @@ And re-render the table:
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> print_tracker_table(user_browser)
     ------------------------
-    ...
-    ------------------------
     Debian Bug tracker
     http://bugs.debian.org
       --> http://bugs.debian.org
@@ -131,8 +122,6 @@ linked to bugtrackers are also linked.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
     >>> print_tracker_table(user_browser)
-    ------------------------
-    ...
     ------------------------
     Debian Bug tracker
     http://bugs.debian.org
