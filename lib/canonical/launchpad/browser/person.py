@@ -105,6 +105,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -4947,7 +4948,8 @@ class EmailToPersonView(LaunchpadFormView):
         sender_email = data['field.from_'].email
         subject = data['subject']
         message = data['message']
-        recipient_email = self.context.preferredemail.email
+        naked_email = removeSecurityProxy(self.context.preferredemail)
+        recipient_email = naked_email.email
         message = send_direct_contact_email(
             sender_email, recipient_email, subject, message)
         self.request.response.addInfoNotification(

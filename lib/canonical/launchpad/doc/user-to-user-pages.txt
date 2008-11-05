@@ -150,3 +150,28 @@ The configuration changes back to allow only three emails.
     >>> contact = list(contacts)[4]
     >>> expires = contact.date_sent + as_timedelta(
     ...     config.launchpad.user_to_user_throttle_interval)
+
+
+== Hidden addresses ==
+
+Salgado decides to hide his email addresses.
+
+    >>> login_person(salgado)
+    >>> salgado.hide_email_addresses = True
+
+Anne contacts Salgado even though his email addresses are hidden.
+
+    >>> anne = factory.makePerson(email='anne@example.com', name='anne')
+    >>> logout()
+    >>> login_person(anne)
+
+    >>> view = create_view(
+    ...     anne, salgado, {
+    ...         'field.field.from_': 'anne@example.com',
+    ...         'field.subject': 'Hello Salgado',
+    ...         'field.message': 'It is nice to meet you',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    Message sent to Guilherme Salgado
