@@ -98,6 +98,7 @@ class Section:
 
         :param schema: The ISectionSchema that defines this ISection.
         """
+        # Use __dict__ because __getattr__ limits access to self.options.
         self.__dict__['schema'] = schema
         if _options is None:
             _options = dict([(key, schema[key]) for key in schema])
