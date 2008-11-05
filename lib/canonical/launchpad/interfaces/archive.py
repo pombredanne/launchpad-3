@@ -548,7 +548,7 @@ class IArchive(IHasOwner):
         source_names=List(
             title=_("Source package names"),
             value_type=TextLine()),
-        from_archive=Reference(schema=Interface),
+        from_archive=Reference(schema=Interface), #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
@@ -583,7 +583,7 @@ class IArchive(IHasOwner):
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
         version=TextLine(title=_("Version")),
-        from_archive=Reference(schema=Interface),
+        from_archive=Reference(schema=Interface), #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
