@@ -72,7 +72,8 @@ class IBugAttachment(IHasBug):
               required=True))
     libraryfile = exported(
         Bytes(title=_("The attachment content."),
-              required=True),
+              required=True,
+              readonly=True),
         exported_as='data')
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
