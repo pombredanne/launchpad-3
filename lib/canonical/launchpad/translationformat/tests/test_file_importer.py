@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import unittest
+import datetime
 import transaction
 from zope.component import getUtility
 
@@ -38,10 +39,36 @@ msgstr ""
 "PO-Revision-Date: 2008-09-17 20:41+0100\n"
 "Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
+"X-Launchpad-Export-Date: 2008-11-05 13:31+0000\n"
 
 msgid "%s"
 msgstr "%s"
 ''' % (TEST_MSGID, TEST_TRANSLATION)
+
+TEST_TEMPLATE_FOR_ERROR = r'''
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2005-05-03 20:41+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#, c-format
+msgid "format specifier follows %d"
+msgstr ""
+'''
+
+TEST_TRANSLATION_FILE_WITH_ERROR = r'''
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2008-09-17 20:41+0100\n"
+"Last-Translator: Foo Bar <foo.bar@canonical.com>\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"X-Launchpad-Export-Date: 2008-11-05 13:31+0000\n"
+
+#, c-format
+msgid "format specifier follows %d"
+msgstr "format specifier changes %s"
+'''
 
 class FileImporterTestCase(unittest.TestCase):
     """Class test for translation importer component"""
@@ -51,7 +78,7 @@ class FileImporterTestCase(unittest.TestCase):
         factory = LaunchpadObjectFactory()
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
-        is_published = True
+        is_published = False
         importer_person = factory.makePerson()
         self.potemplate = factory.makePOTemplate()
         self.pofile = factory.makePOFile(
@@ -63,21 +90,39 @@ class FileImporterTestCase(unittest.TestCase):
             potemplate=self.potemplate)
 
         # Add another one, a translation file.
-        translation_entry = self.translation_import_queue.addOrUpdateEntry(
+        self.translation_entry = self.translation_import_queue.addOrUpdateEntry(
             self.pofile.path, TEST_TRANSLATION_FILE,
             is_published, importer_person,
             productseries=self.potemplate.productseries,
             pofile=self.pofile)
 
+        # Different template for error test.
+        self.err_potemplate = factory.makePOTemplate()
+        self.err_pofile = factory.makePOFile(
+            TEST_LANGUAGE, potemplate=self.err_potemplate)
+        self.err_template_entry = self.translation_import_queue.addOrUpdateEntry(
+            self.err_potemplate.path, TEST_TEMPLATE_FOR_ERROR,
+            is_published, importer_person,
+            productseries=self.err_potemplate.productseries,
+            potemplate=self.err_potemplate)
+
+        # Add another translation file, with error.
+        self.err_translation_entry = self.translation_import_queue.addOrUpdateEntry(
+            self.err_pofile.path, TEST_TRANSLATION_FILE_WITH_ERROR,
+            is_published, importer_person,
+            productseries=self.err_potemplate.productseries,
+            pofile=self.err_pofile)
+
+
         transaction.commit()
 
-        # Create objects to test
+        # Create objects to test for the error-free variants.
         self.file_importer = FileImporter(
             self.template_entry, GettextPOImporter(), None )
         self.pot_importer = POTFileImporter(
             self.template_entry, GettextPOImporter(), None )
         self.po_importer = POFileImporter(
-            translation_entry, GettextPOImporter(), None )
+            self.translation_entry, GettextPOImporter(), None )
 
     def test_fileImporter_init(self):
         # The number of test messages is constant (see above).
@@ -155,8 +200,6 @@ class FileImporterTestCase(unittest.TestCase):
             "FileImporter.storeTranslationsInDatabase fails when storing "
             "a message without errors.")
 
-# TODO: henninge 2008-10-02 Make storeTranslationsInDatabase reject a
-#  translation because of a conflict.
 # TODO: henninge 2008-10-02 Make storeTranslationsInDatabase accept a
 #  translation with error.
 
@@ -244,6 +287,52 @@ class FileImporterTestCase(unittest.TestCase):
                 self.po_importer.pofile.language.displayname,
                 self.po_importer.potemplate.displayname),
             'Did not create the correct comment for %s' % test_email)
+
+    def test_fileImporter_importFile(self):
+        # Use importFile to store a template and a translation.
+        # Then try to store more translations, generating errors.
+        
+        # First import template.
+        errors = self.pot_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POTFileImporter.importFile returns errors where there should "
+            "be none.")
+        # Now import translation.
+        errors = self.po_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POFileImporter.importFile returns errors where there should "
+            "be none.")
+        # Create new POFileImporter and fiddle with the timestamp.
+        po_importer = POFileImporter(
+            self.translation_entry, GettextPOImporter(), None )
+        po_importer.lock_timestamp -= datetime.timedelta(0,60)
+        # Try to import this, too.
+        errors = self.po_importer.importFile()
+        self.failUnless( 
+            (len(errors) == 1) and (
+            errors[0]['error-message'].find(
+                u"updated by someone else after you") != -1 ),
+            "importFile() fails to detect a message update conflict.")
+
+    def test_fileImporter_importFile_errorfile(self):
+        # Create a new POTFileImporter for the error template and import
+        # the template.
+        err_pot_importer = POTFileImporter(
+            self.err_template_entry, GettextPOImporter(), None )
+        errors = err_pot_importer.importFile()
+        self.failUnlessEqual(len(errors), 0,
+            "POTFileImporter.importFile returns errors where there should "
+            "be none.")
+        # Create a new POFileImporter for the error file and import the file.
+        err_po_importer = POFileImporter(
+            self.err_translation_entry, GettextPOImporter(), None )
+        errors = err_po_importer.importFile()
+        self.failUnless( 
+            (len(errors) == 1) and (
+            errors[0]['error-message'].find(
+                u"format specifications in 'msgid' and 'msgstr' "
+                u"for argument 1 are not the same") != -1 ),
+            "importFile() fails to detect errors in message format.")
 
 
 def test_suite():

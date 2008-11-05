@@ -500,6 +500,9 @@ class FileImporter(object):
         :param potmsgset: The current messageset for this message id.
         :param errormsg: The errormessage returned by updateTranslation.
         """
+# XXX: henninge 2008-11-05: The error should contain an ID of some sort
+#  to provide an explicit identification in tests. Until then error messages
+#  must not be rephrased without changing the test as well.
         self.errors.append({
             'potmsgset': potmsgset,
             'pofile': self.pofile,
@@ -595,7 +598,6 @@ class POTFileImporter(FileImporter):
 
         # Update translation_message's comments and flags.
         if translation_message is not None:
-            translation_message.flags_comment = flags_comment
             translation_message.comment = message.comment
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
@@ -724,7 +726,6 @@ class POFileImporter(FileImporter):
 
         # Update translation_message's comments and flags.
         if translation_message is not None:
-            translation_message.flags_comment = flags_comment
             translation_message.comment = message.comment
             if self.translation_import_queue_entry.is_published:
                 translation_message.was_obsolete_in_last_import = (
