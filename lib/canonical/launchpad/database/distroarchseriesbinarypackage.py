@@ -226,3 +226,9 @@ class DistroArchSeriesBinaryPackage:
 
         return current
 
+    @property
+    def distro_source_package(self):
+        """See IDistroArchSeriesBinaryPackage."""
+        src_pkg_release = self.currentrelease.distributionsourcepackagerelease
+        return src_pkg_release.sourcepackage
+
