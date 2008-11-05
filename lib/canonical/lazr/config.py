@@ -98,11 +98,11 @@ class Section:
 
         :param schema: The ISectionSchema that defines this ISection.
         """
-        self.schema = schema
+        # Use __dict__ because __getattr__ limits access to self.options.
+        self.__dict__['schema'] = schema
         if _options is None:
-            self._options = dict([(key, schema[key]) for key in schema])
-        else:
-            self._options = _options
+            _options = dict([(key, schema[key]) for key in schema])
+        self.__dict__['_options'] = _options
 
     def __getitem__(self, key):
         """See `ISection`"""
@@ -115,6 +115,10 @@ class Section:
         else:
             raise AttributeError(
                 "No section key named %s." % name)
+
+    def __setattr__(self, name, value):
+        """Callsites cannot mutate the config by direct manipulation."""
+        raise AttributeError("Config options cannot be set directly.")
 
     @property
     def category_and_section_names(self):
