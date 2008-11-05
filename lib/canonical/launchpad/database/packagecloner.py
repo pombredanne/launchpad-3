@@ -125,12 +125,6 @@ class PackageCloner:
             to be copied.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        query_params =  sqlvalues(
-                destination.distroseries, destination.archive, UTC_NOW,
-                UTC_NOW, destination.pocket, origin.distroseries,
-                PackagePublishingStatus.PENDING,
-                PackagePublishingStatus.PUBLISHED,
-                origin.pocket, origin.archive)
         store.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
@@ -143,5 +137,10 @@ class PackageCloner:
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
-            ''' % query_params)
+            ''' % sqlvalues(
+                destination.distroseries, destination.archive, UTC_NOW,
+                UTC_NOW, destination.pocket, origin.distroseries,
+                PackagePublishingStatus.PENDING,
+                PackagePublishingStatus.PUBLISHED,
+                origin.pocket, origin.archive))
 
