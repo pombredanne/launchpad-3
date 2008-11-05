@@ -47,12 +47,12 @@ the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
     >>> print_tag_with_id(browser.contents, 'merge-counts')
-    2 active reviews, 1 approved merge
+    2 pending proposals, 1 unmerged proposal
 
 The 'active reviews' and 'approved merge' text are links to the listing pages
 for these.
 
-    >>> browser.getLink('active reviews').click()
+    >>> browser.getLink('pending proposals').click()
     >>> print browser.title
     Active code reviews for Fooix
 
