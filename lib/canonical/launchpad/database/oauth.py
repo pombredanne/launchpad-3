@@ -14,6 +14,7 @@ import pytz
 import time
 from datetime import datetime, timedelta
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
@@ -31,7 +32,8 @@ from canonical.launchpad.interfaces.distributionsourcepackage import (
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
     IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed)
-from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel, OAuthPermission, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
 
 
 # How many hours should a request token be valid for?
@@ -46,7 +48,23 @@ REQUEST_TOKEN_VALIDITY = 12
 NONCE_TIME_WINDOW = 60 # seconds
 
 
-class OAuthConsumer(SQLBase):
+class OAuthBase(SQLBase):
+    """Base class for all OAuth database classes."""
+
+    @staticmethod
+    def _get_store():
+        """See `SQLBase`.
+
+        We want all OAuth classes to be retrieved from the Auth store
+        with the Master flavour. If they are retrieved from the slave,
+        there will be problems in the authorization exchange, since it
+        will be done across applications that won't share the session
+        cookies.
+        """
+        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+
+
+class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
     implements(IOAuthConsumer)
 
@@ -87,7 +105,7 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
-class OAuthAccessToken(SQLBase):
+class OAuthAccessToken(OAuthBase):
     """See `IOAuthAccessToken`."""
     implements(IOAuthAccessToken)
 
@@ -147,7 +165,7 @@ class OAuthAccessToken(SQLBase):
                 access_token=self, nonce=nonce, request_timestamp=date)
 
 
-class OAuthRequestToken(SQLBase):
+class OAuthRequestToken(OAuthBase):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
@@ -240,7 +258,7 @@ class OAuthRequestTokenSet:
         return OAuthRequestToken.selectOneBy(key=key)
 
 
-class OAuthNonce(SQLBase):
+class OAuthNonce(OAuthBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
