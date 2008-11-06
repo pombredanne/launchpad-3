@@ -3,10 +3,10 @@ page shows this prominently, and the comment field is accompanied by an extra
 warning that it's a duplicate.
 
     >>> user_browser.open(
-    ... 'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
+    ... 'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'duplicate-of').renderContents()
-    Duplicate of...bug #1...
+    bug #1...
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
     Remember...Comment here only if...
