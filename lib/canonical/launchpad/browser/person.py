@@ -142,7 +142,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -4948,11 +4949,18 @@ class EmailToPersonView(LaunchpadFormView):
         subject = data['subject']
         message = data['message']
         recipient_email = self.context.preferredemail.email
-        message = send_direct_contact_email(
-            sender_email, recipient_email, subject, message)
-        self.request.response.addInfoNotification(
-            _('Message sent to $name',
-              mapping=dict(name=self.context.displayname)))
+        try:
+            message = send_direct_contact_email(
+                sender_email, recipient_email, subject, message)
+        except QuotaReachedError, error:
+            self.request.response.addErrorNotification(
+                _('The message was not sent because you have exceeded your '
+                  'daily quota for user contact messages.  Please try again '
+                  'tomorrow.'))
+        else:
+            self.request.response.addInfoNotification(
+                _('Message sent to $name',
+                  mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
