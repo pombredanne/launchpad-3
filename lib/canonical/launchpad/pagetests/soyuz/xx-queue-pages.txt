@@ -233,6 +233,14 @@ Swallow any email generated at the upload:
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> swallow = pop_notifications()
 
+Set up a second browser on the same page, so we can submit the same
+request a little later:
+
+  >>> duplicate_submission_browser = setupBrowser(
+  ...       auth="Basic test@canonical.com:test")
+  >>> duplicate_submission_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+
 Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
@@ -261,10 +269,13 @@ nascentupload-announcements.txt).
 
 Forcing a duplicated submission on a queue item is recognised:
 
-  >>> upload_manager_browser.reload()
-  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  >>> duplicate_submission_browser.getControl(
+  ...     name="QUEUE_ID").value = [bar_queue_id]
+  >>> duplicate_submission_browser.getControl(name="Accept").click()
+  >>> for message in get_feedback_messages(
+  ...     duplicate_submission_browser.contents):
   ...     print message
-  FAILED: bar (The source bar - 1.0-1 is already accepted
+  FAILED: bar (The source bar - 1.0-1 is already accepted...
 
 No emails are sent in this case:
 
