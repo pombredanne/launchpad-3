@@ -29,7 +29,11 @@
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
         />
-
+    <adapter
+        for="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.XMLRPCDatabasePolicy"
+        />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"

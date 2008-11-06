@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
     'FeedsDatabasePolicy',
+    'XMLRPCDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
@@ -33,12 +34,27 @@ def _now():
     return datetime.utcnow()
 
 
-class LaunchpadDatabasePolicy:
-
+class BaseDatabasePolicy:
+    """Base class for database policies."""
     implements(IDatabasePolicy)
 
     def __init__(self, request):
         self.request = request
+
+    def afterCall(self):
+        """See `IDatabasePolicy`.
+
+        Resets the default flavor. In the app server, it isn't necessary to 
+        reset the default store as it will just be selected the next request. 
+        However, changing the default store in the middle of a pagetest 
+        can break things.
+        """
+        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+
+
+class LaunchpadDatabasePolicy:
+    """Default database policy for web requests."""
+
 
     def beforeTraversal(self):
         """Install the database policy.
@@ -88,8 +104,7 @@ class LaunchpadDatabasePolicy:
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
         if (not self.read_only
-            and not WebServiceLayer.providedBy(self.request)
-            and not IXMLRPCRequest.providedBy(self.request)):
+            and not WebServiceLayer.providedBy(self.request)):
             # We need to further distinguish whether it's safe to write to
             # the session, which will be true if the principal is
             # authenticated or if there is already a session cookie hanging
@@ -119,14 +134,11 @@ class LaunchpadDatabasePolicy:
                     last_write < now - timedelta(minutes=1)):
                     # set value
                     session_data['last_write'] = now
-        # For the webapp, it isn't necessary to reset the default store as
-        # it will just be selected the next request. However, changing the
-        # default store in the middle of a pagetest can break things.
-        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+        super(LaunchpadDatabasePolicy, self).afterCall()
 
     def getReplicationLag(self, name):
         """Return the replication delay for the named replication set.
-       
+
         :returns: timedelta, or None if this isn't a replicated environment,
         """
         # sl_status only gives meaningful results on the origin node.
@@ -134,16 +146,11 @@ class LaunchpadDatabasePolicy:
         return store.execute("SELECT replication_lag()").get_one()[0]
 
 
-
-class FeedsDatabasePolicy:
+class FeedsDatabasePolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` for `FeedsLayer`.
 
     This policy always use the SLAVE_FLAVOR.
     """
-    implements(IDatabasePolicy)
-
-    def __init__(self, request):
-        self.request = request
 
     def beforeTraversal(self):
         """See `IDatabasePolicy`.
@@ -153,12 +160,15 @@ class FeedsDatabasePolicy:
         """
         da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
 
-    def afterCall(self):
-        """See `IDatabasePolicy`.
 
-        Resets the default flavor.
-        """
-        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
+class XMLRPCDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` for `IXMLRPCRequest`.
+
+    This policy always use the MASTER_FLAVOR.
+    """
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`."""
+        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):
