@@ -165,7 +165,6 @@ class BugContextMenu(ContextMenu):
         """Return the 'Mark as duplicate' Link."""
         return Link('+duplicate', '')
 
-
     def addupstream(self):
         """Return the 'lso affects project' Link."""
         text = 'Also affects project'
