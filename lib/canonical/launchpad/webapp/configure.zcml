@@ -42,7 +42,7 @@
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.FeedsDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.SlaveDatabasePolicy"
         />
 
     <!-- links -->

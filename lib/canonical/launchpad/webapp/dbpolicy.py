@@ -5,7 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
-    'FeedsDatabasePolicy',
+    'SlaveDatabasePolicy',
     'MasterDatabasePolicy',
     ]
 
@@ -50,7 +50,7 @@ class BaseDatabasePolicy:
         da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
 
 
-class LaunchpadDatabasePolicy:
+class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """Default database policy for web requests."""
 
 
@@ -137,18 +137,14 @@ class LaunchpadDatabasePolicy:
         return store.execute("SELECT replication_lag()").get_one()[0]
 
 
-class FeedsDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` for `FeedsLayer`.
+class SlaveDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always selects the SLAVE_FLAVOR.
 
-    This policy always use the SLAVE_FLAVOR.
+    This policy is used for Feeds requests and other always-read only request.
     """
 
     def beforeTraversal(self):
-        """See `IDatabasePolicy`.
-
-        This sets the default flavor to SLAVE since all feeds requests
-        are read-only.
-        """
+        """See `IDatabasePolicy`."""
         da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
 
 

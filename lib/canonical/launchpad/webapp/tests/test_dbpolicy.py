@@ -15,7 +15,7 @@ from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.dbpolicy import (
-    FeedsDatabasePolicy, MasterDatabasePolicy)
+    SlaveDatabasePolicy, MasterDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -29,29 +29,36 @@ class BaseDatabasePolicyTestCase(unittest.TestCase):
     def tearDown(self):
         StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
 
+    def test_correctly_implements_IDatabasePolicy(self):
+        self.failUnless(verifyObject(IDatabasePolicy, self.policy))
+
     def test_afterCall_should_reset_default_flavor(self):
         StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
         self.policy.afterCall()
         self.assertEquals(DEFAULT_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
-class FeedsDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
-    """Tests for the `FeedsDatabasePolicy`."""
+class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
+    """Tests for the `SlaveDatabasePolicy`."""
 
     def setUp(self):
-        self.request = (
-            LaunchpadTestRequest(SERVER_URL='http://feed.launchpad.dev'))
-        setFirstLayer(self.request, FeedsLayer)
-        self.policy = getAdapter(self.request, IDatabasePolicy)
+        self.policy = SlaveDatabasePolicy(
+            LaunchpadTestRequest(SERVER_URL='http://launchpad.dev'))
 
-    def test_FeedsRequest_dbpolicy_adapter(self):
+    def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
+        """FeedsRequest should use the SlaveDatabasePolicy since they
+        are read-only in nature. Also we don't want to send session cookies 
+        over them.
+        """
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://feeds.launchpad.dev')
+        setFirstLayer(request, FeedsLayer)
+        policy = getAdapter(request, IDatabasePolicy)
         self.failUnless(
-            isinstance(self.policy, FeedsDatabasePolicy),
-            "Expected a FeedsDatabasePolicy, not %s." % self.policy)
-        self.failUnless(verifyObject(IDatabasePolicy, self.policy))
+            isinstance(policy, SlaveDatabasePolicy),
+            "Expected SlaveDatabasePolicy, not %s." % policy)
 
     def test_beforeTraverse_should_set_slave_flavor(self):
-        """We want to always use the slave flavor for feeds request."""
         self.policy.beforeTraversal()
         self.assertEquals(SLAVE_FLAVOR, StoreSelector.getDefaultFlavor())
 
@@ -60,11 +67,8 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     """Tests for the `MasterDatabasePolicy`."""
 
     def setUp(self):
-        request = LaunchpadTestRequest(SERVER_URL='http://launchpad.dev')
-        self.policy = MasterDatabasePolicy(request)
-
-    def test_MasterPolicy_correctly_implements_IDatabasePolicy(self):
-        self.failUnless(verifyObject(IDatabasePolicy, self.policy))
+        self.policy = MasterDatabasePolicy(
+           LaunchpadTestRequest(SERVER_URL='http://launchpad.dev'))
 
     def test_XMLRPCRequest_uses_MasterPolicy(self):
         """XMLRPC should always use the master flavor, since they always 
@@ -98,6 +102,6 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
 def test_suite():
     return unittest.TestSuite((
-        unittest.makeSuite(FeedsDatabasePolicyTestCase),
+        unittest.makeSuite(SlaveDatabasePolicyTestCase),
         unittest.makeSuite(MasterDatabasePolicyTestCase),
             ))
