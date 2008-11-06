@@ -304,8 +304,10 @@ them:
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> def create_view(distro):
-    ...     request = LaunchpadTestRequest()
+    >>> def create_view(distro, request=None):
+    ...     if request == None:
+    ...         request = LaunchpadTestRequest()
+    ...
     ...     view = getMultiAdapter((distro, request), name='+upstreamreport')
     ...     return view
 
@@ -433,7 +435,35 @@ number of open bugs, descending.
     >>> view.sort_order
     ('open_bugs', True)
 
-    >>> view.request
+The sort order can be changed by altering the sort_by request parameter.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'sort_by': 'product'})
+
+    >>> view = create_view(ubuntu, request)
+    >>> view.sort_order
+    ('product', False)
+
+Prepending a '-' to the sort_by parameter will cause the sort_order to
+be reversed.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'sort_by': '-product'})
+    >>> view = create_view(ubuntu, request)
+
+    >>> view.sort_order
+    ('product', True)
+
+The DistributionUpstreamBugReport view has a list of valid sort keys. If
+we try to sort by a key that isn't in that list we'll get the default
+sort_order back.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'sort_by': 'ifthisisvalidilleatmyhat'})
+    >>> view = create_view(ubuntu, request)
+
+    >>> view.sort_order
+    ('open_bugs', True)
 
 
 PS: This page is actually browser-tested in
