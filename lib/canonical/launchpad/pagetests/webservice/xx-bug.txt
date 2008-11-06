@@ -738,10 +738,10 @@ The collection of all CVEs is available at the top level.
     >>> cves = webservice.get("/bugs/cve").jsonBody()
     >>> show(cves)
     [(u'entries',
-      [{u'datecreated': u'2005-09-13T14:05:17.043865+00:00',
-        u'datemodified': u'2005-09-13T14:05:17.043865+00:00',
+      [{u'date_created': u'2005-09-13T14:05:17.043865+00:00',
+        u'date_modified': u'2005-09-13T14:05:17.043865+00:00',
         u'description': u'Cross-site scripting (XSS) vulnerability in PhotoPost PHP Pro 5.1 allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.',
-        u'displayname': u'CVE-2005-2737',
+        u'display_name': u'CVE-2005-2737',
         u'resource_type_link': u'http://.../#cve',
         u'self_link': u'http://.../bugs/cve/2005-2737',
         u'sequence': u'2005-2737',
@@ -771,10 +771,10 @@ And for every bug we can look at the CVEs linked to it.
     >>> bug_one_cves_url = bug_one['cves_collection_link']
     >>> show(webservice.get(bug_one_cves_url).jsonBody())
     [(u'entries',
-      [{u'datecreated': u'2005-09-07T19:00:32.944561+00:00',
-        u'datemodified': u'2005-09-13T14:00:03.508959+00:00',
+      [{u'date_created': u'2005-09-07T19:00:32.944561+00:00',
+        u'date_modified': u'2005-09-13T14:00:03.508959+00:00',
         u'description': u'Firefox crashes all the time',
-        u'displayname': u'CVE-1999-8979',
+        u'display_name': u'CVE-1999-8979',
         u'resource_type_link': u'http://.../#cve',
         u'self_link': u'http://.../bugs/cve/1999-8979',
         u'sequence': u'1999-8979',

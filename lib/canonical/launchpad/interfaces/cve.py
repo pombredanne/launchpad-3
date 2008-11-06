@@ -81,9 +81,11 @@ class ICve(Interface):
                                'updated regularly from the CVE database.'),
                  required=True, readonly=False))
     datecreated = exported(
-        Datetime(title=_('Date Created'), required=True, readonly=True))
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
     datemodified = exported(
-        Datetime(title=_('Date Modified'), required=True, readonly=False))
+        Datetime(title=_('Date Modified'), required=True, readonly=False),
+        exported_as='date_modified')
 
     # other attributes
     url = exported(
@@ -93,7 +95,8 @@ class ICve(Interface):
     displayname = exported(
         TextLine(title=_("Display Name"),
                  description=_("A very brief name describing "
-                               "the ref and state.")))
+                               "the ref and state.")),
+        exported_as='display_name')
     title = exported(TextLine(title=_("Title"),
                               description=_("A title for the CVE")))
     references = Attribute("The set of CVE References for this CVE.")
