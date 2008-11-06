@@ -27,7 +27,7 @@ Our poll is not yet open, so new options can be added to it.
     ...     'bill-amazingly-huge-middle-name-almost-impossible-to-read-graham')
     >>> team_admin_browser.getControl('Name').value = bill_name
     >>> team_admin_browser.getControl('Title').value = 'Bill Graham'
-    >>> team_admin_browser.getControl('Add').click()
+    >>> team_admin_browser.getControl('Create').click()
 
 After adding an options we're taken back to the poll's home page.
 
@@ -57,10 +57,10 @@ message because the title is required.
     ...     'will-amazingly-huge-middle-name-almost-impossible-to-read-graham')
     >>> team_admin_browser.getControl('Name').value = will_name
     >>> team_admin_browser.getControl('Title').value = ''
-    >>> team_admin_browser.getControl('Add').click()
+    >>> team_admin_browser.getControl('Create').click()
 
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
-    An error occurred.
+    There is 1 error.
     Required input is missing.
 
 If we try to add a new option with the same name of a existing option, we
@@ -68,10 +68,10 @@ should get a nice error message
 
     >>> team_admin_browser.getControl('Name').value = bill_name
     >>> team_admin_browser.getControl('Title').value = 'Bill Again'
-    >>> team_admin_browser.getControl('Add').click()
+    >>> team_admin_browser.getControl('Create').click()
 
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
-    An error occurred.
+    There is 1 error.
     ...is already in use by another option in this poll.
 
 It's not possible to add/edit a poll option after a poll is open or closed.

@@ -13,7 +13,9 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate
+from email.Message import Message as EmailMessage
 from itertools import count
 from StringIO import StringIO
 
@@ -24,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -231,6 +234,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
+
+    def makeMilestone(self, product=None, distribution=None, name=None):
+        if product is None and distribution is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        return Milestone(product=product, distribution=distribution,
+                         name=name)
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
@@ -590,7 +601,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type)
 
-    def makeSignedMessage(self, msgid=None, body=None, subject=None):
+    def makeSignedMessage(self, msgid=None, body=None, subject=None,
+            attachment_contents=None, force_transfer_encoding=False):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
         if subject is None:
@@ -602,11 +614,27 @@ class LaunchpadObjectFactory(ObjectFactory):
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
-        mail.set_payload(body)
+        if attachment_contents is None:
+            mail.set_payload(body)
+            body_part = mail
+        else:
+            body_part = EmailMessage()
+            body_part.set_payload(body)
+            mail.attach(body_part)
+            attach_part = EmailMessage()
+            attach_part.set_payload(attachment_contents)
+            attach_part['Content-type'] = 'application/octet-stream'
+            if force_transfer_encoding:
+                encode_base64(attach_part)
+            mail.attach(attach_part)
+            mail['Content-type'] = 'multipart/mixed'
+        body_part['Content-type'] = 'text/plain'
+        if force_transfer_encoding:
+            encode_base64(body_part)
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None):
+    def makeSpecification(self, product=None, title=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -614,9 +642,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(ISpecificationSet).new(
             name=self.getUniqueString('name'),
-            title=self.getUniqueString('title'),
+            title=title,
             specurl=None,
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
@@ -900,6 +930,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         if singular is None and plural is None:
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
+
+    def makeTranslationMessage(self, pofile=None, potmsgset=None,
+                               translator=None, reviewer=None,
+                               translation=None):
+        """Make a new `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+        if translator is None:
+            translator = self.makePerson()
+        if translation is None:
+            translation = self.getUniqueString()
+
+        return potmsgset.updateTranslation(pofile, translator, [translation],
+                                           is_imported=False,
+                                           lock_timestamp=None)
 
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.

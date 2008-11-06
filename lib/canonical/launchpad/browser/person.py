@@ -8,6 +8,7 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
+    'EmailToPersonView',
     'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
@@ -85,11 +86,13 @@ __all__ = [
     ]
 
 import copy
-from datetime import datetime, timedelta
-from operator import attrgetter, itemgetter
 import pytz
 import subprocess
 import urllib
+
+from datetime import datetime, timedelta
+from itertools import chain
+from operator import attrgetter, itemgetter
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -105,6 +108,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.lazr import decorates
+from canonical.lazr.config import as_timedelta
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -138,6 +142,7 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -169,6 +174,7 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.fields import LocationField
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
+from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp import (
@@ -179,7 +185,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.login import (
+    logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -1514,6 +1521,10 @@ class PersonClaimView(LaunchpadFormView):
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
+        # A dance to assert that we want to break the rules about no
+        # unauthenticated sessions. Only after this next line is it safe
+        # to use the ``addNoticeNotification`` method.
+        allowUnauthenticatedSession(self.request)
         self.request.response.addInfoNotification(_(
             "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
@@ -2423,12 +2434,26 @@ class PersonView(LaunchpadView, FeedsMixin):
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
 
-    def getBugsInProgress(self):
+
+    @cachedproperty
+    def assigned_bugs_in_progress(self):
         """Return up to 5 assigned bugs that are In Progress."""
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
+
+    @cachedproperty
+    def assigned_specs_in_progress(self):
+        """Return up to 5 assigned specs that are being worked on."""
+        return self.context.assigned_specs_in_progress
+
+    @property
+    def has_assigned_bugs_or_specs_in_progress(self):
+        """Does the user have any bugs or specs that are being worked on?"""
+        bugtasks = self.assigned_bugs_in_progress
+        specs = self.assigned_specs_in_progress
+        return bugtasks.count() > 0 or specs.count() > 0
 
     def viewingOwnPage(self):
         return self.user == self.context
@@ -3040,6 +3065,11 @@ class PersonTranslationView(LaunchpadView):
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    @cachedproperty
+    def person_filter_querystring(self):
+        """Return person's name appropriate for including in links."""
+        return urllib.urlencode({'person': self.context.name})
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -4866,3 +4896,78 @@ class TeamEditLocationView(LaunchpadView):
 def archive_to_person(archive):
     """Adapts an `IArchive` to an `IPerson`."""
     return IPerson(archive.owner)
+
+
+class IEmailToPerson(Interface):
+    """Schema for contacting a user via email through Launchpad."""
+
+    from_ = TextLine(
+        title=_('From'), required=True, readonly=False)
+
+    subject = TextLine(
+        title=_('Subject'), required=True, readonly=False)
+
+    message = Text(
+        title=_('Message'), required=True, readonly=False)
+
+
+class EmailToPersonView(LaunchpadFormView):
+    """The 'Contact this user' page."""
+
+    schema = IEmailToPerson
+    field_names = ['subject', 'message']
+    custom_widget('subject', TextWidget, displayWidth=60)
+
+    def setUpFields(self):
+        """Set up fields for this view.
+
+        The field needing special set up is the 'From' fields, which contains
+        a vocabulary of the user's preferred (first) and validated
+        (subsequent) email addresses.
+        """
+        super(EmailToPersonView, self).setUpFields()
+        usable_addresses = [self.user.preferredemail]
+        usable_addresses.extend(self.user.validatedemails)
+        terms = [SimpleTerm(email, email.email) for email in usable_addresses]
+        field = Choice(__name__='field.from_',
+                       title=_('From'),
+                       source=SimpleVocabulary(terms),
+                       default=terms[0].value)
+        # Get the order right; the From field should be first, followed by the
+        # Subject and then Message fields.
+        self.form_fields = FormFields(*chain((field,), self.form_fields))
+
+    @property
+    def label(self):
+        return 'Contact ' + self.context.displayname
+
+    @action(_('Send'), name='send')
+    def action_send(self, action, data):
+        """Send an email to the user."""
+        sender_email = data['field.from_'].email
+        subject = data['subject']
+        message = data['message']
+        recipient_email = self.context.preferredemail.email
+        message = send_direct_contact_email(
+            sender_email, recipient_email, subject, message)
+        self.request.response.addInfoNotification(
+            _('Message sent to $name',
+              mapping=dict(name=self.context.displayname)))
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def contact_is_allowed(self):
+        """Whether the sender is allowed to send this email or not."""
+        return IDirectEmailAuthorization(self.user).is_allowed
+
+    @property
+    def next_try(self):
+        """When can the user try again?"""
+        throttle_date = IDirectEmailAuthorization(self.user).throttle_date
+        interval = as_timedelta(
+            config.launchpad.user_to_user_throttle_interval)
+        return throttle_date + interval

@@ -29,15 +29,17 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = set([
-    ('public', 'account'),
-    ('public', 'openidassociations'),
-    ('public', 'oauthnonce'),
     ])
 
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
 LPMAIN_SEED = set([
+    # These tables are scheduled to move to the authdb seed.
+    ('public', 'account'),
+    ('public', 'openidassociations'),
+    ('public', 'oauthnonce'),
+
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),
@@ -147,6 +149,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
 
     # Run slonik
     log.debug("Executing slonik script %s" % script_on_disk.name)
+    #log.debug(script) # We need a log level < DEBUG :-(
     returncode = subprocess.call(['slonik', script_on_disk.name])
 
     if returncode != 0:
@@ -273,7 +276,7 @@ def calculate_replication_set(cur, seeds):
 
     # We can't easily convert the sequence name to (namespace, name) tuples,
     # so we might as well convert the tables to dot notation for consistancy.
-    tables = set(fqn(namespace, tablename) for namespace,tablename in tables)
+    tables = set(fqn(namespace, tablename) for namespace, tablename in tables)
 
     return tables, sequences
 

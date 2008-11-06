@@ -329,7 +329,7 @@
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-dependency.pt"
     />
 
@@ -341,21 +341,16 @@
     label="Remove a dependency"
     fields="dependency"
     keyword_arguments="dependency"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
   </browser:generalform>
 
-  <browser:addform
+  <browser:page
     name="+linksprint"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SpecificationSprintAddView"
-    label="Propose specification for meeting agenda"
-    fields="sprint"
-    keyword_arguments="sprint"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-linksprint.pt">
-  </browser:addform>
+    template="../templates/specification-linksprint.pt" />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISpecification"

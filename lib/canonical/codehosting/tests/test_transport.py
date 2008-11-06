@@ -27,9 +27,8 @@ class TestingServer(LaunchpadInternalServer):
     def __init__(self):
         """Initialize the server.
 
-        We register ourselves with the scheme lp-testing=${id(self)}:///
-        using the `FakeLaunchpad` authserver client and backed onto a
-        LocalTransport.
+        We register ourselves with the scheme lp-testing=${id(self)}:/// using
+        an in-memory XML-RPC client and backed onto a LocalTransport.
         """
         frontend = InMemoryFrontend()
         branchfs = frontend.getFilesystemEndpoint()

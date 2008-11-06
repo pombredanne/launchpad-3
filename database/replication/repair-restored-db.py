@@ -25,8 +25,7 @@ import replication.helpers
 
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
-from canonical.database.sqlbase import (
-    connect, sqlvalues, quote, quoteIdentifier)
+from canonical.database.sqlbase import connect, quote
 from canonical.launchpad.scripts import db_options, logger_options, logger
 
 def main():

@@ -225,11 +225,31 @@ If the person has no time_zone specified, we use UTC.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/main')
-    >>> test_tales("branch/fmt:link", branch=branch)
-    u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
+    >>> from canonical.launchpad.testing import (
+    ...     LaunchpadObjectFactory, login_person)
+    >>> factory = LaunchpadObjectFactory()
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix')
+    >>> branch = factory.makeBranch(
+    ...     owner=eric, product=fooix, name='bar', title='The branch title')
+    >>> print test_tales("branch/fmt:link", branch=branch)
+    <a href=".../~eric/fooix/bar"
+       title="The branch title"><img src="/@@/branch"
+       alt=""/>&nbsp;~eric/fooix/bar</a>
+
+The bzr-link formatter uses the bzr identity.
+
+    >>> print test_tales("branch/fmt:bzr-link", branch=branch)
+    <a href="http://code.launchpad.dev/~eric/fooix/bar/"
+    title="The branch title"><img src="/@@/branch"
+    alt=""/>&nbsp;lp://dev/~eric/fooix/bar</a>
+
+    >>> login_person(fooix.owner, LaunchpadTestRequest())
+    >>> fooix.development_focus.user_branch = branch
+    >>> print test_tales("branch/fmt:bzr-link", branch=branch)
+    <a href=".../~eric/fooix/bar/"
+       title="The branch title"><img src="/@@/branch"
+       alt=""/>&nbsp;lp://dev/fooix</a>
 
 
 === Bugs ===
@@ -270,8 +290,6 @@ title might be interpreted by the browser.
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> subscription = factory.makeBranchSubscription('My Branch',
     ...     'My Person')
     >>> test_tales("subscription/fmt:link", subscription=subscription)
@@ -381,7 +399,10 @@ to support the branch deletion code.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'http://launchpad.dev/bugs/bugtrackers/email'
+    u'/bugs/bugtrackers/email'
+
+(The url is relative if possible, and our test request claims to be from
+launchpad.dev, so the url is relative.)
 
 As are 'link', 'external-link', 'external-title-link' and 'aliases',
 which help when hiding email addresses from users who are not logged
@@ -441,9 +462,9 @@ in.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/13'
+    u'/bugs/12/+watch/13'
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/14'
+    u'/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when
 hiding email addresses from users who are not logged in:
@@ -787,7 +808,7 @@ Test the 'fmt:url' namespace for canonical urls.
 
     >>> object_having_url = ObjectThatHasUrl()
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'http://launchpad.dev/bonobo/saki'
+    u'/bonobo/saki'
 
 Now, we need to test that it gets the correct application URL from the
 request.
