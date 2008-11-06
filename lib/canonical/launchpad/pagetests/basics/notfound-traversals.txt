@@ -143,7 +143,6 @@ status is returned.
 >>> check_redirect("/firefox/+translations", status=301)
 >>> check("/firefox/+translations", host='translations.launchpad.dev')
 >>> check_redirect("/projects/firefox", status=301)
->>> check("/firefox/+edit-people", auth=True)
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
