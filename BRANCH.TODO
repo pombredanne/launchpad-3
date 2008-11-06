@@ -3,18 +3,6 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
- * Update BugTracker.getBugWatchesNeedingUpdate() to check for BugWatches
-   on a BugTracker that have unpushed comments.
-   * Suggested query:
-        SELECT DISTINCT BugWatch.*
-        FROM BugWatch
-        LEFT JOIN BugMessage ON BugMessage.bugwatch = BugWatch.id
-        WHERE   bugtracker = %s
-            AND (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
-                 OR lastchecked IS NULL)
-             OR BugMessage.remote_comment_id IS NULL;
-   * How do I do this using the STORM API?
-
  * Update BugWatchUpdater.updateBugWatches() to treat watches with unpushed.
    comments differently from other watches (i.e. don't pass them through
    getModifiedRemoteBugs()).
