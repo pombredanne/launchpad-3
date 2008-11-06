@@ -2701,7 +2701,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
     @property
-    def current_user_is_affected(self):
+    def current_user_affected_status(self):
         """Is the current user marked as affected by this bug?"""
         return self.context.isUserAffected(self.user)
 
