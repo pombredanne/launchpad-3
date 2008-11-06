@@ -12,7 +12,7 @@
     <require
         permission="zope.Public"
         attributes="bug bugtasks bugtracker datecreated getLastErrorMessage
-                    hasComment has_unpushed_comments id last_error_type
+                    hasComment unpushed_comments id last_error_type
                     lastchanged lastchecked needscheck owner
                     remote_importance remotebug remotestatus title url
                     getImportedBugMessages" />
