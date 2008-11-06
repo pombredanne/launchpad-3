@@ -36,7 +36,8 @@ existing builds that are in sampledata!
   ...     PackagePublishingPocket)
   >>> priority = PackagePublishingPriority.STANDARD
 
-XXX: noodles 2008-11-05: The dependency on a database id needs to be removed.
+XXX: noodles 2008-11-05 bug=294585: The dependency on a database id 
+needs to be removed.
   >>> bpr = Build.get(8).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
   ...   version="120.6-0",
@@ -76,8 +77,9 @@ XXX: noodles 2008-11-05: The dependency on a database id needs to be removed.
   ...   dateremoved=None,
   ...   archive=hoary_i386.main_archive)
 
-
-  >>> bpr = Build.get(8).createBinaryPackageRelease(
+XXX: noodles 2008-11-06 bug=294585: The dependency on a database id 
+needs to be removed.
+  >>> bpr = Build.get(9).createBinaryPackageRelease(
   ...   binarypackagename=pmount_name.id,
   ...   version="cr98.34",
   ...   summary="Pmount bakes cakes",

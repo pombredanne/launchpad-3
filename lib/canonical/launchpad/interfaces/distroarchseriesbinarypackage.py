@@ -15,7 +15,6 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import IDistributionSourcePackage
 
 from canonical.lazr.fields import Reference
-from canonical.lazr.rest.declarations import exported
 
 class IDistroArchSeriesBinaryPackage(Interface):
 
@@ -52,14 +51,9 @@ class IDistroArchSeriesBinaryPackage(Interface):
     current_published = Attribute("is last BinaryPackagePublishing "
                                   "record that is in PUBLISHED status.")
 
-    #distro_source_package = Attribute("The DistributionSourcePackage that "
-    #    "was used to generate the current binary package release.")
-
-    distro_source_package = exported(
-        Reference(
-            IDistributionSourcePackage,
-            title=_("The DistributionSourcePackage that was used to "
-                "generate the current binary package release")))
+    distro_source_package = Reference(IDistributionSourcePackage,
+        title=_("The DistributionSourcePackage that was used to generate the "
+            "current binary package release"))
 
     def __getitem__(version):
         """Return the DistroArchSeriesBinaryPackageRelease with the given

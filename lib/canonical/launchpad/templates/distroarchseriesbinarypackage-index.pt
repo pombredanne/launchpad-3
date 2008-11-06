@@ -56,11 +56,18 @@
        </tbody>
     </table>
 
-    <p tal:define="source_package context/distro_source_package">
-      The current release was compiled from the
-      <a id="source_package" tal:attributes="href source_package/fmt:url" 
-         tal:content="source_package/title">iceweasel in ubuntu</a>.
-    </p>
+  <h2>Source package</h2>
+
+    <div id="source">
+      <ul>
+        <li class="source package">
+          <a tal:define="spackage context/distro_source_package"
+             tal:content="spackage/title"
+             tal:attributes="href spackage/fmt:url"
+             id="source_package">SOURCEPACKAGE</a>
+        </li>
+      </ul>      
+    </div>
 </div>
 </body>
 </html>
