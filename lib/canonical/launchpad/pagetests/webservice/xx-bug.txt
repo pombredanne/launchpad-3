@@ -27,6 +27,7 @@ At the top level we provide a collection of bugs.
     u'http://.../bugs/11/bug_tasks'),
    (u'bug_watches_collection_link',
     u'http://.../bugs/11/bug_watches'),
+   (u'cves_collection_link', u'http://.../bugs/11/cves'),
    (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
    (u'date_last_message', None),
    (u'date_last_updated', u'2007-03-15T20:37:51.603369+00:00'),
@@ -727,3 +728,85 @@ It is possible to mark a bug as affecting the user using the web service.
     ...     bug_one['self_link'], 'isUserAffected').jsonBody()
     False
 
+
+== CVEs ==
+
+CVEs and how they relate to Launchpad bugs can be accessed using the API.
+
+The collection of all CVEs is available at the top level.
+
+    >>> cves = webservice.get("/bugs/cve").jsonBody()
+    >>> show(cves)
+    [(u'entries',
+      [{u'datecreated': u'2005-09-13T14:05:17.043865+00:00',
+        u'datemodified': u'2005-09-13T14:05:17.043865+00:00',
+        u'description': u'Cross-site scripting (XSS) vulnerability in PhotoPost PHP Pro 5.1 allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.',
+        u'displayname': u'CVE-2005-2737',
+        u'resource_type_link': u'http://.../#cve',
+        u'self_link': u'http://.../bugs/cve/2005-2737',
+        u'sequence': u'2005-2737',
+        u'status': u'Candidate',
+        u'title': u'CVE-2005-2737 (Candidate)',
+        u'url': u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2005-2737'},
+       {...,
+        u'self_link': u'http://.../bugs/cve/2005-2736',
+        ...},
+       {...,
+        u'self_link': u'http://.../bugs/cve/2005-2735',
+        ...},
+       {...,
+        u'self_link': u'http://.../bugs/cve/2005-2734',
+        ...,
+       {...,
+        u'self_link': u'http://.../bugs/cve/2005-2733',
+        ...}]),
+     (u'next_collection_link',
+      u'http://.../bugs/cve?ws.start=5&ws.size=5'),
+     (u'resource_type_link', u'http://.../#cves'),
+     (u'start', 0),
+     (u'total_size', 10)]
+
+And for every bug we can look at the CVEs linked to it.
+
+    >>> bug_one_cves_url = bug_one['cves_collection_link']
+    >>> show(webservice.get(bug_one_cves_url).jsonBody())
+    [(u'entries',
+      [{u'datecreated': u'2005-09-07T19:00:32.944561+00:00',
+        u'datemodified': u'2005-09-13T14:00:03.508959+00:00',
+        u'description': u'Firefox crashes all the time',
+        u'displayname': u'CVE-1999-8979',
+        u'resource_type_link': u'http://.../#cve',
+        u'self_link': u'http://.../bugs/cve/1999-8979',
+        u'sequence': u'1999-8979',
+        u'status': u'Entry',
+        u'title': u'CVE-1999-8979 (Entry)',
+        u'url': u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'}]),
+     (u'resource_type_link',
+      u'http://.../#cve-page-resource'),
+     (u'start', 0),
+     (u'total_size', 1)]
+
+Unlink CVEs from that bug.
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'unlinkCVE',
+    ...     cve='http://api.launchpad.dev/beta/bugs/cve/1999-8979')
+    HTTP/1.1 200 Ok...
+    >>> show(webservice.get(bug_one_cves_url).jsonBody())
+    [(u'entries', []),
+     ...,
+     (u'total_size', 0)]
+
+And link new CVEs to the bug.
+
+    >>> print webservice.named_post(
+    ...     bug_one['self_link'], 'linkCVE',
+    ...     cve='http://api.launchpad.dev/beta/bugs/cve/2005-2733')
+    HTTP/1.1 200 Ok...
+    >>> show(webservice.get(bug_one_cves_url).jsonBody())
+    [(u'entries',
+      [{...,
+        u'self_link': u'http://.../bugs/cve/2005-2733',
+        ...}]),
+     ...,
+     (u'total_size', 1)]
