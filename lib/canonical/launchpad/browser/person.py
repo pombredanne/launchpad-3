@@ -2434,12 +2434,26 @@ class PersonView(LaunchpadView, FeedsMixin):
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
 
-    def getBugsInProgress(self):
+
+    @cachedproperty
+    def assigned_bugs_in_progress(self):
         """Return up to 5 assigned bugs that are In Progress."""
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
+
+    @cachedproperty
+    def assigned_specs_in_progress(self):
+        """Return up to 5 assigned specs that are being worked on."""
+        return self.context.assigned_specs_in_progress
+
+    @property
+    def has_assigned_bugs_or_specs_in_progress(self):
+        """Does the user have any bugs or specs that are being worked on?"""
+        bugtasks = self.assigned_bugs_in_progress
+        specs = self.assigned_specs_in_progress
+        return bugtasks.count() > 0 or specs.count() > 0
 
     def viewingOwnPage(self):
         return self.user == self.context
@@ -3051,6 +3065,11 @@ class PersonTranslationView(LaunchpadView):
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    @cachedproperty
+    def person_filter_querystring(self):
+        """Return person's name appropriate for including in links."""
+        return urllib.urlencode({'person': self.context.name})
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
