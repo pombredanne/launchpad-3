@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
     'FeedsDatabasePolicy',
-    'XMLRPCDatabasePolicy',
+    'MasterDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
@@ -15,10 +15,8 @@ from textwrap import dedent
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
-from canonical.launchpad.layers import FeedsLayer, WebServiceLayer
 from canonical.launchpad.webapp import LaunchpadView
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
@@ -75,15 +73,9 @@ class LaunchpadDatabasePolicy:
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
         if self.read_only:
-            if WebServiceLayer.providedBy(self.request):
-                # Don't bother checking the session for a webservice request,
-                # since we don't even set the session in the afterCall()
-                # method.
-                last_write = None
-            else:
-                session_data = ISession(self.request)['lp.dbpolicy']
-                last_write = session_data.get('last_write', None)
-                now = _now()
+            session_data = ISession(self.request)['lp.dbpolicy']
+            last_write = session_data.get('last_write', None)
+            now = _now()
             # 'recently' is  2 minutes plus the replication lag.
             recently = timedelta(minutes=2)
             lag = self.getReplicationLag(MAIN_STORE)
@@ -103,8 +95,7 @@ class LaunchpadDatabasePolicy:
 
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
-        if (not self.read_only
-            and not WebServiceLayer.providedBy(self.request)):
+        if not self.read_only:
             # We need to further distinguish whether it's safe to write to
             # the session, which will be true if the principal is
             # authenticated or if there is already a session cookie hanging
@@ -161,10 +152,11 @@ class FeedsDatabasePolicy(BaseDatabasePolicy):
         da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
 
 
-class XMLRPCDatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` for `IXMLRPCRequest`.
+class MasterDatabasePolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that always select the MASTER_FLAVOR.
 
-    This policy always use the MASTER_FLAVOR.
+    This policy is used for XMLRPC and WebService requests which don't
+    support session cookies.
     """
     def beforeTraversal(self):
         """See `IDatabasePolicy`."""

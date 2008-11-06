@@ -11,10 +11,11 @@ from zope.component import getAdapter
 from zope.interface.verify import verifyObject
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 
-from canonical.launchpad.layers import FeedsLayer, setFirstLayer
+from canonical.launchpad.layers import (
+    FeedsLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.webapp.adapter import StoreSelector
 from canonical.launchpad.webapp.dbpolicy import (
-    FeedsDatabasePolicy, XMLRPCDatabasePolicy)
+    FeedsDatabasePolicy, MasterDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IDatabasePolicy, MASTER_FLAVOR, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -46,7 +47,7 @@ class FeedsDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     def test_FeedsRequest_dbpolicy_adapter(self):
         self.failUnless(
             isinstance(self.policy, FeedsDatabasePolicy),
-            "Expected a feeds-specific DB policy.")
+            "Expected a FeedsDatabasePolicy, not %s." % self.policy)
         self.failUnless(verifyObject(IDatabasePolicy, self.policy))
 
     def test_beforeTraverse_should_set_slave_flavor(self):
@@ -55,24 +56,42 @@ class FeedsDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
         self.assertEquals(SLAVE_FLAVOR, StoreSelector.getDefaultFlavor())
 
 
-class XMLRPCDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
-    """Tests for the `XMLRPCDatabasePolicy`."""
+class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
+    """Tests for the `MasterDatabasePolicy`."""
 
     def setUp(self):
-        self.request = (
-            LaunchpadTestRequest(
-                SERVER_URL='http://xmlrpc-private.launchpad.dev'))
-        setFirstLayer(self.request, IXMLRPCRequest)
-        self.policy = getAdapter(self.request, IDatabasePolicy)
+        request = LaunchpadTestRequest(SERVER_URL='http://launchpad.dev')
+        self.policy = MasterDatabasePolicy(request)
 
-    def test_XMLRPC_dbpolicy_adapter(self):
-        self.failUnless(
-            isinstance(self.policy, XMLRPCDatabasePolicy),
-            "Expected a xmlrpc-specific DB policy.")
+    def test_MasterPolicy_correctly_implements_IDatabasePolicy(self):
         self.failUnless(verifyObject(IDatabasePolicy, self.policy))
 
+    def test_XMLRPCRequest_uses_MasterPolicy(self):
+        """XMLRPC should always use the master flavor, since they always 
+        use POST and do not support session cookies.
+        """
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://xmlrpc-private.launchpad.dev')
+        setFirstLayer(request, IXMLRPCRequest)
+        policy = getAdapter(request, IDatabasePolicy)
+        self.failUnless(
+            isinstance(policy, MasterDatabasePolicy),
+            "Expected MasterDatabasePolicy, not %s." % policy)
+
+    def test_WebServiceRequest_uses_MasterPolicy(self):
+        """WebService requests should always use the master flavor, since
+        it's likely that clients won't support cookies and thus mixing read
+        and write requests will result in incoherent views of the data.
+        """
+        request = LaunchpadTestRequest(
+            SERVER_URL='http://api.launchpad.dev/beta')
+        setFirstLayer(request, WebServiceLayer)
+        policy = getAdapter(request, IDatabasePolicy)
+        self.failUnless(
+            isinstance(policy, MasterDatabasePolicy),
+            "Expected MasterDatabasePolicy, not %s." % policy)
+
     def test_beforeTraverse_should_set_master_flavor(self):
-        """We want to always use the master flavor on XMLRPC request."""
         self.policy.beforeTraversal()
         self.assertEquals(MASTER_FLAVOR, StoreSelector.getDefaultFlavor())
 
@@ -80,5 +99,5 @@ class XMLRPCDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 def test_suite():
     return unittest.TestSuite((
         unittest.makeSuite(FeedsDatabasePolicyTestCase),
-        unittest.makeSuite(XMLRPCDatabasePolicyTestCase),
+        unittest.makeSuite(MasterDatabasePolicyTestCase),
             ))
