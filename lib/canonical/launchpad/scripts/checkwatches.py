@@ -709,33 +709,28 @@ class BugWatchUpdater(object):
         """
         pushed_comments = 0
 
-        # Loop over the local bug's messages. We ignore the first
-        # message since that's the bug's description and doesn't need to
-        # be pushed.
-        for message in bug_watch.bug.messages[1:]:
-            bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-                bug_watch.bug, message)
+        # Loop over the unpushed comments for the bug watch.
+        # We only push those comments that haven't been pushed
+        # already. We don't push any comments not associated with
+        # the bug watch.
+        for bug_message in bug_watch.unpushed_comments:
+            message = bug_message.message
 
-            # We only push those comments that haven't been pushed
-            # already. We don't push any comments not associated with
-            # the bug watch.
-            if (bug_message.remote_comment_id is None and
-                bug_message.bugwatch == bug_watch):
-                # Format the comment so that it includes information
-                # about the Launchpad bug.
-                formatted_comment = self._formatRemoteComment(
-                    external_bugtracker, bug_watch, message)
+            # Format the comment so that it includes information
+            # about the Launchpad bug.
+            formatted_comment = self._formatRemoteComment(
+                external_bugtracker, bug_watch, message)
 
-                remote_comment_id = (
-                    external_bugtracker.addRemoteComment(
-                        bug_watch.remotebug, formatted_comment,
-                        message.rfc822msgid))
+            remote_comment_id = (
+                external_bugtracker.addRemoteComment(
+                    bug_watch.remotebug, formatted_comment,
+                    message.rfc822msgid))
 
-                assert remote_comment_id is not None, (
-                    "A remote_comment_id must be specified.")
-                bug_message.remote_comment_id = remote_comment_id
+            assert remote_comment_id is not None, (
+                "A remote_comment_id must be specified.")
+            bug_message.remote_comment_id = remote_comment_id
 
-                pushed_comments += 1
+            pushed_comments += 1
 
         if pushed_comments > 0:
             self.log.info("Pushed %(count)i comments to remote bug "
