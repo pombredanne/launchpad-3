@@ -61,8 +61,8 @@ def main():
             return 0
 
     for usename, procpid, backend_start, query_start in rows:
-        print 'Killing %d, %s, %s' % (
-            procpid, backend_start, query_start,
+        print 'Killing %s(%d), %s, %s' % (
+            usename, procpid, backend_start, query_start,
             )
         if not options.dryrun:
             os.kill(procpid, signal.SIGTERM)
