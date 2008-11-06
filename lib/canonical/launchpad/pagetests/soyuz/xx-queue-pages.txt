@@ -233,8 +233,8 @@ Swallow any email generated at the upload:
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> swallow = pop_notifications()
 
-Set up a second browser on the same page, so we can submit the same
-request a little later:
+Set up a second browser on the same page to simulate accidentally posting to the
+form twice.
 
   >>> duplicate_submission_browser = setupBrowser(
   ...       auth="Basic test@canonical.com:test")
@@ -267,7 +267,9 @@ nascentupload-announcements.txt).
   >>> announcement['To']
   'autotest_changes@ubuntu.com'
 
-Forcing a duplicated submission on a queue item is recognised:
+Forcing a duplicated submission on a queue item is recognised.  Here we
+submit the same form again via a different browser instance, which simulates
+a double post.
 
   >>> duplicate_submission_browser.getControl(
   ...     name="QUEUE_ID").value = [bar_queue_id]
