@@ -121,8 +121,8 @@ already have a remote id for it (ergo it has been pushed already).
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     >>> commit()
 
-If we now check the bug watch's has_unpushed_comments property, we will
-find it to be False.
+If we now check the bug watch's unpushed_comments property, we will
+find it to be empty.
 
     >>> print list(bug_watch.unpushed_comments)
     []
