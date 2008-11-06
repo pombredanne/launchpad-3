@@ -31,15 +31,23 @@
                 sent to all team members)</small>
               </tal:is-team>
               <tal:not-team condition="not:context/isTeam">
+                <tal:comment replace="nothing">
+                BarryWarsaw 06-Nov-2008 this code does not appear to be
+                touched in our current test suite.  Is it ever possible in
+                production?  Because I don't know, I'm not removing it, but I
+                am making it DTRT if it ever gets hit.
+                </tal:comment>
                 No public address provided.
-                (<a href="+contactuser">Contact this user</a>)
+                (<a href="+contactuser"
+                    tal:content="view/specific_contact_text">Contact</a>)
               </tal:not-team>
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
-              (<a href="+contactuser">Contact this user</a>)
+              (<a href="+contactuser"
+                  tal:content="view/specific_contact_text">Contact</a>)
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -51,7 +59,8 @@
                   tal:condition="view/email_address_visibility/are_public"/>
                 <tal:email replace="email">foo2@bar.com</tal:email>
                 <tal:contact condition="repeat/email/start">
-                  (<a href="+contactuser">Contact this user</a>)
+                  (<a href="+contactuser"
+                      tal:content="view/specific_contact_text">Contact</a>)
                 </tal:contact>
                 <br tal:omit-tag="repeat/email/end" />
               </span>
