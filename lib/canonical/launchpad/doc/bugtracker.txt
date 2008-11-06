@@ -13,6 +13,15 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
+    >>> from operator import attrgetter
+    >>> def print_watches(bugtracker):
+    ...     watches = sorted(
+    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         key=attrgetter('id'))
+    ...
+    ...     for bug_watch in watches:
+    ...         print bug_watch.remotebug, bug_watch.bug.id
+
 We must be an admin to modify bug watches later on.
 
     >>> login('foo.bar@canonical.com')
@@ -46,14 +55,8 @@ remote bug.
 
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
-    >>> from operator import attrgetter
     >>> flush_database_updates()
-    >>> watches = sorted(
-    ...     mozilla_bugzilla.getBugWatchesNeedingUpdate(23),
-    ...     key=attrgetter('id'))
-
-    >>> for bug_watch in watches:
-    ...     print bug_watch.remotebug, bug_watch.bug.id
+    >>> print_watches(mozilla_bugzilla)
     42 2
     2000 1
     42 1
@@ -77,16 +80,21 @@ this.
     >>> bug_message = bug_watches[1].addComment(None, message)
     >>> transaction.commit()
 
-    >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
-    >>> watches = sorted(
-    ...     mozilla_bugzilla.getBugWatchesNeedingUpdate(23),
-    ...     key=attrgetter('id'))
-
-    >>> for bug_watch in watches:
-    ...     print bug_watch.remotebug, bug_watch.bug.id
+    >>> print_watches(mozilla_bugzilla)
     42 2
     2000 1
     123543 1
+    42 1
+
+Once the comment has been pushed to the remote bug the bug watch will no
+longer appear in the set returned by getBugWatchesNeedingUpdate().
+
+    >>> bug_message.remote_comment_id = '1'
+    >>> transaction.commit()
+
+    >>> print_watches(mozilla_bugzilla)
+    42 2
+    2000 1
     42 1
 
 
