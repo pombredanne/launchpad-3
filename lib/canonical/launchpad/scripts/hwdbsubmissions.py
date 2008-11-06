@@ -1414,9 +1414,33 @@ class HALDevice:
         "O2Micro" or "ATMEL", but sometimes useless values like
         "IEEE 802.11b". See for example
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+
+        Provided that a device is not excluded by the above criteria,
+        ensure that we have vendor ID, product ID and product name.
         """
-        bus = self.raw_bus
-        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+        if self.raw_bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+            return False
+
+        # We identify devices by bus, vendor ID and product ID;
+        # additionally, we need a product name. If any of these
+        # are not available, we can't store information for this
+        # device.
+        if (self.real_bus is None or self.vendor_id is None
+            or self.product_id is None or self.product is None):
+            # Many IDE devices don't provide useful vendor and product
+            # data. We don't want to clutter the log with warnings
+            # about this problem -- there is nothing we can do to fix
+            # it.
+            if self.real_bus != HWBus.IDE:
+                self.parser._logWarning(
+                    'A HALDevice that is supposed to be a real device does '
+                    'not provide bus, vendor ID, product ID or product name: '
+                    '%r %r %r %r %s'
+                    % (self.real_bus, self.vendor_id, self.product_id,
+                       self.product, self.udi),
+                    self.parser.submission_key)
+            return False
+        return True
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -1618,15 +1642,6 @@ class HALDevice:
         vendor_id = self.vendor_id_for_db
         product_id = self.product_id_for_db
         product_name = self.product
-        if (bus is None or vendor_id is None or product_id is None
-            or product_name is None):
-            self.parser._logWarning(
-                'A HALDevice that is supposed to be a real device does '
-                'not provide bus, vendor ID, product ID or product name: '
-                '%r %r %r %r %s'
-                % (bus, vendor_id, product_id, product_name, self.udi),
-                self.parser.submission_key)
-            return
 
         self.ensureVendorIDVendorNameExists()
 
