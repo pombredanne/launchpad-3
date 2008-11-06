@@ -1,10 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Launchpad IDatabaseInteractionPolicy."""
+"""Launchpad database policies."""
 
 __metaclass__ = type
 __all__ = [
     'LaunchpadDatabasePolicy',
+    'FeedsDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
@@ -57,15 +58,7 @@ class LaunchpadDatabasePolicy:
         # This ensures that a user will see any changes they just made
         # on the master, despite the fact it might take a while for
         # those changes to propagate to the slave databases.
-        if FeedsLayer.providedBy(self.request):
-            # We don't want the feeds layer to access the
-            # session since the cookie set by vhosts using ssl
-            # will not get passed into the feeds vhost because it
-            # doesn't use ssl. Since it doesn't see the cookie for
-            # the current session, it will create a new cookie which
-            # overwrites the https cookie.
-            da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
-        elif self.read_only:
+        if self.read_only:
             if WebServiceLayer.providedBy(self.request):
                 # Don't bother checking the session for a webservice request,
                 # since we don't even set the session in the afterCall()
@@ -96,7 +89,6 @@ class LaunchpadDatabasePolicy:
         """
         if (not self.read_only
             and not WebServiceLayer.providedBy(self.request)
-            and not FeedsLayer.providedBy(self.request)
             and not IXMLRPCRequest.providedBy(self.request)):
             # We need to further distinguish whether it's safe to write to
             # the session, which will be true if the principal is
@@ -130,7 +122,7 @@ class LaunchpadDatabasePolicy:
         # For the webapp, it isn't necessary to reset the default store as
         # it will just be selected the next request. However, changing the
         # default store in the middle of a pagetest can break things.
-        da.StoreSelector.setDefaultFlavor(MASTER_FLAVOR)
+        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
 
     def getReplicationLag(self, name):
         """Return the replication delay for the named replication set.
@@ -140,6 +132,33 @@ class LaunchpadDatabasePolicy:
         # sl_status only gives meaningful results on the origin node.
         store = da.StoreSelector.get(name, MASTER_FLAVOR)
         return store.execute("SELECT replication_lag()").get_one()[0]
+
+
+
+class FeedsDatabasePolicy:
+    """`IDatabasePolicy` for `FeedsLayer`.
+
+    This policy always use the SLAVE_FLAVOR.
+    """
+    implements(IDatabasePolicy)
+
+    def __init__(self, request):
+        self.request = request
+
+    def beforeTraversal(self):
+        """See `IDatabasePolicy`.
+
+        This sets the default flavor to SLAVE since all feeds requests
+        are read-only.
+        """
+        da.StoreSelector.setDefaultFlavor(SLAVE_FLAVOR)
+
+    def afterCall(self):
+        """See `IDatabasePolicy`.
+
+        Resets the default flavor.
+        """
+        da.StoreSelector.setDefaultFlavor(DEFAULT_FLAVOR)
 
 
 class WhichDbView(LaunchpadView):

@@ -30,6 +30,12 @@
         factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
         />
 
+    <adapter
+        for="canonical.launchpad.layers.FeedsLayer"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.FeedsDatabasePolicy"
+        />
+
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
