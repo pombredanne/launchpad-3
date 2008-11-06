@@ -3,7 +3,7 @@ page shows this prominently, and the comment field is accompanied by an extra
 warning that it's a duplicate.
 
     >>> user_browser.open(
-    ... 'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
+    ... 'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'duplicate-of').renderContents()
     bug #1...
