@@ -1128,20 +1128,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'id': 1,
                 'udi': self.UDI_COMPUTER,
                 'properties': {}
-            },
+                },
             {
                 'id': 2,
                 'udi': self.UDI_SATA_CONTROLLER,
-                'properties':
-                    {
-                        'info.parent': (self.UDI_COMPUTER, 'str'),
-                        'info.bus': ('pci', 'str'),
-                        'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
-                        'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
-                                           'int'),
-                        'info.product': ('Intel PCCard bridge 1234', 'str'),
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
                     },
-            },
+                },
             ]
         parsed_data = {
             'hardware': {
@@ -1158,7 +1157,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Regular device treated as not having reliable data.')
 
     def testHasReliableDataNotProcessible(self):
-        """Test of HALDevice.has_reliable_data, buses without reliable data."""
+        """Test of HALDevice.has_reliable_data, bus without reliable data."""
         devices = [
             {
                 'id': 1,
@@ -1194,20 +1193,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'id': 1,
                 'udi': self.UDI_COMPUTER,
                 'properties': {}
-            },
+                },
             {
                 'id': 2,
                 'udi': self.UDI_SATA_CONTROLLER,
-                'properties':
-                    {
-                        'info.parent': (self.UDI_COMPUTER, 'str'),
-                        'info.bus': ('pci', 'str'),
-                        'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
-                        'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
-                                           'int'),
-                        'info.product': ('Intel PCCard bridge 1234', 'str'),
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
                     },
-            },
+                },
             ]
         parsed_data = {
             'hardware': {
@@ -1217,26 +1215,28 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 },
             }
 
-        for (missing_data, expected_log_message) in (
+        missing_data_log_message = (
             ('pci.vendor_id',
              "A HALDevice that is supposed to be a real device does not "
              "provide bus, vendor ID, product ID or product name: <DBItem "
              "HWBus.PCI, (1) PCI> None 28980 'Intel PCCard bridge 1234' "
              "/org/freedesktop/Hal/devices/pci_8086_27c5"
-            ),
+             ),
             ('pci.product_id',
              "A HALDevice that is supposed to be a real device does not "
              "provide bus, vendor ID, product ID or product name: "
              "<DBItem HWBus.PCI, (1) PCI> 32902 None 'Intel PCCard bridge "
              "1234' /org/freedesktop/Hal/devices/pci_8086_27c5"
-            ),
+             ),
             ('info.product',
              "A HALDevice that is supposed to be a real device does not "
              "provide bus, vendor ID, product ID or product name: "
              "<DBItem HWBus.PCI, (1) PCI> 32902 28980 None "
              "/org/freedesktop/Hal/devices/pci_8086_27c5"
-            ),
-            ):
+             ),
+            )
+
+        for (missing_data, expected_log_message) in missing_data_log_message:
             test_parsed_data = deepcopy(parsed_data)
             test_device = test_parsed_data['hardware']['hal']['devices'][1]
             del test_device['properties'][missing_data]
@@ -1263,29 +1263,27 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'id': 1,
                 'udi': self.UDI_COMPUTER,
                 'properties': {}
-            },
+                },
             {
                 'id': 2,
                 'udi': self.UDI_SATA_CONTROLLER,
-                'properties':
-                    {
-                        'info.parent': (self.UDI_COMPUTER, 'str'),
-                        'info.bus': ('pci', 'str'),
-                        'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
-                        'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
-                                           'int'),
-                        'info.product': ('Intel PCCard bridge 1234', 'str'),
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
                     },
-            },
+                },
             {
                 'id': 3,
                 'udi': self.UDI_SATA_DISK,
-                'properties':
-                    {
-                        'info.parent': (self.UDI_SATA_CONTROLLER, 'str'),
-                        'info.bus': ('ide', 'str'),
+                'properties': {
+                    'info.parent': (self.UDI_SATA_CONTROLLER, 'str'),
+                    'info.bus': ('ide', 'str'),
                     },
-            },
+                },
             ]
         parsed_data = {
             'hardware': {
