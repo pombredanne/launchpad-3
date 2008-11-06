@@ -51,7 +51,7 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
                 "Sort order should not be reversed for a sort_by value of "
                 "%s" % sort_key)
 
-            # Prepending a '-' to t sort_by will reverse the sort.
+            # Prepending a '-' to sort_by will reverse the sort.
             reversed_key = '-%s' % sort_key
             form = {'sort_by': reversed_key}
             view = create_view(ubuntu, '+upstreamreport', form)
