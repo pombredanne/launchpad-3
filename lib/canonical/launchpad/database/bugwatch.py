@@ -202,6 +202,16 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    @property
+    def has_unpushed_comments(self):
+        """Return True if there are unpushed comments for this `BugWatch`."""
+        store = Store.of(self)
+        messages = store.find(
+            BugMessage, BugMessage.bugwatch == self.id,
+            BugMessage.remote_comment_id == None)
+
+        return messages.count() > 0
+
     def hasComment(self, comment_id):
         """See `IBugWatch`."""
         query = """

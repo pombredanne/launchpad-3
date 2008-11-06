@@ -81,6 +81,15 @@ has not yet been pushed to the remote bugtracker.
     >>> print bug_message.remote_comment_id is None
     True
 
+The IBugWatch interface defines a property, has_unpushed_comments, which
+can be used to test whether or not a given watch has comments that need
+to be pushed to the remote server. In the case of the example bug watch
+we created above, this will be True since bug_message hasn't yet been
+pushed to the remote server.
+
+    >>> bug_watch.has_unpushed_comments
+    True
+
 The BugWatchUpdater method pushBugComments() is responsible for
 calling the addRemoteComment() method of ISupportsCommentPushing for
 each Launchpad comment that needs to be pushed to the remote bug
@@ -110,6 +119,12 @@ already have a remote id for it (ergo it has been pushed already).
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
     >>> commit()
+
+If we now check the bug watch's has_unpushed_comments property, we will
+find it to be False.
+
+    >>> bug_watch.has_unpushed_comments
+    False
 
 If more comments are added to the bug they will be pushed to the remote
 tracker the next time the bugwatch updater accesses it.

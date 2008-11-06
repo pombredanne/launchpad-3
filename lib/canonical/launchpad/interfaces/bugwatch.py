@@ -155,6 +155,11 @@ class IBugWatch(IHasBug):
         "ensure that we spend most effort on high-importance and "
         "high-activity bugs.")
 
+    has_unpushed_comments = Attribute(
+        "A True or False indicator of whether or not there are comments "
+        "on this BugWatch that need to be pushed to the remote bug "
+        "tracker.")
+
     # Required for Launchpad pages.
     title = exported(
         Text(title=_('Bug watch title'), readonly=True))

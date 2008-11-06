@@ -3,6 +3,11 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+ * DONE - Add a has_unpushed_comments() property to BugWatch that test for
+   unpushed comments. 
+   * Pretty similar to BugWatch.hasComment() but we're checking for
+     BugMessages with a NULL remote_comment_id.
+
  * Update BugTracker.getBugWatchesNeedingUpdate() to check for BugWatches
    on a BugTracker that have unpushed comments.
    * Suggested query:
@@ -14,11 +19,6 @@
                  OR lastchecked IS NULL)
              OR BugMessage.remote_comment_id IS NULL;
    * How do I do this using the STORM API?
-
- * Add a has_unpushed_comments() property to BugWatch that test for
-   unpushed comments.
-   * Pretty similar to BugWatch.hasComment() but we're checking for
-     BugMessages with a NULL remote_comment_id.
 
  * Update BugWatchUpdater.updateBugWatches() to treat watches with unpushed.
    comments differently from other watches (i.e. don't pass them through
