@@ -46,11 +46,47 @@ remote bug.
 
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
+    >>> from operator import attrgetter
     >>> flush_database_updates()
-    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
+    >>> watches = sorted(
+    ...     mozilla_bugzilla.getBugWatchesNeedingUpdate(23),
+    ...     key=attrgetter('id'))
+
+    >>> for bug_watch in watches:
     ...     print bug_watch.remotebug, bug_watch.bug.id
-    2000 1
     42 2
+    2000 1
+    42 1
+
+getBugWatchesNeedingUpdate() will also return bug watches that have
+un-pushed bug comments that need pushing to remote bug trackers,
+regardless of whether they have been checked recently or not. We'll add
+a comment to the bug watch against remote bug 123543 to demonstrate
+this.
+
+    >>> import transaction
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+    >>> message = factory.makeMessage(
+    ...     'Unpushed comment', '... is unpushed')
+
+    >>> print bug_watches[1].remotebug
+    123543
+
+    >>> bug_message = bug_watches[1].addComment(None, message)
+    >>> transaction.commit()
+
+    >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
+    >>> watches = sorted(
+    ...     mozilla_bugzilla.getBugWatchesNeedingUpdate(23),
+    ...     key=attrgetter('id'))
+
+    >>> for bug_watch in watches:
+    ...     print bug_watch.remotebug, bug_watch.bug.id
+    42 2
+    2000 1
+    123543 1
     42 1
 
 
@@ -266,9 +302,12 @@ bug messages which have been imported for a given bug tracker.
     ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
     ...         print '- message subject: %s' % bug_message.message.subject
 
-The Mozilla Bugzilla has no imported bug messages:
+The Mozilla Bugzilla has only one imported bug message.
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
 
 We will forge some BugMessage records before trying again:
 
@@ -283,6 +322,9 @@ We will forge some BugMessage records before trying again:
     >>> flush_database_updates()
 
     >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 123543
+    - message subject: Unpushed comment
     * bug: 1
     - remote bug: 2000
     - message subject: You are Number 1.

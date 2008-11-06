@@ -21,6 +21,9 @@ from sqlobject import (
     ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
+from storm.expr import LeftJoin, Or, SQL
+from storm.store import Store
+
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
@@ -179,12 +182,33 @@ class BugTracker(SQLBase):
 
     def getBugWatchesNeedingUpdate(self, hours_since_last_check):
         """See IBugTracker."""
-        query = (
-            """bugtracker = %s AND
-               (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
-                OR lastchecked IS NULL)""" % sqlvalues(
-                    self.id, hours_since_last_check))
-        return BugWatch.select(query, orderBy=["remotebug", "id"])
+        lastchecked_time_sql = SQL(
+            "now() at time zone 'UTC' - interval '%s hours'" %
+            sqlvalues(hours_since_last_check))
+
+        lastchecked_clause = Or(
+            BugWatch.lastchecked < lastchecked_time_sql,
+            BugWatch.lastchecked == None)
+
+        store = Store.of(self)
+
+        # We're going to return the UNION of the bug watches that need
+        # checking and those with unpushed comments.
+        bug_watches_needing_checking = store.find(
+            BugWatch,
+            BugWatch.bugtracker == self.id,
+            lastchecked_clause)
+
+        bug_watches_with_unpushed_comments = store.find(
+            BugWatch,
+            BugWatch.bugtracker == self.id,
+            BugMessage.bugwatch == BugWatch.id,
+            BugMessage.remote_comment_id == None)
+
+        results = bug_watches_needing_checking.union(
+            bug_watches_with_unpushed_comments)
+
+        return results
 
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.
