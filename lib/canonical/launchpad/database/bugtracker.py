@@ -21,7 +21,7 @@ from sqlobject import (
     ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import LeftJoin, Or, SQL
+from storm.expr import Or, SQL
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
