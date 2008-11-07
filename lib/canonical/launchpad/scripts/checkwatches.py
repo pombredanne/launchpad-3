@@ -340,6 +340,49 @@ class BugWatchUpdater(object):
             for bug_watch in bug_watches)
         return bug_watch_lastchecked_times[0]
 
+    def _getRemoteIdsToCheck(self, bug_watches, remotesystem, now=None):
+        """Return the remote bug IDs to check for a set of bug watches.
+
+        The remote bug tracker is queried to find out which of the
+        remote bugs in `bug_watches` have changed since they were last
+        checked. Those which haven't changed are excluded.
+        """
+        old_bug_watches = [
+            bug_watch for bug_watch in bug_watches
+            if bug_watch.lastchecked is not None]
+        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
+        if oldest_lastchecked is not None:
+            # Adjust for possible time skew, and some more, just to be safe.
+            oldest_lastchecked -= (
+                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+
+        remote_old_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in old_bug_watches))
+        remote_new_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch not in old_bug_watches))
+
+        self.txn.commit()
+        server_time = None
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
+
+        server_time = remotesystem.getCurrentDBTime()
+        if (server_time is not None and
+            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+            raise TooMuchTimeSkew(abs(server_time - now))
+
+        if len(remote_old_ids) > 0 and server_time is not None:
+            old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                remote_old_ids, oldest_lastchecked)
+        else:
+            old_ids_to_check = list(remote_old_ids)
+
+        remote_ids_to_check = sorted(
+            set(remote_new_ids + old_ids_to_check))
+
+        return remote_ids_to_check, server_time
+
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         remotesystem = remotesystem.getExternalBugTrackerToUse()
@@ -370,41 +413,11 @@ class BugWatchUpdater(object):
         self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
-        old_bug_watches = [
-            bug_watch for bug_watch in bug_watches
-            if bug_watch.lastchecked is not None]
-        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
-        if oldest_lastchecked is not None:
-            # Adjust for possible time skew, and some more, just to be safe.
-            oldest_lastchecked -= (
-                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
-
-        remote_old_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in old_bug_watches))
-        remote_new_ids = sorted(
-            set(bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch not in old_bug_watches))
-
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
-        self.txn.commit()
-        server_time = None
-        if now is None:
-            now = datetime.now(pytz.timezone('UTC'))
         try:
-            server_time = remotesystem.getCurrentDBTime()
-            if (server_time is not None and
-                abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
-                raise TooMuchTimeSkew(abs(server_time - now))
-
-            if len(remote_old_ids) > 0 and server_time is not None:
-                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                    remote_old_ids, oldest_lastchecked)
-            else:
-                old_ids_to_check = list(remote_old_ids)
-
-            remote_ids_to_check = sorted(
-                set(remote_new_ids + old_ids_to_check))
+            remote_ids_to_check, server_time = self._getRemoteIdsToCheck(
+                bug_watches, remotesystem, now)
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should

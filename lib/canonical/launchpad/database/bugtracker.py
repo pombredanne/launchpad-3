@@ -181,7 +181,11 @@ class BugTracker(SQLBase):
                                     orderBy=['datecreated']))
 
     def getBugWatchesNeedingUpdate(self, hours_since_last_check):
-        """See IBugTracker."""
+        """See `IBugTracker`.
+
+        :return: The UNION of the bug watches that need checking and
+            those with unpushed comments.
+        """
         lastchecked_time_sql = SQL(
             "now() at time zone 'UTC' - interval '%s hours'" %
             sqlvalues(hours_since_last_check))
@@ -192,8 +196,6 @@ class BugTracker(SQLBase):
 
         store = Store.of(self)
 
-        # We're going to return the UNION of the bug watches that need
-        # checking and those with unpushed comments.
         bug_watches_needing_checking = store.find(
             BugWatch,
             BugWatch.bugtracker == self.id,

@@ -94,18 +94,24 @@ tested later.
     >>> for bug_watch_id in bug_watch_ids:
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    280883: done grave woody security
     304014: open important
-    308994: open important
     327452: done critical patch security
     327549: open important security
+    280883: done grave woody security
+    308994: open important
 
 The lastchecked attribute got updated for each bug watch, so no more
-watches are in need of an update:
+watches are in need of an update. However, one watch will still be
+returned by getBugWatchesNeedingUpdate() because it has unpushed
+comments (see Pushing comments to DebBugs, below).
 
     >>> flush_database_updates()
-    >>> debbugs.getBugWatchesNeedingUpdate(23).count()
-    0
+    >>> watches = debbugs.getBugWatchesNeedingUpdate(23)
+    >>> watches.count()
+    1
+
+    >>> print watches[0].remotebug, watches[0].unpushed_comments.count()
+    308994 6
 
 And the linked bugtasks got updated:
 
