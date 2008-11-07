@@ -4,8 +4,10 @@ Some helpful explanatory text - guidelines - can be set for
 distributions, product groups and products.
 
     >>> primary_contexts = [
-    ...     ('Ubuntu', 'ubuntu'), ('Mozilla', 'mozilla'),
-    ...     ('Firefox', 'firefox')]
+    ...     ('Ubuntu', 'ubuntu'),
+    ...     ('Mozilla', 'mozilla'),
+    ...     ('Firefox', 'firefox'),
+    ...     ]
 
     >>> for context_name, context_path in primary_contexts:
     ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
@@ -17,6 +19,24 @@ distributions, product groups and products.
     ...         admin_browser.getControl('Change', index=3).click()
     ...     else:
     ...         admin_browser.getControl('Change').click()
+
+They can also be set for distribution source packages, but not via the
+web UI at present.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> alsa_utils_in_ubuntu = ubuntu.getSourcePackage('alsa-utils')
+    >>> alsa_utils_in_ubuntu.bug_reporting_guidelines = (
+    ...     u"The version of ALSA you're using.")
+    >>> logout()
+
+    >>> primary_contexts_no_package = primary_contexts[:]
+    >>> primary_contexts.append(
+    ...     ('alsa-utils in Ubuntu', 'ubuntu/+source/alsa-utils'))
 
 The guidelines are not displayed on the initial basic bug-reporting
 page, because that page does not include a bug description field.
@@ -56,9 +76,17 @@ include a bug description field.
       - http://launchpad.dev/firefox/+filebug-advanced
       - Please include, if possible:
     The version of Firefox you're using.
+    * alsa-utils in Ubuntu
+      - http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced
+      - Please include, if possible:
+    The version of ALSA you're using.
+    The version of Ubuntu you're using.
 
-They are also displayed on the basic bug-reporting page, once you've
-got to the step of entering a bug description.
+Note how the alsa-utils in Ubuntu specific guidelines were displayed
+followed by the general Ubuntu guidelines.
+
+The guidelines are also displayed on the basic bug-reporting page,
+once you've got to the step of entering a bug description.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+filebug')
     >>> user_browser.getControl('Summary').value = "It doesn't work"
@@ -96,7 +124,7 @@ bug reporting guidelines can be changed, but admins do.
 
     >>> import sys
 
-    >>> for context_name, context_path in primary_contexts:
+    >>> for context_name, context_path in primary_contexts_no_package:
     ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
     ...     print '* ' + context_name
     ...     print '  - User:',
@@ -125,7 +153,7 @@ guidelines.
 
     >>> import traceback
 
-    >>> for context_name, context_path in primary_contexts:
+    >>> for context_name, context_path in primary_contexts_no_package:
     ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
     ...     print '* ' + context_name
     ...     try:
