@@ -503,6 +503,8 @@ class UnembargoSecurityPackage(PackageCopier):
         # security (you can't alter the release pocket anyway).
         if len(self.options.suite.split("-")) == 1:
             self.options.to_suite = "-".join((self.options.suite, "security"))
+            self.logger.warning(
+                "Release pocket specified, defaulting to -security instead")
         else:
             self.options.to_suite = self.options.suite
         self.options.version = None
