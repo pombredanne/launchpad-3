@@ -2,3 +2,12 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+1. Change 'make schema' to load sampledata1 into launchpad_dev, sampledata2
+into launchpad_ftest_template and then create launchpad_ftest_playground using
+launchpad_ftest_template as the template.
+
+2. Change 'make newsampledata' to generate sampledata1 from what's in
+launchpad_dev and sampledata2 from what is in launchpad_ftest_playground.
+
+3. Make it possible to access lp_ftest_playground via https://launchpad.ftest.
