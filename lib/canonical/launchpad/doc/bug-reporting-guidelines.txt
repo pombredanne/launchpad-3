@@ -1,7 +1,8 @@
 = Bug Reporting Guidelines =
 
-Guidelines can be set at the Distribution, Project or Product level to
-help users file good bug reports, direct them to FAQs, and so forth.
+Guidelines can be set at the Distribution, DistributionSourcePackage,
+Project or Product level to help users file good bug reports, direct
+them to FAQs, and so forth.
 
     >>> login('foo.bar@canonical.com')
 
@@ -17,20 +18,12 @@ help users file good bug reports, direct them to FAQs, and so forth.
     ...         "Welcome to %s!" % context.displayname)
 
 In fact, all IBugTargets have guidelines available, but the others
-delegate to the distribution or product level.
+(with one special exception, DistributionSourcePackage) delegate to
+the distribution or product level.
 
-DistroSeries and SourcePackages defer to the Distribution:
-
-    >>> distro_series = distribution.getSeries('warty')
-    >>> print distro_series.bug_reporting_guidelines
-    Welcome to Ubuntu!
-
-    >>> source_package = distro_series.getSourcePackage('alsa-utils')
-    >>> print source_package.bug_reporting_guidelines
-    Welcome to Ubuntu!
-
-DistributionSourcePackages also defer to the Distribution, but
-additional package-specific guidelines can be specified.
+As has been mentioned, DistributionSourcePackages are a little
+special. Package-specific guidelines can be set, but the Distribution
+guidelines are appended when fetching them.
 
     >>> distribution_source_package = (
     ...     distribution.getSourcePackage('alsa-utils'))
@@ -42,6 +35,16 @@ additional package-specific guidelines can be specified.
     >>> print distribution_source_package.bug_reporting_guidelines
     Welcome to ALSA!
     <BLANKLINE>
+    Welcome to Ubuntu!
+
+DistroSeries and SourcePackages defer to the Distribution:
+
+    >>> distro_series = distribution.getSeries('warty')
+    >>> print distro_series.bug_reporting_guidelines
+    Welcome to Ubuntu!
+
+    >>> source_package = distro_series.getSourcePackage('alsa-utils')
+    >>> print source_package.bug_reporting_guidelines
     Welcome to Ubuntu!
 
 ProductSeries defer to the Product:
@@ -61,11 +64,6 @@ access.
     ForbiddenAttribute: ...
 
     >>> source_package.bug_reporting_guidelines = 'Foobar'
-    Traceback (most recent call last):
-    ...
-    ForbiddenAttribute: ...
-
-    >>> distribution_source_package.bug_reporting_guidelines = 'Foobar'
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ...
@@ -96,6 +94,11 @@ guidelines.
     ...
     Unauthorized: ...
 
+    >>> check_access("no-priv@canonical.com", distribution_source_package)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
     >>> check_access("no-priv@canonical.com", project)
     Traceback (most recent call last):
     ...
@@ -116,3 +119,13 @@ Of course the owner can edit the guidelines.
 
     >>> check_access(product.owner, product)
     Mozilla Firefox let Sample Person have access.
+
+In the case of DistributionSourcePackages, the owner of the
+Distribution can edit the guidelines.
+
+    >>> check_access(
+    ...     distribution_source_package.distribution.owner,
+    ...     distribution_source_package)
+    alsa-utils in ubuntu let Ubuntu Team have access.
+    <BLANKLINE>
+    Ubuntu let Ubuntu Team have access.
