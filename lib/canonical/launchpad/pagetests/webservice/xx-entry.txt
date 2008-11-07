@@ -18,6 +18,10 @@ GET request to the entry's URL.
 Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
+  >>> url = ''
+  >>> branch = webservice.get(url).jsonBody()
+  >>> webservice.put(url, simplejson.dumps(branch))
+
   >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
   u'Guilherme Salgado'
