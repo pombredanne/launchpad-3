@@ -1208,12 +1208,45 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc',
+                    'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
             self.failIf(device.has_reliable_data,
                 'Device with bus=%s treated as having reliable data.' % bus)
+
+    def testHasReliableDataRootDevice(self):
+        """Test of HALDevice.has_reliable_data, root device.
+
+        The root device has the info.subsystem or info.bus property set
+        to 'unknown'. While we treat other devices with ths bus value
+        as useless, the root device is real.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'info.subsystem': ('unknown', 'str'),
+                    'system.hardware.vendor': ('FUJITSU SIEMENS', 'str'),
+                    'system.hardware.product': ('LIFEBOOK E8210', 'str'),
+                },
+            },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        properties = devices[0]['properties']
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_COMPUTER]
+        self.failUnless(device.has_reliable_data,
+                        'Root device not treated as having reliable data.')
 
     def testHasReliableDataForInsuffientData(self):
         """Test of HALDevice.has_reliable_data, insufficent device data.
@@ -1286,7 +1319,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'data.' % missing_data)
             self.assertWarningMessage(submission_key, expected_log_message)
 
-    def testHasReliableDataIDEDevcie(self):
+    def testHasReliableDataIDEDevice(self):
         """Test of HALDevice.has_reliable_data, for IDE devices.
 
         Many IDE devices do not provide vendor and product IDs. This is

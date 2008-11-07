@@ -1396,6 +1396,10 @@ class HALDevice:
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
 
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -1418,7 +1422,12 @@ class HALDevice:
         Provided that a device is not excluded by the above criteria,
         ensure that we have vendor ID, product ID and product name.
         """
-        if self.raw_bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+        bus = self.raw_bus
+        if bus == 'unknown' and self.udi != ROOT_UDI:
+            # The root node is course a real device; storing data
+            # about other devices with the bus "unkown" is pointless.
+            return False
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
