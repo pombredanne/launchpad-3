@@ -340,13 +340,20 @@ class BugWatchUpdater(object):
             for bug_watch in bug_watches)
         return bug_watch_lastchecked_times[0]
 
-    def _getRemoteIdsToCheck(self, bug_watches, remotesystem, now=None,
-                             server_time=None):
+    def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
+                             server_time=None, now=None):
         """Return the remote bug IDs to check for a set of bug watches.
 
         The remote bug tracker is queried to find out which of the
         remote bugs in `bug_watches` have changed since they were last
         checked. Those which haven't changed are excluded.
+
+        :param bug_watches: A set of `BugWatch`es to be checked.
+        :param remotesystem: The `ExternalBugtracker` on which
+            `getModifiedRemoteBugs`() should be called
+        :param server_time: The time according to the remote server.
+        :param now: The current time (used for testing)
+        :return: A list of remote bug IDs to be updated.
         """
         old_bug_watches = [
             bug_watch for bug_watch in bug_watches
@@ -376,13 +383,18 @@ class BugWatchUpdater(object):
         else:
             old_ids_to_check = list(remote_old_ids)
 
+        # We bypass the has-it-been-checked tests for bug watches with
+        # unpushed comments.
+        remote_ids_with_comments = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch.unpushed_comments.any() is not None))
+
         remote_ids_to_check = sorted(
-            set(remote_new_ids + old_ids_to_check))
+            set(remote_new_ids + old_ids_to_check + remote_ids_with_comments))
 
         return remote_ids_to_check
 
-    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None,
-                         server_time=None):
+    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         remotesystem = remotesystem.getExternalBugTrackerToUse()
         # Save the url for later, since we might need it to report an
@@ -422,7 +434,7 @@ class BugWatchUpdater(object):
 
         try:
             remote_ids_to_check = self._getRemoteIdsToCheck(
-                bug_watches, remotesystem, now, server_time)
+                remotesystem, bug_watches, server_time, now)
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should
