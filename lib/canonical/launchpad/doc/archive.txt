@@ -1713,7 +1713,8 @@ When copying a single package, if we supply a package name of "pack" it will
 only match one of the test packages we created above rather than all of them:
 
     >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
-    >>> [pack] = sabdfl.archive.getPublishedSources(name="pack")
+    >>> [pack] = sabdfl.archive.getPublishedSources(
+    ...     name="pack", exact_match=True)
     >>> print pack.sourcepackagerelease.version
     1.0
 
