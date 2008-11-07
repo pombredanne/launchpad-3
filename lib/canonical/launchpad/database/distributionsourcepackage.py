@@ -14,7 +14,7 @@ import operator
 
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In
-from storm.store import Store
+from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -316,3 +316,27 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+
+class DistributionSourcePackageInDatabase(Storm):
+    """Temporary class to allow access to the database.
+
+    DistributionSourcePackage is not backed by a database table - yet
+    - but one exists. However, we need access to store some data in
+    that table before we do a full migration of DSP to be backed by
+    the database.
+    """
+
+    __storm_table__ = 'DistributionSourcePackage'
+
+    id = Int(primary=True)
+
+    distribution_id = Int(name='distribution')
+    distribution = Reference(
+        distribution_id, 'Distribution.id')
+
+    sourcepackagename_id = Int(name='sourcepackagename')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
+
+    bug_reporting_guidelines = Unicode()
