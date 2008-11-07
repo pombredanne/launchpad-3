@@ -31,7 +31,8 @@ class ArchivePopulator(SoyuzScript):
     packages and instantiate the builds required.
 
     Please note: the destination copy archive must not exist yet. Otherwise
-    the script will abort with an error."""
+    the script will abort with an error.
+    """
 
     usage = __doc__
     description = (
@@ -98,10 +99,7 @@ class ArchivePopulator(SoyuzScript):
             the_destination.distroseries, the_destination.archive, arch_tags)
 
     def mainTask(self):
-        """Main function entry point.
-        """
-        args_missing = 0
-
+        """Main function entry point."""
         if self.options.origin_spec is None:
             raise SoyuzScriptError(
                 "error: origin of copy operation not specified.")
@@ -116,7 +114,7 @@ class ArchivePopulator(SoyuzScript):
         # Put the origin values into a dictionary. We want 3 splits at a
         # maximum.
         origin_data = [value.strip() for value in
-                       self.options.origin_spec.split(':', 3)]
+                       self.options.origin_spec.split(':', len(keys)-1)]
         origin = dict(zip(keys, origin_data))
 
         # The distro name must be set.
@@ -125,14 +123,15 @@ class ArchivePopulator(SoyuzScript):
                 "error: distro name not specified for the origin of the "
                 "copy operation.")
 
-        # Now put the destination data in a doctionary and make sure that the
-        # first three elements (archive owner and name, distro name) were
-        # specified.
-        destination_data = [value.strip() for value in
-                            self.options.destination_spec.split(':', 3)]
+        # Put the destination data in a dictionary.
+        destination_data = [
+            value.strip() for value in
+            self.options.destination_spec.split(':', len(keys)-1)]
         destination = dict(zip(keys, destination_data))
 
-        for key in keys[:3]:
+        # Make sure that the first three elements (archive owner and name,
+        # distro name) were specified.
+        for key in ('archive-owner', 'archive-name', 'distro'):
             if destination[key] == '':
                 raise SoyuzScriptError(
                     "error: %s not specified for the destination of the "
@@ -178,7 +177,7 @@ class ArchivePopulator(SoyuzScript):
 
     def _createMissingBuilds(
         self, distroseries, archive, arch_tags=None):
-        """Create builds for all source packages in 'location'.
+        """Create builds for all cloned source packages.
 
         :type distroseries: `DistroSeries`
         :param distroseries: the distro series for which to create builds.

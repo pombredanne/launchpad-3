@@ -33,6 +33,7 @@ def get_spn(binary_package):
 
 class TestPopulateArchiveScript(unittest.TestCase):
     """Test the copy-package.py script."""
+
     layer = LaunchpadZopelessLayer
     rebld_archive_name = "ra%s" % int(time.time())
     expected_build_spns = [
@@ -78,16 +79,14 @@ class TestPopulateArchiveScript(unittest.TestCase):
 
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distro, ArchivePurpose.COPY, name)
+        # This is a sanity check: a copy archive with this name should not
+        # exist yet.
         self.assertTrue(copy_archive is None)
 
         hoary = getUtility(IDistributionSet)[distro_name]['hoary']
 
-        # These source packages will be copied to the copy archive.
-        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        src_names = sorted(source.displayname for source in hoary_sources)
-        self.assertEqual(src_names, self.expected_src_names)
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
 
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
@@ -109,14 +108,8 @@ class TestPopulateArchiveScript(unittest.TestCase):
             distro, ArchivePurpose.COPY, name)
         self.assertTrue(copy_archive is not None)
 
-        # Make sure the source packages were cloned.
-        copy_sources = copy_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        copy_src_names = sorted(
-            source.displayname for source in copy_sources)
-
-        self.assertEqual(copy_src_names, self.expected_src_names)
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have build records for the sources cloned.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(
@@ -227,9 +220,10 @@ class TestPopulateArchiveScript(unittest.TestCase):
         return copy_archive
 
     def testInvalidCopyArchiveName(self):
-        """Try archive population with invalid archive name.
+        """Try copy archive creation/population with an invalid archive name.
 
-        The copy archive creation will fail with exit code 2.
+        When trying to create and populate a copy archive with an invalid name
+        the script should fail with an appropriate error message.
         """
         now = int(time.time())
         # The colons in the name make it invalid.
@@ -241,7 +235,13 @@ class TestPopulateArchiveScript(unittest.TestCase):
             exception_text="Invalid archive name")
 
     def testInvalidSuite(self):
-        """Try archive population with invalid suite."""
+        """Try copy archive creation/population with a non-existent suite.
+
+        A suite is a combination of a distro series and pocket e.g.
+        hoary-updates or hardy-security.
+        In the case where a non-existent suite is specified the script should
+        abort with an appropriate error message.
+        """
         now = int(time.time())
         invalid_suite = "suite/:/%s" % now
         self.runScript(
@@ -250,7 +250,12 @@ class TestPopulateArchiveScript(unittest.TestCase):
             exception_text="Could not find suite")
 
     def testInvalidUserName(self):
-        """Try archive population with invalid user name."""
+        """Try copy archive population with an invalid user name.
+
+        The destination/copy archive will be created for some Launchpad user.
+        If the user name passed is invalid the script should abort with an
+        appropriate error message.
+        """
         now = int(time.time())
         invalid_user = "user//%s" % now
         self.runScript(
@@ -259,18 +264,20 @@ class TestPopulateArchiveScript(unittest.TestCase):
             exception_text="Invalid user name")
 
     def testArchWithoutBuilds(self):
-        """Start archive population with no builds for given architecture tag.
+        """Try copy archive population with no builds.
 
-        Use the hoary-RELEASE suite along with the main component.
+        The user may specify a number of given architecture tags on the
+        command line.
+        The script should create build records only for the specified
+        architecture tags that are supported by the destination distro series.
+
+        In this (test) case the specified architecture tag should have the
+        effect that no build records are created.
         """
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
-        # These source packages will be copied to the copy archive.
-        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        src_names = sorted(source.displayname for source in hoary_sources)
-        self.assertEqual(src_names, self.expected_src_names)
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
 
         # Restrict the builds to be created to the 'hppa' architecture
         # only. This should result in zero builds.
@@ -278,14 +285,8 @@ class TestPopulateArchiveScript(unittest.TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        # Make sure the source packages were cloned.
-        copy_sources = copy_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        copy_src_names = sorted(
-            source.displayname for source in copy_sources)
-
-        self.assertEqual(copy_src_names, self.expected_src_names)
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have zero build records for the sources cloned.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(
@@ -296,18 +297,20 @@ class TestPopulateArchiveScript(unittest.TestCase):
         self.assertTrue(len(build_spns) == 0)
 
     def testMultipleDistroArchSeriesSpecified(self):
-        """Start archive population with multiple architecture tags.
+        """Try copy archive population with multiple architecture tags.
 
-        Use the hoary-RELEASE suite along with the main component.
+        The user may specify a number of given architecture tags on the
+        command line.
+        The script should create build records only for the specified
+        architecture tags that are supported by the destination distro series.
+
+        In this (test) case the script should create the build records for the
+        'i386' architecture.
         """
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
-        # These source packages will be copied to the copy archive.
-        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        src_names = sorted(source.displayname for source in hoary_sources)
-        self.assertEqual(src_names, self.expected_src_names)
+        # Verify that we have the right source packages in the sample data.
+        self._verifyPackagesInSampleData(hoary)
 
         # Please note:
         #   * the 'hppa' DistroArchSeries has no resulting builds.
@@ -318,13 +321,8 @@ class TestPopulateArchiveScript(unittest.TestCase):
         copy_archive = self.runScript(
             extra_args=extra_args, exists_after=True)
 
-        # Make sure the source packages were cloned.
-        copy_sources = copy_archive.getPublishedSources(
-            distroseries=hoary, status=self.pending_statuses)
-
-        copy_src_names = sorted(
-            source.displayname for source in copy_sources)
-        self.assertEqual(copy_src_names, self.expected_src_names)
+        # Make sure the right source packages were cloned.
+        self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have the build records expected.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(
@@ -332,6 +330,39 @@ class TestPopulateArchiveScript(unittest.TestCase):
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
         self.assertEqual(build_spns, self.expected_build_spns)
+
+    def _verifyClonedSourcePackages(self, copy_archive, series):
+        """Verify that the expected source packages have been cloned.
+
+        The destination copy archive should be populated with the expected
+        source packages.
+
+        :type copy_archive: `Archive`
+        :param copy_archive: the destination copy archive to check.
+        :type series: `DistroSeries`
+        :param series: the destination distro series.
+        """
+        # Make sure the source packages were cloned.
+        copy_sources = copy_archive.getPublishedSources(
+            distroseries=series, status=self.pending_statuses)
+        copy_src_names = sorted(
+            source.displayname for source in copy_sources)
+        self.assertEqual(copy_src_names, self.expected_src_names)
+
+    def _verifyPackagesInSampleData(self, series):
+        """Verify that the expected source packages are in the sample data.
+
+        :type series: `DistroSeries`
+        :param series: the origin distro series.
+        """
+        # These source packages will be copied to the copy archive.
+        sources = series.distribution.main_archive.getPublishedSources(
+            distroseries=series, status=self.pending_statuses)
+
+        src_names = sorted(source.displayname for source in sources)
+        # Make sure the source to be copied are the ones we expect (this
+        # should break in case of a sample data change/corruption).
+        self.assertEqual(src_names, self.expected_src_names)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

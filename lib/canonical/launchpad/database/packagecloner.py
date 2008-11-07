@@ -18,13 +18,13 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):
     """Copies packages from origin to destination package location.
 
-    Binary packages are only copied for the DistroArchSeries pairs
+    Binary packages are only copied for the `DistroArchSeries` pairs
     specified.
 
     This function is meant to simplify the utilization of the package
@@ -52,7 +52,7 @@ class PackageCloner:
     def clonePackages(self, origin, destination, distroarchseries_list=None):
         """Copies packages from origin to destination package location.
 
-        Binary packages are only copied for the DistroArchSeries pairs
+        Binary packages are only copied for the `DistroArchSeries` pairs
         specified.
 
         @type origin: PackageLocation
