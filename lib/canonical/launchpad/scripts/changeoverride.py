@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 """Soyuz publication override script."""
 
 __metaclass__ = type
@@ -25,13 +25,13 @@ class ArchiveOverriderError(SoyuzScriptError):
 
 class ChangeOverride(SoyuzScript):
 
-    usage = '%prog -s hardy <package name> [-SBt] [-c component]'
+    usage = '%prog -s <suite> <package name> [-SBt] [-c component]'
     description = 'OVERRIDE a publication.'
 
     def add_my_options(self):
-        SoyuzScript.add_transaction_options(self)
-        SoyuzScript.add_distro_options(self)
-        SoyuzScript.add_package_location_options(self)
+        self.add_transaction_options()
+        self.add_distro_options()
+        self.add_package_location_options()
 
         self.parser.add_option(
             "-p", "--priority", dest="priority",
@@ -103,24 +103,24 @@ class ChangeOverride(SoyuzScript):
         pass
 
     def mainTask(self):
-        """Dispatch override operations according given options.
+        """Dispatch override operations according togiven options.
 
         Iterate over multiple targets given as command-line arguments.
         """
         assert self.location, (
-            "location is not available, call PackageCopier.setupLocation() "
+            "Location is not available, call PackageCopier.setupLocation() "
             "before dealing with mainTask.")
 
         for package_name in self.args:
-            # Change matching source
+            # Change matching source.
             if (self.options.sourceonly or self.options.binaryandsource or
                 self.options.sourceandchildren):
                 self.processSourceChange(package_name)
 
-            # Change all binaries for matching source
+            # Change all binaries for matching source.
             if self.options.sourceandchildren:
                 self.processChildrenChange(package_name)
-            # Change only binary matching name
+            # Change only binary matching name.
             elif not self.options.sourceonly:
                 self.processBinaryChange(package_name)
 

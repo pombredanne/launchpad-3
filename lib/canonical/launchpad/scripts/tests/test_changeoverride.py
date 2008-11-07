@@ -272,7 +272,7 @@ class TestChangeOverride(unittest.TestCase):
          * Binary-only overrides: `processBinaryChange`;
          * Source-children overrides: `processChildrenChange`;
 
-        This test check the expected behaviour for each of them.
+        This test checks the expected behaviour for each of them.
         """
         self._setupOverridePublishingContext()
 
