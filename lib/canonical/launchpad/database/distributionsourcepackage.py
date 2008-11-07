@@ -88,7 +88,27 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
-        return self.distribution.bug_reporting_guidelines
+        dsp_in_db = Store.of(self.distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename == (
+                self.sourcepackagename),
+            DistributionSourcePackageInDatabase.distribution == (
+                self.distribution)
+            ).one()
+
+        if dsp_in_db is None:
+            guidelines = [
+                self.distribution.bug_reporting_guidelines,
+                ]
+        else:
+            guidelines = [
+                dsp_in_db.bug_reporting_guidelines,
+                self.distribution.bug_reporting_guidelines,
+                ]
+
+        return '\n\n'.join(
+            guideline for guideline in guidelines
+            if guideline is not None and len(guideline) > 0)
 
     def __getitem__(self, version):
         return self.getVersion(version)
