@@ -11,4 +11,7 @@ WHERE (
     )
     AND trust_root NOT LIKE  '%shop%';
 
+ALTER TABLE ProductRelease
+    ADD COLUMN milestone integer REFERENCES Milestone UNIQUE;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 8, 0);

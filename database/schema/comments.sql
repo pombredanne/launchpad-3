@@ -545,6 +545,7 @@ COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the
 --COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
+COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
 
 -- ProductReleaseFile
 
