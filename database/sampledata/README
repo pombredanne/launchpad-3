@@ -1,8 +1,5 @@
-Sample data and DB patches
-==========================
-
 Sample data
------------
+===========
 
 There are two sorts of sample data. One used by developers when playing around
 in http://launchpad.dev and another used by our tests.
@@ -80,30 +77,3 @@ To update the sample data:
             bzr commit -m 'Added frotz to sampledata..."
             bzr push
             bzr review-submit ...
-
-
-Database Patches
-----------------
-
-If you are updating the sample data to cope with modifications to the
-database schema, you need to be aware that the sample data is loaded
-*after* the database and all its patches are built. It is fairly simple
-if you follow these steps:
-
-    1.  Make sure your patch will *not* be run when you run 'make'
-        in database/schema. Either rename it or leave it in the
-        database/schema/pending directory.
-
-    2.  Follow steps 1 & 2 from the previous section 'Changing sample data'
-
-    3.  Run the pending database schema patch (if any)
-
-    4.  Follow steps 3 - 7 from the previous section 'Changing sample data'.
-
-    5.  Move the pending/renamed patch to its final location
-
-    6.  Run 'make check' again because we are paranoid.
-
-    7.  Follow step 8 from the previous section 'Changing sample data'.
-
-And remember, you need to get the DBA to review all your database patches.
