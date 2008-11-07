@@ -85,10 +85,10 @@ class DistributionSourcePackage(BugTargetBase,
         return smartquote('"%s" source package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
 
-    @property
-    def bug_reporting_guidelines(self):
+    def _get_bug_reporting_guidelines(self):
         """See `IBugTarget`."""
-        dsp_in_db = Store.of(self.distribution).find(
+        store = Store.of(self.distribution)
+        dsp_in_db = store.find(
             DistributionSourcePackageInDatabase,
             DistributionSourcePackageInDatabase.sourcepackagename == (
                 self.sourcepackagename),
@@ -109,6 +109,30 @@ class DistributionSourcePackage(BugTargetBase,
         return '\n\n'.join(
             guideline for guideline in guidelines
             if guideline is not None and len(guideline) > 0)
+
+    def _set_bug_reporting_guidelines(self, value):
+        """See `IBugTarget`."""
+        store = Store.of(self.distribution)
+
+        dsp_in_db = store.find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename == (
+                self.sourcepackagename),
+            DistributionSourcePackageInDatabase.distribution == (
+                self.distribution)
+            ).one()
+
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            store.add(dsp_in_db)
+
+        dsp_in_db.bug_reporting_guidelines = value
+
+    bug_reporting_guidelines = property(
+        _get_bug_reporting_guidelines,
+        _set_bug_reporting_guidelines)
 
     def __getitem__(self, version):
         return self.getVersion(version)
