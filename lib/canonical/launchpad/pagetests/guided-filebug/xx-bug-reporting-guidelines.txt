@@ -151,8 +151,6 @@ bug reporting guidelines can be changed, but admins do.
 Unprivileged cannot access the page for changing bug reporting
 guidelines.
 
-    >>> import traceback
-
     >>> for context_name, context_path in primary_contexts_no_package:
     ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
     ...     print '* ' + context_name
