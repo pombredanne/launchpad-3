@@ -104,18 +104,9 @@ class DistributionSourcePackage(BugTargetBase,
     def _get_bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            guidelines = [
-                self.distribution.bug_reporting_guidelines,
-                ]
-        else:
-            guidelines = [
-                dsp_in_db.bug_reporting_guidelines,
-                self.distribution.bug_reporting_guidelines,
-                ]
-        return '\n\n'.join(
-            guideline for guideline in guidelines
-            if guideline is not None and len(guideline) > 0)
+        if dsp_in_db is not None:
+            return dsp_in_db.bug_reporting_guidelines
+        return None
 
     def _set_bug_reporting_guidelines(self, value):
         """See `IBugTarget`."""
