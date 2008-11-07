@@ -1221,7 +1221,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
 
         The root device has the info.subsystem or info.bus property set
         to 'unknown'. While we treat other devices with ths bus value
-        as useless, the root device is of course real.
+        as useless, the root device is real.
         """
         devices = [
             {
@@ -1246,7 +1246,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_COMPUTER]
         self.failUnless(device.has_reliable_data,
-            'Root device not treated as having reliable data.')
+                        'Root device not treated as having reliable data.')
 
     def testHasReliableDataForInsuffientData(self):
         """Test of HALDevice.has_reliable_data, insufficent device data.
@@ -1319,7 +1319,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'data.' % missing_data)
             self.assertWarningMessage(submission_key, expected_log_message)
 
-    def testHasReliableDataIDEDevcie(self):
+    def testHasReliableDataIDEDevice(self):
         """Test of HALDevice.has_reliable_data, for IDE devices.
 
         Many IDE devices do not provide vendor and product IDs. This is
