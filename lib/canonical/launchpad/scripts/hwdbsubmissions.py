@@ -1419,7 +1419,7 @@ class HALDevice:
         return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
 
     def getScsiVendorAndModelName(self):
-        """Try to separate vendor and model name of SCSI decvices.
+        """Separate vendor and model name of SCSI decvices.
 
         SCSI devcies are identified by an 8 charcter vendor name
         and an 16 character model name. The Linux kernel use the
