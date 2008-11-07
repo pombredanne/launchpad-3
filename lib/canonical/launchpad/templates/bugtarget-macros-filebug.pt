@@ -353,12 +353,12 @@
 
 
 <metal:bug_reporting_guidelines define-macro="bug_reporting_guidelines">
-  <tr tal:condition="context/bug_reporting_guidelines|nothing">
+  <tr tal:define="guidelines view/bug_reporting_guidelines"
+      tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <p>Please include, if possible:</p>
-      <div tal:content=
-        "structure context/bug_reporting_guidelines/fmt:text-to-html"
-      />
+      <div tal:repeat="guideline guidelines"
+           tal:content="structure guideline/fmt:text-to-html" />
     </td>
   </tr>
 </metal:bug_reporting_guidelines>

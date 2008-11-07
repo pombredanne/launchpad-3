@@ -10,32 +10,24 @@ them to FAQs, and so forth.
     ...     IDistributionSet, IProjectSet, IProductSet)
 
     >>> distribution = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> distribution_source_package = (
+    ...     distribution.getSourcePackage('alsa-utils'))
     >>> project = getUtility(IProjectSet).getByName('mozilla')
     >>> product = getUtility(IProductSet).getByName('firefox')
 
-    >>> for context in [distribution, project, product]:
+    >>> settable_contexts = [
+    ...     distribution,
+    ...     distribution_source_package,
+    ...     project,
+    ...     product,
+    ...     ]
+
+    >>> for context in settable_contexts:
     ...     context.bug_reporting_guidelines = (
     ...         "Welcome to %s!" % context.displayname)
 
 In fact, all IBugTargets have guidelines available, but the others
-(with one special exception, DistributionSourcePackage) delegate to
-the distribution or product level.
-
-As has been mentioned, DistributionSourcePackages are a little
-special. Package-specific guidelines can be set, but the Distribution
-guidelines are appended when fetching them.
-
-    >>> distribution_source_package = (
-    ...     distribution.getSourcePackage('alsa-utils'))
-    >>> print distribution_source_package.bug_reporting_guidelines
-    Welcome to Ubuntu!
-
-    >>> distribution_source_package.bug_reporting_guidelines = (
-    ...     u"Welcome to ALSA!")
-    >>> print distribution_source_package.bug_reporting_guidelines
-    Welcome to ALSA!
-    <BLANKLINE>
-    Welcome to Ubuntu!
+delegate to the distribution or product level.
 
 DistroSeries and SourcePackages defer to the Distribution:
 
@@ -127,5 +119,3 @@ Distribution can edit the guidelines.
     ...     distribution_source_package.distribution.owner,
     ...     distribution_source_package)
     alsa-utils in ubuntu let Ubuntu Team have access.
-    <BLANKLINE>
-    Ubuntu let Ubuntu Team have access.

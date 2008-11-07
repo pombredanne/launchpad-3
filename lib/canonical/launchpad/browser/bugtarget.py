@@ -682,6 +682,18 @@ class FileBugViewBase(LaunchpadFormView):
                 return bugtask
         return None
 
+    @property
+    def bug_reporting_guidelines(self):
+        """Return guidelines for filing bugs in the current context."""
+        guidelines = [self.context.bug_reporting_guidelines]
+        # Distribution source packages are shown with both their own
+        # reporting guidelines and those of their distribution.
+        if IDistributionSourcePackage.providedBy(self.context):
+            guidelines.append(
+                self.context.distribution.bug_reporting_guidelines)
+        return [guideline for guideline in guidelines
+                if guideline is not None and len(guideline) > 0]
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
