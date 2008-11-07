@@ -394,6 +394,8 @@ class BugWatchUpdater(object):
 
         return remote_ids_to_check
 
+    # XXX gmb 2008-11-07 [bug=295319]
+    #     This method is 186 lines long. It needs to be shorter.
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         remotesystem = remotesystem.getExternalBugTrackerToUse()
