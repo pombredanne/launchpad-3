@@ -18,7 +18,7 @@ from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
 
 from storm.store import Store
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
