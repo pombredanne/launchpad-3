@@ -894,7 +894,35 @@ class TestCopyPackage(unittest.TestCase):
                 self.assertFalse(changesfile.restricted)
                 buildlog = package.build.buildlog
                 self.assertFalse(buildlog.restricted)
+            # Check that the default pocket is security:
+            self.assertEqual(
+                published.pocket.title, "Security",
+                "Expected Security pocket, got %s" % published.pocket.title)
 
+    def testUnembargoSuite(self):
+        """Test that passing different suites works as expected."""
+        test_args = [
+            "--ppa", "cprov",
+            "-s", "warty-backports",
+            "foo"
+            ]
+
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        script.setUpCopierOptions()
+        self.assertEqual(
+            script.options.to_suite, "warty-backports",
+            "Got %s, expected warty-backports")
+
+        # Change the suite to one with the release pocket, it should
+        # default to -security.
+        test_args[3] = "hoary"
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        script.setUpCopierOptions()
+        self.assertEqual(
+            script.options.to_suite, "hoary-security",
+            "Got %s, expected hoary-security")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

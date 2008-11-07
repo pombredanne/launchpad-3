@@ -474,7 +474,7 @@ class UnembargoSecurityPackage(PackageCopier):
     that packages are always copied between the same distroseries.
     """
 
-    usage = ("%prog [-d <distribution>] [-s <series>] [--ppa <private ppa>] "
+    usage = ("%prog [-d <distribution>] [-s <suite>] [--ppa <private ppa>] "
              "<package(s)>")
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
@@ -490,13 +490,8 @@ class UnembargoSecurityPackage(PackageCopier):
             default="ubuntu-security", action="store",
             help="Private PPA owner's name.")
 
-    def mainTask(self):
-        """Invoke PackageCopier to copy the package(s) and re-upload files."""
-
-        assert self.location, (
-            "location is not available, call SoyuzScript.setupLocation() "
-            "before calling mainTask().")
-
+    def setUpCopierOptions(self):
+        """Set up options needed by PackageCopier."""
         # Set up the options for PackageCopier that are needed in addition
         # to the ones that this class sets up.
         self.options.to_partner = False
@@ -504,9 +499,23 @@ class UnembargoSecurityPackage(PackageCopier):
         self.options.partner_archive = None
         self.options.include_binaries = True
         self.options.to_distribution = self.options.distribution_name
-        self.options.to_suite = "-".join((self.options.suite, "security"))
+        # If the suite did not specify a pocket, we'll default to
+        # security (you can't alter the release pocket anyway).
+        if len(self.options.suite.split("-")) == 1:
+            self.options.to_suite = "-".join((self.options.suite, "security"))
+        else:
+            self.options.to_suite = self.options.suite
         self.options.version = None
         self.options.component = None
+
+    def mainTask(self):
+        """Invoke PackageCopier to copy the package(s) and re-upload files."""
+
+        assert self.location, (
+            "location is not available, call SoyuzScript.setupLocation() "
+            "before calling mainTask().")
+
+        self.setUpCopierOptions()
 
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
