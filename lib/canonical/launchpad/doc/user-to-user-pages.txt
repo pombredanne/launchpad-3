@@ -164,6 +164,7 @@ user, his real name will be properly RFC 2047 encoded.
     0
 
     >>> carlos = person_set.getByName('carlos')
+    >>> login('carlos@canonical.com')
     >>> view = create_view(
     ...     carlos, no_priv, {
     ...     'field.field.from_': 'carlos@canonical.com',
@@ -188,6 +189,7 @@ properly RFC 2047 encoded as well.
 
     >>> del stub.test_emails[:]
 
+    >>> login('no-priv@canonical.com')
     >>> view = create_view(
     ...     no_priv, carlos, {
     ...     'field.field.from_': 'no-priv@canonical.com',
