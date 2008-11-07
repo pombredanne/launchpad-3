@@ -331,7 +331,10 @@
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
-        <iframe id="help-pane-content" class="invisible"></iframe>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:false;"></iframe>
       </div>
       <div id="help-footer">
         <span id="help-close"></span>
