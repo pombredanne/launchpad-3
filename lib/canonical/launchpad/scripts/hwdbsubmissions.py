@@ -1396,6 +1396,10 @@ class HALDevice:
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
 
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -1414,9 +1418,38 @@ class HALDevice:
         "O2Micro" or "ATMEL", but sometimes useless values like
         "IEEE 802.11b". See for example
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+
+        Provided that a device is not excluded by the above criteria,
+        ensure that we have vendor ID, product ID and product name.
         """
         bus = self.raw_bus
-        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+        if bus == 'unknown' and self.udi != ROOT_UDI:
+            # The root node is course a real device; storing data
+            # about other devices with the bus "unkown" is pointless.
+            return False
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc'):
+            return False
+
+        # We identify devices by bus, vendor ID and product ID;
+        # additionally, we need a product name. If any of these
+        # are not available, we can't store information for this
+        # device.
+        if (self.real_bus is None or self.vendor_id is None
+            or self.product_id is None or self.product is None):
+            # Many IDE devices don't provide useful vendor and product
+            # data. We don't want to clutter the log with warnings
+            # about this problem -- there is nothing we can do to fix
+            # it.
+            if self.real_bus != HWBus.IDE:
+                self.parser._logWarning(
+                    'A HALDevice that is supposed to be a real device does '
+                    'not provide bus, vendor ID, product ID or product name: '
+                    '%r %r %r %r %s'
+                    % (self.real_bus, self.vendor_id, self.product_id,
+                       self.product, self.udi),
+                    self.parser.submission_key)
+            return False
+        return True
 
     def getScsiVendorAndModelName(self):
         """Separate vendor and model name of SCSI decvices.
@@ -1636,15 +1669,6 @@ class HALDevice:
         vendor_id = self.vendor_id_for_db
         product_id = self.product_id_for_db
         product_name = self.product
-        if (bus is None or vendor_id is None or product_id is None
-            or product_name is None):
-            self.parser._logWarning(
-                'A HALDevice that is supposed to be a real device does '
-                'not provide bus, vendor ID, product ID or product name: '
-                '%r %r %r %r %s'
-                % (bus, vendor_id, product_id, product_name, self.udi),
-                self.parser.submission_key)
-            return
 
         self.ensureVendorIDVendorNameExists()
 

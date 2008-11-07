@@ -2,6 +2,7 @@
 """Tests of the HWDB submissions parser."""
 
 import bz2
+from copy import deepcopy
 from cStringIO import StringIO
 from datetime import datetime
 import logging
@@ -1159,9 +1160,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         devices = [
             {
                 'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
                 'udi': self.UDI_SATA_CONTROLLER,
                 'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
                     'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
                     },
                 },
             ]
@@ -1175,11 +1186,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
-        self.failUnless(device.has_reliable_data,
-                        'Regular device treated as not having reliable data.')
+        self.failUnless(
+            device.has_reliable_data,
+            'Regular device treated as not having reliable data.')
 
     def testHasReliableDataNotProcessible(self):
-        """Test of HALDevice.has_reliable_data, no reliable data."""
+        """Test of HALDevice.has_reliable_data, bus without reliable data."""
         devices = [
             {
                 'id': 1,
@@ -1196,12 +1208,169 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc',
+                    'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
             self.failIf(device.has_reliable_data,
                 'Device with bus=%s treated as having reliable data.' % bus)
+
+    def testHasReliableDataRootDevice(self):
+        """Test of HALDevice.has_reliable_data, root device.
+
+        The root device has the info.subsystem or info.bus property set
+        to 'unknown'. While we treat other devices with ths bus value
+        as useless, the root device is real.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'info.subsystem': ('unknown', 'str'),
+                    'system.hardware.vendor': ('FUJITSU SIEMENS', 'str'),
+                    'system.hardware.product': ('LIFEBOOK E8210', 'str'),
+                },
+            },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        properties = devices[0]['properties']
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_COMPUTER]
+        self.failUnless(device.has_reliable_data,
+                        'Root device not treated as having reliable data.')
+
+    def testHasReliableDataForInsuffientData(self):
+        """Test of HALDevice.has_reliable_data, insufficent device data.
+
+        Test for a HAL device that should be processible but does
+        not provide enough data. Aside from a bus, we need a vendor ID,
+        a product ID and a product name.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTROLLER,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        missing_data_log_message = (
+            ('pci.vendor_id',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: <DBItem "
+             "HWBus.PCI, (1) PCI> None 28980 'Intel PCCard bridge 1234' "
+             "/org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            ('pci.product_id',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: "
+             "<DBItem HWBus.PCI, (1) PCI> 32902 None 'Intel PCCard bridge "
+             "1234' /org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            ('info.product',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: "
+             "<DBItem HWBus.PCI, (1) PCI> 32902 28980 None "
+             "/org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            )
+
+        for (missing_data, expected_log_message) in missing_data_log_message:
+            test_parsed_data = deepcopy(parsed_data)
+            test_device = test_parsed_data['hardware']['hal']['devices'][1]
+            del test_device['properties'][missing_data]
+
+            parser = SubmissionParser(self.log)
+            submission_key = 'test_missing_%s' % missing_data
+            parser.submission_key = submission_key
+            parser.buildDeviceList(test_parsed_data)
+            device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
+            self.failIf(
+                device.has_reliable_data,
+                'Device with missing property %s treated as having reliable'
+                'data.' % missing_data)
+            self.assertWarningMessage(submission_key, expected_log_message)
+
+    def testHasReliableDataIDEDevice(self):
+        """Test of HALDevice.has_reliable_data, for IDE devices.
+
+        Many IDE devices do not provide vendor and product IDs. This is
+        a known problem and hence not worth a log message.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTROLLER,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
+                    },
+                },
+            {
+                'id': 3,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.parent': (self.UDI_SATA_CONTROLLER, 'str'),
+                    'info.bus': ('ide', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SATA_DISK]
+        self.failIf(
+            device.has_reliable_data,
+            'IDE Device with missing properties vendor ID, product ID, '
+            'product name treated as having reliabledata.')
+        self.assertEqual(
+            len(self.handler.records), 0,
+            'Warning messages exist for processing an IDE device where '
+            'no messages are expected.')
 
     def testHALDeviceSCSIVendorModelNameRegularCase(self):
         """Test of HALDevice.getScsiVendorAndModelName, regular case."""
