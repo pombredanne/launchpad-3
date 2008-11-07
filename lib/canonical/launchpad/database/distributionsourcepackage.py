@@ -85,10 +85,15 @@ class DistributionSourcePackage(BugTargetBase,
         return smartquote('"%s" source package in %s') % (
             self.sourcepackagename.name, self.distribution.displayname)
 
-    def _get_bug_reporting_guidelines(self):
-        """See `IBugTarget`."""
-        store = Store.of(self.distribution)
-        dsp_in_db = store.find(
+    @property
+    def _self_in_database(self):
+        """Return the equivalent database-backed record of self.
+
+        This is a temporary measure while DistributionSourcePackage is
+        not yet hooked into the database but we need access to some of
+        the fields in the database.
+        """
+        return Store.of(self.distribution).find(
             DistributionSourcePackageInDatabase,
             DistributionSourcePackageInDatabase.sourcepackagename == (
                 self.sourcepackagename),
@@ -96,6 +101,9 @@ class DistributionSourcePackage(BugTargetBase,
                 self.distribution)
             ).one()
 
+    def _get_bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
         if dsp_in_db is None:
             guidelines = [
                 self.distribution.bug_reporting_guidelines,
@@ -105,29 +113,18 @@ class DistributionSourcePackage(BugTargetBase,
                 dsp_in_db.bug_reporting_guidelines,
                 self.distribution.bug_reporting_guidelines,
                 ]
-
         return '\n\n'.join(
             guideline for guideline in guidelines
             if guideline is not None and len(guideline) > 0)
 
     def _set_bug_reporting_guidelines(self, value):
         """See `IBugTarget`."""
-        store = Store.of(self.distribution)
-
-        dsp_in_db = store.find(
-            DistributionSourcePackageInDatabase,
-            DistributionSourcePackageInDatabase.sourcepackagename == (
-                self.sourcepackagename),
-            DistributionSourcePackageInDatabase.distribution == (
-                self.distribution)
-            ).one()
-
+        dsp_in_db = self._self_in_database
         if dsp_in_db is None:
             dsp_in_db = DistributionSourcePackageInDatabase()
             dsp_in_db.sourcepackagename = self.sourcepackagename
             dsp_in_db.distribution = self.distribution
-            store.add(dsp_in_db)
-
+            Store.of(self.distribution).add(dsp_in_db)
         dsp_in_db.bug_reporting_guidelines = value
 
     bug_reporting_guidelines = property(
