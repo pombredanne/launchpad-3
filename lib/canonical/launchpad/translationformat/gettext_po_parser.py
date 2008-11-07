@@ -1,4 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0404
+# (Suppress warning about two datetimes being imported)
 #
 # Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
