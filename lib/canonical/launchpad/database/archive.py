@@ -861,7 +861,9 @@ class Archive(SQLBase):
                 raise SourceNotFound(e)
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
-            sources.append(from_archive.getPublishedSources(name=name)[0])
+            sources.append(
+                from_archive.getPublishedSources(
+                    name=name, exact_match=True)[0])
 
         return self._copySources(
             sources, to_pocket, to_series, include_binaries)
@@ -878,7 +880,7 @@ class Archive(SQLBase):
             raise SourceNotFound(e)
 
         source = from_archive.getPublishedSources(
-            name=source_name, version=version)
+            name=source_name, version=version, exact_match=True)
 
         self._copySources(source, to_pocket, to_series, include_binaries)
 
