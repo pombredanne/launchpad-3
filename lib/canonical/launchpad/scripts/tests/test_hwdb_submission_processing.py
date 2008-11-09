@@ -1372,6 +1372,123 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Warning messages exist for processing an IDE device where '
             'no messages are expected.')
 
+    def testHALDeviceSCSIVendorModelNameRegularCase(self):
+        """Test of HALDevice.getScsiVendorAndModelName, regular case."""
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('SHARP', 'str'),
+                    'scsi.model': ('JX250 SCSI', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'SHARP',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a regular SCSI device. Expected vendor name SHARP, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'JX250 SCSI',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a regular SCSI device. Expected model name JX250 SCSI , '
+            'got %r.'
+            % model)
+
+    def testHALDeviceSCSIVendorModelNameATADiskShortModelName(self):
+        """Test of HALDevice.getScsiVendorAndModelName, ATA disk (1).
+
+        Test of an ATA disk with a short model name. The Linux kenrel
+        sets the vendor name to "ATA" and inserts the real vendor
+        name into the model string.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('ATA', 'str'),
+                    'scsi.model': ('Hitachi HTS54161', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'Hitachi',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for an ATA SCSI device. Expected vendor name Hitachi, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'HTS54161',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name HTS54161, '
+            'got %r.'
+            % model)
+
+    def testHALDeviceSCSIVendorModelNameATADiskLongModelName(self):
+        """Test of HALDevice.getScsiVendorAndModelName, ATA disk (2).
+
+        Test of an ATA disk with a short model name. The Linux kenrel
+        sets the vendor name to "ATA" and ignores the real vendor name,
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('ATA', 'str'),
+                    'scsi.model': ('HTC426060G9AT00', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'ATA',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name ATA, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'HTC426060G9AT00',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name '
+            'HTC426060G9AT00 , got %r.'
+            % model)
+
     def testHALDeviceVendorFromInfoVendor(self):
         """Test of HALDevice.vendor, regular case.
 

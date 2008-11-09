@@ -1451,6 +1451,41 @@ class HALDevice:
             return False
         return True
 
+    def getScsiVendorAndModelName(self):
+        """Separate vendor and model name of SCSI decvices.
+
+        SCSI devcies are identified by an 8 charcter vendor name
+        and an 16 character model name. The Linux kernel use the
+        the SCSI command set to access block devices connected
+        via USB, IEEE1394 and ATA buses too.
+
+        For ATA disks, the Linux kernel sets the vendor name to "ATA"
+        and prepends the model name with the real vendor name, but only
+        if the combined length if not larger than 16. Otherwise the
+        real vendor name is omitted.
+
+        This method provides a safe way to retrieve the  the SCSI vendor
+        and model name.
+
+        If the vendor name is 'ATA', and if the model name contains
+        at least one ' ' character, the string before the first ' ' is
+        returned as the vendor name, and the the string after the first
+        ' ' is returned as the model name.
+
+        In all other cases, vendor and model name are returned unmodified.
+        """
+        vendor = self.getProperty('scsi.vendor')
+        if vendor == 'ATA':
+            # The assumption below that the vendor name does not
+            # contain any spaces is not necessarily correct, but
+            # it is hard to find a better heuristic to separate
+            # the vendor name from the product name.
+            splitted_name = self.getProperty('scsi.model').split(' ', 1)
+            if len(splitted_name) < 2:
+                return 'ATA', splitted_name[0]
+            return splitted_name
+        return (vendor, self.getProperty('scsi.model'))
+
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
 
@@ -1469,28 +1504,11 @@ class HALDevice:
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
+            vendor, product = self.getScsiVendorAndModelName()
             if type_ == 'vendor':
-                result = self.getProperty('scsi.vendor').strip()
-                if result == 'ATA':
-                    # A weirdness of the kernel's SCSI emulation layer
-                    # for the IDE and SATA busses: The HAL property
-                    # scsi.vendor is always 'ATA', and the vendor name
-                    # is stored as the first part of the SCSI model
-                    # string.
-                    #
-                    # The assumption below that the vendor name does not
-                    # contain any spaces is not necessarily correct, but
-                    # it is hard to find a better heuristic to separate
-                    # the vendor name from the product name.
-                    return self.getProperty('scsi.model').split(' ', 1)[0]
-                return result
+                return vendor
             else:
-                # What is called elsewhere "product", is called "model"
-                # for the SCSI bus.
-                result = self.getProperty('scsi.model').strip()
-                if self.getProperty('scsi.vendor') == 'ATA':
-                    return result.split(' ', 1)[1]
-                return result
+                return product
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
