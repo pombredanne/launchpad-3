@@ -456,7 +456,8 @@ be reversed.
 
 The DistributionUpstreamBugReport view has a list of valid sort keys. If
 we try to sort by a key that isn't in that list we'll get the default
-sort_order back.
+sort_order back. (See test_distribution_upstream_bug_report.py in
+browser/ftests for further testing of this).
 
     >>> request = LaunchpadTestRequest(
     ...     form={'sort_by': 'ifthisisvalidilleatmyhat'})
@@ -465,6 +466,58 @@ sort_order back.
     >>> view.sort_order
     ('open_bugs', True)
 
+The DistributionUpstreamBugReport view also has a sort_order_links
+property. This is a dict of URLs which is used to create the links in
+the sortable table header on the +upstreamreport page for the
+distribution.
+
+The current sort_order is the default one.
+
+    >>> view.sort_order
+    ('open_bugs', True)
+
+All the links, by default will link to a standard forward sort for their
+particular sort_key. In this case, this is also true of the open_bugs
+key, since this is at the moment reverse-sorted.
+
+    >>> def print_sort_order_links(view):
+    ...     for sort_key in sorted(view.sort_order_links):
+    ...         link_dict = view.sort_order_links[sort_key]
+    ...         print sort_key, link_dict['link']
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=bug_supervisor_name
+    bugtracker_name http://...?sort_by=bugtracker_name
+    dsp http://...?sort_by=dsp
+    open_bugs http://...?sort_by=open_bugs
+    product http://...?sort_by=product
+    triaged_bugs http://...?sort_by=triaged_bugs
+    triaged_bugs_class http://...?sort_by=triaged_bugs_class
+    triaged_bugs_delta http://...?sort_by=triaged_bugs_delta
+    triaged_bugs_percentage http://...?sort_by=triaged_bugs_percentage
+    upstream_bugs http://...?sort_by=upstream_bugs
+    upstream_bugs_class http://...?sort_by=upstream_bugs_class
+    upstream_bugs_delta http://...?sort_by=upstream_bugs_delta
+    upstream_bugs_percentage http://...?sort_by=upstream_bugs_percentage
+    watched_bugs http://...?sort_by=watched_bugs
+    watched_bugs_class http://...?sort_by=watched_bugs_class
+    watched_bugs_delta http://...?sort_by=watched_bugs_delta
+    watched_bugs_percentage http://...?sort_by=watched_bugs_percentage
+
+Changing the sort_order to a forward sort of, say, bug_supervisor_name
+will change the link for that sort key. The others will remain
+unaffected.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'sort_by': 'bug_supervisor_name'})
+    >>> view = create_view(ubuntu, request)
+
+    >>> view.sort_order
+    ('bug_supervisor_name', False)
+
+    >>> print_sort_order_links(view)
+    bug_supervisor_name http://...?sort_by=-bug_supervisor_name
+    bugtracker_name http://...?sort_by=bugtracker_name...
 
 PS: This page is actually browser-tested in
 pagetests.distribution-upstream-bug-report. Look there for more details.

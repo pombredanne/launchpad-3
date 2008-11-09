@@ -4,5 +4,4 @@
 # be converted to bugs so they can be scheduled.
 
  * Add tests that demonstrate reordering.
- * Demonstrate sort_order_links.
  * Add pagetests.
