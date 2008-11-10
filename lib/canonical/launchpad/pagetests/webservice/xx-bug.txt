@@ -707,6 +707,20 @@ setting the tags_combinator parameter to 'All'.
     ...     tags_combinator='All').jsonBody())
     [(u'entries', []), (u'start', None), (u'total_size', 0)]
 
+Search results can be ordered using the same string values used by
+the advanced search interface.
+
+    >>> ordered_bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     order_by='-datecreated').jsonBody()['entries']
+    >>> for ordered_bugtask in ordered_bugtasks:
+    ...     print ordered_bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/evolution/+bug/18
+    http://api.launchpad.dev/beta/ubuntu/+bug/17
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+    http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+    http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9
+
 
 == Affected users ==
 
