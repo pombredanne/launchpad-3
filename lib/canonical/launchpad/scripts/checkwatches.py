@@ -25,7 +25,7 @@ from canonical.launchpad.components.externalbugtracker import (
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchErrorType, CreateBugParams
+    BugTaskStatus, BugWatchErrorType, CreateBugParams,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)

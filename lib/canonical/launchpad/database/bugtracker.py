@@ -208,7 +208,7 @@ class BugTracker(SQLBase):
             BugMessage.remote_comment_id == None)
 
         results = bug_watches_needing_checking.union(
-            bug_watches_with_unpushed_comments)
+            bug_watches_with_unpushed_comments.config(distinct=True))
 
         return results
 
