@@ -692,7 +692,11 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def bug_reporting_guidelines(self):
-        """Return guidelines for filing bugs in the current context."""
+        """Guidelines for filing bugs in the current context.
+
+        Returns a list of dicts, with each dict containing values for
+        "preamble" and "content".
+        """
         guidelines = []
         context = self.bugtarget
         if context is not None:

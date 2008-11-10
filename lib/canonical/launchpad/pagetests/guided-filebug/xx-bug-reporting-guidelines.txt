@@ -159,6 +159,8 @@ following pages are known to be affected:
     /bugs/+filebug-advanced
     /<distro>/+filebug
     /<distro>/+filebug-advanced
+    /<distro>/<distroseries>/+filebug
+    /<distro>/<distroseries>/+filebug-advanced
     /<project-group>/+filebug
     /<project-group>/+filebug-advanced
 
