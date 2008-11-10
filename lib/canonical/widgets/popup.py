@@ -125,6 +125,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         return """(<a href="%s">Choose&hellip;</a>)
 
             <iframe style="display: none"
+                    src="javascript:false"
                     id="popup_iframe_%s"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)
