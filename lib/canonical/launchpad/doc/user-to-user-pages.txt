@@ -208,3 +208,28 @@ properly RFC 2047 encoded as well.
     From: No Privileges Person <no-priv@canonical.com>
     To: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
     ...
+
+
+== Hidden addresses ==
+
+Salgado decides to hide his email addresses.
+
+    >>> login_person(salgado)
+    >>> salgado.hide_email_addresses = True
+
+Anne contacts Salgado even though his email addresses are hidden.
+
+    >>> anne = factory.makePerson(email='anne@example.com', name='anne')
+    >>> logout()
+    >>> login_person(anne)
+
+    >>> view = create_view(
+    ...     anne, salgado, {
+    ...         'field.field.from_': 'anne@example.com',
+    ...         'field.subject': 'Hello Salgado',
+    ...         'field.message': 'It is nice to meet you',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> for notification in view.request.notifications:
+    ...     print notification.message
+    Message sent to Guilherme Salgado
