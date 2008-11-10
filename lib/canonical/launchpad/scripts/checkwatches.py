@@ -377,9 +377,12 @@ class BugWatchUpdater(object):
             abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
             raise TooMuchTimeSkew(abs(server_time - now))
 
-        if len(remote_old_ids) > 0 and server_time is not None:
-            old_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                remote_old_ids, oldest_lastchecked)
+            # We only make the call to getModifiedRemoteBugs() if there
+            # are actually some bugs that we're interested in so as to
+            # avoid unnecessary network traffic.
+            if len(remote_old_ids) > 0:
+                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                    remote_old_ids, oldest_lastchecked)
         else:
             old_ids_to_check = list(remote_old_ids)
 
