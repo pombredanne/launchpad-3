@@ -6,22 +6,30 @@ PYTHON=python2.4
 
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
+SAMPLEDATA_DEV=../sampledata/current-dev.sql
 
 # The database dump to create
 NEWSAMPLEDATA=../sampledata/newsampledata.sql
+NEWSAMPLEDATA_DEV=../sampledata/newsampledata-dev.sql
 
 # The database dump to create for lint reports
 LINTDATA=../sampledata/lintdata.sql
+LINTDATA_DEV=../sampledata/lintdata-dev.sql
 
 # The development database
 DBNAME=launchpad_dev
+TEMPLATE_WITH_DEV_SAMPLEDATA=launchpad_dev_template
 
 # A template for databases used by functional tests.
 # It is not used directly, but used as a template in a createdb command
 # to quickly build a populated database to run tests against.
-TEST_DBNAME=launchpad_ftest_template
+TEMPLATE_WITH_TEST_SAMPLEDATA=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
 TEST_SESSION_DBNAME=session_ftest
+
+# The database which is a copy of launchpad_ftest_template but can be accessed
+# via http://launchpad.test
+TEST_PLAYGROUND_DBNAME=launchpad_ftest_playground
 
 # The session database name.
 SESSION_DBNAME=session_dev
@@ -30,6 +38,12 @@ SESSION_DBNAME=session_dev
 DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to create a database
 CREATEDB=${PYTHON} ../../utilities/pgcreate.py
+
+build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+	| $(PYTHON) sort_sql.py > $(2); \
+	$(PYTHON) fti.py --force -d ${1} -q
 
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
@@ -43,28 +57,92 @@ MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
 default: all
 
 test: create 
-	@ echo "* Installing tsearch2 into ts2 schema"
-	@ ${PYTHON} fti.py -q --setup-only -d ${TEST_DBNAME}
-	@ echo "* Loading base database schema"
-	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
-	@ echo "* Patching the database schema"
-	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
-	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
-	@ echo "* Security setup"
-	@ ${PYTHON} security.py -d ${TEST_DBNAME}
-	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
+	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
+	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_TEST_SAMPLEDATA} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} | grep : | cat ; \
+	fi
 	@ sleep 2
-	@ ${CREATEDB} ${TEST_DBNAME} ${EMPTY_DBNAME}
+	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
-	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
+	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${EMPTY_DBNAME}
-	@ ${PYTHON} fti.py --force -q -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
-	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
+	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Vacuuming"
-	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
+	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+
+dev: test
+	# Create a launchpad_dev_template DB and load the dev sample data into it.
+	@ echo "* Creating ${TEMPLATE_WITH_DEV_SAMPLEDATA}"
+	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_DEV_SAMPLEDATA} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} | grep : | cat ; \
+	fi
+	@ sleep 2
+	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ echo "* Loading sample data"
+	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
+	@ echo "* Rebuilding full text indexes"
+	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ echo "* Resetting sequences"
+	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ echo "* Vacuuming"
+	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Creating ${DBNAME}"
+	@if [ "$$((`psql -l | grep -w ${DBNAME} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
+	fi
+	@ sleep 2
+	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME}
+
+	# Here we can use TEMPLATE_WITH_TEST_SAMPLEDATA as the template
+	# because that has the sample data we want.
+	@ echo "* Creating ${TEST_PLAYGROUND_DBNAME}"
+	@if [ "$$((`psql -l | grep -w ${TEST_PLAYGROUND_DBNAME} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${TEST_PLAYGROUND_DBNAME} | grep : | cat ; \
+	fi
+	@ sleep 2
+	@ ${CREATEDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} ${TEST_PLAYGROUND_DBNAME}
+
+create: check
+	# This will create a DB named launchpad_empty and load the base
+	# database schema, full text indexes and grants into it.
+	# No sample data is added at this point.
+	@ echo "* If this fails you need to run as the postgresql superuser"
+	@ echo "* eg. sudo -u postgres make create"
+	@ echo
+	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
+	fi
+	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
+	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '0' ]; \
+	    then ${CREATEDB} template1 ${EMPTY_DBNAME} ; \
+	    else echo ${EMPTY_DBNAME} already exists; \
+	fi
+	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
+		echo "* Installing PL/PythonU"; \
+		createlang -d ${EMPTY_DBNAME} plpythonu; \
+	fi
+	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpgsql`; then \
+		echo "* Installing PL/PgSQL"; \
+	    	createlang -d ${EMPTY_DBNAME} plpgsql; \
+	fi
+	@ echo "* Creating functions"
+	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
+	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat
+	@ echo "* Installing tsearch2 into ts2 schema"
+	@ ${PYTHON} fti.py -q --setup-only -d ${EMPTY_DBNAME}
+	@ echo "* Loading base database schema"
+	@ psql -d ${EMPTY_DBNAME} -f ${BASELINE} | grep : | cat
+	@ echo "* Patching the database schema"
+	@ ${PYTHON} upgrade.py -d ${EMPTY_DBNAME}
+	@ echo "* Setting up full text indexes"
+	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
+	@ echo "* Security setup"
+	@ ${PYTHON} security.py -d ${EMPTY_DBNAME}
+
+	# Now create session databases, both for tests and for the dev
+	# environment.
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
@@ -78,41 +156,6 @@ test: create
 	${CREATEDB} template1 ${TEST_SESSION_DBNAME} ; \
 	createlang plpgsql ${TEST_SESSION_DBNAME}; \
 	psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql ; \
-
-dev: test
-	@ echo "* Creating ${DBNAME}"
-	@if [ "$$((`psql -l | grep -w ${DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
-	fi
-	@ sleep 2
-	@ ${CREATEDB} ${TEST_DBNAME} ${DBNAME}
-
-create: check
-	@ echo "* If this fails you need to run as the postgresql superuser"
-	@ echo "* eg. sudo -u postgres make create"
-	@ echo
-	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${TEST_DBNAME} | grep : | cat ; \
-	fi
-	@if [ "$$((`psql -l | grep -w ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
-	fi
-	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
-	@if [ "$$((`psql -l | grep -w ${TEST_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${TEST_DBNAME} ; \
-	    else echo ${TEST_DBNAME} already exists; \
-	fi
-	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpythonu`; then \
-		echo "* Installing PL/PythonU"; \
-		createlang -d ${TEST_DBNAME} plpythonu; \
-	fi
-	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpgsql`; then \
-		echo "* Installing PL/PgSQL"; \
-	    	createlang -d ${TEST_DBNAME} plpgsql; \
-	fi
-	@ echo "* Creating functions"
-	@ psql -d ${TEST_DBNAME} -f trusted.sql   | grep : | cat
-	@ psql -d ${TEST_DBNAME} -f testfuncs.sql | grep : | cat
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
@@ -144,21 +187,17 @@ doc:
 diagram:
 	${PYTHON} diagram.py
 
-newsampledata:
-	$(PYTHON) fti.py --null -d ${DBNAME} -q
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-	| $(PYTHON) sort_sql.py \
-	> $(NEWSAMPLEDATA)
-	$(PYTHON) fti.py --force -d ${DBNAME} -q
+newsampledata_test:
+	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${NEWSAMPLEDATA})
+
+newsampledata_dev:
+	$(call build_new_sampledata,${DBNAME},${NEWSAMPLEDATA_DEV})
+
+newsampledata: newsampledata_dev newsampledata_test
 
 lintdata:
-	$(PYTHON) fti.py --null -d ${TEST_DBNAME} -q
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${TEST_DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-	| $(PYTHON) sort_sql.py \
-	> $(LINTDATA)
-	$(PYTHON) fti.py --force -d ${TEST_DBNAME} -q
+	$(call build_new_sampledata,${TEMPLATE_WITH_TEST_SAMPLEDATA},${LINTDATA})
+	$(call build_new_sampledata,${TEMPLATE_WITH_DEV_SAMPLEDATA},${LINTDATA_DEV})
 
 .PHONY: default base all
 

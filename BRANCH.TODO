@@ -3,11 +3,37 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+0. Change the docs to explain how to change each sort of sample data.
+
 1. Change 'make schema' to load sampledata1 into launchpad_dev, sampledata2
 into launchpad_ftest_template and then create launchpad_ftest_playground using
 launchpad_ftest_template as the template.
+    - I think it's a good idea to keep all the existing DB names. The sample
+      data for tests will be in the existing current.sql file and the one for
+      playing around is going to be in current-dev.sql.
 
-2. Change 'make newsampledata' to generate sampledata1 from what's in
-launchpad_dev and sampledata2 from what is in launchpad_ftest_playground.
+2. Change 'make newsampledata' to generate newsampledata-dev.sql from what's in
+launchpad_dev and newsampledata.sql from what is in
+launchpad_ftest_playground.
 
-3. Make it possible to access lp_ftest_playground via https://launchpad.ftest.
+3. Change utilities/lint.sh to complain if any sampledata is out of date.
+    - Do we really need to do that for the sampledata that is loaded into
+      launchpad_dev?  I guess we won't be worrying much about the changes that go in
+      there, but it may be problematic if people don't update it when they write DB
+      patches as that will cause conflicts when two other people generate new
+      sampledata later.
+    - I did this but it means an extra DB (launchpad_dev_template) which is
+      used only by utilities/lint.sh.
+
+4. Make it possible to access lp_ftest_playground via https://launchpad.ftest.
+    - It doesn't seem to be easy to make the server listen on a separate port,
+      with requests on that port using the lp_ftest_playground DB.
+    - Another option is to define a new config environment that'd be identical
+      the dev environment but with a different db name. If we do that, though,
+      devs would have to start a server with a specific config to be able to
+      browse through the test database.
+
+5. Now there will be two more databases with sample data loaded, so that makes
+the number of DB relations to go above 1000, thus causing postgres to issue a
+warning saying that you may want to increase your max_fsm_relations config
+value.
