@@ -1634,6 +1634,8 @@ hoary:
     ...     sourcename="package1", version="1.1", archive=cprov.archive)
     >>> discard = test_publisher.getPubSource(
     ...     sourcename="package2", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="pack", version="1.0", archive=cprov.archive)
 
 Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
 can ask syncSources to synchronise these packages into sabdfl's PPA in the
@@ -1690,9 +1692,10 @@ all result in a NotFound exception:
     ...
     DistroSeriesNotFound: badseries
 
+
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
-pulled:
+pulled.
 
 Set up v1.0 and 1.1 of "package3":
 
@@ -1701,7 +1704,21 @@ Set up v1.0 and 1.1 of "package3":
     >>> discard = test_publisher.getPubSource(
     ...     sourcename="package3", version="1.1", archive=cprov.archive)
 
-Copy 1.0 explicitly:
+The underlying package discovery has the ability to do substring matches
+on the supplied package names.  However, this feature is not being used
+as it's potentially dangerous, since through the API there is no "are
+you sure!" type transaction.
+
+When copying a single package, if we supply a package name of "pack" it will
+only match one of the test packages we created above rather than all of them:
+
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> [pack] = sabdfl.archive.getPublishedSources(
+    ...     name="pack", exact_match=True)
+    >>> print pack.sourcepackagerelease.version
+    1.0
+
+Copy package3 1.0 explicitly:
 
     >>> sabdfl.archive.syncSource("package3", "1.0", cprov.archive, "release")
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")

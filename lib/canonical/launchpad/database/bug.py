@@ -737,6 +737,13 @@ class Bug(SQLBase):
             notify(SQLObjectCreatedEvent(bugcve, user=user))
             return bugcve
 
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # See canonical.launchpad.interfaces.bug
+    def linkCVEAndReturnNothing(self, cve, user):
+        """See `IBug`."""
+        self.linkCVE(cve, user)
+        return None
+
     def unlinkCVE(self, cve, user=None):
         """See `IBug`."""
         for cve_link in self.cve_links:
