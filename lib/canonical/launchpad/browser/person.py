@@ -1168,7 +1168,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def gpgkeys(self):
         target = '+editpgpkeys'
-        text = 'GPG Keys'
+        text = 'OpenPGP Keys'
         return Link(target, text)
 
     def passwords(self):

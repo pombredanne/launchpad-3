@@ -332,7 +332,15 @@
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
-        <iframe id="help-pane-content" class="invisible"></iframe>
+        <tal:XXX condition="nothing">
+          # XXX mars 2008-11-07 bug=295254:
+          # We use this ugly src="" hack to get rid of an IE6 security
+          # warning.  See bug #295234.
+        </tal:XXX>
+        <iframe
+          id="help-pane-content"
+          class="invisible"
+          src="javascript:false;"></iframe>
       </div>
       <div id="help-footer">
         <span id="help-close"></span>

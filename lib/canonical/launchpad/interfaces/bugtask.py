@@ -435,6 +435,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                "Fix Released."),
                  readonly=True,
                  required=False))
+    date_left_closed = exported(
+        Datetime(title=_("Date left closed"),
+                 description=_("The date on which this task was "
+                               "last reopened."),
+                 readonly=True,
+                 required=False))
     age = Datetime(title=_("Age"),
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
