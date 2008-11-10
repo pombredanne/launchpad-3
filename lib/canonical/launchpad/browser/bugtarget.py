@@ -701,7 +701,8 @@ class FileBugViewBase(LaunchpadFormView):
             # own reporting guidelines and those of their
             # distribution.
             if IDistributionSourcePackage.providedBy(context):
-                guidelines.append(context.distribution.bug_reporting_guidelines)
+                guidelines.append(
+                    context.distribution.bug_reporting_guidelines)
         return [guideline for guideline in guidelines
                 if guideline is not None and len(guideline) > 0]
 
