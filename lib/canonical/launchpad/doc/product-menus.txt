@@ -10,10 +10,10 @@ test all the product menu classes below.
     >>> import traceback
     >>> import sys
     >>> import os
-    >>> from zope.component import getMultiAdapter, queryAdapter
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.utils import safe_hasattr
     >>> from canonical.lazr.testing.menus import make_fake_request
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> def check_menu_links(menu):
     ...     for link in menu.iterlinks():
@@ -77,20 +77,15 @@ test all the product menu classes below.
     rdf: http://launchpad.dev/firefox/+rdf
         ProductRdfView: product-rdf.pt
 
-== ProductBranchesMenu ==
 
-    # ProductBranchesMenu.code_import points to /+code-imports/+new
-    # which check_menu_links() can't handle.
-    #>>> branches_menu = ProductBranchesMenu(firefox)
-    #>>> check_menu_links(branches_menu)
+== ProductBranchesMenu and ProductTranslationsMenu ==
 
-== ProductTranslationsMenu ==
+We are not testing ProductBranchesMenu.code_import because it
+points to a view (/+code-imports/+new), which is not easily tested.
 
-    # Most of the links in ProductTranslationsMenu do not
-    # work with check_menu_links(). This might be because the
-    # facet is not applied correctly before using getMultiAdapter().
-    #>>> translations_menu = ProductTranslationsMenu(firefox)
-    #>>> check_menu_links(translations_menu)
+Most of the links in ProductTranslationsMenu do not
+work with check_menu_links(). This might be because the
+facet is not applied correctly before using getMultiAdapter().
 
 
 == ProductBugsMenu ==
