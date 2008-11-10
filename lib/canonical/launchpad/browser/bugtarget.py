@@ -696,15 +696,23 @@ class FileBugViewBase(LaunchpadFormView):
         guidelines = []
         context = self.bugtarget
         if context is not None:
-            guidelines.append(context.bug_reporting_guidelines)
+            preamble = u"Please include, if possible:"
+            content = context.bug_reporting_guidelines
+            if content is not None and len(content) > 0:
+                guidelines.append(
+                    {"preamble": preamble, "content": content})
             # Distribution source packages are shown with both their
             # own reporting guidelines and those of their
             # distribution.
             if IDistributionSourcePackage.providedBy(context):
-                guidelines.append(
-                    context.distribution.bug_reporting_guidelines)
-        return [guideline for guideline in guidelines
-                if guideline is not None and len(guideline) > 0]
+                distribution = context.distribution
+                preamble = u"For %s, please include, if possible:" % (
+                    distribution.displayname)
+                content = distribution.bug_reporting_guidelines
+                if content is not None and len(content) > 0:
+                    guidelines.append(
+                        {"preamble": preamble, "content": content})
+        return guidelines
 
 
 class FileBugAdvancedView(FileBugViewBase):

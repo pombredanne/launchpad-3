@@ -42,9 +42,10 @@ The guidelines are not displayed on the initial basic bug-reporting
 page, because that page does not include a bug description field.
 
     >>> def print_guidelines(name, browser):
-    ...     print '* ' + name
-    ...     print '  - ' + user_browser.url
-    ...     print '  - ' + extract_text(find_tag_by_id(
+    ...     print '*'
+    ...     print name
+    ...     print '  <%s>' % user_browser.url
+    ...     print extract_text(find_tag_by_id(
     ...         user_browser.contents, 'bug-reporting-guidelines'))
 
     >>> for context_name, context_path in primary_contexts:
@@ -64,22 +65,27 @@ include a bug description field.
     ...         'http://launchpad.dev/%s/+filebug-advanced' % (context_path,))
     ...     user_browser.open(filebug_url)
     ...     print_guidelines(context_name, user_browser)
-    * Ubuntu
-      - http://launchpad.dev/ubuntu/+filebug-advanced
-      - Please include, if possible:
+    *
+    Ubuntu
+      <http://launchpad.dev/ubuntu/+filebug-advanced>
+    Please include, if possible:
     The version of Ubuntu you're using.
-    * Mozilla
-      - http://launchpad.dev/mozilla/+filebug-advanced
-      - Please include, if possible:
+    *
+    Mozilla
+      <http://launchpad.dev/mozilla/+filebug-advanced>
+    Please include, if possible:
     The version of Mozilla you're using.
-    * Firefox
-      - http://launchpad.dev/firefox/+filebug-advanced
-      - Please include, if possible:
+    *
+    Firefox
+      <http://launchpad.dev/firefox/+filebug-advanced>
+    Please include, if possible:
     The version of Firefox you're using.
-    * alsa-utils in Ubuntu
-      - http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced
-      - Please include, if possible:
+    *
+    alsa-utils in Ubuntu
+      <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced>
+    Please include, if possible:
     The version of ALSA you're using.
+    For Ubuntu, please include, if possible:
     The version of Ubuntu you're using.
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
@@ -96,16 +102,8 @@ once you've got to the step of entering a bug description.
     Please include, if possible:
     The version of Firefox you're using.
 
-Bugs can also be reported directly against distribution source
-packages and distribution series, but for both of these the
-guidelines are taken from their respective distributions.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/evolution/+filebug-advanced')
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Please include, if possible:
-    The version of Ubuntu you're using.
+Bugs can also be reported directly against a distribution series, for
+which the guidelines are taken from the respective distribution.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/warty/+filebug')
@@ -135,6 +133,7 @@ shown.
     ...     user_browser.contents, 'bug-reporting-guidelines'))
     Please include, if possible:
     The version of ALSA you're using.
+    For Ubuntu, please include, if possible:
     The version of Ubuntu you're using.
 
     >>> user_browser.open(
