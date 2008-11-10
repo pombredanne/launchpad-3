@@ -1,9 +1,9 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE OpenIdRpConfig
-    ADD COLUMN can_query_all_teams BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN can_query_any_team BOOLEAN NOT NULL DEFAULT FALSE;
   
-UPDATE OpenIdRpConfig SET can_query_all_teams=TRUE
+UPDATE OpenIdRpConfig SET can_query_any_team = TRUE
 WHERE (
         trust_root LIKE 'https://%.canonical.com'
         OR trust_root = 'https://www.ubuntuone.com/'
