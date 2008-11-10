@@ -1159,27 +1159,31 @@ being returned.
 == Getting the build records for a particular builder ==
 
 The getBuildsForBuilder method returns all the builds for the 
-specified builder ID, ordered from most-recent to least-recent.
+specified builder ID, ordered from most-recently created.
 
     Create some source packages with which to test the 
     getBuildsForBuilder method:
 
-    >>> src_pkg = test_publisher.getPubSource(
+    >>> src_pkg_earlier = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='buildsforbuilder', architecturehintlist='hppa i386')
-    >>> src_pkg_2 = test_publisher.getPubSource(
+    ...     sourcename='earlierbuildsrc', architecturehintlist='hppa i386')
+    >>> src_pkg_later = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='latestbuildforbuilder',
+    ...     sourcename='laterbuildsrc',
     ...     architecturehintlist='hppa i386')
     
     Create the builds based on the source packages, with the builds
-    for i386 created by the 'frog' builder, while the builds
-    for the hppa created by 'bob' the builder:
+    for 'earlierbuildsrc' created one day ago:
 
     >>> frog_builder = getUtility(IBuilderSet)['frog']
     >>> bob_builder = getUtility(IBuilderSet)['bob']
-    >>> builds = (src_pkg.createMissingBuilds() + 
-    ...     src_pkg_2.createMissingBuilds())
+    >>> builds = src_pkg_earlier.createMissingBuilds()
+    >>> for build in builds:
+    ...     build.datecreated = build.datecreated - timedelta(1)
+    >>> builds += src_pkg_later.createMissingBuilds()
+
+    Ensure that the i386 builds are created by the 'frog' builder,
+    while the hppa builds are created by 'bob' the builder:
     
     >>> for build in builds:
     ...     if build.processor.name == u'386':
@@ -1187,21 +1191,13 @@ specified builder ID, ordered from most-recent to least-recent.
     ...     else:
     ...         build.builder = bob_builder
 
-    Also ensure that the builds for the 'buildforbuilder' package
-    occured 1 day ago, so that the 'latestbuildforbuilder'
-    builds will indeed be the latest builds:
-        
-    >>> for build in builds:
-    ...     if build.sourcepackagerelease.name == 'buildsforbuilder':
-    ...         build.datecreated = build.datecreated - timedelta(1)
-
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datecreated DESC:
     
     >>> builds = getUtility(IBuildSet).getBuildsForBuilder(frog_builder.id)
     >>> for build in builds:
     ...     print build.title
-    i386 build of latestbuildforbuilder 666 in ubuntutest breezy-autotest 
+    i386 build of laterbuildsrc 666 in ubuntutest breezy-autotest 
         RELEASE
-    i386 build of buildsforbuilder 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of earlierbuildsrc 666 in ubuntutest breezy-autotest RELEASE
 
