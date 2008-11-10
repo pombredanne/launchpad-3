@@ -1185,7 +1185,7 @@ specified builder ID, ordered from most-recent to least-recent.
     ...     if build.processor.name == u'386':
     ...         build.builder = frog_builder
     ...     else:
-    ...         build.builder = bob
+    ...         build.builder = bob_builder
 
     Also ensure that the builds for the 'buildforbuilder' package
     occured 1 day ago, so that the 'latestbuildforbuilder'
@@ -1198,7 +1198,7 @@ specified builder ID, ordered from most-recent to least-recent.
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datecreated DESC:
     
-    >>> builds = removeSecurityProxy(bs).getBuildsForBuilder(frog_builder.id)
+    >>> builds = getUtility(IBuildSet).getBuildsForBuilder(frog_builder.id)
     >>> for build in builds:
     ...     print build.title
     i386 build of latestbuildforbuilder 666 in ubuntutest breezy-autotest 
