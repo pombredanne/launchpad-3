@@ -117,7 +117,85 @@ guidelines are taken from their respective distributions.
     The version of Ubuntu you're using.
 
 
-== Edit Access ==
+== Other contexts ==
+
+When filing a bug through the bugs front page the guidelines are also
+shown.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/+filebug')
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['ubuntu']
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.package').value = "alsa-utils"
+    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Continue').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Please include, if possible:
+    The version of ALSA you're using.
+    The version of Ubuntu you're using.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/+filebug')
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = "firefox"
+    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Continue').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Please include, if possible:
+    The version of Firefox you're using.
+
+
+== Limitations ==
+
+There are some limitations to where we can show guidelines, because
+it's not always possible to know what the current context is. The
+following pages are known to be affected:
+
+    /bugs/+filebug
+    /bugs/+filebug-advanced
+    /<distro>/+filebug
+    /<distro>/+filebug-advanced
+    /<project-group>/+filebug
+    /<project-group>/+filebug-advanced
+
+In all cases, the problem is that the user can change the context
+(i.e. distro, package, project) without having to advance a page. This
+may mean that no guidelines are shown or the wrong guidelines are
+shown.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+filebug-advanced')
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Please include, if possible:
+    The version of Ubuntu you're using.
+
+Changing the package to alsa-utils does not make the alsa-utils
+guidelines appear.
+
+    >>> user_browser.getControl(
+    ...     name='packagename_option').value = ['choose']
+    >>> user_browser.getControl(
+    ...     name='field.packagename').value = "alsa-utils"
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Please include, if possible:
+    The version of Ubuntu you're using.
+
+Using Javascript it should be possible to force a page reload or load
+the guidelines dynamically.
+
+This is a slightly silly example because testbrowser does not evaluate
+Javascript and so dynamic changes to the page will never be seen. The
+example is solely for documentation.
+
+
+== Editing the guidelines ==
 
 Unprivileged Launchpad users do not see the link to the page where the
 bug reporting guidelines can be changed, but admins do.

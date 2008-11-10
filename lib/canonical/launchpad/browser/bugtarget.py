@@ -683,14 +683,25 @@ class FileBugViewBase(LaunchpadFormView):
         return None
 
     @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        The same as the context.
+        """
+        return self.context
+
+    @property
     def bug_reporting_guidelines(self):
         """Return guidelines for filing bugs in the current context."""
-        guidelines = [self.context.bug_reporting_guidelines]
-        # Distribution source packages are shown with both their own
-        # reporting guidelines and those of their distribution.
-        if IDistributionSourcePackage.providedBy(self.context):
-            guidelines.append(
-                self.context.distribution.bug_reporting_guidelines)
+        guidelines = []
+        context = self.bugtarget
+        if context is not None:
+            guidelines.append(context.bug_reporting_guidelines)
+            # Distribution source packages are shown with both their
+            # own reporting guidelines and those of their
+            # distribution.
+            if IDistributionSourcePackage.providedBy(context):
+                guidelines.append(context.distribution.bug_reporting_guidelines)
         return [guideline for guideline in guidelines
                 if guideline is not None and len(guideline) > 0]
 
@@ -930,6 +941,18 @@ class FrontPageFileBugMixin:
         product_or_distro = self.getProductOrDistroFromContext()
         return IProduct.providedBy(product_or_distro)
 
+    @property
+    def bugtarget(self):
+        """The bugtarget we're currently assuming.
+
+        This needs to be obtained from form data because we're on the
+        front page, and not already within a product/distro/etc
+        context.
+        """
+        if self.widgets['bugtarget'].hasValidInput():
+            return self.widgets['bugtarget'].getInputValue()
+        return None
+
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.
 
@@ -937,13 +960,10 @@ class FrontPageFileBugMixin:
         distribution related to it. This method will return None if the
         context is not related to a product or a distro.
         """
-        context = self.context
-
         # We need to find a product or distribution from what we've had
         # submitted to us.
-        if self.widgets['bugtarget'].hasValidInput():
-            context = self.widgets['bugtarget'].getInputValue()
-        else:
+        context = self.bugtarget
+        if context is None:
             return None
 
         if IProduct.providedBy(context) or IDistribution.providedBy(context):
