@@ -128,8 +128,10 @@ def cveSetUp(test):
     setUp(test)
 
 def statisticianSetUp(test):
+    test_dbuser = config.statistician.dbuser
+    test.globs['test_dbuser'] = test_dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
     tearDown(test)
