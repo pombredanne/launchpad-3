@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
     IOAuthRequestToken, IOAuthRequestTokenSet, NonceAlreadyUsed)
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, OAuthPermission, IStoreSelector, AUTH_STORE, MASTER_FLAVOR)
+    AccessLevel, OAuthPermission, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 # How many hours should a request token be valid for?
@@ -55,13 +55,12 @@ class OAuthBase(SQLBase):
     def _get_store():
         """See `SQLBase`.
 
-        We want all OAuth classes to be retrieved from the Auth store
-        with the Master flavour. If they are retrieved from the slave,
-        there will be problems in the authorization exchange, since it
-        will be done across applications that won't share the session
-        cookies.
+        We want all OAuth classes to be retrieved from the master flavour.  If
+        they are retrieved from the slave, there will be problems in the
+        authorization exchange, since it will be done across applications that
+        won't share the session cookies.
         """
-        return getUtility(IStoreSelector).get(AUTH_STORE, MASTER_FLAVOR)
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
 
 class OAuthConsumer(OAuthBase):
