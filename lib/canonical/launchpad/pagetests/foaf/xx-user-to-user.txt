@@ -145,5 +145,5 @@ pages, when he tries to submit the fourth one, the submission fails.
 
     >>> browser_4.getControl('Send').click()
     >>> print_errors(browser_4.contents)
-    The message was not sent because you have exceeded your daily quota for
-    user contact messages. Please try again tomorrow.
+    Your message was not sent because you have exceeded your daily quota of 3
+    messages to contact users. Try again in ... hours.

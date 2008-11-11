@@ -653,7 +653,8 @@ def print_tag_with_id(contents, id):
 def print_errors(contents):
     """Print all the errors on the page."""
     errors = find_tags_by_class(contents, 'error')
-    for error in [extract_text(e) for e in errors]:
+    error_texts = [extract_text(error) for error in errors]
+    for error in error_texts:
         print error
 
 

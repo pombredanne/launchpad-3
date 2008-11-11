@@ -213,6 +213,7 @@ def setGlobs(test):
     test.globs['create_view'] = create_view
     test.globs['create_initialized_view'] = create_initialized_view
     test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
 

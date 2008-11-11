@@ -1812,6 +1812,22 @@ def notify_message_held(message_approval, event):
         simple_sendmail(from_address, address, subject, body)
 
 
+def encode(value):
+    """Encode string for transport in a mail header.
+
+    :param value: The raw email header value.
+    :type value: unicode
+    :return: The encoded header.
+    :rtype: `email.Header.Header`
+    """
+    try:
+        value.encode('us-ascii')
+        charset = 'us-ascii'
+    except UnicodeEncodeError:
+        charset = 'utf-8'
+    return Header(value.encode(charset), charset)
+
+
 def send_direct_contact_email(sender_email, recipient_email, subject, body):
     """Send a direct user-to-user email.
 
@@ -1828,31 +1844,27 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
     """
     # Craft the email message.  Start by checking whether the subject and
     # message bodies are ASCII or not.
-    try:
-        subject.encode('us-ascii')
-        charset = 'us-ascii'
-    except UnicodeEncodeError:
-        charset = 'utf-8'
-    subject_header = Header(subject.encode(charset), charset)
+    subject_header = encode(subject)
     try:
         body.encode('us-ascii')
         charset = 'us-ascii'
     except UnicodeEncodeError:
         charset = 'utf-8'
     message = MIMEText(body.encode(charset), _charset=charset)
-    # Get the sender and recipient's real names.
+    # Get the sender and recipient's real names, encoded as per RFC 2047.
     person_set = getUtility(IPersonSet)
     sender = person_set.getByEmail(sender_email)
     assert sender is not None, 'No person for sender %s' % sender_email
     authorization = IDirectEmailAuthorization(sender)
     if not authorization.is_allowed:
-        raise QuotaReachedError('Sender has reached quota: %s' %
-                                sender.displayname)
+        raise QuotaReachedError(sender.displayname, authorization)
     recipient = person_set.getByEmail(recipient_email)
     assert recipient is not None, (
         'No person for recipient %s' % recipient_email)
-    message['From'] = formataddr((sender.displayname, sender_email))
-    message['To'] = formataddr((recipient.displayname, recipient_email))
+    sender_name = str(encode(sender.displayname))
+    recipient_name = str(encode(recipient.displayname))
+    message['From'] = formataddr((sender_name, sender_email))
+    message['To'] = formataddr((recipient_name, recipient_email))
     message['Subject'] = subject_header
     message['Message-ID'] = make_msgid('launchpad')
     # Record the contact.  Send the message first though so it gets a Date

@@ -105,6 +105,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -190,6 +191,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -1169,7 +1171,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def gpgkeys(self):
         target = '+editpgpkeys'
-        text = 'GPG Keys'
+        text = 'OpenPGP Keys'
         return Link(target, text)
 
     def passwords(self):
@@ -4948,15 +4950,22 @@ class EmailToPersonView(LaunchpadFormView):
         sender_email = data['field.from_'].email
         subject = data['subject']
         message = data['message']
-        recipient_email = self.context.preferredemail.email
+        # When the recipient is hiding her email addresses, the security proxy
+        # will prevent direct access to the .email attribute of the preferred
+        # email.  Bypass this restriction.
+        recipient_email = removeSecurityProxy(self.context.preferredemail)
         try:
             message = send_direct_contact_email(
-                sender_email, recipient_email, subject, message)
+                sender_email, recipient_email.email, subject, message)
         except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
-                _('The message was not sent because you have exceeded your '
-                  'daily quota for user contact messages.  Please try again '
-                  'tomorrow.'))
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
         else:
             self.request.response.addInfoNotification(
                 _('Message sent to $name',
