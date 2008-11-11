@@ -2,27 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-0. Change the docs to explain how to change each sort of sample data.
-
-1. Change 'make schema' to load current-dev.sql into launchpad_dev, current.sql
-into launchpad_ftest_template and then create launchpad_ftest_playground using
-launchpad_ftest_template as the template.
-
-2. Change 'make newsampledata' to generate newsampledata-dev.sql from what's in
-launchpad_dev and newsampledata.sql from what is in launchpad_ftest_playground.
-
-3. Change utilities/lint.sh to complain if any sampledata is out of date.
-    - I did this but it means an extra DB (launchpad_dev_template) which is
-      used only by utilities/lint.sh.
-
-4. Make it possible to access lp_ftest_playground via https://launchpad.dev
-when LPCONFIG=test-playground is used.
-    - I'd like to have the web app listening on a separate port, with
-      connections to that port accessing the ftest DB, but that's rather
-      complicated and may not even work.
-
-5. Now there will be two more databases with all of our tables and views, so
-that makes the number of DB relations to go above 1000, thus causing postgres
-to issue a warning saying that we may want to increase your max_fsm_relations
-config value.
