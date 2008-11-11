@@ -212,6 +212,7 @@ class QuotaReachedError(Exception):
     """The user-to-user contact email quota has been reached for today."""
 
     def __init__(self, sender, authorization):
+        Exception.__init__(self)
         self.sender = sender
         self.authorization = authorization
 
