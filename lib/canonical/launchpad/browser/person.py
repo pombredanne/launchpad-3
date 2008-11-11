@@ -105,6 +105,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -1168,7 +1169,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def gpgkeys(self):
         target = '+editpgpkeys'
-        text = 'GPG Keys'
+        text = 'OpenPGP Keys'
         return Link(target, text)
 
     def passwords(self):
@@ -4947,9 +4948,12 @@ class EmailToPersonView(LaunchpadFormView):
         sender_email = data['field.from_'].email
         subject = data['subject']
         message = data['message']
-        recipient_email = self.context.preferredemail.email
+        # When the recipient is hiding her email addresses, the security proxy
+        # will prevent direct access to the .email attribute of the preferred
+        # email.  Bypass this restriction.
+        recipient_email = removeSecurityProxy(self.context.preferredemail)
         message = send_direct_contact_email(
-            sender_email, recipient_email, subject, message)
+            sender_email, recipient_email.email, subject, message)
         self.request.response.addInfoNotification(
             _('Message sent to $name',
               mapping=dict(name=self.context.displayname)))
