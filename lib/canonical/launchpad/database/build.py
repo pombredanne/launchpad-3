@@ -778,7 +778,7 @@ class BuildSet:
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=["-Build.datecreated", "id"])
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):

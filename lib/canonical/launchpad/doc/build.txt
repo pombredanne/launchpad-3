@@ -635,7 +635,9 @@ The default set of builds with no user specified excludes private builds:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    RELEASE
+    
     >>> bob_builds.count()
     13
 
@@ -654,7 +656,9 @@ three additional private builds for cprov:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
+        RELEASE
+    
     >>> bob_builds.count()
     16
 
@@ -670,6 +674,8 @@ Cprov can also see his own builds of course:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
+        RELEASE
 
 You can filter on build state:
 
@@ -1159,7 +1165,7 @@ being returned.
 == Getting the build records for a particular builder ==
 
 The getBuildsForBuilder method returns all the builds for the 
-specified builder ID, ordered from most-recently created.
+specified builder ID, ordered from most-recently built.
 
     Create some source packages with which to test the 
     getBuildsForBuilder method:
@@ -1173,18 +1179,24 @@ specified builder ID, ordered from most-recently created.
     ...     architecturehintlist='hppa i386')
     
     Create the builds based on the source packages, with the builds
-    for 'earlierbuildsrc' created one day ago:
+    for 'earlierbuildsrc' built one day before the 'laterbuildsrc':
 
     >>> frog_builder = getUtility(IBuilderSet)['frog']
     >>> bob_builder = getUtility(IBuilderSet)['bob']
-    >>> builds = src_pkg_earlier.createMissingBuilds()
-    >>> for build in builds:
-    ...     build.datecreated = build.datecreated - timedelta(1)
-    >>> builds += src_pkg_later.createMissingBuilds()
 
+    >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
+    >>> eg_build_date = earlier_builds[0].datecreated
+    >>> for build in earlier_builds:
+    ...     build.datebuilt = eg_build_date - timedelta(1)
+
+    >>> later_builds = src_pkg_later.createMissingBuilds()
+    >>> for build in later_builds:
+    ...     build.datebuilt = eg_build_date
+    
     Ensure that the i386 builds are created by the 'frog' builder,
     while the hppa builds are created by 'bob' the builder:
     
+    >>> builds = earlier_builds + later_builds
     >>> for build in builds:
     ...     if build.processor.name == u'386':
     ...         build.builder = frog_builder
@@ -1192,12 +1204,13 @@ specified builder ID, ordered from most-recently created.
     ...         build.builder = bob_builder
 
     A call to getBuildsForBuilder returns only those builds that were
-    built by the specified builder, ordered by datecreated DESC:
+    built by the specified builder, ordered by datebuilt DESC:
     
-    >>> builds = getUtility(IBuildSet).getBuildsForBuilder(frog_builder.id)
-    >>> for build in builds:
-    ...     print build.title
-    i386 build of laterbuildsrc 666 in ubuntutest breezy-autotest 
-        RELEASE
-    i386 build of earlierbuildsrc 666 in ubuntutest breezy-autotest RELEASE
+    >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
+    ...     frog_builder.id)
+    >>> print_build_details(frog_builds)
+    ubuntu-team: i386 build of laterbuildsrc 666 in ubuntutest
+        breezy-autotest RELEASE
+    ubuntu-team: i386 build of earlierbuildsrc 666 in ubuntutest
+        breezy-autotest RELEASE
 
