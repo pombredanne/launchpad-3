@@ -159,8 +159,10 @@ class HTTPResource:
         if request == None:
             request = self.request
         override = request.headers.get('X-HTTP-Method-Override')
+        print "override: %s" % override
         if override is not None:
             if request.method == 'POST':
+                print "yay %s" % override
                 return override
             else:
                 # XHMO should not be used unless the underlying method
@@ -661,6 +663,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
+        print "Media type: " + media_type
+        print "Representation: " + representation
         if not media_type.startswith(self.JSON_TYPE):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of %s.' % self.JSON_TYPE
@@ -734,6 +738,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
     def do_PATCH(self, media_type, representation):
         """Apply a JSON patch to the entry."""
+        print "do_patch!"
         changeset, error = self.processAsJSONHash(media_type, representation)
         if error is not None:
             return error
