@@ -442,12 +442,6 @@ class BlacklistableContentNameField(ContentNameField):
         """Check that the given name is valid, unique and not blacklisted."""
         super(BlacklistableContentNameField, self)._validate(input)
 
-        _marker = object()
-        if (self._content_iface.providedBy(self.context) and
-            input == getattr(self.context, self.attribute, _marker)):
-            # The attribute wasn't changed.
-            return
-
         # Need a local import because of circular dependencies.
         from canonical.launchpad.interfaces.person import IPersonSet
         if getUtility(IPersonSet).isNameBlacklisted(input):
