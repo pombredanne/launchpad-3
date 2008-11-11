@@ -104,9 +104,9 @@ group_lines_by_file() {
 
 sample_dir="database/sampledata"
 current_sql="${sample_dir}/current.sql"
-current_dev_sql="${sample_dir}/current.sql"
+current_dev_sql="${sample_dir}/current-dev.sql"
 lintdata_sql="${sample_dir}/lintdata.sql"
-lintdata_dev_sql="${sample_dir}/lintdata.sql"
+lintdata_dev_sql="${sample_dir}/lintdata-dev.sql"
 
 if [ -n "${database_changes}" ]; then
     make -C database/schema lintdata > /dev/null
