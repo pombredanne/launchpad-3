@@ -98,7 +98,9 @@ class MockDbTestCase(unittest.TestCase):
         # upstream or not.
         MockDbTestCase._retry_count += 1
         if MockDbTestCase._retry_count % 2 == 1:
-            raise RetryTest("Testing RetryTest behavior")
+            raise RetryTest(
+                "Testing RetryTest behavior. This exception will be raised "
+                "but the test runner doesn't consider it a failure")
 
 
 _doctest_retry_count = 0
@@ -131,7 +133,7 @@ def retry_on_odd_numbered_calls():
     print "Retry not raised."
 
 
-def testRetryTestInDoctest():
+def testRetryTestInDoctest_will_raise_but_testrunner_ignores_it():
     """Test a RetryTest exception in a doctest works as expected.
 
     This doctest raises a RetryTest exception the first time it is run.

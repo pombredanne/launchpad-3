@@ -649,7 +649,7 @@ class BugTextView(LaunchpadView):
 
         for status in ["left_new", "confirmed", "triaged", "assigned",
                        "inprogress", "closed", "incomplete",
-                       "fix_committed", "fix_released"]:
+                       "fix_committed", "fix_released", "left_closed"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (

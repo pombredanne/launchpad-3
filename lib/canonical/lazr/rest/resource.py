@@ -136,6 +136,9 @@ class HTTPResource:
     # authorization to see the real value.
     REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
+    HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
+                                  "with a POST request.")
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -143,6 +146,28 @@ class HTTPResource:
     def __call__(self):
         """See `IHTTPResource`."""
         pass
+
+    def getRequestMethod(self, request=None):
+        """Return the HTTP method of the provided (or current) request.
+
+        This is usually the actual HTTP method, but it might be
+        overridden by a value for X-HTTP-Method-Override.
+
+        :return: None if the valid for X-HTTP-Method-Override is invalid.
+        Otherwise, the HTTP method to use.
+        """
+        if request == None:
+            request = self.request
+        override = request.headers.get('X-HTTP-Method-Override')
+        if override is not None:
+            if request.method == 'POST':
+                return override
+            else:
+                # XHMO should not be used unless the underlying method
+                # is POST.
+                self.request.response.setStatus(400)
+                return None
+        return request.method
 
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
@@ -517,9 +542,12 @@ class ReadOnlyResource(HTTPResource):
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -536,18 +564,21 @@ class ReadWriteResource(HTTPResource):
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method in ["PUT", "PATCH"]:
+        elif method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
                 stream = self.request.bodyStream
                 representation = stream.getCacheStream().read()
-                if self.request.method == "PUT":
+                if method == "PUT":
                     result = self.do_PUT(media_type, representation)
                 else:
                     result = self.do_PATCH(media_type, representation)
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -1071,11 +1102,16 @@ class ServiceRootResource(HTTPResource):
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
-        if REQUEST.method == "GET":
-            return self.applyTransferEncoding(self.do_GET())
+        method = self.getRequestMethod(REQUEST)
+        if method is None:
+            result = HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
+            result = self.do_GET()
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
+            result = ""
+        return self.applyTransferEncoding(result)
 
     def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
