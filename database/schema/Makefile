@@ -27,8 +27,8 @@ TEMPLATE_WITH_TEST_SAMPLEDATA=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
 TEST_SESSION_DBNAME=session_ftest
 
-# The database which is a copy of launchpad_ftest_template but can be accessed
-# via http://launchpad.test
+# The database which is a copy of launchpad_ftest_template and can be accessed
+# via http://launchpad.dev when you use LPCONFIG=test-playground
 TEST_PLAYGROUND_DBNAME=launchpad_ftest_playground
 
 # The session database name.
@@ -39,11 +39,13 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to create a database
 CREATEDB=${PYTHON} ../../utilities/pgcreate.py
 
+# The command used (in conjunction with $(call)) to dump the contents of the
+# given database ($1) into an SQL file ($2).
 build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-	| $(PYTHON) sort_sql.py > $(2); \
-	$(PYTHON) fti.py --force -d ${1} -q
+    pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
+    | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+    | $(PYTHON) sort_sql.py > $(2); \
+    $(PYTHON) fti.py --force -d ${1} -q
 
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
@@ -56,6 +58,7 @@ BASELINE=launchpad-${REV}-00-0.sql
 MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
 default: all
 
+# Create a launchpad_ftest_template DB and load the test sample data into it.
 test: create 
 	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
 	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_TEST_SAMPLEDATA} | wc -l`))" = '1' ]; \
@@ -72,8 +75,10 @@ test: create
 	@ echo "* Vacuuming"
 	@ psql -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
 
+# Create a launchpad_dev_template DB and load the dev sample data into it.
+# Also create a launchpad_ftest_playground DB as a copy of
+# launchpad_ftest_template.
 dev: test
-	# Create a launchpad_dev_template DB and load the dev sample data into it.
 	@ echo "* Creating ${TEMPLATE_WITH_DEV_SAMPLEDATA}"
 	@if [ "$$((`psql -l | grep -w ${TEMPLATE_WITH_DEV_SAMPLEDATA} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} | grep : | cat ; \
@@ -95,8 +100,6 @@ dev: test
 	@ sleep 2
 	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME}
 
-	# Here we can use TEMPLATE_WITH_TEST_SAMPLEDATA as the template
-	# because that has the sample data we want.
 	@ echo "* Creating ${TEST_PLAYGROUND_DBNAME}"
 	@if [ "$$((`psql -l | grep -w ${TEST_PLAYGROUND_DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${TEST_PLAYGROUND_DBNAME} | grep : | cat ; \
@@ -104,10 +107,11 @@ dev: test
 	@ sleep 2
 	@ ${CREATEDB} ${TEMPLATE_WITH_TEST_SAMPLEDATA} ${TEST_PLAYGROUND_DBNAME}
 
+# This will create a DB named launchpad_empty and load the base
+# database schema, full text indexes and grants into it.
+# It will also create session DBs for the test and dev environments.
+# No sample data is added at this point.
 create: check
-	# This will create a DB named launchpad_empty and load the base
-	# database schema, full text indexes and grants into it.
-	# No sample data is added at this point.
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
@@ -141,9 +145,7 @@ create: check
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -d ${EMPTY_DBNAME}
 
-	# Now create session databases, both for tests and for the dev
-	# environment.
-	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
+	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
