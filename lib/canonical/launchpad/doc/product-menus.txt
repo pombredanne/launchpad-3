@@ -87,6 +87,9 @@ Most of the links in ProductTranslationsMenu do not
 work with check_menu_links(). This might be because the
 facet is not applied correctly before using getMultiAdapter().
 
+# XXX: EdwinGrubbs 2008-11-11 bug=296927
+# A method for testing the links in the above menus should be added.
+
 
 == ProductBugsMenu ==
 
