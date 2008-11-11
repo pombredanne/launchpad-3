@@ -191,6 +191,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -4957,10 +4958,14 @@ class EmailToPersonView(LaunchpadFormView):
             message = send_direct_contact_email(
                 sender_email, recipient_email.email, subject, message)
         except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
-                _('The message was not sent because you have exceeded your '
-                  'daily quota for user contact messages.  Please try again '
-                  'tomorrow.'))
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
         else:
             self.request.response.addInfoNotification(
                 _('Message sent to $name',

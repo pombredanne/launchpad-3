@@ -1857,8 +1857,7 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
     assert sender is not None, 'No person for sender %s' % sender_email
     authorization = IDirectEmailAuthorization(sender)
     if not authorization.is_allowed:
-        raise QuotaReachedError('Sender has reached quota: %s' %
-                                sender.displayname)
+        raise QuotaReachedError(sender.displayname, authorization)
     recipient = person_set.getByEmail(recipient_email)
     assert recipient is not None, (
         'No person for recipient %s' % recipient_email)
