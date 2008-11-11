@@ -491,7 +491,10 @@ class UnembargoSecurityPackage(PackageCopier):
             help="Private PPA owner's name.")
 
     def setUpCopierOptions(self):
-        """Set up options needed by PackageCopier."""
+        """Set up options needed by PackageCopier.
+        
+        :return: False if there is a problem with the options.
+        """
         # Set up the options for PackageCopier that are needed in addition
         # to the ones that this class sets up.
         self.options.to_partner = False
@@ -499,25 +502,29 @@ class UnembargoSecurityPackage(PackageCopier):
         self.options.partner_archive = None
         self.options.include_binaries = True
         self.options.to_distribution = self.options.distribution_name
-        # If the suite did not specify a pocket, we'll default to
-        # security (you can't alter the release pocket anyway).
-        if len(self.options.suite.split("-")) == 1:
-            self.options.to_suite = "-".join((self.options.suite, "security"))
-            self.logger.warning(
-                "Release pocket specified, defaulting to -security instead")
+        from_suite = self.options.suite.split("-")
+        if len(from_suite) == 1:
+            self.logger.error("Can't unembargo into the release pocket")
+            return False
         else:
+            # The PackageCopier parent class uses options.suite as the
+            # source suite, so we need to override it to remove the
+            # pocket since PPAs are pocket-less.
             self.options.to_suite = self.options.suite
+            self.options.suite = from_suite[0]
         self.options.version = None
         self.options.component = None
 
+        return True
+
     def mainTask(self):
         """Invoke PackageCopier to copy the package(s) and re-upload files."""
+        if not self.setUpCopierOptions():
+            return None
 
-        assert self.location, (
-            "location is not available, call SoyuzScript.setupLocation() "
-            "before calling mainTask().")
-
-        self.setUpCopierOptions()
+        # Generate the location for PackageCopier after overriding the
+        # options.
+        self.setupLocation()
 
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
