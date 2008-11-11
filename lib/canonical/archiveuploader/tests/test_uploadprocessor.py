@@ -38,9 +38,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    ILibraryFileAliasSet, NonBuildableSourceUploadError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    QueueInconsistentStateError)
+    ILibraryFileAliasSet, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, QueueInconsistentStateError)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType)
 from canonical.launchpad.interfaces.component import IComponentSet
