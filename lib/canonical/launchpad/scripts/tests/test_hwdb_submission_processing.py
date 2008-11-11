@@ -34,6 +34,8 @@ class TestCaseHWDB(TestCase):
 
     layer = BaseLayer
 
+    PCI_SUBCLASS_STORAGE_SCSI = 0
+
     UDI_COMPUTER = '/org/freedesktop/Hal/devices/computer'
     UDI_SATA_CONTROLLER = '/org/freedesktop/Hal/devices/pci_8086_27c5'
     UDI_SATA_CONTROLLER_SCSI = ('/org/freedesktop/Hal/devices/'
@@ -60,12 +62,17 @@ class TestCaseHWDB(TestCase):
     UDI_PCI_PCCARD_BRIDGE = '/org/freedesktop/Hal/devices/pci_1217_7134'
     UDI_PCCARD_DEVICE = '/org/freedesktop/Hal/devices/pci_9004_6075'
 
+    UDI_SCSI_CONTROLLER_PCI_SIDE = '/org/freedesktop/Hal/devices/pci_9004_6075'
+    UDI_SCSI_CONTROLLER_SCSI_SIDE = (
+        '/org/freedesktop/Hal/devices/pci_9004_6075_scsi_host')
     UDI_SCSI_DISK = '/org/freedesktop/Hal/devices/scsi_disk'
 
     PCI_VENDOR_ID_INTEL = 0x8086
+    PCI_VENDOR_ID_ADAPTEC = 0x9004
     PCI_PROD_ID_PCI_PCCARD_BRIDGE = 0x7134
     PCI_PROD_ID_PCCARD_DEVICE = 0x6075
     PCI_PROD_ID_USB_CONTROLLER = 0x27cc
+    PCI_PROD_ID_AIC1480 = 0x6075
 
     USB_VENDOR_ID_NEC = 0x0409
     USB_PROD_ID_NEC_HUB = 0x005a
@@ -2403,6 +2410,44 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             },
         }
 
+    HAL_SCSI_CONTROLLER_PCI_SIDE = {
+        'id': 7,
+        'udi': TestCaseHWDB.UDI_SCSI_CONTROLLER_PCI_SIDE,
+        'properties': {
+            'info.bus': ('pci', 'str'),
+            'info.linux.driver': ('aic7xxx', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_COMPUTER, 'str'),
+            'info.product': ('AIC-1480 / APA-1480', 'str'),
+            'pci.device_class': (PCI_CLASS_STORAGE, 'int'),
+            'pci.device_subclass': (TestCaseHWDB.PCI_SUBCLASS_STORAGE_SCSI,
+                                    'int'),
+            'pci.vendor_id': (TestCaseHWDB.PCI_VENDOR_ID_ADAPTEC, 'int'),
+            'pci.product_id': (TestCaseHWDB.PCI_PROD_ID_AIC1480, 'int'),
+            },
+        }
+
+    HAL_SCSI_CONTROLLER_SCSI_SIDE = {
+        'id': 8,
+        'udi': TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE,
+        'properties': {
+            'info.bus': ('scsi_host', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_PCI_SIDE, 'str'),
+            'info.linux.driver': ('sd', 'str'),
+            }
+        }
+
+    HAL_SCSI_STORAGE_DEVICE = {
+        'id': 9,
+        'udi': TestCaseHWDB.UDI_SCSI_DISK,
+        'properties': {
+            'info.bus': ('scsi', 'str'),
+            'info.linux.driver': ('sd', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE, 'str'),
+            'scsi.vendor': ('SEAGATE', 'str'),
+            'scsi.model': ('ST36530N', 'str'),
+            },
+        }
+
     parsed_data = {
         'hardware': {
             'hal': {},
@@ -2558,6 +2603,56 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             ]
         self.runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
             devices, HWBus.USB, '0x1307', self.UDI_USB_STORAGE)
+
+    def testEnsureVendorIDVendorNameExistVendorSCSI(self):
+        """Test of ensureVendorIDVendorNameExists(self), SCSI bus."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_SCSI_CONTROLLER_PCI_SIDE,
+            self.HAL_SCSI_CONTROLLER_SCSI_SIDE,
+            self.HAL_SCSI_STORAGE_DEVICE,
+            ]
+
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = self.parsed_data
+        parser.buildDeviceList(self.parsed_data)
+
+        # The database does not know yet about the vendor name
+        # 'SEAGATE'...
+        vendor_name_set = getUtility(IHWVendorNameSet)
+        vendor_name = vendor_name_set.getByName('SEAGATE')
+        self.assertEqual(vendor_name, None,
+                         'Expected None looking up vendor name "SEAGATE" in '
+                         'HWVendorName, got %r.' % vendor_name)
+
+        # ...as well as the vendor ID (which is identical to the vendor
+        # name for SCSI devices).
+        vendor_id_set = getUtility(IHWVendorIDSet)
+        # Note that we must provide a string with exactly 8 characters
+        # as the vendor ID of a SCSI device.
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'SEAGATE ')
+        self.assertEqual(vendor_id, None,
+                         'Expected None looking up vendor ID "SEAGATE " in '
+                         'HWVendorID for the SCSI bus, got %r.' % vendor_id)
+
+        # HALDevice.ensureVendorIDVendorNameExists() creates these
+        # records.
+        scsi_disk = parser.hal_devices[self.UDI_SCSI_DISK]
+        scsi_disk.ensureVendorIDVendorNameExists()
+
+        vendor_name = vendor_name_set.getByName('SEAGATE')
+        self.assertEqual(vendor_name.name, 'SEAGATE',
+                         'Expected to find vendor name "SEAGATE" in '
+                         'HWVendorName, got %r.' % vendor_name.name)
+
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'SEAGATE ')
+        self.assertEqual(vendor_id.vendor_id_for_bus, 'SEAGATE ',
+                         'Expected "SEAGATE " as vendor_id_for_bus, '
+                         'got %r.' % vendor_id.vendor_id_for_bus)
+        self.assertEqual(vendor_id.bus, HWBus.SCSI,
+                         'Expected HWBUS.SCSI as bus, got %s.'
+                         % vendor_id.bus.title)
 
     def testCreateDBDataForSimpleDevice(self):
         """Test of HALDevice.createDBData.
