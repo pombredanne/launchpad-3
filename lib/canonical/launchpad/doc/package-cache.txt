@@ -551,7 +551,7 @@ Exactly 2 new sources and 2 new binaries will be accounted.
   >>> warty.binarycount
   8
 
-Let's create one source with a single binary in PENDING status.
+Let's create one source with a single binary in DELETED status.
 
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> commit()
