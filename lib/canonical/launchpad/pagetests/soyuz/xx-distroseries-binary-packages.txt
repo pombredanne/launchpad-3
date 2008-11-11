@@ -1,0 +1,15 @@
+= Distro series binary package =
+
+A binary package for a distro-series displays the package's name,
+summary and description:
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/warty/+package/mozilla-firefox')
+    >>> browser.title
+    'Binary package "mozilla-firefox" in ubuntu warty'
+    
+    >>> main_content = find_main_content(browser.contents)
+    >>> print extract_text(main_content)
+    XXX
+    
+    Grab the h1, and the summary + description here...
