@@ -169,6 +169,26 @@ class HTTPResource:
                 return None
         return request.method
 
+    def getRequestContentType(self, default):
+        """Return the incoming media type of the current request.
+
+        This is usually the value of Content-Type, but it might be
+        overridden by a value for X-Content-Type-Override.
+
+        :return: None if the valid for X-Content-Type-Override is invalid.
+        Otherwise, the incoming media type.
+        """
+        override = request.headers.get('X-Content-Type-Override')
+        if override is not None:
+            if request.method == 'POST':
+                return override
+            else:
+                # XCTO should not be used unless the underlying method
+                # is POST.
+                self.request.response.setStatus(400)
+                return None
+        self.request.headers.get('Content-Type', default)
+
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
 
@@ -205,12 +225,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
