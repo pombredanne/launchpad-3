@@ -53,6 +53,7 @@ class IHasBugs(Interface):
     @operation_parameters(
         order_by=List(
             title=_('List of fields by which the results are ordered.'),
+            value_type=Text(),
             required=False),
         search_text=copy_field(IBugTaskSearch['searchtext']),
         status=copy_field(IBugTaskSearch['status']),

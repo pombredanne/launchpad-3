@@ -946,15 +946,16 @@ class SubmissionParser(object):
                 WARNING_NO_HAL_KERNEL_VERSION)
             return None
         kernel_package_name = 'linux-image-' + kernel_version
-        if 'packages' not in self.parsed_data['software']:
-            # The RelaxNG schema does not require package data.
-            return None
         packages = self.parsed_data['software']['packages']
-        if kernel_package_name not in packages:
+        # The submission is not required to provide any package data...
+        if packages and kernel_package_name not in packages:
+            # ...but if we have it, we want it to be consistent with
+            # the HAL root node property.
             self._logWarning(
                 'Inconsistent kernel version data: According to HAL the '
                 'kernel is %s, but the submission does not know about a '
-                'kernel package %s' % (kernel_version, kernel_package_name),
+                'kernel package %s'
+                % (kernel_version, kernel_package_name),
                 WARNING_NO_HAL_KERNEL_VERSION)
             return None
         return kernel_package_name
@@ -1395,6 +1396,10 @@ class HALDevice:
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
 
+        info.bus == 'misc' and info.bus == 'unknown' are obviously
+        not very useful, except for the computer itself, which has
+        the bus 'unknown'.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -1413,9 +1418,73 @@ class HALDevice:
         "O2Micro" or "ATMEL", but sometimes useless values like
         "IEEE 802.11b". See for example
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+
+        Provided that a device is not excluded by the above criteria,
+        ensure that we have vendor ID, product ID and product name.
         """
         bus = self.raw_bus
-        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+        if bus == 'unknown' and self.udi != ROOT_UDI:
+            # The root node is course a real device; storing data
+            # about other devices with the bus "unkown" is pointless.
+            return False
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc'):
+            return False
+
+        # We identify devices by bus, vendor ID and product ID;
+        # additionally, we need a product name. If any of these
+        # are not available, we can't store information for this
+        # device.
+        if (self.real_bus is None or self.vendor_id is None
+            or self.product_id is None or self.product is None):
+            # Many IDE devices don't provide useful vendor and product
+            # data. We don't want to clutter the log with warnings
+            # about this problem -- there is nothing we can do to fix
+            # it.
+            if self.real_bus != HWBus.IDE:
+                self.parser._logWarning(
+                    'A HALDevice that is supposed to be a real device does '
+                    'not provide bus, vendor ID, product ID or product name: '
+                    '%r %r %r %r %s'
+                    % (self.real_bus, self.vendor_id, self.product_id,
+                       self.product, self.udi),
+                    self.parser.submission_key)
+            return False
+        return True
+
+    def getScsiVendorAndModelName(self):
+        """Separate vendor and model name of SCSI decvices.
+
+        SCSI devcies are identified by an 8 charcter vendor name
+        and an 16 character model name. The Linux kernel use the
+        the SCSI command set to access block devices connected
+        via USB, IEEE1394 and ATA buses too.
+
+        For ATA disks, the Linux kernel sets the vendor name to "ATA"
+        and prepends the model name with the real vendor name, but only
+        if the combined length if not larger than 16. Otherwise the
+        real vendor name is omitted.
+
+        This method provides a safe way to retrieve the  the SCSI vendor
+        and model name.
+
+        If the vendor name is 'ATA', and if the model name contains
+        at least one ' ' character, the string before the first ' ' is
+        returned as the vendor name, and the the string after the first
+        ' ' is returned as the model name.
+
+        In all other cases, vendor and model name are returned unmodified.
+        """
+        vendor = self.getProperty('scsi.vendor')
+        if vendor == 'ATA':
+            # The assumption below that the vendor name does not
+            # contain any spaces is not necessarily correct, but
+            # it is hard to find a better heuristic to separate
+            # the vendor name from the product name.
+            splitted_name = self.getProperty('scsi.model').split(' ', 1)
+            if len(splitted_name) < 2:
+                return 'ATA', splitted_name[0]
+            return splitted_name
+        return (vendor, self.getProperty('scsi.model'))
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -1435,28 +1504,11 @@ class HALDevice:
             # below does not work properly.
             return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
+            vendor, product = self.getScsiVendorAndModelName()
             if type_ == 'vendor':
-                result = self.getProperty('scsi.vendor').strip()
-                if result == 'ATA':
-                    # A weirdness of the kernel's SCSI emulation layer
-                    # for the IDE and SATA busses: The HAL property
-                    # scsi.vendor is always 'ATA', and the vendor name
-                    # is stored as the first part of the SCSI model
-                    # string.
-                    #
-                    # The assumption below that the vendor name does not
-                    # contain any spaces is not necessarily correct, but
-                    # it is hard to find a better heuristic to separate
-                    # the vendor name from the product name.
-                    return self.getProperty('scsi.model').split(' ', 1)[0]
-                return result
+                return vendor
             else:
-                # What is called elsewhere "product", is called "model"
-                # for the SCSI bus.
-                result = self.getProperty('scsi.model').strip()
-                if self.getProperty('scsi.vendor') == 'ATA':
-                    return result.split(' ', 1)[1]
-                return result
+                return product
         else:
             result = self.getProperty('info.' + type_)
             if result is None:
@@ -1617,15 +1669,6 @@ class HALDevice:
         vendor_id = self.vendor_id_for_db
         product_id = self.product_id_for_db
         product_name = self.product
-        if (bus is None or vendor_id is None or product_id is None
-            or product_name is None):
-            self.parser._logWarning(
-                'A HALDevice that is supposed to be a real device does '
-                'not provide bus, vendor ID, product ID or product name: '
-                '%r %r %r %r %s'
-                % (bus, vendor_id, product_id, product_name, self.udi),
-                self.parser.submission_key)
-            return
 
         self.ensureVendorIDVendorNameExists()
 
