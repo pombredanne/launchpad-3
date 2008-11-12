@@ -857,11 +857,15 @@ class IBranch(IHasOwner):
         is not found (as in a ghost revision).
         """
 
-    def updateScannedDetails(revision_id, revision_count):
+    def updateScannedDetails(revision, revision_count):
         """Updates attributes associated with the scanning of the branch.
 
         A single entry point that is called solely from the branch scanner
         script.
+
+        :param revision: The `Revision` that is the tip, or None if empty.
+        :param revision_count: The number of revisions in the history
+                               (main line revisions).
         """
 
     def getNotificationRecipients():

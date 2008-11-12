@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pytz import UTC
 import transaction
 from unittest import TestCase, TestLoader
@@ -12,6 +12,7 @@ from unittest import TestCase, TestLoader
 from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
@@ -20,6 +21,9 @@ from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
     ISpecificationSet, InvalidBranchMergeProposal, PersonCreationRationale,
     SpecificationDefinitionStatus)
+from canonical.launchpad.interfaces.branch import (
+    BranchLifecycleStatus,
+    DEFAULT_BRANCH_STATUS_IN_LISTING)
 from canonical.launchpad.database.branch import (BranchSet,
     BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
      DeleteCodeImport, DeletionCallable, DeletionOperation)
@@ -803,12 +807,10 @@ class BranchAddLandingTarget(TestCase):
 
 class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(BranchDateLastModified, self).setUp()
-        login('test@canonical.com')
-        self.addCleanup(logout)
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
 
     def test_initialValue(self):
         """Initially the date_last_modifed is the date_created."""
@@ -844,15 +846,74 @@ class BranchDateLastModified(TestCaseWithFactory):
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
-    def test_updateScannedDetailsUpdateModifedTime(self):
-        """A branch that has been scanned is considered modified."""
+    def test_updateScannedDetails_with_null_revision(self):
+        # If updateScannedDetails is called with a null revision, it
+        # effectively means that there is an empty branch, so we can't use the
+        # revision date, so we set the last modified time to UTC_NOW.
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
         branch = self.factory.makeBranch(date_created=date_created)
-        self.assertEqual(branch.date_last_modified, date_created)
+        branch.updateScannedDetails(None, 0)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
 
-        branch.updateScannedDetails("hello world", 42)
-        self.assertTrue(branch.date_last_modified > date_created,
-                        "Date last modified was not updated.")
+    def test_updateScannedDetails_with_revision(self):
+        # If updateScannedDetails is called with a revision with which has a
+        # revision date set in the past (the usual case), the last modified
+        # time of the branch is set to the be revision date of the revision.
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.factory.makeBranch(date_created=date_created)
+        revision_date = datetime(2005, 2, 2, 12, tzinfo=UTC)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(revision_date, branch.date_last_modified)
+
+    def test_updateScannedDetails_with_future_revision(self):
+        # If updateScannedDetails is called with a revision with which has a
+        # revision date set in the future, UTC_NOW is used as the last modifed
+        # time.  date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.factory.makeBranch(date_created=date_created)
+        revision_date = datetime.now(UTC) + timedelta(days=1000)
+        revision = self.factory.makeRevision(revision_date=revision_date)
+        branch.updateScannedDetails(revision, 1)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'date_last_modified', UTC_NOW)
+
+
+class TestBranchLifecycleStatus(TestCaseWithFactory):
+    """Exercises changes in lifecycle status."""
+    layer = DatabaseFunctionalLayer
+
+    def assertNoStatusChangeOnScan(self, state):
+        # Assert that the lifecycle status does not change on scanning a new
+        # revision.
+        branch = self.factory.makeBranch(lifecycle_status=state)
+        revision = self.factory.makeRevision()
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(state, branch.lifecycle_status)
+
+
+    def assertUpdateMovesToDevelopment(self, state):
+        # Assert that the lifecycle status becomes developmenton scanning a
+        # new revision.
+        branch = self.factory.makeBranch(lifecycle_status=state)
+        revision = self.factory.makeRevision()
+        branch.updateScannedDetails(revision, 1)
+        self.assertEqual(
+            BranchLifecycleStatus.DEVELOPMENT, branch.lifecycle_status)
+
+    def test_updateScannedDetails_active_branch(self):
+        # If a new revision is scanned, and the branch is in an active state,
+        # then the lifecycle status isn't changed.
+        for state in DEFAULT_BRANCH_STATUS_IN_LISTING:
+            self.assertNoStatusChangeOnScan(state)
+
+    def test_updateScannedDetails_inactive_branch(self):
+        # If a branch is inactive (merged or abandonded) and a new revision is
+        # scanned, the branch is moved to the development state.
+        for state in (BranchLifecycleStatus.MERGED,
+                      BranchLifecycleStatus.ABANDONED):
+            self.assertUpdateMovesToDevelopment(state)
 
 
 class BranchSorting(TestCase):
