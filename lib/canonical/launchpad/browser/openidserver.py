@@ -17,8 +17,9 @@ from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
+from zope.publisher.interfaces import BadRequest
+from zope.session.interfaces import ISession, IClientIdManager
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.message import registerNamespaceAlias
@@ -288,7 +289,22 @@ class OpenIDMixin:
         assert self.user is not None, (
             'Must be logged in to query for login delta')
         args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
-        return args.get('max_login_delta') is None
+        delta = args.get('max_login_delta')
+
+        # If there is no parameter, the login is valid.
+        if delta is None:
+            return True
+
+        try:
+            delta = int(delta)
+        except ValueError:
+            raise BadRequest(
+                'lp:max_login_delta parameter should be an '
+                'integer: %s' % delta)
+
+        authdata = ISession(self.request)['launchpad.authenticateduser']
+        cutoff = datetime.utcnow() - timedelta(seconds=delta)
+        return authdata['logintime'] > cutoff
 
     def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)

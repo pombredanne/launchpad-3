@@ -6,24 +6,28 @@ __metaclass__ = type
 
 __all__ = []
 
+from datetime import datetime, timedelta
 import unittest
 
 from openid.message import Message
 
 from zope.component import getUtility
+from zope.session.interfaces import ISession
+from zope.publisher.interfaces import BadRequest
 from zope.testing import doctest
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet, IOpenIDRPConfigSet
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class SimpleRegistrationTestCase(unittest.TestCase):
     """Tests for Simple Registration helpers in OpenIDMixin"""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -90,6 +94,89 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('timezone', u'Europe/Paris')])
 
 
+class FakeOpenIdRequest:
+    """A fake openid request for unit testing.
+
+    It only provides the message attribute. And that one only provides
+    the getArgs() method which will return canned data.
+
+    Wathever is in the args attribute.
+    """
+
+    def __init__(self):
+        self.args = {}
+
+    @property
+    def message(self):
+        return self
+
+    def getArgs(self, namespace):
+        return self.args
+
+
+class OpenIDMixin_isLoginDelta_TestCase(unittest.TestCase):
+    """Test cases for the isLoginWithinDelta() period."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Sets up a very simple openid_mixin with a FakeOpenIdRequest.
+
+        The user is set-up to have logged 90 days ago.
+        """
+        self.request = LaunchpadTestRequest(
+            SERVER_URL='http://openid.launchpad.net/+openid')
+        login("test@canonical.com", self.request)
+        self.openid_mixin = OpenIDMixin(None, self.request)
+        self.openid_mixin.user = object()
+        self.openid_mixin.request = self.request
+        self.openid_request = FakeOpenIdRequest()
+        self.openid_mixin.openid_request = self.openid_request
+        self.authdata = ISession(self.request)['launchpad.authenticateduser']
+        self.authdata['logintime'] = datetime.utcnow() - timedelta(days=90)
+
+    def tearDown(self):
+        logout()
+
+    def test_should_be_True_when_param_not_used(self):
+        """If the extension isn't present in the request, and the user is
+        logged in, it should be True."""
+        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
+
+    def test_should_be_False_with_zero(self):
+        """If the maximum delta is 0, the user must re-authenticate."""
+        self.openid_request.args['max_login_delta'] = '0'
+        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+
+    def test_should_be_True_with_negative(self):
+        """If the maximum delta is below zero, the user must re-authenticate.
+        """
+        self.openid_request.args['max_login_delta'] = '-1'
+        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+
+    def test_should_raise_BadRequest_with_invalid_param(self):
+        """If the maximum delta is not an integer, BadRequest is raised."""
+        self.openid_request.args['max_login_delta'] = 'not a number'
+        self.assertRaises(BadRequest, self.openid_mixin.isLoginWithinDelta)
+
+    def test_should_be_True_when_delta_within_range(self):
+        """If the last login is within the maximum delta, the user won't have
+        to enter their password again.
+        """
+        self.authdata['logintime'] = datetime.utcnow() - timedelta(seconds=50)
+        self.openid_request.args['max_login_delta'] = '3600'
+        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
+
+    def test_should_be_False_when_delta_not_in_range(self):
+        """If the last login is not within the maximum delta, they will have
+        to enter their password again.
+        """
+        self.authdata['logintime'] = (
+            datetime.utcnow() - timedelta(seconds=3601))
+        self.openid_request.args['max_login_delta'] = '3600'
+        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
@@ -99,7 +186,7 @@ def test_suite():
         'loginservice.txt',
         'loginservice-dissect-radio-button.txt',
         setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer))
+        layer=DatabaseFunctionalLayer))
     return suite
 
 if __name__ == '__main__':
