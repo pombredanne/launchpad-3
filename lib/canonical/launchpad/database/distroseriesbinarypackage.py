@@ -17,10 +17,10 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
-from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IDistroSeriesBinaryPackage)
 
