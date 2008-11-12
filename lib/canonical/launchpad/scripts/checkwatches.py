@@ -352,6 +352,7 @@ class BugWatchUpdater(object):
         :param remotesystem: The `ExternalBugtracker` on which
             `getModifiedRemoteBugs`() should be called
         :param server_time: The time according to the remote server.
+            This may be None when the server doesn't specify a remote time.
         :param now: The current time (used for testing)
         :return: A list of remote bug IDs to be updated.
         """
