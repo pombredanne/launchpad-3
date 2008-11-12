@@ -305,6 +305,13 @@ class IProductReleasePublic(Interface):
             readonly=True,
             value_type=Reference(schema=IProductReleaseFile)))
 
+    milestone = exported(
+            Reference(
+                title=u"The milestone for this release.",
+                # Schema is set to IMilestone in interfaces/milestone.py.
+                schema=Interface,
+                required=True))
+
     def getFileAliasByName(name):
         """Return the `LibraryFileAlias` by file name.
 
@@ -316,7 +323,6 @@ class IProductReleasePublic(Interface):
 
         Raises a NotFoundError if no matching ProductReleaseFile exists.
         """
-
 
 class IProductRelease(IProductReleaseEditRestricted,
                       IProductReleasePublic):

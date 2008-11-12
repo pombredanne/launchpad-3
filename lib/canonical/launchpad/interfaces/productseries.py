@@ -198,24 +198,6 @@ class IProductSeriesEditRestricted(Interface):
     def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this ProjectSeries."""
 
-    @call_with(owner=REQUEST_USER)
-    @rename_parameters_as(codename='code_name')
-    @export_factory_operation(
-        IProductRelease,
-        ['version', 'codename', 'summary', 'description', 'changelog'])
-    def addRelease(version, owner, codename=None, summary=None,
-                   description=None, changelog=None):
-        """Create a new ProductRelease.
-
-        :param version: Name of the version.
-        :param owner: `IPerson` object who manages the release.
-        :param codename: Alternative name of the version.
-        :param shortdesc: Summary information.
-        :param description: Detailed information.
-        :param changelog: Highlighted changes in each version.
-        :returns: `IProductRelease` object.
-        """
-
 
 class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                            IBugTarget, ISpecificationGoal, IHasMilestones):

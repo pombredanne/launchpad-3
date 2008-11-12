@@ -22,6 +22,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.widgets import SinglePopupWidget
 from canonical.launchpad.interfaces import (
     ILaunchBag, IProductRelease, IProductReleaseFileAddForm)
 from canonical.launchpad.interfaces.productseries import IProductSeriesSet
@@ -49,7 +50,7 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download']
+    links = ['edit', 'add_file', 'administer', 'download', 'viewMilestone']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -70,25 +71,33 @@ class ProductReleaseContextMenu(ContextMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
+    def viewMilestone(self):
+        text = 'View milestone'
+        url = canonical_url(self.context.milestone)
+        return Link(url, text)
 
-class ProductReleaseAddView(AddView):
 
-    __used_for__ = IProductRelease
+class ProductReleaseAddView(LaunchpadFormView):
 
-    _nextURL = '.'
+    schema = IProductRelease
+    label = "Register a release"
+    field_names = [
+        'codename',
+        'summary',
+        'changelog',
+        ]
 
-    def nextURL(self):
-        return self._nextURL
+    custom_widget('summary', TextAreaWidget, height=4, width=62)
+    custom_widget('changelog', TextAreaWidget, height=7, width=62)
 
-    def createAndAdd(self, data):
+    @action(_('Register release'))
+    def createAndAdd(self, action, data):
         user = getUtility(ILaunchBag).user
-        product_series_set = getUtility(IProductSeriesSet)
-        product_series = product_series_set[data['productseries']]
-        newrelease = product_series.addRelease(
-            data['version'], user, codename=data['codename'],
-            summary=data['summary'], description=data['description'],
+        newrelease = self.context.addRelease(
+            user, codename=data['codename'],
+            summary=data['summary'],
             changelog=data['changelog'])
-        self._nextURL = canonical_url(newrelease)
+        self.next_url = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))
 
 

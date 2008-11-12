@@ -46,7 +46,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin', 'subscribe']
+    links = ['edit', 'admin', 'subscribe', 'publishRelease', 'viewRelease']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -68,6 +68,27 @@ class MilestoneContextMenu(ContextMenu):
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+subscribe', 'Subscribe to bug mail',
                     icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def publishRelease(self):
+        text = 'Publish release'
+        # ProjectMilestones are virtual milestones and do not have
+        # any properties which can be edited.
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+addrelease', text, icon='add', enabled=enabled)
+
+    def viewRelease(self):
+        text = 'View release'
+        # ProjectMilestones are virtual milestones and do not have
+        # any properties which can be edited.
+        if (not IProjectMilestone.providedBy(self.context)
+            and self.context.release is not None):
+            enabled = True
+            url = canonical_url(self.context.release)
+        else:
+            enabled = False
+            url = '.'
+        return Link(url, text, enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):

@@ -74,6 +74,16 @@
         template="../templates/milestone-edit.pt"
         />
 
+    <browser:page
+        name="+addrelease"
+        for="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.ProductReleaseAddView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/productrelease-add.pt"
+        >
+    </browser:page>
+
     <!-- IMilestoneSet -->
     <securedutility
         class="canonical.launchpad.database.MilestoneSet"

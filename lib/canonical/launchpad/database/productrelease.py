@@ -33,23 +33,37 @@ class ProductRelease(SQLBase):
     _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    version = StringCol(notNull=True)
+    _deprecated_version = StringCol(dbName='version', notNull=True)
     codename = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
-    description = StringCol(notNull=False, default=None)
+    _deprecated_description = StringCol(dbName='description', notNull=False,
+                                        default=None)
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_public_person, notNull=True)
-    productseries = ForeignKey(dbName='productseries',
+    _deprecated_productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
+    milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
                             orderBy='-date_uploaded')
 
     # properties
+    @property
+    def version(self):
+        return self.milestone.name
+
+    @property
+    def description(self):
+        return self.milestone.description
+
+    @property
+    def productseries(self):
+        return self.milestone.productseries
+
     @property
     def product(self):
         return self.productseries.product

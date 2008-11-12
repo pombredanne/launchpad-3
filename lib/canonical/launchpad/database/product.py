@@ -19,6 +19,7 @@ import sets
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from storm.locals import Store, Join
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -512,12 +513,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def releases(self):
-        return ProductRelease.select(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id),
-            clauseTables=['ProductSeries'],
-            orderBy=['version']
-            )
+        store = Store.of(self)
+        origin = [
+            ProductRelease,
+            Join(Milestone, ProductRelease.milestone == Milestone.id),
+            ]
+        result = store.using(*origin)
+        result = result.find(ProductRelease, Milestone.product == self.id)
+        return result.order_by(Milestone.name)
 
     @property
     def drivers(self):

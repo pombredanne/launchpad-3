@@ -12,6 +12,7 @@ from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from warnings import warn
 from zope.interface import implements
+from storm.locals import Desc, ReferenceSet
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -94,8 +95,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datepublishedsync = UtcDateTimeCol(
         dbName='date_published_sync', default=None)
 
-    releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
-                            orderBy=['-datereleased'])
+    releases = ReferenceSet('ProductSeries.id', 'Milestone.productseries',
+                            'Milestone.id', 'ProductRelease.milestone',
+                            order_by=Desc('datereleased'))
+
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
@@ -445,17 +448,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
         return shortlist(result, 300)
-
-    def addRelease(self, version, owner, codename=None, summary=None,
-                   description=None, changelog=None):
-        """See `IProductSeries`."""
-        return ProductRelease(version=version,
-                              productseries=self,
-                              owner=owner,
-                              codename=codename,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
 
 
 class ProductSeriesSet:

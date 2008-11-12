@@ -11,10 +11,12 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
     SQLMultipleJoin)
+from storm.locals import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
@@ -52,6 +54,17 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         prejoins=['assignee'])
 
     @property
+    def release(self):
+        store = Store.of(self)
+        result = store.find(ProductRelease,
+                            ProductRelease.milestone == self.id)
+        releases = list(result)
+        if len(releases) == 0:
+            return None
+        else:
+            return releases[0]
+
+    @property
     def target(self):
         """See IMilestone."""
         if self.product:
@@ -81,6 +94,19 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.milestone = self
+
+    def addRelease(self, owner, codename=None, summary=None, changelog=None):
+        """See `IMilestone`."""
+        # XXX
+        return ProductRelease(
+            _deprecated_version='SEE-MILESTONE-NAME',
+            _deprecated_productseries=self.productseries,
+            owner=owner,
+            codename=codename,
+            summary=summary,
+            _deprecated_description='SEE-MILESTONE-DESCRIPTION',
+            changelog=changelog,
+            milestone=self)
 
 
 class MilestoneSet:

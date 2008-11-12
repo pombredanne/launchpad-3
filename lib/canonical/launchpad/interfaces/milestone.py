@@ -17,6 +17,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
 from canonical.launchpad.interfaces.bugtarget import IHasBugs
+from canonical.launchpad.interfaces.productrelease import IProductRelease
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description
@@ -25,7 +26,8 @@ from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    call_with, export_as_webservice_entry, export_factory_operation, exported,
+    rename_parameters_as, REQUEST_USER)
 
 class MilestoneNameField(ContentNameField):
 
@@ -121,6 +123,29 @@ class IMilestone(IHasBugs):
                  readonly=True))
     specifications = Attribute("A list of the specifications targeted to "
         "this milestone.")
+
+    release = Reference(
+        schema=IProductRelease,
+        title=_("The release for this milestone."),
+        required=False,
+        readonly=True)
+
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(codename='code_name')
+    @export_factory_operation(
+        IProductRelease,
+        ['codename', 'summary', 'changelog'])
+    def addRelease(owner, codename=None, summary=None, changelog=None):
+        """Create a new ProductRelease.
+
+        :param version: Name of the version.
+        :param owner: `IPerson` object who manages the release.
+        :param codename: Alternative name of the version.
+        :param shortdesc: Summary information.
+        :param description: Detailed information.
+        :param changelog: Highlighted changes in each version.
+        :returns: `IProductRelease` object.
+        """
 
 
 class IMilestoneSet(Interface):
