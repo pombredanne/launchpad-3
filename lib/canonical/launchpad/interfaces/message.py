@@ -14,6 +14,7 @@ __all__ = [
     'IndexedMessage',
     'InvalidEmailMessage',
     'MissingSubject',
+    'QuotaReachedError',
     'UnknownSender',
     ]
 
@@ -207,6 +208,15 @@ class IMessageChunk(Interface):
     blob = Int(title=_('Binary content'), required=False, readonly=True)
 
 
+class QuotaReachedError(Exception):
+    """The user-to-user contact email quota has been reached for today."""
+
+    def __init__(self, sender, authorization):
+        Exception.__init__(self)
+        self.sender = sender
+        self.authorization = authorization
+
+
 class IUserToUserEmail(Interface):
     """User to user direct email communications."""
 
@@ -250,6 +260,10 @@ class IDirectEmailAuthorization(Interface):
         title=_('The earliest date used to throttle senders.'),
         readonly=True,
         )
+
+    message_quota = Int(
+        title=_('The maximum number of messages allowed per quota period'),
+        readonly=True)
 
     def record(message):
         """Record that the message was sent.
