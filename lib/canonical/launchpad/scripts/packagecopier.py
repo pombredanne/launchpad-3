@@ -471,7 +471,10 @@ class UnembargoSecurityPackage(PackageCopier):
     and implements the file re-uploading.
 
     An assumption is made, to reduce the number of command line options,
-    that packages are always copied between the same distroseries.
+    that packages are always copied between the same distroseries.  The user
+    can, however, select which target pocket to unembargo into.  This is
+    useful to the security team when there are major version upgrades
+    and they want to stage it through -proposed first for testing.
     """
 
     usage = ("%prog [-d <distribution>] [-s <suite>] [--ppa <private ppa>] "
