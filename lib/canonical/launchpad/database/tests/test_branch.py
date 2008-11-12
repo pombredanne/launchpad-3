@@ -859,7 +859,8 @@ class BranchDateLastModified(TestCaseWithFactory):
     def test_updateScannedDetails_with_revision(self):
         # If updateScannedDetails is called with a revision with which has a
         # revision date set in the past (the usual case), the last modified
-        # time of the branch is set to the be revision date of the revision.
+        # time of the branch is set to be the date from the Bazaar revision
+        # (Revision.revision_date).
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
         branch = self.factory.makeBranch(date_created=date_created)
         revision_date = datetime(2005, 2, 2, 12, tzinfo=UTC)
@@ -884,36 +885,28 @@ class TestBranchLifecycleStatus(TestCaseWithFactory):
     """Exercises changes in lifecycle status."""
     layer = DatabaseFunctionalLayer
 
-    def assertNoStatusChangeOnScan(self, state):
-        # Assert that the lifecycle status does not change on scanning a new
-        # revision.
-        branch = self.factory.makeBranch(lifecycle_status=state)
+    def checkStatusAfterUpdate(self, initial_state, expected_state):
+        # Make sure that the lifecycle status of the branch with the initial
+        # lifecycle state to be the expected_state after a revision has been
+        # scanned.
+        branch = self.factory.makeBranch(lifecycle_status=initial_state)
         revision = self.factory.makeRevision()
         branch.updateScannedDetails(revision, 1)
-        self.assertEqual(state, branch.lifecycle_status)
-
-
-    def assertUpdateMovesToDevelopment(self, state):
-        # Assert that the lifecycle status becomes developmenton scanning a
-        # new revision.
-        branch = self.factory.makeBranch(lifecycle_status=state)
-        revision = self.factory.makeRevision()
-        branch.updateScannedDetails(revision, 1)
-        self.assertEqual(
-            BranchLifecycleStatus.DEVELOPMENT, branch.lifecycle_status)
+        self.assertEqual(expected_state, branch.lifecycle_status)
 
     def test_updateScannedDetails_active_branch(self):
         # If a new revision is scanned, and the branch is in an active state,
         # then the lifecycle status isn't changed.
         for state in DEFAULT_BRANCH_STATUS_IN_LISTING:
-            self.assertNoStatusChangeOnScan(state)
+            self.checkStatusAfterUpdate(state, state)
 
     def test_updateScannedDetails_inactive_branch(self):
         # If a branch is inactive (merged or abandonded) and a new revision is
         # scanned, the branch is moved to the development state.
         for state in (BranchLifecycleStatus.MERGED,
                       BranchLifecycleStatus.ABANDONED):
-            self.assertUpdateMovesToDevelopment(state)
+            self.checkStatusAfterUpdate(
+                state, BranchLifecycleStatus.DEVELOPMENT)
 
 
 class BranchSorting(TestCase):
