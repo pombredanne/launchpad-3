@@ -105,6 +105,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -142,7 +143,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -189,6 +191,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -1168,7 +1171,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def gpgkeys(self):
         target = '+editpgpkeys'
-        text = 'GPG Keys'
+        text = 'OpenPGP Keys'
         return Link(target, text)
 
     def passwords(self):
@@ -2434,12 +2437,26 @@ class PersonView(LaunchpadView, FeedsMixin):
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
 
-    def getBugsInProgress(self):
+
+    @cachedproperty
+    def assigned_bugs_in_progress(self):
         """Return up to 5 assigned bugs that are In Progress."""
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
+
+    @cachedproperty
+    def assigned_specs_in_progress(self):
+        """Return up to 5 assigned specs that are being worked on."""
+        return self.context.assigned_specs_in_progress
+
+    @property
+    def has_assigned_bugs_or_specs_in_progress(self):
+        """Does the user have any bugs or specs that are being worked on?"""
+        bugtasks = self.assigned_bugs_in_progress
+        specs = self.assigned_specs_in_progress
+        return bugtasks.count() > 0 or specs.count() > 0
 
     def viewingOwnPage(self):
         return self.user == self.context
@@ -3051,6 +3068,11 @@ class PersonTranslationView(LaunchpadView):
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    @cachedproperty
+    def person_filter_querystring(self):
+        """Return person's name appropriate for including in links."""
+        return urllib.urlencode({'person': self.context.name})
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -4928,12 +4950,26 @@ class EmailToPersonView(LaunchpadFormView):
         sender_email = data['field.from_'].email
         subject = data['subject']
         message = data['message']
-        recipient_email = self.context.preferredemail.email
-        message = send_direct_contact_email(
-            sender_email, recipient_email, subject, message)
-        self.request.response.addInfoNotification(
-            _('Message sent to $name',
-              mapping=dict(name=self.context.displayname)))
+        # When the recipient is hiding her email addresses, the security proxy
+        # will prevent direct access to the .email attribute of the preferred
+        # email.  Bypass this restriction.
+        recipient_email = removeSecurityProxy(self.context.preferredemail)
+        try:
+            message = send_direct_contact_email(
+                sender_email, recipient_email.email, subject, message)
+        except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
+            self.request.response.addErrorNotification(
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
+        else:
+            self.request.response.addInfoNotification(
+                _('Message sent to $name',
+                  mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
