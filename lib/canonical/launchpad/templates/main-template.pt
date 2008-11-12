@@ -109,6 +109,10 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
 
+    <tal:script
+     condition="view/user|nothing"
+     replace="structure string:&lt;script&gt;LP.client.me_link = '${view/user/fmt:api_url}'&lt;/script&gt;" />
+
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"
         tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
