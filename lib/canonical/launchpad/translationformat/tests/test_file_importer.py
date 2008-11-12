@@ -166,12 +166,6 @@ class FileImporterTestCase(unittest.TestCase):
         self.failUnlessRaises( NotImplementedError,
             importer.importMessage, None)
 
-    def test_FileImporter_importFile_NotImplemented(self):
-        # import File calls importMethod which should raise the exception.
-        importer = self._createFileImporter()
-        self.failUnlessRaises( NotImplementedError,
-            importer.importFile)
-
     def test_FileImporter_format_exporter(self):
         # Test if format_exporter behaves like a singleton
         importer = self._createFileImporter()
@@ -232,25 +226,6 @@ class FileImporterTestCase(unittest.TestCase):
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(po_importer.pofile is not None,
             "POFileImporter had no reference to an IPOFile.")
-
-    def test_FileImporter_importMessage_implemented(self):
-        (pot_importer, po_importer) = self._createImporterForExportedEntries()
-        # POTFileImporter must implement importMessage and not throw
-        # NotImplementedError like the base class does.
-        try:
-            pot_importer.importMessage(None)
-        except NotImplementedError:
-            self.fail("POTFileImporter does not implement importMessage()")
-        except:
-            pass
-        # POFileImporter must implement importMessage and not throw
-        # NotImplementedError like the base class does.
-        try:
-            po_importer.importMessage(None)
-        except NotImplementedError:
-            self.fail("POFileImporter does not implement importMessage()")
-        except:
-            pass
 
     def test_FileImporter_getPersonByEmail(self):
         (pot_importer, po_importer) = self._createImporterForExportedEntries()
