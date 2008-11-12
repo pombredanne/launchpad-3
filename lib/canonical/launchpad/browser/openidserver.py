@@ -273,6 +273,23 @@ class OpenIDMixin:
         openid_response.fields.setArg(
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
 
+    def isLoginWithinDelta(self):
+        """Perform max_login_delta check.
+
+        The maximum login delta is the maximum number of seconds before which
+        an authenticated user must enter their password again. By default,
+        there is no such maximum and if the user is logged in Launchpad, they
+        can simply click-through to Sign In the relaying party.
+
+        But if the relaying party provides a value for that parameter, the
+        user most have logged in not more than that number of seconds ago,
+        Otherwise, they'll have to enter their password again.
+        """
+        assert self.user is not None, (
+            'Must be logged in to query for login delta')
+        args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
+        return args.get('max_login_delta') is None
+
     def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
@@ -378,6 +395,8 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
                 return self.showLoginPage()
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
+            elif not self.isLoginWithinDelta():
+                return self.showLoginPage()
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.
                 openid_response = self.createPositiveResponse()
