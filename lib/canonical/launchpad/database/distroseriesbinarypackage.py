@@ -7,16 +7,22 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from storm.store import Store
+from storm.expr import Desc
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import (
-    IDistroSeriesBinaryPackage)
+from canonical.launchpad.database.archive import Archive
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-
+from canonical.launchpad.database.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease)
+from canonical.launchpad.interfaces import (
+    IDistroSeriesBinaryPackage)
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
@@ -101,3 +107,44 @@ class DistroSeriesBinaryPackage:
             a.distroarchseries.architecturetag,
             a.datecreated))
 
+    @property
+    def last_published(self):
+        """See `IDistroSeriesBinaryPackage`."""
+        # Import here so as to avoid circular import.
+        from canonical.launchpad.database.distroarchseries import (
+            DistroArchSeries)
+
+        store = Store.of(self.distroseries)
+
+        # Note: The join below on Archive.id seems to be necessary only
+        # because Storm doesn't provide the is_in method on References,
+        # that is, BinaryPackageRelease.archive.is_in doesn't exist.
+        publishing_history = store.find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.distroarchseries == 
+                DistroArchSeries.id, 
+            DistroArchSeries.distroseries == self.distroseries,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagename == self.binarypackagename,
+            BinaryPackagePublishingHistory.archive == Archive.id,
+            Archive.id.is_in(self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.dateremoved == None)
+
+        last_published_history = publishing_history.order_by(
+            Desc(BinaryPackagePublishingHistory.datepublished)).first()
+            
+        if last_published_history is None:
+            return None
+        else:
+            return last_published_history.distroarchseriesbinarypackagerelease
+
+
+    @property
+    def sourcepackagerelease(self):
+        """See `IDistroSeriesBinaryPackage`."""
+
+        src_pkg_release = self.last_published.build.sourcepackagerelease
+        
+        return DistroSeriesSourcePackageRelease(
+            self.distroseries, src_pkg_release)

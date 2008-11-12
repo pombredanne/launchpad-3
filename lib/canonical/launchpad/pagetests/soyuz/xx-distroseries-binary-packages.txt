@@ -10,6 +10,16 @@ summary and description:
     
     >>> main_content = find_main_content(browser.contents)
     >>> print extract_text(main_content)
-    XXX
+    Mozilla Firefox Web Browser
+    Mozilla Firefox Web Browser is .....
+    Source package
+    iceweasel 1.0 (source) in ubuntu warty
+
+    The page also displays a link to the distro series source package 
+    release:
     
-    Grab the h1, and the summary + description here...
+    >>> browser.getLink(id="source_package").click()
+    >>> browser.title
+    'iceweasel 1.0 (source) in ubuntu warty'
+
+
