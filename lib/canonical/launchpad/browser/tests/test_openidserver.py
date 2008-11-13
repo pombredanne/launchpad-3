@@ -114,7 +114,7 @@ class FakeOpenIdRequest:
         return self.args
 
 
-class OpenIDMixin_isLoginDelta_TestCase(unittest.TestCase):
+class OpenIDMixin_isLoginWithinDelta_TestCase(unittest.TestCase):
     """Test cases for the isLoginWithinDelta() period."""
 
     layer = DatabaseFunctionalLayer
@@ -145,26 +145,28 @@ class OpenIDMixin_isLoginDelta_TestCase(unittest.TestCase):
 
     def test_should_be_False_with_zero(self):
         """If the maximum delta is 0, the user must re-authenticate."""
-        self.openid_request.args['max_login_delta'] = '0'
+        self.openid_request.args['max_auth_age'] = '0'
         self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
 
     def test_should_be_True_with_negative(self):
         """If the maximum delta is below zero, the user must re-authenticate.
         """
-        self.openid_request.args['max_login_delta'] = '-1'
+        self.openid_request.args['max_auth_age'] = '-1'
         self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
 
-    def test_should_raise_BadRequest_with_invalid_param(self):
-        """If the maximum delta is not an integer, BadRequest is raised."""
-        self.openid_request.args['max_login_delta'] = 'not a number'
-        self.assertRaises(BadRequest, self.openid_mixin.isLoginWithinDelta)
+    def test_should_ignore_invalid_param(self):
+        """If the maximum delta is not an integer, it's like if the parameter
+        wasn't used. That's mainly because python-openid hides that fact 
+        from us."""
+        self.openid_request.args['max_auth_age'] = 'not a number'
+        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
 
     def test_should_be_True_when_delta_within_range(self):
         """If the last login is within the maximum delta, the user won't have
         to enter their password again.
         """
         self.authdata['logintime'] = datetime.utcnow() - timedelta(seconds=50)
-        self.openid_request.args['max_login_delta'] = '3600'
+        self.openid_request.args['max_auth_age'] = '3600'
         self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
 
     def test_should_be_False_when_delta_not_in_range(self):
@@ -173,7 +175,7 @@ class OpenIDMixin_isLoginDelta_TestCase(unittest.TestCase):
         """
         self.authdata['logintime'] = (
             datetime.utcnow() - timedelta(seconds=3601))
-        self.openid_request.args['max_login_delta'] = '3600'
+        self.openid_request.args['max_auth_age'] = '3600'
         self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
 
 

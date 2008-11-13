@@ -22,6 +22,7 @@ from zope.publisher.interfaces import BadRequest
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.security.proxy import isinstance as zisinstance
 
+from openid.extensions import pape
 from openid.message import registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
@@ -275,9 +276,13 @@ class OpenIDMixin:
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
 
     def isLoginWithinDelta(self):
-        """Perform max_login_delta check.
+        """Perform the max_auth_age PAPE check.
 
-        The maximum login delta is the maximum number of seconds before which
+        This is defined in the OpenID Provider Authentication Policy
+        Extension.
+        http://openid.net/specs/openid-provider-authentication-policy-extension-1_0-07.html
+
+        This parameter contains the maximum number of seconds before which
         an authenticated user must enter their password again. By default,
         there is no such maximum and if the user is logged in Launchpad, they
         can simply click-through to Sign In the relaying party.
@@ -287,24 +292,22 @@ class OpenIDMixin:
         Otherwise, they'll have to enter their password again.
         """
         assert self.user is not None, (
-            'Must be logged in to query for login delta')
-        args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
-        delta = args.get('max_login_delta')
+            'Must be logged in to query for max_auth_age check')
+        pape_request = pape.Request.fromOpenIDRequest(self.openid_request)
 
         # If there is no parameter, the login is valid.
-        if delta is None:
+        if pape_request is None or pape_request.max_auth_age is None:
             return True
 
         try:
-            delta = int(delta)
+            max_auth_age= int(pape_request.max_auth_age)
         except ValueError:
             raise BadRequest(
-                'lp:max_login_delta parameter should be an '
-                'integer: %s' % delta)
+                'pape:max_auth_age parameter should be an '
+                'integer: %s' % max_auth_age)
 
-        authdata = ISession(self.request)['launchpad.authenticateduser']
-        cutoff = datetime.utcnow() - timedelta(seconds=delta)
-        return authdata['logintime'] > cutoff
+        cutoff = datetime.utcnow() - timedelta(seconds=max_auth_age)
+        return self._getLoginTime() > cutoff
 
     def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
@@ -348,11 +351,24 @@ class OpenIDMixin:
 
         self.checkTeamMembership(response)
 
+        # XXX flacoste 2008-11-13 bug=297816
+        # Add auth_time information. We need a newer version
+        # of python-openid to use this.
+        # last_login = self._getLoginTime()
+        #pape_response = pape.Response(
+        #    auth_time=last_login.strftime('%Y-%m-%dT%H:%M:%SZ'))
+        #response.addExtension(pape_response)
+
         rp_summary_set = getUtility(IOpenIDRPSummarySet)
         rp_summary_set.record(
             self.user.account, self.openid_request.trust_root)
 
         return response
+
+    def _getLoginTime(self):
+        """Return the last login time of the user."""
+        authdata = ISession(self.request)['launchpad.authenticateduser']
+        return authdata['logintime']
 
     def createFailedResponse(self):
         """Create a failed assertion OpenIDResponse.

@@ -1,6 +1,9 @@
-= OpenID Security Extensions: Max Login Delta =
+= OpenID Security Extensions: Max Auth Age =
 
-Launchpad offers a way to relaying party to ensure that the user enters
+Launchpad supports the max_auth_age extension parameter defined in
+Provider Authentication Policy Extension (
+http://openid.net/specs/openid-provider-authentication-policy-extension-1_0-07.html).
+It offers a way to relaying party to ensure that the user enters
 their password, even if they have already logged into Launchpad. The
 purpose of this is for sites for which the long-lived session policy of
 Launchpad is problematic.
@@ -21,35 +24,31 @@ authentication process.
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.testing.openidhelpers import (
-    ...     complete_from_browser, make_identifier_select_endpoint,
-    ...     PublisherFetcher)
+    ...     complete_from_browser, PublisherFetcher)
     >>> setDefaultFetcher(PublisherFetcher())
 
     >>> openid_store = MemoryStore()
-    >>> endpoint = make_identifier_select_endpoint(PROTOCOL_URI)
     >>> consumer = Consumer(session={}, store=openid_store)
-    >>> request = consumer.beginWithoutDiscovery(endpoint)
+    >>> request = consumer.begin('http://openid.launchpad.dev')
 
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
     >>> browser.getControl('Sign In', index=0)
     <SubmitControl...>
 
-The max_login_delta extension parameter can be used to force the user to
+The max_auth_age PAPE parameter can be used to force the user to
 enter their password, even if they are already authenticated with
 Launchpad.
 
-    >>> from canonical.launchpad.browser.openidserver import (
-    ...     LAUNCHPAD_TEAMS_NS)
     >>> consumer = Consumer(session={}, store=openid_store)
-    >>> request = consumer.beginWithoutDiscovery(endpoint)
-    >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
-    'lp'
+    >>> request = consumer.begin('http://openid.launchpad.dev')
 
-Using 0 as max_login_delta value will always force the user to enter
+Using 0 as max_auth_age value will always force the user to enter
 their password.
 
-    >>> request.addExtensionArg(LAUNCHPAD_TEAMS_NS, 'max_login_delta', '0')
+    >>> from openid.extensions import pape
+    >>> pape_request = pape.Request(max_auth_age=0)
+    >>> request.addExtension(pape_request)
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
     >>> print browser.url
@@ -84,6 +83,15 @@ Entering their credential properly completes the OpenID request.
     success
     >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/name12_oid
+
+# XXX flacoste 2008-11-13 bug=297816
+# Add auth_time information. We need a newer version
+# of python-openid to use this.
+The auth_age parameter contains the time of the last login.
+
+    > > > pape_response = pape.Response.fromSuccessResponse(info)
+    > > > print pape_response.auth_age
+    2...
 
 == Cleanup ==
 
