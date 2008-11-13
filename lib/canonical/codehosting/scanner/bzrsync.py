@@ -348,22 +348,22 @@ class BranchMailer:
 class BranchMergeDetectionHandler:
     """Handle merge detection events."""
 
-    def mergeProposalMergeDetected(self, proposal):
+    def mergeProposalMerge(self, proposal):
         """Handle a detected merge of a proposal."""
         proposal.markAsMerged()
         proposal.source_branch.lifecycle_status = (
             BranchLifecycleStatus.MERGED)
 
-    def mergeOfTwoBranchesDetected(self, source, target):
+    def mergeOfTwoBranches(self, source, target):
         """Handle the merge of source into target."""
-        # If the source branch is a series branch, then don't change the
-        # lifecycle status of it at all.
-        if source.associatedProductSeries().count() > 0:
-            return
         # If the target branch is not the development focus, then don't update
         # the status of the source branch.
         dev_focus = target.product.development_focus
         if target != dev_focus.user_branch:
+            return
+        # If the source branch is a series branch, then don't change the
+        # lifecycle status of it at all.
+        if source.associatedProductSeries().count() > 0:
             return
 
         # In other cases, we now want to update the lifecycle status of the
@@ -490,14 +490,18 @@ class BzrSync:
         self.trans_manager.commit()
 
     def autoMergeBranches(self, bzr_ancestry):
-        """Detect branches that have been merged into trunk."""
-        # Only do this for development focus branches.
+        """Detect branches that have been merged."""
+        # We only check branches that have been merged into the branch that is
+        # being scanned as we already have the ancestry handy.  It is much
+        # more work to determine which other branches this branch has been
+        # merged into.  At this stage the merge detection only checks other
+        # branches merged into the scanned one.
+
+        # Only do this for non-junk branches.
         if self.db_branch.product is None:
             return
         # Get all the active branches for the product, and if the
         # last_scanned_revision is in the ancestry, then mark it as merged.
-        # Don't change mature branches as they may be branched off trunk with
-        # no extra revisions.
         branches = getUtility(IBranchSet).getBranchesForContext(
             context=self.db_branch.product,
             lifecycle_statuses=(
@@ -521,7 +525,7 @@ class BzrSync:
                 # branch, not one merged into the other.
                 pass
             elif last_scanned in bzr_ancestry:
-                self._merge_handler.mergeOfTwoBranchesDetected(
+                self._merge_handler.mergeOfTwoBranches(
                     branch, self.db_branch)
 
     def autoMergeProposals(self, bzr_ancestry):
@@ -535,7 +539,7 @@ class BzrSync:
         # ui by a person, of by PQM once it is integrated.
         for proposal in self.db_branch.landing_candidates:
             if proposal.source_branch.last_scanned_id in bzr_ancestry:
-                self._merge_handler.mergeProposalMergeDetected(proposal)
+                self._merge_handler.mergeProposalMerge(proposal)
 
         # Now check the landing targets.
         final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -547,7 +551,7 @@ class BzrSync:
                 branch_revision = proposal.target_branch.getBranchRevision(
                     revision_id=tip_rev_id)
                 if branch_revision is not None:
-                    self._merge_handler.mergeProposalMergeDetected(proposal)
+                    self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""

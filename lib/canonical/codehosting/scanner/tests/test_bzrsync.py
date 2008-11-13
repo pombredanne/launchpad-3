@@ -1157,21 +1157,18 @@ class TestMergeDetection(TestCaseWithFactory):
         # Monkey patch the _merge_handler of the sync object to be the test.
         self.bzrsync._merge_handler = self
         # Reset the recorded branches.
-        self.merged_source = self.merged_target = None
+        self.merges = []
 
-    def mergeOfTwoBranchesDetected(self, source, target):
+    def mergeOfTwoBranches(self, source, target):
         # Record the merged branches
-        self.merged_source = source
-        self.merged_target = target
+        self.merges.append((source, target))
 
     def test_own_branch_not_emitted(self):
-        # All branches that are not set as merged are checked against the
-        # branch being scanned.  A merge is never emitted with the source
-        # branch being the same as the target branch.
+        # A merge is never emitted with the source branch being the same as
+        # the target branch.
         self.db_branch.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertIs(None, self.merged_source)
-        self.assertIs(None, self.merged_target)
+        self.assertEqual([], self.merges)
 
     def test_branch_tip_in_ancestry(self):
         # If there is another branch with their tip revision id in the
@@ -1179,35 +1176,33 @@ class TestMergeDetection(TestCaseWithFactory):
         source = self.factory.makeBranch(product=self.product)
         source.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertEqual(source, self.merged_source)
-        self.assertEqual(self.db_branch, self.merged_target)
+        self.assertEqual([(source, self.db_branch)], self.merges)
 
     def test_branch_tip_in_ancestry_status_merged(self):
-        # Branches that are already merged do not get checked again.
+        # Branches that are already merged do emit events.
         source = self.factory.makeBranch(
             product=self.product,
             lifecycle_status=BranchLifecycleStatus.MERGED)
         source.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertIs(None, self.merged_source)
-        self.assertIs(None, self.merged_target)
+        self.assertEqual([], self.merges)
 
     def test_other_branch_with_no_last_scanned_id(self):
         # Other branches for the product are checked, but if the tip revision
-        # is not yet been set, it is not checked.
+        # of the branch is not yet been set no merge event is emitted for that
+        # branch.
         source = self.factory.makeBranch(product=self.product)
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertIs(None, self.merged_source)
-        self.assertIs(None, self.merged_target)
+        self.assertEqual([], self.merges)
 
     def test_other_branch_with_NULL_REVISION_last_scanned_id(self):
         # Other branches for the product are checked, but if the tip revision
-        # is the NULL_REVISION, it is not checked.
+        # of the branch is the NULL_REVISION no merge event is emitted for
+        # that branch.
         source = self.factory.makeBranch(product=self.product)
         source.last_scanned_id = NULL_REVISION
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertIs(None, self.merged_source)
-        self.assertIs(None, self.merged_target)
+        self.assertEqual([], self.merges)
 
     def test_other_branch_same_tip_revision_not_emitted(self):
         # If two different branches have the same tip revision, then they are
@@ -1216,8 +1211,7 @@ class TestMergeDetection(TestCaseWithFactory):
         source.last_scanned_id = 'revid'
         self.db_branch.last_scanned_id = 'revid'
         self.bzrsync.autoMergeBranches(['revid'])
-        self.assertIs(None, self.merged_source)
-        self.assertIs(None, self.merged_target)
+        self.assertEqual([], self.merges)
 
 
 class TestBranchMergeDetectionHandler(TestCaseWithFactory):
