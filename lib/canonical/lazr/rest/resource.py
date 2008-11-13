@@ -169,26 +169,6 @@ class HTTPResource:
                 return None
         return request.method
 
-    def getRequestContentType(self, default):
-        """Return the incoming media type of the current request.
-
-        This is usually the value of Content-Type, but it might be
-        overridden by a value for X-Content-Type-Override.
-
-        :return: None if the valid for X-Content-Type-Override is invalid.
-        Otherwise, the incoming media type.
-        """
-        override = request.headers.get('X-Content-Type-Override')
-        if override is not None:
-            if request.method == 'POST':
-                return override
-            else:
-                # XCTO should not be used unless the underlying method
-                # is POST.
-                self.request.response.setStatus(400)
-                return None
-        self.request.headers.get('Content-Type', default)
-
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
 
@@ -1140,7 +1120,7 @@ class ServiceRootResource(HTTPResource):
         """Handle a GET request."""
         method = self.getRequestMethod(REQUEST)
         if method is None:
-            result = HTTP_METHOD_OVERRIDE_ERROR
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
         elif method == "GET":
             result = self.do_GET()
         else:
