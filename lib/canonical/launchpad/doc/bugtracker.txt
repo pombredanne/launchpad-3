@@ -17,7 +17,7 @@ and an external bug, see bugwatch.txt.
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
     ...         bugtracker.getBugWatchesNeedingUpdate(23),
-    ...         key=attrgetter('id'))
+    ...         key=lambda watch: (watch.remotebug, watch.bug.id))
     ...
     ...     for bug_watch in watches:
     ...         print "Remote bug: %s LP bug: %s" % (
@@ -58,9 +58,9 @@ The watches needing updating should the ones with old statuses, 2000 and 42:
 
     >>> flush_database_updates()
     >>> print_watches(mozilla_bugzilla)
-    Remote bug: 42   LP bug: 2
     Remote bug: 2000 LP bug: 1
     Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
 
 getBugWatchesNeedingUpdate() will also return bug watches that have
 un-pushed bug comments that need pushing to remote bug trackers,
@@ -82,10 +82,10 @@ this.
     >>> transaction.commit()
 
     >>> print_watches(mozilla_bugzilla)
-    Remote bug: 42     LP bug: 2
-    Remote bug: 2000   LP bug: 1
     Remote bug: 123543 LP bug: 1
+    Remote bug: 2000   LP bug: 1
     Remote bug: 42     LP bug: 1
+    Remote bug: 42     LP bug: 2
 
 Once the comment has been pushed to the remote bug the bug watch will no
 longer appear in the set returned by getBugWatchesNeedingUpdate().
@@ -94,9 +94,9 @@ longer appear in the set returned by getBugWatchesNeedingUpdate().
     >>> transaction.commit()
 
     >>> print_watches(mozilla_bugzilla)
-    Remote bug: 42   LP bug: 2
     Remote bug: 2000 LP bug: 1
     Remote bug: 42   LP bug: 1
+    Remote bug: 42   LP bug: 2
 
 
 == Auto-creating bug trackers ==
