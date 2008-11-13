@@ -39,7 +39,8 @@
                 </tal:comment>
                 No public address provided.
                 (<a href="+contactuser"
-                    tal:content="view/specific_contact_text">Contact</a>)
+                    tal:attributes="title view/contactuser_link_title"
+                    >Contact this user</a>)
               </tal:not-team>
             </tal:no_preferredemail>
 
@@ -47,7 +48,8 @@
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
               (<a href="+contactuser"
-                  tal:content="view/specific_contact_text">Contact</a>)
+                  tal:attributes="title view/contactuser_link_title"
+                  >Contact this user</a>)
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -60,7 +62,8 @@
                 <tal:email replace="email">foo2@bar.com</tal:email>
                 <tal:contact condition="repeat/email/start">
                   (<a href="+contactuser"
-                      tal:content="view/specific_contact_text">Contact</a>)
+                      tal:attributes="title view/contactuser_link_title"
+                      >Contact this user</a>)
                 </tal:contact>
                 <br tal:omit-tag="repeat/email/end" />
               </span>

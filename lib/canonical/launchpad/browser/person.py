@@ -2463,12 +2463,12 @@ class PersonView(LaunchpadView, FeedsMixin):
         return self.user == self.context
 
     @property
-    def specific_contact_text(self):
-        """Return the appropriate +contactuser link name."""
+    def contactuser_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
         if self.viewing_own_page:
-            return 'Contact yourself'
+            return 'Send an email to yourself through Launchpad'
         else:
-            return 'Contact this user'
+            return 'Send an email to this user through Launchpad'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
