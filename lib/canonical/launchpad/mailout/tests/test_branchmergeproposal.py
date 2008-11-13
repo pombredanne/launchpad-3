@@ -66,7 +66,9 @@ I think this would be good.
 %s
 %s
 """ % (canonical_url(bmp), reason.getReason()), body)
-        self.assertEqual('Proposed merge of foo into bar', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name15/product-name10/branch17 into '
+            'lp://dev/~person-name4/product-name10/branch6', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
@@ -144,7 +146,9 @@ I think this would be good.
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Proposed merge of foo into bar updated', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name15/product-name10/branch17 into '
+            'lp://dev/~person-name4/product-name10/branch6 updated', subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
