@@ -146,25 +146,12 @@ in the expected path.
 
     >>> mock_key = MockKey(True)
     >>> archive_signing_key.exportSecretKey(mock_key)
-
-    >>> import os
-    >>> from canonical.config import config
-
-    >>> secret_export_path = os.path.join(
-    ...     config.personalpackagearchive.signing_keys_root,
-    ...     '%s.gpg' % mock_key.fingerprint)
-
-    >>> print open(secret_export_path).read()
+    >>> print open(
+    ...     archive_signing_key.getPathForSecretKey(mock_key)).read()
     Secret True
 
     >>> archive_signing_key.exportPublicKey(MockKey(False))
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_pub_config = removeSecurityProxy(cprov.archive.getPubConfig())
-    >>> pub_export_path = os.path.join(
-    ...     naked_pub_config.archiveroot, 'key.pub')
-
-    >>> print open(pub_export_path).read()
+    >>> print open(archive_signing_key.public_key_path).read()
     Secret False
 
 Use an `IArchiveSigningKey` to generate and assign a real signing_key.
@@ -174,7 +161,7 @@ Use an `IArchiveSigningKey` to generate and assign a real signing_key.
 The assigned key is a sign-only, password-less 1024-RSA GPG key owner
 by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 
-    >>> signing_key = cprov.archive.signing_key
+    >>> signing_key = archive_signing_key.archive.signing_key
 
     >>> from canonical.launchpad.interfaces.gpg import IGPGKey
     >>> verifyObject(IGPGKey, signing_key)
@@ -198,7 +185,7 @@ by the 'PPA key guard' celebrity and represented by a IGPGKey record.
 The public key can be accessed publically via its export placed in the
 repository root as 'key.pub'.
 
-    >>> print open(pub_export_path).read()
+    >>> print open(archive_signing_key.public_key_path).read()
     -----BEGIN PGP PUBLIC KEY BLOCK-----
     ...
     -----END PGP PUBLIC KEY BLOCK-----
@@ -208,11 +195,8 @@ On the other hand, the secret key is securily stored in the
 designed configuration path. So only the IGPGHandler itself can access
 it.
 
-    >>> secret_export_path = os.path.join(
-    ...     config.personalpackagearchive.signing_keys_root,
-    ...     '%s.gpg' % signing_key.fingerprint)
-
-    >>> print open(secret_export_path).read()
+    >>> print open(
+    ...     archive_signing_key.getPathForSecretKey(signing_key)).read()
     -----BEGIN PGP PRIVATE KEY BLOCK-----
     ...
     -----END PGP PRIVATE KEY BLOCK-----

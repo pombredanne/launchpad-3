@@ -43,25 +43,29 @@ class ArchiveSigningKey:
     def __init__(self, archive):
         self.archive = archive
 
+    def getPathForSecretKey(self, key):
+        """See `IArchiveSigningKey`."""
+        return os.path.join(
+            config.personalpackagearchive.signing_keys_root,
+            "%s.gpg" % key.fingerprint)
+
+    @property
+    def public_key_path(self):
+        """See `IArchiveSigningKey`."""
+        # XXX cprov 20081104: Publish configuration has no interface.
+        from zope.security.proxy import removeSecurityProxy
+        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
+        return os.path.join(naked_pub_config.archiveroot, 'key.pub')
+
     def exportSecretKey(self, key):
         """See `IArchiveSigningKey`."""
         assert key.secret, "Only secret keys should be exported."
-
-        export_path = os.path.join(
-            config.personalpackagearchive.signing_keys_root,
-            "%s.gpg" % key.fingerprint)
-        exportKey(key, export_path)
+        exportKey(key, self.getPathForSecretKey(key))
 
     def exportPublicKey(self, key):
         """See `IArchiveSigningKey`."""
         assert not key.secret, "Only public keys should be exported."
-
-        # XXX cprov 20081104: Publish configuration has no interface.
-        from zope.security.proxy import removeSecurityProxy
-        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
-        export_path = os.path.join(
-            naked_pub_config.archiveroot, 'key.pub')
-        exportKey(key, export_path)
+        exportKey(key, self.public_key_path)
 
     def generateSigningKey(self):
         """See `IArchiveSigningKey`."""
@@ -93,5 +97,8 @@ class ArchiveSigningKey:
 
     def signRepository(self):
         """See `IArchiveSigningKey`."""
-        pass
+        assert self.archive.signing_key is not None, (
+            "No signing key available for %s" % self.archive.title)
+
+        gpghandler = getUtility(IGPGHandler)
 
