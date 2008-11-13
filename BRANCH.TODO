@@ -27,11 +27,11 @@ A rough implementation plan:
 2. Text IField which accepts a list of aliases (separated by space) and
    ensures they match the aliases of the pillar in context, either creating
    new ones or removing existing or both.
-    - Curtis used TokensTextWidget to manage faq keywords, so that's a good
-      candidate for the base class.
 
 3. Use the field on pillar's +edit pages.
 
+4. Redirect to the pillar's canonical_url when it is traversed using one
+of its aliases.
 
 == Testing ==
 
