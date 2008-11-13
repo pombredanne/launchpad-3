@@ -29,6 +29,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 __all__ = [
     'pillar_sort_key',
+    'PillarMixin',
     'PillarNameSet',
     'PillarName',
     ]
@@ -64,8 +65,11 @@ class PillarNameSet:
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
-            WHERE name=? AND active IS TRUE
-            """, [name])
+            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+                   OR name=?)
+                AND alias_for IS NULL
+                AND active IS TRUE
+            """, [name, name])
         return result.get_one() is not None
 
     def __getitem__(self, name):
@@ -98,19 +102,20 @@ class PillarNameSet:
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE name=?
+            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+                   OR name=?)
+                AND alias_for IS NULL
             """
         if ignore_inactive:
             query += " AND active IS TRUE"
-        result = store.execute(query, [name])
+        result = store.execute(query, [name, name])
         row = result.get_one()
         if row is None:
             return None
 
-        assert len([column for column in row[1:] if column is None]) == 2, """
-                One (and only one) of project, project or distribution may
-                be NOT NULL
-                """
+        assert len([column for column in row[1:] if column is None]) == 2, (
+            "One (and only one) of project, project or distribution may be "
+            "NOT NULL")
 
         id, product, project, distribution = row
 
@@ -139,17 +144,21 @@ class PillarNameSet:
             ]
         conditions = SQL('''
             PillarName.active = TRUE
-            AND (
+            AND PillarName.alias_for IS NULL
+            AND ((PillarName.id IN (
+                    SELECT alias_for
+                    FROM PillarName
+                    WHERE name=lower(%(text)s))
+                  OR PillarName.name = lower(%(text)s)
+                 ) OR
+
                  Product.fti @@ ftq(%(text)s) OR
-                 Product.name = lower(%(text)s) OR
                  lower(Product.title) = lower(%(text)s) OR
 
                  Project.fti @@ ftq(%(text)s) OR
-                 Project.name = lower(%(text)s) OR
                  lower(Project.title) = lower(%(text)s) OR
 
                  Distribution.fti @@ ftq(%(text)s) OR
-                 Distribution.name = lower(%(text)s) OR
                  lower(Distribution.title) = lower(%(text)s)
                 )
             ''' % sqlvalues(text=text))
@@ -274,6 +283,8 @@ class PillarName(SQLBase):
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
+    alias_for = ForeignKey(
+        foreignKey='PillarName', dbName='alias_for', default=None)
 
     @property
     def pillar(self):
@@ -285,3 +296,30 @@ class PillarName(SQLBase):
             return self.product
         else:
             raise AssertionError("Unknown pillar type: %s" % self.name)
+
+
+class PillarMixin:
+    """Mixin for classes that implement IPillar."""
+
+    @property
+    def aliases(self):
+        """See `IPillar`."""
+        aliases = PillarName.selectBy(alias_for=PillarName.byName(self.name))
+        return [alias.name for alias in aliases]
+
+    def setAliases(self, names):
+        """See `IPillar`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        existing_aliases = set(self.aliases)
+        self_pillar = store.find(PillarName, name=self.name).one()
+        to_remove = set(existing_aliases).difference(names)
+        to_add = set(names).difference(existing_aliases)
+        for name in to_add:
+            assert store.find(PillarName, name=name).count() == 0, (
+                "This alias is already in use: %s" % name)
+            PillarName(name=name, alias_for=self_pillar)
+        for name in to_remove:
+            pillar_name = store.find(PillarName, name=name).one()
+            assert pillar_name.alias_for == self_pillar, (
+                "Can't remove an alias of another pillar.")
+            store.remove(pillar_name)

@@ -28,7 +28,6 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
-from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -56,7 +55,7 @@ class IProject(IHasBugs, ICanGetMilestonesDirectly, IHasAppointedDriver,
                IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
                IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
                IHasSpecifications, IHasSprints, IHasTranslationGroup,
-               IMakesAnnouncements, IKarmaContext, IPillar):
+               IMakesAnnouncements, IKarmaContext):
     """A Project."""
     export_as_webservice_entry('project_group')
 

@@ -47,6 +47,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.pillar import PillarMixin
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -146,7 +147,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              StructuralSubscriptionTargetMixin):
+              PillarMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 

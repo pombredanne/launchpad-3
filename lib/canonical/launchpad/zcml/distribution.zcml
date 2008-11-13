@@ -30,6 +30,12 @@
       permission="launchpad.TranslationsAdmin"
       set_attributes="language_pack_admin"
       />
+    <!-- IPillar -->
+    <allow attributes="active aliases" />
+    <require
+      permission="launchpad.Admin"
+      attributes="setAliases"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages

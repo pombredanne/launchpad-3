@@ -40,7 +40,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.database.pillar import PillarMixin
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -51,10 +51,11 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin,
+              MakesAnnouncements, HasSprintsMixin, PillarMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               StructuralSubscriptionTargetMixin):
     """A Project"""

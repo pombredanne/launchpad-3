@@ -34,7 +34,6 @@ from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
-from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -70,7 +69,7 @@ class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
     IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    IMakesAnnouncements, IPillar, ISpecificationTarget):
+    IMakesAnnouncements, ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
