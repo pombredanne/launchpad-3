@@ -1208,7 +1208,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc',
+        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc',
                     'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)

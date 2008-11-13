@@ -1385,7 +1385,7 @@ class HALDevice:
         Devices are identifed by (bus, vendor_id, product_id).
         At present we cannot generate reliable vendor and/or product
         IDs for devices where
-        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia').
+        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc').
 
         info.bus == 'platform' is used for devices like the i8042
         which controls keyboard and mouse; HAL has no vendor
@@ -1395,6 +1395,10 @@ class HALDevice:
         info.bus == 'pnp' is used for components like the ancient
         AT DMA controller or the keyboard. Like for the bus
         'platform', HAL does not provide any vendor data.
+
+        info.bus == 'mmc' is used for SD/MMC cards. We do not not
+        have at present enough background information to properly
+        extract a vendor and product ID from these cards.
 
         info.bus == 'misc' and info.bus == 'unknown' are obviously
         not very useful, except for the computer itself, which has
@@ -1427,7 +1431,7 @@ class HALDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'misc'):
+        if bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
