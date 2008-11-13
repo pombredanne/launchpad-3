@@ -73,10 +73,10 @@
         <h2>What&#8217;s new?</h2>
         <ul>
          <li class="news">
-            <a href="http://news.launchpad.net/?p=151">
-              <strong>Branch uploads: fast as lightning</strong><br />
-              If Launchpad already hosts a project's trunk, pushing up another
-              branch is now significantly faster!
+            <a href="http://news.launchpad.net/?p=214">
+              <strong>Contact any Launchpad user</strong><br />
+              Launchpad's new contact system means you can get in touch with
+              other users without needing to know their email address.
             </a>
          </li>
          <li class="news">
@@ -101,7 +101,7 @@
          </li>
         </ul>
         <div class="discreet" style="text-align: right">
-          Updated 2008-10-15.
+          Updated 2008-11-19.
           <a href="http://news.launchpad.net">More...</a>
         </div>
       </div>
