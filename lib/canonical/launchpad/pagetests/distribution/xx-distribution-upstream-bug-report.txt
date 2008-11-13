@@ -48,12 +48,6 @@ So let's check out the actual table:
     thunderbird          Missing corresponding project.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0
 
-The table is sortable using sorttables.js.
-
-    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
-    >>> print table['class']
-    listing sortable
-
 XXX kiko 2008-02-01 bug=188020: One thing to note from the counts above
 is that while the linux-source/tomcat task is counted as pending a
 bugwatch, the mozilla-firefox one is not -- and the reason for that is
@@ -78,13 +72,6 @@ we'd solve this by separating the watched column into natively watched
 and remote watched, but I don't know how to fix this right now.  See
 https://bugs.edge.launchpad.net/malone/+bug/188020
     -- kiko, 2008-02-01
-
-The Totals row will remain at the bottom of the table when it's sorted
-using JavaScript.
-
-    >>> footer_row = table.findChild('tr')
-    >>> print footer_row['class']
-    sortbottom
 
 
 == Useful links ==
@@ -286,6 +273,37 @@ The report now renders an icon and a link to the branch page:
     'http://code.launchpad.dev/~name12/firefox/main'
 
 (This means that anyone can use bzr branch lp:firefox to pull this code.)
+
+
+== Sorting the report ==
+
+The table of packages can be sorted by any of the columns. The column
+headers are links. Clicking on them will cause the table to be resorted.
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> link = browser.getLink('Package')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=dsp
+
+    >>> link = browser.getLink('Project')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=product
+
+    >>> link = browser.getLink('Bugtracker')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=bugtracker_name
+
+    >>> link = browser.getLink('Upstream Contact')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=bug_supervisor_name
+
+    >>> link = browser.getLink('Open')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=open_bugs
+
+    >>> link = browser.getLink('Triaged')
+    >>> print link.url
+    http://.../ubuntu/+upstreamreport?sort_by=triaged_bugs
 
 
 == Empty distributions ==

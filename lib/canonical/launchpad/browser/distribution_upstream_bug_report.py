@@ -177,7 +177,7 @@ class PackageBugReportData(BugReportData):
 
             # Create a 'bugtracker_name' attribute for searching.
             if self.bugtracker is not None:
-                self.bugtracker_name = bugtracker.displayname
+                self.bugtracker_name = self.bugtracker.title
             elif self.product.official_malone:
                 self.bugtracker_name = 'Launchpad'
             else:
