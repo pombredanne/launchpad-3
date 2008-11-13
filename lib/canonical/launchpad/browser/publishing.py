@@ -235,7 +235,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
                 arch_tag = build.distroarchseries.architecturetag
                 arch_links.append(
                     '<a href="%(url)s" title="%(title)s">%(arch_tag)s</a>' % {
-                        'url': canonical_url(build), 
+                        'url': canonical_url(build),
                         'arch_tag': arch_tag,
                         'title': desc})
             return icon + " ".join(arch_links)
