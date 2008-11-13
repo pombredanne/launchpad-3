@@ -451,11 +451,10 @@ class _BaseLaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-
         deferred = self._getLaunchpadBranch(virtual_url_fragment)
 
         def couldnt_get_branch(failure):
-            failure.trap(NotABranchPath)
+            failure.trap(NotEnoughInformation)
             deferred = defer.maybeDeferred(
                 self._translateControlPath, virtual_url_fragment)
             deferred.addErrback(lambda ignored: failure)
