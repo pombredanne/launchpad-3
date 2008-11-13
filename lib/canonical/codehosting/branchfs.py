@@ -453,7 +453,7 @@ class _BaseLaunchpadServer(Server):
         """
         try:
             lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
-        except NotABranchPath:
+        except NotEnoughInformation:
             fail = failure.Failure()
             deferred = defer.maybeDeferred(
                 self._translateControlPath, virtual_url_fragment)
