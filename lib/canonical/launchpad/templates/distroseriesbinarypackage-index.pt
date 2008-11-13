@@ -28,7 +28,7 @@
       Package Description
   </tal:description>
 
-  <tal:sourcepkg tal:define="spackage context/sourcepackagerelease"
+  <tal:sourcepkg tal:define="spackage context/last_sourcepackagerelease"
                    tal:condition="spackage">
     <h2>Source package</h2>
 

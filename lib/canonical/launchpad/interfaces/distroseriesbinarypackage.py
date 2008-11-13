@@ -44,9 +44,9 @@ class IDistroSeriesBinaryPackage(Interface):
     last_published = Reference(
         IDistroArchSeriesBinaryPackageRelease,
         title=_("The most recently published BinaryPackageRelease for this "
-            "binary package in this distroseries."))
+                "binary package in this distroseries."))
 
-    sourcepackagerelease = Reference(
+    last_sourcepackagerelease = Reference(
         IDistroSeriesSourcePackageRelease,
         title=_("The DistroSeriesSourcePackageRelease that was used to "
                 "generate the most recently published binary package "

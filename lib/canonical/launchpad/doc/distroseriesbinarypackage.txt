@@ -3,7 +3,7 @@
 A DistroSeriesBinaryPackage is really a BinaryPackageName for a particular
 DistroSeries. That is, it doesn't represent a particular package release or
 architecture, but is a reference point for obtaining particular package
-releases and/or architecturs for a given binary package name within a 
+releases and/or architectures for a given binary package name within a
 specific distribution series.
 
     >>> from zope.component import getUtility
@@ -33,6 +33,9 @@ It has a name, summary, description and title:
     >>> firefox_dsbp.title
     u'Binary package "mozilla-firefox" in ubuntu warty'
 
+    >>> firefox_dsbp.distribution.name
+    u'ubuntu'
+
 It provides the current publishings for the binary package in the
 distro series (ordered by architecture then datecreated):
 
@@ -51,8 +54,24 @@ The last published binary can also be accessed directly:
     >>> "%s %s" % (last_published.name, last_published.version)
     u'mozilla-firefox 1.0'
 
-It also provides access to the DistroSeriesSourcePackageRelease:
+It also provides access to the last DistroSeriesSourcePackageRelease:
 
-    >>> firefox_dsbp.sourcepackagerelease.title
+    >>> firefox_dsbp.last_sourcepackagerelease.title
     u'iceweasel 1.0 (source) in ubuntu warty'
+
+If a DistroSeriesBinaryPackage doesn't a publishing history (for whatever
+reason), then last_published returns None.
+
+    >>> firefox_hoary_dsbp = ubuntu['hoary'].getBinaryPackage(
+    ...     firefox_bin_name)
+    >>> firefox_hoary_dsbp.current_publishings
+    []
+    
+    >>> print firefox_hoary_dsbp.last_published
+    None
+
+In this case, the last DistroSeriesSourcePackageRelease will also be None:
+
+    >>> print firefox_hoary_dsbp.last_sourcepackagerelease
+    None
 

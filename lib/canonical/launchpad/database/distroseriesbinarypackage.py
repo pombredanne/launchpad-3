@@ -6,9 +6,9 @@ __all__ = [
     'DistroSeriesBinaryPackage',
     ]
 
-from zope.interface import implements
-from storm.store import Store
 from storm.expr import Desc
+from storm.store import Store
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
@@ -74,7 +74,7 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return None
+            return self.title
         return cache.summary
 
     @property
@@ -82,7 +82,9 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return None
+            return "This package is not published in %s %s at present." % (
+                self.distribution.name,
+                self.distroseries.name)
         return cache.description
 
     @property
@@ -121,8 +123,8 @@ class DistroSeriesBinaryPackage:
         # that is, BinaryPackageRelease.archive.is_in doesn't exist.
         publishing_history = store.find(
             BinaryPackagePublishingHistory,
-            BinaryPackagePublishingHistory.distroarchseries == 
-                DistroArchSeries.id, 
+            BinaryPackagePublishingHistory.distroarchseries ==
+                DistroArchSeries.id,
             DistroArchSeries.distroseries == self.distroseries,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
@@ -133,18 +135,20 @@ class DistroSeriesBinaryPackage:
 
         last_published_history = publishing_history.order_by(
             Desc(BinaryPackagePublishingHistory.datepublished)).first()
-            
+
         if last_published_history is None:
             return None
         else:
             return last_published_history.distroarchseriesbinarypackagerelease
 
-
     @property
-    def sourcepackagerelease(self):
+    def last_sourcepackagerelease(self):
         """See `IDistroSeriesBinaryPackage`."""
+        last_published = self.last_published
+        if last_published is None:
+            return None
 
-        src_pkg_release = self.last_published.build.sourcepackagerelease
-        
+        src_pkg_release = last_published.build.sourcepackagerelease
+
         return DistroSeriesSourcePackageRelease(
             self.distroseries, src_pkg_release)
