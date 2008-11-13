@@ -1,12 +1,20 @@
 SET client_min_messages=ERROR;
 
+-- ProductReleases are only unique on the version and productseries,
+-- which causes a problem when merging them with Milestones, which
+-- are unique on the name and product.
+ALTER TABLE Milestone
+DROP CONSTRAINT milestone_name_product_key;
+
+ALTER TABLE Milestone
+ADD UNIQUE (name, productseries);
+
 -- Link milestones and releases with matching names and productseries.
 UPDATE ProductRelease
 SET milestone = Milestone.id
 FROM Milestone
 WHERE Milestone.name = lower(ProductRelease.version)
-    AND Milestone.productseries = ProductRelease.productseries
-    AND Milestone.description = ProductRelease.description;
+    AND Milestone.productseries = ProductRelease.productseries;
 
 -- Append ProductRelease.description to Milestone.description.
 UPDATE Milestone
@@ -45,4 +53,4 @@ ALTER COLUMN milestone SET NOT NULL;
 ALTER TABLE productrelease
 DROP constraint productrelease_productseries_version_key;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 8, 99);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 99, 0);
