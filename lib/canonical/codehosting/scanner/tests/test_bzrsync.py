@@ -1232,34 +1232,34 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
-        self.handler.mergeProposalMergeDetected(proposal)
+        self.handler.mergeProposalMerge(proposal)
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
 
-    def test_mergeOfTwoBranchesDetected_target_not_dev_focus(self):
+    def test_mergeOfTwoBranches_target_not_dev_focus(self):
         # The target branch must be the development focus in order for the
         # lifecycle status of the source branch to be updated to merged.
         source = self.factory.makeBranch()
         target = self.factory.makeBranch()
-        self.handler.mergeOfTwoBranchesDetected(source, target)
+        self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
-    def test_mergeOfTwoBranchesDetected_target_dev_focus(self):
+    def test_mergeOfTwoBranches_target_dev_focus(self):
         # If the target branch is the development focus branch of the product,
         # then the source branch gets its lifecycle status set to merged.
         product = self.factory.makeProduct()
         source = self.factory.makeBranch(product=product)
         target = self.factory.makeBranch(product=product)
         product.development_focus.user_branch = target
-        self.handler.mergeOfTwoBranchesDetected(source, target)
+        self.handler.mergeOfTwoBranches(source, target)
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
-    def test_mergeOfTwoBranchesDetected_source_seriec_branch(self):
+    def test_mergeOfTwoBranches_source_seriec_branch(self):
         # If the source branch is associated with a series, its lifecycle
         # status is not updated.
         product = self.factory.makeProduct()
@@ -1269,7 +1269,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         series = product.newSeries(product.owner, 'new', '')
         series.user_branch = source
 
-        self.handler.mergeOfTwoBranchesDetected(source, target)
+        self.handler.mergeOfTwoBranches(source, target)
         self.assertNotEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
