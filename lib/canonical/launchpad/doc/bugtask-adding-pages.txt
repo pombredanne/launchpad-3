@@ -72,6 +72,11 @@ If we supply a valid product, it will move on to the next step.
     >>> add_task_view.step_name
     'specify_remote_bug_url' 
 
+The URL widget is focused, to make it easier to paste the URL directly.
+
+    >>> add_task_view.initial_focus_widget
+    'bug_url'
+
 If the validation fails, an error will be displayed.
 
     >>> form = {
