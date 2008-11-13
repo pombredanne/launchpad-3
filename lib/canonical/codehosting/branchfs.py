@@ -406,8 +406,8 @@ class _BaseLaunchpadServer(Server):
         raise NotImplementedError("Override this in subclasses.")
 
     def _getLaunchpadBranch(self, virtual_path):
-        return LaunchpadBranch.from_virtual_path(
-            self._authserver, virtual_path)
+        return defer.maybeDeferred(
+            LaunchpadBranch.from_virtual_path, self._authserver, virtual_path)
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
@@ -451,35 +451,40 @@ class _BaseLaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        try:
-            lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
-        except NotABranchPath:
-            fail = failure.Failure()
+
+        deferred = self._getLaunchpadBranch(virtual_url_fragment)
+
+        def couldnt_get_branch(failure):
+            failure.trap(NotABranchPath)
             deferred = defer.maybeDeferred(
                 self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: fail)
+            deferred.addErrback(lambda ignored: failure)
             return deferred
 
-        virtual_path_deferred = lp_branch.getRealPath(path)
+        def got_branch((lp_branch, path)):
+            virtual_path_deferred = lp_branch.getRealPath(path)
 
-        def branch_not_found(failure):
-            failure.trap(BranchNotFound)
-            if path == '':
-                # We are trying to translate a branch path that doesn't exist.
-                return failure
-            else:
-                # We are trying to translate a path within a branch that
-                # doesn't exist.
-                raise NoSuchFile(virtual_url_fragment)
+            def branch_not_found(failure):
+                failure.trap(BranchNotFound)
+                if path == '':
+                    # We are trying to translate a branch path that doesn't
+                    # exist.
+                    return failure
+                else:
+                    # We are trying to translate a path within a branch that
+                    # doesn't exist.
+                    raise NoSuchFile(virtual_url_fragment)
 
-        virtual_path_deferred.addErrback(branch_not_found)
+            virtual_path_deferred.addErrback(branch_not_found)
 
-        def get_transport(real_path):
-            deferred = self._getTransportForLaunchpadBranch(lp_branch)
-            deferred.addCallback(lambda transport: (transport, real_path))
-            return deferred
+            def get_transport(real_path):
+                deferred = self._getTransportForLaunchpadBranch(lp_branch)
+                deferred.addCallback(lambda transport: (transport, real_path))
+                return deferred
 
-        return virtual_path_deferred.addCallback(get_transport)
+            return virtual_path_deferred.addCallback(get_transport)
+
+        return deferred.addCallbacks(got_branch, couldnt_get_branch)
 
     def get_url(self):
         """Return the URL of this server."""
@@ -560,13 +565,17 @@ class LaunchpadServer(_BaseLaunchpadServer):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
-        deferred = lp_branch.create()
+        deferred = self._getLaunchpadBranch(virtual_url_fragment)
 
-        def ensure_path(branch_id):
-            deferred = lp_branch.ensureUnderlyingPath(self._hosted_transport)
-            return deferred.addCallback(lambda ignored: branch_id)
-        return deferred.addCallback(ensure_path)
+        def got_branch((lp_branch, ignored)):
+            deferred = lp_branch.create()
+            def ensure_path(branch_id):
+                deferred = lp_branch.ensureUnderlyingPath(
+                    self._hosted_transport)
+                return deferred.addCallback(lambda ignored: branch_id)
+            return deferred.addCallback(ensure_path)
+
+        return deferred.addCallback(got_branch)
 
     def requestMirror(self, virtual_url_fragment):
         """Mirror the branch that owns 'virtual_url_fragment'.
@@ -576,8 +585,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :raise NotABranchPath: If `virtual_url_fragment` does not have at
             least a valid path to a branch.
         """
-        lp_branch, ignored = self._getLaunchpadBranch(virtual_url_fragment)
-        return lp_branch.requestMirror()
+        deferred = self._getLaunchpadBranch(virtual_url_fragment)
+
+        def got_branch((lp_branch, ignored)):
+            return lp_branch.requestMirror()
+
+        return deferred.addCallback(got_branch)
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
