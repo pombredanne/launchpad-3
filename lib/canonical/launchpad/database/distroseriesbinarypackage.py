@@ -21,7 +21,7 @@ from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage)
 
 class DistroSeriesBinaryPackage:
@@ -118,9 +118,6 @@ class DistroSeriesBinaryPackage:
 
         store = Store.of(self.distroseries)
 
-        # Note: The join below on Archive.id seems to be necessary only
-        # because Storm doesn't provide the is_in method on References,
-        # that is, BinaryPackageRelease.archive.is_in doesn't exist.
         publishing_history = store.find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.distroarchseries ==
@@ -129,8 +126,8 @@ class DistroSeriesBinaryPackage:
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == self.binarypackagename,
-            BinaryPackagePublishingHistory.archive == Archive.id,
-            Archive.id.is_in(self.distribution.all_distro_archive_ids),
+            BinaryPackagePublishingHistory.archiveID.is_in(
+                self.distribution.all_distro_archive_ids),
             BinaryPackagePublishingHistory.dateremoved == None)
 
         last_published_history = publishing_history.order_by(

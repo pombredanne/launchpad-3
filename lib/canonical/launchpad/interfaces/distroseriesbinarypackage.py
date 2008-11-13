@@ -11,8 +11,8 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease \
-    import IDistroArchSeriesBinaryPackageRelease
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import (
+    IDistroArchSeriesBinaryPackageRelease)
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 
