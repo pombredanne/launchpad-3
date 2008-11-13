@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.schema import Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -140,6 +140,12 @@ class IOpenIDRPConfig(Interface):
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
+    can_query_any_team = Bool(
+        title=_('Query Any Team'),
+        description=_(
+            'Teammembership of any team can be requested, including '
+            'private teams.'),
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
