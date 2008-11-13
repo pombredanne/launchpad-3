@@ -98,70 +98,94 @@
         <thead tal:define="links view/sort_order_links">
           <tr>
             <th>
-              <a tal:attributes="href links/dsp/link">Package</a>
-              <img tal:attributes="src links/dsp/arrow" />
+              <a id="sort-dsp" tal:attributes="href links/dsp/link">Package</a>
+              <img id="sortarrow-dsp" tal:attributes="src links/dsp/arrow" />
             </th>
             <th colspan="2">
-              <a tal:attributes="href links/product/link">Project</a>
-              <img tal:attributes="src links/product/arrow" />
+              <a id="sort-product" tal:attributes="href links/product/link">Project</a>
+              <img id="sortarrow-product" tal:attributes="src links/product/arrow" />
             </th>
             <th>
-              <a tal:attributes="href links/bugtracker_name/link"
+              <a id="sort-bugtracker-name"
+                  tal:attributes="href links/bugtracker_name/link"
               >Bugtracker</a>
-              <img tal:attributes="src links/bugtracker_name/arrow" />
+              <img id="sortarrow-bugtracker-name"
+                  tal:attributes="src links/bugtracker_name/arrow" />
             </th>
             <th>
-              <a tal:attributes="href links/bug_supervisor_name/link"
+              <a id="sort-bug-supervisor-name"
+                  tal:attributes="href links/bug_supervisor_name/link"
               >Upstream Contact</a>
-              <img tal:attributes="src links/bug_supervisor_name/arrow" />
+              <img id="sortarrow-bug-supervisor-name"
+                  tal:attributes="src links/bug_supervisor_name/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/open_bugs/link">Open</a>
-              <img tal:attributes="src links/open_bugs/arrow" />
+              <a id="sort-open-bugs"
+                  tal:attributes="href links/open_bugs/link">Open</a>
+              <img id="sortarrow-open-bugs"
+                  tal:attributes="src links/open_bugs/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/triaged_bugs/link"
+              <a id="sort-triaged-bugs"
+                  tal:attributes="href links/triaged_bugs/link"
               >Triaged</a>
-              <img tal:attributes="src links/triaged_bugs/arrow" />
+              <img id="sortarrow-triaged-bugs"
+                  tal:attributes="src links/triaged_bugs/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/triaged_bugs_percentage/link"
+              <a id="sort-triaged-percentage"
+                  tal:attributes="href links/triaged_bugs_percentage/link"
               >%</a>
-              <img tal:attributes="src links/triaged_bugs_percentage/arrow" />
+              <img id="sortarrow-triaged-percentage"
+                  tal:attributes="src links/triaged_bugs_percentage/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/triaged_bugs_delta/link"
+              <a id="sort-triaged-delta"
+                  tal:attributes="href links/triaged_bugs_delta/link"
               >&Delta;</a>
-              <img tal:attributes="src links/triaged_bugs_delta/arrow" />
+              <img id="sortarrow-triaged-delta"
+                  tal:attributes="src links/triaged_bugs_delta/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/upstream_bugs/link"
+              <a id="sort-upstream-bugs"
+                  tal:attributes="href links/upstream_bugs/link"
               >Upstream</a>
-              <img tal:attributes="src links/upstream_bugs/arrow" />
+              <img id="sortarrow-upstream-bugs"
+                  tal:attributes="src links/upstream_bugs/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/upstream_bugs_percentage/link"
+              <a id="sort-upstream-percentage"
+                  tal:attributes="href links/upstream_bugs_percentage/link"
               >%</a>
-              <img tal:attributes="src links/upstream_bugs_percentage/arrow" />
+              <img id="sortarrow-upstream-percentage"
+                  tal:attributes="src links/upstream_bugs_percentage/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/upstream_bugs_delta/link"
+              <a id="sort-upstream-delta"
+                  tal:attributes="href links/upstream_bugs_delta/link"
               >&Delta;</a>
-              <img tal:attributes="src links/upstream_bugs_delta/arrow" />
+              <img id="sortarrow-upstream-delta"
+                  tal:attributes="src links/upstream_bugs_delta/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/watched_bugs/link">Watch</a>
-              <img tal:attributes="src links/watched_bugs/arrow" />
+              <a id="sort-watched-bugs"
+                  tal:attributes="href links/watched_bugs/link">Watch</a>
+              <img id="sortarrow-watched-bugs"
+                  tal:attributes="src links/watched_bugs/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/watched_bugs_percentage/link"
+              <a id="sort-watched-percentage"
+                  tal:attributes="href links/watched_bugs_percentage/link"
               >%</a>
-              <img tal:attributes="src links/watched_bugs_percentage/arrow" />
+              <img id="sortarrow-watched-percentage"
+                  tal:attributes="src links/watched_bugs_percentage/arrow" />
             </th>
             <th class="amount">
-              <a tal:attributes="href links/watched_bugs_delta/link"
+              <a id="sort-watched-delta"
+                  tal:attributes="href links/watched_bugs_delta/link"
               >&Delta;</a>
-              <img tal:attributes="src links/watched_bugs_delta/arrow" />
+              <img id="sortarrow-watched-delta"
+                  tal:attributes="src links/watched_bugs_delta/arrow" />
             </th>
           </tr>
         </thead>
