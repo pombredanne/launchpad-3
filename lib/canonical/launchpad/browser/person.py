@@ -2458,8 +2458,17 @@ class PersonView(LaunchpadView, FeedsMixin):
         specs = self.assigned_specs_in_progress
         return bugtasks.count() > 0 or specs.count() > 0
 
-    def viewingOwnPage(self):
+    @property
+    def viewing_own_page(self):
         return self.user == self.context
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate +contactuser link name."""
+        if self.viewing_own_page:
+            return 'Contact yourself'
+        else:
+            return 'Contact this user'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -4988,3 +4997,11 @@ class EmailToPersonView(LaunchpadFormView):
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return throttle_date + interval
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate pagetitle."""
+        if self.context == self.user:
+            return 'Contact yourself'
+        else:
+            return 'Contact this user'
