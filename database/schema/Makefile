@@ -17,7 +17,7 @@ LINTDATA=../sampledata/lintdata.sql
 LINTDATA_DEV=../sampledata/lintdata-dev.sql
 
 # The development database
-DBNAME=launchpad_dev
+DBNAME_DEV=launchpad_dev
 TEMPLATE_WITH_DEV_SAMPLEDATA=launchpad_dev_template
 
 # A template for databases used by functional tests.
@@ -93,12 +93,12 @@ dev: test
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -c 'vacuum full analyze' | grep : | cat
-	@ echo "* Creating ${DBNAME}"
-	@if [ "$$((`psql -l | grep -w ${DBNAME} | wc -l`))" = '1' ]; \
-	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
+	@ echo "* Creating ${DBNAME_DEV}"
+	@if [ "$$((`psql -l | grep -w ${DBNAME_DEV} | wc -l`))" = '1' ]; \
+	    then ${DROPDB} ${DBNAME_DEV} | grep : | cat ; \
 	fi
 	@ sleep 2
-	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME}
+	@ ${CREATEDB} ${TEMPLATE_WITH_DEV_SAMPLEDATA} ${DBNAME_DEV}
 
 	@ echo "* Creating ${TEST_PLAYGROUND_DBNAME}"
 	@if [ "$$((`psql -l | grep -w ${TEST_PLAYGROUND_DBNAME} | wc -l`))" = '1' ]; \
@@ -183,7 +183,7 @@ all: dev test
 	@ echo "* All done"
 
 doc:
-	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	postgresql_autodoc -d ${DBNAME_DEV} -f launchpad -t html
 	tidy -asxhtml launchpad.html > ,launchpad.html || mv ,launchpad.html launchpad.html
 
 diagram:
@@ -193,7 +193,7 @@ newsampledata_test:
 	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${NEWSAMPLEDATA})
 
 newsampledata_dev:
-	$(call build_new_sampledata,${DBNAME},${NEWSAMPLEDATA_DEV})
+	$(call build_new_sampledata,${DBNAME_DEV},${NEWSAMPLEDATA_DEV})
 
 newsampledata: newsampledata_dev newsampledata_test
 

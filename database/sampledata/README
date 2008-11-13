@@ -4,14 +4,17 @@ Sample data
 There are two sorts of sample data. One used by developers when playing around
 in http://launchpad.dev and another used by our tests.
 
-The sample data used in http://launchpad.dev is stored as a SQL file called
-current-dev.sql, in this same directory. You can change it as you like.
+The sample data used by default in http://launchpad.dev is stored as a SQL
+file called current-dev.sql, in this same directory. That data is loaded into
+the launchpad_dev DB and you can change it as you like, as its main purpose is
+to aid developers experimenting all features of Launchpad.
 
 Sample data for tests is stored as a SQL file called current.sql, under this
-same directory. However, for a long time we have been avoiding writing new
-tests that depend on sample data, so changes to current.sql should not happen
-often, as that's unnecessary *and* will certainly cause existing tests to
-fail.
+same directory. This data is loaded into the launchpad_ftest_template and
+launchpad_ftest_playground DBs. The former is used by our test runner and the
+latter can be accessed through http://launchpad.dev when you run the web app
+using the test-playground config (i.e. make LPCONFIG=test-playground run),
+so that you can see the world as one of our tests would.
 
 
 Changing sample data
