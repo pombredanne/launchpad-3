@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 __all__ = [
     'pillar_sort_key',
-    'PillarMixin',
+    'HasAliasMixin',
     'PillarNameSet',
     'PillarName',
     ]
@@ -298,17 +298,17 @@ class PillarName(SQLBase):
             raise AssertionError("Unknown pillar type: %s" % self.name)
 
 
-class PillarMixin:
-    """Mixin for classes that implement IPillar."""
+class HasAliasMixin:
+    """Mixin for classes that implement IHasAlias."""
 
     @property
     def aliases(self):
-        """See `IPillar`."""
+        """See `IHasAlias`."""
         aliases = PillarName.selectBy(alias_for=PillarName.byName(self.name))
         return [alias.name for alias in aliases]
 
     def setAliases(self, names):
-        """See `IPillar`."""
+        """See `IHasAlias`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         existing_aliases = set(self.aliases)
         self_pillar = store.find(PillarName, name=self.name).one()

@@ -30,8 +30,8 @@
       permission="launchpad.TranslationsAdmin"
       set_attributes="language_pack_admin"
       />
-    <!-- IPillar -->
-    <allow attributes="active aliases" />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
     <require
       permission="launchpad.Admin"
       attributes="setAliases"

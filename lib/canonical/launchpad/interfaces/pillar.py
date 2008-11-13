@@ -18,7 +18,7 @@ from canonical.lazr.rest.declarations import (
     operation_parameters, operation_returns_collection_of)
 
 
-__all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
+__all__ = ['IHasAliases', 'IPillar', 'IPillarName', 'IPillarNameSet']
 
 
 class IPillar(Interface):
@@ -31,6 +31,10 @@ class IPillar(Interface):
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
+
+
+class IHasAliases(Interface):
+
     aliases = List(
         title=_('Aliases'), required=False, readonly=False,
         description=_(

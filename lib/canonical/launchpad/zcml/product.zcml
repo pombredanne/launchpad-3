@@ -64,8 +64,8 @@
       permission="launchpad.TranslationsAdmin"
       set_attributes="official_rosetta"
       />
-    <!-- IPillar -->
-    <allow attributes="active aliases" />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
     <require
       permission="launchpad.Admin"
       attributes="setAliases"

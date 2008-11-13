@@ -14,7 +14,7 @@
             set_schema="canonical.launchpad.interfaces.IProject"
         />
         <!-- IStructuralSubscriptionTarget -->
-        <allow attributes="bug_subscriptions getSubscriptions active aliases
+        <allow attributes="bug_subscriptions getSubscriptions
                            getSubscription getBugNotificationsRecipients
                            parent_subscription_target" />
         <require
@@ -23,10 +23,13 @@
                         removeBugSubscription" />
         <require
             permission="launchpad.Admin"
-            attributes="setAliases" />
+            set_attributes="registrant" />
+        <!-- IHasAliases -->
+        <allow attributes="aliases" />
         <require
-            permission="launchpad.Admin"
-            set_attributes="registrant active" />
+          permission="launchpad.Admin"
+          attributes="setAliases"
+          />
     </class>
 
     <adapter
