@@ -699,6 +699,11 @@ class DirectEmailAuthorization:
             return after
         return affecters[expiry].date_sent
 
+    @property
+    def message_quota(self):
+        """See `IDirectEmailAuthorization`."""
+        return config.launchpad.user_to_user_max_messages
+
     def record(self, message):
         """See `IDirectEmailAuthorization`."""
         contact = UserToUserEmail(message)

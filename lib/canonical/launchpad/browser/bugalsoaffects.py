@@ -318,6 +318,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
 
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
 
+    initial_focus_widget = 'bug_url'
     step_name = 'specify_remote_bug_url'
     target_field_names = ()
 

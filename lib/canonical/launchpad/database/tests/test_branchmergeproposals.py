@@ -815,6 +815,29 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
 
+    def test_nominate_multiple_with_different_types(self):
+        # While an individual can only be requested to do one review
+        # (test_nominate_updates_reference) a team can have multiple
+        # nominations for different review types.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-1')
+        # Second nomination of the same type fails.
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-2')
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            ['general-1', 'general-2'],
+            sorted([review.review_type for review in votes]))
+
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
