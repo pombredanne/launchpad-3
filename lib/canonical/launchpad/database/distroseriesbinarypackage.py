@@ -74,7 +74,10 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return self.title
+            return "No summary available for %s in %s %s." % (
+                self.name,
+                self.distribution.name,
+                self.distroseries.name)
         return cache.summary
 
     @property
@@ -82,7 +85,8 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         cache = self.cache
         if cache is None:
-            return "This package is not published in %s %s at present." % (
+            return "No description available for %s in %s %s." % (
+                self.name,
                 self.distribution.name,
                 self.distroseries.name)
         return cache.description

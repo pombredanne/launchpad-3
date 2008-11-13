@@ -59,11 +59,19 @@ It also provides access to the last DistroSeriesSourcePackageRelease:
     >>> firefox_dsbp.last_sourcepackagerelease.title
     u'iceweasel 1.0 (source) in ubuntu warty'
 
-If a DistroSeriesBinaryPackage doesn't a publishing history (for whatever
-reason), then last_published returns None.
+If a DistroSeriesBinaryPackage doesn't have a DistroSeriesPackageCache,
+then the summary and description fields reflect the situation:
 
     >>> firefox_hoary_dsbp = ubuntu['hoary'].getBinaryPackage(
     ...     firefox_bin_name)
+    >>> firefox_hoary_dsbp.summary
+    u'No summary available for mozilla-firefox in ubuntu hoary.'
+    >>> firefox_hoary_dsbp.description
+    u'No description available for mozilla-firefox in ubuntu hoary.'
+
+If a DistroSeriesBinaryPackage doesn't have a publishing history (for
+whatever reason), then last_published returns None.
+
     >>> firefox_hoary_dsbp.current_publishings
     []
     

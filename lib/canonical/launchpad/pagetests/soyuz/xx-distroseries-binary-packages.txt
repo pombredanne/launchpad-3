@@ -51,6 +51,6 @@ no link to any source package:
     
     >>> main_content = find_main_content(browser.contents)
     >>> print extract_text(main_content)
-    Binary package "mozilla-firefox" in ubuntu hoary
-    This package is not published in ubuntu hoary at present.
+    No summary available for mozilla-firefox in ubuntu hoary.
+    No description available for mozilla-firefox in ubuntu hoary.
 
