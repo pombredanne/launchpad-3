@@ -143,7 +143,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -190,6 +191,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -4952,11 +4954,22 @@ class EmailToPersonView(LaunchpadFormView):
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
         recipient_email = removeSecurityProxy(self.context.preferredemail)
-        message = send_direct_contact_email(
-            sender_email, recipient_email.email, subject, message)
-        self.request.response.addInfoNotification(
-            _('Message sent to $name',
-              mapping=dict(name=self.context.displayname)))
+        try:
+            message = send_direct_contact_email(
+                sender_email, recipient_email.email, subject, message)
+        except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
+            self.request.response.addErrorNotification(
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
+        else:
+            self.request.response.addInfoNotification(
+                _('Message sent to $name',
+                  mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
