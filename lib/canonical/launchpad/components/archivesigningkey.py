@@ -11,6 +11,8 @@ __all__ = [
 
 import os
 
+import gpgme
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -43,6 +45,21 @@ class ArchiveSigningKey:
     def __init__(self, archive):
         self.archive = archive
 
+    @property
+    def _archive_root_path(self):
+        # XXX cprov 20081104: IArchive pub configuration doesn't implement
+        # any interface.
+        from zope.security.proxy import removeSecurityProxy
+        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
+        return naked_pub_config.archiveroot
+
+    def _setSigningKey(self, gpg_key):
+        # XXX cprov 20081104: setting 'signing_archive' requires lp.Admin
+        # on IArchive and we better not relax it system-wide.
+        from zope.security.proxy import removeSecurityProxy
+        naked_archive = removeSecurityProxy(self.archive)
+        naked_archive.signing_key = gpg_key
+
     def getPathForSecretKey(self, key):
         """See `IArchiveSigningKey`."""
         return os.path.join(
@@ -52,10 +69,7 @@ class ArchiveSigningKey:
     @property
     def public_key_path(self):
         """See `IArchiveSigningKey`."""
-        # XXX cprov 20081104: Publish configuration has no interface.
-        from zope.security.proxy import removeSecurityProxy
-        naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
-        return os.path.join(naked_pub_config.archiveroot, 'key.pub')
+        return os.path.join(self._archive_root_path, 'key.pub')
 
     def exportSecretKey(self, key):
         """See `IArchiveSigningKey`."""
@@ -88,17 +102,30 @@ class ArchiveSigningKey:
             key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
 
-        # XXX cprov 20081104: setting 'signing_archive' requires lp.Admin
-        # on IArchive and we better not relax it system-wide.
-        from zope.security.proxy import removeSecurityProxy
-        naked_archive = removeSecurityProxy(self.archive)
         # Assign the public key reference to the context IArchive.
-        naked_archive.signing_key = gpg_key
+        self._setSigningKey(gpg_key)
 
     def signRepository(self):
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is not None, (
             "No signing key available for %s" % self.archive.title)
 
-        gpghandler = getUtility(IGPGHandler)
+        release_file_path = os.path.join(self._archive_root_path, 'Release')
+        assert os.path.exists(release_file_path), (
+            "Release file doesn't exist in the repository")
 
+        secret_key_export = open(
+            self.getPathForSecretKey(self.archive.signing_key)).read()
+
+        gpghandler = getUtility(IGPGHandler)
+        secret_key = gpghandler.importSecretKey(secret_key_export)
+
+        release_file_content = open(release_file_path).read()
+        signature = gpghandler.signContent(
+            release_file_content, secret_key.fingerprint,
+            mode=gpgme.SIG_MODE_DETACH)
+
+        release_signature_file = open(
+            os.path.join(self._archive_root_path, 'Release.gpg'), 'w')
+        release_signature_file.write(signature)
+        release_signature_file.close()

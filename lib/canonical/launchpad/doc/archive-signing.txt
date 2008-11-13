@@ -210,6 +210,78 @@ If called against a PPA which already has a 'signing_key'
     ...
     AssertionError: Cannot override signing_keys.
 
+Let's reset the gpg local key ring, so we can verify repository
+signature mechanisms without noise.
+
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    >>> gpghandler = getUtility(IGPGHandler)
+    >>> gpghandler.resetLocalState()
+
+
+== Sigining PPA repository ==
+
+`IArchiveSigningKey.signRepository` can be user to sign repositories
+for archive which already contains a 'signing_key'.
+
+When signing repositores we assert they contain the right format and
+the expected file.
+
+    >>> archive_signing_key.signRepository()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Release file doesn't exist in the repository
+
+It produces a detached signature for the repository Release current
+file contents.
+
+    >>> import os
+
+    >>> release_path = os.path.join(
+    ...     os.path.dirname(archive_signing_key.public_key_path),
+    ...     'Release')
+
+    >>> release_file = open(release_path, 'w')
+    >>> release_file.write('This is a fake release file.')
+    >>> release_file.close()
+
+    >>> archive_signing_key.signRepository()
+
+    >>> print open(release_path + '.gpg').read()
+    -----BEGIN PGP SIGNATURE-----
+    ...
+    -----END PGP SIGNATURE-----
+    <BLANKLINE>
+
+The signature can be verified by importing the public key available in
+the root of the repository.
+
+    >>> gpghandler.resetLocalState()
+
+    >>> public_key_content = open(
+    ...     archive_signing_key.public_key_path).read()
+    >>> public_key = gpghandler.importPublicKey(public_key_content)
+
+    >>> signature = gpghandler.getVerifiedSignature(
+    ...     content=open(release_path).read(),
+    ...     signature=open(release_path + '.gpg').read())
+
+    >>> expected_fingerprint = (
+    ...     archive_signing_key.archive.signing_key.fingerprint)
+    >>> signature.fingerprint == expected_fingerprint
+    True
+
+Finally, if we try to sign a repository for which the archive doesn't
+have a 'signing_key' set,  it raises an error.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.signing_key = None
+    >>> login(ANONYMOUS)
+
+    >>> archive_signing_key.signRepository()
+    Traceback (most recent call last):
+    ...
+    AssertionError: No signing key available for PPA for Celso Providelo
+
 Purge 'signing_keys_root' and the PPA repository root.
 
     >>> import shutil
