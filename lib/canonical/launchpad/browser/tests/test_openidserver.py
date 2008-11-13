@@ -13,7 +13,6 @@ from openid.message import Message
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession
-from zope.publisher.interfaces import BadRequest
 from zope.testing import doctest
 
 from canonical.launchpad.browser.openidserver import OpenIDMixin
@@ -156,7 +155,7 @@ class OpenIDMixin_isLoginWithinDelta_TestCase(unittest.TestCase):
 
     def test_should_ignore_invalid_param(self):
         """If the maximum delta is not an integer, it's like if the parameter
-        wasn't used. That's mainly because python-openid hides that fact 
+        wasn't used. That's mainly because python-openid hides that fact
         from us."""
         self.openid_request.args['max_auth_age'] = 'not a number'
         self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
