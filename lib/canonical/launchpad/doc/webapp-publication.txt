@@ -1040,6 +1040,10 @@ the OAuthNonce table.
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     DEFAULT_FLAVOR, IStoreSelector)
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1223,6 +1227,7 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()

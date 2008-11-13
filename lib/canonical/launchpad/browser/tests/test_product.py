@@ -56,7 +56,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         # If the product's development focus branch is browseable, there is a
         # 'browse code' link.
         product, branch = self.makeProductAndDevelopmentFocusBranch()
-        branch.updateScannedDetails(self.factory.getUniqueString(), 1)
+        branch.updateScannedDetails(self.factory.makeRevision(), 1)
         self.assertTrue(branch.code_is_browseable)
 
         link = self.getBranchSummaryBrowseLinkForProduct(product)
