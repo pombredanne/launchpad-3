@@ -110,6 +110,11 @@ class OpenIDMixin:
                 query[key.encode('US-ASCII')] = value.encode('US-ASCII')
         return query
 
+    @cachedproperty('_rpconfig')
+    def rpconfig(self):
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
+
     def getSession(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             # A dance to assert that we want to break the rules about no
@@ -257,16 +262,10 @@ class OpenIDMixin:
             if team is None or not team.isTeam():
                 continue
             # Control access to private teams
-            if team.visibility != PersonVisibility.PUBLIC:
-                # XXX jamesh 2008-02-14 bug=174076:
-
-                # We should have fine grained control of which RPs can
-                # query for which teams, but for now we will let any
-                # RP with an OpenIDRPconfig perform such queries.
-                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
-                    self.openid_request.trust_root)
-                if rpconfig is None:
-                    continue
+            if (team.visibility != PersonVisibility.PUBLIC
+                and (self.rpconfig is None
+                    or not self.rpconfig.can_query_any_team)):
+                continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')

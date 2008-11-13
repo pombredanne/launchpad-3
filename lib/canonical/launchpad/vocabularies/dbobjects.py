@@ -1608,14 +1608,21 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL])
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
         return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        return obj in self._all_specs()
+        # We don't use self._all_specs here, since it will call
+        # self._filter_specs(all_specs) which will cause all the specs
+        # to be loaded, whereas obj in all_specs will query a single object.
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
+        return obj in all_specs and len(self._filter_specs([obj])) > 0
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):

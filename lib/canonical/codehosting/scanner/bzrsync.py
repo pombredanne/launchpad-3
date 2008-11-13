@@ -675,16 +675,13 @@ class BzrSync:
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        self.logger.info("Updating branch scanner status.")
         if len(bzr_history) > 0:
             last_revision = bzr_history[-1]
+            revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
         else:
-            last_revision = NULL_REVISION
+            revision = None
 
-        # FIXME: move that conditional logic down to updateScannedDetails.
-        # -- DavidAllouche 2007-02-22
         revision_count = len(bzr_history)
-        if ((last_revision != self.db_branch.last_scanned_id)
-                or (revision_count != self.db_branch.revision_count)):
-            self.db_branch.updateScannedDetails(
-                last_revision, revision_count)
+        self.logger.info(
+            "Updating branch scanner status: %s revs", revision_count)
+        self.db_branch.updateScannedDetails(revision, revision_count)

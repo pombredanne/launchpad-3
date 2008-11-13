@@ -80,7 +80,7 @@ menu:
     Personal Package Archive: .../~salgado/+activate-ppa
     Personal
     E-mail Settings: .../~salgado/+editemails
-    GPG Keys: .../~salgado/+editpgpkeys
+    OpenPGP Keys: .../~salgado/+editpgpkeys
     Passwords: .../~salgado/+changepassword
 
 Salgado will now remove one of his ssh keys from Launchpad.

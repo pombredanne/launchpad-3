@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import ArchivePurpose, CannotCopy
 from canonical.launchpad.interfaces.build import incomplete_building_status
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -29,10 +29,6 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.librarian.utils import copy_and_close
-
-
-class CannotCopy(Exception):
-    """Exception raised when a copy cannot be performed."""
 
 
 def is_completely_built(source):
@@ -475,10 +471,13 @@ class UnembargoSecurityPackage(PackageCopier):
     and implements the file re-uploading.
 
     An assumption is made, to reduce the number of command line options,
-    that packages are always copied between the same distroseries.
+    that packages are always copied between the same distroseries.  The user
+    can, however, select which target pocket to unembargo into.  This is
+    useful to the security team when there are major version upgrades
+    and they want to stage it through -proposed first for testing.
     """
 
-    usage = ("%prog [-d <distribution>] [-s <series>] [--ppa <private ppa>] "
+    usage = ("%prog [-d <distribution>] [-s <suite>] [--ppa <private ppa>] "
              "<package(s)>")
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
@@ -494,13 +493,11 @@ class UnembargoSecurityPackage(PackageCopier):
             default="ubuntu-security", action="store",
             help="Private PPA owner's name.")
 
-    def mainTask(self):
-        """Invoke PackageCopier to copy the package(s) and re-upload files."""
-
-        assert self.location, (
-            "location is not available, call SoyuzScript.setupLocation() "
-            "before calling mainTask().")
-
+    def setUpCopierOptions(self):
+        """Set up options needed by PackageCopier.
+        
+        :return: False if there is a problem with the options.
+        """
         # Set up the options for PackageCopier that are needed in addition
         # to the ones that this class sets up.
         self.options.to_partner = False
@@ -508,9 +505,29 @@ class UnembargoSecurityPackage(PackageCopier):
         self.options.partner_archive = None
         self.options.include_binaries = True
         self.options.to_distribution = self.options.distribution_name
-        self.options.to_suite = "-".join((self.options.suite, "security"))
+        from_suite = self.options.suite.split("-")
+        if len(from_suite) == 1:
+            self.logger.error("Can't unembargo into the release pocket")
+            return False
+        else:
+            # The PackageCopier parent class uses options.suite as the
+            # source suite, so we need to override it to remove the
+            # pocket since PPAs are pocket-less.
+            self.options.to_suite = self.options.suite
+            self.options.suite = from_suite[0]
         self.options.version = None
         self.options.component = None
+
+        return True
+
+    def mainTask(self):
+        """Invoke PackageCopier to copy the package(s) and re-upload files."""
+        if not self.setUpCopierOptions():
+            return None
+
+        # Generate the location for PackageCopier after overriding the
+        # options.
+        self.setupLocation()
 
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)

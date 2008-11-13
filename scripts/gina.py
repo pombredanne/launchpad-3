@@ -196,7 +196,7 @@ def run_gina(options, ztm, target_section):
             log.info('Ensuring %s name' % source['Package'])
             importer_handler.ensure_sourcepackagename(source['Package'])
         log.info('done')
-        sys.exit(0)
+        return
 
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
@@ -204,7 +204,7 @@ def run_gina(options, ztm, target_section):
 
     if source_only:
         log.info('Source only mode... done')
-        sys.exit(0)
+        return
 
     for archtag in archs:
         try:
