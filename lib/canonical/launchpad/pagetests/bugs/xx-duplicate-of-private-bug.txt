@@ -44,13 +44,11 @@ But when accessing it as an unprivileged user the title of the private
 bug cannot be found in the messages on the duplicate bug page:
 
     >>> user_browser.open(admin_browser.url)
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'duplicate-of').renderContents()
-    Duplicate of bug #8
+    >>> print find_tag_by_id(user_browser.contents, 'duplicate-of')
+    None
 
 The same is true when viewing the duplicate bug anonymously:
 
     >>> anon_browser.open(admin_browser.url)
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'duplicate-of').renderContents()
-    Duplicate of bug #8
+    >>> print find_tag_by_id(anon_browser.contents, 'duplicate-of')
+    None
