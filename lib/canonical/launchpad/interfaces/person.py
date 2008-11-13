@@ -16,6 +16,7 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
@@ -711,8 +712,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 

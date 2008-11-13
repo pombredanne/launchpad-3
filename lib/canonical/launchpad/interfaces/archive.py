@@ -838,3 +838,9 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+# This is patched here to avoid even more circular imports in
+# interfaces/person.py.
+from canonical.launchpad.interfaces.person import IPersonPublic
+IPersonPublic['archive'].schema = IArchive
+
