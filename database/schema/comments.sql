@@ -44,6 +44,14 @@ COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 
+-- BranchJob
+
+COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch.';
+COMMENT ON COLUMN BranchJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchJob.branch IS 'The branch that this job is for.';
+COMMENT ON COLUMN BranchJob.job_type IS 'The type of job, like new revisions, or attribute change.';
+COMMENT ON COLUMN BranchJob.json_data IS 'Data that is specific to the type of job, whether this be the revisions to send email out for, or the changes that were recorded for the branch.';
+
 -- BranchMergeProposal
 
 COMMENT ON TABLE BranchMergeProposal IS 'Branch merge proposals record the intent of landing (or merging) one branch on another.';
@@ -76,6 +84,14 @@ COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is perform
 COMMENt ON COLUMN BranchMergeProposal.root_message_id IS 'The root message of this BranchMergeProposal''s mail thread.';
 COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
+
+-- BranchMergeProposalJob
+
+COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch merge proposal.';
+COMMENT ON COLUMN BranchJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchJob.branch_merge_proposal IS 'The branch merge proposal that this job is for.';
+COMMENT ON COLUMN BranchJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
+COMMENT ON COLUMN BranchJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
 
 -- BranchMergeRobot
 
@@ -335,24 +351,6 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
--- CodeMailJob
-COMMENT ON TABLE CodeMailJob IS 'A job to generate a mail related to code.';
-COMMENT ON COLUMN CodeMailJob.body IS 'The body for the mail.';
-COMMENT ON COLUMN CodeMailJob.branch_project_name IS 'The name of the project this mail is about.';
-COMMENT ON COLUMN CodeMailJob.branch_url IS 'The URL for the branch this message is about.';
-COMMENT ON COLUMN CodeMailJob.date_created IS 'The date this CodeMailJob was created.';
-COMMENT ON COLUMN CodeMailJob.footer IS 'The footer for the mail.';
-COMMENT ON COLUMN CodeMailJob.from_address IS 'The address for the mail from header.';
-COMMENT ON COLUMN CodeMailJob.in_reply_to IS 'The Message-Id of the message this message is a reply to.';
-COMMENT ON COLUMN CodeMailJob.job IS 'The Job for this CodeMailJob.';
-COMMENT ON COLUMN CodeMailJob.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not included in the mail.';
-COMMENT ON COLUMN CodeMailJob.rationale IS 'The rationale for the X-Launchpad-Message-Rationale header.';
-COMMENT ON COLUMN CodeMailJob.reply_to_address IS 'The address for the mail reply-to header.';
-COMMENT ON COLUMN CodeMailJob.rfc822msgid IS 'The Message-Id to use in the mail.';
-COMMENT ON COLUMN CodeMailJob.static_diff IS 'A diff to include in the mail.';
-COMMENT ON COLUMN CodeMailJob.subject IS 'The subject line for the mail.';
-COMMENT ON COLUMN CodeMailJob.to_address IS 'The address the mail should be sent to.';
-
 
 -- CodeReviewMessage
 
@@ -530,12 +528,6 @@ COMMENT ON COLUMN PreviewDiff.diff IS 'The last Diff generated for this PreviewD
 COMMENT ON COLUMN PreviewDiff.dependent_revision_id IS 'The dependant branch revision_id used to generate this diff.';
 COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_id used to generate this diff.';
 COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
-
-
--- PreviewDiffJob
-COMMENT ON TABLE PreviewDiffJob IS 'Describes a job to create a preview diff.';
-COMMENT ON COLUMN PreviewDiffJob.job IS 'A Job containing more information about this PreviewDiffJob.';
-COMMENT ON COLUMN PreviewDiffJob.branch_merge_proposal IS 'The BranchMergeProposal to generate the PreviewDiff for.';
 
 
 -- Product
@@ -2113,21 +2105,21 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.requester IS 'Ther person who requested this job (if applicable).';
+COMMENT ON COLUMN Job.reason IS 'The reason that this job was created (if applicable)';
+COMMENT ON COLUMN Job.status IS 'An enum (JobStatus) indicating the job status, one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN Job.progress IS 'The percentage complete.  Can be NULL for some jobs that do not report progress.';
+COMMENT ON COLUMN Job.last_report_seen IS 'The last time the progress was reported.';
+COMMENT ON COLUMN Job.next_report_due IS 'The next time a progress report is expected.';
 COMMENT ON COLUMN Job.attempt_count IS 'The number of times this job has been attempted.';
-COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
-COMMENT ON COLUMN Job.date_created IS 'If the job has started, the time when the job started.';
-COMMENT ON COLUMN Job.date_created IS 'If the job has ended, the time when the job ended.';
-COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.max_retries IS 'The maximum number of retries valid for this job.';
 COMMENT ON COLUMN Job.log IS 'If provided, a log of the last attempt to run the job.';
 COMMENT ON COLUMN Job.scheduled_start IS 'The time when the job should start';
-COMMENT ON COLUMN Job.status IS 'An enum indicating the job status, with 0 meaning "waiting".';
+COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
+COMMENT ON COLUMN Job.date_started IS 'If the job has started, the time when the job started.';
+COMMENT ON COLUMN Job.date_finished IS 'If the job has finished, the time when the job finished.';
 
-
--- JobDependency
-
-COMMENT ON TABLE JobDependency IS 'Dependency table for jobs.';
-COMMENT ON COLUMN JobDependency.prerequisite IS 'A Job that must be performed before another job.';
-COMMENT ON COLUMN JobDependency.dependant IS 'A Job that must be performed after another job.';
 
 -- StructuralSubscription
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
