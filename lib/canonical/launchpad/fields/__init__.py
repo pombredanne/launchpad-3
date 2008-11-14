@@ -477,10 +477,16 @@ class PillarAliases(TextLine):
         else:
             raise AssertionError("Unexpected context type.")
         name_field.bind(context)
+        existing_aliases = context.aliases
         for name in self._split_input(input):
             if name == context.name:
                 raise LaunchpadValidationError('This is your name: %s' % name)
-            name_field._validate(name)
+            elif name in existing_aliases:
+                # This is already an alias to this pillar, so there's no need
+                # to validate it.
+                pass
+            else:
+                name_field._validate(name)
 
     def set(self, object, value):
         object.setAliases(self._split_input(value))

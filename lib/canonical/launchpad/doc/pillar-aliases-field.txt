@@ -22,6 +22,16 @@ to.
     >>> bound_field.get(firefox)
     u'iceweasel snowchicken'
 
+An alias which is already in use by a given pillar is considered by the field
+to be a valid alias for that pillar, but only for that pillar.
+
+    >>> bound_field.validate(u'iceweasel')
+
+    >>> field.bind(getUtility(IProductSet)['bzr']).validate(u'iceweasel')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: iceweasel is already used by another project
+
 If existing aliases are not passed to the field's set() method, they will be
 removed.
 
