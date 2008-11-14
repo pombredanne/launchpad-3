@@ -40,6 +40,10 @@ class IHasAliases(Interface):
         description=_(
             "The names (as strings) which are aliases to this pillar."))
 
+    # Instead of a method for setting aliases we could make the 'aliases'
+    # attribute writable, but we decided to go with a method because this
+    # operation may trigger several inserts/deletes in the database and a
+    # method helps clarifying it may be an expensive operation.
     def setAliases(names):
         """Set the given names as this pillar's aliases.
 

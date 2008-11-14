@@ -15,6 +15,7 @@ from zope.interface import implements
 
 from storm.expr import LeftJoin, NamedFunc, Select
 from storm.locals import SQL
+from storm.store import Store
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
@@ -303,7 +304,7 @@ class HasAliasMixin:
 
     def setAliases(self, names):
         """See `IHasAlias`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(self)
         existing_aliases = set(self.aliases)
         self_pillar = store.find(PillarName, name=self.name).one()
         to_remove = set(existing_aliases).difference(names)
