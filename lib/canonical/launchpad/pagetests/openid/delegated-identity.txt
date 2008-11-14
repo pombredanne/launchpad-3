@@ -1,6 +1,6 @@
 = Launchpad Delegated Identity =
 
-The Launchpad profile page acts an OpenID identifier through delegation.
+The Launchpad profile page acts as an OpenID identifier through delegation.
 
 To test this, we will set up the python-openid to talk directly to the
 Zope publisher:
