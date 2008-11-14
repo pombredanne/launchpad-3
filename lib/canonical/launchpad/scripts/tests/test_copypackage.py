@@ -934,35 +934,41 @@ class TestCopyPackage(unittest.TestCase):
         warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
+        cprov = getUtility(IPersonSet).getByName("cprov")
 
         # Generate a testing publication in warty-proposed.
-        proposed_source = test_publisher.getPubSource(
-            sourcename='proposed-source', distroseries=warty,
-            pocket=PackagePublishingPocket.PROPOSED,
-            status=PackagePublishingStatus.PUBLISHED)
-        proposed_binaries = test_publisher.getPubBinaries(
-            pub_source=proposed_source, distroseries=warty,
-            pocket=PackagePublishingPocket.PROPOSED,
-            status=PackagePublishingStatus.PUBLISHED)
+        def create_source(version, archive, pocket):
+            source = test_publisher.getPubSource(
+                sourcename='bugged-source', version=version,
+                distroseries=warty, archive=archive, pocket=pocket,
+                status=PackagePublishingStatus.PUBLISHED)
+            binaries = test_publisher.getPubBinaries(
+                pub_source=source, distroseries=warty, archive=archive,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
+            return source
+
+        proposed_source = create_source(
+            '666', warty.main_archive, PackagePublishingPocket.PROPOSED)
+        ppa_source = create_source(
+            '667', cprov.archive, PackagePublishingPocket.RELEASE)
 
         # Create a bug to be closed.
-        proposed_ubuntu = ubuntu.getSourcePackage('proposed-source')
-        proposed_release = proposed_ubuntu.currentrelease.sourcepackagerelease
+        bugged_ubuntu = ubuntu.getSourcePackage('bugged-source')
+        bugged_release = bugged_ubuntu.currentrelease.sourcepackagerelease
 
         bug_params = CreateBugParams(
-            getUtility(IPersonSet).getByName("cprov"),
-            "Test bug", "Test bug.")
-        proposed_bug_id = proposed_ubuntu.createBug(bug_params).id
+            cprov, "Test bug", "Test bug.")
+        bugged_bug_id = bugged_ubuntu.createBug(bug_params).id
 
-        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
-        [proposed_task] = proposed_bug.bugtasks
-        self.assertEqual(proposed_task.status.name, 'NEW')
+        bugged_bug = getUtility(IBugSet).get(bugged_bug_id)
+        [bugged_task] = bugged_bug.bugtasks
+        self.assertEqual(bugged_task.status.name, 'NEW')
 
         # Generate the corresponding upload record with the relevant
         # changelog ... (close bugs)
         closing_bug_changesfile = (
             "Format: 1.7\n"
-            "Launchpad-bugs-fixed: %s\n" % proposed_bug_id
+            "Launchpad-bugs-fixed: %s\n" % bugged_bug_id
             )
         proposed_source.sourcepackagerelease.changelog_entry = "Boing!"
         proposed_queue_item = warty.createQueueEntry(
@@ -975,16 +981,16 @@ class TestCopyPackage(unittest.TestCase):
 
         # Promote the source & binaries from -proposed to -updates.
         copy_helper = self.getCopier(
-            sourcename='proposed-source', include_binaries=True,
+            sourcename='bugged-source', include_binaries=True,
             from_suite='warty-proposed', to_suite='warty-updates')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
         # Bug was closed.
-        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
-        [proposed_task] = proposed_bug.bugtasks
-        self.assertEqual(proposed_task.status.name, 'FIXRELEASED')
+        bugged_bug = getUtility(IBugSet).get(bugged_bug_id)
+        [bugged_task] = bugged_bug.bugtasks
+        self.assertEqual(bugged_task.status.name, 'FIXRELEASED')
 
 
 def test_suite():
