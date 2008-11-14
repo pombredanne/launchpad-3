@@ -33,6 +33,9 @@ The profile page delegates to the underlying Single Sign On identifier:
       http://openid.net/signon/1.0
     ----
 
+
+== Logging in ==
+
 Users can login through their profile page:
 
     >>> openid_store = MemoryStore()
@@ -48,6 +51,24 @@ Users can login through their profile page:
     success
     >>> print info.endpoint.claimed_id
     http://launchpad.dev/~name12
+
+
+== Profile Page ==
+
+That OpenID identifier is advertised on the user's page.
+
+    >>> anon_browser.open('http://launchpad.dev/~no-priv')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'contact-details'))
+    Email: ...
+    OpenID login: http://launchpad.dev/~no-priv
+    ...
+
+There is a 'What's this?' link, that can be used to obtain 
+more information on it.
+
+    >>> anon_browser.getLink(u"this?").url
+    'https://help.launchpad.net/OpenID'
 
 
 == Cleanup ==

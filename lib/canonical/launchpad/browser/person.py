@@ -2363,6 +2363,11 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return True
         return False
 
+    @cachedproperty
+    def openid_identity_url(self):
+        """The public OpenID identity URL. That's the profile page."""
+        return canonical_url(self.context)
+
     @property
     def subscription_policy_description(self):
         """Return the description of this team's subscription policy."""
