@@ -68,29 +68,24 @@ include a bug description field.
     *
     Ubuntu
       <http://launchpad.dev/ubuntu/+filebug-advanced>
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
     *
     Mozilla
       <http://launchpad.dev/mozilla/+filebug-advanced>
-    The Mozilla Project guidelines
-    Please include, if possible:
+    The Mozilla Project guidelines:
     The version of Mozilla you're using.
     *
     Firefox
       <http://launchpad.dev/firefox/+filebug-advanced>
-    Mozilla Firefox guidelines
-    Please include, if possible:
+    Mozilla Firefox guidelines:
     The version of Firefox you're using.
     *
     alsa-utils in Ubuntu
       <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced>
-    alsa-utils (Ubuntu) guidelines
-    Please include, if possible:
+    alsa-utils (Ubuntu) guidelines:
     The version of ALSA you're using.
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
@@ -104,8 +99,7 @@ once you've got to the step of entering a bug description.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Mozilla Firefox guidelines
-    Please include, if possible:
+    Mozilla Firefox guidelines:
     The version of Firefox you're using.
 
 Bugs can also be reported directly against a distribution series, for
@@ -117,8 +111,7 @@ which the guidelines are taken from the respective distribution.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
 
@@ -138,11 +131,9 @@ shown.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    alsa-utils (Ubuntu) guidelines
-    Please include, if possible:
+    alsa-utils (Ubuntu) guidelines:
     The version of ALSA you're using.
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
     >>> user_browser.open(
@@ -154,8 +145,7 @@ shown.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Mozilla Firefox guidelines
-    Please include, if possible:
+    Mozilla Firefox guidelines:
     The version of Firefox you're using.
 
 
@@ -183,8 +173,7 @@ shown.
     ...     'http://launchpad.dev/ubuntu/+filebug-advanced')
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
 Changing the package to alsa-utils does not make the alsa-utils
@@ -196,8 +185,7 @@ guidelines appear.
     ...     name='field.packagename').value = "alsa-utils"
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
-    Ubuntu guidelines
-    Please include, if possible:
+    Ubuntu guidelines:
     The version of Ubuntu you're using.
 
 XXX: allenap 2008-11-14 bug=297743: These limitations have been filed
