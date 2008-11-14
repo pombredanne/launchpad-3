@@ -470,13 +470,12 @@ class POTMsgSet(SQLBase):
         return just_a_suggestion, warn_about_lock_timestamp
 
     def allTranslationsAreEmpty(self, translations):
-        """Returns true if all translations are empty strings or None."""
+        """Return true if all translations are empty strings or None."""
         has_translations = False
         for pluralform in translations:
             translation = translations[pluralform]
             if (translation is not None and
-                translation != u"" and
-                translation != ""):
+                translation != u""):
                 has_translations = True
                 break
         return not has_translations
@@ -533,7 +532,8 @@ class POTMsgSet(SQLBase):
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
 
-            if is_imported and self.allTranslationsAreEmpty(sanitized_translations):
+            if (is_imported and
+                self.allTranslationsAreEmpty(sanitized_translations)):
                 # Don't create empty is_imported translations
                 if imported_message is not None:
                     imported_message.is_imported = False

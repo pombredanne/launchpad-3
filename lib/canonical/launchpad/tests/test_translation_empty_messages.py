@@ -38,9 +38,10 @@ class TestTranslationEmptyMessages(unittest.TestCase):
         translation = potmsgset.updateTranslation(
             self.pofile_sr, self.pofile_sr.owner, [""],
             is_imported=True, lock_timestamp=None)
-        self.assertEquals(translation, None,
-                          "Importing an empty translation should not create "
-                          "a new record in the database.")
+
+        # Importing an empty translation should not create a new record
+        # in the database.
+        self.assertEquals(translation, None)
 
     def test_DeactivatingCurrentTranslation(self):
         # Deactivating replace existing is_current translation,
@@ -53,9 +54,10 @@ class TestTranslationEmptyMessages(unittest.TestCase):
             self.pofile_sr, self.pofile_sr.owner, [u""],
             is_imported=False, lock_timestamp=self.now)
         current_message = potmsgset.getCurrentTranslationMessage(self.serbian)
-        self.assertEquals(deactivation, current_message,
-                          "Storing empty translation should deactivate "
-                          "current translation message.")
+
+        # Storing empty translation should deactivate current
+        # translation message.
+        self.assertEquals(deactivation, current_message)
 
     def test_DeactivatingImportedTranslation(self):
         # When an empty translation comes from import, it is
@@ -72,12 +74,13 @@ class TestTranslationEmptyMessages(unittest.TestCase):
             self.serbian)
         current_message = potmsgset.getCurrentTranslationMessage(
             self.serbian)
-        self.assertEquals(deactivation, None,
-                          "Empty is_imported message should not be imported.")
-        self.assertEquals(imported_message, None,
-                          "Existing is_imported message should be unset.")
-        self.assertEquals(current_message, None,
-                          "Old is_imported message is not is_current either.")
+
+        # Empty is_imported message should not be imported.
+        self.assertEquals(deactivation, None)
+        # Existing is_imported message should be unset.
+        self.assertEquals(imported_message, None)
+        # Old is_imported message is not is_current either.
+        self.assertEquals(current_message, None)
 
     def test_DeactivatingImportedNotCurrentTranslation(self):
         # When an empty translation comes from import, and there is a
@@ -97,10 +100,11 @@ class TestTranslationEmptyMessages(unittest.TestCase):
             self.serbian)
         current_message = potmsgset.getCurrentTranslationMessage(
             self.serbian)
-        self.assertEquals(launchpad_message, current_message,
-                          "Current message should not be changed.")
-        self.assertEquals(new_imported_message, None,
-                          "Existing is_imported message should be unset.")
+
+        # Current message should not be changed.
+        self.assertEquals(launchpad_message, current_message)
+        # Existing is_imported message should be unset.
+        self.assertEquals(new_imported_message, None)
 
 
 def test_suite():
