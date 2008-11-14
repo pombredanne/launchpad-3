@@ -3,7 +3,11 @@
 """Helper functions for the process-accepted.py script."""
 
 __metaclass__ = type
-__all__ = ['close_bugs', 'close_bugs_for_queue_item', 'close_bugs_for_sourcepackagerelease']
+__all__ = [
+    'close_bugs',
+    'close_bugs_for_queue_item',
+    'close_bugs_for_sourcepackagerelease',
+    ]
 
 from zope.component import getUtility
 
@@ -73,19 +77,20 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
 
     if changesfile_object is None:
         changesfile_object = queue_item.changesfile
-    
+
     for source_queue_item in queue_item.sources:
-                close_bug_for_sourcepackagerelease(source_queue_item.sourcepackagerelease, changesfile_object)
+        close_bugs_for_sourcepackagerelease(
+            source_queue_item.sourcepackagerelease, changesfile_object)
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
     bugs_to_close = get_bugs_from_changes_file(changesfile_object)
-    
+
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
         return
-    
+
     janitor = getUtility(ILaunchpadCelebrities).janitor
-    
+
     for bug in bugs_to_close:
         edited_task = bug.setStatus(
             target=source_release.sourcepackage,

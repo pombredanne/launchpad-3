@@ -279,7 +279,9 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
         if source_in_destination.count() == 0:
             source_copy = source.copyTo(destination_series, pocket, archive)
             copies.append(source_copy)
-            close_bugs_for_sourcepackagerelease(source.sourcepackagerelease, source.sourcepackagerelease.upload_changesfile)
+            close_bugs_for_sourcepackagerelease(
+                source.sourcepackagerelease,
+                source.sourcepackagerelease.upload_changesfile)
             if not include_binaries:
                 source_copy.createMissingBuilds()
                 continue

@@ -951,7 +951,8 @@ class TestCopyPackage(unittest.TestCase):
         proposed_release = proposed_ubuntu.currentrelease.sourcepackagerelease
 
         bug_params = CreateBugParams(
-            getUtility(IPersonSet).getByName("cprov"), "Test bug", "Test bug.")
+            getUtility(IPersonSet).getByName("cprov"),
+            "Test bug", "Test bug.")
         proposed_bug_id = proposed_ubuntu.createBug(bug_params).id
 
         proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
@@ -964,6 +965,7 @@ class TestCopyPackage(unittest.TestCase):
             "Format: 1.7\n"
             "Launchpad-bugs-fixed: %s\n" % proposed_bug_id
             )
+        proposed_source.sourcepackagerelease.changelog_entry = "Boing!"
         proposed_queue_item = warty.createQueueEntry(
             archive=warty.main_archive, changesfilename='foo_source.changes',
             pocket=PackagePublishingPocket.PROPOSED,
