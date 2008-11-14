@@ -55,6 +55,7 @@ __all__ = [
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
+    'TranslationTemplateVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -85,7 +86,8 @@ from canonical.launchpad.database import (
     Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
     Component, Country, Distribution, DistroArchSeries, DistroSeries,
     EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
-    MailingList, Milestone, Person, PillarName, Processor, ProcessorFamily,
+    MailingList, Milestone, Person, PillarName, POTemplate,
+    Processor, ProcessorFamily,
     Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
     Specification, Sprint, TranslationGroup, TranslationMessage)
 
@@ -666,6 +668,26 @@ class TranslationMessageVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         for message in self.context.messages:
             yield self.toTerm(message)
+
+
+class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
+    """The set of all POTemplates for a given product or package."""
+
+    _table = POTemplate
+    _orderBy = 'name'
+
+    def __init__(self, context):
+        if context.productseries != None:
+            self._filter = POTemplate.productseries == context.productseries
+        else:
+            self._filter = AND(
+                POTemplate.distroseries == context.distroseries,
+                POTemplate.sourcepackagename == context.sourcepackagename
+            )
+        super(TranslationTemplateVocabulary, self).__init__(context)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
 
 
 class NonMergedPeopleAndTeamsVocabulary(

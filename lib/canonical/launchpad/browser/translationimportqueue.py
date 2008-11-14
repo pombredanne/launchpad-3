@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import os
+from os.path import splitext
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
@@ -24,7 +25,8 @@ from canonical.launchpad.browser.hastranslationimports import (
 from canonical.launchpad.interfaces import (
     IDistroSeries, IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
     IPOTemplateSet, ITranslationImportQueue, ITranslationImportQueueEntry,
-    NotFoundError, RosettaImportStatus, UnexpectedFormData)
+    NotFoundError, RosettaImportStatus, UnexpectedFormData,
+    TranslationFileType)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
 
@@ -47,34 +49,48 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # We got a form post, we don't need to do any initialisation.
             return field_values
         # Fill the know values.
+        field_values['path'] = self.context.path
+        (fname, fext) = splitext(self.context.path)
+        if fext.lower() == '.po':
+            file_type = TranslationFileType.PO
+        elif fext.lower() == '.pot':
+            file_type = TranslationFileType.POT
+        else:
+            file_type = TranslationFileType.UNSPEC
+        field_values['file_type'] = file_type
+
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        if self.context.potemplate is not None:
+        if( file_type in (TranslationFileType.POT,
+                          TranslationFileType.UNSPEC) and
+            self.context.potemplate is not None):
             field_values['name'] = (
                 self.context.potemplate.name)
             field_values['translation_domain'] = (
                 self.context.potemplate.translation_domain)
-        if self.context.pofile is not None:
-            field_values['language'] = self.context.pofile.language
-            field_values['variant'] = self.context.pofile.variant
-        else:
-            # The entries that are translations usually have the language code
-            # as its filename. We try to get it to use as a suggestion.
-            language_set = getUtility(ILanguageSet)
-            filename = os.path.basename(self.context.path)
-            guessed_language, file_ext = filename.split(u'.', 1)
-            (language, variant) = (
-                language_set.getLanguageAndVariantFromString(
-                    guessed_language))
-            if language is not None:
-                field_values['language'] = language
-                # Need to warn the user that we guessed the language
-                # information.
-                self.request.response.addWarningNotification(
-                    "Review the language selection as we guessed it and"
-                    " could not be accurated.")
-            if variant is not None:
-                field_values['variant'] = variant
+        if file_type in (TranslationFileType.PO, TranslationFileType.UNSPEC):
+            if self.context.pofile is not None:
+                field_values['language'] = self.context.pofile.language
+                field_values['variant'] = self.context.pofile.variant
+            else:
+                # The entries that are translations usually have the language
+                # code
+                # as its filename. We try to get it to use as a suggestion.
+                language_set = getUtility(ILanguageSet)
+                filename = os.path.basename(self.context.path)
+                guessed_language, file_ext = filename.split(u'.', 1)
+                (language, variant) = (
+                    language_set.getLanguageAndVariantFromString(
+                        guessed_language))
+                if language is not None:
+                    field_values['language'] = language
+                    # Need to warn the user that we guessed the language
+                    # information.
+                    self.request.response.addWarningNotification(
+                        "Review the language selection as we guessed it and"
+                        " could not be accurate.")
+                if variant is not None:
+                    field_values['variant'] = variant
 
         return field_values
 
@@ -86,9 +102,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
-        self.field_names = ['sourcepackagename', 'name',
-                            'translation_domain', 'path', 'language',
-                            'variant']
+        self.field_names = ['file_type', 'path', 'sourcepackagename',
+                            'name', 'translation_domain',
+                            'potemplate', 'potemplate_name',
+                            'language', 'variant']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -98,38 +115,23 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Execute default initialisation.
         LaunchpadFormView.initialize(self)
 
-    def validate(self, data):
-        """Extra validations for the given fields."""
-        path = data.get('path')
-        if path is not None and self.context.path != path:
-            # The Rosetta Expert decided to change the path of the file.
-            # Before accepting such change, we should check first whether is
-            # already another entry with that path in the same context
-            # (sourcepackagename/distroseries or productseries).
-            pofile_set = getUtility(IPOFileSet)
-            existing_pofile = pofile_set.getPOFileByPathAndOrigin(
-                path, self.context.productseries, self.context.distroseries,
-                self.context.sourcepackagename)
-            if existing_pofile is None:
-                # There is no other pofile in the given path for this context,
-                # let's change it as requested by admins.
-                self.context.path = path
-            else:
-                # We already have an IPOFile in this path, let's notify the
-                # user about that so they choose another path.
-                self.setFieldError('path',
-                    'There is already a POFile in the given path.')
+    def _checkProductOrPackage(self, obj):
+        """Check if the given object is linked to the same productseries
+        or sourcepackage as the context.
 
-    @action("Attach")
-    def change_action(self, action, data):
-        """Process the form we got from the submission."""
-        name = data.get('name')
-        translation_domain = data.get('translation_domain')
-        path = data.get('path')
-        sourcepackagename = data.get('sourcepackagename')
-        language = data.get('language')
-        variant = data.get('variant')
+        :param obj: The object to check, must have productseries,
+            distroseries and sourcepackagename attributes.
+        :return: true if object and context match.
+        """
+        if self.context.productseries != None:
+            return obj.productseries == self.context.productseries
+        if self.context.distroseries != None:
+            return (
+                obj.distroseries == self.context.distroseries and
+                obj.sourcepackagename == self.context.sourcepackagename)
+        return False
 
+    def _getPOTemplateSubset(self, sourcepackagename):
         potemplate_set = getUtility(IPOTemplateSet)
         if self.context.productseries is None:
             if (sourcepackagename is not None and
@@ -146,6 +148,83 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate_subset = potemplate_set.getSubset(
                 productseries=self.context.productseries)
+        return potemplate_subset
+
+    def validate(self, data):
+        """Extra validations for the given fields."""
+        # Without a file type we cannot do anything
+        file_type = data.get('file_type')
+        if file_type not in (TranslationFileType.PO,
+                             TranslationFileType.POT):
+            self.setFieldError('file_type', 'Please specify the file type')
+            return
+
+        path = data.get('path')
+        (fname, fext) = splitext(path)
+        if (file_type == TranslationFileType.POT and
+                fext.lower() != '.pot' and fext.lower() != '.xpi'):
+            self.setFieldError('path', 'The file name must end with ".pot".')
+        if (file_type == TranslationFileType.PO and
+                fext.lower() != '.po' and fext.lower() != '.xpi'):
+            self.setFieldError('path', 'The file name must end with ".po".')
+
+        if self.context.path != path:
+            # The Rosetta Expert decided to change the path of the file.
+            # Before accepting such change, we should check first whether is
+            # already another entry with that path in the same context
+            # (sourcepackagename/distroseries or productseries).
+            if file_type == TranslationFileType.POT:
+                potemplate_set = getUtility(IPOTemplateSet)
+                existing_file = potemplate_set.getPOTemplateByPathAndOrigin(
+                    path, self.context.productseries,
+                    self.context.distroseries,
+                    self.context.sourcepackagename)
+            else:
+                pofile_set = getUtility(IPOFileSet)
+                existing_file = pofile_set.getPOFileByPathAndOrigin(
+                    path, self.context.productseries,
+                    self.context.distroseries,
+                    self.context.sourcepackagename)
+            if existing_file is None:
+                # There is no other pofile in the given path for this context,
+                # let's change it as requested by admins.
+                self.context.path = path
+            else:
+                # We already have an IPOFile in this path, let's notify the
+                # user about that so they choose another path.
+                self.setFieldError('path',
+                    'There is already a file in the given path.')
+
+        if file_type == TranslationFileType.PO:
+            potemplate_name = data.get('potemplate_name')
+            if potemplate_name == None:
+                potemplate = data.get('potemplate')
+                if not self._checkProductOrPackage(potemplate):
+                    self.setFieldError(
+                        'potemplate', 'Please choose a template.')
+            else:
+                sourcepackagename = data.get('sourcepackagename')
+                potemplate_subset = (
+                    self._getPOTemplateSubset(sourcepackagename))
+                try:
+                    potemplate = potemplate_subset[potemplate_name]
+                except NotFoundError:
+                    self.setFieldError('potemplate_name',
+                        'Please enter a valid template name.')
+
+    @action("Approve")
+    def change_action(self, action, data):
+        """Process the form we got from the submission."""
+        name = data.get('name')
+        translation_domain = data.get('translation_domain')
+        path = data.get('path')
+        sourcepackagename = data.get('sourcepackagename')
+        potemplate = data.get('potemplate')
+        potemplate_name = data.get('potemplate_name')
+        language = data.get('language')
+        variant = data.get('variant')
+
+        potemplate_subset = self._getPOTemplateSubset(sourcepackagename)
         try:
             potemplate = potemplate_subset[name]
         except NotFoundError:
