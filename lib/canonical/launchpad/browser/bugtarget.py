@@ -964,7 +964,8 @@ class FrontPageFileBugMixin:
         """
         if self.widgets['bugtarget'].hasValidInput():
             return self.widgets['bugtarget'].getInputValue()
-        return None
+        else:
+            return None
 
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.

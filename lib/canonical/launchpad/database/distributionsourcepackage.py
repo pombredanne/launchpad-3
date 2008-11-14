@@ -87,12 +87,11 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def _self_in_database(self):
-        """Return the equivalent database-backed record of self.
-
-        This is a temporary measure while DistributionSourcePackage is
-        not yet hooked into the database but we need access to some of
-        the fields in the database.
-        """
+        """Return the equivalent database-backed record of self."""
+        # XXX: allenap 2008-11-13 bug=297736: This is a temporary
+        # measure while DistributionSourcePackage is not yet hooked
+        # into the database but we need access to some of the fields
+        # in the database.
         return Store.of(self.distribution).find(
             DistributionSourcePackageInDatabase,
             DistributionSourcePackageInDatabase.sourcepackagename == (
@@ -351,13 +350,12 @@ class DistributionSourcePackage(BugTargetBase,
 
 
 class DistributionSourcePackageInDatabase(Storm):
-    """Temporary class to allow access to the database.
+    """Temporary class to allow access to the database."""
 
-    DistributionSourcePackage is not backed by a database table - yet
-    - but one exists. However, we need access to store some data in
-    that table before we do a full migration of DSP to be backed by
-    the database.
-    """
+    # XXX: allenap 2008-11-13 bug=297736: This is a temporary measure
+    # while DistributionSourcePackage is not yet hooked into the
+    # database but we need access to some of the fields in the
+    # database.
 
     __storm_table__ = 'DistributionSourcePackage'
 

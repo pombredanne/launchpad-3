@@ -188,12 +188,9 @@ guidelines appear.
     Please include, if possible:
     The version of Ubuntu you're using.
 
-Using Javascript it should be possible to force a page reload or load
-the guidelines dynamically.
-
-This is a slightly silly example because testbrowser does not evaluate
-Javascript and so dynamic changes to the page will never be seen. The
-example is solely for documentation.
+XXX: allenap 2008-11-14 bug=297743: These limitations have been filed
+as bug #297743, "When filing a bug always display the appropriate
+reporting guidelines".
 
 
 == Editing the guidelines ==
