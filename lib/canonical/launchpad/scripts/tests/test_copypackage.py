@@ -847,14 +847,13 @@ class TestCopyPackage(unittest.TestCase):
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
-            "-s", "%s" % ppa_source.distroseries.name,
+            "-s", "%s" % ppa_source.distroseries.name + "-security",
             "foo"
             ]
 
         script = UnembargoSecurityPackage(
             name='unembargo', test_args=test_args)
         script.logger = QuietFakeLogger()
-        script.setupLocation()
 
         copied = script.mainTask()
 
@@ -894,7 +893,35 @@ class TestCopyPackage(unittest.TestCase):
                 self.assertFalse(changesfile.restricted)
                 buildlog = package.build.buildlog
                 self.assertFalse(buildlog.restricted)
+            # Check that the pocket is -security as specified in the
+            # script parameters.
+            self.assertEqual(
+                published.pocket.title, "Security",
+                "Expected Security pocket, got %s" % published.pocket.title)
 
+    def testUnembargoSuite(self):
+        """Test that passing different suites works as expected."""
+        test_args = [
+            "--ppa", "cprov",
+            "-s", "warty-backports",
+            "foo"
+            ]
+
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        self.assertTrue(script.setUpCopierOptions())
+        self.assertEqual(
+            script.options.to_suite, "warty-backports",
+            "Got %s, expected warty-backports")
+
+        # Change the suite to one with the release pocket, it should
+        # copy nothing as you're not allowed to unembargo into the
+        # release pocket.
+        test_args[3] = "hoary"
+        script = UnembargoSecurityPackage(
+            name='unembargo', test_args=test_args)
+        script.logger = QuietFakeLogger()
+        self.assertFalse(script.setUpCopierOptions())
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

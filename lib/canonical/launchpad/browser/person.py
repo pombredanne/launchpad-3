@@ -144,7 +144,8 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -191,6 +192,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -2466,8 +2468,17 @@ class PersonView(LaunchpadView, FeedsMixin):
         specs = self.assigned_specs_in_progress
         return bugtasks.count() > 0 or specs.count() > 0
 
-    def viewingOwnPage(self):
+    @property
+    def viewing_own_page(self):
         return self.user == self.context
+
+    @property
+    def contactuser_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        if self.viewing_own_page:
+            return 'Send an email to yourself through Launchpad'
+        else:
+            return 'Send an email to this user through Launchpad'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -4972,11 +4983,22 @@ class EmailToPersonView(LaunchpadFormView):
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
         recipient_email = removeSecurityProxy(self.context.preferredemail)
-        message = send_direct_contact_email(
-            sender_email, recipient_email.email, subject, message)
-        self.request.response.addInfoNotification(
-            _('Message sent to $name',
-              mapping=dict(name=self.context.displayname)))
+        try:
+            message = send_direct_contact_email(
+                sender_email, recipient_email.email, subject, message)
+        except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
+            self.request.response.addErrorNotification(
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
+        else:
+            self.request.response.addInfoNotification(
+                _('Message sent to $name',
+                  mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -4995,3 +5017,11 @@ class EmailToPersonView(LaunchpadFormView):
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return throttle_date + interval
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate pagetitle."""
+        if self.context == self.user:
+            return 'Contact yourself'
+        else:
+            return 'Contact this user'
