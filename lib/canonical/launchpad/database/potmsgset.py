@@ -471,12 +471,15 @@ class POTMsgSet(SQLBase):
 
     def allTranslationsAreEmpty(self, translations):
         """Returns true if all translations are empty strings or None."""
-        no_translations = True
-        for translation in translations:
-            if translation is not None and translation != u"" and translation != "":
-                no_translations = False
+        has_translations = False
+        for pluralform in translations:
+            translation = translations[pluralform]
+            if (translation is not None and
+                translation != u"" and
+                translation != ""):
+                has_translations = True
                 break
-        return no_translations
+        return not has_translations
 
     def updateTranslation(self, pofile, submitter, new_translations,
                           is_imported, lock_timestamp, force_suggestion=False,
@@ -485,9 +488,6 @@ class POTMsgSet(SQLBase):
         assert self.potemplate == pofile.potemplate, (
             "The template for the translation file and this message doesn't"
             " match.")
-
-        import sys
-        print >>sys.stderr, "\nIS_IMPORTED: %s\n" % is_imported
 
         just_a_suggestion, warn_about_lock_timestamp = (
             self._isTranslationMessageASuggestion(force_suggestion,
@@ -533,13 +533,12 @@ class POTMsgSet(SQLBase):
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
 
-            errorlog = open("/tmp/greske.log", "w")
-            print >>errorlog, "\n\nIMPORTED: %s!\n\n" % (is_imported)
             if is_imported and self.allTranslationsAreEmpty(sanitized_translations):
                 # Don't create empty is_imported translations
                 if imported_message is not None:
                     imported_message.is_imported = False
-                print >>errorlog, "\n\nIMPORTED EMPTY: YES!\n\n"
+                    if imported_message.is_current:
+                        imported_message.is_current = False
                 return None
             else:
                 matching_message = TranslationMessage(
