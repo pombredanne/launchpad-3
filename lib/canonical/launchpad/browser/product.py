@@ -494,16 +494,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'pending proposal'
         else:
-            text = 'active reviews'
+            text = 'pending proposals'
         return Link('+activereviews', text)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
-            text = 'approved merge'
+            text = 'unmerged proposal'
         else:
-            text = 'approved merges'
+            text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Admin')

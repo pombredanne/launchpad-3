@@ -1635,14 +1635,14 @@ class HALDevice:
             bus not in (HWBus.PCI, HWBus.PCCARD, HWBus.USB)):
             hw_vendor_id_set = getUtility(IHWVendorIDSet)
             hw_vendor_id = hw_vendor_id_set.getByBusAndVendorID(
-                bus, self.vendor_id)
+                bus, self.vendor_id_for_db)
             if hw_vendor_id is None:
                 hw_vendor_name_set = getUtility(IHWVendorNameSet)
                 hw_vendor_name = hw_vendor_name_set.getByName(self.vendor)
                 if hw_vendor_name is None:
                     hw_vendor_name = hw_vendor_name_set.create(self.vendor)
                 hw_vendor_id_set.create(
-                    self.real_bus, self.vendor_id, hw_vendor_name)
+                    self.real_bus, self.vendor_id_for_db, hw_vendor_name)
 
     def createDBData(self, submission, parent_submission_device):
         """Create HWDB records for this HAL device and its children.
