@@ -122,6 +122,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
     BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
@@ -2362,11 +2363,6 @@ class PersonView(LaunchpadView, FeedsMixin):
                 return True
         return False
 
-    @cachedproperty
-    def openid_identity_url(self):
-        """The identity URL for the person."""
-        return IOpenIDPersistentIdentity(self.context).openid_identity_url
-
     @property
     def subscription_policy_description(self):
         """Return the description of this team's subscription policy."""
@@ -2696,7 +2692,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../templates/openidapplication-xrds.pt")
+        "../templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -2710,6 +2706,16 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
         return self.context.is_openid_enabled
+
+    @cachedproperty
+    def openid_server_url(self):
+        """The OpenID Server endpoint URL for Launchpad."""
+        return CurrentOpenIDEndPoint.getOldServiceURL()
+
+    @cachedproperty
+    def openid_identity_url(self):
+        return IOpenIDPersistentIdentity(
+            self.context).old_openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):

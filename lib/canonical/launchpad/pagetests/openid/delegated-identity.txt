@@ -1,0 +1,55 @@
+= Launchpad Delegated Identity =
+
+The Launchpad profile page acts an OpenID identifier through delegation.
+
+To test this, we will set up the python-openid to talk directly to the
+Zope publisher:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.testing.openidhelpers import (
+    ...     complete_from_browser, PublisherFetcher, print_endpoints)
+    >>> setDefaultFetcher(PublisherFetcher())
+
+The profile page delegates to the underlying Single Sign On identifier:
+
+    >>> print_endpoints('http://launchpad.dev/~name12')
+    Claimed ID: http://launchpad.dev/~name12
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.1
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.0
+    ----
+
+Users can login through their profile page:
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+    >>> request = consumer.begin('http://launchpad.dev/~name12')
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> browser.getControl('Sign In').click()
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print info.endpoint.claimed_id
+    http://launchpad.dev/~name12
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)
