@@ -72,18 +72,18 @@
       <div class="three column middle">
         <h2>What&#8217;s new?</h2>
         <ul>
+		<li class="news">
+            <a href="http://news.launchpad.net/?p=242">
+              <strong>OpenID with Launchpad</strong><br />          
+              Now you need remember only your Launchpad username and
+              password to log into hundreds of other websites!
+            </a>
+         </li>
          <li class="news">
             <a href="http://news.launchpad.net/?p=214">
               <strong>Contact any Launchpad user</strong><br />
               Launchpad's new contact system means you can get in touch with
               other users without needing to know their email address.
-            </a>
-         </li>
-         <li class="news">
-            <a href="http://news.launchpad.net/?p=157">
-              <strong>This bug is hot!</strong><br />
-              Help projects understand how important a bug is with the new "me
-              too" feature.
             </a>
          </li>
          <li class="news">
