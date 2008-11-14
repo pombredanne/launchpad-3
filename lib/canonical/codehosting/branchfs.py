@@ -355,18 +355,6 @@ class _BaseLaunchpadServer(Server):
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._is_set_up = False
 
-    def _buildControlDirectory(self, stack_on_url):
-        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        transport = get_transport(memory_server.get_url())
-        if stack_on_url == '':
-            return transport
-        format = BzrDirFormat.get_default_format()
-        bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(stack_on_url)
-        return get_transport('readonly+' + transport.base)
-
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
 
@@ -381,29 +369,6 @@ class _BaseLaunchpadServer(Server):
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
         raise NotImplementedError("Override this in subclasses.")
-
-    def _parseProductControlDirectory(self, virtual_path):
-        """Parse `virtual_path` and return a product and path in that product.
-
-        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
-        """
-        segments = get_path_segments(virtual_path, 3)
-        if len(segments) < 3:
-            raise InvalidControlDirectory(virtual_path)
-        user, product, control = segments[:3]
-        if not user.startswith('~'):
-            raise InvalidControlDirectory(virtual_path)
-        if control != '.bzr':
-            raise InvalidControlDirectory(virtual_path)
-        return product, '/'.join([control] + segments[3:])
-
-    def _translateControlPath(self, virtual_url_fragment):
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        product, path = self._parseProductControlDirectory(virtual_path)
-        deferred = self._authserver.getDefaultStackedOnBranch(product)
-        deferred.addCallback(self._buildControlDirectory)
-        return deferred.addCallback(
-            lambda transport: (transport, urlutils.escape(path)))
 
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
@@ -488,6 +453,41 @@ class LaunchpadServer(_BaseLaunchpadServer):
         self._hosted_transport = hosted_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
+
+    def _buildControlDirectory(self, stack_on_url):
+        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        transport = get_transport(memory_server.get_url())
+        if stack_on_url == '':
+            return transport
+        format = BzrDirFormat.get_default_format()
+        bzrdir = format.initialize_on_transport(transport)
+        bzrdir.get_config().set_default_stack_on(stack_on_url)
+        return get_transport('readonly+' + transport.base)
+
+    def _parseProductControlDirectory(self, virtual_path):
+        """Parse `virtual_path` and return a product and path in that product.
+
+        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
+        """
+        segments = get_path_segments(virtual_path, 3)
+        if len(segments) < 3:
+            raise InvalidControlDirectory(virtual_path)
+        user, product, control = segments[:3]
+        if not user.startswith('~'):
+            raise InvalidControlDirectory(virtual_path)
+        if control != '.bzr':
+            raise InvalidControlDirectory(virtual_path)
+        return product, '/'.join([control] + segments[3:])
+
+    def _translateControlPath(self, virtual_url_fragment):
+        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
+        product, path = self._parseProductControlDirectory(virtual_path)
+        deferred = self._authserver.getDefaultStackedOnBranch(product)
+        deferred.addCallback(self._buildControlDirectory)
+        return deferred.addCallback(
+            lambda transport: (transport, urlutils.escape(path)))
 
     def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
