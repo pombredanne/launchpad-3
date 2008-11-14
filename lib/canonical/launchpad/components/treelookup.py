@@ -35,6 +35,7 @@ __all__ = [
     'LookupTree',
     ]
 
+import copy
 import string
 
 
@@ -169,7 +170,21 @@ class LookupTree:
                 # last value from the iterable is the result of the
                 # branch, and all the preceding values are keys.
                 branches.append(self._branch_factory(*arg))
-        self.branches = tuple(branches)
+
+        # Prune the branches to remove duplicate paths.
+        seen_keys = set()
+        pruned_branches = []
+        for branch in branches:
+            prune = seen_keys.intersection(branch.keys)
+            if len(prune) > 0:
+                branch = copy.copy(branch)
+                branch.keys = tuple(
+                    key for key in branch.keys
+                    if key not in prune)
+                seen_keys.update(prune)
+            pruned_branches.append(branch)
+
+        self.branches = tuple(pruned_branches)
         self._verify()
 
     def _verify(self):
