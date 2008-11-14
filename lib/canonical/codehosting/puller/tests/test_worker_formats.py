@@ -17,8 +17,7 @@ try:
     from bzrlib.tests.repository_implementations.test_repository import (
                 TestCaseWithRepository)
 except ImportError:
-    from bzrlib.tests.per_repository.per_repository import (
-                TestCaseWithRepository)
+    from bzrlib.tests.per_repository import TestCaseWithRepository
 
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
