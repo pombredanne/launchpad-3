@@ -36,7 +36,7 @@ class IPillar(Interface):
 class IHasAliases(Interface):
 
     aliases = List(
-        title=_('Aliases'), required=False, readonly=False,
+        title=_('Aliases'), required=False, readonly=True,
         description=_(
             "The names (as strings) which are aliases to this pillar."))
 

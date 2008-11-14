@@ -59,8 +59,6 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 2007-10-09 bug=90983: Workaround.
-        name = name.encode('ASCII')
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result = store.execute("""
             SELECT TRUE
@@ -74,8 +72,6 @@ class PillarNameSet:
 
     def __getitem__(self, name):
         """See `IPillarNameSet`."""
-        # XXX flacoste 2007-10-09 bug=90983: Workaround.
-        name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
         if pillar is None:
             raise NotFoundError(name)
@@ -93,8 +89,6 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-        # XXX flacoste 2007-10-09 bug=90983: Workaround.
-        name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -114,8 +108,8 @@ class PillarNameSet:
             return None
 
         assert len([column for column in row[1:] if column is None]) == 2, (
-            "One (and only one) of project, project or distribution may be "
-            "NOT NULL")
+            "One (and only one) of product, project or distribution may be "
+            "NOT NULL: %s" % row[1:])
 
         id, product, project, distribution = row
 

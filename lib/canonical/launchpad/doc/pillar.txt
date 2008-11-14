@@ -68,7 +68,7 @@ It also works if you use Unicode strings.
     >>> pillar_set[u'launchpad']
     Traceback (most recent call last):
     ...
-    NotFoundError: 'launchpad'
+    NotFoundError: u'launchpad'
     >>> IProduct.providedBy(pillar_set.getByName(u'launchpad'))
     True
 
