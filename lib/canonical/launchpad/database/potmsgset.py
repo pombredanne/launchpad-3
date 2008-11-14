@@ -474,8 +474,7 @@ class POTMsgSet(SQLBase):
         has_translations = False
         for pluralform in translations:
             translation = translations[pluralform]
-            if (translation is not None and
-                translation != u""):
+            if (translation is not None and translation != u""):
                 has_translations = True
                 break
         return not has_translations
