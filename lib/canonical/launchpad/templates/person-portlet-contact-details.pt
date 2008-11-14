@@ -123,7 +123,7 @@
           </tr>
         </tal:keys>
 
-        <tr tal:condition="context/is_openid_enabled">
+        <tr tal:condition="view/is_delegated_identity">
           <th>OpenID login:</th>
           <td>
             <img src="/@@/private" alt="" />

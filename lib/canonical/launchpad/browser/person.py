@@ -2370,7 +2370,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         We only do this if it's enabled for the vhost, and the current URL
         is the canonical URL of the context.
         """
-        return (self.context.is_openid_enabled
+        return (self.context.is_valid_person
                 and config.vhost.mainsite.openid_delegate_profile)
 
     @cachedproperty
@@ -2720,7 +2720,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
-        return self.context.is_openid_enabled
+        return self.is_delegated_identity
 
     @cachedproperty
     def openid_server_url(self):
