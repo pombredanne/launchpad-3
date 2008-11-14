@@ -40,8 +40,7 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
 
             # The sort_order property of DistributionUpstreamBugReport is
             # a tuple in the form (sort_key, reversed).
-            view_sort_key = view.sort_order[0]
-            view_sort_reversed = view.sort_order[1]
+            view_sort_key, view_sort_reversed = view.sort_order
             self.assertEqual(view_sort_key, sort_key,
                 "Expected a sort_key of '%s', got '%s'" % 
                 (sort_key, view_sort_key))
@@ -58,8 +57,7 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
 
             # The sort_key part of view.sort_order will be the same as
             # for a normal sort.
-            view_sort_key = view.sort_order[0]
-            view_sort_reversed = view.sort_order[1]
+            view_sort_key, view_sort_reversed = view.sort_order
             self.assertEqual(view_sort_key, sort_key,
                 "Expected a sort_key of '%s', got '%s'" %
                 (sort_key, view_sort_key))

@@ -264,9 +264,9 @@ class DistributionUpstreamBugReport(LaunchpadView):
         'watched_bugs_percentage',
         ]
 
-    arrow_up = "/@@/arrowUp";
-    arrow_down = "/@@/arrowDown";
-    arrow_blank = "/@@/arrowBlank";
+    arrow_up = "/@@/arrowUp"
+    arrow_down = "/@@/arrowDown"
+    arrow_blank = "/@@/arrowBlank"
 
     @property
     def sort_order(self):
@@ -337,7 +337,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
         return self.context.currentseries
 
     def initialize(self):
-        """Assemble self.data and self.total from upstream count report."""
+        """Assemble self._data and self.total from upstream count report."""
         self._data = []
         self.total = BugReportData()
         packages_to_exclude = self.context.upstream_report_excluded_packages
