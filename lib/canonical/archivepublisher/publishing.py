@@ -251,7 +251,7 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.serieses:
             for pocket, suffix in pocketsuffix.items():
-                if self.canModifySuite(distroseries, pocket):
+                if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
                     # that precede here have dirtied it.
@@ -455,7 +455,7 @@ class Publisher(object):
             self.apt_handler.requestReleaseFile(
                 suite_name, component.name, arch_name)
 
-    def canModifySuite(self, distroseries, pocket):
+    def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
         return (not distroseries.isUnstable() and
                 not self.archive.allowUpdatesToReleasePocket() and
@@ -468,7 +468,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if self.canModifySuite(distroseries, pocket):
+        if self.cannotModifySuite(distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
