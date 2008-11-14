@@ -2708,6 +2708,16 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             self.processForm()
 
     @cachedproperty
+    def is_delegated_identity(self):
+        """Should the page delegate identity to the OpenId identitier.
+
+        We only do this if it's enabled for the vhost, and the current URL
+        is the canonical URL of the context.
+        """
+        return (self.context.is_openid_enabled
+                and config.vhost.mainsite.openid_delegate_profile)
+
+    @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
         return self.context.is_openid_enabled
