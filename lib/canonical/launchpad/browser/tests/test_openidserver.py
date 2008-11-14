@@ -99,7 +99,7 @@ class FakeOpenIdRequest:
     It only provides the message attribute. And that one only provides
     the getArgs() method which will return canned data.
 
-    Wathever is in the args attribute.
+    Whatever is in the args attribute.
     """
 
     def __init__(self):

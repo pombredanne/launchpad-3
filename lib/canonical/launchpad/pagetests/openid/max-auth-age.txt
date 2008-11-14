@@ -3,7 +3,7 @@
 Launchpad supports the max_auth_age extension parameter defined in
 Provider Authentication Policy Extension (
 http://openid.net/specs/openid-provider-authentication-policy-extension-1_0-07.html).
-It offers a way to relaying party to ensure that the user enters
+It offers a way for a relaying party to ensure that the user enters
 their password, even if they have already logged into Launchpad. The
 purpose of this is for sites for which the long-lived session policy of
 Launchpad is problematic.

@@ -303,7 +303,7 @@ class OpenIDMixin:
             return False
 
         try:
-            max_auth_age= int(pape_request.max_auth_age)
+            max_auth_age = int(pape_request.max_auth_age)
         except ValueError:
             raise BadRequest(
                 'pape:max_auth_age parameter should be an '
