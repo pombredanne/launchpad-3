@@ -2367,8 +2367,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def is_delegated_identity(self):
         """Should the page delegate identity to the OpenId identitier.
 
-        We only do this if it's enabled for the vhost, and the current URL
-        is the canonical URL of the context.
+        We only do this if it's enabled for the vhost.
         """
         return (self.context.is_valid_person
                 and config.vhost.mainsite.openid_delegate_profile)

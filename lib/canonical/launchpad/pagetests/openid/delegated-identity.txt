@@ -7,7 +7,6 @@ Zope publisher:
 
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.testing.openidhelpers import (
     ...     complete_from_browser, PublisherFetcher, print_endpoints)
     >>> setDefaultFetcher(PublisherFetcher())
@@ -50,7 +49,7 @@ includes <link> discovery:
       http://openid.net/signon/1.1
     ----
 
-But not, if the virtual host openid_delegate_profile variable is False.
+But not if the virtual host openid_delegate_profile variable is False.
 
     >>> from canonical.config import config
     >>> from textwrap import dedent
@@ -71,6 +70,7 @@ But not, if the virtual host openid_delegate_profile variable is False.
 
 Users can login through their profile page:
 
+    >>> from openid.store.memstore import MemoryStore
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
 
