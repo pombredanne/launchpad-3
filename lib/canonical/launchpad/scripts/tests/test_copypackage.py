@@ -17,6 +17,8 @@ from canonical.launchpad.components.packagelocation import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces.bug import (
+    CreateBugParams, IBugSet)
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
@@ -944,9 +946,6 @@ class TestCopyPackage(unittest.TestCase):
             status=PackagePublishingStatus.PUBLISHED)
 
         # Create a bug to be closed.
-        from canonical.launchpad.interfaces import CreateBugParams
-        from canonical.launchpad.interfaces import IBugSet
-
         proposed_ubuntu = ubuntu.getSourcePackage('proposed-source')
         proposed_release = proposed_ubuntu.currentrelease.sourcepackagerelease
 
@@ -982,7 +981,7 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
-        # Bug was closed (XXX not yet)
+        # Bug was closed.
         proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
         [proposed_task] = proposed_bug.bugtasks
         self.assertEqual(proposed_task.status.name, 'FIXRELEASED')

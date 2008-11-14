@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'close_bugs',
     'close_bugs_for_queue_item',
-    'close_bugs_for_sourcepackagerelease',
+    'close_bugs_for_sourcepublication',
     ]
 
 from zope.component import getUtility
@@ -82,7 +82,24 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
         close_bugs_for_sourcepackagerelease(
             source_queue_item.sourcepackagerelease, changesfile_object)
 
+def close_bugs_for_sourcepublication(source_publication):
+    """Close bugs for a given sourcepublication.
+
+    Given a `ISourcePackagePublishingHistory` close bugs mentioned in
+    upload changesfile.
+    """
+    # XXX Add checks ...
+
+    sourcepackagerelease = source_publication.sourcepackagerelease
+    close_bugs_for_sourcepackagerelease(
+        sourcepackagerelease, sourcepackagerelease.upload_changesfile)
+
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
+    """Close bugs for a given source.
+
+    Given a `ISourcePackageRelease` and a corresponding changesfile object,
+    close bugs mentioned in the changesfile in the context of the source.
+    """
     bugs_to_close = get_bugs_from_changes_file(changesfile_object)
 
     # No bugs to be closed by this upload, move on.
@@ -90,7 +107,6 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
         return
 
     janitor = getUtility(ILaunchpadCelebrities).janitor
-
     for bug in bugs_to_close:
         edited_task = bug.setStatus(
             target=source_release.sourcepackage,
