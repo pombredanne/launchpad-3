@@ -420,35 +420,41 @@ class _BaseLaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        try:
-            lp_branch, path = self._getLaunchpadBranch(virtual_url_fragment)
-        except NotABranchPath:
-            fail = failure.Failure()
+        deferred = defer.maybeDeferred(
+            self._getLaunchpadBranch, virtual_url_fragment)
+
+        def got_lp_branch((lp_branch, path)):
+            """Got the Launchpad branch."""
+            virtual_path_deferred = lp_branch.getRealPath(path)
+
+            def branch_not_found(failure):
+                failure.trap(BranchNotFound)
+                if path == '':
+                    # We are trying to translate a branch path that doesn't exist.
+                    return failure
+                else:
+                    # We are trying to translate a path within a branch that
+                    # doesn't exist.
+                    raise NoSuchFile(virtual_url_fragment)
+
+            virtual_path_deferred.addErrback(branch_not_found)
+
+            def get_transport(real_path):
+                deferred = self._getTransportForLaunchpadBranch(lp_branch)
+                deferred.addCallback(lambda transport: (transport, real_path))
+                return deferred
+
+            return virtual_path_deferred.addCallback(get_transport)
+
+        def not_a_branch(failure):
+            """Called when the path simply could not point to a branch."""
+            failure.trap(NotABranchPath)
             deferred = defer.maybeDeferred(
                 self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: fail)
+            deferred.addErrback(lambda ignored: failure)
             return deferred
 
-        virtual_path_deferred = lp_branch.getRealPath(path)
-
-        def branch_not_found(failure):
-            failure.trap(BranchNotFound)
-            if path == '':
-                # We are trying to translate a branch path that doesn't exist.
-                return failure
-            else:
-                # We are trying to translate a path within a branch that
-                # doesn't exist.
-                raise NoSuchFile(virtual_url_fragment)
-
-        virtual_path_deferred.addErrback(branch_not_found)
-
-        def get_transport(real_path):
-            deferred = self._getTransportForLaunchpadBranch(lp_branch)
-            deferred.addCallback(lambda transport: (transport, real_path))
-            return deferred
-
-        return virtual_path_deferred.addCallback(get_transport)
+        return deferred.addCallbacks(got_lp_branch, not_a_branch)
 
     def get_url(self):
         """Return the URL of this server."""
