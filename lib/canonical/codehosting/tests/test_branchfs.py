@@ -128,18 +128,6 @@ class MixinBaseLaunchpadServerTests:
             assert_path_starts_with, branch_id_to_path(branch.id))
         return deferred
 
-    def test_translateControlPath(self):
-        branch = self.factory.makeBranch(owner=self.requester)
-        branch.product.development_focus.user_branch = branch
-        deferred = self.server.translateVirtualPath(
-            '~%s/%s/.bzr/control.conf'
-            % (branch.owner.name, branch.product.name))
-        def check_control_file((transport, path)):
-            self.assertEqual(
-                'default_stack_on = /%s\n' % branch.unique_name,
-                transport.get_bytes(path))
-        return deferred.addCallback(check_control_file)
-
     def test_buildControlDirectory(self):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -207,6 +195,18 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         return LaunchpadServer(
             BlockingProxy(authserver), user_id, MemoryTransport(),
             MemoryTransport())
+
+    def test_translateControlPath(self):
+        branch = self.factory.makeBranch(owner=self.requester)
+        branch.product.development_focus.user_branch = branch
+        deferred = self.server.translateVirtualPath(
+            '~%s/%s/.bzr/control.conf'
+            % (branch.owner.name, branch.product.name))
+        def check_control_file((transport, path)):
+            self.assertEqual(
+                'default_stack_on = /%s\n' % branch.unique_name,
+                transport.get_bytes(path))
+        return deferred.addCallback(check_control_file)
 
     def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows

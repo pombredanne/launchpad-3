@@ -446,15 +446,7 @@ class _BaseLaunchpadServer(Server):
 
             return virtual_path_deferred.addCallback(get_transport)
 
-        def not_a_branch(failure):
-            """Called when the path simply could not point to a branch."""
-            failure.trap(NotABranchPath)
-            deferred = defer.maybeDeferred(
-                self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: failure)
-            return deferred
-
-        return deferred.addCallbacks(got_lp_branch, not_a_branch)
+        return deferred.addCallback(got_lp_branch)
 
     def get_url(self):
         """Return the URL of this server."""
@@ -517,6 +509,20 @@ class LaunchpadServer(_BaseLaunchpadServer):
         permissions_deferred = lp_branch.getPermissions()
         return permissions_deferred.addCallback(
             self._getTransportForPermissions, lp_branch)
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        deferred = super(LaunchpadServer, self).translateVirtualPath(
+            virtual_url_fragment)
+
+        def not_a_branch(failure):
+            """Called when the path simply could not point to a branch."""
+            failure.trap(NotABranchPath)
+            deferred = defer.maybeDeferred(
+                self._translateControlPath, virtual_url_fragment)
+            deferred.addErrback(lambda ignored: failure)
+            return deferred
+
+        return deferred.addErrback(not_a_branch)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
