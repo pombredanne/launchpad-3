@@ -40,6 +40,7 @@ __all__ = [
     'MugshotImageUpload',
     'LocationField',
     'PasswordField',
+    'PillarAliases',
     'PillarNameField',
     'ProductBugTracker',
     'ProductNameField',
@@ -64,6 +65,7 @@ __all__ = [
     ]
 
 
+import re
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -448,6 +450,43 @@ class BlacklistableContentNameField(ContentNameField):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
                 "administrators" % input)
+
+
+class PillarAliases(TextLine):
+    """A field which takes a list of space-separated aliases for a pillar."""
+
+    def _split_input(self, input):
+        return re.sub(r'\s+', ' ', input).split()
+
+    def _validate(self, input):
+        """Make sure all the aliases are valid for the field's pillar.
+
+        An alias is valid if it can be used as the name of a pillar and is
+        not identical to the pillar's existing name.
+        """
+        context = self.context
+        from canonical.launchpad.interfaces.product import IProduct
+        from canonical.launchpad.interfaces.project import IProject
+        from canonical.launchpad.interfaces.distribution import IDistribution
+        if IProduct.providedBy(context):
+            name_field = IProduct['name']
+        elif IProject.providedBy(context):
+            name_field = IProject['name']
+        elif IDistribution.providedBy(context):
+            name_field = IDistribution['name']
+        else:
+            raise AssertionError("Unexpected context type.")
+        name_field.bind(context)
+        for name in self._split_input(input):
+            if name == context.name:
+                raise LaunchpadValidationError('This is your name: %s' % name)
+            name_field._validate(name)
+
+    def set(self, object, value):
+        object.setAliases(self._split_input(value))
+
+    def get(self, object):
+        return " ".join(object.aliases)
 
 
 class ShipItRecipientDisplayname(TextLine):
