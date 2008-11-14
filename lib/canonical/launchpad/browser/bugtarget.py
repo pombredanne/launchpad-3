@@ -38,6 +38,7 @@ from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces import (
@@ -697,25 +698,37 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
+        def target_name(target):
+            # IProject can be considered the target of a bug during
+            # the bug filing process, but does not extend IBugTarget
+            # and ultimately cannot actually be the target of a
+            # bug. Hence this function to determine a suitable
+            # name/title to display. Hurrumph.
+            if IBugTarget.providedBy(target):
+                return target.bugtargetdisplayname
+            else:
+                return target.title
+
         guidelines = []
         context = self.bugtarget
         if context is not None:
-            preamble = u"Please include, if possible:"
             content = context.bug_reporting_guidelines
             if content is not None and len(content) > 0:
-                guidelines.append(
-                    {"preamble": preamble, "content": content})
+                guidelines.append({
+                        "source": target_name(context),
+                        "content": content,
+                        })
             # Distribution source packages are shown with both their
             # own reporting guidelines and those of their
             # distribution.
             if IDistributionSourcePackage.providedBy(context):
                 distribution = context.distribution
-                preamble = u"For %s, please include, if possible:" % (
-                    distribution.displayname)
                 content = distribution.bug_reporting_guidelines
                 if content is not None and len(content) > 0:
-                    guidelines.append(
-                        {"preamble": preamble, "content": content})
+                    guidelines.append({
+                            "source": target_name(distribution),
+                            "content": content,
+                            })
         return guidelines
 
 

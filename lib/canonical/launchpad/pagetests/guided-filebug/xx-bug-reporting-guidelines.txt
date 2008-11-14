@@ -68,24 +68,29 @@ include a bug description field.
     *
     Ubuntu
       <http://launchpad.dev/ubuntu/+filebug-advanced>
+    Ubuntu guidelines
     Please include, if possible:
     The version of Ubuntu you're using.
     *
     Mozilla
       <http://launchpad.dev/mozilla/+filebug-advanced>
+    The Mozilla Project guidelines
     Please include, if possible:
     The version of Mozilla you're using.
     *
     Firefox
       <http://launchpad.dev/firefox/+filebug-advanced>
+    Mozilla Firefox guidelines
     Please include, if possible:
     The version of Firefox you're using.
     *
     alsa-utils in Ubuntu
       <http://launchpad.dev/ubuntu/+source/alsa-utils/+filebug-advanced>
+    alsa-utils (Ubuntu) guidelines
     Please include, if possible:
     The version of ALSA you're using.
-    For Ubuntu, please include, if possible:
+    Ubuntu guidelines
+    Please include, if possible:
     The version of Ubuntu you're using.
 
 Note how the alsa-utils in Ubuntu specific guidelines were displayed
@@ -99,6 +104,7 @@ once you've got to the step of entering a bug description.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Mozilla Firefox guidelines
     Please include, if possible:
     The version of Firefox you're using.
 
@@ -111,6 +117,7 @@ which the guidelines are taken from the respective distribution.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Ubuntu guidelines
     Please include, if possible:
     The version of Ubuntu you're using.
 
@@ -131,9 +138,11 @@ shown.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    alsa-utils (Ubuntu) guidelines
     Please include, if possible:
     The version of ALSA you're using.
-    For Ubuntu, please include, if possible:
+    Ubuntu guidelines
+    Please include, if possible:
     The version of Ubuntu you're using.
 
     >>> user_browser.open(
@@ -145,6 +154,7 @@ shown.
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Mozilla Firefox guidelines
     Please include, if possible:
     The version of Firefox you're using.
 
@@ -173,6 +183,7 @@ shown.
     ...     'http://launchpad.dev/ubuntu/+filebug-advanced')
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Ubuntu guidelines
     Please include, if possible:
     The version of Ubuntu you're using.
 
@@ -185,6 +196,7 @@ guidelines appear.
     ...     name='field.packagename').value = "alsa-utils"
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
+    Ubuntu guidelines
     Please include, if possible:
     The version of Ubuntu you're using.
 

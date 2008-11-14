@@ -357,7 +357,8 @@
       tal:condition="guidelines">
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
-        <p tal:content="guideline/preamble" />
+        <h3><span tal:replace="guideline/source" /> guidelines</h3>
+        <p>Please include, if possible:</p>
         <div tal:content="structure guideline/content/fmt:text-to-html" />
       </tal:guidelines>
     </td>
