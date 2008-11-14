@@ -923,5 +923,63 @@ class TestCopyPackage(unittest.TestCase):
         script.logger = QuietFakeLogger()
         self.assertFalse(script.setUpCopierOptions())
 
+    def testCopyClosesBugs(self):
+        """Copying packages closes bugs.
+
+        XXX
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        test_publisher.addFakeChroots(warty)
+
+        # Generate a testing publication in warty-proposed.
+        proposed_source = test_publisher.getPubSource(
+            sourcename='proposed-source', distroseries=warty,
+            pocket=PackagePublishingPocket.PROPOSED,
+            status=PackagePublishingStatus.PUBLISHED)
+        proposed_binaries = test_publisher.getPubBinaries(
+            pub_source=proposed_source, distroseries=warty,
+            pocket=PackagePublishingPocket.PROPOSED,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Create a bug to be closed.
+        from canonical.launchpad.interfaces import CreateBugParams
+        from canonical.launchpad.interfaces import IBugSet
+
+        proposed_ubuntu = ubuntu.getSourcePackage('proposed-source')
+        proposed_release = proposed_ubuntu.currentrelease.sourcepackagerelease
+
+        bug_params = CreateBugParams(
+            getUtility(IPersonSet).getByName("cprov"), "Test bug", "Test bug.")
+        proposed_bug_id = proposed_ubuntu.createBug(bug_params).id
+
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_task.status.name, 'NEW')
+
+        # Generate the corresponding upload record with the relevant
+        # changelog ... (close bugs)
+        proposed_queue_item = warty.createQueueEntry(
+            archive=warty.main_archive, changesfilename='foo_source.changes',
+            pocket=PackagePublishingPocket.PROPOSED,
+            changesfilecontent='x')
+        proposed_queue_item.addSource(proposed_source.sourcepackagerelease)
+        proposed_queue_item.setDone()
+
+        # Promote the source & binaries from -proposed to -updates.
+        copy_helper = self.getCopier(
+            sourcename='proposed-source', include_binaries=True,
+            from_suite='warty-proposed', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 3)
+
+        # Bug was closed (XXX not yet)
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_task.status.name, 'FIXRELEASED')
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
