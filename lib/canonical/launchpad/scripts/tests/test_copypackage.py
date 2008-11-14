@@ -960,12 +960,17 @@ class TestCopyPackage(unittest.TestCase):
 
         # Generate the corresponding upload record with the relevant
         # changelog ... (close bugs)
+        closing_bug_changesfile = (
+            "Format: 1.7\n"
+            "Launchpad-bugs-fixed: %s\n" % proposed_bug_id
+            )
         proposed_queue_item = warty.createQueueEntry(
             archive=warty.main_archive, changesfilename='foo_source.changes',
             pocket=PackagePublishingPocket.PROPOSED,
-            changesfilecontent='x')
+            changesfilecontent=closing_bug_changesfile)
         proposed_queue_item.addSource(proposed_source.sourcepackagerelease)
         proposed_queue_item.setDone()
+        self.layer.txn.commit()
 
         # Promote the source & binaries from -proposed to -updates.
         copy_helper = self.getCopier(
