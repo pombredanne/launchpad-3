@@ -275,11 +275,14 @@ class OpenIDMixin:
         openid_response.fields.setArg(
             LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
 
-    def isLoginWithinDelta(self):
-        """Perform the max_auth_age PAPE check.
+    def shouldReauthenticate(self):
+        """Should the user re-enter their password?
 
-        This is defined in the OpenID Provider Authentication Policy
-        Extension.
+        Return True if the user entered their password more than
+        max_auth_age seconds ago. Return False otherwise.
+
+        The max_auth_age parameter is defined in the OpenID Provider 
+        Authentication Policy Extension.
         http://openid.net/specs/openid-provider-authentication-policy-extension-1_0-07.html
 
         This parameter contains the maximum number of seconds before which
@@ -297,7 +300,7 @@ class OpenIDMixin:
 
         # If there is no parameter, the login is valid.
         if pape_request is None or pape_request.max_auth_age is None:
-            return True
+            return False
 
         try:
             max_auth_age= int(pape_request.max_auth_age)
@@ -307,7 +310,7 @@ class OpenIDMixin:
                 'integer: %s' % max_auth_age)
 
         cutoff = datetime.utcnow() - timedelta(seconds=max_auth_age)
-        return self._getLoginTime() > cutoff
+        return self._getLoginTime() <= cutoff
 
     def renderOpenIDResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
@@ -427,7 +430,7 @@ class OpenIDView(OpenIDMixin, LaunchpadView):
                 return self.showLoginPage()
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
-            elif not self.isLoginWithinDelta():
+            elif self.shouldReauthenticate():
                 return self.showLoginPage()
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.

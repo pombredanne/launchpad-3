@@ -113,8 +113,8 @@ class FakeOpenIdRequest:
         return self.args
 
 
-class OpenIDMixin_isLoginWithinDelta_TestCase(unittest.TestCase):
-    """Test cases for the isLoginWithinDelta() period."""
+class OpenIDMixin_shouldReauthenticate_TestCase(unittest.TestCase):
+    """Test cases for the shouldReauthenticate() period."""
 
     layer = DatabaseFunctionalLayer
 
@@ -137,45 +137,45 @@ class OpenIDMixin_isLoginWithinDelta_TestCase(unittest.TestCase):
     def tearDown(self):
         logout()
 
-    def test_should_be_True_when_param_not_used(self):
+    def test_should_be_False_when_param_not_used(self):
         """If the extension isn't present in the request, and the user is
-        logged in, it should be True."""
-        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
+        logged in, it should be False."""
+        self.assertEquals(False, self.openid_mixin.shouldReauthenticate())
 
-    def test_should_be_False_with_zero(self):
+    def test_should_be_True_with_zero(self):
         """If the maximum delta is 0, the user must re-authenticate."""
         self.openid_request.args['max_auth_age'] = '0'
-        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+        self.assertEquals(True, self.openid_mixin.shouldReauthenticate())
 
     def test_should_be_True_with_negative(self):
         """If the maximum delta is below zero, the user must re-authenticate.
         """
         self.openid_request.args['max_auth_age'] = '-1'
-        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+        self.assertEquals(True, self.openid_mixin.shouldReauthenticate())
 
     def test_should_ignore_invalid_param(self):
         """If the maximum delta is not an integer, it's like if the parameter
         wasn't used. That's mainly because python-openid hides that fact
         from us."""
         self.openid_request.args['max_auth_age'] = 'not a number'
-        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
+        self.assertEquals(False, self.openid_mixin.shouldReauthenticate())
 
-    def test_should_be_True_when_delta_within_range(self):
+    def test_should_be_False_when_delta_within_range(self):
         """If the last login is within the maximum delta, the user won't have
         to enter their password again.
         """
         self.authdata['logintime'] = datetime.utcnow() - timedelta(seconds=50)
         self.openid_request.args['max_auth_age'] = '3600'
-        self.assertEquals(True, self.openid_mixin.isLoginWithinDelta())
+        self.assertEquals(False, self.openid_mixin.shouldReauthenticate())
 
-    def test_should_be_False_when_delta_not_in_range(self):
+    def test_should_be_True_when_delta_not_in_range(self):
         """If the last login is not within the maximum delta, they will have
         to enter their password again.
         """
         self.authdata['logintime'] = (
             datetime.utcnow() - timedelta(seconds=3601))
         self.openid_request.args['max_auth_age'] = '3600'
-        self.assertEquals(False, self.openid_mixin.isLoginWithinDelta())
+        self.assertEquals(True, self.openid_mixin.shouldReauthenticate())
 
 
 def test_suite():
