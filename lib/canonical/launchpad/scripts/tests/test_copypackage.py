@@ -101,6 +101,7 @@ class TestCopyPackageScript(unittest.TestCase):
 class TestCopyPackage(unittest.TestCase):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Anotate pending publishing records provided in the sampledata.
@@ -114,6 +115,9 @@ class TestCopyPackage(unittest.TestCase):
         pending_binaries = SecureBinaryPackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.binaries_pending_ids = [pub.id for pub in pending_binaries]
+
+        # Run test cases in the production context.
+        self.layer.switchDbUser(self.dbuser)
 
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_distribution='ubuntu', from_suite='warty',
