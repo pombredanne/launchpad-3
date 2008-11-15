@@ -53,7 +53,6 @@ class BaseDatabasePolicy:
 class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """Default database policy for web requests."""
 
-
     def beforeTraversal(self):
         """Install the database policy.
 

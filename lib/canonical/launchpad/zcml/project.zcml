@@ -24,6 +24,12 @@
         <require
             permission="launchpad.Admin"
             set_attributes="registrant" />
+        <!-- IHasAliases -->
+        <allow attributes="aliases" />
+        <require
+          permission="launchpad.Admin"
+          attributes="setAliases"
+          />
     </class>
 
     <adapter

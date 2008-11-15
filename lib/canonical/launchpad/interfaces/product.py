@@ -118,7 +118,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IPillar, ISpecificationTarget):
+    ILaunchpadUsage, IMakesAnnouncements, ISpecificationTarget, IPillar):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
