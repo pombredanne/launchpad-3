@@ -50,6 +50,27 @@ def close_bugs(queue_ids):
         queue_item = getUtility(IPackageUploadSet).get(queue_id)
         close_bugs_for_queue_item(queue_item)
 
+def can_close_bugs(target):
+    """Whether or not bugs should be closed in the given target.
+
+    ISourcePackagePublishingHistory and IPackageUpload are the
+    currently supported targets.
+
+    Source publications or package uploads target to pocket
+    PROPOSED or any other archive purpose than PRIMARY will
+    not automatically close bugs.
+    """
+    forbidden_pockets = (
+        PackagePublishingPocket.PROPOSED,
+        )
+
+    if target.pocket in forbidden_pockets:
+        return False
+
+    if target.archive.purpose != ArchivePurpose.PRIMARY:
+        return False
+
+    return True
 
 def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     """Close bugs for a given queue item.
@@ -69,10 +90,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     Set the package bugtask status to Fix Released and the changelog is added
     as a comment.
     """
-    if queue_item.pocket == PackagePublishingPocket.PROPOSED:
-        return
-
-    if queue_item.archive.purpose == ArchivePurpose.PPA:
+    if not can_close_bugs(queue_item):
         return
 
     if changesfile_object is None:
@@ -88,11 +106,18 @@ def close_bugs_for_sourcepublication(source_publication):
     Given a `ISourcePackagePublishingHistory` close bugs mentioned in
     upload changesfile.
     """
-    # XXX Add checks ...
+    if not can_close_bugs(source_publication):
+        return
 
     sourcepackagerelease = source_publication.sourcepackagerelease
+    changesfile_object = sourcepackagerelease.upload_changesfile
+
+    # No changesfile available, cannot close bugs.
+    if changesfile_object is None:
+        return
+
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, sourcepackagerelease.upload_changesfile)
+        sourcepackagerelease, changesfile_object)
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
     """Close bugs for a given source.
