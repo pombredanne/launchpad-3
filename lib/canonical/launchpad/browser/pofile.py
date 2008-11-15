@@ -514,23 +514,20 @@ class POFileTranslateView(BaseTranslationView):
         if self.search_text is not None:
             self.show = 'all'
 
-        if self.show not in (
-            'translated', 'untranslated', 'all', 'need_review',
-            'changed_in_launchpad', 'new_suggestions'):
-            # XXX: kiko 2006-09-27: Should this be an UnexpectedFormData?
+        # Functions that deliver the correct message counts for each
+        # valid option value.
+        count_functions = {
+            'all': self.context.messageCount,
+            'translated': self.context.translatedCount,
+            'untranslated': self.context.untranslatedCount,
+            'new_suggestions': self.context.unreviewedCount,
+            'changed_in_launchpad': self.context.updatesCount,
+            }
+
+        if self.show not in count_functions:
             self.show = self.DEFAULT_SHOW
-        if self.show == 'all':
-            self.shown_count = self.context.messageCount()
-        elif self.show == 'translated':
-            self.shown_count = self.context.translatedCount()
-        elif self.show == 'untranslated':
-            self.shown_count = self.context.untranslatedCount()
-        elif self.show == 'new_suggestions':
-            self.shown_count = self.context.unreviewedCount()
-        elif self.show == 'changed_in_launchpad':
-            self.shown_count = self.context.updatesCount()
-        else:
-            raise AssertionError("Bug in _initializeShowOption")
+
+        self.shown_count = count_functions[self.show]()
 
         # Changing the "show" option resets batching.
         old_show_option = self.request.form.get('old_show')

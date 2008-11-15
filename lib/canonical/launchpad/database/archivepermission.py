@@ -19,12 +19,14 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
+from canonical.launchpad.interfaces.archive import ComponentNotFound, SourceNotFound
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
     IArchiveUploader, IArchiveQueueAdmin)
 from canonical.launchpad.interfaces.component import IComponent, IComponentSet
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -125,16 +127,22 @@ class ArchivePermissionSet:
 
     def _nameToComponent(self, component):
         """Helper to convert a possible string component to IComponent"""
-        if isinstance(component, basestring):
-            component = getUtility(IComponentSet)[component]
-        return component
+        try:
+            if isinstance(component, basestring):
+                component = getUtility(IComponentSet)[component]
+            return component
+        except NotFoundError, e:
+            raise ComponentNotFound(e)
 
     def _nameToSourcePackageName(self, sourcepackagename):
         """Helper to convert a possible string name to ISourcePackageName."""
-        if isinstance(sourcepackagename, basestring):
-            sourcepackagename = getUtility(
-                ISourcePackageNameSet)[sourcepackagename]
-        return sourcepackagename
+        try:
+            if isinstance(sourcepackagename, basestring):
+                sourcepackagename = getUtility(
+                    ISourcePackageNameSet)[sourcepackagename]
+            return sourcepackagename
+        except NotFoundError, e:
+            raise SourceNotFound(e)
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
