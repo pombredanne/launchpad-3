@@ -19,6 +19,7 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.bug import (
     CreateBugParams, IBugSet)
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.build import BuildStatus
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
@@ -934,9 +935,10 @@ class TestCopyPackage(unittest.TestCase):
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         warty = ubuntu.getSeries('warty')
+        cprov = getUtility(IPersonSet).getByName("cprov")
+
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
-        cprov = getUtility(IPersonSet).getByName("cprov")
 
         def create_source(version, archive, pocket):
             source = test_publisher.getPubSource(
@@ -949,15 +951,12 @@ class TestCopyPackage(unittest.TestCase):
             return source
 
         def create_bug(summary):
-            source_in_ubuntu = ubuntu.getSourcePackage('bugged-source')
-            source_release = (
-                source_in_ubuntu.currentrelease.sourcepackagerelease)
+            bugged_in_ubuntu = ubuntu.getSourcePackage('bugged-source')
             bug_params = CreateBugParams(cprov, summary, "booo")
-            bug_id = source_in_ubuntu.createBug(bug_params).id
-            bug = getUtility(IBugSet).get(bug_id)
+            bug = bugged_in_ubuntu.createBug(bug_params)
             [bug_task] = bug.bugtasks
-            self.assertEqual(bug_task.status.name, 'NEW')
-            return bug_id
+            self.assertEqual(bug_task.status, BugTaskStatus.NEW)
+            return bug.id
 
         def create_upload(pub_source, changesfilecontent):
             pub_source.sourcepackagerelease.changelog_entry = "Boing!"
@@ -981,8 +980,8 @@ class TestCopyPackage(unittest.TestCase):
         # Copies to -updates close bugs when they exist.
         proposed_source = create_source(
             '666', warty.main_archive, PackagePublishingPocket.PROPOSED)
-        ubuntu_bug_id = create_bug('bugged source is bugged in -proposed.')
-        closing_bug_changesfile = changes_template % ubuntu_bug_id
+        updates_bug_id = create_bug('bug in -proposed')
+        closing_bug_changesfile = changes_template % updates_bug_id
         create_upload(proposed_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
@@ -992,16 +991,16 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
-        bugged_bug = getUtility(IBugSet).get(ubuntu_bug_id)
-        [bug_task] = bugged_bug.bugtasks
-        self.assertEqual(bug_task.status.name, 'FIXRELEASED')
+        updates_bug = getUtility(IBugSet).get(updates_bug_id)
+        [updates_bug_task] = updates_bug.bugtasks
+        self.assertEqual(updates_bug_task.status, BugTaskStatus.FIXRELEASED)
 
         publish_copies(copied)
 
         # Copies to the development distroseries close bugs.
         dev_source = create_source(
             '667', warty.main_archive, PackagePublishingPocket.UPDATES)
-        dev_bug_id = create_bug('bugged source is bugged in hoary.')
+        dev_bug_id = create_bug('bug in development')
         closing_bug_changesfile = changes_template % dev_bug_id
         create_upload(dev_source, closing_bug_changesfile)
 
@@ -1014,14 +1013,14 @@ class TestCopyPackage(unittest.TestCase):
 
         dev_bug = getUtility(IBugSet).get(dev_bug_id)
         [dev_bug_task] = dev_bug.bugtasks
-        self.assertEqual(dev_bug_task.status.name, 'FIXRELEASED')
+        self.assertEqual(dev_bug_task.status, BugTaskStatus.FIXRELEASED)
 
         publish_copies(copied)
 
         # Copies to -proposed do not close bugs
         ppa_source = create_source(
             '668', cprov.archive, PackagePublishingPocket.RELEASE)
-        ppa_bug_id = create_bug('bugged source is bugged in release')
+        ppa_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % ppa_bug_id
         create_upload(ppa_source, closing_bug_changesfile)
 
@@ -1034,15 +1033,15 @@ class TestCopyPackage(unittest.TestCase):
 
         ppa_bug = getUtility(IBugSet).get(ppa_bug_id)
         [ppa_bug_task] = ppa_bug.bugtasks
-        self.assertEqual(ppa_bug_task.status.name, 'NEW')
+        self.assertEqual(ppa_bug_task.status, BugTaskStatus.NEW)
 
         publish_copies(copied)
 
         # Copies to PPA do not close bugs.
         release_source = create_source(
             '669', warty.main_archive, PackagePublishingPocket.RELEASE)
-        release_bug_id = create_bug('bugged source is bugged in PPA')
-        closing_bug_changesfile = changes_template % release_bug_id
+        proposed_bug_id = create_bug('bug in PPA')
+        closing_bug_changesfile = changes_template % proposed_bug_id
         create_upload(release_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
@@ -1052,9 +1051,9 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
-        release_bug = getUtility(IBugSet).get(release_bug_id)
-        [release_bug_task] = release_bug.bugtasks
-        self.assertEqual(release_bug_task.status.name, 'NEW')
+        proposed_bug = getUtility(IBugSet).get(proposed_bug_id)
+        [proposed_bug_task] = proposed_bug.bugtasks
+        self.assertEqual(proposed_bug_task.status, BugTaskStatus.NEW)
 
         publish_copies(copied)
 
