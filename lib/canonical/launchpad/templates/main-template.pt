@@ -77,7 +77,6 @@
 
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
@@ -107,6 +106,8 @@
           <script type="text/javascript" tal:attributes="src string:${yui}/yui-launchpad.js"></script>
       </tal:production>
     </tal:yui>
+
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad-ajax.js"></script>
 
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"

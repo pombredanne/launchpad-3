@@ -179,6 +179,14 @@ upload a particular package.
     >>> show_mozilla_permissions()
     Archive Upload Rights ...~carlos None mozilla-firefox
 
+Passing a bad package name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...     source_package_name="badpackage").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+
 newPackageUploader() is a factory function that adds a new permission for
 a person to upload a package.
 
@@ -225,6 +233,14 @@ upload to a particular component:
 
     >>> show_component_permissions("main")
     Archive Upload Rights ...~ubuntu-team main None
+
+Passing a bad component name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...     component_name="badcomponent").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
 
 If you don't specify the component, you get all the uploaders for
 all components.

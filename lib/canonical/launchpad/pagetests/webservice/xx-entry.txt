@@ -185,11 +185,16 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH. It's possible to fake a PATCH request with
-POST, by setting the X-HTTP-Method-Override header to "PATCH".
+POST, by setting the X-HTTP-Method-Override header to "PATCH". Because
+Firefox 3 mangles the Content-Type header for POST requests, you may
+also set the X-Content-Type-Override header, which will override the
+value of Content-Type.
 
   >>> print modify_person('salgado',
   ...     {'display_name' : 'GUILHERME SALGADO XVII'}, 'POST',
-  ...     {'X-HTTP-Method-Override' : 'PATCH'})
+  ...     {'X-HTTP-Method-Override' : 'PATCH',
+  ...      'Content-Type': 'not-a-valid-content/type',
+  ...      'X-Content-Type-Override': 'application/json'})
   HTTP/1.1 200 Ok
   ...
 
