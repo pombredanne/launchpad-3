@@ -329,14 +329,6 @@ class LaunchpadBranch:
         branch_path = branch_id_to_path(self._branch_id)
         return defer.succeed('/'.join([branch_path, url_fragment_on_branch]))
 
-    def getID(self):
-        """Return the database ID of this branch.
-
-        :raise BranchNotFound: if the branch does not exist.
-        :return: the database ID of the branch, an integer.
-        """
-        return defer.succeed(self._branch_id)
-
     def getPermissions(self):
         """Return the permissions that the current user has for this branch.
 
@@ -354,9 +346,7 @@ class LaunchpadBranch:
 
         :raise BranchNotFound: if the branch does not exist.
         """
-        deferred = self.getID()
-        deferred.addCallback(self._authserver.requestMirror)
-        return deferred
+        return self._authserver.requestMirror(self._branch_id)
 
 
 class _BaseLaunchpadServer(Server):
