@@ -337,6 +337,7 @@ def canonical_url_iterator(obj):
         if urldata.inside is not None:
             yield urldata.inside
 
+
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
     view_name=None):

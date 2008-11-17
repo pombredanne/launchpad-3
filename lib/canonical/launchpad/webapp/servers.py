@@ -1276,7 +1276,9 @@ def website_request_to_web_service_request(website_request):
     Used to instantiate Resource objects when handling normal web
     browser requests.
     """
-    web_service_request = WebServiceClientRequest('', website_request._environ)
+    body = website_request.bodyStream.getCacheStream().read()
+    web_service_request = WebServiceClientRequest(
+        body, website_request._environ)
     web_service_request.setVirtualHostRoot(names=["api", "beta"])
     web_service_request.setPublication(WebServicePublication(None))
     return web_service_request
