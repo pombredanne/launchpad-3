@@ -25,7 +25,6 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
     LaunchpadServer, TransportFactory)
-from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -180,7 +179,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
     def getLaunchpadServer(self, authserver, user_id):
         return LaunchpadServer(
-            BlockingProxy(authserver), user_id, MemoryTransport(),
+            XMLRPCWrapper(authserver), user_id, MemoryTransport(),
             MemoryTransport())
 
     def test_translateControlPath(self):
@@ -861,7 +860,7 @@ class TestRequestMirror(TestCaseWithTransport):
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
-                BlockingProxy(self.authserver), self.requester.id,
+                XMLRPCWrapper(self.authserver), self.requester.id,
                 self.backing_transport, self.mirror_transport)
             self._server.setUp()
             self.addCleanup(self._server.tearDown)
@@ -947,7 +946,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
                               mirror_transport):
         server = LaunchpadServer(
-            BlockingProxy(authserver), user_id, backing_transport,
+            XMLRPCWrapper(authserver), user_id, backing_transport,
             mirror_transport)
         server.setUp()
         self.addCleanup(server.tearDown)

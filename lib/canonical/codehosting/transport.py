@@ -216,7 +216,7 @@ class AsyncVirtualTransport(Transport):
 
         def check_transports_and_rename(
             ((to_transport, to_path), (from_transport, from_path))):
-            if to_transport is not from_transport:
+            if to_transport.base != from_transport.base:
                 raise TransportNotPossible(
                     'cannot move between underlying transports')
             return getattr(from_transport, 'rename')(from_path, to_path)

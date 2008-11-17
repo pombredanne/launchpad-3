@@ -138,7 +138,14 @@ class TransportFactory:
         else:
             transport = self.mirrored_transport
         transport = transport.clone(branch_id_to_path(id))
-        ensure_base(transport)
+        try:
+            ensure_base(transport)
+        except TransportNotPossible:
+            # For now, silently ignore TransportNotPossible. This is raised
+            # when transport is read-only. In the future, we probably want to
+            # pass only writable transports in here: not sure.
+            # XXX JonathanLange
+            pass
         if not writable:
             transport = get_transport('readonly+' + transport.base)
         return transport
@@ -308,15 +315,6 @@ class LaunchpadBranch:
 
         return deferred.addErrback(translate_fault)
 
-    def ensureUnderlyingPath(self, transport):
-        """Ensure that the directory for the branch exists on the transport.
-        """
-        try:
-            real_path = self.getRealPath('')
-        except BranchNotFound:
-            pass
-        ensure_base(transport.clone(real_path))
-
     def getRealPath(self, url_fragment_on_branch):
         """Return the 'real' URL-escaped path to a path within this branch.
 
@@ -332,8 +330,7 @@ class LaunchpadBranch:
             '.bzr/foo' is `path_on_branch`.
         """
         self._checkPath(url_fragment_on_branch)
-        branch_path = branch_id_to_path(self._branch_id)
-        return '/'.join([branch_path, url_fragment_on_branch])
+        return url_fragment_on_branch
 
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
@@ -487,10 +484,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        if not lp_branch.can_write:
-            return self._mirror_transport
-        lp_branch.ensureUnderlyingPath(self._hosted_transport)
-        return self._hosted_transport
+        factory = TransportFactory(
+            self._hosted_transport, self._mirror_transport)
+        return factory.make_branch_transport(
+            id=lp_branch._branch_id, writable=lp_branch.can_write)
 
     def translateVirtualPath(self, virtual_url_fragment):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
@@ -561,14 +558,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        try:
-            lp_branch.ensureUnderlyingPath(self._branch_transport)
-        except TransportNotPossible:
-            # We try to make the branch's directory on the underlying
-            # transport. If the transport is read-only, then we just continue
-            # silently.
-            pass
-        return self._branch_transport
+        factory = TransportFactory(
+            self._branch_transport, self._branch_transport)
+        return factory.make_branch_transport(
+            id=lp_branch._branch_id, writable=True)
 
 
 def get_scanner_server():
