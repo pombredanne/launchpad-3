@@ -42,18 +42,23 @@ stagingsetup:
 	# Restore the DB schema. Don't restore permissions - it will blow
 	# up when roles don't exist in this cluster, and we rebuild it later
 	# with security.py anyway.
-	pg_restore --dbname=lpmain_staging_new \
+	pg_restore -1 --dbname=lpmain_staging_new \
 	    --no-acl --exit-on-error ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Analyze the new db performance doesn't suck until autovacuum
+	# gets around to it. This can be done in the background while
+	# the slave is being rebuilt, but needs to start *after* the
+	# subscription has started to avoid the open transaction blocking
+	# the setup. slon automatically analyzes newly
+	# replicated tables on the slave, so no need to analyze the slave
+	# ourselves.
+	(sleep 900; psql -d lpmain_staging_new -c 'analyze;') &
 	# Setup replication
 	make _replicate _CONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
 	    _SLAVE_TABLESPACE=${STAGING_TABLESPACE}
-	# Analyze the new replica so performance doesn't suck until autovacuum
-	# gets around to it.
-	psql -d lpmain_staging_slave_new -c 'analyze;'
 	# Upgrade the _new databases and rebuild acls.
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/upgrade.py
 	LPCONFIG=${NEW_STAGING_CONFIG} ../schema/fti.py

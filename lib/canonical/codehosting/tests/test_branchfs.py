@@ -211,6 +211,19 @@ class MixinBaseLaunchpadServerTests:
             assert_path_starts_with, branch_id_to_path(branch.id))
         return deferred
 
+
+class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
+                          BzrTestCase):
+
+    def setUp(self):
+        BzrTestCase.setUp(self)
+        MixinBaseLaunchpadServerTests.setUp(self)
+
+    def getLaunchpadServer(self, authserver, user_id):
+        return LaunchpadServer(
+            BlockingProxy(authserver), user_id, MemoryTransport(),
+            MemoryTransport())
+
     def test_translateControlPath(self):
         branch = self.factory.makeBranch(owner=self.requester)
         branch.product.development_focus.user_branch = branch
@@ -222,74 +235,6 @@ class MixinBaseLaunchpadServerTests:
                 'default_stack_on = /%s\n' % branch.unique_name,
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
-
-    def test_buildControlDirectory(self):
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        branch = 'http://example.com/~user/product/branch'
-        transport = self.server._buildControlDirectory(branch)
-        self.assertEqual(
-            'default_stack_on = %s\n' % branch,
-            transport.get_bytes('.bzr/control.conf'))
-
-    def test_buildControlDirectory_no_branch(self):
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        transport = self.server._buildControlDirectory('')
-        self.assertEqual([], transport.list_dir('.'))
-
-    def test_parseProductControlDirectory(self):
-        # _parseProductControlDirectory takes a path to a product control
-        # directory and returns the name of the product, followed by the path.
-        product, path = self.server._parseProductControlDirectory(
-            '~user/product/.bzr')
-        self.assertEqual('product', product)
-        self.assertEqual('.bzr', path)
-        product, path = self.server._parseProductControlDirectory(
-            '~user/product/.bzr/foo')
-        self.assertEqual('product', product)
-        self.assertEqual('.bzr/foo', path)
-
-    def test_parseProductControlDirectoryNotControlDir(self):
-        # If the directory isn't a control directory (doesn't have '.bzr'),
-        # raise an error.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user/product/branch')
-
-    def test_parseProductControlDirectoryTooShort(self):
-        # If there aren't enough path segments, raise an error.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user')
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            '~user/product')
-
-    def test_parseProductControlDirectoryInvalidUser(self):
-        # If the user directory is invalid, raise an InvalidControlDirectory.
-        self.assertRaises(
-            InvalidControlDirectory,
-            self.server._parseProductControlDirectory,
-            'user/product/.bzr/foo')
-
-
-class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
-                          BzrTestCase):
-
-    def setUp(self):
-        BzrTestCase.setUp(self)
-        MixinBaseLaunchpadServerTests.setUp(self)
-
-    def getLaunchpadServer(self, authserver, user_id):
-        return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, MemoryTransport(),
-            MemoryTransport())
 
     def test_base_path_translation_person_branch(self):
         # Branches are stored on the filesystem by branch ID. This allows
@@ -375,6 +320,61 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
+
+    def test_buildControlDirectory(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        branch = 'http://example.com/~user/product/branch'
+        transport = self.server._buildControlDirectory(branch)
+        self.assertEqual(
+            'default_stack_on = %s\n' % branch,
+            transport.get_bytes('.bzr/control.conf'))
+
+    def test_buildControlDirectory_no_branch(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        transport = self.server._buildControlDirectory('')
+        self.assertEqual([], transport.list_dir('.'))
+
+    def test_parseProductControlDirectory(self):
+        # _parseProductControlDirectory takes a path to a product control
+        # directory and returns the name of the product, followed by the path.
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr', path)
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr/foo')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr/foo', path)
+
+    def test_parseProductControlDirectoryNotControlDir(self):
+        # If the directory isn't a control directory (doesn't have '.bzr'),
+        # raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product/branch')
+
+    def test_parseProductControlDirectoryTooShort(self):
+        # If there aren't enough path segments, raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user')
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product')
+
+    def test_parseProductControlDirectoryInvalidUser(self):
+        # If the user directory is invalid, raise an InvalidControlDirectory.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            'user/product/.bzr/foo')
 
 
 class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,

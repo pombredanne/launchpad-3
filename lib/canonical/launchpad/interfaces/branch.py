@@ -58,7 +58,7 @@ from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
-    RepositoryFormatPackDevelopment1, RepositoryFormatPackDevelopment1Subtree)
+    )
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
@@ -249,6 +249,16 @@ class RepositoryFormat(DBEnumeratedType):
         'Packs 5 rich-root (adds stacking support, requires bzr 1.6.1)',
         )
 
+    BZR_KNITPACK_6 = DBItem(208,
+        'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n',
+        'Packs 6 (uses btree indexes, requires bzr 1.9)'
+        )
+
+    BZR_KNITPACK_6_RR = DBItem(209,
+        'Bazaar RepositoryFormatKnitPack6RichRoot (bzr 1.9)\n',
+        'Packs 6 rich-root (uses btree indexes, requires bzr 1.9)'
+        )
+
     BZR_PACK_DEV_0 = DBItem(300,
         'Bazaar development format 0 (needs bzr.dev from before 1.3)\n',
         'Development repository format, currently the same as pack-0.92',
@@ -261,11 +271,31 @@ class RepositoryFormat(DBEnumeratedType):
         ' pack-0.92-subtree\n',
         )
 
-    BZR_DEV_1 = _format_enum(
-        302, RepositoryFormatPackDevelopment1)
+    BZR_DEV_1 = DBItem(302,
+        "Bazaar development format 1 (needs bzr.dev from before 1.6)\n",
+        "Development repository format, currently the same as "
+        "pack-0.92 with external reference support.\n"
+        )
 
-    BZR_DEV_1_SUBTREE = _format_enum(
-        303, RepositoryFormatPackDevelopment1Subtree)
+    BZR_DEV_1_SUBTREE = DBItem(303,
+        "Bazaar development format 1 with subtree support "
+        "(needs bzr.dev from before 1.6)\n",
+        "Development repository format, currently the same as "
+        "pack-0.92-subtree with external reference support.\n"
+        )
+
+    BZR_DEV_2 = DBItem(304,
+        "Bazaar development format 2 (needs bzr.dev from before 1.8)\n",
+        "Development repository format, currently the same as "
+            "1.6.1 with B+Trees.\n"
+        )
+
+    BZR_DEV_2_SUBTREE = DBItem(305,
+       "Bazaar development format 2 with subtree support "
+        "(needs bzr.dev from before 1.8)\n",
+        "Development repository format, currently the same as "
+        "1.6.1-subtree with B+Tree indices.\n"
+        )
 
 
 class ControlFormat(DBEnumeratedType):
@@ -577,12 +607,12 @@ class IBranch(IHasOwner):
 
     reviewer = exported(
         PublicPersonChoice(
-            title=_('Reviewer'),
+            title=_('Default Review Team'),
             required=False,
             vocabulary='ValidPersonOrTeam',
             description=_("The reviewer of a branch is the person or team "
-                          "that is responsible for authorising code to be "
-                          "merged.")))
+                          "that is responsible for reviewing proposals and "
+                          "merging into this branch.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -857,11 +887,15 @@ class IBranch(IHasOwner):
         is not found (as in a ghost revision).
         """
 
-    def updateScannedDetails(revision_id, revision_count):
+    def updateScannedDetails(db_revision, revision_count):
         """Updates attributes associated with the scanning of the branch.
 
         A single entry point that is called solely from the branch scanner
         script.
+
+        :param revision: The `Revision` that is the tip, or None if empty.
+        :param revision_count: The number of revisions in the history
+                               (main line revisions).
         """
 
     def getNotificationRecipients():

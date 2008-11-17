@@ -104,36 +104,39 @@ def create_replication_sets(
     authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
-    script = ["""
-        try {
-        echo 'Creating AuthDB replication set (@authdb_set)';
-        create set (
-            id=@authdb_set, origin=@master_node,
-            comment='AuthDB tables and sequences');
-        """]
+    script = ["try {"]
+    # script,append("""
+    #     echo 'Creating AuthDB replication set (@authdb_set)';
+    #     create set (
+    #         id=@authdb_set, origin=@master_node,
+    #         comment='AuthDB tables and sequences');
+    #     """)
 
-    entry_id = 1
-    for table in sorted(authdb_tables):
-        script.append("""
-            echo 'Adding %(table)s to replication set @authdb_set';
-            set add table (
-                set id=@authdb_set,
-                origin=@master_node,
-                id=%(entry_id)d,
-                fully qualified name='%(table)s');
-            """ % vars())
-        entry_id += 1
-    entry_id = 1
-    for sequence in sorted(authdb_sequences):
-        script.append("""
-            echo 'Adding %(sequence)s to replication set @authdb_set';
-            set add sequence (
-                set id=@authdb_set,
-                origin=@master_node,
-                id=%(entry_id)d,
-                fully qualified name='%(sequence)s');
-            """ % vars())
-        entry_id += 1
+    # entry_id = 1
+    # for table in sorted(authdb_tables):
+    #     script.append("""
+    #         echo 'Adding %(table)s to replication set @authdb_set';
+    #         set add table (
+    #             set id=@authdb_set,
+    #             origin=@master_node,
+    #             id=%(entry_id)d,
+    #             fully qualified name='%(table)s');
+    #         """ % vars())
+    #     entry_id += 1
+    # entry_id = 1
+    # for sequence in sorted(authdb_sequences):
+    #     script.append("""
+    #         echo 'Adding %(sequence)s to replication set @authdb_set';
+    #         set add sequence (
+    #             set id=@authdb_set,
+    #             origin=@master_node,
+    #             id=%(entry_id)d,
+    #             fully qualified name='%(sequence)s');
+    #         """ % vars())
+    #     entry_id += 1
+    #
+    # assert entry_id < 200, 'authdb replcation set has > 200 objects???'
+    entry_id = 200
 
     script.append("""
         echo 'Creating LPMain replication set (@lpmain_set)';
@@ -142,8 +145,6 @@ def create_replication_sets(
             comment='Launchpad tables and sequences');
         """)
 
-    assert entry_id < 200, 'authdb replcation set has > 200 objects???'
-    entry_id = 200
     for table in sorted(lpmain_tables):
         script.append("""
             echo 'Adding %(table)s to replication set @lpmain_set';
@@ -184,10 +185,10 @@ def subscribe_slaves():
     # Note that direct subscribers to the master
     # always need forward=yes as per Slony-I docs.
     helpers.execute_slonik("""
-        subscribe set (
-            id=@authdb_set,
-            provider=@master_node, receiver=@slave1_node,
-            forward=yes);
+        # subscribe set (
+        #     id=@authdb_set,
+        #     provider=@master_node, receiver=@slave1_node,
+        #     forward=yes);
         subscribe set (
             id=@lpmain_set,
             provider=@master_node, receiver=@slave1_node,

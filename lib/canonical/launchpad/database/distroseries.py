@@ -324,7 +324,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status = %s AND
+            SourcePackagePublishingHistory.status IN %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -333,7 +333,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(
                     self,
                     self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
             query, distinct=True,
@@ -349,14 +349,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.status IN %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE,
                     self,
                     self.distribution.all_distro_archive_ids)

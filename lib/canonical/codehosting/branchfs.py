@@ -387,11 +387,6 @@ class _BaseLaunchpadServer(Server):
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._is_set_up = False
 
-    def _buildControlDirectory(self, stack_on_url):
-        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return TransportFactory(
-            None, None).make_control_transport(stack_on_url)
-
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
 
@@ -406,29 +401,6 @@ class _BaseLaunchpadServer(Server):
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
         raise NotImplementedError("Override this in subclasses.")
-
-    def _parseProductControlDirectory(self, virtual_path):
-        """Parse `virtual_path` and return a product and path in that product.
-
-        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
-        """
-        segments = get_path_segments(virtual_path, 3)
-        if len(segments) < 3:
-            raise InvalidControlDirectory(virtual_path)
-        user, product, control = segments[:3]
-        if not user.startswith('~'):
-            raise InvalidControlDirectory(virtual_path)
-        if control != '.bzr':
-            raise InvalidControlDirectory(virtual_path)
-        return product, '/'.join([control] + segments[3:])
-
-    def _translateControlPath(self, virtual_url_fragment):
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        product, path = self._parseProductControlDirectory(virtual_path)
-        deferred = self._authserver.getDefaultStackedOnBranch(product)
-        deferred.addCallback(self._buildControlDirectory)
-        return deferred.addCallback(
-            lambda transport: (transport, urlutils.escape(path)))
 
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
@@ -453,13 +425,6 @@ class _BaseLaunchpadServer(Server):
 
         deferred.addErrback(branch_not_found)
 
-        def couldnt_get_branch(failure):
-            failure.trap(NotEnoughInformation)
-            deferred = defer.maybeDeferred(
-                self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: failure)
-            return deferred
-
         def got_branch((lp_branch, path)):
             virtual_path_deferred = lp_branch.getRealPath(path)
 
@@ -470,7 +435,7 @@ class _BaseLaunchpadServer(Server):
 
             return virtual_path_deferred.addCallback(get_transport)
 
-        return deferred.addCallbacks(got_branch, couldnt_get_branch)
+        return deferred.addCallback(got_branch)
 
     def get_url(self):
         """Return the URL of this server."""
@@ -513,6 +478,34 @@ class LaunchpadServer(_BaseLaunchpadServer):
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
 
+    def _buildControlDirectory(self, stack_on_url):
+        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
+        return TransportFactory(
+            None, None).make_control_transport(stack_on_url)
+
+    def _parseProductControlDirectory(self, virtual_path):
+        """Parse `virtual_path` and return a product and path in that product.
+
+        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
+        """
+        segments = get_path_segments(virtual_path, 3)
+        if len(segments) < 3:
+            raise InvalidControlDirectory(virtual_path)
+        user, product, control = segments[:3]
+        if not user.startswith('~'):
+            raise InvalidControlDirectory(virtual_path)
+        if control != '.bzr':
+            raise InvalidControlDirectory(virtual_path)
+        return product, '/'.join([control] + segments[3:])
+
+    def _translateControlPath(self, virtual_url_fragment):
+        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
+        product, path = self._parseProductControlDirectory(virtual_path)
+        deferred = self._authserver.getDefaultStackedOnBranch(product)
+        deferred.addCallback(self._buildControlDirectory)
+        return deferred.addCallback(
+            lambda transport: (transport, urlutils.escape(path)))
+
     def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.get_url())
@@ -533,6 +526,20 @@ class LaunchpadServer(_BaseLaunchpadServer):
         permissions_deferred = lp_branch.getPermissions()
         return permissions_deferred.addCallback(
             self._getTransportForPermissions, lp_branch)
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        deferred = super(LaunchpadServer, self).translateVirtualPath(
+            virtual_url_fragment)
+
+        def not_a_branch(failure):
+            """Called when the path simply could not point to a branch."""
+            failure.trap(NotEnoughInformation)
+            deferred = defer.maybeDeferred(
+                self._translateControlPath, virtual_url_fragment)
+            deferred.addErrback(lambda ignored: failure)
+            return deferred
+
+        return deferred.addErrback(not_a_branch)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
