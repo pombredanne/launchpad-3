@@ -332,6 +332,8 @@ class FakeBranchFilesystem:
         self._factory = factory
 
     def createBranch(self, requester_id, branch_path):
+        if not branch_path.startswith('/'):
+            return faults.InvalidPath(branch_path)
         try:
             branch_tokens = branch_path.strip('/').split('/')
             owner_name, product_name, branch_name = branch_tokens
