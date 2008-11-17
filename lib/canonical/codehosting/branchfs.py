@@ -76,7 +76,7 @@ from canonical.codehosting.transport import (
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -186,6 +186,9 @@ class LaunchpadBranch:
     It also exposes operations on Launchpad branches that we in turn expose
     via the codehosting system. Namely, creating a branch and requesting that
     a branch be mirrored.
+
+    :ivar can_write: Whether or not the current user can write to the branch.
+    :type can_write: bool
     """
 
     @classmethod
@@ -250,7 +253,7 @@ class LaunchpadBranch:
         self._authserver = authserver
         self._branch_path = branch_path
         self._branch_id = branch_id
-        self._can_write = can_write
+        self.can_write = can_write
 
     def checkPath(self, path_on_branch):
         """Raise an error if `path_on_branch` is not valid.
@@ -328,18 +331,6 @@ class LaunchpadBranch:
             return defer.fail(failure.Failure())
         branch_path = branch_id_to_path(self._branch_id)
         return defer.succeed('/'.join([branch_path, url_fragment_on_branch]))
-
-    def getPermissions(self):
-        """Return the permissions that the current user has for this branch.
-
-        :raise BranchNotFound: if the branch does not exist.
-        :return: WRITABLE if the user can write to the branch, READ_ONLY
-            otherwise.
-        """
-        if self._can_write:
-            return defer.succeed(WRITABLE)
-        else:
-            return defer.succeed(READ_ONLY)
 
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
@@ -497,21 +488,14 @@ class LaunchpadServer(_BaseLaunchpadServer):
         assert url.startswith(self.get_url())
         return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
-    def _getTransportForPermissions(self, permissions, lp_branch):
-        """Get the appropriate transport for `permissions` on `lp_branch`."""
-        if permissions == READ_ONLY:
-            return self._mirror_transport
-        else:
-            transport = self._hosted_transport
-            deferred = lp_branch.ensureUnderlyingPath(transport)
-            deferred.addCallback(lambda ignored: transport)
-            return deferred
-
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        permissions_deferred = lp_branch.getPermissions()
-        return permissions_deferred.addCallback(
-            self._getTransportForPermissions, lp_branch)
+        if not lp_branch.can_write:
+            return defer.succeed(self._mirror_transport)
+        transport = self._hosted_transport
+        deferred = lp_branch.ensureUnderlyingPath(transport)
+        deferred.addCallback(lambda ignored: transport)
+        return deferred
 
     def translateVirtualPath(self, virtual_url_fragment):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
