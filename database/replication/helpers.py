@@ -29,15 +29,17 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = set([
-    ('public', 'account'),
-    ('public', 'openidassociations'),
-    ('public', 'oauthnonce'),
     ])
 
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
 LPMAIN_SEED = set([
+    # These tables are scheduled to move to the authdb seed.
+    ('public', 'account'),
+    ('public', 'openidassociations'),
+    ('public', 'oauthnonce'),
+
     ('public', 'person'),
     ('public', 'launchpaddatabaserevision'),
     ('public', 'fticache'),

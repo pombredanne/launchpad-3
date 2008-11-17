@@ -163,8 +163,7 @@ class BugContextMenu(ContextMenu):
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
-        text = 'Mark as duplicate'
-        return Link('+duplicate', text)
+        return Link('+duplicate', '')
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -649,7 +648,7 @@ class BugTextView(LaunchpadView):
 
         for status in ["left_new", "confirmed", "triaged", "assigned",
                        "inprogress", "closed", "incomplete",
-                       "fix_committed", "fix_released"]:
+                       "fix_committed", "fix_released", "left_closed"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (
