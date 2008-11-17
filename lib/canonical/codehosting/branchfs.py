@@ -344,7 +344,7 @@ class _BaseLaunchpadServer(Server):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
 
-    def _getTransportForLaunchpadBranch(self, lp_branch):
+    def _getTransportForLaunchpadBranch(self, id, writable):
         """Return the transport for accessing `lp_branch`."""
         raise NotImplementedError("Override this in subclasses.")
 
@@ -390,7 +390,8 @@ class _BaseLaunchpadServer(Server):
 
         def got_branch((lp_branch, path)):
             self._checkPath(path)
-            transport = self._getTransportForLaunchpadBranch(lp_branch)
+            transport = self._getTransportForLaunchpadBranch(
+                id=lp_branch._branch_id, writable=lp_branch.can_write)
             return transport, path
 
         return deferred.addCallback(got_branch)
@@ -467,10 +468,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
 
-    def _getTransportForLaunchpadBranch(self, lp_branch):
+    def _getTransportForLaunchpadBranch(self, **args):
         """Return the transport for accessing `lp_branch`."""
-        return self._transport_dispatch.make_branch_transport(
-            id=lp_branch._branch_id, writable=lp_branch.can_write)
+        return self._transport_dispatch.make_branch_transport(**args)
 
     def translateVirtualPath(self, virtual_url_fragment):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
@@ -541,10 +541,10 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         self._transport_dispatch = TransportDispatch(
             self._branch_transport, self._branch_transport)
 
-    def _getTransportForLaunchpadBranch(self, lp_branch):
+    def _getTransportForLaunchpadBranch(self, id, writable):
         """Return the transport for accessing `lp_branch`."""
         return self._transport_dispatch.make_branch_transport(
-            id=lp_branch._branch_id, writable=True)
+            id=id, writable=True)
 
 
 def get_scanner_server():
