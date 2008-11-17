@@ -424,9 +424,10 @@ class ObjectFormatterAPI:
         """Return the object's (partial) canonical web service URL.
 
         This method returns everything that goes after the web service
-        version number.
+        version number. It's the same as 'url', but without any view
+        name.
         """
-        return canonical_url(self._context, path_only_if_possible=True)
+        return self.url()
 
     def traverse(self, name, furtherPath):
         if name in self.traversable_names:

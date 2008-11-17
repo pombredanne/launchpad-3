@@ -91,10 +91,12 @@ class WebLayerAPI:
     def __init__(self, context):
         self.context = context
 
+    @property
     def is_entry(self):
         """Whether the object is published as an entry."""
         return queryAdapter(self.context, IEntry) != None
 
+    @property
     def json_entry(self):
         """Return a JSON description of the object."""
         request = WebServiceLayer(get_current_browser_request())
