@@ -924,17 +924,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  description=_(
                     'Select one or more dependencies to be removed.')))
 
-    def refreshSelectedDependenciesWidget(self):
-        """Refresh 'selected_dependencies' widget.
-
-        It's called after removals or additions to present up-to-date results.
-        """
-        flush_database_caches()
-        self.form_fields = self.form_fields.omit('selected_dependencies')
-        self.form_fields = (
-            self.createSelectedDependenciesField() + self.form_fields)
-        self.setUpWidgets()
-
     @cachedproperty
     def has_dependencies(self):
         """Whether or not the PPA has recorded dependencies."""
@@ -967,8 +956,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         for dependency in selected_dependencies:
             self.context.removeArchiveDependency(dependency)
 
-        self.refreshSelectedDependenciesWidget()
-
         # Present a page notification describing the action.
         messages = []
         messages.append('<p>Dependencies removed:')
@@ -977,6 +964,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         messages.append('</p>')
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
+        self.next_url = self.request.URL
 
     def validate_add(self, action, data):
         """Validate 'add dependency' parameters.
@@ -1017,11 +1005,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.context.addArchiveDependency(
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
-        self.refreshSelectedDependenciesWidget()
 
         self.request.response.addNotification(
             structured(
                 '<p>Dependency added: %s</p>' % dependency_candidate.title))
+        self.next_url = self.request.URL
 
 
 class ArchiveActivateView(LaunchpadFormView):
