@@ -509,6 +509,16 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
+    def test_createBranch_no_preceding_slash(self):
+        requester = self.factory.makePerson()
+        path = escape(u'invalid')
+        fault = self.branchfs.createBranch(requester.id, path)
+        login(ANONYMOUS)
+        self.assertFaultEqual(
+            faults.InvalidPath.error_code,
+            "Could not translate '%s'. Can only translate absolute paths."
+            % path, fault)
+
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
         owner = self.factory.makePerson()

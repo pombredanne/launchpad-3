@@ -197,7 +197,8 @@ class IBranchFileSystem(Interface):
         :returns: the ID for the new branch or a Fault if the branch cannot be
             created. The faultCode will be PERMISSION_DENIED_FAULT_CODE or
             NOT_FOUND_FAULT_CODE and the faultString will be a description
-            suitable to display to the user.
+            suitable to display to the user. The Fault InvalidPath is returned
+            if the caller tries to create a branch at a non-absolute path.
         """
         # XXX: MichaelHudson 2008-08-05 spec=package-branches: This
         # method will need to change to support source package
