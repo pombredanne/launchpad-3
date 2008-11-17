@@ -352,6 +352,8 @@ class _BaseLaunchpadServer(Server):
     For more information, see the module docstring.
     """
 
+    asyncTransportFactory = None
+
     def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
 
@@ -372,7 +374,8 @@ class _BaseLaunchpadServer(Server):
 
         Override this in subclasses.
         """
-        raise NotImplementedError("Override this in subclasses.")
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(self.asyncTransportFactory(self, url))
 
     def _getLaunchpadBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
@@ -449,6 +452,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
                  mirror_transport):
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        self.asyncTransportFactory = AsyncLaunchpadTransport
         self._hosted_transport = hosted_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
@@ -480,11 +484,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred.addCallback(self._buildControlDirectory)
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
-
-    def _transportFactory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(AsyncLaunchpadTransport(self, url))
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
@@ -557,6 +556,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
+        self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
@@ -569,11 +569,6 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             # silently.
             pass
         return self._branch_transport
-
-    def _transportFactory(self, url):
-        """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(AsyncVirtualTransport(self, url))
 
 
 def get_scanner_server():
