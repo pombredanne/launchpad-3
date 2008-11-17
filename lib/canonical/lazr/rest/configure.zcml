@@ -17,6 +17,15 @@
         factory="canonical.launchpad.webapp.servers.website_request_to_web_service_request"
         />
 
+    <!-- TALES namespace for web service functions available through the
+         website. -->
+    <adapter
+        for="*"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WebLayerAPI"
+        name="webservice"
+        />
+
     <!-- TALES namespaces for WADL generation -->
     <adapter
         for="canonical.lazr.interfaces.IHTTPResource"

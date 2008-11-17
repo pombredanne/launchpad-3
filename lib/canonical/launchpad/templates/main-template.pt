@@ -115,8 +115,8 @@
      LP.client.links.me = '${view/user/fmt:api_url}'&lt;/script&gt;" />
 
     <tal:script
-     condition="context/fmt:is_resource" replace="structure string:&lt;script&gt;
-     LP.client.cache.context = ${context/fmt:json}
+     condition="context/webservice:is_entry" replace="structure string:&lt;script&gt;
+     LP.client.cache.context = ${context/webservice:json_entry}
      &lt;/script&gt;" />
 
     <tal:needs_json tal:condition="request/needs_json">
