@@ -352,9 +352,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
-                                set_state=None, dependent_branch=None):
+                                set_state=None, dependent_branch=None,
+                                product=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = _DEFAULT
+        if not product:
+            product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
