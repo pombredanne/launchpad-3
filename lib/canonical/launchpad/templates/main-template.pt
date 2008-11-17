@@ -111,7 +111,13 @@
 
     <tal:script
      condition="view/user|nothing"
-     replace="structure string:&lt;script&gt;LP.client.me_link = '${view/user/fmt:api_url}'&lt;/script&gt;" />
+     replace="structure string:&lt;script&gt;
+     LP.client.links.me = '${view/user/fmt:api_url}'&lt;/script&gt;" />
+
+    <tal:script
+     condition="context/fmt:is_resource" replace="structure string:&lt;script&gt;
+     LP.client.cache.context = ${context/fmt:json}
+     &lt;/script&gt;" />
 
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"

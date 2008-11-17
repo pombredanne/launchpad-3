@@ -1270,6 +1270,18 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
     implements(canonical.launchpad.layers.WebServiceLayer)
 
 
+def website_request_to_web_service_request(website_request):
+    """An adapter from a web browser request to a web service request.
+
+    Used to instantiate Resource objects when handling normal web
+    browser requests.
+    """
+    web_service_request = WebServiceClientRequest('', website_request._environ)
+    web_service_request.setVirtualHostRoot(names=["api", "beta"])
+    web_service_request.setPublication(WebServicePublication(None))
+    return web_service_request
+
+
 class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """Test request for the webservice.
 

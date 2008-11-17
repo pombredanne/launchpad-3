@@ -12,6 +12,7 @@ import math
 import os.path
 import re
 import rfc822
+import simplejson
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 
@@ -25,6 +26,7 @@ from zope.traversing.interfaces import ITraversable, IPathAdapter
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
+from canonical.lazr.interfaces.rest import WebServiceLayer
 
 import pytz
 
@@ -48,6 +50,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
+from canonical.lazr.interfaces import IEntry, ICollection
+from canonical.lazr.rest import EntryResource, ResourceJSONEncoder
 from canonical.lazr.canonicalurl import nearest_adapter
 
 
@@ -403,7 +407,8 @@ class ObjectFormatterAPI:
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url',
+                         'is_resource': 'is_resource', 'json': 'json'}
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {}
 
@@ -428,6 +433,19 @@ class ObjectFormatterAPI:
         """
         print context
         return canonical_url(self._context, path_only_if_possible=True)
+
+    def is_resource(self, context):
+        """Whether the object has a JSON representation."""
+        return queryAdapter(self._context, IEntry) != None
+
+    def json(self, context):
+        """Return a JSON description of the object."""
+        request = WebServiceLayer(get_current_browser_request())
+        if queryAdapter(self._context, IEntry):
+            resource = EntryResource(self._context, request)
+        else:
+            return ""
+        return simplejson.dumps(resource, cls=ResourceJSONEncoder)
 
     def traverse(self, name, furtherPath):
         if name in self.traversable_names:
