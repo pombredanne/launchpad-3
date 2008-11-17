@@ -278,11 +278,7 @@ class LaunchpadBranch:
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        try:
-            owner, product, branch = self._branch_path.strip('/').split('/')
-        except ValueError:
-            raise PermissionDenied(self._branch_path)
-        deferred = self._authserver.createBranch(owner[1:], product, branch)
+        deferred = self._authserver.createBranch(self._branch_path.strip('/'))
 
         def convert_fault(failure):
             failure.trap(Fault)

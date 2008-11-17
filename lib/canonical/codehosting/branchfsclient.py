@@ -47,7 +47,7 @@ class CachingAuthserverClient:
         self._stacked_branch_cache = {}
         self._user_id = user_id
 
-    def createBranch(self, owner, product, branch):
+    def createBranch(self, branch_path):
         """Create a branch on the authserver.
 
         This raises any Faults that might be raised by the authserver's
@@ -62,18 +62,9 @@ class CachingAuthserverClient:
 
         :return: A `Deferred` that fires the ID of the created branch.
         """
-        deferred = defer.maybeDeferred(
+        return defer.maybeDeferred(
             self._authserver.callRemote, 'createBranch', self._user_id,
-            '~%s/%s/%s' % (owner, product, branch))
-
-        def clear_cache(branch_id):
-            # Clear the cache for this branch. We *could* populate it with
-            # (branch_id, 'w'), but then we'd be building in more assumptions
-            # about the authserver.
-            self._branch_info_cache[(owner, product, branch)] = None
-            return branch_id
-
-        return deferred.addCallback(clear_cache)
+            branch_path)
 
     def getBranchInformation(self, owner, product, branch):
         """Get branch information from the authserver.
