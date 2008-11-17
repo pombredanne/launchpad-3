@@ -117,6 +117,27 @@ def trap_fault(failure, *fault_codes):
     raise failure
 
 
+class SimpleTransportDispatch:
+
+    def __init__(self, base_transport):
+        self.base_transport = base_transport
+
+    def make_transport(self, transport_tuple):
+        transport_type, data, trailing_path = transport_tuple
+        if transport_type != BRANCH_TRANSPORT:
+            raise UnknownTransportType(transport_type)
+        transport = self.base_transport.clone(branch_id_to_path(data['id']))
+        try:
+            ensure_base(transport)
+        except TransportNotPossible:
+            # For now, silently ignore TransportNotPossible. This is raised
+            # when transport is read-only. In the future, we probably want to
+            # pass only writable transports in here: not sure.
+            # XXX JonathanLange
+            pass
+        return transport, trailing_path
+
+
 class TransportDispatch:
 
     def __init__(self, hosted_transport, mirrored_transport, writable=None):
@@ -203,6 +224,10 @@ class InvalidControlDirectory(BzrError):
     """Raised when we try to parse an invalid control directory."""
 
 
+class UnknownTransportType(Exception):
+    """Raised when we don't know the transport type."""
+
+
 class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches.
 
@@ -272,12 +297,13 @@ class _BaseLaunchpadServer(Server):
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
         def path_translated(result):
-            (transport_type, data, trailing_path) = result
+            (transport_type, data, path) = result
             if transport_type != BRANCH_TRANSPORT:
                 raise NotEnoughInformation(virtual_url_fragment)
-            self._checkPath(trailing_path)
-            transport = self._transport_dispatch.make_branch_transport(**data)
-            return transport, trailing_path
+            self._checkPath(path)
+            transport, path = self._transport_dispatch.make_transport(
+                (transport_type, data, path))
+            return transport, path
 
         def branch_not_found(failure):
             trap_fault(failure, faults.PathTranslationError.error_code)

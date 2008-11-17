@@ -24,7 +24,8 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer, TransportDispatch)
+    LaunchpadServer, SimpleTransportDispatch, TransportDispatch,
+    UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -43,8 +44,48 @@ def branch_to_path(branch, add_slash=True):
     return path
 
 
+class TestSimpleTransportDispatch(TestCase):
+
+    def setUp(self):
+        super(TestSimpleTransportDispatch, self).setUp()
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.base_transport = get_transport(memory_server.get_url())
+        self.factory = SimpleTransportDispatch(self.base_transport)
+
+    def test_writable_false_ignored(self):
+        transport, path = self.factory.make_transport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=False), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_writable_implies_writable(self):
+        transport, path = self.factory.make_transport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(['.bzr'], transport.list_dir('.'))
+
+    def test_gets_id_directory(self):
+        transport, path = self.factory.make_transport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
+        transport.mkdir('.bzr')
+        self.assertEqual(
+            ['.bzr'], self.base_transport.list_dir('00/00/00/05'))
+
+    def test_returns_trailing_path(self):
+        transport, path = self.factory.make_transport(
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), 'foo'))
+        self.assertEqual('foo', path)
+
+    def test_make_transport_control(self):
+        # make_transport returns a control transport for the tuple.
+        self.assertRaises(
+            UnknownTransportType, self.factory.make_transport,
+            (CONTROL_TRANSPORT, {}, ''))
+
+
 class TestTransportDispatch(TestCase):
-    """Tests for the control transport factory."""
+    """Tests for the transport factory."""
 
     def setUp(self):
         super(TestTransportDispatch, self).setUp()
@@ -119,33 +160,6 @@ class TestTransportDispatch(TestCase):
             (BRANCH_TRANSPORT, {'id': 1, 'writable': True}, 'bar/baz'))
         self.assertEqual('bar/baz', path)
         self.assertEqual([(1, True)], log)
-
-    def test_override_all_writable_mirrored(self):
-        dispatch = TransportDispatch(
-            self.hosted_transport, self.mirrored_transport, writable=True)
-        self.mirrored_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
-        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
-        transport = dispatch.make_branch_transport(id=5, writable=False)
-        transport.put_bytes('.bzr/README', "Goodbye")
-        self.assertEqual(
-            "Goodbye",
-            self.mirrored_transport.get_bytes('00/00/00/05/.bzr/README'))
-
-    def test_override_all_writable_hosted(self):
-        dispatch = TransportDispatch(
-            self.hosted_transport, self.mirrored_transport, writable=True)
-        transport = dispatch.make_branch_transport(id=5, writable=True)
-        transport.mkdir('.bzr')
-        self.assertEqual(
-            ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
-
-    def test_override_all_readonly_hosted(self):
-        dispatch = TransportDispatch(
-            self.hosted_transport, self.mirrored_transport, writable=False)
-        transport = dispatch.make_branch_transport(id=5, writable=True)
-        self.assertRaises(
-            errors.TransportNotPossible, transport.mkdir, '.bzr')
 
 
 class TestBranchIDToPath(unittest.TestCase):
