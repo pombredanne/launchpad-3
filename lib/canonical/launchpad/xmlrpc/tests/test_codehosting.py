@@ -593,6 +593,15 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
+    def test_createBranch_not_branch(self):
+        # Trying to create a branch at a path that's not valid for branches
+        # raises a PermissionDenied fault.
+        owner = self.factory.makePerson()
+        fault = self.branchfs.createBranch(owner.id, '~%s' % owner.name)
+        message = "Cannot create branch at '~%s'" % owner.name
+        self.assertFaultEqual(
+            PERMISSION_DENIED_FAULT_CODE, message, fault)
+
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own hosted
         # branches, we get the database id of the branch, and a flag saying

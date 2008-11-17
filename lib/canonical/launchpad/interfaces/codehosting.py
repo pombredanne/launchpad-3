@@ -184,18 +184,15 @@ class IBranchFileSystem(Interface):
         # method will need to change to support source package
         # branches.
 
-    def createBranch(loginID, personName, productName, branchName):
+    def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user
         pushes a new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param loginID: the person ID of the user creating the branch.
-        :param personName: the unique name of the owner of the branch.
-        :param productName: the unique name of the product that the branch
-            belongs to.
-        :param branchName: the name for this branch, to be used in URLs.
+        :param login_id: the person ID of the user creating the branch.
+        :param branch_path: the path of the branch to be created.
         :returns: the ID for the new branch or a Fault if the branch cannot be
             created. The faultCode will be PERMISSION_DENIED_FAULT_CODE or
             NOT_FOUND_FAULT_CODE and the faultString will be a description

@@ -332,7 +332,12 @@ class FakeBranchFilesystem:
         self._factory = factory
 
     def createBranch(self, requester_id, branch_path):
-        owner_name, product_name, branch_name = branch_path.split('/')
+        try:
+            owner_name, product_name, branch_name = branch_path.split('/')
+        except ValueError:
+            return Fault(
+                PERMISSION_DENIED_FAULT_CODE,
+                "Cannot create branch at '%s'" % branch_path)
         owner_name = owner_name[1:]
         owner = self._person_set.getByName(owner_name)
         if owner is None:
