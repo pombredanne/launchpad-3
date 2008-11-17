@@ -437,19 +437,11 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
             # Looks like we are trying to make a branch.
             failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
-        def check_permission_denied(failure):
-            # You can't ever create a directory that's not even a valid branch
-            # name. That's strictly forbidden.
-            failure.trap(NotABranchPath)
-            exc_object = failure.value
-            raise PermissionDenied(
-                exc_object.virtual_url_fragment, exc_object.reason)
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
         deferred.addCallback(real_mkdir)
         deferred.addErrback(maybe_make_branch_in_db)
-        deferred.addErrback(check_permission_denied)
         return deferred
 
     def rename(self, rel_from, rel_to):
