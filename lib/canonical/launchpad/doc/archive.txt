@@ -853,6 +853,12 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
+The `IArchiveDependency` object itself implement a 'title' property,
+which on PPA dependencies default to the PPA title.
+
+    >>> print archive_dependency.title
+    PPA for Mark Shuttleworth
+
 The archive dependency is immediately recorded on Celso's PPA.
 
     >>> print_dependencies(cprov.archive)
@@ -911,6 +917,12 @@ COPY.
     ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
     ...     getUtility(IComponentSet)['universe'])
 
+Other dependencies than PPAs have an extended 'title', which includes
+the target 'pocket' and 'component'.
+
+    >>> print primary_dependency.title
+    Primary Archive for Ubuntu Linux - UPDATES - universe
+
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
 
@@ -928,7 +940,6 @@ Thus archive dependency removal can be performed simply by passing the
 dependency target.
 
     >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
-
 
 Non-PPA dependencies can have empty 'component' ...
 

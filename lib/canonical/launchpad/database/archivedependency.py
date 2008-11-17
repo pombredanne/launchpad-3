@@ -42,3 +42,14 @@ class ArchiveDependency(SQLBase):
 
     component = ForeignKey(
         foreignKey='Component', dbName='component')
+
+    @property
+    def title(self):
+        """See `IArchiveDependency`."""
+        if self.dependency.is_ppa:
+            return self.dependency.title
+
+        full_title = "%s - %s - %s" % (
+            self.dependency.title, self.pocket.name, self.component.name)
+
+        return full_title
