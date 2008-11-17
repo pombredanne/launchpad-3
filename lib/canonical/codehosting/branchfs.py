@@ -305,11 +305,11 @@ class LaunchpadBranch:
     def ensureUnderlyingPath(self, transport):
         """Ensure that the directory for the branch exists on the transport.
         """
-        deferred = defer.maybeDeferred(self.getRealPath, '')
-        deferred.addErrback(lambda failure: failure.trap(BranchNotFound))
-        deferred.addCallback(
-            lambda real_path: ensure_base(transport.clone(real_path)))
-        return deferred
+        try:
+            real_path = self.getRealPath('')
+        except BranchNotFound:
+            pass
+        ensure_base(transport.clone(real_path))
 
     def getRealPath(self, url_fragment_on_branch):
         """Return the 'real' URL-escaped path to a path within this branch.
@@ -401,9 +401,8 @@ class _BaseLaunchpadServer(Server):
 
         def got_branch((lp_branch, path)):
             real_path = lp_branch.getRealPath(path)
-            deferred = self._getTransportForLaunchpadBranch(lp_branch)
-            deferred.addCallback(lambda transport: (transport, real_path))
-            return deferred
+            transport = self._getTransportForLaunchpadBranch(lp_branch)
+            return transport, real_path
 
         return deferred.addCallback(got_branch)
 
@@ -484,11 +483,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
         if not lp_branch.can_write:
-            return defer.succeed(self._mirror_transport)
-        transport = self._hosted_transport
-        deferred = lp_branch.ensureUnderlyingPath(transport)
-        deferred.addCallback(lambda ignored: transport)
-        return deferred
+            return self._mirror_transport
+        lp_branch.ensureUnderlyingPath(self._hosted_transport)
+        return self._hosted_transport
 
     def translateVirtualPath(self, virtual_url_fragment):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
@@ -558,15 +555,14 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        deferred = lp_branch.ensureUnderlyingPath(self._branch_transport)
-        # We try to make the branch's directory on the underlying transport.
-        # If the transport is read-only, then we just continue silently.
-        def if_not_readonly(failure):
-            failure.trap(TransportNotPossible)
-            return self._branch_transport
-        deferred.addCallback(lambda ignored: self._branch_transport)
-        deferred.addErrback(if_not_readonly)
-        return deferred
+        try:
+            lp_branch.ensureUnderlyingPath(self._branch_transport)
+        except TransportNotPossible:
+            # We try to make the branch's directory on the underlying
+            # transport. If the transport is read-only, then we just continue
+            # silently.
+            pass
+        return self._branch_transport
 
     def _transportFactory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
