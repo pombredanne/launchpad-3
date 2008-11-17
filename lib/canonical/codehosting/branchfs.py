@@ -436,6 +436,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         self._hosted_transport = hosted_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
+        self._transport_dispatch = TransportFactory(
+            self._hosted_transport, self._mirror_transport)
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
@@ -467,9 +469,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        factory = TransportFactory(
-            self._hosted_transport, self._mirror_transport)
-        return factory.make_branch_transport(
+        return self._transport_dispatch.make_branch_transport(
             id=lp_branch._branch_id, writable=lp_branch.can_write)
 
     def translateVirtualPath(self, virtual_url_fragment):
@@ -538,12 +538,12 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
+        self._transport_dispatch = TransportFactory(
+            self._branch_transport, self._branch_transport)
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
-        factory = TransportFactory(
-            self._branch_transport, self._branch_transport)
-        return factory.make_branch_transport(
+        return self._transport_dispatch.make_branch_transport(
             id=lp_branch._branch_id, writable=True)
 
 
