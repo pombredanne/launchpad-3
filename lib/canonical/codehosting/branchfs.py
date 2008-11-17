@@ -305,7 +305,7 @@ class LaunchpadBranch:
     def ensureUnderlyingPath(self, transport):
         """Ensure that the directory for the branch exists on the transport.
         """
-        deferred = self.getRealPath('')
+        deferred = defer.maybeDeferred(self.getRealPath, '')
         deferred.addErrback(lambda failure: failure.trap(BranchNotFound))
         deferred.addCallback(
             lambda real_path: ensure_base(transport.clone(real_path)))
@@ -325,12 +325,9 @@ class LaunchpadBranch:
             'AB0243' is the database ID of the branch expressed in hex and
             '.bzr/foo' is `path_on_branch`.
         """
-        try:
-            self.checkPath(url_fragment_on_branch)
-        except PermissionDenied:
-            return defer.fail(failure.Failure())
+        self.checkPath(url_fragment_on_branch)
         branch_path = branch_id_to_path(self._branch_id)
-        return defer.succeed('/'.join([branch_path, url_fragment_on_branch]))
+        return '/'.join([branch_path, url_fragment_on_branch])
 
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
@@ -403,14 +400,10 @@ class _BaseLaunchpadServer(Server):
         deferred.addErrback(branch_not_found)
 
         def got_branch((lp_branch, path)):
-            virtual_path_deferred = lp_branch.getRealPath(path)
-
-            def get_transport(real_path):
-                deferred = self._getTransportForLaunchpadBranch(lp_branch)
-                deferred.addCallback(lambda transport: (transport, real_path))
-                return deferred
-
-            return virtual_path_deferred.addCallback(get_transport)
+            real_path = lp_branch.getRealPath(path)
+            deferred = self._getTransportForLaunchpadBranch(lp_branch)
+            deferred.addCallback(lambda transport: (transport, real_path))
+            return deferred
 
         return deferred.addCallback(got_branch)
 
