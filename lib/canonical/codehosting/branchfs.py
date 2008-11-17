@@ -198,114 +198,6 @@ class InvalidControlDirectory(BzrError):
     """Raised when we try to parse an invalid control directory."""
 
 
-class LaunchpadBranch:
-    """A branch on Launchpad.
-
-    This abstractly represents a branch on Launchpad without exposing details
-    of the naming of Launchpad branches. It contains and maintains the
-    knowledge of how a virtual path, such as '~owner/product/branch' is
-    translated into the underlying storage systems.
-
-    It also exposes operations on Launchpad branches that we in turn expose
-    via the codehosting system. Namely, creating a branch and requesting that
-    a branch be mirrored.
-
-    :ivar can_write: Whether or not the current user can write to the branch.
-    :type can_write: bool
-    """
-
-    @classmethod
-    def from_virtual_path(cls, authserver, virtual_url_fragment):
-        """Construct a LaunchpadBranch from a virtual URL fragment.
-
-        :param authserver: An XML-RPC client to the Launchpad authserver.
-            This is used to get information about the branch and to perform
-            database operations on the branch. This XML-RPC client should
-            implement 'callRemote'.
-        :param virtual_path: A public path to a branch, or to a file or
-            directory within a branch. This path is required to be URL
-            escaped.
-
-        :raise NotABranchPath: If `virtual_path` cannot be translated into a
-            (potential) path to a branch. See also `NotEnoughInformation`
-            and `InvalidOwnerDirectory`.
-
-        :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
-            is an instance of LaunchpadBranch that represents the branch at
-            the virtual path, and `rest_of_path` is a URL fragment within
-            that branch.
-        """
-        deferred = authserver.translatePath('/' + virtual_url_fragment)
-
-        def path_translated(result):
-            (transport_type, data, trailing_path) = result
-            if transport_type != BRANCH_TRANSPORT:
-                raise NotEnoughInformation(virtual_url_fragment)
-            return (
-                cls(authserver, virtual_url_fragment, data['id'],
-                    data['writable']),
-                trailing_path)
-
-        def path_not_translated(failure):
-            trap_fault(failure, faults.PathTranslationError.error_code)
-            raise BranchNotFound(virtual_url_fragment)
-
-        return deferred.addCallbacks(path_translated, path_not_translated)
-
-    def __init__(self, authserver, branch_path, branch_id, can_write):
-        """Construct a LaunchpadBranch object.
-
-        In general, don't call this directly, use
-        `LaunchpadBranch.from_virtual_path` instead. This prevents assumptions
-        about branch naming spreading throughout the code.
-
-        :param authserver: An XML-RPC client to the Launchpad authserver.
-            This is used to get information about the branch and to perform
-            database operations on the branch. The client should implement
-            `callRemote`.
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch.
-        """
-        self._authserver = authserver
-        self._branch_path = branch_path
-        self._branch_id = branch_id
-        self.can_write = can_write
-
-    def create(self):
-        """Create a branch in the database.
-
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
-        :raise PermissionDenied: If the branch cannot be created in the
-            database. This might indicate that the branch already exists, or
-            that its creation is forbidden by a policy.
-        """
-        deferred = self._authserver.createBranch(self._branch_path)
-
-        def translate_fault(failure):
-            # One might think that it would make sense to raise NoSuchFile
-            # here, but that makes the client do "clever" things like say
-            # "Parent directory of
-            # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch does not
-            # exist. You may supply --create-prefix to create all leading
-            # parent directories." Which is just misleading.
-            fault = trap_fault(
-                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
-            raise PermissionDenied(fault.faultString)
-
-        return deferred.addErrback(translate_fault)
-
-    def requestMirror(self):
-        """Request that the branch be mirrored as soon as possible.
-
-        :raise BranchNotFound: if the branch does not exist.
-        """
-        return self._authserver.requestMirror(self._branch_id)
-
-
 class _BaseLaunchpadServer(Server):
     """Bazaar Server for Launchpad branches.
 
@@ -339,10 +231,6 @@ class _BaseLaunchpadServer(Server):
         """
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
-
-    def _getLaunchpadBranch(self, virtual_path):
-        return LaunchpadBranch.from_virtual_path(
-            self._authserver, virtual_path)
 
     def _getTransportForLaunchpadBranch(self, id, writable):
         """Return the transport for accessing `lp_branch`."""
@@ -503,9 +391,20 @@ class LaunchpadServer(_BaseLaunchpadServer):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        lp_branch = LaunchpadBranch(
-            self._authserver, virtual_url_fragment, None, None)
-        return lp_branch.create()
+        deferred = self._authserver.createBranch(virtual_url_fragment)
+
+        def translate_fault(failure):
+            # One might think that it would make sense to raise NoSuchFile
+            # here, but that makes the client do "clever" things like say
+            # "Parent directory of
+            # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch does not
+            # exist. You may supply --create-prefix to create all leading
+            # parent directories." Which is just misleading.
+            fault = trap_fault(
+                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+            raise PermissionDenied(fault.faultString)
+
+        return deferred.addErrback(translate_fault)
 
     def requestMirror(self, virtual_url_fragment):
         """Mirror the branch that owns 'virtual_url_fragment'.
@@ -515,12 +414,14 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :raise NotABranchPath: If `virtual_url_fragment` does not have at
             least a valid path to a branch.
         """
-        deferred = self._getLaunchpadBranch(virtual_url_fragment)
+        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
-        def got_branch((lp_branch, ignored)):
-            return lp_branch.requestMirror()
+        def got_path_info((transport_type, data, trailing_path)):
+            if transport_type != BRANCH_TRANSPORT:
+                raise NotABranchPath(virtual_url_fragment)
+            return self._authserver.requestMirror(data['id'])
 
-        return deferred.addCallback(got_branch)
+        return deferred.addCallback(got_path_info)
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
