@@ -140,14 +140,13 @@ class SimpleTransportDispatch:
 
 class TransportDispatch:
 
-    def __init__(self, hosted_transport, mirrored_transport, writable=None):
+    def __init__(self, hosted_transport, mirrored_transport):
         self.hosted_transport = hosted_transport
         self.mirrored_transport = mirrored_transport
         self._transport_factories = {
             BRANCH_TRANSPORT: self.make_branch_transport,
             CONTROL_TRANSPORT: self.make_control_transport,
             }
-        self._writable = writable
 
     def make_transport(self, transport_tuple):
         transport_type, data, trailing_path = transport_tuple
@@ -168,12 +167,8 @@ class TransportDispatch:
             # pass only writable transports in here: not sure.
             # XXX JonathanLange
             pass
-        if self._writable is None:
-            if not writable:
-                transport = get_transport('readonly+' + transport.base)
-        else:
-            if not self._writable:
-                transport = get_transport('readonly+' + transport.base)
+        if not writable:
+            transport = get_transport('readonly+' + transport.base)
         return transport
 
     def make_control_transport(self, default_stack_on):
@@ -462,8 +457,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
-        self._transport_dispatch = TransportDispatch(
-            self._branch_transport, self._branch_transport, writable=True)
+        self._transport_dispatch = SimpleTransportDispatch(
+            self._branch_transport)
 
 
 def get_scanner_server():
