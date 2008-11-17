@@ -36,6 +36,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
@@ -724,6 +726,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
+
+
+class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its source
+    package information"""
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(admins))
 
 

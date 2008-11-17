@@ -71,9 +71,12 @@ class TestImportKeyRing(unittest.TestCase):
 
         # Multiple results when filtering by email.
         filtered_keys = self.gpg_handler.localKeys('foo.bar@canonical.com')
-        self.assertEqual(
-            [target_fpr, 'FD311613D941C6DE55737D310E3498675D147547'],
-            [key.fingerprint for key in filtered_keys])
+
+        filtered_fingerprints = [key.fingerprint for key in filtered_keys]
+        self.assertTrue(target_fpr in filtered_fingerprints)
+        self.assertTrue(
+            'FD311613D941C6DE55737D310E3498675D147547'
+            in filtered_fingerprints)
 
         # Secret keys only filter.
         self.assertEqual(

@@ -122,6 +122,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
     BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
@@ -2365,9 +2366,18 @@ class PersonView(LaunchpadView, FeedsMixin):
         return False
 
     @cachedproperty
+    def is_delegated_identity(self):
+        """Should the page delegate identity to the OpenId identitier.
+
+        We only do this if it's enabled for the vhost.
+        """
+        return (self.context.is_valid_person
+                and config.vhost.mainsite.openid_delegate_profile)
+
+    @cachedproperty
     def openid_identity_url(self):
-        """The identity URL for the person."""
-        return IOpenIDPersistentIdentity(self.context).openid_identity_url
+        """The public OpenID identity URL. That's the profile page."""
+        return canonical_url(self.context)
 
     @property
     def subscription_policy_description(self):
@@ -2458,8 +2468,17 @@ class PersonView(LaunchpadView, FeedsMixin):
         specs = self.assigned_specs_in_progress
         return bugtasks.count() > 0 or specs.count() > 0
 
-    def viewingOwnPage(self):
+    @property
+    def viewing_own_page(self):
         return self.user == self.context
+
+    @property
+    def contactuser_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        if self.viewing_own_page:
+            return 'Send an email to yourself through Launchpad'
+        else:
+            return 'Send an email to this user through Launchpad'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -2698,7 +2717,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../templates/openidapplication-xrds.pt")
+        "../templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -2711,7 +2730,17 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
-        return self.context.is_openid_enabled
+        return self.is_delegated_identity
+
+    @cachedproperty
+    def openid_server_url(self):
+        """The OpenID Server endpoint URL for Launchpad."""
+        return CurrentOpenIDEndPoint.getOldServiceURL()
+
+    @cachedproperty
+    def openid_identity_url(self):
+        return IOpenIDPersistentIdentity(
+            self.context).old_openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -4988,3 +5017,11 @@ class EmailToPersonView(LaunchpadFormView):
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return throttle_date + interval
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate pagetitle."""
+        if self.context == self.user:
+            return 'Contact yourself'
+        else:
+            return 'Contact this user'

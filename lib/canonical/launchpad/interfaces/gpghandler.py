@@ -118,12 +118,11 @@ class IGPGHandler(Interface):
     def generateKey(name):
         """Generate a new GPG key with the given name.
 
-        It currently only generates a password-less, sign-only,
-        1024 bits RSA key.
+        Currently only passwordless, signo-only 1024-bit RSA keys are
+        generated.
 
         :param name: string to be included in the key paramenters, 'comment'
             and 'email' will be empty.
-
         :raise: AssertionError if the key generation is not exaclty what
             we expect.
 
@@ -241,7 +240,7 @@ class IPymeKey(Interface):
     def export():
         """Export the context key in ASCII-armored mode.
 
-        Both, public and secret keys are supported, although secret keys are
+        Both public and secret keys are supported, although secret keys are
         exported by calling `gpg` process while public ones use the native
         gpgme API.
 

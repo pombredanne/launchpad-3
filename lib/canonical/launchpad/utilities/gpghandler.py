@@ -246,17 +246,18 @@ class GPGHandler:
         context = gpgme.Context()
         context.armor = True
         newkey = StringIO(content)
-        result = context.import_(newkey)
+        import_result = context.import_(newkey)
 
         secret_imports = [
-            fpr for fpr, res, status in result.imports
+            fingerprint
+            for fingerprint, result, status in import_result.imports
             if status & gpgme.IMPORT_SECRET]
         if len(secret_imports) != 1:
             raise MoreThanOneGPGKeyFound(
                 'Found %d secret GPG keys when importing %s'
                 % (len(secret_imports), content))
 
-        fingerprint, res, status = result.imports[0]
+        fingerprint, result, status = import_result.imports[0]
         try:
             key = context.get_key(fingerprint, True)
         except gpgme.GpgmeError:
@@ -277,7 +278,7 @@ class GPGHandler:
         result = context.genkey(signing_only_param % {'name': name})
 
         # Right, it might seem paranoid to have this many assertions,
-        # but we have to take key generation very serious.
+        # but we have to take key generation very seriously.
         assert result.primary, 'Secret key generation failed.'
         assert not result.sub, (
             'Only sign-only RSA keys are safe to be generated')
