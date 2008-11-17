@@ -278,7 +278,7 @@ class LaunchpadBranch:
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        deferred = self._authserver.createBranch(self._branch_path.strip('/'))
+        deferred = self._authserver.createBranch(self._branch_path)
 
         def convert_fault(failure):
             failure.trap(Fault)

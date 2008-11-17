@@ -206,6 +206,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def createBranch(self, login_id, branch_path):
         """See `IBranchFileSystem`."""
         def create_branch(requester):
+            if not branch_path.startswith('/'):
+                return faults.InvalidPath(branch_path)
             try:
                 branch_tokens = branch_path.strip('/').split('/')
                 personName, productName, branchName = branch_tokens
