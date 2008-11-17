@@ -194,82 +194,11 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
-    def test_base_path_translation_person_branch(self):
-        # Branches are stored on the filesystem by branch ID. This allows
-        # users to rename and re-assign branches without causing unnecessary
-        # disk churn. The ID is converted to four-byte hexadecimal and split
-        # into four path segments, to make sure that the directory tree
-        # doesn't get too wide and cause ext3 to have conniptions.
-        #
-        # However, branches are _accessed_ using their
-        # ~person/product/branch-name. The server knows how to map this unique
-        # name to the branch's path on the filesystem.
-
-        # We can map a branch owned by the user to its path.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_team_branch(self):
-        # We can map a branch owned by a team that the user is in to its path.
-        team = self.factory.makeTeam(self.requester)
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_other_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_extend_path_translation_on_mirror(self):
-        branch = self.factory.makeBranch(BranchType.HOSTED, product=None)
-        deferred = self.server.translateVirtualPath(
-            '/%s/.bzr' % branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._mirror_transport,
-             '%s/.bzr' % branch_id_to_path(branch.id)))
-        return deferred
-
-    def test_extend_path_translation_on_hosted(self):
-        # More than just the branch name needs to be translated: transports
-        # will ask for files beneath the branch. The server translates the
-        # unique name of the branch (i.e. the ~user/product/branch-name part)
-        # to the four-byte hexadecimal split ID described in
-        # test_base_path_translation and appends the remainder of the path.
-        branch = self.factory.makeBranch(
-            BranchType.HOSTED, owner=self.requester)
-        deferred = self.server.translateVirtualPath(
-            '/%s/.bzr' % branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._hosted_transport,
-             '%s/.bzr' % branch_id_to_path(branch.id)))
-        return deferred
+    # XXX: Test that translateVirtualPath returns a transport that is a child
+    # of the appropriate transport (hosted, mirrored) and that the trailing
+    # path is correct. OR, test that it basically returns
+    # make_branch_transport. OR, don't worry, let test_filesystem handle this
+    # bit.
 
     def test_get_url(self):
         # The URL of the server is 'lp-<number>:///', where <number> is the
@@ -348,44 +277,9 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         return LaunchpadInternalServer(
             'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
 
-    def test_base_path_translation_person_branch(self):
-        # Branches are stored on the filesystem by branch ID. This allows
-        # users to rename and re-assign branches without causing unnecessary
-        # disk churn. The ID is converted to four-byte hexadecimal and split
-        # into four path segments, to make sure that the directory tree
-        # doesn't get too wide and cause ext3 to have conniptions.
-        #
-        # However, branches are _accessed_ using their
-        # ~person/product/branch-name. The server knows how to map this unique
-        # name to the branch's path on the filesystem.
-
-        branch = self.factory.makeBranch(owner=self.requester)
-        # We can map a branch owned by the user to its path.
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_junk_branch(self):
-        # The '+junk' product doesn't actually exist. It is used for branches
-        # which don't have a product assigned to them.
-        branch = self.factory.makeBranch(owner=self.requester, product=None)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
-
-    def test_base_path_translation_team_branch(self):
-        # We can map a branch owned by a team that the user is in to its path.
-        team = self.factory.makeTeam(self.requester)
-        branch = self.factory.makeBranch(BranchType.HOSTED, owner=team)
-        deferred = self.server.translateVirtualPath('/' + branch.unique_name)
-        deferred.addCallback(
-            self.assertEqual,
-            (self.server._branch_transport, branch_to_path(branch)))
-        return deferred
+    # XXX: Test that translateVirtualPath returns a transport that is a child
+    # of the transport and that the trailing path is correct. OR, test that it
+    # basically returns make_branch_transport.
 
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no
@@ -988,37 +882,6 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             errors.TransportNotPossible,
             self.lp_transport.rename, self.writable_file,
             '/%s/.bzr/goodbye.txt' % self.read_only_branch)
-
-    def test_readonly_refers_to_mirror(self):
-        # Read-only operations should get their data from the mirror, not the
-        # primary backing transport.
-        # XXX: JonathanLange 2007-06-21, Explain more of this.
-        self.assertEqual(
-            'Goodbye World!',
-            self.lp_transport.get_bytes(self.file_on_both_transports))
-
-    def test_iter_files_refers_to_mirror(self):
-        # iter_files_recursive() gets its data from the mirror if it cannot
-        # write to the branch.
-        read_only_branch_name = '/%s/' % self.read_only_branch
-        transport = self.lp_transport.clone(read_only_branch_name)
-        files = list(transport.iter_files_recursive())
-
-        mirror_only = self.file_on_mirror_only[len(read_only_branch_name):]
-        self.assertTrue(
-            mirror_only in files, '%r not in %r' % (mirror_only, files))
-
-    def test_listable_refers_to_mirror(self):
-        # listable() refers to the mirror transport for read-only branches.
-        read_only_branch_name = '/%s' % self.read_only_branch
-        transport = self.lp_transport.clone(read_only_branch_name)
-
-        # listable() returns the same value for both transports. To
-        # distinguish them, we'll monkey patch the mirror and backing
-        # transports.
-        self.lp_server._mirror_transport.listable = lambda: 'mirror'
-        self.lp_server._hosted_transport.listable = lambda: 'hosted'
-        self.assertEqual('mirror', transport.listable())
 
 
 def test_suite():
