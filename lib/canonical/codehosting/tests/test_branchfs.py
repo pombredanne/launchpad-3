@@ -120,6 +120,33 @@ class TestTransportDispatch(TestCase):
         self.assertEqual('bar/baz', path)
         self.assertEqual([(1, True)], log)
 
+    def test_override_all_writable_mirrored(self):
+        dispatch = TransportDispatch(
+            self.hosted_transport, self.mirrored_transport, writable=True)
+        self.mirrored_transport.mkdir_multi(
+            ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
+        self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
+        transport = dispatch.make_branch_transport(id=5, writable=False)
+        transport.put_bytes('.bzr/README', "Goodbye")
+        self.assertEqual(
+            "Goodbye",
+            self.mirrored_transport.get_bytes('00/00/00/05/.bzr/README'))
+
+    def test_override_all_writable_hosted(self):
+        dispatch = TransportDispatch(
+            self.hosted_transport, self.mirrored_transport, writable=True)
+        transport = dispatch.make_branch_transport(id=5, writable=True)
+        transport.mkdir('.bzr')
+        self.assertEqual(
+            ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
+
+    def test_override_all_readonly_hosted(self):
+        dispatch = TransportDispatch(
+            self.hosted_transport, self.mirrored_transport, writable=False)
+        transport = dispatch.make_branch_transport(id=5, writable=True)
+        self.assertRaises(
+            errors.TransportNotPossible, transport.mkdir, '.bzr')
+
 
 class TestBranchIDToPath(unittest.TestCase):
     """Tests for branch_id_to_path."""
