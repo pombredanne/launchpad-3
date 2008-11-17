@@ -207,7 +207,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         """See `IBranchFileSystem`."""
         def create_branch(requester):
             try:
-                personName, productName, branchName = branch_path.split('/')
+                branch_tokens = branch_path.strip('/').split('/')
+                personName, productName, branchName = branch_tokens
             except ValueError:
                 return Fault(
                     PERMISSION_DENIED_FAULT_CODE,

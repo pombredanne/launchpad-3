@@ -333,7 +333,8 @@ class FakeBranchFilesystem:
 
     def createBranch(self, requester_id, branch_path):
         try:
-            owner_name, product_name, branch_name = branch_path.split('/')
+            branch_tokens = branch_path.strip('/').split('/')
+            owner_name, product_name, branch_name = branch_tokens
         except ValueError:
             return Fault(
                 PERMISSION_DENIED_FAULT_CODE,
