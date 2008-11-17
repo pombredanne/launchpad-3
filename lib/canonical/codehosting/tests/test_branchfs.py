@@ -170,47 +170,6 @@ class MixinBaseLaunchpadServerTests:
         self.assertFalse(
             self.server.get_url() in _get_protocol_handlers().keys())
 
-    def test_translationIsCached(self):
-        # We don't go to the authserver for every path translation.
-        #
-        # To test this, we translate a branch and then delete that branch on
-        # the authserver. If the cache is operating, the next attempt to
-        # translate that branch should succeed with the same value as the
-        # first attempt.
-        # XXX: disabled while we move over to the new system.
-        return
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-
-        branch = self.factory.makeBranch(owner=self.requester)
-
-        deferred = self.server.translateVirtualPath(
-            '%s/.bzr' % branch.unique_name)
-
-        def assert_path_starts_with(branch_info, expected_path):
-            transport, path = branch_info
-            self.assertStartsWith(path, expected_path)
-
-        def futz_with_branchfs_endpoint(ignored):
-            # Delete the branch on the fake filesystem endpoint, breaking
-            # encapsulation.
-            self.authserver._branch_set._delete(branch)
-            branch_info = self.authserver.getBranchInformation(
-                self.requester.id, branch.owner.name, branch.product.name,
-                branch.name)
-            # The branchfs endpoint says there is no such branch.
-            self.assertEqual(('', ''), branch_info)
-
-        deferred.addCallback(
-            assert_path_starts_with, branch_id_to_path(branch.id))
-        deferred.addCallback(futz_with_branchfs_endpoint)
-        deferred.addCallback(
-            lambda ignored: self.server.translateVirtualPath(
-                    '%s/.bzr' % branch.unique_name))
-        deferred.addCallback(
-            assert_path_starts_with, branch_id_to_path(branch.id))
-        return deferred
-
 
 class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):

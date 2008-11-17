@@ -27,7 +27,7 @@ class CachingAuthserverClient:
     """Wrapper for the authserver that caches responses for a particular user.
 
     This only wraps the methods that are used for serving branches via a
-    Bazaar transport: createBranch, getBranchInformation and requestMirror.
+    Bazaar transport: createBranch, requestMirror and translatePath.
 
     In the normal course of operation, our Bazaar transport translates from
     "virtual branch identifier" (currently '~owner/product/name') to a branch
@@ -65,34 +65,6 @@ class CachingAuthserverClient:
         return defer.maybeDeferred(
             self._authserver.callRemote, 'createBranch', self._user_id,
             branch_path)
-
-    def getBranchInformation(self, owner, product, branch):
-        """Get branch information from the authserver.
-
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch that we are interested in.
-
-        :return: A Deferred that fires (branch_id, permissions), where
-            'permissions' is WRITABLE if the current user can write to the
-            branch, and READ_ONLY if they cannot. If the branch doesn't exist,
-            return ('', ''). The "current user" is the user ID passed to the
-            constructor.
-        """
-        branch_info = self._branch_info_cache.get((owner, product, branch))
-        if branch_info is not None:
-            return defer.succeed(branch_info)
-
-        deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getBranchInformation',
-            self._user_id, owner, product, branch)
-        def add_to_cache(branch_info):
-            self._branch_info_cache[
-                (owner, product, branch)] = branch_info
-            return branch_info
-        return deferred.addCallback(add_to_cache)
 
     def getDefaultStackedOnBranch(self, product):
         branch_name = self._stacked_branch_cache.get(product)
