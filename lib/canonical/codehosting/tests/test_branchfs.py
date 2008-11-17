@@ -805,6 +805,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
 
         self.writable_branch = self.factory.makeBranch(
             BranchType.HOSTED, owner=self.requester).unique_name
+        self.writable_file = '/%s/.bzr/hello.txt' % self.writable_branch
         self.read_only_branch = self.factory.makeBranch(
             BranchType.HOSTED).unique_name
 
@@ -812,24 +813,8 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             self.requester.id, authserver, backing_transport,
             mirror_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
-
-        self.writable_file = '/%s/.bzr/hello.txt' % self.writable_branch
-        self.file_on_both_transports = '/%s/.bzr/README' % (
-            self.read_only_branch,)
-        self.file_on_mirror_only = '/%s/.bzr/MIRROR-ONLY' % (
-            self.read_only_branch,)
-
-        d1 = self._makeFilesInBranches(
-            backing_transport,
-            [(self.writable_file, 'Hello World!'),
-             (self.file_on_both_transports, 'Hello World!')])
-
-        d2 = self._makeFilesInBranches(
-            mirror_transport,
-            [(self.file_on_both_transports, 'Goodbye World!'),
-             (self.file_on_mirror_only, 'ignored')])
-
-        return defer.gatherResults([d1, d2])
+        self.lp_transport.mkdir(os.path.dirname(self.writable_file))
+        self.lp_transport.put_bytes(self.writable_file, 'Hello World!')
 
     def _setUpMemoryServer(self):
         memory_server = MemoryServer()
@@ -845,28 +830,6 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         server.setUp()
         self.addCleanup(server.tearDown)
         return server
-
-    def _makeFilesInBranches(self, transport, file_spec):
-        """Write a bunch of files inside branches on the LP codehost.
-
-        :param transport: Either a backing transport or a mirror transport
-            for a Launchpad server.
-        :param file_spec: A list of (filename, contents) tuples.
-            The path in the filename is translated as if it were a virtual
-            path.
-        """
-
-        def make_file(filename, contents):
-            deferred = self.lp_server.translateVirtualPath(filename)
-            def write_to_file(branch_info):
-                path_to_file = branch_info[1]
-                directory = os.path.dirname(path_to_file)
-                ensure_base(transport.clone(directory))
-                transport.put_bytes(path_to_file, contents)
-            return deferred.addCallback(write_to_file)
-        return defer.gatherResults(
-            [make_file(filename, contents)
-             for filename, contents in file_spec])
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
