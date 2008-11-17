@@ -237,10 +237,6 @@ class _BaseLaunchpadServer(Server):
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
 
-    def _getTransportForLaunchpadBranch(self, id, writable):
-        """Return the transport for accessing `lp_branch`."""
-        raise NotImplementedError("Override this in subclasses.")
-
     def _checkPath(self, path_on_branch):
         """Raise an error if `path_on_branch` is not valid.
 
@@ -280,7 +276,7 @@ class _BaseLaunchpadServer(Server):
             if transport_type != BRANCH_TRANSPORT:
                 raise NotEnoughInformation(virtual_url_fragment)
             self._checkPath(trailing_path)
-            transport = self._getTransportForLaunchpadBranch(**data)
+            transport = self._transport_dispatch.make_branch_transport(**data)
             return transport, trailing_path
 
         def branch_not_found(failure):
@@ -360,10 +356,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred.addCallback(self._buildControlDirectory)
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
-
-    def _getTransportForLaunchpadBranch(self, **args):
-        """Return the transport for accessing `lp_branch`."""
-        return self._transport_dispatch.make_branch_transport(**args)
 
     def translateVirtualPath(self, virtual_url_fragment):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
@@ -445,12 +437,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
         self._transport_dispatch = TransportDispatch(
-            self._branch_transport, self._branch_transport)
-
-    def _getTransportForLaunchpadBranch(self, id, writable):
-        """Return the transport for accessing `lp_branch`."""
-        return self._transport_dispatch.make_branch_transport(
-            id=id, writable=True)
+            self._branch_transport, self._branch_transport, writable=True)
 
 
 def get_scanner_server():
