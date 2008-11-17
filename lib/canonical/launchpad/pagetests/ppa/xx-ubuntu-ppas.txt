@@ -256,7 +256,7 @@ The headings:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Built</th>
+    <th>Build Status</th>
     </tr>
     </thead>
     ...
@@ -269,7 +269,8 @@ available changesfile.
     ...         print extract_text(ppa_row)
 
     >>> print_ppa_package_rows(anon_browser.contents)
-    Source              Published   Status     Series      Section  Built
+    Source              Published   Status     Series      Section  Build
+        Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
     com...(changesfile)             Pending    Warty       Devel
     ice...(changesfile) 2007-07-09  Published  Warty       Editors
@@ -372,7 +373,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
     comm...(changesfile)        Pending    Warty            Devel
 
@@ -382,7 +384,8 @@ Use can explicitly select 'published' filter and will get the same result.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
     comm...(changesfile)        Pending    Warty            Devel
 
@@ -393,7 +396,8 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source            Published    Status        Series   Section  Built
+    Source            Published    Status        Series   Section  Build
+        Status
     i...(changesfile) 2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
@@ -404,7 +408,8 @@ any package ever published in the context PPA.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source             Published    Status     Series      Section  Built
+    Source             Published    Status     Series      Section  Build
+        Status
     cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
     co...(changesfile)              Pending    Warty       Devel
     ic...(changesfile) 2007-07-09   Superseded Warty       Editors
@@ -536,7 +541,7 @@ The package row headings show an Uploader column:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Built</th>
+    <th>Build Status</th>
     </tr>
     </thead>
     ...
@@ -544,7 +549,8 @@ The package row headings show an Uploader column:
 The package row data shows the uploader:
 
     >>> print_ppa_package_rows(foo_browser.contents)
-    Source                 Uploader Published Status   Series  Section  Built
+    Source                 Uploader Published Status   Series  Section  Build
+        Status
     mozilla-firefox - 0.9  name16             Pending  Hoary   Base
 
 Links from files go to their on-archive locations:
@@ -559,7 +565,7 @@ The uploader name is linkified to that user's home page:
     'http://launchpad.dev/~name16'
 
 
-== PPA Built column ==
+== PPA Build Status column ==
 
 Each row in the PPA package list contains a special column that
 summarises its 'build status'. It contains the following information
@@ -578,7 +584,7 @@ Anyone can see the build status for package in Celso's PPA.
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
 
-    >>> def print_built_status(contents):
+    >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'ppa_package_row')
     ...     headers = rows[0].findAll('th')
     ...     print extract_text(headers[0]), extract_text(headers[-1])
@@ -591,8 +597,8 @@ Anyone can see the build status for package in Celso's PPA.
     ...             built_text = built_text.renderContents()
     ...         print name, built_icon, built_text
 
-    >>> print_built_status(anon_browser.contents)
-    Source                    Built
+    >>> print_build_status(anon_browser.contents)
+    Source                    Build Status
     cdrkit - 1.0              /@@/no i386
     commercialpackage - 1.0-1 /@@/yes None
 
@@ -623,8 +629,8 @@ At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
     >>> anon_browser.getLink('View PPA').click()
-    >>> print_built_status(anon_browser.contents)
-    Source                    Built
+    >>> print_build_status(anon_browser.contents)
+    Source                    Build Status
     cdrkit - 1.0              /@@/build-building i386
     commercialpackage - 1.0-1 /@@/yes None
 

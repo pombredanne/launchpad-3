@@ -46,9 +46,9 @@
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
-                        linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch addAttachment unsubscribeFromDupes
-                        subscribe unsubscribe addNomination
+                        linkCVE linkCVEAndReturnNothing unlinkCVE findCvesInText
+                        newMessage linkMessage addBranch addAttachment
+                        unsubscribeFromDupes subscribe unsubscribe addNomination
                         expireNotifications setStatus setPrivate
                         convertToQuestion isUserAffected
                         markUserAffected"
