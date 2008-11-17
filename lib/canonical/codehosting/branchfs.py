@@ -380,21 +380,21 @@ class _BaseLaunchpadServer(Server):
 
         :return: (transport, path_on_transport)
         """
-        deferred = self._getLaunchpadBranch(virtual_url_fragment)
+        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
+
+        def path_translated(result):
+            (transport_type, data, trailing_path) = result
+            if transport_type != BRANCH_TRANSPORT:
+                raise NotEnoughInformation(virtual_url_fragment)
+            self._checkPath(trailing_path)
+            transport = self._getTransportForLaunchpadBranch(**data)
+            return transport, trailing_path
 
         def branch_not_found(failure):
-            failure.trap(BranchNotFound)
+            trap_fault(failure, faults.PathTranslationError.error_code)
             raise NoSuchFile(virtual_url_fragment)
 
-        deferred.addErrback(branch_not_found)
-
-        def got_branch((lp_branch, path)):
-            self._checkPath(path)
-            transport = self._getTransportForLaunchpadBranch(
-                id=lp_branch._branch_id, writable=lp_branch.can_write)
-            return transport, path
-
-        return deferred.addCallback(got_branch)
+        return deferred.addCallbacks(path_translated, branch_not_found)
 
     def get_url(self):
         """Return the URL of this server."""
