@@ -101,6 +101,22 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
+def trap_fault(failure, *fault_codes):
+    """Trap a fault, based on fault code.
+
+    :param failure: A Twisted L{Failure}.
+    :param *fault_codes: XML-RPC fault codes.
+    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
+        does not match the given codes.
+    :return: The Fault if it matches one of the codes.
+    """
+    failure.trap(Fault)
+    fault = failure.value
+    if fault.faultCode in fault_codes:
+        return fault
+    raise failure
+
+
 class TransportFactory:
 
     def __init__(self, hosted_transport, mirrored_transport):
@@ -224,12 +240,8 @@ class LaunchpadBranch:
                 trailing_path)
 
         def path_not_translated(failure):
-            failure.trap(Fault)
-            fault = failure.value
-            if fault.faultCode == faults.PathTranslationError.error_code:
-                raise BranchNotFound(virtual_url_fragment)
-            else:
-                failure.raiseException()
+            trap_fault(failure, faults.PathTranslationError.error_code)
+            raise BranchNotFound(virtual_url_fragment)
 
         return deferred.addCallbacks(path_translated, path_not_translated)
 
@@ -283,24 +295,18 @@ class LaunchpadBranch:
         """
         deferred = self._authserver.createBranch(self._branch_path)
 
-        def convert_fault(failure):
-            failure.trap(Fault)
-            fault = failure.value
-            if fault.faultCode == NOT_FOUND_FAULT_CODE:
-                # One might think that it would make sense to raise
-                # NoSuchFile here, but that makes the client do "clever"
-                # things like say "Parent directory of
-                # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
-                # does not exist.  You may supply --create-prefix to
-                # create all leading parent directories."  Which is just
-                # misleading.
-                raise PermissionDenied(fault.faultString)
-            elif fault.faultCode == PERMISSION_DENIED_FAULT_CODE:
-                raise PermissionDenied(fault.faultString)
-            else:
-                raise
+        def translate_fault(failure):
+            # One might think that it would make sense to raise NoSuchFile
+            # here, but that makes the client do "clever" things like say
+            # "Parent directory of
+            # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch does not
+            # exist. You may supply --create-prefix to create all leading
+            # parent directories." Which is just misleading.
+            fault = trap_fault(
+                failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+            raise PermissionDenied(fault.faultString)
 
-        return deferred.addErrback(convert_fault)
+        return deferred.addErrback(translate_fault)
 
     def ensureUnderlyingPath(self, transport):
         """Ensure that the directory for the branch exists on the transport.
