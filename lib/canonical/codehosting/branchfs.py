@@ -425,20 +425,6 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
     valid branch path') into Bazaar errors (such as 'no such file').
     """
 
-    def _getUnderylingTransportAndPath(self, relpath):
-        """Return the underlying transport and path for `relpath`."""
-        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
-            self, relpath)
-        def convert_failure(failure):
-            failure.trap(NotABranchPath)
-            # If a virtual path doesn't point to a branch, then we cannot
-            # translate it to an underlying transport. For almost all
-            # purposes, this is as good as not existing at all.
-            exception = failure.value
-            raise NoSuchFile(
-                exception.virtual_url_fragment, exception.reason)
-        return deferred.addErrback(convert_failure)
-
     def mkdir(self, relpath, mode=None):
         # We hook into mkdir so that we can request the creation of a branch
         # and so that we can provide useful errors in the special case where
