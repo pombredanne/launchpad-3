@@ -206,7 +206,13 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def createBranch(self, login_id, branch_path):
         """See `IBranchFileSystem`."""
         def create_branch(requester):
-            personName, productName, branchName = branch_path.split('/')
+            try:
+                branch_tokens = branch_path.strip('/').split('/')
+                personName, productName, branchName = branch_tokens
+            except ValueError:
+                return Fault(
+                    PERMISSION_DENIED_FAULT_CODE,
+                    "Cannot create branch at '%s'" % branch_path)
             personName = personName[1:]
             owner = getUtility(IPersonSet).getByName(personName)
             if owner is None:
