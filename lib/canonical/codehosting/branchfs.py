@@ -57,7 +57,6 @@ import xmlrpclib
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.errors import (
     BzrError, NoSuchFile, PermissionDenied, TransportNotPossible)
-from bzrlib import urlutils
 from bzrlib.transport import (
     get_transport, register_transport, Server, unregister_transport)
 from bzrlib.transport.memory import MemoryServer
@@ -176,12 +175,6 @@ class TransportDispatch:
         return get_transport('readonly+' + transport.base)
 
 
-class BranchNotFound(BzrError):
-    """Raised when on translating a virtual path for a non-existent branch."""
-
-    _fmt = ("Could not find id for branch ~%(owner)s/%(product)s/%(name)s.")
-
-
 class NotABranchPath(TranslationError):
     """Raised when we cannot translate a virtual URL fragment to a branch.
 
@@ -191,25 +184,6 @@ class NotABranchPath(TranslationError):
 
     _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
             "%(reason)s")
-
-
-class NotEnoughInformation(NotABranchPath):
-    """Raised when there's not enough information in the path."""
-
-    reason = "Not enough information."
-
-
-class InvalidOwnerDirectory(NotABranchPath):
-    """Raised when the owner directory is invalid.
-
-    This generally means that it doesn't start with a tilde (~).
-    """
-
-    reason = "Path must start with a user or team directory."
-
-
-class InvalidControlDirectory(BzrError):
-    """Raised when we try to parse an invalid control directory."""
 
 
 class UnknownTransportType(Exception):
@@ -274,8 +248,6 @@ class _BaseLaunchpadServer(Server):
 
         :raise NotABranchPath: If `virtual_url_fragment` does not have at
             least a valid path to a branch.
-        :raise BranchNotFound: If `virtual_path` looks like a path to a
-            branch, but there is no branch in the database that matches.
         :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
             branch.
         :raise PermissionDenied: if the path on the branch is forbidden.
@@ -286,9 +258,8 @@ class _BaseLaunchpadServer(Server):
 
         def path_translated(result):
             (transport_type, data, path) = result
-            if transport_type != BRANCH_TRANSPORT:
-                raise NotEnoughInformation(virtual_url_fragment)
-            self._checkPath(path)
+            if transport_type == BRANCH_TRANSPORT:
+                self._checkPath(path)
             transport, path = self._transport_dispatch.make_transport(
                 (transport_type, data, path))
             return transport, path
@@ -342,48 +313,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
             'readonly+' + mirror_transport.base)
         self._transport_dispatch = TransportDispatch(
             self._hosted_transport, self._mirror_transport)
-
-    def _buildControlDirectory(self, stack_on_url):
-        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return TransportDispatch(
-            None, None).make_control_transport(stack_on_url)
-
-    def _parseProductControlDirectory(self, virtual_path):
-        """Parse `virtual_path` and return a product and path in that product.
-
-        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
-        """
-        segments = get_path_segments(virtual_path, 3)
-        if len(segments) < 3:
-            raise InvalidControlDirectory(virtual_path)
-        user, product, control = segments[:3]
-        if not user.startswith('~'):
-            raise InvalidControlDirectory(virtual_path)
-        if control != '.bzr':
-            raise InvalidControlDirectory(virtual_path)
-        return product, '/'.join([control] + segments[3:])
-
-    def _translateControlPath(self, virtual_url_fragment):
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        product, path = self._parseProductControlDirectory(virtual_path)
-        deferred = self._authserver.getDefaultStackedOnBranch(product)
-        deferred.addCallback(self._buildControlDirectory)
-        return deferred.addCallback(
-            lambda transport: (transport, urlutils.escape(path)))
-
-    def translateVirtualPath(self, virtual_url_fragment):
-        deferred = super(LaunchpadServer, self).translateVirtualPath(
-            virtual_url_fragment)
-
-        def not_a_branch(failure):
-            """Called when the path simply could not point to a branch."""
-            failure.trap(NotEnoughInformation)
-            deferred = defer.maybeDeferred(
-                self._translateControlPath, virtual_url_fragment)
-            deferred.addErrback(lambda ignored: failure)
-            return deferred
-
-        return deferred.addErrback(not_a_branch)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
