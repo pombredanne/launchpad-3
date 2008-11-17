@@ -274,23 +274,6 @@ class LaunchpadBranch:
         self._branch_id = branch_id
         self.can_write = can_write
 
-    def _checkPath(self, path_on_branch):
-        """Raise an error if `path_on_branch` is not valid.
-
-        This allows us to enforce a certain level of policy about what goes
-        into a branch directory on Launchpad. Specifically, we do not allow
-        arbitrary files at the top-level, we only allow Bazaar control
-        directories, and backups of same.
-
-        :raise PermissionDenied: if `path_on_branch` is forbidden.
-        """
-        if path_on_branch == '':
-            return
-        segments = get_path_segments(path_on_branch)
-        if segments[0] not in ALLOWED_DIRECTORIES:
-            raise PermissionDenied(
-                FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
-
     def create(self):
         """Create a branch in the database.
 
@@ -314,23 +297,6 @@ class LaunchpadBranch:
             raise PermissionDenied(fault.faultString)
 
         return deferred.addErrback(translate_fault)
-
-    def getRealPath(self, url_fragment_on_branch):
-        """Return the 'real' URL-escaped path to a path within this branch.
-
-        :param path_on_branch: A URL fragment referring to a path within this
-             branch.
-
-        :raise BranchNotFound: if the branch does not exist.
-        :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
-
-        :return: A path relative to the base directory where all branches
-            are stored. This path will look like '00/AB/02/43/.bzr/foo', where
-            'AB0243' is the database ID of the branch expressed in hex and
-            '.bzr/foo' is `path_on_branch`.
-        """
-        self._checkPath(url_fragment_on_branch)
-        return url_fragment_on_branch
 
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
@@ -382,6 +348,23 @@ class _BaseLaunchpadServer(Server):
         """Return the transport for accessing `lp_branch`."""
         raise NotImplementedError("Override this in subclasses.")
 
+    def _checkPath(self, path_on_branch):
+        """Raise an error if `path_on_branch` is not valid.
+
+        This allows us to enforce a certain level of policy about what goes
+        into a branch directory on Launchpad. Specifically, we do not allow
+        arbitrary files at the top-level, we only allow Bazaar control
+        directories, and backups of same.
+
+        :raise PermissionDenied: if `path_on_branch` is forbidden.
+        """
+        if path_on_branch == '':
+            return
+        segments = get_path_segments(path_on_branch)
+        if segments[0] not in ALLOWED_DIRECTORIES:
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
+
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
@@ -406,9 +389,9 @@ class _BaseLaunchpadServer(Server):
         deferred.addErrback(branch_not_found)
 
         def got_branch((lp_branch, path)):
-            real_path = lp_branch.getRealPath(path)
+            self._checkPath(path)
             transport = self._getTransportForLaunchpadBranch(lp_branch)
-            return transport, real_path
+            return transport, path
 
         return deferred.addCallback(got_branch)
 
