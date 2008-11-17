@@ -946,7 +946,7 @@ class TestCopyPackage(unittest.TestCase):
 
         def create_source(version, archive, pocket):
             source = test_publisher.getPubSource(
-                sourcename='bugged-source', version=version,
+                sourcename='buggy-source', version=version,
                 distroseries=warty, archive=archive, pocket=pocket,
                 status=PackagePublishingStatus.PUBLISHED)
             binaries = test_publisher.getPubBinaries(
@@ -955,9 +955,9 @@ class TestCopyPackage(unittest.TestCase):
             return source
 
         def create_bug(summary):
-            bugged_in_ubuntu = ubuntu.getSourcePackage('bugged-source')
+            buggy_in_ubuntu = ubuntu.getSourcePackage('buggy-source')
             bug_params = CreateBugParams(cprov, summary, "booo")
-            bug = bugged_in_ubuntu.createBug(bug_params)
+            bug = buggy_in_ubuntu.createBug(bug_params)
             [bug_task] = bug.bugtasks
             self.assertEqual(bug_task.status, BugTaskStatus.NEW)
             return bug.id
@@ -989,7 +989,7 @@ class TestCopyPackage(unittest.TestCase):
         create_upload(proposed_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
-            sourcename='bugged-source', include_binaries=True,
+            sourcename='buggy-source', include_binaries=True,
             from_suite='warty-proposed', to_suite='warty-updates')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
@@ -1009,7 +1009,7 @@ class TestCopyPackage(unittest.TestCase):
         create_upload(dev_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
-            sourcename='bugged-source', include_binaries=True,
+            sourcename='buggy-source', include_binaries=True,
             from_suite='warty-updates', to_suite='hoary')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
@@ -1029,7 +1029,7 @@ class TestCopyPackage(unittest.TestCase):
         create_upload(ppa_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
-            sourcename='bugged-source', include_binaries=True,
+            sourcename='buggy-source', include_binaries=True,
             from_ppa='cprov', from_suite='warty', to_suite='warty-proposed')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive
@@ -1049,7 +1049,7 @@ class TestCopyPackage(unittest.TestCase):
         create_upload(release_source, closing_bug_changesfile)
 
         copy_helper = self.getCopier(
-            sourcename='bugged-source', include_binaries=True,
+            sourcename='buggy-source', include_binaries=True,
             to_ppa='cprov', from_suite='warty', to_suite='warty')
         copied = copy_helper.mainTask()
         target_archive = copy_helper.destination.archive

@@ -56,7 +56,7 @@ def can_close_bugs(target):
     ISourcePackagePublishingHistory and IPackageUpload are the
     currently supported targets.
 
-    Source publications or package uploads targetted to pocket
+    Source publications or package uploads targeted to pocket
     PROPOSED or any other archive purpose than PRIMARY will
     not automatically close bugs.
     """
