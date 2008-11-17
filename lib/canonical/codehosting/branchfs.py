@@ -56,7 +56,7 @@ import xmlrpclib
 
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.errors import (
-    BzrError, NoSuchFile, PermissionDenied, TransportNotPossible)
+    NoSuchFile, PermissionDenied, TransportNotPossible)
 from bzrlib.transport import (
     get_transport, register_transport, Server, unregister_transport)
 from bzrlib.transport.memory import MemoryServer
@@ -217,10 +217,7 @@ class _BaseLaunchpadServer(Server):
         self._is_set_up = False
 
     def _transportFactory(self, url):
-        """Create a transport for this server pointing at `url`.
-
-        Override this in subclasses.
-        """
+        """Create a transport for this server pointing at `url`."""
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
 
@@ -246,8 +243,6 @@ class _BaseLaunchpadServer(Server):
 
         :param virtual_url_fragment: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
         :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
             branch.
         :raise PermissionDenied: if the path on the branch is forbidden.
