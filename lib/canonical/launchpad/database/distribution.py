@@ -40,6 +40,7 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.distroseries import DistroSeries
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -87,7 +88,7 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
-                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
@@ -961,11 +962,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
+                SourcePackagePublishingHistory.status IN %s
                 ''' % sqlvalues(self,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
+                                (PackagePublishingStatus.PUBLISHED,
+                                 PackagePublishingStatus.PENDING)),
                 clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")

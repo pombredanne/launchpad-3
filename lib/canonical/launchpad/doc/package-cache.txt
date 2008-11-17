@@ -489,9 +489,95 @@ counters. IDistroSeries provides a method to update its own cache:
 New values were stored:
 
   >>> warty.sourcecount
-  5
+  6
   >>> warty.binarycount
   6
+
+Only PENDING and PUBLISHED publications are considered.
+
+We will use `SoyuzTestPublisher` for creating convenient publications.
+
+  >>> from canonical.database.sqlbase import commit
+  >>> from canonical.launchpad.interfaces.publishing import (
+  ...     PackagePublishingStatus)
+  >>> from canonical.launchpad.tests.test_publishing import (
+  ...     SoyuzTestPublisher)
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+  >>> test_publisher = SoyuzTestPublisher()
+
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> commit()
+
+  >>> unused = test_publisher.setUpDefaultDistroSeries(warty)
+  >>> test_publisher.addFakeChroots()
+
+Let's create one source with a single binary in PENDING status.
+
+  >>> pending_source = test_publisher.getPubSource(
+  ...     sourcename = 'pending-source',
+  ...     status=PackagePublishingStatus.PENDING)
+
+  >>> pending_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="pending-binary", pub_source=pending_source,
+  ...     status=PackagePublishingStatus.PENDING)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in pending_binaries))
+  1
+
+And one source with a single binary in PUBLISHED status.
+
+  >>> published_source = test_publisher.getPubSource(
+  ...     sourcename = 'published-source',
+  ...     status=PackagePublishingStatus.PUBLISHED)
+
+  >>> published_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="published-binary", pub_source=published_source,
+  ...     status=PackagePublishingStatus.PUBLISHED)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in published_binaries))
+  1
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+Exactly 2 new sources and 2 new binaries will be accounted.
+
+  >>> warty.updatePackageCount()
+  >>> warty.sourcecount
+  8
+  >>> warty.binarycount
+  8
+
+Let's create one source with a single binary in DELETED status.
+
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> commit()
+
+  >>> deleted_source = test_publisher.getPubSource(
+  ...     sourcename = 'pending-source',
+  ...     status=PackagePublishingStatus.DELETED)
+
+  >>> deleted_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="pending-binary", pub_source=deleted_source,
+  ...     status=PackagePublishingStatus.DELETED)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in deleted_binaries))
+  1
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+Distroseries package counters will not account DELETED publications.
+
+  >>> warty.updatePackageCount()
+  >>> warty.sourcecount
+  8
+  >>> warty.binarycount
+  8
 
 A similar mechanism is offered by IDistroArchSeries, but only for
 binaries (of course):
@@ -508,7 +594,7 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  8
+  9
 
 
 == DistroSeriesBinaryPackage cache lookups ==

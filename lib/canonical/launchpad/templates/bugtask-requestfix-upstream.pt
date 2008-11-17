@@ -6,12 +6,16 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
 
 <div metal:fill-slot="main">
+
+  <div id="maincontent">
+
+    <p tal:content="structure context/fmt:link" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -25,15 +29,13 @@
 
     </metal:extra_info>
 
-    <metal:widgets 
+    <metal:widgets
         metal:fill-slot="widgets"
         tal:define="product_widget nocall:view/widgets/product;
                     product product_widget/getInputValue">
 
-
-      <div tal:define="widgets view/compulsory_widgets">
-        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
-      </div>
+      <tal:visited_steps
+          replace="structure view/widgets/visited_steps/hidden" />
 
       <div class="field">
 
@@ -122,7 +124,7 @@
       <p tal:condition="product/bug_supervisor">
         <a tal:attributes="href product/bug_supervisor/fmt:url"
            tal:content="product/bug_supervisor/displayname">Sample Person</a>,
-           the bug supervisor for 
+           the bug supervisor for
            <tal:product tal:replace="product/displayname">Firefox</tal:product>,
            will be notified about this bug.
       </p>
@@ -153,9 +155,9 @@
         This is a private bug report,
         so <a tal:attributes="href product/bug_supervisor/fmt:url"
            tal:content="product/bug_supervisor/displayname">Sample Person</a>,
-         the bug supervisor for 
+         the bug supervisor for
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-         won&rsquo;t be notified. You can also set up 
+         won&rsquo;t be notified. You can also set up
            <a href="+addsubscriber">additional contacts</a> to be notified.
       </p>
 
@@ -164,6 +166,11 @@
     </metal:widgets>
 
   </div>
+
+  </div>
+
+  <div id="portlets"
+       tal:content="structure context/bug/@@+portlet-notified" />
 
 </div>
 
