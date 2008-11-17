@@ -141,8 +141,8 @@ class SimpleTransportDispatch:
 class TransportDispatch:
 
     def __init__(self, hosted_transport, mirrored_transport):
-        self.hosted_transport = hosted_transport
-        self.mirrored_transport = mirrored_transport
+        self._hosted_dispatch = SimpleTransportDispatch(hosted_transport)
+        self._mirrored_dispatch = SimpleTransportDispatch(mirrored_transport)
         self._transport_factories = {
             BRANCH_TRANSPORT: self.make_branch_transport,
             CONTROL_TRANSPORT: self.make_control_transport,
@@ -155,18 +155,11 @@ class TransportDispatch:
 
     def make_branch_transport(self, id, writable):
         if writable:
-            transport = self.hosted_transport
+            dispatch = self._hosted_dispatch
         else:
-            transport = self.mirrored_transport
-        transport = transport.clone(branch_id_to_path(id))
-        try:
-            ensure_base(transport)
-        except TransportNotPossible:
-            # For now, silently ignore TransportNotPossible. This is raised
-            # when transport is read-only. In the future, we probably want to
-            # pass only writable transports in here: not sure.
-            # XXX JonathanLange
-            pass
+            dispatch = self._mirrored_dispatch
+        transport, ignored = dispatch.make_transport(
+            (BRANCH_TRANSPORT, dict(id=id), ''))
         if not writable:
             transport = get_transport('readonly+' + transport.base)
         return transport
