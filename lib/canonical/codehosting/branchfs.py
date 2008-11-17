@@ -76,7 +76,8 @@ from canonical.codehosting.transport import (
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
+from canonical.launchpad.xmlrpc import faults
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -208,28 +209,28 @@ class LaunchpadBranch:
             the virtual path, and `rest_of_path` is a URL fragment within
             that branch.
         """
-        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
-        segments = get_path_segments(virtual_path, 3)
-        # If we don't have at least an owner, product and name, then we don't
-        # have enough information for a branch.
-        if len(segments) < 3:
-            raise NotEnoughInformation(virtual_path)
-        # If we have only an owner, product, name tuple, append an empty path.
-        if len(segments) == 3:
-            segments.append('')
-        user_dir, product, name, path = segments
-        # The Bazaar client will look for a .bzr directory in the owner and
-        # product directories to see if there's a shared repository. There
-        # won't be, so we should treat this case the same as trying to access
-        # a branch without enough information.
-        if '.bzr' in (user_dir, product, name):
-            raise NotEnoughInformation(virtual_path)
-        if not user_dir.startswith('~'):
-            raise InvalidOwnerDirectory(virtual_path)
-        escaped_path = urlutils.escape(path)
-        return cls(authserver, user_dir[1:], product, name), escaped_path
+        deferred = authserver.translatePath('/' + virtual_url_fragment)
 
-    def __init__(self, authserver, owner, product, name):
+        def path_translated(result):
+            (transport_type, data, trailing_path) = result
+            if transport_type != BRANCH_TRANSPORT:
+                raise NotEnoughInformation(virtual_url_fragment)
+            return (
+                cls(authserver, virtual_url_fragment, data['id'],
+                    data['writable']),
+                trailing_path)
+
+        def path_not_translated(failure):
+            failure.trap(Fault)
+            fault = failure.value
+            if fault.faultCode == faults.PathTranslationError.error_code:
+                raise BranchNotFound(virtual_url_fragment)
+            else:
+                failure.raiseException()
+
+        return deferred.addCallbacks(path_translated, path_not_translated)
+
+    def __init__(self, authserver, branch_path, branch_id, can_write):
         """Construct a LaunchpadBranch object.
 
         In general, don't call this directly, use
@@ -247,9 +248,9 @@ class LaunchpadBranch:
         :param branch: The name of the branch.
         """
         self._authserver = authserver
-        self._owner = owner
-        self._product = product
-        self._name = name
+        self._branch_path = branch_path
+        self._branch_id = branch_id
+        self._can_write = can_write
 
     def checkPath(self, path_on_branch):
         """Raise an error if `path_on_branch` is not valid.
@@ -277,8 +278,11 @@ class LaunchpadBranch:
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        deferred = self._authserver.createBranch(
-            self._owner, self._product, self._name)
+        try:
+            owner, product, branch = self._branch_path.strip('/').split('/')
+        except ValueError:
+            raise PermissionDenied(self._branch_path)
+        deferred = self._authserver.createBranch(owner[1:], product, branch)
 
         def convert_fault(failure):
             failure.trap(Fault)
@@ -326,10 +330,8 @@ class LaunchpadBranch:
             self.checkPath(url_fragment_on_branch)
         except PermissionDenied:
             return defer.fail(failure.Failure())
-        deferred = self.getID()
-        return deferred.addCallback(
-            lambda branch_id: '/'.join(
-                [branch_id_to_path(branch_id), url_fragment_on_branch]))
+        branch_path = branch_id_to_path(self._branch_id)
+        return defer.succeed('/'.join([branch_path, url_fragment_on_branch]))
 
     def getID(self):
         """Return the database ID of this branch.
@@ -337,7 +339,7 @@ class LaunchpadBranch:
         :raise BranchNotFound: if the branch does not exist.
         :return: the database ID of the branch, an integer.
         """
-        return self._getInfo().addCallback(lambda branch_info: branch_info[0])
+        return defer.succeed(self._branch_id)
 
     def getPermissions(self):
         """Return the permissions that the current user has for this branch.
@@ -346,18 +348,10 @@ class LaunchpadBranch:
         :return: WRITABLE if the user can write to the branch, READ_ONLY
             otherwise.
         """
-        return self._getInfo().addCallback(lambda branch_info: branch_info[1])
-
-    def _getInfo(self):
-        deferred = self._authserver.getBranchInformation(
-            self._owner, self._product, self._name)
-        def check_branch_id(branch_info):
-            (branch_id, permissions) = branch_info
-            if branch_id == '':
-                raise BranchNotFound(
-                    owner=self._owner, product=self._product, name=self._name)
-            return branch_info
-        return deferred.addCallback(check_branch_id)
+        if self._can_write:
+            return defer.succeed(WRITABLE)
+        else:
+            return defer.succeed(READ_ONLY)
 
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
@@ -453,6 +447,12 @@ class _BaseLaunchpadServer(Server):
         """
         deferred = self._getLaunchpadBranch(virtual_url_fragment)
 
+        def branch_not_found(failure):
+            failure.trap(BranchNotFound)
+            raise NoSuchFile(virtual_url_fragment)
+
+        deferred.addErrback(branch_not_found)
+
         def couldnt_get_branch(failure):
             failure.trap(NotEnoughInformation)
             deferred = defer.maybeDeferred(
@@ -462,19 +462,6 @@ class _BaseLaunchpadServer(Server):
 
         def got_branch((lp_branch, path)):
             virtual_path_deferred = lp_branch.getRealPath(path)
-
-            def branch_not_found(failure):
-                failure.trap(BranchNotFound)
-                if path == '':
-                    # We are trying to translate a branch path that doesn't
-                    # exist.
-                    return failure
-                else:
-                    # We are trying to translate a path within a branch that
-                    # doesn't exist.
-                    raise NoSuchFile(virtual_url_fragment)
-
-            virtual_path_deferred.addErrback(branch_not_found)
 
             def get_transport(real_path):
                 deferred = self._getTransportForLaunchpadBranch(lp_branch)
@@ -564,17 +551,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        deferred = self._getLaunchpadBranch(virtual_url_fragment)
-
-        def got_branch((lp_branch, ignored)):
-            deferred = lp_branch.create()
-            def ensure_path(branch_id):
-                deferred = lp_branch.ensureUnderlyingPath(
-                    self._hosted_transport)
-                return deferred.addCallback(lambda ignored: branch_id)
-            return deferred.addCallback(ensure_path)
-
-        return deferred.addCallback(got_branch)
+        lp_branch = LaunchpadBranch(
+            self._authserver, virtual_url_fragment, None, None)
+        return lp_branch.create()
 
     def requestMirror(self, virtual_url_fragment):
         """Mirror the branch that owns 'virtual_url_fragment'.
@@ -691,7 +670,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
             self, relpath)
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
-            failure.trap(BranchNotFound)
+            failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
         def check_permission_denied(failure):
             # You can't ever create a directory that's not even a valid branch
