@@ -24,7 +24,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer, TransportFactory)
+    LaunchpadServer, TransportDispatch)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -43,11 +43,11 @@ def branch_to_path(branch, add_slash=True):
     return path
 
 
-class TestTransportFactory(TestCase):
+class TestTransportDispatch(TestCase):
     """Tests for the control transport factory."""
 
     def setUp(self):
-        super(TestTransportFactory, self).setUp()
+        super(TestTransportDispatch, self).setUp()
         memory_server = MemoryServer()
         memory_server.setUp()
         base_transport = get_transport(memory_server.get_url())
@@ -55,7 +55,7 @@ class TestTransportFactory(TestCase):
         base_transport.mkdir('mirrored')
         self.hosted_transport = base_transport.clone('hosted')
         self.mirrored_transport = base_transport.clone('mirrored')
-        self.factory = TransportFactory(
+        self.factory = TransportDispatch(
             self.hosted_transport, self.mirrored_transport)
 
     def test_control_conf_read_only(self):

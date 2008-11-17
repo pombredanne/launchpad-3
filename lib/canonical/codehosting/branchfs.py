@@ -117,7 +117,7 @@ def trap_fault(failure, *fault_codes):
     raise failure
 
 
-class TransportFactory:
+class TransportDispatch:
 
     def __init__(self, hosted_transport, mirrored_transport):
         self.hosted_transport = hosted_transport
@@ -436,12 +436,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
         self._hosted_transport = hosted_transport
         self._mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
-        self._transport_dispatch = TransportFactory(
+        self._transport_dispatch = TransportDispatch(
             self._hosted_transport, self._mirror_transport)
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return TransportFactory(
+        return TransportDispatch(
             None, None).make_control_transport(stack_on_url)
 
     def _parseProductControlDirectory(self, virtual_path):
@@ -538,7 +538,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
-        self._transport_dispatch = TransportFactory(
+        self._transport_dispatch = TransportDispatch(
             self._branch_transport, self._branch_transport)
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
