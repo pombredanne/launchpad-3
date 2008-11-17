@@ -369,8 +369,8 @@ class _BaseLaunchpadServer(Server):
         raise NotImplementedError("Override this in subclasses.")
 
     def _getLaunchpadBranch(self, virtual_path):
-        return defer.maybeDeferred(
-            LaunchpadBranch.from_virtual_path, self._authserver, virtual_path)
+        return LaunchpadBranch.from_virtual_path(
+            self._authserver, virtual_path)
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
         """Return the transport for accessing `lp_branch`."""
