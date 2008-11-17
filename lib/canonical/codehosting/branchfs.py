@@ -255,7 +255,7 @@ class LaunchpadBranch:
         self._branch_id = branch_id
         self.can_write = can_write
 
-    def checkPath(self, path_on_branch):
+    def _checkPath(self, path_on_branch):
         """Raise an error if `path_on_branch` is not valid.
 
         This allows us to enforce a certain level of policy about what goes
@@ -325,7 +325,7 @@ class LaunchpadBranch:
             'AB0243' is the database ID of the branch expressed in hex and
             '.bzr/foo' is `path_on_branch`.
         """
-        self.checkPath(url_fragment_on_branch)
+        self._checkPath(url_fragment_on_branch)
         branch_path = branch_id_to_path(self._branch_id)
         return '/'.join([branch_path, url_fragment_on_branch])
 
