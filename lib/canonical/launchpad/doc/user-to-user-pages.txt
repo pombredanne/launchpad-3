@@ -4,13 +4,9 @@ A Launchpad user can contact another Launchpad user directly, even if the
 recipient is hiding their email addresses.
 
     >>> def create_view(sender, recipient, form=None):
-    ...     if form is None:
-    ...         method = 'GET'
-    ...     else:
-    ...         method = 'POST'
     ...     return create_initialized_view(
     ...         recipient, '+contactuser',
-    ...         form=form, method=method, principal=sender)
+    ...         form=form, principal=sender)
 
 For example, let's say No Privileges Person wants to contact Salgado...
 
