@@ -874,7 +874,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveEditDependenciesForm
 
-    custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget)
+    custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget,
+                  cssClass='ppa-dependencies')
     custom_widget('primary_dependencies', LaunchpadRadioWidget)
 
 

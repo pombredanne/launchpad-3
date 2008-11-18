@@ -58,7 +58,7 @@ via the POST form.
     ...     empty_dep = find_tag_by_id(contents, 'empty-dependencies')
     ...     if empty_dep is not None:
     ...         print extract_text(empty_dep)
-    ...     dependencies = find_tags_by_class(contents, 'ppa_dependency_row')
+    ...     dependencies = find_tags_by_class(contents, 'ppa-dependencies')
     ...     for dep in dependencies:
     ...         print extract_text(dep)
 
@@ -77,53 +77,54 @@ The adding dependency input offers a interface to look for PPAs based
 on the PPA fti and/or the PPA owner's fti via a IHugeVocabulary
 popup. A valid term is the owner username.
 
-An empty or unknown term results in an error.
+An empty request doesn't change anything.
 
     >>> admin_browser.getControl("PPA Dependency").value = ''
-    >>> admin_browser.getControl("Add Dependency").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    Choose one dependency to add.
+    >>> admin_browser.getControl("Save").click()
+
+    >>> print_ppa_dependencies(admin_browser.contents)
+    No dependencies recorded for this PPA yet.
+
+An unknown term results in an error.
 
     >>> admin_browser.getControl("PPA Dependency").value = 'whatever'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Choose one dependency to add.
+    Invalid value
 
 When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
     >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     Dependency added: PPA for Mark Shuttleworth
 
+    >>> admin_browser.reload()
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
 
 Trying to add a dependency that is already recorded results in a error.
 
     >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    This dependency is already recorded.
+    This dependency is already registered.
 
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
     >>> admin_browser.getControl("PPA Dependency").value = 'cprov'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -133,7 +134,7 @@ a error.
 If it's a new dependency everything is fine.
 
     >>> admin_browser.getControl("PPA Dependency").value = 'no-priv'
-    >>> admin_browser.getControl("Add Dependency").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -141,6 +142,7 @@ If it's a new dependency everything is fine.
 
 Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
 
+    >>> admin_browser.reload()
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
@@ -166,15 +168,11 @@ One or more dependencies can be removed via this page, they are
 presented as a vertical array of check-boxes labeled by dependency PPA
 title.
 
-If no dependency is selected and the dependency removal is requested
-an error is raised.
+If no dependency is selected and the configuration is save, no
+dependencies get removed.
 
-    >>> admin_browser.getControl("Remove Dependencies").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    No dependencies selected.
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
@@ -187,7 +185,7 @@ dependencies is refreshed.
     ...     "PPA for Mark Shuttleworth").selected = True
     >>> admin_browser.getControl(
     ...     "PPA for No Privileges Person").selected = True
-    >>> admin_browser.getControl("Remove Dependencies").click()
+    >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -202,5 +200,20 @@ Once the dependencies are removed, the 'dependency-section' (including
 the warning message) are omitted from the PPA overview page
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    None
+
+
+== Canceling a form request ==
+
+At anytime the form can be cancelled and the user will be taken to the
+PPA context page and the action won't be executed.
+
+    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
+    >>> admin_browser.getLink("Cancel").click()
+
+    >>> print admin_browser.title
+    PPA for Celso Providelo
+
     >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
     None
