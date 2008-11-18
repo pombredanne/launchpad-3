@@ -92,9 +92,10 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -173,13 +174,13 @@ def validate_person_visibility(person, attr, value):
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
         mailing_list is not None and
         mailing_list.status != MailingListStatus.PURGED):
-        raise ValueError('This team cannot be made public since it has '
-                         'a mailing list')
+        raise ImmutableVisibilityError(
+            'This team cannot be made public since it has a mailing list')
 
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
-            raise ValueError(warning)
+            raise ImmutableVisibilityError(warning)
 
     return value
 

@@ -13,10 +13,12 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BranchType, CreateBugParams, EmailAddressAlreadyTaken,
-    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, InvalidEmailAddress,
-    InvalidName, IPersonSet, IProductSet, ISpecificationSet, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility)
+    IArchiveSet, IBranchSet, IBugSet, IEmailAddressSet, IProductSet,
+    ISpecificationSet, InvalidEmailAddress, InvalidName)
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
+    PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
 from canonical.launchpad.testing.systemdocs import create_initialized_view
@@ -128,7 +130,7 @@ class TestPerson(unittest.TestCase):
             )
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -142,7 +144,7 @@ class TestPerson(unittest.TestCase):
             sourcepackagename=None)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -155,7 +157,7 @@ class TestPerson(unittest.TestCase):
             purpose=ArchivePurpose.PPA)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -172,7 +174,7 @@ class TestPerson(unittest.TestCase):
             url=None)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -190,7 +192,7 @@ class TestPerson(unittest.TestCase):
         bug.bugtasks[0].transitionToAssignee(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -200,7 +202,7 @@ class TestPerson(unittest.TestCase):
         self.bzr.addSubscription(self.otherteam, self.guadamen)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by'
@@ -214,7 +216,7 @@ class TestPerson(unittest.TestCase):
         specification.subscribe(self.otherteam, self.otherteam, True)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -224,7 +226,7 @@ class TestPerson(unittest.TestCase):
         self.guadamen.addMember(self.otherteam, self.guadamen)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
@@ -235,7 +237,7 @@ class TestPerson(unittest.TestCase):
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made public since it has a mailing list')
@@ -268,7 +270,7 @@ class TestPerson(unittest.TestCase):
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ValueError, exc:
+        except ImmutableVisibilityError, exc:
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it '
