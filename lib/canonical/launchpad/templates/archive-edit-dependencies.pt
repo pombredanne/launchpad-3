@@ -36,7 +36,7 @@
             metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td></td>
-            <td style="padding: 5pt 0 10pt 0;">
+            <td style="padding: .5em 0 1em 0;">
               <input
                 tal:replace="structure view/actions/field.actions.remove/render" />
             </td>
@@ -51,7 +51,7 @@
             metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td></td>
-            <td style="padding: 5pt 0 10pt 0;">
+            <td style="padding: .5em 0 1em 0;">
               <input
                 tal:replace="structure view/actions/field.actions.add_ppa/render" />
             </td>
@@ -65,7 +65,7 @@
             metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td></td>
-            <td style="padding: 5pt 0 10pt 0;">
+            <td style="padding: .5em 0 1em 0;">
               <input
                 tal:replace="structure view/actions/field.actions.add_primary/render" />
             </td>
