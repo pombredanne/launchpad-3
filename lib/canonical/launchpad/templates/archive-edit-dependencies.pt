@@ -55,6 +55,35 @@
 
   </div> <!-- launchpad_form -->
 
+<script type="text/javascript">
+   YUI().use("node-style", function(Y) {
+       var ppa_dependencies = Y.get(".ppa-dependencies div");
+       if (ppa_dependencies == null) {
+           return;
+       }
+       var labels = ppa_dependencies.queryAll("label")
+       labels.each(function(v, k, items) {
+           var checkbox = Y.get(v.get("firstChild"));
+           checkbox.on("click", function(e) {
+               var link = Y.get(v.get("lastChild"));
+               if (e.currentTarget.get("checked")) {
+                   link.setStyle('color', 'red');
+                   link.setStyle('text-decoration', 'underline');
+                   console.log(
+                       "Style: " + link.getStyle('text-decoration'));
+               }
+               else {
+                   link.setStyle('color', 'blue');
+                   link.setStyle('text-decoration', 'none');
+                   console.log(
+                       "Style: " + link.getStyle('text-decoration'));
+               }
+           });
+       });
+
+   });
+</script>
+
 
 </div> <!--main -->
 
