@@ -148,8 +148,8 @@ class IProductPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or "
-                          "Team inside Launchpad context.")))
+            description=_("This person or team maintains the information "
+                          "in Launchpad regarding the project.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -157,8 +157,8 @@ class IProductPublic(
             required=True,
             readonly=True,
             vocabulary='ValidPersonOrTeam',
-            description=_("Project registrant, a valid Person "
-                          "within Launchpad context.")))
+            description=_("This person registered the project in "
+                          "Launchpad.")))
 
     driver = exported(
         PublicPersonChoice(
