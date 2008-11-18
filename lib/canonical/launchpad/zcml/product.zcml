@@ -164,7 +164,6 @@
         ProductBranchesMenu ProductSpecificationsMenu
         ProductTranslationsMenu ProductBugsMenu
         ProductSetFacets ProductSetContextMenu
-        ProductNavigationMenu ProductEditNavigationMenu
         "
         />
 
