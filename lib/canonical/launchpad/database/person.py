@@ -171,7 +171,8 @@ def validate_person_visibility(person, attr, value):
 
     if (value == PersonVisibility.PUBLIC and
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None):
+        mailing_list is not None and
+        mailing_list.status != MailingListStatus.PURGED):
         raise ValueError('This team cannot be made public since it has '
                          'a mailing list')
 
@@ -1864,6 +1865,9 @@ class Person(
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            # Skip mailing lists because if the mailing list is purged, it's
+            # not a problem.  Do this check separately below.
+            ('mailinglist', 'team')
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -1904,6 +1908,12 @@ class Person(
                 'a source package subscriber']):
             if count > 0:
                 warnings.add(warning)
+
+        # Non-purged mailing list check.
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
+            warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)

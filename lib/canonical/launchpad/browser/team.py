@@ -122,7 +122,10 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     @action('Save', name='save')
     def action_save(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except ValueError, error:
+            self.request.response.addErrorNotification(str(error))
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):
