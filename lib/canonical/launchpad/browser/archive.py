@@ -976,7 +976,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             Choice(__name__='primary_dependencies',
                    title=_('Primary dependencies'),
                    vocabulary=primary_dependency_vocabulary,
-                   description=_("How the context PPA sould depend on %s "
+                   description=_("How the context PPA should depend on %s "
                                  "primary archive."
                                  % self.context.distribution.name),
                    missing_value=updates,
@@ -1117,18 +1117,17 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
 
-        if dependency_pocket == PackagePublishingPocket.UPDATES:
-            # Remove any primary dependencies overrides.
+        # Remove any primary dependencies overrides.
+        if primary_dependency is not None:
             self.context.removeArchiveDependency(
                 self.context.distribution.main_archive)
+
+        if dependency_pocket == PackagePublishingPocket.UPDATES:
             self.request.response.addNotification(
                 structured('<p>Default primary dependencies restored.</p>'))
             return
 
         # Install the required primary archive dependency override.
-        if primary_dependency is not None:
-            self.context.removeArchiveDependency(
-                self.context.distribution.main_archive)
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket)
         self.request.response.addNotification(

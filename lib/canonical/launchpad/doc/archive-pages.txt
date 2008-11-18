@@ -325,6 +325,110 @@ Now all the updated fields can be inspected.
     setFocusByName('field.dependency_candidate');
     // -->
 
+Primary dependencies can be adjusted in the same form according to a
+set of pre-defined options. By default all PPAs use the dependencies
+for UPDATES pocket (see more information on archive-dependencies.txt).
+
+    >>> primary_dependencies = view.widgets.get(
+    ...     'primary_dependencies').vocabulary
+    >>> for dependency in primary_dependencies:
+    ...     print dependency.value
+    Release
+    Security
+    Updates
+    Backports
+    Proposed
+
+    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
+    <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
+
+The form validation code identifies primary dependency override to the
+same value and raises an error. Even when there is not explicit
+override.
+
+    >>> add_updates_request = LaunchpadTestRequest(
+    ...     form={
+    ...         'field.selected_dependencies': [],
+    ...         'field.dependency_candidate': '',
+    ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.actions.add_primary': 'Add primary dependencies',
+    ...         })
+    >>> add_updates_request.method = 'POST'
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_updates_request),
+    ...     name="+edit-dependencies")
+    >>> view.initialize()
+
+    >>> for message in view.errors:
+    ...     print message
+    This PPA already uses the default primary dependencies.
+
+Any other pre-defined primary dependency can be selected.
+
+    >>> add_proposed_request = LaunchpadTestRequest(
+    ...     form={
+    ...         'field.selected_dependencies': [],
+    ...         'field.dependency_candidate': '',
+    ...         'field.primary_dependencies': 'PROPOSED',
+    ...         'field.actions.add_primary': 'Add primary dependencies',
+    ...         })
+    >>> add_proposed_request.method = 'POST'
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_proposed_request),
+    ...     name="+edit-dependencies")
+    >>> view.initialize()
+    >>> transaction.commit()
+
+Once the page is reloaded, the selected primary dependency is
+presented in the 'selected_dependencies' widget and selected as a
+current value of 'primary_dependencies' widget.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
+    >>> view.initialize()
+
+    >>> selectable_dependencies = view.widgets.get(
+    ...     'selected_dependencies').vocabulary
+    >>> for dependency in selectable_dependencies:
+    ...     print dependency.title
+    <a href="http://launchpad.dev/ubuntu/+archive/primary">Primary Archive
+    for Ubuntu Linux - PROPOSED</a>
+
+    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
+    <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
+
+As mentioned, attempts to override primary dependencies to the same
+value are detected in the form validation and an error is raised.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_proposed_request),
+    ...     name="+edit-dependencies")
+    >>> view.initialize()
+
+    >>> for message in view.errors:
+    ...     print message
+    This PPA already uses the PROPOSED primary dependencies.
+
+Overriding the primary dependencies back to the 'default' value
+(UPDATES pocket) will result in the override removal and the 'default'
+option to be selected.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, add_updates_request),
+    ...     name="+edit-dependencies")
+    >>> view.initialize()
+    >>> transaction.commit()
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
+    >>> view.initialize()
+
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
+
+    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
+    <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
+
 
 == ArchivePackageCopyingView ==
 
