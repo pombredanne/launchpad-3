@@ -21,6 +21,34 @@
 
       <table>
 
+        <tal:primary_dependency
+          define="widget nocall:view/widgets/primary_dependencies|nothing"
+          condition="widget">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
+          <tr>
+            <td></td>
+            <td style="padding: .5em 0 1em 0;">
+              <input
+                tal:replace="structure view/actions/field.actions.add_primary/render" />
+            </td>
+          </tr>
+        </tal:primary_dependency>
+
+        <tal:add_dependency
+          define="widget nocall:view/widgets/dependency_candidate|nothing"
+          condition="widget">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
+          <tr>
+            <td></td>
+            <td style="padding: .5em 0 1em 0;">
+              <input
+                tal:replace="structure view/actions/field.actions.add_ppa/render" />
+            </td>
+          </tr>
+        </tal:add_dependency>
+
         <tr tal:condition="not: view/has_dependencies">
           <td></td>
           <td>
@@ -42,35 +70,6 @@
             </td>
           </tr>
         </tal:dependencies>
-
-
-        <tal:add_dependency
-          define="widget nocall:view/widgets/dependency_candidate|nothing"
-          condition="widget">
-          <metal:widget
-            metal:use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td style="padding: .5em 0 1em 0;">
-              <input
-                tal:replace="structure view/actions/field.actions.add_ppa/render" />
-            </td>
-          </tr>
-        </tal:add_dependency>
-
-        <tal:primary_dependency
-          define="widget nocall:view/widgets/primary_dependencies|nothing"
-          condition="widget">
-          <metal:widget
-            metal:use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td style="padding: .5em 0 1em 0;">
-              <input
-                tal:replace="structure view/actions/field.actions.add_primary/render" />
-            </td>
-          </tr>
-        </tal:primary_dependency>
 
       </table>
 

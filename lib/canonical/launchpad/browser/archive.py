@@ -920,7 +920,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
-                 title=_('Recorded dependencies'),
+                 title=_('Current dependencies'),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
                  default=[],
@@ -974,7 +974,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         return form.Fields(
             Choice(__name__='primary_dependencies',
-                   title=_('Primary dependencies'),
+                   title=_('Dependency configuration'),
                    vocabulary=primary_dependency_vocabulary,
                    description=_("How the context PPA should depend on %s "
                                  "primary archive."
@@ -1052,7 +1052,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         if self.context.getArchiveDependency(dependency_candidate):
             self.setFieldError('dependency_candidate',
                                "This dependency is already recorded.")
-            return
 
     @action(_("Add PPA Dependency"), name="add_ppa",
             validator="validate_add_ppa")
@@ -1093,15 +1092,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 'primary_dependencies',
                 "This PPA already uses the default primary dependencies.")
             return
-        elif (primary_dependency is not None and
-              primary_dependency.pocket == dependency_pocket):
+        if (primary_dependency is not None and
+            primary_dependency.pocket == dependency_pocket):
             self.setFieldError(
                 'primary_dependencies',
                 "This PPA already uses the %s primary dependencies." %
                 dependency_pocket.name)
-            return
-        else:
-            pass
 
     @action(_("Add Primary Dependency"), name="add_primary",
             validator='validate_add_primary')
