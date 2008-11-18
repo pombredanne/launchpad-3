@@ -87,11 +87,11 @@ COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge ha
 
 -- BranchMergeProposalJob
 
-COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch merge proposal.';
-COMMENT ON COLUMN BranchJob.job IS 'A reference to a row in the Job table that has all the common job details.';
-COMMENT ON COLUMN BranchJob.branch_merge_proposal IS 'The branch merge proposal that this job is for.';
-COMMENT ON COLUMN BranchJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
-COMMENT ON COLUMN BranchJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
+COMMENT ON TABLE BranchMergeProposalJob IS 'Contains references to jobs that are executed for a branch merge proposal.';
+COMMENT ON COLUMN BranchMergeProposalJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchMergeProposalJob.branch_merge_proposal IS 'The branch merge proposal that this job is for.';
+COMMENT ON COLUMN BranchMergeProposalJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
+COMMENT ON COLUMN BranchMergeProposalJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
 
 -- BranchMergeRobot
 
@@ -512,7 +512,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MergeDirectiveJob
 COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
 COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
-COMMENT ON COLUMN MergeDirectiveJob.message IS 'Full MIME content of the message containing the merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.merge_directive IS 'Full MIME content of the message containing the merge directive.';
 COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
 
 

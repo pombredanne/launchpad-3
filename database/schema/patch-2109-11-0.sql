@@ -23,7 +23,9 @@ CREATE TABLE Job (
   date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
       DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   date_started TIMESTAMP WITHOUT TIME ZONE,
-  date_finished TIMESTAMP WITHOUT TIME ZONE
+  date_finished TIMESTAMP WITHOUT TIME ZONE,
+  -- For selecting
+  CONSTRAINT job__status__id__key UNIQUE (status, id)
 );
 
 -- For person merge.
@@ -31,60 +33,78 @@ CREATE INDEX job__requester__key
     ON Job (requester)
     WHERE (requester IS NOT NULL);
 
-
 CREATE TABLE BranchJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER NOT NULL REFERENCES Job,
+  job INTEGER NOT NULL REFERENCES Job ON DELETE CASCADE UNIQUE,
   branch INTEGER NOT NULL REFERENCES Branch,
   job_type INTEGER NOT NULL,
   json_data TEXT
 );
 
+CREATE INDEX branchjob__branch__idx ON BranchJob(branch);
+
 CREATE TABLE BranchMergeProposalJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER NOT NULL REFERENCES Job,
+  job INTEGER NOT NULL REFERENCES Job ON DELETE CASCADE UNIQUE,
   branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal,
   job_type INTEGER NOT NULL,
   json_data TEXT
 );
 
+CREATE INDEX branchmergeproposaljob__branch_merge_proposal__idx
+    ON BranchMergeProposalJob(branch_merge_proposal);
+
 CREATE TABLE MergeDirectiveJob (
   id SERIAL PRIMARY KEY,
-  job INTEGER NOT NULL REFERENCES Job,
-  message INTEGER NOT NULL REFERENCES LibraryFileAlias,
-  action INTEGER
+  job INTEGER NOT NULL REFERENCES Job ON DELETE CASCADE UNIQUE,
+  merge_directive INTEGER NOT NULL REFERENCES LibraryFileAlias,
+  action INTEGER NOT NULL
 );
+
+CREATE INDEX mergedirectivejob__merge_directive__idx
+    ON MergeDirectiveJob(merge_directive);
 
 CREATE TABLE Diff (
   id serial PRIMARY KEY,
   diff_text INTEGER NOT NULL REFERENCES LibraryFileAlias,
-  diff_lines_count INTEGER,
-  diffstat TEXT,
-  added_lines_count INTEGER,
-  removed_lines_count INTEGER
+  diff_lines_count INTEGER NOT NULL,
+  diffstat TEXT NOT NULL,
+  added_lines_count INTEGER NOT NULL,
+  removed_lines_count INTEGER NOT NULL
 );
+
+CREATE INDEX diff__diff_text__idx ON Diff(diff_text);
 
 CREATE TABLE StaticDiff (
   id serial PRIMARY KEY,
-  from_revision_id TEXT,
-  to_revision_id TEXT,
-  diff INTEGER REFERENCES Diff,
+  from_revision_id TEXT NOT NULL,
+  to_revision_id TEXT NOT NULL,
+  diff INTEGER REFERENCES Diff NOT NULL,
   UNIQUE (from_revision_id, to_revision_id)
 );
 
+CREATE INDEX staticdiff__diff__idx ON StaticDiff(diff);
+
 CREATE TABLE PreviewDiff (
   id SERIAL PRIMARY KEY,
-  source_revision_id TEXT,
-  target_revision_id TEXT,
-  dependent_revision_id TEXT,
-  diff INTEGER REFERENCES Diff,
+  source_revision_id TEXT NOT NULL,
+  target_revision_id TEXT NOT NULL,
+  dependent_revision_id TEXT NOT NULL,
+  diff INTEGER REFERENCES Diff NOT NULL,
   conflicts TEXT
 );
 
+CREATE INDEX previewdiff__diff__idx ON PreviewDiff(diff);
 
 ALTER TABLE BranchMergeProposal
   ADD COLUMN review_diff INTEGER REFERENCES StaticDiff;
 ALTER TABLE BranchMergeProposal
   ADD COLUMN merge_diff INTEGER REFERENCES PreviewDiff;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
+CREATE INDEX branchmergeproposal__review_diff__idx
+    ON BranchMergeProposal(review_diff);
+CREATE INDEX branchmergeproposal__merge_diff__idx
+    ON BranchMergeProposal(merge_diff);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2109, 11, 0);
+
