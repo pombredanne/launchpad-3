@@ -875,6 +875,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     schema = IArchiveEditDependenciesForm
 
     custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget)
+    custom_widget('primary_dependencies', LaunchpadRadioWidget)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -887,7 +888,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         LaunchpadFormView.setUpFields(self)
 
         self.form_fields = (
-            self.createSelectedDependenciesField() + self.form_fields)
+            self.createSelectedDependenciesField() +
+            self.createPrimaryDependenciesField() +
+            self.form_fields)
 
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
@@ -911,7 +914,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         for archive_dependency in self.context.dependencies:
             dependency = archive_dependency.dependency
             dependency_label = '<a href="%s">%s</a>' % (
-                canonical_url(dependency), dependency.title)
+                canonical_url(dependency), archive_dependency.title)
             term = SimpleTerm(
                 dependency, dependency.owner.name, dependency_label)
             terms.append(term)
@@ -923,6 +926,62 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  default=[],
                  description=_(
                     'Select one or more dependencies to be removed.')))
+
+    def createPrimaryDependenciesField(self):
+        """Create the 'primary_dependencies' field.
+
+        'primary_dependency' widget is a choice, rendered as radio-buttons,
+        with 5 options that provides `PackagePublishingPocket` as result:
+
+         || Option    || Value     ||
+         || Release   || RELEASE   ||
+         || Security  || SECURITY  ||
+         || Default   || UPDATES   ||
+         || Backports || BACKPORTS ||
+         || Proposed  || PROPOSED  ||
+
+        When omitted in the form, this widget defaults for 'Default'
+        option when rendered.
+        """
+        release = SimpleTerm(
+            PackagePublishingPocket.RELEASE, 'RELEASE',
+            _('Depend only on RELEASE pocket, no SECURITY or UPDATES '
+              'candidates will be used as build dependencies.'))
+        security = SimpleTerm(
+            PackagePublishingPocket.SECURITY, 'SECURITY',
+            _('Depend only on RELEASE and SECURITY pockets, no UPDATES '
+              'candidates will be used as build dependencies.'))
+        updates = SimpleTerm(
+            PackagePublishingPocket.UPDATES, 'UPDATES',
+            _('Default dependencies, include RELEASE, SECURITY and UPDATES.'))
+        backports = SimpleTerm(
+            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
+            _('Depend also on BACKPORTS pocket, additionally to the '
+              'default archive dependencies.'))
+        proposed = SimpleTerm(
+            PackagePublishingPocket.PROPOSED, 'PROPOSED',
+            _('Depend also on PROPOSED pocket, i.e. all pockets will '
+              'be used to fetch build dependencies.'))
+        primary_dependency_vocabulary = SimpleVocabulary(
+            [release, security, updates, backports, proposed])
+
+        primary_dependency = self.context.getArchiveDependency(
+            self.context.distribution.main_archive)
+        if primary_dependency is None:
+            default_value = PackagePublishingPocket.UPDATES
+        else:
+            default_value = primary_dependency.pocket
+
+        return form.Fields(
+            Choice(__name__='primary_dependencies',
+                   title=_('Primary dependencies'),
+                   vocabulary=primary_dependency_vocabulary,
+                   description=_("How the context PPA sould depend on %s "
+                                 "primary archive."
+                                 % self.context.distribution.name),
+                   missing_value=updates,
+                   default=default_value,
+                   required=True))
 
     @cachedproperty
     def has_dependencies(self):
@@ -966,8 +1025,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.request.response.addNotification(structured(notification))
         self.next_url = self.request.URL
 
-    def validate_add(self, action, data):
-        """Validate 'add dependency' parameters.
+    def validate_add_ppa(self, action, data):
+        """Validate 'add ppa dependency' parameters.
 
         Ensure the following conditions
 
@@ -995,8 +1054,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "This dependency is already recorded.")
             return
 
-    @action(_("Add Dependency"), name="add", validator="validate_add")
-    def action_add(self, action, data):
+    @action(_("Add PPA Dependency"), name="add_ppa",
+            validator="validate_add_ppa")
+    def action_add_ppa(self, action, data):
         """Record the selected dependency."""
         if len(self.errors) != 0:
             return
@@ -1009,6 +1069,27 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.request.response.addNotification(
             structured(
                 '<p>Dependency added: %s</p>' % dependency_candidate.title))
+        self.next_url = self.request.URL
+
+    @action(_("Add Primary Dependency"), name="add_primary")
+    def action_add_primary(self, action, data):
+        """Record the selected dependency."""
+        dependency_pocket = data.get('primary_dependencies')
+
+        primary_dependency = self.context.getArchiveDependency(
+            self.context.distribution.main_archive)
+        if primary_dependency is not None:
+            self.context.removeArchiveDependency(
+                self.context.distribution.main_archive)
+
+        primary_dependency = self.context.addArchiveDependency(
+            self.context.distribution.main_archive, dependency_pocket)
+
+        self.request.response.addNotification(
+            structured(
+                '<p>Primary dependency added: %s</p>' %
+                primary_dependency.title))
+
         self.next_url = self.request.URL
 
 
