@@ -26,13 +26,6 @@
           condition="widget">
           <metal:widget
             metal:use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td style="padding: .5em 0 1em 0;">
-              <input
-                tal:replace="structure view/actions/field.actions.add_primary/render" />
-            </td>
-          </tr>
         </tal:primary_dependency>
 
         <tal:add_dependency
@@ -40,20 +33,13 @@
           condition="widget">
           <metal:widget
             metal:use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td style="padding: .5em 0 1em 0;">
-              <input
-                tal:replace="structure view/actions/field.actions.add_ppa/render" />
-            </td>
-          </tr>
         </tal:add_dependency>
 
         <tr tal:condition="not: view/has_dependencies">
           <td></td>
           <td>
             <p id="empty-dependencies"
-            ><i>No dependencies recorded for this PPA yet.<i></p>
+            ><i>No dependencies recorded for this PPA yet.</i></p>
           </td>
         </tr>
 
@@ -62,22 +48,10 @@
           condition="view/has_dependencies">
           <metal:widget
             metal:use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td></td>
-            <td style="padding: .5em 0 1em 0;">
-              <input
-                tal:replace="structure view/actions/field.actions.remove/render" />
-            </td>
-          </tr>
         </tal:dependencies>
-
       </table>
 
    </div> <!-- widgets -->
-
-   <div class="actions" metal:fill-slot="buttons">
-   </div> <!-- empty buttons -->
-
 
   </div> <!-- launchpad_form -->
 

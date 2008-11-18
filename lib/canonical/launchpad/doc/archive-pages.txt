@@ -163,6 +163,7 @@ situation and ignore it. See bug #185922 for reference.
     >>> len(view.errors)
     2
 
+
 == ArchiveEditDependenciesView ==
 
 We use ArchiveEditDependenciesView to provide the mechnisms used to
@@ -217,7 +218,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': 'sabdfl',
     ...         'field.primary_dependencies': 'UPDATES',
-    ...         'field.actions.add_ppa': 'Add PPA Dependency',
+    ...         'field.actions.save': 'Save',
     ...         })
     >>> add_dependency_request.method = 'POST'
     >>> view = getMultiAdapter(
@@ -270,20 +271,6 @@ first listed dependency.
     setFocusByName('field.selected_dependencies');
     // -->
 
-We warn the user when a malformed request does not include selected
-dependencies for a removal.
-
-    >>> broken_request = LaunchpadTestRequest(
-    ...     form={'field.actions.remove': 'Remove Dependencies',})
-    >>> broken_request.method = 'POST'
-    >>> view = getMultiAdapter(
-    ...     (cprov.archive, broken_request), name="+edit-dependencies")
-    >>> view.initialize()
-    >>> for message in view.errors:
-    ...     print message
-    ...
-    No dependencies selected.
-
 If we remove the just-added dependency, the view gets back to its
 initial/empty state.
 
@@ -292,7 +279,7 @@ initial/empty state.
     ...         'field.selected_dependencies': ['sabdfl'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
-    ...         'field.actions.remove': 'Remove Dependencies',
+    ...         'field.actions.save': 'Save',
     ...         })
     >>> remove_dependency_request.method = 'POST'
     >>> view = getMultiAdapter(
@@ -343,7 +330,7 @@ for UPDATES pocket (see more information on archive-dependencies.txt).
     <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
 The form validation code identifies primary dependency override to the
-same value and raises an error. Even when there is not explicit
+same value and doesn't change anything. Even when there is not explicit
 override.
 
     >>> add_updates_request = LaunchpadTestRequest(
@@ -351,7 +338,7 @@ override.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
-    ...         'field.actions.add_primary': 'Add primary dependencies',
+    ...         'field.actions.save': 'Save',
     ...         })
     >>> add_updates_request.method = 'POST'
     >>> view = getMultiAdapter(
@@ -359,9 +346,11 @@ override.
     ...     name="+edit-dependencies")
     >>> view.initialize()
 
-    >>> for message in view.errors:
-    ...     print message
-    This PPA already uses the default primary dependencies.
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
+
+    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
+    <DBItem PackagePublishingPocket.UPDATES, (20) Updates>
 
 Any other pre-defined primary dependency can be selected.
 
@@ -370,7 +359,7 @@ Any other pre-defined primary dependency can be selected.
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'PROPOSED',
-    ...         'field.actions.add_primary': 'Add primary dependencies',
+    ...         'field.actions.save': 'Save',
     ...         })
     >>> add_proposed_request.method = 'POST'
     >>> view = getMultiAdapter(
@@ -398,16 +387,19 @@ current value of 'primary_dependencies' widget.
     <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
 
 As mentioned, attempts to override primary dependencies to the same
-value are detected in the form validation and an error is raised.
+value are detected in the form validation and nothing is changed, even
+when there is a explicit override.
 
     >>> view = getMultiAdapter(
     ...     (cprov.archive, add_proposed_request),
     ...     name="+edit-dependencies")
     >>> view.initialize()
 
-    >>> for message in view.errors:
-    ...     print message
-    This PPA already uses the PROPOSED primary dependencies.
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    1
+
+    >>> view.widgets.get('primary_dependencies')._getCurrentValue()
+    <DBItem PackagePublishingPocket.PROPOSED, (30) Proposed>
 
 Overriding the primary dependencies back to the 'default' value
 (UPDATES pocket) will result in the override removal and the 'default'

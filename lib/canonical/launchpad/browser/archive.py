@@ -877,6 +877,12 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget)
     custom_widget('primary_dependencies', LaunchpadRadioWidget)
 
+
+    def initialize(self):
+        self.cancel_url = canonical_url(self.context)
+        self._messages = []
+        LaunchpadFormView.initialize(self)
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
@@ -962,8 +968,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             PackagePublishingPocket.PROPOSED, 'PROPOSED',
             _('Depend also on PROPOSED pocket, i.e. all pockets will '
               'be used to fetch build dependencies.'))
-        primary_dependency_vocabulary = SimpleVocabulary(
-            [release, security, updates, backports, proposed])
+
+        terms = [release, security, updates, backports, proposed]
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
@@ -972,6 +978,10 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         else:
             default_value = primary_dependency.pocket
 
+        primary_dependency_vocabulary = SimpleVocabulary(terms)
+        current_term = primary_dependency_vocabulary.getTerm(
+            default_value)
+
         return form.Fields(
             Choice(__name__='primary_dependencies',
                    title=_('Dependency configuration'),
@@ -979,7 +989,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                    description=_("How the context PPA should depend on %s "
                                  "primary archive."
                                  % self.context.distribution.name),
-                   missing_value=updates,
+                   missing_value=current_term,
                    default=default_value,
                    required=True))
 
@@ -990,128 +1000,51 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # in storm.
         return self.context.dependencies.count() > 0
 
-    def validate_remove(self, action, data):
-        """Validate dependency removal parameters.
+    @property
+    def messages(self):
+        return '\n'.join(self._messages)
 
-        Ensure we have at least one dependency selected.
-        """
-        self.validate_widgets(data, ['selected_dependencies'])
-
-        if len(data.get('selected_dependencies', [])) == 0:
-            self.setFieldError(
-                'selected_dependencies', 'No dependencies selected.')
-        return self.errors
-
-    @action(_("Remove Dependencies"), name="remove",
-            validator="validate_remove")
-    def action_remove(self, action, data):
+    def _remove_dependencies(self, data):
         """Perform the removal of the selected dependencies."""
-        if len(self.errors) != 0:
+        selected_dependencies = data.get('selected_dependencies', [])
+        if len(selected_dependencies) == 0:
             return
-
-        selected_dependencies = data.get('selected_dependencies')
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
             self.context.removeArchiveDependency(dependency)
 
         # Present a page notification describing the action.
-        messages = []
-        messages.append('<p>Dependencies removed:')
+        self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            messages.append('<br/>%s' % dependency.title)
-        messages.append('</p>')
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
-        self.next_url = self.request.URL
+            self._messages.append('<br/>%s' % dependency.title)
+        self._messages.append('</p>')
 
-    def validate_add_ppa(self, action, data):
-        """Validate 'add ppa dependency' parameters.
-
-        Ensure the following conditions
-
-         * The dependency_candidate exists (was chosen by the user);
-         * The dependency_candidate is not the context PPA (recursive);
-         * The dependency_candidate is not yet recorded (duplication).
-
-        A error message is rendered if any of those checks fails.
-        """
-        form.getWidgetsData(self.widgets, 'field', data)
-
+    def _add_ppa_dependencies(self, data):
+        """Record the selected dependency."""
         dependency_candidate = data.get('dependency_candidate')
         if dependency_candidate is None:
-            self.setFieldError(
-                'dependency_candidate', 'Choose one dependency to add.')
             return
 
-        if dependency_candidate == self.context:
-            self.setFieldError('dependency_candidate',
-                               "An archive should not depend on itself.")
-            return
-
-        if self.context.getArchiveDependency(dependency_candidate):
-            self.setFieldError('dependency_candidate',
-                               "This dependency is already recorded.")
-
-    @action(_("Add PPA Dependency"), name="add_ppa",
-            validator="validate_add_ppa")
-    def action_add_ppa(self, action, data):
-        """Record the selected dependency."""
-        if len(self.errors) != 0:
-            return
-
-        dependency_candidate = data.get('dependency_candidate')
         self.context.addArchiveDependency(
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
 
-        self.request.response.addNotification(
-            structured(
-                '<p>Dependency added: %s</p>' % dependency_candidate.title))
-        self.next_url = self.request.URL
+        self._messages.append(
+            '<p>Dependency added: %s</p>' % dependency_candidate.title)
 
-    def validate_add_primary(self, action, data):
-        """Validate 'add primary dependency' parameters.
-
-        Ensure the following condition:
-
-         * Selected primary dependency override is not the one already
-           installed.
-
-        A error message is rendered if this checks fails.
-        """
-        form.getWidgetsData(self.widgets, 'field', data)
-
+    def _add_primary_dependencies(self, data):
+        """Record the selected dependency."""
         dependency_pocket = data.get('primary_dependencies')
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
 
         if (primary_dependency is None and
             dependency_pocket == PackagePublishingPocket.UPDATES):
-            self.setFieldError(
-                'primary_dependencies',
-                "This PPA already uses the default primary dependencies.")
             return
         if (primary_dependency is not None and
             primary_dependency.pocket == dependency_pocket):
-            self.setFieldError(
-                'primary_dependencies',
-                "This PPA already uses the %s primary dependencies." %
-                dependency_pocket.name)
-
-    @action(_("Add Primary Dependency"), name="add_primary",
-            validator='validate_add_primary')
-    def action_add_primary(self, action, data):
-        """Record the selected dependency."""
-        if len(self.errors) != 0:
             return
-
-        # Redirect after POST.
-        self.next_url = self.request.URL
-
-        dependency_pocket = data.get('primary_dependencies')
-        primary_dependency = self.context.getArchiveDependency(
-            self.context.distribution.main_archive)
 
         # Remove any primary dependencies overrides.
         if primary_dependency is not None:
@@ -1119,16 +1052,56 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 self.context.distribution.main_archive)
 
         if dependency_pocket == PackagePublishingPocket.UPDATES:
-            self.request.response.addNotification(
-                structured('<p>Default primary dependencies restored.</p>'))
+            self._messages.append(
+                '<p>Default primary dependencies restored.</p>')
             return
 
         # Install the required primary archive dependency override.
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket)
-        self.request.response.addNotification(
-            structured('<p>Primary dependency added: %s</p>' %
-                       primary_dependency.title))
+        self._messages.append(
+            '<p>Primary dependency added: %s</p>' % primary_dependency.title)
+
+    def validate(self, data):
+        """Validate dependency configuration changes.
+
+        Currently it only needs to validate if the requested PPA dependency
+        is sane (different than the context PPA and not yet registered).
+        """
+        dependency_candidate = data.get('dependency_candidate')
+        if dependency_candidate == self.context:
+            self.setFieldError('dependency_candidate',
+                               "An archive should not depend on itself.")
+            return
+
+        if self.context.getArchiveDependency(dependency_candidate):
+            self.setFieldError('dependency_candidate',
+                               "This dependency is already registered.")
+            return
+
+    @action(_("Save"), name="save")
+    def action_save(self, action, data):
+        """Save dependency configuration changes.
+
+        See `_remove_dependencies`, `_add_ppa_dependencies` and
+        `_add_primary_dependencies`.
+
+        Redirect to the same page once the form is processed, to avoid widget
+        refreshing. And render a page notification with the summary of the
+        changes made.
+        """
+        # Redirect after POST.
+        self.next_url = self.request.URL
+
+        # Process the form.
+        self._remove_dependencies(data)
+        self._add_ppa_dependencies(data)
+        self._add_primary_dependencies(data)
+
+        # Issue a notification if anything was changed.
+        if len(self.messages) > 0:
+            self.request.response.addNotification(
+                structured(self.messages))
 
 
 class ArchiveActivateView(LaunchpadFormView):
