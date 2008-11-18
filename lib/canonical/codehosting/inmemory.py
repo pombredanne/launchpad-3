@@ -11,7 +11,8 @@ __all__ = [
 from xmlrpclib import Fault
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.branch import BranchType, IBranch
+from canonical.launchpad.interfaces.branch import (
+    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranch)
 from canonical.launchpad.interfaces.codehosting import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.testing import ObjectFactory
@@ -342,7 +343,7 @@ class FakeBranchFilesystem:
             if owner.isTeam():
                 return Fault(
                     PERMISSION_DENIED_FAULT_CODE,
-                    'Cannot create team-owned junk branches.')
+                    BranchCreationNoTeamOwnedJunkBranches.error_message)
             product = None
         else:
             product = self._product_set.getByName(product_name)

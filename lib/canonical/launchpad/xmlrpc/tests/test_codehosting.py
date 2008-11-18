@@ -18,7 +18,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.branch import (
-    BranchType, IBranchSet, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    BranchCreationNoTeamOwnedJunkBranches, BranchType, IBranchSet,
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
 from canonical.launchpad.interfaces.scriptactivity import (
     IScriptActivitySet)
 from canonical.launchpad.interfaces.codehosting import (
@@ -530,7 +531,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             owner.id, team.name, '+junk', name)
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE,
-            'Cannot create team-owned junk branches.', fault)
+            BranchCreationNoTeamOwnedJunkBranches.error_message, fault)
 
     def test_createBranch_bad_product(self):
         # Creating a branch for a non-existant product fails.

@@ -369,6 +369,14 @@ class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
     Raised when a user is attempting to create a team-owned +junk branch.
     """
 
+    error_message = (
+        "Cannot create junk branches owned by teams: they are reserved for "
+        "people. Please consider registering a project for collaborating on "
+        "branches: https://help.launchpad.net/Projects/Registering")
+
+    def __init__(self):
+        BranchCreationException.__init__(self, self.error_message)
+
 
 class BranchCreatorNotOwner(BranchCreationException):
     """A user cannot create a branch belonging to another user.
