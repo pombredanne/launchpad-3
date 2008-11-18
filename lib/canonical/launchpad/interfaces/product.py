@@ -253,7 +253,7 @@ class IProductPublic(
 
     programminglang = exported(
         TextLine(
-            title=_('Programming Language'),
+            title=_('Programming Languages'),
             required=False,
             description=_("""A comma delimited list of programming
                 languages used for this project.""")),
