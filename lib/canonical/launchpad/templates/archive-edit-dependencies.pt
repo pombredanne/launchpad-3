@@ -20,42 +20,29 @@
     <div class="form" metal:fill-slot="widgets">
 
       <table>
+
+        <tr tal:condition="not: view/has_dependencies">
+          <td></td>
+          <td>
+            <p id="empty-dependencies"
+            ><i>No dependencies recorded for this PPA yet.<i></p>
+          </td>
+        </tr>
+
         <tal:dependencies
-          condition="widget"
-          define="widget nocall:view/widgets/selected_dependencies;
-                  field_name widget/context/__name__;
-                  error python:view.getFieldError(field_name);">
+          define="widget nocall:view/widgets/selected_dependencies|nothing"
+          condition="view/has_dependencies">
+          <metal:widget
+            metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
-            <th>
-              <label tal:attributes="for widget/name"
-                     tal:content="string:${widget/label}:">Label</label>
-            </th>
-            <td class="ppa_dependency_row">
-              <input tal:replace="structure widget" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div class="error message" tal:condition="error"
-                   tal:content="structure error">Error message</div>
-            </td>
-            <td>
+            <td></td>
+            <td style="padding: 5pt 0 10pt 0;">
               <input
-                tal:condition="view/has_dependencies"
-                tal:replace="structure
-                             view/actions/field.actions.remove/render" />
-              <p id="empty-dependencies"
-                 tal:condition="not: view/has_dependencies"
-                 >No dependencies recorded for this PPA yet.</p>
-            </td>
-          </tr>
-          <tr tal:condition="view/has_dependencies">
-            <td colspan="2">
-              <p class="formHelp" tal:condition="widget/hint"
-                 tal:content="widget/hint">Some Help Text</p>
+                tal:replace="structure view/actions/field.actions.remove/render" />
             </td>
           </tr>
         </tal:dependencies>
+
 
         <tal:add_dependency
           define="widget nocall:view/widgets/dependency_candidate|nothing"
@@ -64,7 +51,7 @@
             metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td></td>
-            <td>
+            <td style="padding: 5pt 0 10pt 0;">
               <input
                 tal:replace="structure view/actions/field.actions.add_ppa/render" />
             </td>
@@ -78,7 +65,7 @@
             metal:use-macro="context/@@launchpad_form/widget_row" />
           <tr>
             <td></td>
-            <td>
+            <td style="padding: 5pt 0 10pt 0;">
               <input
                 tal:replace="structure view/actions/field.actions.add_primary/render" />
             </td>

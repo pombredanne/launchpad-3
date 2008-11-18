@@ -1071,26 +1071,69 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                 '<p>Dependency added: %s</p>' % dependency_candidate.title))
         self.next_url = self.request.URL
 
-    @action(_("Add Primary Dependency"), name="add_primary")
-    def action_add_primary(self, action, data):
-        """Record the selected dependency."""
-        dependency_pocket = data.get('primary_dependencies')
+    def validate_add_primary(self, action, data):
+        """Validate 'add primary dependency' parameters.
 
+        Ensure the following condition:
+
+         * Selected primary dependency override is not the one already
+           installed.
+
+        A error message is rendered if this checks fails.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        dependency_pocket = data.get('primary_dependencies')
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
+
+        if (primary_dependency is None and
+            dependency_pocket == PackagePublishingPocket.UPDATES):
+            self.setFieldError(
+                'primary_dependencies',
+                "This PPA already uses the default primary dependencies.")
+            return
+        elif (primary_dependency is not None and
+              primary_dependency.pocket == dependency_pocket):
+            self.setFieldError(
+                'primary_dependencies',
+                "This PPA already uses the %s primary dependencies." %
+                dependency_pocket.name)
+            return
+        else:
+            pass
+
+    @action(_("Add Primary Dependency"), name="add_primary",
+            validator='validate_add_primary')
+    def action_add_primary(self, action, data):
+        """Record the selected dependency."""
+        if len(self.errors) != 0:
+            return
+
+        # Redirect after POST.
+        self.next_url = self.request.URL
+
+        dependency_pocket = data.get('primary_dependencies')
+        primary_dependency = self.context.getArchiveDependency(
+            self.context.distribution.main_archive)
+
+        if dependency_pocket == PackagePublishingPocket.UPDATES:
+            # Remove any primary dependencies overrides.
+            self.context.removeArchiveDependency(
+                self.context.distribution.main_archive)
+            self.request.response.addNotification(
+                structured('<p>Default primary dependencies restored.</p>'))
+            return
+
+        # Install the required primary archive dependency override.
         if primary_dependency is not None:
             self.context.removeArchiveDependency(
                 self.context.distribution.main_archive)
-
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket)
-
         self.request.response.addNotification(
-            structured(
-                '<p>Primary dependency added: %s</p>' %
-                primary_dependency.title))
-
-        self.next_url = self.request.URL
+            structured('<p>Primary dependency added: %s</p>' %
+                       primary_dependency.title))
 
 
 class ArchiveActivateView(LaunchpadFormView):
