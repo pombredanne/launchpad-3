@@ -17,7 +17,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     suite.addTest(LayeredDocFileSuite(
-        'person-rename-account.txt',
+        'person-rename-account-with-openid.txt',
         setUp=setUp, tearDown=tearDown,
         layer=DatabaseFunctionalLayer))
     return suite
