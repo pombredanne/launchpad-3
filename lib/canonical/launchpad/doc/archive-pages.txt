@@ -216,7 +216,8 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     form={
     ...         'field.selected_dependencies': [],
     ...         'field.dependency_candidate': 'sabdfl',
-    ...         'field.actions.add': 'Add Dependency',
+    ...         'field.primary_dependencies': 'UPDATES',
+    ...         'field.actions.add_ppa': 'Add PPA Dependency',
     ...         })
     >>> add_dependency_request.method = 'POST'
     >>> view = getMultiAdapter(
@@ -225,13 +226,24 @@ pagetests/ppa/xx-edit-dependencies.txt.
     >>> view.initialize()
     >>> transaction.commit()
 
+After processing the POST the view will redirect to itself.
+
+    >>> view.next_url is not None
+    True
+
+Let's refresh the view class as it would be done in browsers.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
+    >>> view.initialize()
+
 Now we can see that the view properties correctly indicates the
 presence of a PPA dependency.
 
     >>> view.has_dependencies
     True
 
-The 'selected_dependencies' widget has on element representing a PPA
+The 'selected_dependencies' widget has one element representing a PPA
 dependency. Each element has:
 
  * value: dependency IArchive,
@@ -279,6 +291,7 @@ initial/empty state.
     ...     form={
     ...         'field.selected_dependencies': ['sabdfl'],
     ...         'field.dependency_candidate': '',
+    ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.actions.remove': 'Remove Dependencies',
     ...         })
     >>> remove_dependency_request.method = 'POST'
@@ -286,6 +299,20 @@ initial/empty state.
     ...     (cprov.archive, remove_dependency_request),
     ...     name="+edit-dependencies")
     >>> view.initialize()
+    >>> transaction.commit()
+
+After processing the POST the view will redirect to itself.
+
+    >>> view.next_url is not None
+    True
+
+Again, the view would be refreshed by browsers.
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, empty_request), name="+edit-dependencies")
+    >>> view.initialize()
+
+Now all the updated fields can be inspected.
 
     >>> view.has_dependencies
     False
