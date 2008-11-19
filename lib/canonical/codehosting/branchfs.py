@@ -102,6 +102,18 @@ def is_lock_directory(absolute_path):
 
 
 def make_control_transport(default_stack_on):
+    """Make a transport that points to a control directory.
+
+    A control directory is a .bzr directory containing a 'control.conf' file.
+    This is used to specify configuration for branches created underneath the
+    directory that contains the control directory.
+
+    :param default_stack_on: The default stacked-on branch URL for branches
+        that respect this control directory. If empty, then we'll return an
+        empty momory transport.
+    :return: A read-only `MemoryTransport` containing a working BzrDir,
+        configured to use the given default stacked-on location.
+    """
     memory_server = MemoryServer()
     memory_server.setUp()
     transport = get_transport(memory_server.get_url())
