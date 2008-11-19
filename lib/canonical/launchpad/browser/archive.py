@@ -876,8 +876,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget,
                   cssClass='ppa-dependencies')
-    custom_widget('primary_dependencies', LaunchpadRadioWidget)
-
+    custom_widget('primary_dependencies', LaunchpadRadioWidget,
+                  cssClass='primary-dependency-option')
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)

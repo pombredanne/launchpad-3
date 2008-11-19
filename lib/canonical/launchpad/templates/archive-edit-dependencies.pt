@@ -61,15 +61,24 @@
 
 <script type="text/javascript">
    YUI().use("node-style", function(Y) {
+       var main_area = Y.get("#mainarea");
+       var inputs = main_area.queryAll(".primary-dependency-option");
+       inputs.each(function(input, k, items) {
+           if (input.get("checked")) {
+               var label = Y.get(input.get("parentNode"));
+               label.setStyle("fontWeight", "bold");
+           }
+       });
+
        var ppa_dependencies = Y.get(".ppa-dependencies div");
        if (ppa_dependencies == null) {
            return;
        }
        var labels = ppa_dependencies.queryAll("label")
-       labels.each(function(v, k, items) {
-           var checkbox = Y.get(v.get("firstChild"));
+       labels.each(function(label, k, items) {
+           var checkbox = Y.get(label.get("firstChild"));
            checkbox.on("click", function(e) {
-               var link = Y.get(v.get("lastChild"));
+               var link = Y.get(label.get("lastChild"));
                if (e.currentTarget.get("checked")) {
                    link.setStyle('color', 'red');
                    link.setStyle('textDecoration', 'line-through');
