@@ -112,6 +112,37 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
+def get_scanner_server():
+    """Get a Launchpad internal server for scanning branches."""
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    authserver = BlockingProxy(proxy)
+    branch_transport = get_transport(
+        'readonly+' + config.supermirror.warehouse_root_url)
+    return LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, branch_transport)
+
+
+def get_puller_server():
+    """Get a server for the Launchpad branch puller.
+
+    The server wraps up two `LaunchpadInternalServer`s. One of them points to
+    the hosted branch area and is read-only, the other points to the mirrored
+    area and is read/write.
+    """
+    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    authserver = BlockingProxy(proxy)
+    hosted_transport = get_readonly_transport(
+        get_chrooted_transport(config.codehosting.branches_root))
+    mirrored_transport = get_chrooted_transport(
+        config.supermirror.branchesdest)
+    hosted_server = LaunchpadInternalServer(
+        'lp-hosted:///', authserver,
+        get_readonly_transport(hosted_transport))
+    mirrored_server = LaunchpadInternalServer(
+        'lp-mirrored:///', authserver, mirrored_transport)
+    return _MultiServer(hosted_server, mirrored_server)
+
+
 class SimpleTransportDispatch:
 
     def __init__(self, base_transport):
@@ -250,6 +281,32 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
             self._transport_dispatch.make_transport, path_not_translated)
 
 
+class LaunchpadInternalServer(_BaseLaunchpadServer):
+    """Server for Launchpad internal services.
+
+    This server provides access to a transport using the Launchpad virtual
+    filesystem. Unlike the `LaunchpadServer`, it backs onto a single transport
+    and doesn't do any permissions work.
+
+    Intended for use with the branch puller and scanner.
+    """
+
+    def __init__(self, scheme, authserver, branch_transport):
+        """Construct a `LaunchpadInternalServer`.
+
+        :param scheme: The URL scheme to use.
+
+        :param authserver: An object that provides a 'translatePath' method.
+
+        :param branch_transport: A Bazaar `Transport` that refers to an
+            area where Launchpad branches are stored, generally either the
+            hosted or mirrored areas.
+        """
+        super(LaunchpadInternalServer, self).__init__(
+            scheme, authserver, LAUNCHPAD_SERVICES)
+        self._transport_dispatch = SimpleTransportDispatch(branch_transport)
+
+
 class LaunchpadServer(_BaseLaunchpadServer):
     """The Server used for the public SSH codehosting service.
 
@@ -346,63 +403,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return self._authserver.requestMirror(data['id'])
 
         return deferred.addCallback(got_path_info)
-
-
-class LaunchpadInternalServer(_BaseLaunchpadServer):
-    """Server for Launchpad internal services.
-
-    This server provides access to a transport using the Launchpad virtual
-    filesystem. Unlike the `LaunchpadServer`, it backs onto a single transport
-    and doesn't do any permissions work.
-
-    Intended for use with the branch puller and scanner.
-    """
-
-    def __init__(self, scheme, authserver, branch_transport):
-        """Construct a `LaunchpadInternalServer`.
-
-        :param scheme: The URL scheme to use.
-
-        :param authserver: An object that provides a 'translatePath' method.
-
-        :param branch_transport: A Bazaar `Transport` that refers to an
-            area where Launchpad branches are stored, generally either the
-            hosted or mirrored areas.
-        """
-        super(LaunchpadInternalServer, self).__init__(
-            scheme, authserver, LAUNCHPAD_SERVICES)
-        self._transport_dispatch = SimpleTransportDispatch(branch_transport)
-
-
-def get_scanner_server():
-    """Get a Launchpad internal server for scanning branches."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    branch_transport = get_transport(
-        'readonly+' + config.supermirror.warehouse_root_url)
-    return LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, branch_transport)
-
-
-def get_puller_server():
-    """Get a server for the Launchpad branch puller.
-
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area and is read-only, the other points to the mirrored
-    area and is read/write.
-    """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    hosted_transport = get_readonly_transport(
-        get_chrooted_transport(config.codehosting.branches_root))
-    mirrored_transport = get_chrooted_transport(
-        config.supermirror.branchesdest)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', authserver,
-        get_readonly_transport(hosted_transport))
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, mirrored_transport)
-    return _MultiServer(hosted_server, mirrored_server)
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
