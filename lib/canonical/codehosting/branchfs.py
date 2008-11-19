@@ -63,11 +63,10 @@ from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
 from twisted.python import failure
-from twisted.web.xmlrpc import Fault
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
-    BlockingProxy, CachingAuthserverClient)
+    BlockingProxy, CachingAuthserverClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.transport import (
     AsyncVirtualTransport, _MultiServer, get_chrooted_transport,
@@ -98,22 +97,6 @@ def get_path_segments(path, maximum_segments=-1):
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
     return absolute_path.endswith('/.bzr/branch/lock/held')
-
-
-def trap_fault(failure, *fault_codes):
-    """Trap a fault, based on fault code.
-
-    :param failure: A Twisted L{Failure}.
-    :param *fault_codes: XML-RPC fault codes.
-    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
-        does not match the given codes.
-    :return: The Fault if it matches one of the codes.
-    """
-    failure.trap(Fault)
-    fault = failure.value
-    if fault.faultCode in fault_codes:
-        return fault
-    raise failure
 
 
 class SimpleTransportDispatch:
