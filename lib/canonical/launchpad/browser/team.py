@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PersonVisibility, TeamContactMethod,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -122,7 +123,10 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     @action('Save', name='save')
     def action_save(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except ImmutableVisibilityError, error:
+            self.request.response.addErrorNotification(str(error))
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):
