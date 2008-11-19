@@ -9,9 +9,11 @@ __metaclass__ = type
 __all__ = [
     'BlockingProxy',
     'CachingAuthserverClient',
+    'trap_fault',
     ]
 
 from twisted.internet import defer
+from twisted.web.xmlrpc import Fault
 
 
 class BlockingProxy:
@@ -92,3 +94,19 @@ class CachingAuthserverClient:
         """Translate 'path'."""
         return defer.maybeDeferred(
             self._authserver.callRemote, 'translatePath', self._user_id, path)
+
+
+def trap_fault(failure, *fault_codes):
+    """Trap a fault, based on fault code.
+
+    :param failure: A Twisted L{Failure}.
+    :param *fault_codes: XML-RPC fault codes.
+    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
+        does not match the given codes.
+    :return: The Fault if it matches one of the codes.
+    """
+    failure.trap(Fault)
+    fault = failure.value
+    if fault.faultCode in fault_codes:
+        return fault
+    raise failure
