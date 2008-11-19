@@ -24,7 +24,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, InvalidControlDirectory, LaunchpadInternalServer,
-    LaunchpadServer, TransportFactory)
+    LaunchpadServer, make_control_transport, TransportFactory)
 from canonical.codehosting.branchfsclient import BlockingProxy
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
@@ -60,20 +60,20 @@ class TestTransportFactory(TestCase):
             self.hosted_transport, self.mirrored_transport)
 
     def test_control_conf_read_only(self):
-        transport = self.factory.make_control_transport(
+        transport = make_control_transport(
             default_stack_on='/~foo/bar/baz')
         self.assertRaises(
             errors.TransportNotPossible,
             transport.put_bytes, '.bzr/control.conf', 'data')
 
     def test_control_conf_with_stacking(self):
-        transport = self.factory.make_control_transport(
+        transport = make_control_transport(
             default_stack_on='/~foo/bar/baz')
         control_conf = transport.get_bytes('.bzr/control.conf')
         self.assertEqual('default_stack_on = /~foo/bar/baz\n', control_conf)
 
     def test_control_conf_with_no_stacking(self):
-        transport = self.factory.make_control_transport('')
+        transport = make_control_transport('')
         self.assertEqual([], transport.list_dir('.'))
 
     def test_writable_false_implies_readonly(self):

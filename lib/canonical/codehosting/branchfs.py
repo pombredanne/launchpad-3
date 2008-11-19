@@ -50,6 +50,7 @@ __all__ = [
     'get_scanner_server',
     'LaunchpadInternalServer',
     'LaunchpadServer',
+    'make_control_transport',
     ]
 
 import xmlrpclib
@@ -107,7 +108,6 @@ class TransportFactory:
         self.mirrored_transport = mirrored_transport
         self._transport_factories = {
             BRANCH_TRANSPORT: self.make_branch_transport,
-            CONTROL_TRANSPORT: self.make_control_transport,
             }
 
     def make_transport(self, transport_tuple):
@@ -126,16 +126,17 @@ class TransportFactory:
             transport = get_transport('readonly+' + transport.base)
         return transport
 
-    def make_control_transport(self, default_stack_on):
-        memory_server = MemoryServer()
-        memory_server.setUp()
-        transport = get_transport(memory_server.get_url())
-        if default_stack_on == '':
-            return transport
-        format = BzrDirFormat.get_default_format()
-        bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(default_stack_on)
-        return get_transport('readonly+' + transport.base)
+
+def make_control_transport(default_stack_on):
+    memory_server = MemoryServer()
+    memory_server.setUp()
+    transport = get_transport(memory_server.get_url())
+    if default_stack_on == '':
+        return transport
+    format = BzrDirFormat.get_default_format()
+    bzrdir = format.initialize_on_transport(transport)
+    bzrdir.get_config().set_default_stack_on(default_stack_on)
+    return get_transport('readonly+' + transport.base)
 
 
 class BranchNotFound(BzrError):
@@ -442,8 +443,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
-        return TransportFactory(
-            None, None).make_control_transport(stack_on_url)
+        return make_control_transport(stack_on_url)
 
     def _parseProductControlDirectory(self, virtual_path):
         """Parse `virtual_path` and return a product and path in that product.
