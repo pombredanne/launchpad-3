@@ -48,12 +48,11 @@ Distribution has some custom operations.
 
 "getSeries" returns the named distribution series for the distribution.
 
-Disabled until an API bug is fixed where it thinks a collection is returned.
-#    >>> series = webservice.named_get(
-#    ...     ubuntu['self_link'], 'getSeries',
-#    ...     name_or_version='hoary').jsonBody()
-#    >>> print series['self_link']
-#    http://.../ubuntu/hoary
+    >>> series = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='hoary').jsonBody()
+    >>> print series['self_link']
+    http://.../ubuntu/hoary
 
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.

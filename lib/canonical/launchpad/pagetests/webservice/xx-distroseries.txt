@@ -33,12 +33,11 @@ Via the collection of development series:
 
 And via a direct query of a named series:
 
-Disabled until an API bug is fixed where it thinks a collection is returned.
-#    >>> series = webservice.named_get(
-#    ...     ubuntu['self_link'], 'getSeries',
-#    ...     name_or_version='hoary').jsonBody()
-#    >>> print series['self_link']
-#    http://.../ubuntu/hoary
+    >>> series = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSeries',
+    ...     name_or_version='hoary').jsonBody()
+    >>> print series['self_link']
+    http://.../ubuntu/hoary
 
 
 For distroseries we publish a subset of its attributes.
