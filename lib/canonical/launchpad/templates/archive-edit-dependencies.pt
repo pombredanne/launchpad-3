@@ -13,7 +13,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Edit dependencies for <tal:title replace="context/title" /></h1>
+  <h1>Edit dependencies for the <tal:title replace="context/title" /></h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -27,6 +27,10 @@
           <metal:widget
             metal:use-macro="context/@@launchpad_form/widget_row" />
         </tal:primary_dependency>
+
+        <tr style="height: 2em;">
+          <td colspan="2">&nbsp;</td>
+        </tr>
 
         <tal:add_dependency
           define="widget nocall:view/widgets/dependency_candidate|nothing"
@@ -68,15 +72,11 @@
                var link = Y.get(v.get("lastChild"));
                if (e.currentTarget.get("checked")) {
                    link.setStyle('color', 'red');
-                   link.setStyle('text-decoration', 'underline');
-                   console.log(
-                       "Style: " + link.getStyle('text-decoration'));
+                   link.setStyle('textDecoration', 'line-through');
                }
                else {
                    link.setStyle('color', 'blue');
-                   link.setStyle('text-decoration', 'none');
-                   console.log(
-                       "Style: " + link.getStyle('text-decoration'));
+                   link.setStyle('textDecoration', 'none');
                }
            });
        });

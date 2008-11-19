@@ -987,9 +987,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             Choice(__name__='primary_dependencies',
                    title=_('Dependency configuration'),
                    vocabulary=primary_dependency_vocabulary,
-                   description=_("How the context PPA should depend on %s "
+                   description=_("How this PPA should depend on %s "
                                  "primary archive."
-                                 % self.context.distribution.name),
+                                 % self.context.distribution.displayname),
                    missing_value=current_term,
                    default=default_value,
                    required=True))
