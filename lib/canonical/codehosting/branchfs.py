@@ -213,10 +213,12 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
     :ivar _authserver: An object that has a method 'translatePath' that
         returns a Deferred that fires information about how a path can be
         translated into a transport.
+    XXX: JonathanLange 2008-11-19: Specify this interface better.
 
     :ivar _transport_dispatch: An object has a method 'make_transport' that
         takes the successful output of '_authserver.translatePath' and returns
         a tuple (transport, trailing_path)
+    XXX: JonathanLange 2008-11-19: Specify this interface better.
     """
 
     def __init__(self, scheme, authserver, user_id):
@@ -266,14 +268,31 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     def __init__(self, authserver, user_id, hosted_transport,
                  mirror_transport):
+        """Construct a `LaunchpadServer`.
+
+        See `_BaseLaunchpadServer` for more information.
+
+        :param authserver: An object that has 'createBranch' and
+            'requestMirror' methods in addition to a 'translatePath' method.
+            These methods should return Deferreds.
+            XXX: JonathanLange 2008-11-19: Specify this interface better.
+
+        :param user_id: The database ID of the user to connect as.
+
+        :param hosted_transport: A Bazaar `Transport` that points to the
+            "hosted" area of Launchpad. See module docstring for more
+            information.
+
+        :param mirror_transport: A Bazaar `Transport` that points to the
+            "mirrored" area of Launchpad. See module docstring for more
+            information.
+        """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
         self.asyncTransportFactory = AsyncLaunchpadTransport
-        self._hosted_transport = hosted_transport
-        self._mirror_transport = get_transport(
-            'readonly+' + mirror_transport.base)
+        mirror_transport = get_transport('readonly+' + mirror_transport.base)
         self._transport_dispatch = TransportDispatch(
-            self._hosted_transport, self._mirror_transport)
+            hosted_transport, mirror_transport)
 
     def createBranch(self, virtual_url_fragment):
         """Make a new directory for the given virtual URL fragment.
@@ -340,11 +359,19 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     """
 
     def __init__(self, scheme, authserver, branch_transport):
+        """Construct a `LaunchpadInternalServer`.
+
+        :param scheme: The URL scheme to use.
+
+        :param authserver: An object that provides a 'translatePath' method.
+
+        :param branch_transport: A Bazaar `Transport` that refers to an
+            area where Launchpad branches are stored, generally either the
+            hosted or mirrored areas.
+        """
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
-        self._branch_transport = branch_transport
-        self._transport_dispatch = SimpleTransportDispatch(
-            self._branch_transport)
+        self._transport_dispatch = SimpleTransportDispatch(branch_transport)
 
 
 def get_scanner_server():
