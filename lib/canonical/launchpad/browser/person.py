@@ -3479,9 +3479,10 @@ class PersonEditView(BasePersonEditView):
         unknown_trust_root_login_records = list(
             getUtility(IOpenIDRPSummarySet).getByIdentifier(
                 identifier.old_openid_identity_url, True))
-        unknown_trust_root_login_records.extend(list(
-            getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.new_openid_identity_url, True)))
+        if identifier.new_openid_identifier is not None:
+            unknown_trust_root_login_records.extend(list(
+                getUtility(IOpenIDRPSummarySet).getByIdentifier(
+                    identifier.new_openid_identity_url, True)))
         return sorted([
             record.trust_root
             for record in unknown_trust_root_login_records])
