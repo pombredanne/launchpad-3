@@ -79,7 +79,7 @@ CREATE TABLE StaticDiff (
   id serial PRIMARY KEY,
   from_revision_id TEXT NOT NULL,
   to_revision_id TEXT NOT NULL,
-  diff INTEGER REFERENCES Diff NOT NULL,
+  diff INTEGER REFERENCES Diff ON DELETE CASCADE NOT NULL,
   UNIQUE (from_revision_id, to_revision_id)
 );
 
@@ -90,7 +90,7 @@ CREATE TABLE PreviewDiff (
   source_revision_id TEXT NOT NULL,
   target_revision_id TEXT NOT NULL,
   dependent_revision_id TEXT NOT NULL,
-  diff INTEGER REFERENCES Diff NOT NULL,
+  diff INTEGER REFERENCES Diff ON DELETE CASCADE NOT NULL,
   conflicts TEXT
 );
 
