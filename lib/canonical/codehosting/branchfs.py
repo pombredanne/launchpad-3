@@ -262,11 +262,11 @@ class _BaseLaunchpadServer(Server):
                 (transport_type, data, path))
             return transport, path
 
-        def branch_not_found(failure):
+        def path_not_translated(failure):
             trap_fault(failure, faults.PathTranslationError.error_code)
             raise NoSuchFile(virtual_url_fragment)
 
-        return deferred.addCallbacks(path_translated, branch_not_found)
+        return deferred.addCallbacks(path_translated, path_not_translated)
 
     def get_url(self):
         """Return the URL of this server."""
