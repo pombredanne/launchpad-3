@@ -84,6 +84,21 @@ FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
 
+class NotABranchPath(TranslationError):
+    """Raised when we cannot translate a virtual URL fragment to a branch.
+
+    In particular, this is raised when there is some intrinsic deficiency in
+    the path itself.
+    """
+
+    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
+            "%(reason)s")
+
+
+class UnknownTransportType(Exception):
+    """Raised when we don't know the transport type."""
+
+
 def get_path_segments(path, maximum_segments=-1):
     """Break up the given path into segments.
 
@@ -188,23 +203,8 @@ class TransportDispatch:
         return get_transport('readonly+' + transport.base)
 
 
-class NotABranchPath(TranslationError):
-    """Raised when we cannot translate a virtual URL fragment to a branch.
-
-    In particular, this is raised when there is some intrinsic deficiency in
-    the path itself.
-    """
-
-    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
-            "%(reason)s")
-
-
-class UnknownTransportType(Exception):
-    """Raised when we don't know the transport type."""
-
-
 class _BaseLaunchpadServer(Server):
-    """Bazaar `Server` for Launchpad branches.
+    """Bazaar `Server` for translating paths via XML-RPC.
 
     This server provides facilities for transports that use a virtual
     filesystem, backed by an XML-RPC server.
@@ -214,6 +214,14 @@ class _BaseLaunchpadServer(Server):
     :ivar asyncTransportFactory: A callable that takes a Server and a URL and
         returns an `AsyncVirtualTransport` instance. Subclasses should set
         this callable if they need to hook into any filesystem operations.
+
+    :ivar _authserver: An object that has a method 'translatePath' that
+        returns a Deferred that fires information about how a path can be
+        translated into a transport.
+
+    :ivar _transport_dispatch: An object has a method 'make_transport' that
+        takes the successful output of '_authserver.translatePath' and returns
+        a tuple (transport, trailing_path)
     """
 
     asyncTransportFactory = AsyncVirtualTransport
