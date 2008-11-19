@@ -62,30 +62,31 @@
 <script type="text/javascript">
    YUI().use("node-style", function(Y) {
        var main_area = Y.get("#mainarea");
-       var inputs = main_area.queryAll(".primary-dependency-option");
-       inputs.each(function(input, k, items) {
+
+       var inputs = main_area.queryAll("input.highlight-selected");
+       inputs.each(function(input) {
            if (input.get("checked")) {
                var label = Y.get(input.get("parentNode"));
                label.setStyle("fontWeight", "bold");
            }
        });
 
-       var ppa_dependencies = Y.get(".ppa-dependencies div");
-       if (ppa_dependencies == null) {
-           return;
-       }
-       var labels = ppa_dependencies.queryAll("label")
-       labels.each(function(label, k, items) {
-           var checkbox = Y.get(label.get("firstChild"));
-           checkbox.on("click", function(e) {
+       var inputs = main_area.queryAll("input.line-through-when-checked");
+       inputs.each(function(input) {
+           if (input.get("tagName") == "DIV") {
+               return;
+           }
+           input.on("click", function(e) {
+               var input = e.currentTarget;
+               var label = Y.get(input.get("parentNode"));
                var link = Y.get(label.get("lastChild"));
-               if (e.currentTarget.get("checked")) {
-                   link.setStyle('color', 'red');
-                   link.setStyle('textDecoration', 'line-through');
+               if (input.get("checked")) {
+                   link.setStyle("color", "red");
+                   link.setStyle("textDecoration", "line-through");
                }
                else {
-                   link.setStyle('color', 'blue');
-                   link.setStyle('textDecoration', 'none');
+                   link.setStyle("color", "blue");
+                   link.setStyle("textDecoration", "none");
                }
            });
        });
