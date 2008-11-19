@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
@@ -299,6 +300,14 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         self.searchrequested = False
         if self.text:
             self.searchrequested = True
+            results = self.searchresults()
+            self.matches = len(results)
+            if self.matches > 5:
+                self.detailed = False
+            else:
+                self.detailed = True
+
+            self.batchnav = BatchNavigator(results, self.request)
 
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
@@ -331,7 +340,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         if self._results is None:
             self._results = self.context.searchPackages(self.text)
-        self.matches = len(self._results)
+
         return self._results
 
     def requestDistroLangs(self):

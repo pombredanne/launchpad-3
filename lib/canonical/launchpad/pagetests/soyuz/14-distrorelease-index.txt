@@ -4,14 +4,18 @@ a given name.
 As it's main functionality this page allow users to search for binary
 packages within the distroseries in context:
 
-  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
-  >>> anon_browser.getControl(name="text").value = "firefox"
-  >>> anon_browser.getControl("Find a Package").click()
-  >>> anon_browser.url
-  'http://launchpad.dev/ubuntu/warty/+search?text=firefox'
-  >>> anon_browser.contents
-  '...Mozilla Firefox Web Browser...'
-
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
+    >>> anon_browser.getControl(name="text").value = "a"
+    >>> anon_browser.getControl("Find a Package").click()
+    >>> anon_browser.url
+    'http://launchpad.dev/ubuntu/warty/+search?text=a'
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'search-results'))
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
+    foobar: foobar is bad
+    mozilla-firefox: Mozilla Firefox Web Browser
+    at: at the mountains of madness
 
 == Latest uploads page ==
 

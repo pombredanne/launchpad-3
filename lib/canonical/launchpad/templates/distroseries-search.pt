@@ -31,35 +31,46 @@
 
   </form>
 
-  <tal:searching condition="view/searchrequested">
+  <div id="search-results">
+    <tal:search_requested condition="view/searchrequested">
 
-    <tal:has_matches condition="view/searchresults">
+      <tal:batch define="batch view/batchnav/currentBatch">
 
-      <tal:per_match repeat="drbp view/searchresults">
-        <img src="/@@/package-binary" />
-        <a tal:content="drbp/name"
-           tal:attributes="href drbp/fmt:url">foobar</a>:
-        <div style="margin-left: 30px; font-size: 80%;"
-             tal:content="drbp/summary">
-          Gee whiz special package.
-          <span tal:replace="drbp/description"
-                tal:condition="python:view.matches &lt; 5">
-            Gee whiz special package description goes here if there are
-            fewer than 5 matches.
-          </span>
-        </div>
-      </tal:per_match>
+        <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
-    </tal:has_matches>
+        <ul tal:condition="batch">
+          <li tal:repeat="dsbp batch">
+            <img src="/@@/package-binary" />
+            <a tal:attributes="href dsbp/fmt:url;
+                               title dsbp/title"
+               class="packagetitle"
+               tal:content="dsbp/name"/>:
+            <div style="margin-left: 30px; font-size: 80%;"
+                 tal:content="dsbp/summary">
+              Gee whiz special package.
+              <span tal:replace="dsbp/description"
+                    tal:condition="view/detailed">
+                Gee whiz special package description goes here if there are
+                fewer than 5 matches.
+              </span>
+            </div>
+          </li>
+        </ul>
 
-      <p tal:condition="not: view/matches">
-        No packages matching "<span tal:replace="view/text">amarok</span>"
-        are published in
-        <span tal:replace="context/displayname">hoary</span>.
-      </p>
+        <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
-  </tal:searching>
+        <tal:no_matches condition="not: view/matches">
 
+          No packages matching '<span tal:replace="view/text">amarok</span>'
+          are published in
+          <span tal:replace="context/displayname">hoary</span>.
+
+        </tal:no_matches>
+
+      </tal:batch>
+
+    </tal:search_requested>
+  </div>
 </div>
 
 </body>

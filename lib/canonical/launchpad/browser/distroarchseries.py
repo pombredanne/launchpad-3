@@ -11,13 +11,15 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    GetitemNavigation, LaunchpadFormView, Link)
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
-
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.launchpadform import (action,
+    LaunchpadFormView)
+from canonical.launchpad.webapp.menu import (ContextMenu, 
+    enabled_with_permission, Link)
+from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
@@ -60,6 +62,14 @@ class DistroArchSeriesBinariesView:
         self.searchrequested = False
         if self.text:
             self.searchrequested = True
+            results = self.searchresults()
+            self.matches = len(results)
+            if self.matches > 5:
+                self.detailed = False
+            else:
+                self.detailed = True
+
+            self.batchnav = BatchNavigator(results, self.request)
 
     def searchresults(self):
         """Try to find the binary packages in this port that match
@@ -68,20 +78,7 @@ class DistroArchSeriesBinariesView:
         """
         if self._results is None:
             self._results = self.context.searchBinaryPackages(self.text)
-        self.matches = len(self._results)
-        if self.matches > 5:
-            self.detailed = False
         return self._results
-
-
-    def binaryPackagesBatchNavigator(self):
-        # XXX: kiko 2006-03-17: This is currently disabled in the template.
-
-        if self.text:
-            binary_packages = self.context.searchBinaryPackages(self.text)
-        else:
-            binary_packages = []
-        return BatchNavigator(binary_packages, self.request)
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):
