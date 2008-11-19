@@ -355,6 +355,9 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # products and people from the VFS.
         virtual_url_fragment = self._abspath(relpath)
         path_segments = virtual_url_fragment.lstrip('/').split('/')
+        # XXX: JonathanLange 2008-11-19: This code assumes stuff about the
+        # VFS! We need to figure out the best way to delegate the decision
+        # about permission-to-delete to the XML-RPC server.
         if len(path_segments) <= 3:
             return defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment)))
