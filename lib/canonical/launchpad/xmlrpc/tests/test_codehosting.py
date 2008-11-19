@@ -1022,16 +1022,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
 
-    def test_translatePath_control_conf(self):
-        requester = self.factory.makePerson()
-        product, branch = self._makeProductWithDevFocus()
-        path = escape(
-            u'/~%s/%s/.bzr/control.conf' % (requester.name, product.name))
-        translation = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        self.assertControlDirectory(
-            branch.unique_name, '.bzr/control.conf', translation)
-
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
         # don't even bother translating control directory paths.
