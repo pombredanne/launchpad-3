@@ -223,6 +223,9 @@ class IBranchFileSystem(Interface):
         :raise `InvalidPath`: if 'path' is known to be invalid.
 
         :returns: (transport_type, transport_parameters, path_in_transport)
-            where transport_type is one of BRANCH_TRANSPORT or
-            CONTROL_TRANSPORT.
+            where 'transport_type' is one of BRANCH_TRANSPORT or
+            CONTROL_TRANSPORT, 'transport_parameters' is a dict of data that
+            the client can use to construct the transport and
+            'path_in_transport' is a path relative to that transport. e.g.
+            (BRANCH_TRANSPORT, {'id': 3, 'writable': False}, '.bzr/README').
         """
