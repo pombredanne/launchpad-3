@@ -27,8 +27,7 @@ paths.
 This server does most of its work by delegating to a `LaunchpadBranch` object.
 This object can be constructed from a virtual path and then operated on. It in
 turn delegates to the "authserver", an internal XML-RPC server that actually
-talks to the database. We cache requests to the authserver using
-`CachingAuthserverClient`, in order to speed things up a bit.
+talks to the database.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
 `AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
@@ -165,13 +164,9 @@ class LaunchpadBranch:
     """A branch on Launchpad.
 
     This abstractly represents a branch on Launchpad without exposing details
-    of the naming of Launchpad branches. It contains and maintains the
-    knowledge of how a virtual path, such as '~owner/product/branch' is
-    translated into the underlying storage systems.
-
-    It also exposes operations on Launchpad branches that we in turn expose
-    via the codehosting system. Namely, creating a branch and requesting that
-    a branch be mirrored.
+    of the naming of Launchpad branches. It exposes operations on Launchpad
+    branches that we in turn expose via the codehosting system. Namely,
+    creating a branch and requesting that a branch be mirrored.
 
     :ivar can_write: Whether or not the current user can write to the branch.
     :type can_write: bool
@@ -185,13 +180,16 @@ class LaunchpadBranch:
             This is used to get information about the branch and to perform
             database operations on the branch. This XML-RPC client should
             implement 'callRemote'.
+
         :param virtual_path: A public path to a branch, or to a file or
             directory within a branch. This path is required to be URL
             escaped.
 
-        :raise NotABranchPath: If `virtual_path` cannot be translated into a
-            (potential) path to a branch. See also `NotEnoughInformation`
-            and `InvalidOwnerDirectory`.
+        :raise NotEnoughInformation: If `virtual_path` cannot be translated
+            into a (potential) path to a branch.
+
+        :raise BranchNotFound: If `virtual_path` does not point to a branch
+            that exists.
 
         :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
             is an instance of LaunchpadBranch that represents the branch at
@@ -219,18 +217,15 @@ class LaunchpadBranch:
         """Construct a LaunchpadBranch object.
 
         In general, don't call this directly, use
-        `LaunchpadBranch.from_virtual_path` instead. This prevents assumptions
-        about branch naming spreading throughout the code.
+        `LaunchpadBranch.from_virtual_path` instead.
 
         :param authserver: An XML-RPC client to the Launchpad authserver.
             This is used to get information about the branch and to perform
             database operations on the branch. The client should implement
             `callRemote`.
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch.
+        :param branch_path: The virtual path to the branch.
+        :param branch_id: The database ID of the branch.
+        :param can_write: Whether or not the user can write to this branch.
         """
         self._authserver = authserver
         self._branch_path = branch_path
@@ -257,11 +252,10 @@ class LaunchpadBranch:
     def create(self):
         """Create a branch in the database.
 
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
         :raise PermissionDenied: If the branch cannot be created in the
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
+        :return: A `Deferred` that fires with the new branch's ID.
         """
         deferred = self._authserver.createBranch(self._branch_path)
 
@@ -290,10 +284,9 @@ class LaunchpadBranch:
     def getRealPath(self, url_fragment_on_branch):
         """Return the 'real' URL-escaped path to a path within this branch.
 
-        :param path_on_branch: A URL fragment referring to a path within this
-             branch.
+        :param url_fragment_on_branch: A URL fragment referring to a path
+             within this branch.
 
-        :raise BranchNotFound: if the branch does not exist.
         :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
 
         :return: A path relative to the base directory where all branches
@@ -308,21 +301,26 @@ class LaunchpadBranch:
     def requestMirror(self):
         """Request that the branch be mirrored as soon as possible.
 
-        :raise BranchNotFound: if the branch does not exist.
+        :raise Fault: if there is some error raised by the XML-RPC service.
+            See `IBranchFileSystem` for more details.
         """
         return self._authserver.requestMirror(self._branch_id)
 
 
 class _BaseLaunchpadServer(Server):
-    """Bazaar Server for Launchpad branches.
+    """Bazaar `Server` for Launchpad branches.
 
     This server provides facilities for transports that use a virtual
     filesystem, backed by an XML-RPC server.
 
     For more information, see the module docstring.
+
+    :ivar asyncTransportFactory: A callable that takes a Server and a URL and
+        returns an `AsyncVirtualTransport` instance. Subclasses should set
+        this callable if they need to hook into any filesystem operations.
     """
 
-    asyncTransportFactory = None
+    asyncTransportFactory = AsyncVirtualTransport
 
     def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
@@ -342,7 +340,9 @@ class _BaseLaunchpadServer(Server):
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
 
-        Override this in subclasses.
+        This constructs a regular Bazaar `Transport` from the "asynchronous
+        transport" factory specified in the `asyncTransportFactory` instance
+        variable.
         """
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
@@ -360,11 +360,9 @@ class _BaseLaunchpadServer(Server):
 
         :param virtual_url_fragment: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
-        :raise BranchNotFound: If `virtual_path` looks like a path to a
-            branch, but there is no branch in the database that matches.
-        :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
+        :raise NoSuchFile: If `virtual_path` is maps to a branch that could
+            not be found.
+        :raise NotEnoughInformation: If the given path cannot be mapped to a
             branch.
         :raise PermissionDenied: if the path on the branch is forbidden.
 
@@ -403,7 +401,7 @@ class _BaseLaunchpadServer(Server):
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
-    """The Server used for codehosting services.
+    """The Server used for the public SSH codehosting service.
 
     This server provides a VFS that backs onto two transports: a 'hosted'
     transport and a 'mirrored' transport. When users push up 'hosted'
@@ -462,6 +460,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return self._hosted_transport
 
     def translateVirtualPath(self, virtual_url_fragment):
+        """Translate 'virtual_url_fragment' into a transport and path.
+
+        As for `_BaseLaunchpadServer.translateVirtualPath` except that this
+        will attempt to translate requests for ~user/product/.bzr/ in order
+        to provide access to control directories.
+        """
         deferred = super(LaunchpadServer, self).translateVirtualPath(
             virtual_url_fragment)
 
@@ -486,11 +490,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         :raise NotABranchPath: If `virtual_path` does not have at least a
             valid path to a branch.
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
+        :raise NotEnoughInformation: If `virtual_path` does not map to a
+            branch.
         :raise PermissionDenied: If the branch cannot be created in the
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
+        :raise Fault: If the XML-RPC server raises errors.
         """
         lp_branch = LaunchpadBranch(
             self._authserver, virtual_url_fragment, None, None)
@@ -501,8 +506,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         :param virtual_path: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
+        :raise NotABranchPath: If `virtual_url_fragment` points to a path
+            that's not a branch.
+        :raise NotEnoughInformation: If `virtual_url_fragment` cannot be
+            translated to a branch.
+        :raise Fault: If the XML-RPC server raises errors.
         """
         deferred = self._getLaunchpadBranch(virtual_url_fragment)
 
@@ -525,7 +533,6 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
-        self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
 
     def _getTransportForLaunchpadBranch(self, lp_branch):
