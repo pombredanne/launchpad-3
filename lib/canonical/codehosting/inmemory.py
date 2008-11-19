@@ -451,6 +451,18 @@ class FakeBranchFilesystem:
                 {'default_stack_on': '/' + default_branch.unique_name},
                 '/'.join([bazaar, trailing_path]))
 
+    def _serializeBranch(self, requester_id, branch, trailing_path):
+        if not self._canRead(requester_id, branch):
+            return None
+        elif branch.branch_type == BranchType.REMOTE:
+            return None
+        else:
+            return (
+                BRANCH_TRANSPORT,
+                {'id': branch.id,
+                 'writable': self._canWrite(requester_id, branch),
+                 }, trailing_path)
+
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
@@ -460,16 +472,10 @@ class FakeBranchFilesystem:
             # Is it a branch?
             branch = self._branch_set._find(unique_name=first)
             if branch is not None:
-                if not self._canRead(requester_id, branch):
+                branch = self._serializeBranch(requester_id, branch, second)
+                if branch is None:
                     break
-                elif branch.branch_type == BranchType.REMOTE:
-                    break
-                else:
-                    return (
-                        BRANCH_TRANSPORT,
-                        {'id': branch.id,
-                         'writable': self._canWrite(requester_id, branch),
-                         }, second)
+                return branch
 
             # Is it a product?
             product = self._getProduct(requester_id, first, second)
