@@ -27,8 +27,7 @@ paths.
 This server does most of its work by delegating to a `LaunchpadBranch` object.
 This object can be constructed from a virtual path and then operated on. It in
 turn delegates to the "authserver", an internal XML-RPC server that actually
-talks to the database. We cache requests to the authserver using
-`CachingAuthserverClient`, in order to speed things up a bit.
+talks to the database.
 
 We hook the `LaunchpadServer` into Bazaar by implementing a
 `AsyncVirtualTransport`, a `bzrlib.transport.Transport` that wraps all of its
@@ -186,15 +185,19 @@ class UnknownTransportType(Exception):
 
 
 class _BaseLaunchpadServer(Server):
-    """Bazaar Server for Launchpad branches.
+    """Bazaar `Server` for Launchpad branches.
 
     This server provides facilities for transports that use a virtual
     filesystem, backed by an XML-RPC server.
 
     For more information, see the module docstring.
+
+    :ivar asyncTransportFactory: A callable that takes a Server and a URL and
+        returns an `AsyncVirtualTransport` instance. Subclasses should set
+        this callable if they need to hook into any filesystem operations.
     """
 
-    asyncTransportFactory = None
+    asyncTransportFactory = AsyncVirtualTransport
 
     def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
@@ -212,7 +215,12 @@ class _BaseLaunchpadServer(Server):
         self._is_set_up = False
 
     def _transportFactory(self, url):
-        """Create a transport for this server pointing at `url`."""
+        """Create a transport for this server pointing at `url`.
+
+        This constructs a regular Bazaar `Transport` from the "asynchronous
+        transport" factory specified in the `asyncTransportFactory` instance
+        variable.
+        """
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
 
@@ -238,8 +246,8 @@ class _BaseLaunchpadServer(Server):
 
         :param virtual_url_fragment: A virtual URL fragment to be translated.
 
-        :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
-            branch.
+        :raise NoSuchFile: If `virtual_path` is maps to a branch that could
+            not be found.
         :raise PermissionDenied: if the path on the branch is forbidden.
 
         :return: (transport, path_on_transport)
@@ -278,7 +286,7 @@ class _BaseLaunchpadServer(Server):
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
-    """The Server used for codehosting services.
+    """The Server used for the public SSH codehosting service.
 
     This server provides a VFS that backs onto two transports: a 'hosted'
     transport and a 'mirrored' transport. When users push up 'hosted'
@@ -315,11 +323,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         :raise NotABranchPath: If `virtual_path` does not have at least a
             valid path to a branch.
-        :raise TransportNotPossible: If the branch owner or product does not
-            exist.
+        :raise NotEnoughInformation: If `virtual_path` does not map to a
+            branch.
         :raise PermissionDenied: If the branch cannot be created in the
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
+        :raise Fault: If the XML-RPC server raises errors.
         """
         deferred = self._authserver.createBranch(virtual_url_fragment)
 
@@ -341,8 +350,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
         :param virtual_path: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_url_fragment` does not have at
-            least a valid path to a branch.
+        :raise NotABranchPath: If `virtual_url_fragment` points to a path
+            that's not a branch.
+        :raise NotEnoughInformation: If `virtual_url_fragment` cannot be
+            translated to a branch.
+        :raise Fault: If the XML-RPC server raises errors.
         """
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
@@ -367,7 +379,6 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def __init__(self, scheme, authserver, branch_transport):
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
-        self.asyncTransportFactory = AsyncVirtualTransport
         self._branch_transport = branch_transport
         self._transport_dispatch = SimpleTransportDispatch(
             self._branch_transport)
