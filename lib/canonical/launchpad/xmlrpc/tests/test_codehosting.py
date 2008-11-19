@@ -832,7 +832,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -840,9 +839,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        # XXX: Maybe we should distinguish between "I don't know how to
-        # translate /foo" and "there's no branch at /~foo/bar/baz".
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -859,7 +855,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.InvalidPath.error_code,
             "Could not translate '%s'. Can only translate absolute paths."
