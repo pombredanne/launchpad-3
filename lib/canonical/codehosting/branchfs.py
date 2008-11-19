@@ -75,8 +75,8 @@ from canonical.codehosting.transport import (
     get_readonly_transport, SynchronousAdapter, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
+    BRANCH_TRANSPORT, LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE,
+    PERMISSION_DENIED_FAULT_CODE)
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -99,32 +99,6 @@ def get_path_segments(path, maximum_segments=-1):
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
     return absolute_path.endswith('/.bzr/branch/lock/held')
-
-
-class TransportFactory:
-
-    def __init__(self, hosted_transport, mirrored_transport):
-        self.hosted_transport = hosted_transport
-        self.mirrored_transport = mirrored_transport
-        self._transport_factories = {
-            BRANCH_TRANSPORT: self.make_branch_transport,
-            }
-
-    def make_transport(self, transport_tuple):
-        transport_type, data, trailing_path = transport_tuple
-        factory = self._transport_factories[transport_type]
-        return factory(**data), trailing_path
-
-    def make_branch_transport(self, id, writable):
-        if writable:
-            transport = self.hosted_transport
-        else:
-            transport = self.mirrored_transport
-        transport = transport.clone(branch_id_to_path(id))
-        ensure_base(transport)
-        if not writable:
-            transport = get_transport('readonly+' + transport.base)
-        return transport
 
 
 def make_control_transport(default_stack_on):
