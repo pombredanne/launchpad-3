@@ -58,6 +58,7 @@ from bzrlib.errors import (
     NoSuchFile, PermissionDenied, TransportNotPossible)
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
+from bzrlib.urlutils import unescape
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -229,7 +230,7 @@ class TransportDispatch:
             return transport
         format = BzrDirFormat.get_default_format()
         bzrdir = format.initialize_on_transport(transport)
-        bzrdir.get_config().set_default_stack_on(default_stack_on)
+        bzrdir.get_config().set_default_stack_on(unescape(default_stack_on))
         return get_transport('readonly+' + transport.base)
 
 
