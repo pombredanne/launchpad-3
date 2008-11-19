@@ -10,7 +10,7 @@ __all__ = [
 
 from xmlrpclib import Fault
 
-from bzrlib.urlutils import unescape
+from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
@@ -448,9 +448,10 @@ class FakeBranchFilesystem:
             return
         if not self._canRead(requester, default_branch):
             return
-        return (CONTROL_TRANSPORT,
-                {'default_stack_on': '/' + default_branch.unique_name},
-                '/'.join([bazaar, trailing_path]))
+        return (
+            CONTROL_TRANSPORT,
+            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            '/'.join([bazaar, trailing_path]))
 
     def _serializeBranch(self, requester_id, branch, trailing_path):
         if not self._canRead(requester_id, branch):

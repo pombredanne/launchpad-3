@@ -17,7 +17,7 @@ from xmlrpclib import Fault
 
 import pytz
 
-from bzrlib.urlutils import unescape
+from bzrlib.urlutils import escape, unescape
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -333,7 +333,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         except Unauthorized:
             return
         return (
-            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name},
+            CONTROL_TRANSPORT,
+            {'default_stack_on': escape('/' + unique_name)},
             '/'.join([bazaar, trailing_path]))
 
     def translatePath(self, requester_id, path):
