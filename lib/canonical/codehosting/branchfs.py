@@ -307,6 +307,60 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         self._transport_dispatch = SimpleTransportDispatch(branch_transport)
 
 
+class AsyncLaunchpadTransport(AsyncVirtualTransport):
+    """Virtual transport to implement the Launchpad VFS for branches.
+
+    This implements a few hooks to translate filesystem operations (such as
+    making a certain kind of directory) into Launchpad operations (such as
+    creating a branch in the database).
+
+    It also converts the Launchpad-specific translation errors (such as 'not a
+    valid branch path') into Bazaar errors (such as 'no such file').
+    """
+
+    def mkdir(self, relpath, mode=None):
+        # We hook into mkdir so that we can request the creation of a branch
+        # and so that we can provide useful errors in the special case where
+        # the user tries to make a directory like "~foo/bar". That is, a
+        # directory that has too little information to be translated into a
+        # Launchpad branch.
+        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
+            self, relpath)
+        def maybe_make_branch_in_db(failure):
+            # Looks like we are trying to make a branch.
+            failure.trap(NoSuchFile)
+            return self.server.createBranch(self._abspath(relpath))
+        def real_mkdir((transport, path)):
+            return getattr(transport, 'mkdir')(path, mode)
+
+        deferred.addCallback(real_mkdir)
+        deferred.addErrback(maybe_make_branch_in_db)
+        return deferred
+
+    def rename(self, rel_from, rel_to):
+        # We hook into rename to catch the "unlock branch" event, so that we
+        # can request a mirror once a branch is unlocked.
+        abs_from = self._abspath(rel_from)
+        if is_lock_directory(abs_from):
+            deferred = self.server.requestMirror(abs_from)
+        else:
+            deferred = defer.succeed(None)
+        deferred = deferred.addCallback(
+            lambda ignored: AsyncVirtualTransport.rename(
+                self, rel_from, rel_to))
+        return deferred
+
+    def rmdir(self, relpath):
+        # We hook into rmdir in order to prevent users from deleting branches,
+        # products and people from the VFS.
+        virtual_url_fragment = self._abspath(relpath)
+        path_segments = virtual_url_fragment.lstrip('/').split('/')
+        if len(path_segments) <= 3:
+            return defer.fail(
+                failure.Failure(PermissionDenied(virtual_url_fragment)))
+        return AsyncVirtualTransport.rmdir(self, relpath)
+
+
 class LaunchpadServer(_BaseLaunchpadServer):
     """The Server used for the public SSH codehosting service.
 
@@ -322,6 +376,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
     associated transport, `AsyncLaunchpadTransport`, has hooks in certain
     filesystem-level operations to trigger these.
     """
+
+    asyncTransportFactory = AsyncLaunchpadTransport
 
     def __init__(self, authserver, user_id, hosted_transport,
                  mirror_transport):
@@ -346,7 +402,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
         """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
-        self.asyncTransportFactory = AsyncLaunchpadTransport
         mirror_transport = get_transport('readonly+' + mirror_transport.base)
         self._transport_dispatch = TransportDispatch(
             hosted_transport, mirror_transport)
@@ -403,57 +458,3 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return self._authserver.requestMirror(data['id'])
 
         return deferred.addCallback(got_path_info)
-
-
-class AsyncLaunchpadTransport(AsyncVirtualTransport):
-    """Virtual transport to implement the Launchpad VFS for branches.
-
-    This implements a few hooks to translate filesystem operations (such as
-    making a certain kind of directory) into Launchpad operations (such as
-    creating a branch in the database).
-
-    It also converts the Launchpad-specific translation errors (such as 'not a
-    valid branch path') into Bazaar errors (such as 'no such file').
-    """
-
-    def mkdir(self, relpath, mode=None):
-        # We hook into mkdir so that we can request the creation of a branch
-        # and so that we can provide useful errors in the special case where
-        # the user tries to make a directory like "~foo/bar". That is, a
-        # directory that has too little information to be translated into a
-        # Launchpad branch.
-        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
-            self, relpath)
-        def maybe_make_branch_in_db(failure):
-            # Looks like we are trying to make a branch.
-            failure.trap(NoSuchFile)
-            return self.server.createBranch(self._abspath(relpath))
-        def real_mkdir((transport, path)):
-            return getattr(transport, 'mkdir')(path, mode)
-
-        deferred.addCallback(real_mkdir)
-        deferred.addErrback(maybe_make_branch_in_db)
-        return deferred
-
-    def rename(self, rel_from, rel_to):
-        # We hook into rename to catch the "unlock branch" event, so that we
-        # can request a mirror once a branch is unlocked.
-        abs_from = self._abspath(rel_from)
-        if is_lock_directory(abs_from):
-            deferred = self.server.requestMirror(abs_from)
-        else:
-            deferred = defer.succeed(None)
-        deferred = deferred.addCallback(
-            lambda ignored: AsyncVirtualTransport.rename(
-                self, rel_from, rel_to))
-        return deferred
-
-    def rmdir(self, relpath):
-        # We hook into rmdir in order to prevent users from deleting branches,
-        # products and people from the VFS.
-        virtual_url_fragment = self._abspath(relpath)
-        path_segments = virtual_url_fragment.lstrip('/').split('/')
-        if len(path_segments) <= 3:
-            return defer.fail(
-                failure.Failure(PermissionDenied(virtual_url_fragment)))
-        return AsyncVirtualTransport.rmdir(self, relpath)
