@@ -4,13 +4,9 @@ A Launchpad user can contact another Launchpad user directly, even if the
 recipient is hiding their email addresses.
 
     >>> def create_view(sender, recipient, form=None):
-    ...     if form is None:
-    ...         method = 'GET'
-    ...     else:
-    ...         method = 'POST'
     ...     return create_initialized_view(
     ...         recipient, '+contactuser',
-    ...         form=form, method=method, principal=sender)
+    ...         form=form, principal=sender)
 
     >>> def print_notifications(view):
     ...     for notification in view.request.notifications:
@@ -240,6 +236,15 @@ Teams can also be contacted directly, regardless of whether they have no
 official contact address, use a Launchpad mailing list, or have the contact
 address set to an explicit address.
 
+The team's overview page tells us that we're contacting a team instead of a
+user.
+
+    >>> view = create_view(anne, guadamen)
+    >>> print view.contactuser_link_title
+    Send an email to this team thorugh Launchpad
+    >>> print view.specific_contact_text
+    Contact this team
+
 The Guadamen team has no contact address, so contacting them contacts all
 its members directly.
 
@@ -310,7 +315,34 @@ Everyone does get a unique copy of the message though.
     Mark Shuttleworth <mark@hbd.com>
     Steve Alexander <steve.alexander@ubuntulinux.com>
 
+The Guadamen team now registers an external contact address.
 
-* contact address
+    >>> address = getUtility(IEmailAddressSet).new(
+    ...     'guadamen@example.com', guadamen)
+    >>> guadamen.setContactAddress(address)
+
+Anne contacts the Guadamen team again.  This time only one message is sent,
+and that to the new contact address.
+
+    >>> view = create_view(
+    ...     anne, guadamen, {
+    ...         'field.field.from_': 'anne@example.com',
+    ...         'field.subject': 'Hello again Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print from_addr, to_addrs
+    XXX
+    >>> print raw_msg
+    XXX
+
+
 * mailing list
 * quota proofs

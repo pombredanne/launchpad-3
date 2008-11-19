@@ -984,4 +984,3 @@ class LaunchpadObjectFactory(ObjectFactory):
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
             msg_id = make_msgid('launchpad')
         return msg_id
-
