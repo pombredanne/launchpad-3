@@ -110,7 +110,7 @@ def make_control_transport(default_stack_on):
 
     :param default_stack_on: The default stacked-on branch URL for branches
         that respect this control directory. If empty, then we'll return an
-        empty momory transport.
+        empty memory transport.
     :return: A read-only `MemoryTransport` containing a working BzrDir,
         configured to use the given default stacked-on location.
     """
