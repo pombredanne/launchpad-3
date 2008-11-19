@@ -93,6 +93,7 @@ import urllib
 from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
+from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -147,7 +148,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDPersistentIdentity)
+    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -3422,6 +3423,10 @@ class PersonEditView(BasePersonEditView):
 
     implements(IPersonEditMenu)
 
+    # Will contain an hidden input when the user is renaming his
+    # account with full knowledge of the consequences.
+    i_know_this_an_openid_security_issue_input = None
+
     @property
     def cancel_url(self):
         """The URL that the 'Cancel' link should return to."""
@@ -3436,6 +3441,58 @@ class PersonEditView(BasePersonEditView):
         """
         return [convertToHtmlCode(jabber.jabberid)
                 for jabber in self.context.jabberids]
+
+    def validate(self, data):
+        """If the name changed, warn the user about the implications."""
+        new_name = data.get('name')
+        bypass_check = self.request.form_ng.getOne(
+            'i_know_this_an_openid_security_issue', 0)
+        if (new_name and new_name != self.context.name and
+            len(self.unknown_trust_roots_user_logged_in) > 0
+            and not bypass_check):
+            # Warn the user that they might shoot themselves in the foot.
+            self.setFieldError('name', structured(dedent("""
+            <div class="inline-warning">
+              <p>Changing your name will change your
+                  public OpenID identifier. This means that you might be
+                  locked out of certain sites where you used it, or that
+                  somebody could create a new profile with the same name and
+                  log in as you on these third-party sites. See
+                  <a href="https://help.launchpad.net/OpenID#rename-account"
+                    >https://help.launchpad.net/OpenID#rename-account</a>
+                  for more information.
+              </p>
+              <p> You may have used your identifier on the following
+                  sites:<br> %s.
+              </p>
+              <p>If you click 'Save' again, we will rename your account
+                 anyway.
+              </p>
+            </div>"""),
+             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            self.i_know_this_an_openid_security_issue_input = dedent("""\
+                <input type="hidden"
+                       name="i_know_this_an_openid_security_issue"
+                       value="1">""")
+
+    @cachedproperty
+    def unknown_trust_roots_user_logged_in(self):
+        """The unknown trust roots the user has logged in using OpenID.
+
+        We assume that they logged in using their delegated profile OpenID,
+        since that's the one we advertise.
+        """
+        identifier = IOpenIDPersistentIdentity(self.context)
+        unknown_trust_root_login_records = list(
+            getUtility(IOpenIDRPSummarySet).getByIdentifier(
+                identifier.old_openid_identity_url, True))
+        if identifier.new_openid_identifier is not None:
+            unknown_trust_root_login_records.extend(list(
+                getUtility(IOpenIDRPSummarySet).getByIdentifier(
+                    identifier.new_openid_identity_url, True)))
+        return sorted([
+            record.trust_root
+            for record in unknown_trust_root_login_records])
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
