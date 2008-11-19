@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     TranslationFileType)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
-
+from canonical.launchpad.validators.name import valid_name
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -180,17 +180,19 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 self.setFieldError('path',
                                    'The file name must end with ".po".')
 
+            self.path_changed = False # Flag for change_action
             if self.context.path != path:
                 # The Rosetta Expert decided to change the path of the file.
-                # Before accepting such change, we should check first whether is
-                # already another entry with that path in the same context
-                # (sourcepackagename/distroseries or productseries).
+                # Before accepting such change, we should check first whether
+                # there is already another entry with that path in the same
+                # context (sourcepackagename/distroseries or productseries).
                 if file_type == TranslationFileType.POT:
                     potemplate_set = getUtility(IPOTemplateSet)
-                    existing_file = potemplate_set.getPOTemplateByPathAndOrigin(
-                        path, self.context.productseries,
-                        self.context.distroseries,
-                        self.context.sourcepackagename)
+                    existing_file = (
+                        potemplate_set.getPOTemplateByPathAndOrigin(
+                            path, self.context.productseries,
+                            self.context.distroseries,
+                            self.context.sourcepackagename))
                 else:
                     pofile_set = getUtility(IPOFileSet)
                     existing_file = pofile_set.getPOFileByPathAndOrigin(
@@ -198,12 +200,13 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                         self.context.distroseries,
                         self.context.sourcepackagename)
                 if existing_file is None:
-                    # There is no other pofile in the given path for this context,
-                    # let's change it as requested by admins.
+                    # There is no other pofile in the given path for this
+                    # context, let's change it as requested by admins.
                     self.context.path = path
+                    self.path_changed = True
                 else:
-                    # We already have an IPOFile in this path, let's notify the
-                    # user about that so they choose another path.
+                    # We already have an IPOFile in this path, let's notify
+                    # the user about that so they choose another path.
                     self.setFieldError('path',
                         'There is already a file in the given path.')
 
@@ -213,6 +216,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             if name is None:
                 self.setFieldError('name', 'Please specify a name for '
                                    'the template.')
+            if not valid_name(name):
+                self.setFieldError('name', 'Please specify a valid name for '
+                                   'the template. Names must be all lower '
+                                   'case and start with a letter or number.')
             if translation_domain is None:
                 self.setFieldError('translation_domain', 'Please specify a '
                                    'translation domain for the template.')
@@ -253,7 +260,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # Use manual potemplate, if given.
             # man_potemplate is set in validate().
             if self.man_potemplate != None:
-               potemplate = self.man_potemplate
+                potemplate = self.man_potemplate
 
             pofile = potemplate.getPOFileByLang(language.code, variant)
             if pofile is None:
@@ -270,7 +277,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 # note it here.
                 pofile.from_sourcepackagename = self.context.sourcepackagename
 
-            if path is not None:
+            if self.path_changed:
                 # We got a path to store as the new one for the POFile.
                 pofile.setPathIfUnique(path)
             elif self.context.is_published:
@@ -284,7 +291,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 # Leave path unchanged.
                 pass
 
-        
         if file_type == TranslationFileType.POT:
             # We are importing an IPOTemplate file.
 
@@ -309,7 +315,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 # note it here.
                 potemplate.from_sourcepackagename = (
                     self.context.sourcepackagename)
-
 
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
