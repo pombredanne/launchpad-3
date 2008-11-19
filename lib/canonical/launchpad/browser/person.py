@@ -3423,8 +3423,8 @@ class PersonEditView(BasePersonEditView):
 
     implements(IPersonEditMenu)
 
-    # Will contain an hidden input when the user is renaming is
-    # account in all knowledge of the consequences.
+    # Will contain an hidden input when the user is renaming his
+    # account with full knowledge of the consequences.
     i_know_what_i_am_doing_input = None
 
     @property

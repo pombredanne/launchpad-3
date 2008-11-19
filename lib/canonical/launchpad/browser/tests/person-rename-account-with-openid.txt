@@ -2,13 +2,12 @@ Renaming an account and the OpenID public identifier
 ====================================================
 
 When you rename an account, you are also changing your delegated OpenID
-identity. This means that if you used that identifiers to log into a third
-party site, there is a chance that you'll lock yourself of those sites.
-It's also possible for somebody to claim back your old nickname and then log
+identity. This means that if you used that identifier to log into a third
+party site, there is a chance that you'll lock yourself out of those sites.
+It's also possible for somebody to claim your old nickname and then log
 into these third party sites using your old identity.
 
-Because of this, we warn users about to rename their account when they attempt
-such a thing.
+Because of this, we warn users about to rename their account of the risks.
 
     >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.browser.person import PersonEditView
@@ -38,7 +37,7 @@ wishes:
     >>> print joe.name
     new-joe
 
-Same thing if they logged in using OpenID only in known trust root.
+Same thing if they logged in using OpenID only to known trust roots.
 
     >>> from canonical.launchpad.interfaces.openidserver import (
     ...     IOpenIDRPConfigSet, IOpenIDRPSummarySet)
@@ -55,9 +54,9 @@ Same thing if they logged in using OpenID only in known trust root.
     >>> print joe.name
     joe
 
-But if the user has logged in OpenID using an unknown trust root, we assume
-that they did with the public profile identifier and warn them about the
-potential pitfalls of this.
+But if the user has logged in using OpenID into an unknown trust root, we
+assume that they did with the public profile identifier and warn them about
+the potential pitfalls of this.
 
     >>> record = getUtility(IOpenIDRPSummarySet).record(
     ...     joe.account, 'http://sourceforge.net/')
@@ -69,9 +68,9 @@ potential pitfalls of this.
     >>> harness.hasErrors()
     True
     >>> print harness.getFieldError('name')
-     <p>Changing your name will change your public OpenID identifier...
-    You may have used that identifier on the following sites:<br>
-    http://my.very.cool.site.com/, http://sourceforge.net/.
+     <p>Changing your name will change your public OpenID
+    identifier...  You may have used that identifier on the following 
+    sites:<br> http://my.very.cool.site.com/, http://sourceforge.net/.
     ...
 
 The view will now contain an hidden input field allowing the user to confirm
