@@ -66,11 +66,11 @@ CREATE INDEX mergedirectivejob__merge_directive__idx
 
 CREATE TABLE Diff (
   id serial PRIMARY KEY,
-  diff_text INTEGER NOT NULL REFERENCES LibraryFileAlias,
-  diff_lines_count INTEGER NOT NULL,
-  diffstat TEXT NOT NULL,
-  added_lines_count INTEGER NOT NULL,
-  removed_lines_count INTEGER NOT NULL
+  diff_text INTEGER REFERENCES LibraryFileAlias,
+  diff_lines_count INTEGER,
+  diffstat TEXT,
+  added_lines_count INTEGER,
+  removed_lines_count INTEGER
 );
 
 CREATE INDEX diff__diff_text__idx ON Diff(diff_text);
