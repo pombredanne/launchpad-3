@@ -12,6 +12,10 @@ recipient is hiding their email addresses.
     ...         recipient, '+contactuser',
     ...         form=form, method=method, principal=sender)
 
+    >>> def print_notifications(view):
+    ...     for notification in view.request.notifications:
+    ...         print notification.message
+
 For example, let's say No Privileges Person wants to contact Salgado...
 
     >>> from zope.component import getUtility
@@ -47,8 +51,7 @@ No Priv decides, what the heck, let's contact Salgado after all.
     ...     'field.message': 'Can you tell me about your project?',
     ...     'field.actions.send': 'Send',
     ...     })
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
+    >>> print_notifications(view)
     Message sent to Guilherme Salgado
 
     # Capture the date of the last contact for later.
@@ -71,8 +74,7 @@ No Priv sends two more messages to Salgado.  Each of these are allowed too.
     ...     'field.message': 'Can you tell me about your project?',
     ...     'field.actions.send': 'Send',
     ...     })
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
+    >>> print_notifications(view)
     Message sent to Guilherme Salgado
 
     >>> view = create_view(
@@ -82,8 +84,7 @@ No Priv sends two more messages to Salgado.  Each of these are allowed too.
     ...     'field.message': 'Can you tell me about your project?',
     ...     'field.actions.send': 'Send',
     ...     })
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
+    >>> print_notifications(view)
     Message sent to Guilherme Salgado
 
 Now however, No Priv had reached her quota for direct user-to-user contact and
@@ -125,8 +126,7 @@ So, No Priv sends four more emails.
     ...         'field.message': 'Can you tell me about your project?',
     ...         'field.actions.send': 'Send',
     ...         })
-    ...     for notification in view.request.notifications:
-    ...         print notification.message
+    ...     print_notifications(view)
     Message sent to Guilherme Salgado
     Message sent to Guilherme Salgado
     Message sent to Guilherme Salgado
@@ -230,6 +230,87 @@ Anne contacts Salgado even though his email addresses are hidden.
     ...         'field.message': 'It is nice to meet you',
     ...         'field.actions.send': 'Send',
     ...         })
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
+    >>> print_notifications(view)
     Message sent to Guilherme Salgado
+
+
+== Contacting teams ==
+
+Teams can also be contacted directly, regardless of whether they have no
+official contact address, use a Launchpad mailing list, or have the contact
+address set to an explicit address.
+
+The Guadamen team has no contact address, so contacting them contacts all
+its members directly.
+
+    # Clear out left over crud.
+    >>> transaction.commit()
+    >>> del stub.test_emails[:]
+
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> view = create_view(
+    ...     anne, guadamen, {
+    ...         'field.field.from_': 'anne@example.com',
+    ...         'field.subject': 'Hello Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
+    >>> emails = []
+    >>> while stub.test_emails:
+    ...     emails.append(stub.test_emails.pop())
+    >>> from operator import itemgetter
+    >>> emails.sort(key=itemgetter(1))
+
+There are 10 members of the team, so exactly 10 unique copies of the message
+are sent, one to each team member.
+
+    >>> len(emails)
+    9
+
+    >>> from email import message_from_string
+    >>> message_ids = set()
+    >>> message_subjects = set()
+    >>> message_senders = set()
+    >>> message_recipients = set()
+    >>> message_bodies = set()
+    >>> for from_addr, to_addrs, raw_msg in emails:
+    ...     message = message_from_string(raw_msg)
+    ...     message_ids.add(message['message-id'])
+    ...     message_subjects.add(message['subject'])
+    ...     message_senders.add(message['from'])
+    ...     message_recipients.add(message['to'])
+    ...     message_bodies.add(message.get_payload())
+
+Everyone gets a message with the same subject and body from the same sender.
+    
+    >>> print message_senders
+    set(['Anne <anne@example.com>'])
+    >>> print message_subjects
+    set(['Hello Guadamen'])
+    >>> print message_bodies
+    set(['Can one of you help me?'])
+
+Everyone does get a unique copy of the message though.
+
+    >>> len(message_ids)
+    9
+    >>> for recipient in sorted(message_recipients):
+    ...     print recipient
+    Alexander Limi <limi@plone.org>
+    Celso Providelo <celso.providelo@canonical.com>
+    Colin Watson <colin.watson@ubuntulinux.com>
+    Daniel Silverstone <daniel.silverstone@canonical.com>
+    Edgar Bursic <edgar@monteparadiso.hr>
+    Foo Bar <foo.bar@canonical.com>
+    Jeff Waugh <jeff.waugh@ubuntulinux.com>
+    Mark Shuttleworth <mark@hbd.com>
+    Steve Alexander <steve.alexander@ubuntulinux.com>
+
+
+* contact address
+* mailing list
+* quota proofs
