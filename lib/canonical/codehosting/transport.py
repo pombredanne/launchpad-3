@@ -10,6 +10,7 @@ bzrlib.transport classes.
 
 __metaclass__ = type
 __all__ = [
+    'AsyncVirtualServer',
     'AsyncVirtualTransport',
     'get_chrooted_transport',
     'get_readonly_transport',
@@ -23,7 +24,8 @@ from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
 from bzrlib.transport import (
-    chroot, get_transport, Server, Transport)
+    chroot, get_transport, register_transport, Server, Transport,
+    unregister_transport)
 
 from twisted.internet import defer
 from canonical.twistedsupport import gatherResults
@@ -360,3 +362,64 @@ class SynchronousAdapter(Transport):
         """See `bzrlib.transport.Transport`."""
         return self._extractResult(
             self._async_transport.writeChunk(relpath, offset, data))
+
+
+class AsyncVirtualServer(Server):
+    """Bazaar `Server` for translating paths asynchronously.
+
+    :ivar asyncTransportFactory: A callable that takes a Server and a URL and
+        returns an `AsyncVirtualTransport` instance. Subclasses should set
+        this callable if they need to hook into any filesystem operations.
+    """
+
+    asyncTransportFactory = AsyncVirtualTransport
+
+    def __init__(self, scheme):
+        """Construct an `AsyncVirtualServer`.
+
+        :param scheme: The URL scheme to use.
+        """
+        # bzrlib's Server class does not have a constructor, so we cannot
+        # safely upcall it.
+        # pylint: disable-msg=W0231
+        self._scheme = scheme
+        self._is_set_up = False
+
+    def _transportFactory(self, url):
+        """Create a transport for this server pointing at `url`.
+
+        This constructs a regular Bazaar `Transport` from the "asynchronous
+        transport" factory specified in the `asyncTransportFactory` instance
+        variable.
+        """
+        assert url.startswith(self.get_url())
+        return SynchronousAdapter(self.asyncTransportFactory(self, url))
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        """Translate 'virtual_url_fragment' into a transport and sub-fragment.
+
+        :param virtual_url_fragment: A virtual URL fragment to be translated.
+
+        :raise NoSuchFile: If `virtual_path` is maps to a path that could
+            not be found.
+        :raise PermissionDenied: if the path is forbidden.
+
+        :return: (transport, path_on_transport)
+        """
+        raise NotImplementedError(self.translateVirtualPath)
+
+    def get_url(self):
+        """Return the URL of this server."""
+        return self._scheme
+
+    def setUp(self):
+        """See Server.setUp."""
+        register_transport(self.get_url(), self._transportFactory)
+        self._is_set_up = True
+
+    def tearDown(self):
+        """See Server.tearDown."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        unregister_transport(self.get_url(), self._transportFactory)

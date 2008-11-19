@@ -56,8 +56,7 @@ import xmlrpclib
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.errors import (
     NoSuchFile, PermissionDenied, TransportNotPossible)
-from bzrlib.transport import (
-    get_transport, register_transport, Server, unregister_transport)
+from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
@@ -68,8 +67,8 @@ from canonical.codehosting.branchfsclient import (
     BlockingProxy, CachingAuthserverClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.transport import (
-    AsyncVirtualTransport, _MultiServer, get_chrooted_transport,
-    get_readonly_transport, SynchronousAdapter, TranslationError)
+    AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
+    get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from canonical.launchpad.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES,
@@ -203,17 +202,13 @@ class TransportDispatch:
         return get_transport('readonly+' + transport.base)
 
 
-class _BaseLaunchpadServer(Server):
-    """Bazaar `Server` for translating paths via XML-RPC.
+class _BaseLaunchpadServer(AsyncVirtualServer):
+    """Bazaar `Server` for translating Lanuchpad paths via XML-RPC.
 
     This server provides facilities for transports that use a virtual
     filesystem, backed by an XML-RPC server.
 
     For more information, see the module docstring.
-
-    :ivar asyncTransportFactory: A callable that takes a Server and a URL and
-        returns an `AsyncVirtualTransport` instance. Subclasses should set
-        this callable if they need to hook into any filesystem operations.
 
     :ivar _authserver: An object that has a method 'translatePath' that
         returns a Deferred that fires information about how a path can be
@@ -224,8 +219,6 @@ class _BaseLaunchpadServer(Server):
         a tuple (transport, trailing_path)
     """
 
-    asyncTransportFactory = AsyncVirtualTransport
-
     def __init__(self, scheme, authserver, user_id):
         """Construct a LaunchpadServer.
 
@@ -234,33 +227,16 @@ class _BaseLaunchpadServer(Server):
         :param user_id: The database ID for the user who is accessing
             branches.
         """
-        # bzrlib's Server class does not have a constructor, so we cannot
-        # safely upcall it.
-        # pylint: disable-msg=W0231
-        self._scheme = scheme
+        AsyncVirtualServer.__init__(self, scheme)
         self._authserver = CachingAuthserverClient(authserver, user_id)
         self._is_set_up = False
 
-    def _transportFactory(self, url):
-        """Create a transport for this server pointing at `url`.
-
-        This constructs a regular Bazaar `Transport` from the "asynchronous
-        transport" factory specified in the `asyncTransportFactory` instance
-        variable.
-        """
-        assert url.startswith(self.get_url())
-        return SynchronousAdapter(self.asyncTransportFactory(self, url))
-
     def translateVirtualPath(self, virtual_url_fragment):
-        """Translate 'virtual_url_fragment' into a transport and sub-fragment.
+        """See `AsyncVirtualServer.translateVirtualPath`.
 
-        :param virtual_url_fragment: A virtual URL fragment to be translated.
-
-        :raise NoSuchFile: If `virtual_path` is maps to a branch that could
-            not be found.
-        :raise PermissionDenied: if the path on the branch is forbidden.
-
-        :return: (transport, path_on_transport)
+        Call 'translatePath' on the authserver with the fragment and then use
+        'make_transport' on the _transport_dispatch to translate that result
+        into a transport and trailing path.
         """
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
 
@@ -270,22 +246,6 @@ class _BaseLaunchpadServer(Server):
 
         return deferred.addCallbacks(
             self._transport_dispatch.make_transport, path_not_translated)
-
-    def get_url(self):
-        """Return the URL of this server."""
-        return self._scheme
-
-    def setUp(self):
-        """See Server.setUp."""
-        register_transport(self.get_url(), self._transportFactory)
-        self._is_set_up = True
-
-    def tearDown(self):
-        """See Server.tearDown."""
-        if not self._is_set_up:
-            return
-        self._is_set_up = False
-        unregister_transport(self.get_url(), self._transportFactory)
 
 
 class LaunchpadServer(_BaseLaunchpadServer):
