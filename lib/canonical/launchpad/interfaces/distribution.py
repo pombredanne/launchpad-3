@@ -502,4 +502,4 @@ IDistribution['getSeries'].queryTaggedValue(
     'return_type'].schema = IDistroSeries
 IDistribution['getDevelopmentSerieses'].queryTaggedValue(
     'lazr.webservice.exported')[
-    'return_type'].schema = IDistroSeries
+    'return_type'].value_type.schema = IDistroSeries
