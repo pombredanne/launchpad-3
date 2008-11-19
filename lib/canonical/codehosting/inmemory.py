@@ -433,7 +433,8 @@ class FakeBranchFilesystem:
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
-    def _getProduct(self, requester, product_path, trailing_path):
+    def _serializeControlDirectory(self, requester, product_path,
+                                   trailing_path):
         try:
             owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
@@ -478,7 +479,8 @@ class FakeBranchFilesystem:
                 return branch
 
             # Is it a product?
-            product = self._getProduct(requester_id, first, second)
+            product = self._serializeControlDirectory(
+                requester_id, first, second)
             if product:
                 return product
         return faults.PathTranslationError(path)
