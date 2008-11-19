@@ -3452,17 +3452,20 @@ class PersonEditView(BasePersonEditView):
             and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent("""
-            <p>Changing your name will change your
-                public OpenID identifier. This means that you might be locked
-                out of certain sites where you used it, or that somebody could
-                create a new profile with the same name and log in as you
-                on these third-party sites. 
-            </p>
-            <p> You may have used that identifier on the following sites:<br>
-                %s.
-             </p>
-             <p>If you click 'Save' again, we will rename your account anyway.
-             </p>"""),
+            <div class="inline-warning">
+              <p>Changing your name will change your
+                  public OpenID identifier. This means that you might be
+                  locked out of certain sites where you used it, or that
+                  somebody could create a new profile with the same name and
+                  log in as you on these third-party sites. 
+              </p>
+              <p> You may have used that identifier on the following
+                  sites:<br> %s.
+              </p>
+              <p>If you click 'Save' again, we will rename your account
+                 anyway.
+              </p>
+            </div>"""),
              ", ".join(self.unknown_trust_roots_user_logged_in)))
             self.i_know_what_i_am_doing_input = dedent("""\
                 <input type="hidden" name="i_know_what_i_am_doing" 

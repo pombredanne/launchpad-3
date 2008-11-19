@@ -68,7 +68,8 @@ the potential pitfalls of this.
     >>> harness.hasErrors()
     True
     >>> print harness.getFieldError('name')
-     <p>Changing your name will change your public OpenID
+    <div class="inline-warning">
+    <p>Changing your name will change your public OpenID
     identifier...  You may have used that identifier on the following 
     sites:<br> http://my.very.cool.site.com/, http://sourceforge.net/.
     ...
