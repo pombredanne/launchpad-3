@@ -832,7 +832,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -840,9 +839,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
-        # XXX: Maybe we should distinguish between "I don't know how to
-        # translate /foo" and "there's no branch at /~foo/bar/baz".
         self.assertFaultEqual(
             faults.PathTranslationError.error_code,
             "Could not translate '%s'." % path, fault)
@@ -859,7 +855,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
-        login(ANONYMOUS)
         self.assertFaultEqual(
             faults.InvalidPath.error_code,
             "Could not translate '%s'. Can only translate absolute paths."
@@ -1011,18 +1006,21 @@ class BranchFileSystemTest(TestCaseWithFactory):
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
 
+    def assertControlDirectory(self, unique_name, trailing_path, translation):
+        """Assert that 'translation' points to the right control transport."""
+        unique_name = escape(u'/' + unique_name)
+        expected_translation = (
+            CONTROL_TRANSPORT,
+            {'default_stack_on': unique_name}, trailing_path)
+        self.assertEqual(expected_translation, translation)
+
     def test_translatePath_control_directory(self):
         requester = self.factory.makePerson()
         product, branch = self._makeProductWithDevFocus()
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        # XXX: Should the stacked-on branch path be escaped?
-        # XXX: YES
-        self.assertEqual(
-            (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
-            translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
 
     def test_translatePath_control_conf(self):
         requester = self.factory.makePerson()
@@ -1031,12 +1029,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
             u'/~%s/%s/.bzr/control.conf' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        # XXX: Should the stacked-on branch path be escaped?
-        # XXX: YES
-        self.assertEqual(
-            (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name},
-             '.bzr/control.conf'), translation)
+        self.assertControlDirectory(
+            branch.unique_name, '.bzr/control.conf', translation)
 
     def test_translatePath_control_directory_no_stacked_set(self):
         # When there's no default stacked-on branch set for the project, we
@@ -1059,12 +1053,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        # XXX: Should the stacked-on branch path be escaped?
-        # XXX: YES
-        self.assertEqual(
-            (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
-            translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
 
     def test_translatePath_control_directory_other_owner(self):
         requester = self.factory.makePerson()
@@ -1073,12 +1062,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
         translation = self.branchfs.translatePath(requester.id, path)
         login(ANONYMOUS)
-        # XXX: Should the stacked-on branch path be escaped?
-        # XXX: YES
-        self.assertEqual(
-            (CONTROL_TRANSPORT,
-             {'default_stack_on': '/' + branch.unique_name}, '.bzr/'),
-            translation)
+        self.assertControlDirectory(branch.unique_name, '.bzr/', translation)
 
 
 class TestIterateSplit(TestCase):

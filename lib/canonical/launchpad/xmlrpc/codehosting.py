@@ -17,7 +17,7 @@ from xmlrpclib import Fault
 
 import pytz
 
-from bzrlib.urlutils import unescape
+from bzrlib.urlutils import escape, unescape
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -315,7 +315,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
              'writable': self._canWriteToBranch(requester, branch)},
             trailing_path)
 
-    def _getProduct(self, requester, product_path, trailing_path):
+    def _serializeControlDirectory(self, requester, product_path,
+                                   trailing_path):
         try:
             owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
@@ -332,7 +333,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         except Unauthorized:
             return
         return (
-            CONTROL_TRANSPORT, {'default_stack_on': '/' + unique_name},
+            CONTROL_TRANSPORT,
+            {'default_stack_on': escape('/' + unique_name)},
             '/'.join([bazaar, trailing_path]))
 
     def translatePath(self, requester_id, path):
@@ -351,11 +353,10 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                         break
                     return branch
                 # Is it a product control directory?
-                product = self._getProduct(requester, first, second)
+                product = self._serializeControlDirectory(
+                    requester, first, second)
                 if product is not None:
                     return product
-            # XXX: Should we use the unescaped path in the error? Unescaped is
-            # easier to read.
             return faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
 
@@ -364,8 +365,13 @@ def iter_split(string, splitter):
     """Iterate over ways to split 'string' in two with 'splitter'.
 
     If 'string' is empty, then yield nothing. Otherwise, yield tuples like
-    ('a', 'b/c'), ('a/b', 'c'), ('a/b/c', '') for a string 'a/b/c' and a
+    ('a/b/c', ''), ('a/b', 'c'), ('a', 'b/c') for a string 'a/b/c' and a
     splitter '/'.
+
+    The tuples are yielded such that the first tuple has everything in the
+    first tuple. With each iteration, the first element gets smaller and the
+    second gets larger. It stops iterating just before it would have to yield
+    ('', 'a/b/c').
     """
     if string == '':
         return

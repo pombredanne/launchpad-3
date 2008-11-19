@@ -10,7 +10,7 @@ __all__ = [
 
 from xmlrpclib import Fault
 
-from bzrlib.urlutils import unescape
+from bzrlib.urlutils import escape, unescape
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.branch import BranchType, IBranch
@@ -433,7 +433,8 @@ class FakeBranchFilesystem:
             return ''
         return '/' + product.development_focus.user_branch.unique_name
 
-    def _getProduct(self, requester, product_path, trailing_path):
+    def _serializeControlDirectory(self, requester, product_path,
+                                   trailing_path):
         try:
             owner_name, product_name, bazaar = product_path.split('/')
         except ValueError:
@@ -447,9 +448,22 @@ class FakeBranchFilesystem:
             return
         if not self._canRead(requester, default_branch):
             return
-        return (CONTROL_TRANSPORT,
-                {'default_stack_on': '/' + default_branch.unique_name},
-                '/'.join([bazaar, trailing_path]))
+        return (
+            CONTROL_TRANSPORT,
+            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            '/'.join([bazaar, trailing_path]))
+
+    def _serializeBranch(self, requester_id, branch, trailing_path):
+        if not self._canRead(requester_id, branch):
+            return None
+        elif branch.branch_type == BranchType.REMOTE:
+            return None
+        else:
+            return (
+                BRANCH_TRANSPORT,
+                {'id': branch.id,
+                 'writable': self._canWrite(requester_id, branch),
+                 }, trailing_path)
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
@@ -460,19 +474,14 @@ class FakeBranchFilesystem:
             # Is it a branch?
             branch = self._branch_set._find(unique_name=first)
             if branch is not None:
-                if not self._canRead(requester_id, branch):
+                branch = self._serializeBranch(requester_id, branch, second)
+                if branch is None:
                     break
-                elif branch.branch_type == BranchType.REMOTE:
-                    break
-                else:
-                    return (
-                        BRANCH_TRANSPORT,
-                        {'id': branch.id,
-                         'writable': self._canWrite(requester_id, branch),
-                         }, second)
+                return branch
 
             # Is it a product?
-            product = self._getProduct(requester_id, first, second)
+            product = self._serializeControlDirectory(
+                requester_id, first, second)
             if product:
                 return product
         return faults.PathTranslationError(path)
