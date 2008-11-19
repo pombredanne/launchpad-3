@@ -73,8 +73,8 @@ class TestSimpleTransportDispatch(TestCase):
 
     def test_returns_trailing_path(self):
         transport, path = self.factory.make_transport(
-            (BRANCH_TRANSPORT, dict(id=5, writable=True), 'foo'))
-        self.assertEqual('foo', path)
+            (BRANCH_TRANSPORT, dict(id=5, writable=True), '.bzr/foo'))
+        self.assertEqual('.bzr/foo', path)
 
     def test_make_transport_control(self):
         # make_transport returns a control transport for the tuple.
@@ -144,7 +144,8 @@ class TestTransportDispatch(TestCase):
         # make_transport returns a control transport for the tuple.
         log = []
         self.factory._transport_factories[CONTROL_TRANSPORT] = (
-            lambda default_stack_on: log.append(default_stack_on))
+            lambda default_stack_on, trailing_path:
+                log.append(default_stack_on))
         transport, path = self.factory.make_transport(
             (CONTROL_TRANSPORT, {'default_stack_on': 'foo'}, 'bar/baz'))
         self.assertEqual('bar/baz', path)
@@ -154,7 +155,7 @@ class TestTransportDispatch(TestCase):
         # make_transport returns a control transport for the tuple.
         log = []
         self.factory._transport_factories[BRANCH_TRANSPORT] = (
-            lambda id, writable: log.append((id, writable)))
+            lambda id, writable, trailing_path: log.append((id, writable)))
         transport, path = self.factory.make_transport(
             (BRANCH_TRANSPORT, {'id': 1, 'writable': True}, 'bar/baz'))
         self.assertEqual('bar/baz', path)

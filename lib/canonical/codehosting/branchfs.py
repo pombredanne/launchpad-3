@@ -103,10 +103,28 @@ class SimpleTransportDispatch:
     def __init__(self, base_transport):
         self.base_transport = base_transport
 
+    def _checkPath(self, path_on_branch):
+        """Raise an error if `path_on_branch` is not valid.
+
+        This allows us to enforce a certain level of policy about what goes
+        into a branch directory on Launchpad. Specifically, we do not allow
+        arbitrary files at the top-level, we only allow Bazaar control
+        directories, and backups of same.
+
+        :raise PermissionDenied: if `path_on_branch` is forbidden.
+        """
+        if path_on_branch == '':
+            return
+        segments = get_path_segments(path_on_branch)
+        if segments[0] not in ALLOWED_DIRECTORIES:
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
+
     def make_transport(self, transport_tuple):
         transport_type, data, trailing_path = transport_tuple
         if transport_type != BRANCH_TRANSPORT:
             raise UnknownTransportType(transport_type)
+        self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
             ensure_base(transport)
@@ -132,20 +150,21 @@ class TransportDispatch:
     def make_transport(self, transport_tuple):
         transport_type, data, trailing_path = transport_tuple
         factory = self._transport_factories[transport_type]
+        data['trailing_path'] = trailing_path
         return factory(**data), trailing_path
 
-    def make_branch_transport(self, id, writable):
+    def make_branch_transport(self, id, writable, trailing_path=''):
         if writable:
             dispatch = self._hosted_dispatch
         else:
             dispatch = self._mirrored_dispatch
         transport, ignored = dispatch.make_transport(
-            (BRANCH_TRANSPORT, dict(id=id), ''))
+            (BRANCH_TRANSPORT, dict(id=id), trailing_path))
         if not writable:
             transport = get_transport('readonly+' + transport.base)
         return transport
 
-    def make_control_transport(self, default_stack_on):
+    def make_control_transport(self, default_stack_on, trailing_path=None):
         """Make a transport that points to a control directory.
 
         A control directory is a .bzr directory containing a 'control.conf'
@@ -224,23 +243,6 @@ class _BaseLaunchpadServer(Server):
         assert url.startswith(self.get_url())
         return SynchronousAdapter(self.asyncTransportFactory(self, url))
 
-    def _checkPath(self, path_on_branch):
-        """Raise an error if `path_on_branch` is not valid.
-
-        This allows us to enforce a certain level of policy about what goes
-        into a branch directory on Launchpad. Specifically, we do not allow
-        arbitrary files at the top-level, we only allow Bazaar control
-        directories, and backups of same.
-
-        :raise PermissionDenied: if `path_on_branch` is forbidden.
-        """
-        if path_on_branch == '':
-            return
-        segments = get_path_segments(path_on_branch)
-        if segments[0] not in ALLOWED_DIRECTORIES:
-            raise PermissionDenied(
-                FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
-
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
@@ -256,8 +258,6 @@ class _BaseLaunchpadServer(Server):
 
         def path_translated(result):
             (transport_type, data, path) = result
-            if transport_type == BRANCH_TRANSPORT:
-                self._checkPath(path)
             transport, path = self._transport_dispatch.make_transport(
                 (transport_type, data, path))
             return transport, path
