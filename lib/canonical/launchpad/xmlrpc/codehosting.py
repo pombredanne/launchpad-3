@@ -356,8 +356,6 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                     requester, first, second)
                 if product is not None:
                     return product
-            # XXX: Should we use the unescaped path in the error? Unescaped is
-            # easier to read.
             return faults.PathTranslationError(path)
         return run_with_login(requester_id, translate_path)
 
@@ -366,8 +364,13 @@ def iter_split(string, splitter):
     """Iterate over ways to split 'string' in two with 'splitter'.
 
     If 'string' is empty, then yield nothing. Otherwise, yield tuples like
-    ('a', 'b/c'), ('a/b', 'c'), ('a/b/c', '') for a string 'a/b/c' and a
+    ('a/b/c', ''), ('a/b', 'c'), ('a', 'b/c') for a string 'a/b/c' and a
     splitter '/'.
+
+    The tuples are yielded such that the first tuple has everything in the
+    first tuple. With each iteration, the first element gets smaller and the
+    second gets larger. It stops iterating just before it would have to yield
+    ('', 'a/b/c').
     """
     if string == '':
         return
