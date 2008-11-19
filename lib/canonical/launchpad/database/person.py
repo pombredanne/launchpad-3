@@ -1214,25 +1214,6 @@ class Person(
         except SQLObjectNotFound:
             return False
 
-    @property
-    def is_openid_enabled(self):
-        """See `IPerson`."""
-        if not self.is_valid_person:
-            return False
-
-        if config.launchpad.openid_users == 'all':
-            return True
-
-        openid_users = getUtility(IPersonSet).getByName(
-                config.launchpad.openid_users
-                )
-        assert openid_users is not None, \
-                'No Person %s found' % config.launchpad.openid_users
-        if self.inTeam(openid_users):
-            return True
-
-        return False
-
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See `IPerson`."""

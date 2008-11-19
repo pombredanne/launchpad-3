@@ -54,7 +54,8 @@ When the 'Delete packages' page is loaded a list of all published
 sources is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published   Status     Series          Section  Built
+    Source            Published   Status     Series          Section  Build
+        Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest Editors  i386
     iceweasel...(...) 2007-07-09  Published  Warty           Editors
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
@@ -78,7 +79,8 @@ matching the given text.
     ...     name='field.name_filter').value = 'pmount'
     >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 The user may delete packages from a PPA without providing a reason
@@ -87,7 +89,8 @@ The user may delete packages from a PPA without providing a reason
     >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print_ppa_packages(admin_browser.contents)
-    Source            Published   Status     Series          Section  Built
+    Source            Published   Status     Series          Section  Build
+        Status
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest Editors
 
 Please note that the 'deletion_comment' field (which is optional) is empty.
@@ -151,7 +154,7 @@ entirely readable content.
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source             Published   Status     Series   Section  Built
+    Source             Published   Status     Series   Section  Build Status
     iceweasel...(...)  2007-07-09  Published  Warty    Editors
     pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
@@ -187,7 +190,8 @@ will use another browser to inspect the results of our deletions.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print_ppa_packages(cprov_browser.contents)
-    Source            Published   Status     Series          Section  Built
+    Source            Published   Status     Series          Section  Build
+        Status
     iceweasel...(...) 2007-07-09  Published  Warty           Editors
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
 
@@ -195,14 +199,16 @@ will use another browser to inspect the results of our deletions.
     ...    name='field.status_filter').value = ['superseded']
     >>> cprov_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
 
     >>> cprov_browser.getControl(
     ...    name='field.status_filter').value = ['any']
     >>> cprov_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source            Published   Status     Series          Section  Built
+    Source            Published   Status     Series          Section  Build
+        Status
     cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
     iceweasel...(...) 2007-07-09  Published  Warty           Editors
     pmount - 0.1-1    2007-07-09  Published  Warty           Editors
@@ -268,7 +274,8 @@ Any user can see that all packages present in Celso's PPA are deleted.
     ...    name='field.status_filter').value = ['any']
     >>> cprov_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
-    Source            Published   Status     Series          Section  Built
+    Source            Published   Status     Series          Section  Build
+        Status
     cdrkit - 1.0      2007-07-09  Deleted    Breezy-autotest Editors  i386
     iceweasel...(...) 2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1    2007-07-09  Deleted    Warty           Editors
@@ -358,7 +365,8 @@ overview page.
     ...    name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
@@ -387,7 +395,8 @@ available for deletion because it contains a PUBLISHED binary.
     'Delete packages from PPA for No Privileges Person'
 
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
     >>> details_section = find_tag_by_id(
@@ -424,7 +433,8 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     ...     name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl("Update").click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
@@ -461,7 +471,8 @@ opposed to being truncated after the fisrt 20 characters.
     ...    name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl('Search', index=0).click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    Source           Published   Status     Series          Section  Build
+        Status
     foo - 1.0                    Deleted    Hoary           Base
 
     >>> details_section = find_tag_by_id(
