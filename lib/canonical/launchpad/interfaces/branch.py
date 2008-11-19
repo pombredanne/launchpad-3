@@ -370,9 +370,9 @@ class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
     """
 
     error_message = (
-        "Cannot create junk branches owned by teams: they are reserved for "
-        "people. Please consider registering a project for collaborating on "
-        "branches: https://help.launchpad.net/Projects/Registering")
+        "+junk branches are only available for individuals. Please consider "
+        "registering a project for collaborating on branches: "
+        "https://help.launchpad.net/Projects/Registering")
 
     def __init__(self):
         BranchCreationException.__init__(self, self.error_message)
