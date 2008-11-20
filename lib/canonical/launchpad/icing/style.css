@@ -224,7 +224,7 @@ table.listing div.actions {
 /* Text fields occupy as much of the page width as possible, minus a safety
 margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
-textarea.codereviewcomment { font-family: monospace; }
+textarea.codereviewcomment {font: 120% monospace;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
@@ -1195,7 +1195,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
-.boardCommentBody {padding: 0.5em 12px 0; font: 120% monospace;}
+.boardCommentBody {padding: 0.5em 12px 0;}
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}
