@@ -135,7 +135,7 @@
           </tr>
         </tal:keys>
 
-        <tr tal:condition="view/is_delegated_identity">
+        <tr tal:condition="not: context/is_team">
           <th>OpenID login:</th>
           <td>
             <img src="/@@/private" alt="" />
