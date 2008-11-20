@@ -135,7 +135,7 @@
           </tr>
         </tal:keys>
 
-        <tr>
+        <tr tal:condition="not: context/is_team">
           <th>OpenID login:</th>
           <td>
             <img src="/@@/private" alt="" />
