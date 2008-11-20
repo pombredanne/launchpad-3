@@ -3472,6 +3472,7 @@ class PersonEditView(BasePersonEditView):
              ", ".join(self.unknown_trust_roots_user_logged_in)))
             self.i_know_this_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
+                       id="i_know_this_an_openid_security_issue"
                        name="i_know_this_an_openid_security_issue"
                        value="1">""")
 
