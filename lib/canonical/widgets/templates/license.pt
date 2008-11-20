@@ -38,8 +38,7 @@
   </div>
 
   <tal:allow-pending condition="view/allow_pending_license">
-    <div tal:attributes="style checkbox_padding|nothing"
-         tal:define="checkbox_padding string:padding-left: 20px"
+    <div tal:attributes="style string:padding-left: 20px"
          onclick="setLicensePendingStatus(false)">
       <input tal:replace="structure view/checkbox_matrix" />
     </div>
