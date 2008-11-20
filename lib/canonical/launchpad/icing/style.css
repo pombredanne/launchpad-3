@@ -1195,7 +1195,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
-.boardCommentBody {padding: 0.5em 12px 0;}
+.boardCommentBody {padding: 0.5em 12px 0; font: 120% monospace;}
 .boardCommentContent { line-height: 1.5em;}
 .boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}
