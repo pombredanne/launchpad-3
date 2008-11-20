@@ -319,7 +319,7 @@ proxy redirects to the public http url.
     >>> logout()
 
     >>> print file_librarian_url
-    http://localhost:58000/95/test-pkg_1.0.dsc
+    http://localhost:58000/.../test-pkg_1.0.dsc
 
     >>> print http(r"""
     ... GET %s HTTP/1.1
