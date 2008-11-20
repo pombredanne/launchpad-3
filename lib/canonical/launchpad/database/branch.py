@@ -46,21 +46,25 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    NotFoundError, RepositoryFormat)
+    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
+    MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.validators.person import (
+    validate_public_person)
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidProductIdentifier, NoBranchForSeries, NoSuchProduct, NoSuchSeries)
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -1030,6 +1034,15 @@ class BranchSet:
         if match is None:
             return default
         owner_name, product_name, branch_name = match.groups()
+        branch = self._getByUniqueNameElements(
+            owner_name, product_name, branch_name)
+        if branch is None:
+            return default
+        else:
+            return branch
+
+    @staticmethod
+    def _getByUniqueNameElements(owner_name, product_name, branch_name):
         if product_name == '+junk':
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product IS NULL"
@@ -1043,11 +1056,69 @@ class BranchSet:
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
             tables = ['Person', 'Product']
-        branch = Branch.selectOne(query, clauseTables=tables)
-        if branch is None:
-            return default
+        return Branch.selectOne(query, clauseTables=tables)
+
+    def getByLPPath(self, path):
+        path_segments = path.split('/', 3)
+        if len(path_segments) > 3:
+            suffix = path_segments[3]
         else:
-            return branch
+            suffix = None
+        if len(path_segments) == 1:
+            [project_name] = path_segments
+            result = self._getBranchForProject(project_name)
+        elif len(path_segments) == 2:
+            project_name, series_name = path_segments
+            return self._getBranchForSeries(project_name, series_name), None
+        else:
+            owner, product, name = path_segments[:3]
+            owner = owner[1:]
+            return self._getByUniqueNameElements(owner, product, name), suffix
+
+    @staticmethod
+    def _getProduct(product_name):
+        if not valid_name(product_name):
+            raise InvalidProductIdentifier(product_name)
+        product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            raise NoSuchProduct(product_name)
+        return product
+
+    def _getBranchForProject(self, project_name):
+        """Return the branch for the development focus of the given project.
+
+        :param project_name: The name of a Launchpad project.
+        :return: The Branch object.
+        """
+        project = self._getProduct(project_name)
+        series = project.development_focus
+        return self._getSeriesBranch(series)
+
+    def _getBranchForSeries(self, project_name, series_name):
+        """Return the branch for the given series on the given project.
+
+        :param project_name: The name of a Launchpad project.
+        :param series_name: The name of a series on that project.
+        :return: The branch for that series or a Fault if the project or the
+            series do not exist.
+        """
+        project = self._getProduct(project_name)
+        series = project.getSeries(series_name)
+        if series is None:
+            raise NoSuchSeries(series_name, project)
+        return self._getSeriesBranch(series)
+
+    def _getSeriesBranch(self, series):
+        """Return the branch for the given series.
+
+        :return: The branch for the given series or faults.NoBranchForSeries
+            if there is no such branch, or if the branch is invisible to the
+            user.
+        """
+        branch = series.series_branch
+        if (branch is None or not check_permission('launchpad.View', branch)):
+            raise NoBranchForSeries(series)
+        return branch
 
     def getRewriteMap(self):
         """See `IBranchSet`."""

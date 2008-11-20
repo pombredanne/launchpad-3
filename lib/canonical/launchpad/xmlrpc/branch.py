@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -185,61 +184,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return the hostname for the codehosting server."""
         return URI(config.codehosting.supermirror_root).host
 
-    def _getSeriesBranch(self, series):
-        """Return the branch for the given series.
-
-        :return: The branch for the given series or faults.NoBranchForSeries
-            if there is no such branch, or if the branch is invisible to the
-            user.
-        """
-        branch = series.series_branch
-        if (branch is None
-            or not check_permission('launchpad.View', branch)):
-            return faults.NoBranchForSeries(series)
-        return branch
-
-    def _getBranchForProject(self, project_name):
-        """Return the branch for the development focus of the given project.
-
-        :param project_name: The name of a Launchpad project.
-        :return: The Branch object or faults.NoSuchProduct if there's no
-            project by that name.
-        """
-        if not valid_name(project_name):
-            return faults.InvalidProductIdentifier(project_name)
-        project = getUtility(IProductSet).getByName(project_name)
-        if project is None:
-            pillar = getUtility(IPillarNameSet).getByName(project_name)
-            if pillar:
-                if IProject.providedBy(pillar):
-                    pillar_type = 'project group'
-                elif IDistribution.providedBy(pillar):
-                    pillar_type = 'distribution'
-                else:
-                    raise AssertionError(
-                        "pillar of unknown type %s" % pillar)
-                return faults.NoDefaultBranchForPillar(
-                    project_name, pillar_type)
-            else:
-                return faults.NoSuchProduct(project_name)
-        series = project.development_focus
-        return self._getSeriesBranch(series)
-
-    def _getBranchForSeries(self, project_name, series_name):
-        """Return the branch for the given series on the given project.
-
-        :param project_name: The name of a Launchpad project.
-        :param series_name: The name of a series on that project.
-        :return: The branch for that series or a Fault if the project or the
-            series do not exist.
-        """
-        project = getUtility(IProductSet).getByName(project_name)
-        if project is None:
-            return faults.NoSuchProduct(project_name)
-        series = project.getSeries(series_name)
-        if series is None:
-            return faults.NoSuchSeries(series_name, project)
-        return self._getSeriesBranch(series)
 
     def _getBranch(self, unique_name):
         """Return a branch or _NonexistentBranch for the given unique name.
@@ -302,21 +246,22 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
-        path_segments = strip_path.split('/', 3)
-        suffix = None
-        if len(path_segments) == 1:
-            [project_name] = path_segments
-            result = self._getBranchForProject(project_name)
-        elif len(path_segments) == 2:
-            project_name, series_name = path_segments
-            result = self._getBranchForSeries(project_name, series_name)
-        elif len(path_segments) == 3:
-            result = self._getBranch(strip_path)
-        else:
-            suffix = path_segments.pop()
-            result = self._getBranch('/'.join(path_segments))
-
-        if isinstance(result, faults.LaunchpadFault):
-            return result
-        else:
-            return self._getResultDict(result, suffix)
+        try:
+            branch, suffix = getUtility(IBranchSet).getByLPPath(path)
+        except NoSuchProject, e:
+            pillar = getUtility(IPillarNameSet).getByName(e.project_name)
+            if pillar:
+                if IProject.providedBy(pillar):
+                    pillar_type = 'project group'
+                elif IDistribution.providedBy(pillar):
+                    pillar_type = 'distribution'
+                else:
+                    raise AssertionError(
+                        "pillar of unknown type %s" % pillar)
+                return faults.NoDefaultBranchForPillar(
+                    project_name, pillar_type)
+            else:
+                return faults.NoSuchProduct(project_name)
+        if not check_permission('launchpad.View', branch):
+            return faults.NoBranchForSeries(series)
+        return self._getResultDict(branch, suffix)

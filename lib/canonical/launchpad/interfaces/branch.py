@@ -1022,6 +1022,18 @@ class IBranchSet(Interface):
         Return the default value if no match was found.
         """
 
+    def getByLPPath(path):
+        """Find the branch associated with an lp: path.
+
+        Recognized formats:
+        "~/owner/product/name" (same as unique name)
+        "product/series" (branch associated with a product series)
+        "product" (development focus of product)
+
+        :return: an `IBranch`
+        :raises: `NotFoundError` if the branch does not exist.
+        """
+
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 

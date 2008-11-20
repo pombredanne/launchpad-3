@@ -1045,5 +1045,29 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
             [(rev.revision_id, revision_number)])
 
 
+class TestGetByLPPath(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def make_branch(self):
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('bb')
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        series = self.factory.makeSeries(name='dd', product=product,
+                                         user_branch=branch)
+        return branch
+
+    def test_getByLPPath_with_three_parts(self):
+        branch = self.make_branch()
+        branch_set = getUtility(IBranchSet)
+        self.assertEqual((branch, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_two_parts(self):
+        branch = self.make_branch()
+        branch_set = getUtility(IBranchSet)
+        self.assertEqual((branch, None), branch_set.getByLPPath('bb/dd'))
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
