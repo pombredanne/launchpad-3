@@ -185,27 +185,10 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """Return the hostname for the codehosting server."""
         return URI(config.codehosting.supermirror_root).host
 
-
-    def _getBranch(self, unique_name):
-        """Return a branch or _NonexistentBranch for the given unique name.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :return: The corresponding Branch object if the branch exists, a
-            _NonexistentBranch stub object if the branch does not exist or
-            faults.InvalidBranchIdentifier if unique_name is invalid.
-        """
-        if unique_name[0] != '~':
-            return faults.InvalidBranchIdentifier(unique_name)
-        branch = getUtility(IBranchSet).getByUniqueName(unique_name)
-        if check_permission('launchpad.View', branch):
-            return branch
-        else:
-            return self._getNonexistentBranch(unique_name)
-
     def _getResultDict(self, branch, suffix=None):
         """Return a result dict with a list of URLs for the given branch.
 
-        :param branch: A Branch object or a _NonexistentBranch object.
+        :param branch: A Branch object.
         :param suffix: The section of the path that follows the branch
             specification.
         :return: {'urls': [list_of_branch_urls]}.
@@ -215,15 +198,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 return faults.NoUrlForBranch(branch.unique_name)
             return dict(urls=[branch.url])
         else:
-            result = dict(urls=[])
-            host = self._getBazaarHost()
-            for scheme in self.supported_schemes:
-                path = '/' + branch.unique_name
-                if suffix is not None:
-                    path = os.path.join(path, suffix)
-                result['urls'].append(
-                    str(URI(host=host, scheme=scheme, path=path)))
-            return result
+            return self._getUniqueNameResultDict(branch.unique_name, suffix)
+
+    def _getUniqueNameResultDict(self, unique_name, suffix=None):
+        result = dict(urls=[])
+        host = self._getBazaarHost()
+        path = '/' + unique_name
+        if suffix is not None:
+            path = os.path.join(path, suffix)
+        for scheme in self.supported_schemes:
+            result['urls'].append(
+                str(URI(host=host, scheme=scheme, path=path)))
+        return result
 
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""
@@ -234,8 +220,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             branch, suffix = getUtility(IBranchSet).getByLPPath(strip_path)
             branch = removeSecurityProxy(branch)
         except faults.NoSuchBranch:
-            branch = _NonexistentBranch(strip_path)
-            suffix = None
+            return self._getUniqueNameResultDict(strip_path)
         except faults.NoSuchProduct, e:
             pillar = getUtility(IPillarNameSet).getByName(e.product_name)
             if pillar:
@@ -249,7 +234,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                 return faults.NoDefaultBranchForPillar(
                     e.product_name, pillar_type)
             else:
-                return faults.NoSuchProduct(e.product_name)
+                return e
         except faults.LaunchpadFault, e:
             return e
         return self._getResultDict(branch, suffix)
