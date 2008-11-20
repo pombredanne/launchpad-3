@@ -615,6 +615,26 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             )
 
     @property
+    def source_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.name
+
+    @property
+    def source_package_version(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.sourcepackagerelease.version
+
+    @property
+    def component_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.component.name
+
+    @property
+    def section_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.section.name
+
+    @property
     def displayname(self):
         """See `IPublishing`."""
         release = self.sourcepackagerelease

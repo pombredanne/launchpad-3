@@ -30,8 +30,17 @@ from zope.schema import Bool, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.archive import IArchive
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported, export_read_operation,
+    export_factory_operation, export_write_operation, operation_parameters,
+    operation_returns_collection_of, webservice_error)
+
 
 #
 # Exceptions
@@ -104,7 +113,10 @@ class IPublishing(Interface):
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
-    displayname = Attribute("Text representation of the current record.")
+    displayname = exported(
+        TextLine(
+            title=_("Display Name"),
+            description=_("Text representation of the current record.")))
     age = Attribute("Age of the publishing record.")
 
     def publish(diskpool, log):
@@ -236,14 +248,17 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The source package release being published'),
             required=False, readonly=False,
             )
-    status = Int(
+    status = exported(
+        Int(
             title=_('The status of this publishing record'),
             required=False, readonly=False,
-            )
-    distroseries = Int(
+            ))
+    distroseries = exported(
+        Reference(
+            IDistroSeries,
             title=_('The distroseries being published into'),
             required=False, readonly=False,
-            )
+            ))
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -252,44 +267,53 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The section being published into'),
             required=False, readonly=False,
             )
-    datepublished = Datetime(
+    datepublished = exported(
+        Datetime(
             title=_('The date on which this record was published'),
             required=False, readonly=False,
-            )
-    scheduleddeletiondate = Datetime(
+            ))
+    scheduleddeletiondate = exported(
+        Datetime(
             title=_('The date on which this record is scheduled for '
                     'deletion'),
             required=False, readonly=False,
-            )
-    pocket = Int(
+            ))
+    pocket = exported(
+        Int(
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
-            )
-    archive = Int(
+            ))
+    archive = exported(
+        Reference(
+            IArchive,
             title=_('Archive ID'), required=True, readonly=True,
-            )
+            ))
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
             )
-    datesuperseded = Datetime(
+    datesuperseded = exported(
+        Datetime(
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
-            )
-    datecreated = Datetime(
+            ))
+    datecreated = exported(
+        Datetime(
             title=_('The date on which this record was created'),
             required=True, readonly=False,
-            )
-    datemadepending = Datetime(
+            ))
+    datemadepending = exported(
+        Datetime(
             title=_('The date on which this record was set as pending '
                     'removal'),
             required=False, readonly=False,
-            )
-    dateremoved = Datetime(
+            ))
+    dateremoved = exported(
+        Datetime(
             title=_('The date on which this record was removed from the '
                     'published set'),
             required=False, readonly=False,
-            )
+            ))
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -298,18 +322,23 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             title=_('The date on which this record had its embargo lifted'),
             required=False, readonly=False,
             )
-    removed_by = Int(
-        title=_('The IPerson responsible for the removal'),
-        required=False, readonly=False,
-        )
-    removal_comment = Text(
-        title=_('Reason why this publication is going to be removed.'),
-        required=False, readonly=False,
-        )
+    removed_by = exported(
+        Reference(
+            IPerson,
+            title=_('The IPerson responsible for the removal'),
+            required=False, readonly=False,
+            ))
+    removal_comment = exported(
+        Text(
+            title=_('Reason why this publication is going to be removed.'),
+            required=False, readonly=False,
+        ))
 
 
 class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
     """A source package publishing history record."""
+    export_as_webservice_entry()
+
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
@@ -324,6 +353,23 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an IDistroSeriesSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
+
+    source_package_name = exported(
+        TextLine(
+            title=_("Source Package Name"),
+            required=False, readonly=True))
+    source_package_version = exported(
+        TextLine(
+            title=_("Source Package Version"),
+            required=False, readonly=True))
+    component_name = exported(
+        TextLine(
+            title=_("Component Name"),
+            required=False, readonly=True))
+    section_name = exported(
+        TextLine(
+            title=_("Section Name"),
+            required=False, readonly=True))
 
     def getPublishedBinaries():
         """Return all resulted `IBinaryPackagePublishingHistory`.
