@@ -5057,7 +5057,11 @@ class EmailToPersonView(LaunchpadFormView):
         # message to each team member individually.
         if recipient_email is None:
             # It's possible that we're on a person's page and that person has
-            # no preferred email address.  In that case, send nothing.
+            # no preferred email address.  This should never happen in
+            # practice, but it's possible that old data may not satisfy the
+            # constraint that all users must have a preferred email address.
+            # Because of that, we don't assert the condition here, we just do
+            # nothing but issue an error notice.
             if not self.context.is_team:
                 self.request.response.addErrorNotification(
                     _('Your message was not sent because the recipient '
@@ -5109,7 +5113,7 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_text(self):
+    def specific_contact_title_text(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
             return 'Contact this team'
