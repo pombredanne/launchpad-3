@@ -1828,13 +1828,13 @@ def encode(value):
     return Header(value.encode(charset), charset)
 
 
-def send_direct_contact_email(sender_email, recipient_email, subject, body):
+def send_direct_contact_email(sender_email, recipients_email, subject, body):
     """Send a direct user-to-user email.
 
     :param sender_email: The email address of the sender.
     :type sender_email: string
-    :param recipient_email: The email address of the recipient.
-    :type recipient_email:' string
+    :param recipients_email: The email address of the recipients.
+    :type recipients_email:' list of string
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
@@ -1850,26 +1850,39 @@ def send_direct_contact_email(sender_email, recipient_email, subject, body):
         charset = 'us-ascii'
     except UnicodeEncodeError:
         charset = 'utf-8'
-    message = MIMEText(body.encode(charset), _charset=charset)
-    # Get the sender and recipient's real names, encoded as per RFC 2047.
+    # Get the sender's real name, encoded as per RFC 2047.
     person_set = getUtility(IPersonSet)
     sender = person_set.getByEmail(sender_email)
     assert sender is not None, 'No person for sender %s' % sender_email
+    sender_name = str(encode(sender.displayname))
+    # Do a single authorization/quota check for the sender.  We consume one
+    # quota credit per contact, not per recipient.
     authorization = IDirectEmailAuthorization(sender)
     if not authorization.is_allowed:
         raise QuotaReachedError(sender.displayname, authorization)
-    recipient = person_set.getByEmail(recipient_email)
-    assert recipient is not None, (
-        'No person for recipient %s' % recipient_email)
-    sender_name = str(encode(sender.displayname))
-    recipient_name = str(encode(recipient.displayname))
-    message['From'] = formataddr((sender_name, sender_email))
-    message['To'] = formataddr((recipient_name, recipient_email))
-    message['Subject'] = subject_header
-    message['Message-ID'] = make_msgid('launchpad')
-    # Record the contact.  Send the message first though so it gets a Date
-    # header.  Yeah, we could add one ourselves I guess.
-    sendmail(message)
+    # Craft and send one message per recipient.
+    message = None
+    for recipient_email in recipients_email:
+        recipient = person_set.getByEmail(recipient_email)
+        assert recipient is not None, (
+            'No person for recipient %s' % recipient_email)
+        recipient_name = str(encode(recipient.displayname))
+        message = MIMEText(body.encode(charset), _charset=charset)
+        message['From'] = formataddr((sender_name, sender_email))
+        message['To'] = formataddr((recipient_name, recipient_email))
+        message['Subject'] = subject_header
+        message['Message-ID'] = make_msgid('launchpad')
+        # Send the message.
+        sendmail(message)
+    # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
+    # the sender contacted the team.  This is not perfect though because we're
+    # really recording the fact that the person contacted the last member of
+    # the team.  There's little we can do better though because the team has
+    # no contact address, and so there isn't actually an address to record as
+    # the team's recipient.  It currently doesn't matter though because we
+    # don't actually do anything with the recipient information yet.  All we
+    # care about is the sender, for quota purposes.  We definitely want to
+    # record the contact outside the above loop though, because if there are
+    # 10 members of the team with no contact address, one message should not
+    # consume the sender's entire quota.
     authorization.record(message)
-    return message
-
