@@ -3429,7 +3429,7 @@ class PersonEditView(BasePersonEditView):
 
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
-    i_know_this_an_openid_security_issue_input = None
+    i_know_this_is_an_openid_security_issue_input = None
 
     @property
     def cancel_url(self):
@@ -3450,7 +3450,7 @@ class PersonEditView(BasePersonEditView):
         """If the name changed, warn the user about the implications."""
         new_name = data.get('name')
         bypass_check = self.request.form_ng.getOne(
-            'i_know_this_an_openid_security_issue', 0)
+            'i_know_this_is_an_openid_security_issue', 0)
         if (new_name and new_name != self.context.name and
             len(self.unknown_trust_roots_user_logged_in) > 0
             and not bypass_check):
@@ -3474,10 +3474,10 @@ class PersonEditView(BasePersonEditView):
               </p>
             </div>"""),
              ", ".join(self.unknown_trust_roots_user_logged_in)))
-            self.i_know_this_an_openid_security_issue_input = dedent("""\
+            self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
-                       id="i_know_this_an_openid_security_issue"
-                       name="i_know_this_an_openid_security_issue"
+                       id="i_know_this_is_an_openid_security_issue"
+                       name="i_know_this_is_an_openid_security_issue"
                        value="1">""")
 
     @cachedproperty

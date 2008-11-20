@@ -82,13 +82,13 @@ the name change if they click save again:
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
     >>> find_tag_by_id(
-    ...     harness.view.render(), 'i_know_this_an_openid_security_issue')
+    ...     harness.view.render(), 'i_know_this_is_an_openid_security_issue')
     <input type="hidden" 
-           id="i_know_this_an_openid_security_issue"
-           name="i_know_this_an_openid_security_issue"
+           id="i_know_this_is_an_openid_security_issue"
+           name="i_know_this_is_an_openid_security_issue"
            value="1" />
 
-    >>> form_data['i_know_this_an_openid_security_issue'] = 1
+    >>> form_data['i_know_this_is_an_openid_security_issue'] = 1
     >>> harness.submit('save', form_data)
     >>> harness.hasErrors()
     False
