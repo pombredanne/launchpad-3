@@ -4,6 +4,8 @@ We can get a distroseries object via a distribution object in several ways:
 
     >>> distros = webservice.get("/distros").jsonBody()
     >>> ubuntu = distros['entries'][0]
+    >>> print ubuntu['self_link']
+    http://.../ubuntu
 
 Via all the available series:
 
@@ -38,7 +40,6 @@ And via a direct query of a named series:
     ...     name_or_version='hoary').jsonBody()
     >>> print series['self_link']
     http://.../ubuntu/hoary
-
 
 For distroseries we publish a subset of its attributes.
 
