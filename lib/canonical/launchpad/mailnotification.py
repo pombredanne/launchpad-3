@@ -1860,6 +1860,21 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
     authorization = IDirectEmailAuthorization(sender)
     if not authorization.is_allowed:
         raise QuotaReachedError(sender.displayname, authorization)
+    # Add the footer as a unicode string, then encode the body if necessary.
+    # This is not entirely optimal if the body has non-ascii characters in it,
+    # since the footer may get garbled in a non-MIME aware mail reader.  Who
+    # uses those anyway!?  The only alternative is to attach the footer as a
+    # MIME attachment with a us-ascii charset, but that has it's own set of
+    # problems (and user complaints).  Email sucks.
+    additions = [
+        u'',
+        u'-- ',
+        u'This message was sent by Launchpad via the Contact user/team',
+        u'link on your profile page.  For more information see',
+        u'https://help.launchpad.net/YourAccount/ContactingPeople',
+        ]
+    body += u'\n'.join(additions)
+    encoded_body = body.encode(charset)
     # Craft and send one message per recipient.
     message = None
     for recipient_email in recipients_email:
@@ -1867,11 +1882,12 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
         assert recipient is not None, (
             'No person for recipient %s' % recipient_email)
         recipient_name = str(encode(recipient.displayname))
-        message = MIMEText(body.encode(charset), _charset=charset)
+        message = MIMEText(encoded_body, _charset=charset)
         message['From'] = formataddr((sender_name, sender_email))
         message['To'] = formataddr((recipient_name, recipient_email))
         message['Subject'] = subject_header
         message['Message-ID'] = make_msgid('launchpad')
+        message['X-Launchpad-Message-Rationale'] = 'ContactViaWeb'
         # Send the message.
         sendmail(message)
     # BarryWarsaw 19-Nov-2008: If any messages were sent, record the fact that
