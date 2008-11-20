@@ -191,12 +191,27 @@ def format_rfc2822_date(date):
     return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
 
 
-def construct_bug_notification(bug, from_address, address, body, subject,
-        email_date, rationale_header=None, references=None, msgid=None):
-    """Constructs a MIMEText message based on a bug and a set of headers."""
+def construct_bug_notification(
+    bug, from_address, to_address, body, subject, email_date,
+    rationale_header=None, references=None, msgid=None):
+    """Constructs a MIMEText message based on a bug and a set of headers.
+
+    :param bug: The bug for which a notification is being constructed.
+    :type bug: IBug
+    :param from_address: The From address of the notification.
+    :param to_address: The To address for the notification.
+    :param body: The body text of the notification.
+    :type body: unicode
+    :param subject: The Subject of the notification.
+    :param email_date: The Date for the notification.
+    :param rationale_header: The rationale for why the recipient is
+        receiving this notification.
+    :param references: A value for the References header.
+    :param msgid: A value for the Message-ID header.
+    """
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     msg['From'] = from_address
-    msg['To'] = address
+    msg['To'] = to_address
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     if references is not None:
         msg['References'] = ' '.join(references)
@@ -231,8 +246,15 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
                    (bug.security_related and 'yes' or 'no'))
 
+    # Add the -Bug-Commenters header, a space-separated list of
+    # distinct IDs of people who have commented on the bug. The list
+    # is sorted to aid testing.
+    msg.add_header('X-Launchpad-Bug-Commenters', ' '.join(
+            sorted(set(message.owner.name for message in bug.messages))))
+
     if rationale_header is not None:
         msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
+
     return msg
 
 

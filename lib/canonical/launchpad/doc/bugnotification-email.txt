@@ -619,6 +619,11 @@ auto-generated if it is not supplied.
     >>> print notification_email['Message-Id']
     <67890@launchpad.net>
 
+The X-Launchpad-Bug-Commenters header is always calculated.
+
+    >>> print notification_email['X-Launchpad-Bug-Commenters']
+    name12
+
 The message subject will always have [Bug <bug_id>] prepended to it.
 
     >>> notification_email = construct_bug_notification(

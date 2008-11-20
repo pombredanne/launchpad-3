@@ -1225,6 +1225,37 @@ simple "yes":
     mark@hbd.com ['yes']
 
 
+== The X-Launchpad-Bug-Commenters header ==
+
+The X-Launchpad-Bug-Recipient-Commented header lists all user IDs of
+people who have ever commented on the bug. It's a space-separated
+list.
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12
+
+    >>> from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12 name16
+
+It only lists each user once, no matter how many comments they've
+made.
+
+    >>> getUtility(IBugMessageSet).createMessage(
+    ...     'Hungry', bug_three, foo_bar, "Make me a sandwich.")
+    <BugMessage ...>
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message.get('X-Launchpad-Bug-Commenters')
+    name12 name16
+
+
 == Verbose bug notifications ==
 
 It is possible for users to have all the bug notifications which they
