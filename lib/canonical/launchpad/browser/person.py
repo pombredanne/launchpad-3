@@ -2480,10 +2480,22 @@ class PersonView(LaunchpadView, FeedsMixin):
     @property
     def contactuser_link_title(self):
         """Return the appropriate +contactuser link title for the tooltip."""
-        if self.viewing_own_page:
+        if self.context.is_team:
+            return 'Send an email to this team through Launchpad'
+        elif self.viewing_own_page:
             return 'Send an email to yourself through Launchpad'
         else:
             return 'Send an email to this user through Launchpad'
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate link text."""
+        if self.context.is_team:
+            return 'Contact this team'
+        else:
+            # Note that we explicitly do not change the text to "Contact
+            # yourself" when viewing your own page.
+            return 'Contact this user'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -5045,9 +5057,34 @@ class EmailToPersonView(LaunchpadFormView):
         # will prevent direct access to the .email attribute of the preferred
         # email.  Bypass this restriction.
         recipient_email = removeSecurityProxy(self.context.preferredemail)
+        # recipient_email will be None in the case where we're contacting a
+        # team, but that team has no contact address.  In that case, we send a
+        # message to each team member individually.
+        if recipient_email is None:
+            # It's possible that we're on a person's page and that person has
+            # no preferred email address.  This should never happen in
+            # practice, but it's possible that old data may not satisfy the
+            # constraint that all users must have a preferred email address.
+            # Because of that, we don't assert the condition here, we just do
+            # nothing but issue an error notice.
+            if not self.context.is_team:
+                self.request.response.addErrorNotification(
+                    _('Your message was not sent because the recipient '
+                      'does not have a preferred email address.'))
+                self.next_url = canonical_url(self.context)
+                return
+            recipients_email = []
+            for person in self.context.allmembers:
+                if not person.is_team and person.preferredemail is not None:
+                    # This is either a team or a person without a preferred
+                    # email, so don't send a notification.
+                    recipients_email.append(
+                        removeSecurityProxy(person.preferredemail).email)
+        else:
+            recipients_email = [recipient_email.email]
         try:
-            message = send_direct_contact_email(
-                sender_email, recipient_email.email, subject, message)
+            send_direct_contact_email(
+                sender_email, recipients_email, subject, message)
         except QuotaReachedError, error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
@@ -5081,9 +5118,11 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_text(self):
+    def specific_contact_title_text(self):
         """Return the appropriate pagetitle."""
-        if self.context == self.user:
+        if self.context.is_team:
+            return 'Contact this team'
+        elif self.context == self.user:
             return 'Contact yourself'
         else:
             return 'Contact this user'
