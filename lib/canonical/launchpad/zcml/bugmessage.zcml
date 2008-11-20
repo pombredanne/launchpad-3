@@ -5,17 +5,17 @@
     i18n_domain="launchpad">
 
     <!-- BugMessage -->
-    <content class="canonical.launchpad.database.BugMessage">
+    <class class="canonical.launchpad.database.BugMessage">
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
         <require
             permission="launchpad.Admin"
             set_attributes="remote_comment_id bugwatch" />
-    </content>
+    </class>
 
     <!-- BugMessageSet -->
-    <content class="canonical.launchpad.database.BugMessageSet">
+    <class class="canonical.launchpad.database.BugMessageSet">
         <allow interface="canonical.launchpad.interfaces.IBugMessageSet" />
-    </content>
+    </class>
 
     <securedutility
         class="canonical.launchpad.database.BugMessageSet"

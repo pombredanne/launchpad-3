@@ -3,19 +3,19 @@
 For archives we publish a subset of their attributes.
 This works for PPAs:
 
-    >>> archive = webservice.get("/~cprov/+archive").jsonBody()
-    >>> print archive['self_link']
+    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> print cprov_archive['self_link']
     http://.../~cprov/+archive
 
-    >>> for key, value in sorted(archive.items()):
-    ...     print "%s: %s" % (key, value)
-    description: packages to help my friends.
-    distribution_link: http://.../ubuntu
-    name: default
-    owner_link: http://.../~cprov
-    resource_type_link: http://.../#archive
-    self_link: http://.../~cprov/+archive
-    title: PPA for Celso Providelo
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> pprint_entry(cprov_archive)
+    description: u'packages to help my friends.'
+    distribution_link: u'http://.../ubuntu'
+    name: u'default'
+    owner_link: u'http://.../~cprov'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive'
+    title: u'PPA for Celso Providelo'
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
     >>> print main['self_link']
@@ -33,32 +33,33 @@ at "ubuntutest":
     http://.../debian
     http://.../gentoo
 
-    >>> ubuntu = distros['entries'][2]
+    >>> ubuntutest = distros['entries'][2]
+    >>> ubuntu = distros['entries'][0]
 
 "ubuntutest" has a "main_archive" which is always present:
 
-    >>> print ubuntu['main_archive_link']
+    >>> print ubuntutest['main_archive_link']
     http://.../ubuntutest/+archive/primary
 
 The archive has the following attributes:
 
-    >>> main_archive = webservice.get(ubuntu['main_archive_link']).jsonBody()
-    >>> for key, value in sorted(main_archive.items()):
-    ...     print "%s: %s" % (key, value)
+    >>> main_archive = webservice.get(
+    ...     ubuntutest['main_archive_link']).jsonBody()
+    >>> pprint_entry(main_archive)
     description: None
-    distribution_link: http://.../ubuntutest
-    name: primary
-    owner_link: http://.../~ubuntu-team
-    resource_type_link: http://.../#archive
-    self_link: http://.../ubuntutest/+archive/primary
-    title: Primary Archive for Ubuntu Test
+    distribution_link: u'http://.../ubuntutest'
+    name: u'primary'
+    owner_link: u'http://.../~ubuntu-team'
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../ubuntutest/+archive/primary'
+    title: u'Primary Archive for Ubuntu Test'
 
 A distribution can also provide a list of all its archives:
 
-    >>> print ubuntu['archives_collection_link']
+    >>> print ubuntutest['archives_collection_link']
     http://.../ubuntutest/archives
     >>> archives = webservice.get(
-    ...     ubuntu['archives_collection_link']).jsonBody()
+    ...     ubuntutest['archives_collection_link']).jsonBody()
     >>> print_self_link_of_entries(archives)
     http://api.launchpad.dev/beta/ubuntutest/+archive/partner
     http://api.launchpad.dev/beta/ubuntutest/+archive/primary
@@ -71,3 +72,367 @@ Attempting to grab a non-existent archive will result in a 404 error:
     ...
     ValueError: HTTP/1.1 404 Not Found
     ...
+
+
+= Archive Permissions =
+
+Archives have associated permissions.  These are currently either upload
+rights or queue administration rights.  The URL to the permissions
+takes two forms:
+ * <archive>/+upload/username.item
+ * <archive>/+queue-admin/username.item
+where `item` is a component or a source package name.
+
+This is a permission that allows a team to upload to a component:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+upload/ubuntu-team.main").jsonBody()
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
+    date_created: ...
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~ubuntu-team'
+    resource_type_link: ...
+    self_link: u'http://.../ubuntu/+archive/primary/+upload/ubuntu-team.main'
+    source_package_name: None
+
+This is a permission that allows an individual to upload a source package.
+
+    >>> carlos_mozilla_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/"
+    ...     "+upload/carlos.mozilla-firefox").jsonBody()
+    >>> pprint_entry(carlos_mozilla_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: None
+    date_created: ...
+    permission: u'Archive Upload Rights'
+    person_link: u'http://.../~carlos'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+upload/carlos.mozilla-firefox'
+    source_package_name: u'mozilla-firefox'
+
+This is a queue admin right for ubuntu-team:
+
+    >>> ubuntu_main_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/ubuntu-team.main").jsonBody()
+    >>> pprint_entry(ubuntu_main_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'main'
+    date_created: ...
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~ubuntu-team'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-team.main'
+    source_package_name: None
+
+And one for an individual:
+
+    >>> name16_admin_permission = webservice.get(
+    ...     "/ubuntu/+archive/primary/+queue-admin/name12.universe").jsonBody()
+    >>> pprint_entry(name16_admin_permission)
+    archive_link: u'http://.../ubuntu/+archive/primary'
+    component_name: u'universe'
+    date_created: ...
+    permission: u'Queue Administration Rights'
+    person_link: u'http://.../~name12'
+    resource_type_link: ...
+    self_link:
+        u'http://.../ubuntu/+archive/primary/+queue-admin/name12.universe'
+    source_package_name: None
+
+
+== Archive Permission Custom Operations ==
+
+Permission collections can be retrieved with custom operations on the
+archive.
+
+getPermissionsForPerson returns all the permissions that a user has.
+
+    >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
+    >>> permissions = webservice.named_get(
+    ...     ubuntutest['main_archive_link'], 'getPermissionsForPerson',
+    ...     person=ubuntu_team['self_link']).jsonBody()
+
+    >>> def show_permission_entries(permissions):
+    ...     for entry in sorted(permissions['entries']):
+    ...         print entry['permission']
+    ...         print entry['person_link']
+    ...         print entry['component_name']
+    ...         print entry['source_package_name']
+
+    >>> show_permission_entries(permissions)
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+getUploadersForPackage returns all the permissions where someone can
+upload a particular package.
+
+    >>> def show_mozilla_permissions():
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...         source_package_name='mozilla-firefox').jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+
+Passing a bad package name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...     source_package_name="badpackage").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+
+newPackageUploader() is a factory function that adds a new permission for
+a person to upload a package.
+
+    >>> name12 = webservice.get("/~name12").jsonBody()
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
+    ...     person=name12['self_link'],
+    ...     source_package_name='mozilla-firefox')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12.mozilla-firefox
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+    Archive Upload Rights ...~name12 None mozilla-firefox
+
+deletePackageUploader() removes that permission:
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deletePackageUploader', {},
+    ...     person=name12['self_link'],
+    ...     source_package_name='mozilla-firefox')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_mozilla_permissions()
+    Archive Upload Rights ...~carlos None mozilla-firefox
+
+getUploadersForComponent returns all the permissions where someone can
+upload to a particular component:
+
+    >>> def show_component_permissions(component=None):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...         component_name=component).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_component_permissions("main")
+    Archive Upload Rights ...~ubuntu-team main None
+
+Passing a bad component name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...     component_name="badcomponent").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+
+If you don't specify the component, you get all the uploaders for
+all components.
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+newComponentUploader adds a new permission for a person to upload to a
+component.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'],
+    ...     component_name='restricted')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+upload/name12.restricted
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team restricted None
+    Archive Upload Rights ...~name12 restricted None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+deleteComponentUploader() removes that permission:
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deleteComponentUploader', {},
+    ...     person=name12['self_link'],
+    ...     component_name='restricted')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_component_permissions()
+    Archive Upload Rights ...~ubuntu-team main None
+    Archive Upload Rights ...~ubuntu-team restricted None
+    Archive Upload Rights ...~ubuntu-team universe None
+
+getQueueAdminsForComponent returns all the permissions where someone
+can administer distroseries queues in a particular component.
+
+    >>> def show_admins_for_component(component):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getQueueAdminsForComponent',
+    ...         component_name=component).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_admins_for_component("main")
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~ubuntu-team main None
+
+getComponentsForQueueAdmin returns all the permissions relating to components
+where the user is able to administer distroseries queues.
+
+    >>> def show_components_for_admin(person):
+    ...     permissions = webservice.named_get(
+    ...         ubuntu['main_archive_link'], 'getComponentsForQueueAdmin',
+    ...         person=person['self_link']).jsonBody()
+    ...     show_permission_entries(permissions)
+
+    >>> show_components_for_admin(name12)
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None
+
+newQueueAdmin adds a new permission for a person to administer distroseries
+queues in a particular component.
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
+    ...     person=name12['self_link'],
+    ...     component_name='partner')
+    >>> print response.getOutput()
+    HTTP/1.1 201 Created
+    ...
+
+    >>> new_permission = webservice.get(
+    ...     response.getHeader('Location')).jsonBody()
+    >>> print new_permission['self_link']
+    http://.../ubuntu/+archive/primary/+queue-admin/name12.partner
+
+    >>> show_components_for_admin(name12) 
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 partner None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None
+
+deleteQueueAdmin removes that permission.
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'deleteQueueAdmin', {},
+    ...     person=name12['self_link'],
+    ...     component_name='partner')
+    HTTP/1.1 200 Ok
+    ...
+
+And we can see that it's gone:
+
+    >>> show_components_for_admin(name12) 
+    Queue Administration Rights ...~name12 main None
+    Queue Administration Rights ...~name12 multiverse None
+    Queue Administration Rights ...~name12 restricted None
+    Queue Administration Rights ...~name12 universe None
+
+
+== Package copying/synchronisation ==
+
+IArchive contains 2 custom operations to copy packages from another archive.
+These are syncSource() and syncSources().
+
+syncSource() copies a single package with a specific version from another
+archive.
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='cdrkit', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: cdrkit 1.0 in breezy-autotest
+        (same version already has published binaries in the destination archive)
+    <BLANKLINE>
+
+That one failed because cdrkit is already published in the same context in
+the main archive.  Let's add some more test publications that we can copy
+around:
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> main_archive = ubuntu_distro.main_archive
+    >>> hoary = ubuntu_distro.getSeries('hoary')
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.0", archive=main_archive)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.1", archive=main_archive)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package2", version="1.0", archive=main_archive)
+    >>> logout()
+
+Now copy "package1" version 1.0 from the main archive into cprov's PPA:
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSource', {},
+    ...     source_name='package1', version='1.0',
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 200 Ok
+    ...
+
+syncSources() allows the caller to specify a list of sources to copy all at
+once.  The latest versions that are found in the from_archive are
+"synchronised" to the context archive.  If a particular version already
+exists then nothing is copied.  The list of packages that were copied is
+returned from the function call.
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 200 Ok
+    ...
+    ["package1", "package2"]
+
+If there's nothing to copy at all, an error is returned.  Repeating the copy
+above will give this effect.
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: Packages already copied.
+    <BLANKLINE>

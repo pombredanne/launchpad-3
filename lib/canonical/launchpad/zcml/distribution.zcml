@@ -5,7 +5,7 @@
   i18n_domain="launchpad">
 
   <!-- Distribution -->
-  <content class="canonical.launchpad.database.Distribution">
+  <class class="canonical.launchpad.database.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistributionPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -29,6 +29,12 @@
     <require
       permission="launchpad.TranslationsAdmin"
       set_attributes="language_pack_admin"
+      />
+    <!-- IHasAliases -->
+    <allow attributes="aliases" />
+    <require
+      permission="launchpad.Admin"
+      attributes="setAliases"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -63,7 +69,7 @@
     <require
         permission="launchpad.Edit"
         attributes="setBugSupervisor" />
-  </content>
+  </class>
 
   <adapter
       for="canonical.launchpad.interfaces.IDistribution"
@@ -496,9 +502,9 @@
     />
 
   <!-- DistributionSet -->
-  <content class="canonical.launchpad.database.DistributionSet">
+  <class class="canonical.launchpad.database.DistributionSet">
     <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
-  </content>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.DistributionSet"

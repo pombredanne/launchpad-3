@@ -13,7 +13,9 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from email.Encoders import encode_base64
 from email.Utils import make_msgid, formatdate
+from email.Message import Message as EmailMessage
 from itertools import count
 from StringIO import StringIO
 
@@ -23,6 +25,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, BranchType, CodeImportMachineState,
@@ -47,11 +51,12 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.poll import (
+    IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
 
 SPACE = ' '
@@ -209,6 +214,15 @@ class LaunchpadObjectFactory(ObjectFactory):
                 getUtility(IEmailAddressSet).new(email, team))
         return team
 
+    def makePoll(self, team, name, title, proposition):
+        """Create a new poll which starts tomorrow and lasts for a week."""
+        dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
+        datecloses = dateopens + timedelta(days=7)
+        return getUtility(IPollSet).new(
+            team, name, title, proposition, dateopens, datecloses,
+            PollSecrecy.SECRET, allowspoilt=True,
+            poll_type=PollAlgorithm.SIMPLE)
+
     def makeTranslationGroup(
         self, owner, name=None, title=None, summary=None):
         """Create a new, arbitrary `TranslationGroup`."""
@@ -220,6 +234,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             summary = self.getUniqueString("summary")
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
+
+    def makeMilestone(self, product=None, distribution=None, name=None):
+        if product is None and distribution is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        return Milestone(product=product, distribution=distribution,
+                         name=name)
 
     def makeProduct(self, name=None, project=None, displayname=None,
                     licenses=None, owner=None, registrant=None,
@@ -330,9 +352,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
-                                set_state=None, dependent_branch=None):
+                                set_state=None, dependent_branch=None,
+                                product=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = _DEFAULT
+        if not product:
+            product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -438,10 +462,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
-        branch.updateScannedDetails(parent.revision_id, sequence)
+        branch.updateScannedDetails(parent, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
-                private=False, date_closed=None, title=None):
+                private=False, date_closed=None, title=None,
+                date_created=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -460,7 +485,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = self.getUniqueString()
         create_bug_params = CreateBugParams(
-            owner, title, comment=self.getUniqueString(), private=private)
+            owner, title, comment=self.getUniqueString(), private=private,
+            datecreated=date_created)
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
@@ -531,7 +557,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, BugTrackerType.BUGZILLA)
 
-    def makeBugWatch(self, remote_bug=None, bugtracker=None):
+    def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -539,7 +565,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        bug = self.makeBug()
+        if bug is None:
+            bug = self.makeBug()
         owner = self.makePerson()
         return getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
@@ -576,23 +603,40 @@ class LaunchpadObjectFactory(ObjectFactory):
         return bug.addAttachment(
             owner, data, comment, filename, content_type=content_type)
 
-    def makeSignedMessage(self, msgid=None, body=None, subject=None):
+    def makeSignedMessage(self, msgid=None, body=None, subject=None,
+            attachment_contents=None, force_transfer_encoding=False):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
         if msgid is None:
-            msgid = make_msgid('launchpad')
+            msgid = self.makeUniqueRFC822MsgId()
         if body is None:
             body = self.getUniqueString('body')
         mail['Message-Id'] = msgid
         mail['Date'] = formatdate()
-        mail.set_payload(body)
+        if attachment_contents is None:
+            mail.set_payload(body)
+            body_part = mail
+        else:
+            body_part = EmailMessage()
+            body_part.set_payload(body)
+            mail.attach(body_part)
+            attach_part = EmailMessage()
+            attach_part.set_payload(attachment_contents)
+            attach_part['Content-type'] = 'application/octet-stream'
+            if force_transfer_encoding:
+                encode_base64(attach_part)
+            mail.attach(attach_part)
+            mail['Content-type'] = 'multipart/mixed'
+        body_part['Content-type'] = 'text/plain'
+        if force_transfer_encoding:
+            encode_base64(body_part)
         mail.parsed_string = mail.as_string()
         return mail
 
-    def makeSpecification(self, product=None):
+    def makeSpecification(self, product=None, title=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -600,9 +644,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if product is None:
             product = self.makeProduct()
+        if title is None:
+            title = self.getUniqueString('title')
         return getUtility(ISpecificationSet).new(
             name=self.getUniqueString('name'),
-            title=self.getUniqueString('title'),
+            title=title,
             specurl=None,
             summary=self.getUniqueString('summary'),
             definition_status=SpecificationDefinitionStatus.NEW,
@@ -746,7 +792,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
-        rfc822msgid = make_msgid("launchpad")
+        rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)
         MessageChunk(message=message, sequence=1, content=content)
@@ -887,6 +933,23 @@ class LaunchpadObjectFactory(ObjectFactory):
             singular = self.getUniqueString()
         return potemplate.createMessageSetFromText(singular, plural)
 
+    def makeTranslationMessage(self, pofile=None, potmsgset=None,
+                               translator=None, reviewer=None,
+                               translation=None):
+        """Make a new `TranslationMessage` in the given PO file."""
+        if pofile is None:
+            pofile = self.makePOFile('sr')
+        if potmsgset is None:
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+        if translator is None:
+            translator = self.makePerson()
+        if translation is None:
+            translation = self.getUniqueString()
+
+        return potmsgset.updateTranslation(pofile, translator, [translation],
+                                           is_imported=False,
+                                           lock_timestamp=None)
+
     def makeTeamAndMailingList(self, team_name, owner_name):
         """Make a new active mailing list for the named team.
 
@@ -910,3 +973,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeUniqueRFC822MsgId(self):
+        """Make a unique RFC 822 message id.
+
+        The created message id is guaranteed not to exist in the
+        `Message` table already.
+        """
+        msg_id = make_msgid('launchpad')
+        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+            msg_id = make_msgid('launchpad')
+        return msg_id
+

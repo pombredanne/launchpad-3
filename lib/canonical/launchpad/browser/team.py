@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces.mailinglist import (
     PostedMessageStatus)
 from canonical.launchpad.interfaces.person import (
     IPerson, IPersonSet, ITeam, ITeamContactAddressForm, ITeamCreation,
-    PersonVisibility, TeamContactMethod, TeamSubscriptionPolicy)
+    ImmutableVisibilityError, PersonVisibility, TeamContactMethod,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.teammembership import TeamMembershipStatus
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.lazr.interfaces import IObjectPrivacy
@@ -122,7 +123,10 @@ class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     @action('Save', name='save')
     def action_save(self, action, data):
-        self.updateContextFromData(data)
+        try:
+            self.updateContextFromData(data)
+        except ImmutableVisibilityError, error:
+            self.request.response.addErrorNotification(str(error))
         self.next_url = canonical_url(self.context)
 
     def validate(self, data):
@@ -278,8 +282,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
         return form.FormField(
             Choice(__name__='contact_method',
                    title=_("How do people contact this team's members?"),
-                   required=True, vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['contact_method'])
+                   required=True, vocabulary=SimpleVocabulary(terms)))
 
     def validate(self, data):
         """Validate the team contact email address.
@@ -839,8 +842,8 @@ class TeamMemberAddView(LaunchpadFormView):
 
 
 class TeamMapView(LaunchpadView):
-    """Show all people with known locations on a map. 
-    
+    """Show all people with known locations on a map.
+
     Also provides links to edit the locations of people in the team without
     known locations.
     """
@@ -858,8 +861,7 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def unmapped_participants(self):
         """Participants (ordered by name) with no recorded locations."""
-        return sorted(list(self.context.unmapped_participants),
-                      key=lambda p: p.browsername)
+        return list(self.context.unmapped_participants)
 
     @cachedproperty
     def times(self):

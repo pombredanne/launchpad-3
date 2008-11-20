@@ -127,9 +127,9 @@ Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
   ...     "/~admins?ws.op=no_such_operation")
-  HTTP/1.1 404 Not Found
+  HTTP/1.1 400 Bad Request
   ...
-
+  No such operation: no_such_operation
 
 == Modification ==
 
@@ -184,16 +184,41 @@ http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
   <BLANKLINE>
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
-clients support PATCH, and sometimes it's easier to GET a document,
-modify it, and send it back. If you have the full document at hand,
-you can use the PUT method.
+clients support PATCH. It's possible to fake a PATCH request with
+POST, by setting the X-HTTP-Method-Override header to "PATCH". Because
+Firefox 3 mangles the Content-Type header for POST requests, you may
+also set the X-Content-Type-Override header, which will override the
+value of Content-Type.
+
+  >>> print modify_person('salgado',
+  ...     {'display_name' : 'GUILHERME SALGADO XVII'}, 'POST',
+  ...     {'X-HTTP-Method-Override' : 'PATCH',
+  ...      'Content-Type': 'not-a-valid-content/type',
+  ...      'X-Content-Type-Override': 'application/json'})
+  HTTP/1.1 200 Ok
+  ...
+
+If you try to use X-HTTP-Method-Override when the underlying HTTP
+method is not POST, you'll get an error.
+
+  >>> print modify_person('salgado',
+  ...     {}, 'GET', {'X-HTTP-Method-Override' : 'PATCH'})
+  HTTP/1.1 400 Bad Request
+  ...
+  X-HTTP-Method-Override can only be used with a POST request.
+
+
+Even if a client supports PATCH, sometimes it's easier to GET a
+document, modify it, and send it back. If you have the full document
+at hand, you can use the PUT method.
 
 We happen to have a full document from when we sent a GET request to
 the 'salgado' Person. Modifying that document and PUTting it back is
 less work than constructing a new document and sending it with PATCH.
 
+  >>> salgado = webservice.get('/~salgado').jsonBody()
   >>> salgado['display_name']
-  u'GUILHERME SALGADO'
+  u'GUILHERME SALGADO XVII'
 
   >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')

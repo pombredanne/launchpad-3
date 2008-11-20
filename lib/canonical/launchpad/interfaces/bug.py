@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
+from canonical.launchpad.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -40,8 +41,8 @@ from canonical.launchpad.validators.bugattachment import (
 
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_write_operation, exported,
-    operation_parameters, rename_parameters_as, webservice_error)
+    export_factory_operation, export_operation_as, export_write_operation,
+    exported, operation_parameters, rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 
@@ -207,8 +208,12 @@ class IBug(ICanBeMentored):
             value_type=Object(schema=IBugWatch),
             readonly=True),
         exported_as='bug_watches')
-    cves = Attribute('CVE entries related to this bug.')
-    cve_links = Attribute('LInks between this bug and CVE entries.')
+    cves = exported(
+        CollectionField(
+            title=_('CVE entries related to this bug.'),
+            value_type=Reference(schema=ICve),
+            readonly=True))
+    cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
         CollectionField(
             title=_('Subscriptions.'),
@@ -262,13 +267,23 @@ class IBug(ICanBeMentored):
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug'),
             required=True, readonly=True))
+    users_unaffected_count = exported(
+        Int(title=_('The number of users unaffected by this bug'),
+            required=True, readonly=True))
 
-    messages = exported(
+    messages = CollectionField(
+            title=_("The messages related to this object, in reverse "
+                    "order of creation (so newest first)."),
+            readonly=True,
+            value_type=Reference(schema=IMessage))
+
+    indexed_messages = exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Reference(schema=IMessage)))
+            value_type=Reference(schema=IMessage)),
+        exported_as='messages')
 
     followup_subject = Attribute("The likely subject of the next message.")
 
@@ -418,6 +433,20 @@ class IBug(ICanBeMentored):
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # We use this method to suppress the return value
+    # from linkCVE, which we don't want to export.
+    # In the future we'll have a decorator which does that for us.
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
+    @export_operation_as('linkCVE')
+    @export_write_operation()
+    def linkCVEAndReturnNothing(cve, user):
+        """Ensure that this CVE is linked to this bug."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(cve=Reference(ICve, title=_('CVE'), required=True))
+    @export_write_operation()
     def unlinkCVE(cve, user=None):
         """Ensure that any links between this bug and the given CVE are
         removed.
@@ -576,16 +605,14 @@ class IBug(ICanBeMentored):
     def isUserAffected(user):
         """Is :user: marked as affected by this bug?"""
 
+    @operation_parameters(
+        affected=Bool(
+            title=_("Does this bug affect you?"),
+            required=False, default=True))
     @call_with(user=REQUEST_USER)
     @export_write_operation()
-
-    def markUserAffected(user):
+    def markUserAffected(user, affected=True):
         """Mark :user: as affected by this bug."""
-
-    @call_with(user=REQUEST_USER)
-    @export_write_operation()
-    def unmarkUserAffected(user):
-        """Unmark :user: as affected by this bug."""
 
 
 # We are forced to define these now to avoid circular import problems.

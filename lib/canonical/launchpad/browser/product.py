@@ -50,7 +50,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import implements, Interface
 from zope.formlib import form
@@ -91,6 +91,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -364,7 +365,7 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -493,16 +494,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'pending proposal'
         else:
-            text = 'active reviews'
+            text = 'pending proposals'
         return Link('+activereviews', text)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
-            text = 'approved merge'
+            text = 'unmerged proposal'
         else:
-            text = 'approved merges'
+            text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Admin')
@@ -1175,10 +1176,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             return canonical_url(getUtility(IProductSet))
 
 
-class ProductChangeTranslatorsView(ProductEditView):
-    label = "Change translation group"
+class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
+    label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
-
 
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
@@ -1214,8 +1214,7 @@ class ProductAdminView(ProductEditView):
                 required=True,
                 readonly=False,
                 default=self.context.registrant
-                ),
-            custom_widget=self.custom_widgets['registrant']
+                )
             )
 
     def validate(self, data):
@@ -1650,7 +1649,13 @@ class ProductBranchListingView(BranchListingView):
 
     @cachedproperty
     def development_focus_branch(self):
-        return self.context.development_focus.series_branch
+        dev_focus_branch = self.context.development_focus.series_branch
+        if dev_focus_branch is None:
+            return None
+        elif check_permission('launchpad.View', dev_focus_branch):
+            return dev_focus_branch
+        else:
+            return None
 
     @property
     def no_branch_message(self):
@@ -1674,6 +1679,8 @@ class ProductBranchListingView(BranchListingView):
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
+
+    show_set_development_focus = True
 
     def initialize(self):
         ProductBranchListingView.initialize(self)
@@ -1763,6 +1770,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
+        if not check_permission('launchpad.View', dev_focus_branch):
+            dev_focus_branch = None
         result = []
         if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
@@ -1770,6 +1779,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
+                check_permission('launchpad.View', branch) and
                 show_branch(branch)):
                 result.append(branch)
         return result
@@ -1815,7 +1825,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.product.development_focus.series_branch is not None
+        return self.development_focus_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:

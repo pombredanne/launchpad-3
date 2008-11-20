@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
@@ -35,6 +36,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
@@ -42,8 +45,7 @@ from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
-from canonical.launchpad.interfaces.hwdb import (
-    IHWSubmission, IHWSubmissionSet)
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
 from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
 from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -52,7 +54,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.location import IPersonLocation
 from canonical.launchpad.interfaces.mailinglist import IMailingListSet
 from canonical.launchpad.interfaces.milestone import IMilestone
-from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthAccessToken, IOAuthRequestToken)
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
@@ -60,7 +63,7 @@ from canonical.launchpad.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from canonical.launchpad.interfaces.packaging import IPackaging
 from canonical.launchpad.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -190,6 +193,11 @@ class EditOAuthAccessToken(AuthorizationBase):
     def checkAuthenticated(self, user):
         return (self.obj.person == user
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class EditOAuthRequestToken(EditOAuthAccessToken):
+    permission = 'launchpad.Edit'
+    usedfor = IOAuthRequestToken
 
 
 class EditBugNominationStatus(AuthorizationBase):
@@ -721,6 +729,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its source
+    package information"""
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins))
+
+
 class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
@@ -1170,16 +1190,27 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.ExpensiveRequest'
     usedfor = ISourcePackage
 
+    def _userInAnyOfTheTeams(self, user, archive_permissions):
+        if archive_permissions is None or len(archive_permissions) == 0:
+            return False
+        for permission in archive_permissions:
+            if user.inTeam(permission.person):
+                return True
+        return False
+
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
         Admins and Translations admins have access, as does the owner of
-        the translation group (if applicable).
+        the translation group (if applicable) and distribution uploaders.
         """
-        translation_group = self.obj.distribution.translationgroup
+        distribution = self.obj.distribution
+        translation_group = distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User is part of the 'driver' team for the distribution.
+            (self._userInAnyOfTheTeams(user, distribution.uploaders)) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1852,3 +1883,26 @@ class ViewEmailAddress(AuthorizationBase):
         return (user.inTeam(self.obj.person)
                 or user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))
+
+
+class EditArchivePermissionSet(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchivePermissionSet
+
+    def checkAuthenticated(self, user):
+        """Users must be an admin or a member of the tech board."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if user.inTeam(celebrities.admin):
+            return True
+
+        techboard = getUtility(IPersonSet).getByName("techboard")
+        if techboard is None:
+            # We expect techboard to be present but it's not.  Log an
+            # OOPS.
+            error = AssertionError(
+                "'techboard' team is missing, has it been renamed?")
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info)
+            return False
+        return user.inTeam(techboard)

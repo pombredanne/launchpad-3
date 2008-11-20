@@ -9,6 +9,7 @@ import email
 import os
 import random
 import time
+import transaction
 import unittest
 
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
@@ -26,12 +27,19 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
-    BranchFormat, BranchSubscriptionDiffSize,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+    IPersonSet, IRevisionSet)
+from canonical.launchpad.interfaces.branch import (
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
+    RepositoryFormat)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, get_diff, get_revision_message, InvalidStackedBranchURL)
+    BranchMergeDetectionHandler, BzrSync, get_diff, get_revision_message,
+    InvalidStackedBranchURL)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -110,10 +118,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
         ensure_base(self.get_transport(db_branch.unique_name))
         return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
-    def makeDatabaseBranch(self):
+    def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
-        new_branch = self.factory.makeBranch()
+        new_branch = self.factory.makeBranch(*args, **kwargs)
         # Unsubscribe the implicit owner subscription.
         new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
@@ -234,7 +242,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
         # Branch from the base revision.
-        new_db_branch = self.makeDatabaseBranch()
+        new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
         branch_tree = self.makeBzrBranchAndTree(new_db_branch)
         branch_tree.pull(trunk_tree.branch)
 
@@ -1002,6 +1010,268 @@ class TestScanUnrecognizedFormat(BzrSyncTestCase):
                          RepositoryFormat.UNRECOGNIZED)
         self.assertEqual(self.db_branch.control_format,
                          ControlFormat.UNRECOGNIZED)
+
+
+class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
+    """Test the scanner's ability to mark merge proposals as merged."""
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def createProposal(self, source, target):
+        # The scanner doesn't have insert rights, so do it here.
+        proposal = source.addLandingTarget(source.owner, target)
+        transaction.commit()
+
+    def _createBranchesAndProposal(self):
+        # Create two branches where the trunk has the branch as a merge.  Also
+        # create a merge proposal from the branch to the trunk.
+        (db_trunk, trunk_tree), (db_branch, branch_tree) = (
+            self.makeBranchWithMerge('base', 'trunk', 'branch', 'merge'))
+        trunk_id = db_trunk.id
+        branch_id = db_branch.id
+        self.createProposal(db_branch, db_trunk)
+        # Reget the objects due to transaction boundary.
+        branchset = getUtility(IBranchSet)
+        db_trunk = branchset[trunk_id]
+        db_branch = branchset[branch_id]
+        proposal = list(db_branch.landing_targets)[0]
+        return proposal, db_trunk, db_branch, branch_tree
+
+    def _scanTheBranches(self, branch1, branch2):
+        for branch in (branch1, branch2):
+            scanner = self.makeBzrSync(branch)
+            scanner.syncBranchAndClose()
+
+    def test_autoMergeProposals_real_merge(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target, mark it as merged.
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        self._scanTheBranches(db_branch, db_trunk)
+        # The proposal should now be merged.
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED,
+            proposal.queue_status)
+        # The source branch is also marked as merged.
+        self.assertEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+
+    def test_autoMergeProposals_real_merge_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target, mark it as merged.
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        self._scanTheBranches(db_trunk, db_branch)
+        # The proposal should now be merged.
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED,
+            proposal.queue_status)
+        # The source branch is also marked as merged.
+        self.assertEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+
+    def test_autoMergeProposals_rejected_proposal(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target but the proposal is in a final state the
+        # proposal is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        proposal.rejectBranch(db_trunk.owner, 'branch')
+
+        self._scanTheBranches(db_branch, db_trunk)
+
+        # The proposal should stay rejected..
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_rejected_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is in the
+        # ancestry of the target but the proposal is in a final state the
+        # proposal is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        proposal.rejectBranch(db_trunk.owner, 'branch')
+
+        self._scanTheBranches(db_trunk, db_branch)
+
+        # The proposal should stay rejected..
+        self.assertEqual(
+            BranchMergeProposalStatus.REJECTED,
+            proposal.queue_status)
+
+    def test_autoMergeProposals_not_merged_proposal(self):
+        # If there is a merge proposal where the tip of the source is not in
+        # the ancestry of the target it is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        branch_tree.commit(u'another revision', rev_id='another-rev')
+        current_proposal_status = proposal.queue_status
+        self.assertNotEqual(
+            current_proposal_status,
+            BranchMergeProposalStatus.MERGED)
+
+        self._scanTheBranches(db_branch, db_trunk)
+
+        # The proposal should stay in the same state.
+        self.assertEqual(current_proposal_status, proposal.queue_status)
+
+    def test_autoMergeProposals_not_merged_proposal_target_scanned_first(self):
+        # If there is a merge proposal where the tip of the source is not in
+        # the ancestry of the target it is not marked as merged.
+
+        proposal, db_trunk, db_branch, branch_tree = (
+            self._createBranchesAndProposal())
+
+        branch_tree.commit(u'another revision', rev_id='another-rev')
+        current_proposal_status = proposal.queue_status
+        self.assertNotEqual(
+            current_proposal_status,
+            BranchMergeProposalStatus.MERGED)
+
+        self._scanTheBranches(db_trunk, db_branch)
+
+        # The proposal should stay in the same state.
+        self.assertEqual(current_proposal_status, proposal.queue_status)
+
+
+class TestMergeDetection(TestCaseWithFactory):
+    """Test that the merges are detected, and the handler called."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.product = self.factory.makeProduct()
+        self.db_branch = self.factory.makeBranch(product=self.product)
+        self.bzrsync = BzrSync(transaction, self.db_branch)
+        # Monkey patch the _merge_handler of the sync object to be the test.
+        self.bzrsync._merge_handler = self
+        # Reset the recorded branches.
+        self.merges = []
+
+    def mergeOfTwoBranches(self, source, target):
+        # Record the merged branches
+        self.merges.append((source, target))
+
+    def test_own_branch_not_emitted(self):
+        # A merge is never emitted with the source branch being the same as
+        # the target branch.
+        self.db_branch.last_scanned_id = 'revid'
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([], self.merges)
+
+    def test_branch_tip_in_ancestry(self):
+        # If there is another branch with their tip revision id in the
+        # ancestry passed in, the merge detection is emitted.
+        source = self.factory.makeBranch(product=self.product)
+        source.last_scanned_id = 'revid'
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([(source, self.db_branch)], self.merges)
+
+    def test_branch_tip_in_ancestry_status_merged(self):
+        # Branches that are already merged do emit events.
+        source = self.factory.makeBranch(
+            product=self.product,
+            lifecycle_status=BranchLifecycleStatus.MERGED)
+        source.last_scanned_id = 'revid'
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([], self.merges)
+
+    def test_other_branch_with_no_last_scanned_id(self):
+        # Other branches for the product are checked, but if the tip revision
+        # of the branch is not yet been set no merge event is emitted for that
+        # branch.
+        source = self.factory.makeBranch(product=self.product)
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([], self.merges)
+
+    def test_other_branch_with_NULL_REVISION_last_scanned_id(self):
+        # Other branches for the product are checked, but if the tip revision
+        # of the branch is the NULL_REVISION no merge event is emitted for
+        # that branch.
+        source = self.factory.makeBranch(product=self.product)
+        source.last_scanned_id = NULL_REVISION
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([], self.merges)
+
+    def test_other_branch_same_tip_revision_not_emitted(self):
+        # If two different branches have the same tip revision, then they are
+        # conceptually the same branch, not one merged into the other.
+        source = self.factory.makeBranch(product=self.product)
+        source.last_scanned_id = 'revid'
+        self.db_branch.last_scanned_id = 'revid'
+        self.bzrsync.autoMergeBranches(['revid'])
+        self.assertEqual([], self.merges)
+
+
+class TestBranchMergeDetectionHandler(TestCaseWithFactory):
+    """Test the merge handing of the merge detection handler."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.handler = BranchMergeDetectionHandler()
+
+    def test_mergeProposalMergeDetected(self):
+        # A merge proposal that is merged has the proposal itself marked as
+        # merged, and the source branch lifecycle status set as merged.
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        self.assertNotEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+        self.handler.mergeProposalMerge(proposal)
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        self.assertEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+
+    def test_mergeOfTwoBranches_target_not_dev_focus(self):
+        # The target branch must be the development focus in order for the
+        # lifecycle status of the source branch to be updated to merged.
+        source = self.factory.makeBranch()
+        target = self.factory.makeBranch()
+        self.handler.mergeOfTwoBranches(source, target)
+        self.assertNotEqual(
+            BranchLifecycleStatus.MERGED, source.lifecycle_status)
+
+    def test_mergeOfTwoBranches_target_dev_focus(self):
+        # If the target branch is the development focus branch of the product,
+        # then the source branch gets its lifecycle status set to merged.
+        product = self.factory.makeProduct()
+        source = self.factory.makeBranch(product=product)
+        target = self.factory.makeBranch(product=product)
+        product.development_focus.user_branch = target
+        self.handler.mergeOfTwoBranches(source, target)
+        self.assertEqual(
+            BranchLifecycleStatus.MERGED, source.lifecycle_status)
+
+    def test_mergeOfTwoBranches_source_seriec_branch(self):
+        # If the source branch is associated with a series, its lifecycle
+        # status is not updated.
+        product = self.factory.makeProduct()
+        source = self.factory.makeBranch(product=product)
+        target = self.factory.makeBranch(product=product)
+        product.development_focus.user_branch = target
+        series = product.newSeries(product.owner, 'new', '')
+        series.user_branch = source
+
+        self.handler.mergeOfTwoBranches(source, target)
+        self.assertNotEqual(
+            BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
 
 def test_suite():

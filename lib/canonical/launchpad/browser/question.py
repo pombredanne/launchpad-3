@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Question views."""
 
@@ -49,7 +49,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
-    ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
     QuestionSort, NotFoundError, UnexpectedFormData)
@@ -234,7 +234,7 @@ class QuestionLanguageVocabularyFactory:
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        english = getUtility(ILanguageSet)['en']
+        english = getUtility(ILaunchpadCelebrities).english
         if english in languages:
             languages.remove(english)
         languages.insert(0, english)
@@ -250,7 +250,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([getUtility(ILanguageSet)['en']])
+            supported_languages = set([english])
 
         terms = []
         for lang in languages:
@@ -377,13 +377,25 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         LaunchpadFormView.setUpFields(self)
         self.form_fields = self.createLanguageField() + self.form_fields
 
-    def setUpWidgets(self):
-        """Set up the widgets using the view's form fields and the context."""
+    def _getFieldsForWidgets(self):
+        """Return fields for which need we widgets.
+
+        Depending on the action, not all fields are present on the screen,
+        and need validation.
+        """
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
             fields = self.form_fields.select(*self.search_field_names)
         else:
             fields = self.form_fields
+        for field in fields:
+            if field.__name__ in self.custom_widgets:
+                field.custom_widget = self.custom_widgets[field.__name__]
+        return fields
+
+    def setUpWidgets(self):
+        """Set up the widgets using the view's form fields and the context."""
+        fields = self._getFieldsForWidgets()
         self.widgets = form.setUpWidgets(
             fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
@@ -1241,4 +1253,3 @@ class QuestionSetContextMenu(ContextMenu):
         """Return a Link to the find distribution view."""
         text = 'Find distribution'
         return Link('/distros', text, icon='search')
-

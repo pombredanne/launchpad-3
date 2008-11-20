@@ -6,19 +6,16 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
 
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
+  <div id="maincontent">
+
+  <p tal:content="structure context/fmt:link" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -38,12 +35,10 @@
 
     </div>
 
-
     <div metal:fill-slot="extra_bottom">
 
-      <div tal:define="widgets view/compulsory_widgets">
-        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
-      </div>
+      <tal:visited_steps
+          replace="structure view/widgets/visited_steps/hidden" />
 
       <div tal:define="widgets view/bugwatch_widgets">
         <p>
@@ -58,6 +53,11 @@
     </div>
 
   </div>
+
+  </div>
+
+  <div id="portlets"
+       tal:content="structure context/bug/@@+portlet-notified" />
 
 </div>
 

@@ -34,15 +34,17 @@ class TestMergeProposalMailing(TestCase):
 
     def makeProposalWithSubscriber(self):
         registrant = self.factory.makePerson(
-            displayname='Baz Qux', email='baz.qux@example.com')
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+            name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
+        product = self.factory.makeProduct(name='super-product')
+        bmp = self.factory.makeBranchMergeProposal(registrant=registrant,
+            product=product)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
-        bmp.source_branch.title = 'foo'
-        bmp.target_branch.title = 'bar'
+        bmp.source_branch.name = 'fix-foo-for-bar'
+        bmp.target_branch.name = 'bar'
         return bmp, subscriber
 
     def test_generateCreationEmail(self):
@@ -57,7 +59,7 @@ class TestMergeProposalMailing(TestCase):
         bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
-Baz Qux has proposed merging foo into bar.
+Baz Qux has proposed merging lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar.
 
 Whiteboard:
 I think this would be good.
@@ -66,7 +68,9 @@ I think this would be good.
 %s
 %s
 """ % (canonical_url(bmp), reason.getReason()), body)
-        self.assertEqual('Proposed merge of foo into bar', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
+            'lp://dev/~person-name9/super-product/bar', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
@@ -144,12 +148,14 @@ I think this would be good.
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Proposed merge of foo into bar updated', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
+            'lp://dev/~person-name9/super-product/bar updated', subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
-The proposal to merge foo into bar has been updated.
+The proposal to merge lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar has been updated.
 
     Status: Work in progress => Needs review
 
@@ -273,7 +279,7 @@ class TestRecipientReason(TestCaseWithFactory):
         vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(
-            'You are requested to review the proposed merge of foo into bar.',
+            'You are requested to review the proposed merge of lp://dev/~person-name5/product-name11/branch7 into lp://dev/~person-name16/product-name11/branch18.',
             reason.getReason())
 
     def test_getReasonPerson(self):
@@ -281,7 +287,7 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscription.person, merge_proposal, '')
-        self.assertEqual('You are subscribed to branch foo.',
+        self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
     def test_getReasonTeam(self):
@@ -292,7 +298,7 @@ class TestRecipientReason(TestCaseWithFactory):
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
             subscription, team_member, bmp, '')
-        self.assertEqual('Your team Qux is subscribed to branch foo.',
+        self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
 

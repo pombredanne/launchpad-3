@@ -380,6 +380,11 @@ def print_radio_button_field(content, name):
         print radio, label
 
 
+def strip_label(label):
+    """Strip surrounding whitespace and non-breaking spaces."""
+    return label.replace('\xC2', '').replace('\xA0', '').strip()
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
@@ -645,6 +650,14 @@ def print_tag_with_id(contents, id):
     print extract_text(tag)
 
 
+def print_errors(contents):
+    """Print all the errors on the page."""
+    errors = find_tags_by_class(contents, 'error')
+    error_texts = [extract_text(error) for error in errors]
+    for error in error_texts:
+        print error
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -697,15 +710,14 @@ def stop():
 
 
 def setUpGlobs(test):
-    # Our tests report being on a different port.
     test.globs['transaction'] = transaction
-    test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['http'] = UnstickyCookieHTTPCaller()
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'salgado-change-anything', port=9000)
+        'launchpad-library', 'salgado-change-anything')
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'salgado-read-nonprivate', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -732,6 +744,7 @@ def setUpGlobs(test):
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location
     test.globs['print_location_apps'] = print_location_apps
     test.globs['print_navigation_links'] = print_navigation_links

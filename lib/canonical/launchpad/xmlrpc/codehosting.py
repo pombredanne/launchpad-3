@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     'BranchFileSystem',
     'BranchPuller',
+    'datetime_from_tuple',
+    'LAUNCHPAD_SERVICES',
     ]
 
 
@@ -33,6 +35,7 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
@@ -49,15 +52,31 @@ class BranchPuller(LaunchpadXMLRPCView):
         This is outside of the IBranch interface so that the authserver can
         access the information without logging in as a particular user.
 
-        :return: (id, url, unique_name), where `id` is the branch database ID,
-            `url` is the URL to pull from and `unique_name` is the
-            `unique_name` property without the initial '~'.
+        :return: (id, url, unique_name, default_stacked_on_url), where 'id'
+            is the branch database ID, 'url' is the URL to pull from,
+            'unique_name' is the `unique_name` property and
+            'default_stacked_on_url' is the URL of the branch to stack on by
+            default (normally of the form '/~foo/bar/baz'). If there is no
+            default stacked-on branch, then it's ''.
         """
         branch = removeSecurityProxy(branch)
         if branch.branch_type == BranchType.REMOTE:
             raise AssertionError(
                 'Remote branches should never be in the pull queue.')
-        return (branch.id, branch.getPullURL(), branch.unique_name)
+        if branch.product is None:
+            default_branch = None
+        else:
+            default_branch = branch.product.default_stacked_on_branch
+        if default_branch is None:
+            default_branch = ''
+        elif (default_branch.private
+              and branch.branch_type == BranchType.MIRRORED):
+            default_branch = ''
+        else:
+            default_branch = '/' + default_branch.unique_name
+        return (
+            branch.id, branch.getPullURL(), branch.unique_name,
+            default_branch)
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchPuller`."""
@@ -116,15 +135,17 @@ class BranchPuller(LaunchpadXMLRPCView):
         # method should be able to see all branches and set stacking
         # information on any of them.
         branch_set = removeSecurityProxy(getUtility(IBranchSet))
-        stacked_on_branch = None
-        if stacked_on_location.startswith('/'):
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
+        if stacked_on_location == '':
+            stacked_on_branch = None
         else:
-            stacked_on_branch = branch_set.getByUrl(
-                stacked_on_location.rstrip('/'))
-        if stacked_on_branch is None:
-            return faults.NoSuchBranch(stacked_on_location)
+            if stacked_on_location.startswith('/'):
+                stacked_on_branch = branch_set.getByUniqueName(
+                    stacked_on_location.strip('/'))
+            else:
+                stacked_on_branch = branch_set.getByUrl(
+                    stacked_on_location.rstrip('/'))
+            if stacked_on_branch is None:
+                return faults.NoSuchBranch(stacked_on_location)
         stacked_branch = branch_set.get(branch_id)
         if stacked_branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -162,7 +183,11 @@ def run_with_login(login_id, function, *args, **kwargs):
     requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
-    login_person(requester)
+    # XXX gary 21-Oct-2008 bug 285808
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login_person(requester, Participation())
     try:
         return function(requester, *args, **kwargs)
     finally:

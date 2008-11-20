@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import _
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
@@ -61,7 +62,7 @@ class BuildUrl:
         return u"+build/%d" % self.context.id
 
 
-class BuildNavigation(GetitemNavigation):
+class BuildNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IBuild
 
 

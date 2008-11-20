@@ -558,6 +558,21 @@ template section.
     key2 : changed
     key3 : unique
 
+Sections attributes cannot be directly set to shadow config options. An
+AttributeError is raised when a callsite attempts to mutate the config.
+
+    >>> config['section_3.app_b'].key1 = 'fail'
+    Traceback (most recent call last):
+     ...
+    AttributeError: Config options cannot be set directly.
+
+Nor can new attributes be added to a section.
+
+    >>> config['section_3.app_b'].no_such_attribute = 'fail'
+    Traceback (most recent call last):
+     ...
+    AttributeError: Config options cannot be set directly.
+
 
 == Validating configs ==
 
@@ -1107,3 +1122,79 @@ By default the current user and group names are returned.
     True
     >>> group == grp.getgrgid(os.getgid()).gr_name
     True
+
+
+=== Time intervals ===
+
+One such converter accepts a range of 'time interval specifications', and
+returns a Python timedelta.
+
+    >>> from canonical.lazr.config import as_timedelta
+
+The function converts from an integer to the equivalent number of seconds.
+
+    >>> as_timedelta('45s')
+    datetime.timedelta(0, 45)
+
+The function also accepts suffixes 'm' for minutes...
+
+    >>> as_timedelta('3m')
+    datetime.timedelta(0, 180)
+
+...'h' for hours...
+
+    >>> as_timedelta('2h')
+    datetime.timedelta(0, 7200)
+
+...and 'd' for days...
+
+    >>> as_timedelta('4d')
+    datetime.timedelta(4)
+
+...and 'w' for weeks.
+
+    >>> as_timedelta('4w')
+    datetime.timedelta(28)
+
+The function accepts a fractional number of seconds, indicating microseconds.
+
+    >>> as_timedelta('3.2s')
+    datetime.timedelta(0, 3, 200000)
+
+It also accepts any combination thereof.
+
+    >>> as_timedelta('3m22.5s')
+    datetime.timedelta(0, 202, 500000)
+    >>> as_timedelta('4w2d9h3s')
+    datetime.timedelta(30, 32403)
+
+But doesn't accept 'weird' or duplicate combinations.
+
+    >>> as_timedelta('3s2s')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('2.9s4w')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('m')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('3m2')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('45')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('45wm')
+    Traceback (most recent call last):
+    ...
+    ValueError
+    >>> as_timedelta('45z')
+    Traceback (most recent call last):
+    ...
+    ValueError

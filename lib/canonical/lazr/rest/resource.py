@@ -3,6 +3,7 @@
 """Base classes for HTTP resources."""
 
 __metaclass__ = type
+
 __all__ = [
     'BatchingResourceMixin',
     'Collection',
@@ -19,6 +20,7 @@ __all__ = [
     'ServiceRootResource',
     'WADL_SCHEMA_FILE',
     ]
+
 
 import copy
 from cStringIO import StringIO
@@ -134,6 +136,9 @@ class HTTPResource:
     # authorization to see the real value.
     REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
+    HTTP_METHOD_OVERRIDE_ERROR = ("X-HTTP-Method-Override can only be used "
+                                  "with a POST request.")
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -141,6 +146,28 @@ class HTTPResource:
     def __call__(self):
         """See `IHTTPResource`."""
         pass
+
+    def getRequestMethod(self, request=None):
+        """Return the HTTP method of the provided (or current) request.
+
+        This is usually the actual HTTP method, but it might be
+        overridden by a value for X-HTTP-Method-Override.
+
+        :return: None if the valid for X-HTTP-Method-Override is invalid.
+        Otherwise, the HTTP method to use.
+        """
+        if request == None:
+            request = self.request
+        override = request.headers.get('X-HTTP-Method-Override')
+        if override is not None:
+            if request.method == 'POST':
+                return override
+            else:
+                # XHMO should not be used unless the underlying method
+                # is POST.
+                self.request.response.setStatus(400)
+                return None
+        return request.method
 
     def handleConditionalGET(self):
         """Handle a possible conditional GET request.
@@ -178,12 +205,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
@@ -254,8 +297,8 @@ class HTTPResource:
         Right now this means the resource has defined one or more
         custom POST operations.
         """
-        adapters = getAdapters((self.context, self.request),
-                               IResourcePOSTOperation)
+        adapters = list(
+            getAdapters((self.context, self.request), IResourcePOSTOperation))
         return len(adapters) > 0
 
     def toWADL(self, template_name="wadl-resource.pt"):
@@ -465,9 +508,13 @@ class CustomOperationResourceMixin:
         :return: The result of the operation: either a string or an
         object that needs to be serialized to JSON.
         """
-        operation = getMultiAdapter((self.context, self.request),
-                                    IResourceGETOperation,
-                                    name=operation_name)
+        try:
+            operation = getMultiAdapter((self.context, self.request),
+                                        IResourceGETOperation,
+                                        name=operation_name)
+        except ComponentLookupError:
+            self.request.response.setStatus(400)
+            return "No such operation: " + operation_name
         return operation()
 
     def handleCustomPOST(self, operation_name):
@@ -511,9 +558,12 @@ class ReadOnlyResource(HTTPResource):
     def __call__(self):
         """Handle a GET or (if implemented) POST request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -530,18 +580,21 @@ class ReadWriteResource(HTTPResource):
     def __call__(self):
         """Handle a GET, PUT, or PATCH request."""
         result = ""
-        if self.request.method == "GET":
+        method = self.getRequestMethod()
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
             result = self.do_GET()
-        elif self.request.method in ["PUT", "PATCH"]:
+        elif method in ["PUT", "PATCH"]:
             media_type = self.handleConditionalWrite()
             if media_type is not None:
                 stream = self.request.bodyStream
                 representation = stream.getCacheStream().read()
-                if self.request.method == "PUT":
+                if method == "PUT":
                     result = self.do_PUT(media_type, representation)
                 else:
                     result = self.do_PATCH(media_type, representation)
-        elif self.request.method == "POST" and self.implementsPOST():
+        elif method == "POST" and self.implementsPOST():
             result = self.do_POST()
         else:
             if self.implementsPOST():
@@ -624,7 +677,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         appropriate HTTP response code.
         """
 
-        if media_type != self.JSON_TYPE:
+        if not media_type.startswith(self.JSON_TYPE):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of %s.' % self.JSON_TYPE
         try:
@@ -1065,11 +1118,16 @@ class ServiceRootResource(HTTPResource):
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
-        if REQUEST.method == "GET":
-            return self.applyTransferEncoding(self.do_GET())
+        method = self.getRequestMethod(REQUEST)
+        if method is None:
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
+        elif method == "GET":
+            result = self.do_GET()
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
+            result = ""
+        return self.applyTransferEncoding(result)
 
     def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
@@ -1095,11 +1153,11 @@ class ServiceRootResource(HTTPResource):
         collection_classes = []
         singular_names = {}
         plural_names = {}
-        for registration in sorted(site_manager.registrations()):
+        for registration in sorted(site_manager.registeredAdapters()):
             provided = registration.provided
             if IInterface.providedBy(provided):
                 if (provided.isOrExtends(IEntry)
-                    and IEntry.implementedBy(registration.value)):
+                    and IEntry.implementedBy(registration.factory)):
                     # The implementedBy check is necessary because
                     # some IEntry adapters aren't classes with
                     # schemas; they're functions. We can ignore these
@@ -1126,15 +1184,15 @@ class ServiceRootResource(HTTPResource):
                            schema.__name__, plural))
                     plural_names[plural] = schema
 
-                    entry_classes.append(registration.value)
+                    entry_classes.append(registration.factory)
                 elif (provided.isOrExtends(ICollection)
-                      and ICollection.implementedBy(registration.value)
+                      and ICollection.implementedBy(registration.factory)
                       and not IScopedCollection.implementedBy(
-                        registration.value)):
+                        registration.factory)):
                     # See comment above re: implementedBy check.
                     # We omit IScopedCollection because those are handled
                     # by the entry classes.
-                    collection_classes.append(registration.value)
+                    collection_classes.append(registration.factory)
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
         namespace['context'] = self
@@ -1165,18 +1223,25 @@ class ServiceRootResource(HTTPResource):
         top_level_resources = {}
         site_manager = zapi.getGlobalSiteManager()
         # First, collect the top-level collections.
-        for registration in site_manager.registrations():
+        for registration in site_manager.registeredAdapters():
             provided = registration.provided
             if IInterface.providedBy(provided):
+                # XXX sinzui 2008-09-29 bug=276079:
+                # Top-level collections need a marker interface
+                # so that so top-level utilities are explicit.
                 if (provided.isOrExtends(ICollection)
-                     and ICollection.implementedBy(registration.value)):
+                     and ICollection.implementedBy(registration.factory)):
                     try:
                         utility = getUtility(registration.required[0])
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
+                    entry_schema = registration.factory.entry_schema
+                    if isinstance(entry_schema, property):
+                        # It's not a top-level resource.
+                        continue
                     adapter = EntryAdapterUtility.forEntryInterface(
-                        registration.value.entry_schema)
+                        entry_schema)
                     link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         # Now, collect the top-level entries.
@@ -1273,12 +1338,12 @@ class EntryAdapterUtility(RESTUtilityBase):
     @classmethod
     def forEntryInterface(cls, entry_interface):
         """Create an entry adapter utility, given a subclass of IEntry."""
-        registrations = zapi.getGlobalSiteManager().registrations()
+        registrations = zapi.getGlobalSiteManager().registeredAdapters()
         entry_classes = [
-            registration.value for registration in registrations
+            registration.factory for registration in registrations
             if (IInterface.providedBy(registration.provided)
                 and registration.provided.isOrExtends(IEntry)
-                and entry_interface.implementedBy(registration.value))]
+                and entry_interface.implementedBy(registration.factory))]
         assert not len(entry_classes) > 1, (
             "%s provides more than one IEntry subclass." %
             entry_interface.__name__)
@@ -1354,4 +1419,3 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the description of the object's full representation."""
         return "%s#%s-full" % (
             self._service_root_url(), self.singular_type)
-

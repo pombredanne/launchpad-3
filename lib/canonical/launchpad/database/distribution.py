@@ -40,6 +40,7 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.distroseries import DistroSeries
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -87,7 +88,7 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
-                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
@@ -961,11 +962,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
+                SourcePackagePublishingHistory.status IN %s
                 ''' % sqlvalues(self,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
+                                (PackagePublishingStatus.PUBLISHED,
+                                 PackagePublishingStatus.PENDING)),
                 clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
@@ -1148,9 +1150,46 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # Otherwise we defer to the caller.
             return None
 
-    def getPackagesAndPublicUpstreamBugCounts(self, limit=50):
+    @property
+    def upstream_report_excluded_packages(self):
+        """See `IDistribution`."""
+        # If the current distribution is Ubuntu, return a specific set
+        # of excluded packages. Otherwise return an empty list.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if self == ubuntu:
+            excluded_packages = [
+                'apport',
+                'casper',
+                'displayconfig-gtk',
+                'gnome-app-install',
+                'software-properties',
+                'synaptic',
+                'ubiquity',
+                'ubuntu-meta',
+                'update-manager',
+                'usplash',
+                ]
+        else:
+            excluded_packages = []
+
+        return excluded_packages
+
+    def getPackagesAndPublicUpstreamBugCounts(self, limit=50,
+                                              exclude_packages=None):
         """See `IDistribution`."""
         from canonical.launchpad.database.product import Product
+
+        if exclude_packages is None or len(exclude_packages) == 0:
+            # If exclude_packages is None or an empty list we set it to
+            # be a list containing a single empty string. This is so
+            # that we can quote() it properly for the query below ('NOT
+            # IN ()' is not valid SQL).
+            exclude_packages = ['']
+        else:
+            # Otherwise, listify exclude_packages so that we're not
+            # trying to quote() a security proxy object.
+            exclude_packages = list(exclude_packages)
+
         # This method collects three open bug counts for
         # sourcepackagenames in this distribution first, and then caches
         # product information before rendering everything into a list of
@@ -1187,6 +1226,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND Bugtask.status IN %(unresolved)s
                 AND Bug.private = 'F'
                 AND Bug.duplicateof IS NULL
+                AND spn.name NOT IN %(excluded_packages)s
             GROUP BY SPN.id, SPN.name
             HAVING COUNT(DISTINCT Bugtask.bug) > 0
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
@@ -1194,7 +1234,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
-               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
+               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES),
+               'excluded_packages': quote(exclude_packages),
+                })
         counts = cur.fetchall()
         cur.close()
         if not counts:

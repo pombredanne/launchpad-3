@@ -7,8 +7,9 @@ import logging
 
 import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationService, IPrincipal
+from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
@@ -51,7 +52,7 @@ class ILaunchpadContainer(Interface):
         """Return True if this context is within the given scope."""
 
 
-class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
+class ILaunchpadRoot(IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 
@@ -509,7 +510,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationService):
+class IPlacelessAuthUtility(IAuthenticationUtility):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
@@ -671,8 +672,8 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, `zope.i18n.Message`,
-        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of
+        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
         	INFO, NOTICE, WARNING, ERROR.
@@ -807,7 +808,7 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
-    def startRequest():
+    def beforeTraversal():
         """Install the database policy into the current thread."""
 
     def afterCall():

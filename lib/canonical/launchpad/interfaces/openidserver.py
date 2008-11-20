@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.schema import Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -140,6 +140,12 @@ class IOpenIDRPConfig(Interface):
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
+    can_query_any_team = Bool(
+        title=_('Query Any Team'),
+        description=_(
+            'Teammembership of any team can be requested, including '
+            'private teams.'),
+        required=True, readonly=False)
 
 
 class IOpenIDRPConfigSet(Interface):
@@ -185,10 +191,12 @@ class IOpenIDRPSummary(Interface):
 class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
 
-    def getByIdentifier(identifier):
+    def getByIdentifier(identifier, only_unknown_trust_roots=False):
         """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
+        :param only_unknown_trust_roots: if True, only records for trust roots
+            which there is no IOpenIDRPConfig entry will be returned.
         :return: An iterator of IOpenIDRPSummary objects.
         """
 
@@ -207,11 +215,20 @@ class IOpenIDPersistentIdentity(Interface):
     This interface is generally needed by the UI.
     """
     account = Attribute('The `IAccount` for the user.')
-    openid_identifier = Attribute('The openid_identifier for the `IAccount`.')
-    openid_identity_url = Attribute("The OpenID identity URL for the user.")
-
-    def supportsURL(identity_url):
-        """Return True if the identity_url format is supported, or False."""
+    # XXX sinzui 2008-09-04 bug=264783:
+    # Remove old_openid_identity_url and new_*.
+    old_openid_identifier = Attribute(
+        'The old openid_identifier for the `IAccount`.')
+    old_openid_identity_url = Attribute(
+        'The old OpenID identity URL for the user.')
+    new_openid_identifier = Attribute(
+        'The new openid_identifier for the `IAccount`.')
+    new_openid_identity_url = Attribute(
+        'The new OpenID identity URL for the user.')
+    openid_identity_url = Attribute(
+        'The OpenID identity URL for the user.')
+    openid_identifier = Attribute(
+        'The OpenID identifier used with the request.')
 
 
 class ILoginServiceAuthorizeForm(Interface):

@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BugNotFound',
+    'BugTrackerAuthenticationError',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
@@ -80,6 +81,10 @@ class BugTrackerConnectError(BugWatchUpdateError):
 
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
+
+
+class BugTrackerAuthenticationError(BugTrackerConnectError):
+    """Launchpad couldn't authenticate with the remote bugtracker."""
 
 
 #

@@ -24,8 +24,8 @@ import pytz
 import random
 import re
 
-from zope.app.error.interfaces import IErrorReportingUtility
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.error.interfaces import IErrorReportingUtility
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
@@ -51,7 +51,8 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.oauth import OAuthAccessToken
+from canonical.launchpad.database.oauth import (
+    OAuthAccessToken, OAuthRequestToken)
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
@@ -91,9 +92,10 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -170,14 +172,15 @@ def validate_person_visibility(person, attr, value):
 
     if (value == PersonVisibility.PUBLIC and
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None):
-        raise ValueError('This team cannot be made public since it has '
-                         'a mailing list')
+        mailing_list is not None and
+        mailing_list.status != MailingListStatus.PURGED):
+        raise ImmutableVisibilityError(
+            'This team cannot be made public since it has a mailing list')
 
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
-            raise ValueError(warning)
+            raise ImmutableVisibilityError(warning)
 
     return value
 
@@ -250,17 +253,12 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
+    # XXX StuartBishop 2008-05-13 bug=237280: The password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
     # access via Person to use the less strinct controls on that interface.
     # Part of the process of removing these methods from Person will be
     # losening the permissions on Account or fixing the callsites.
-    @property
-    def openid_identifier(self):
-        if self.account is not None:
-            return removeSecurityProxy(self.account).openid_identifier
-
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -400,6 +398,14 @@ class Person(
     def oauth_access_tokens(self):
         """See `IPerson`."""
         return OAuthAccessToken.select("""
+            person = %s
+            AND (date_expires IS NULL OR date_expires > %s)
+            """ % sqlvalues(self, UTC_NOW))
+
+    @property
+    def oauth_request_tokens(self):
+        """See `IPerson`."""
+        return OAuthRequestToken.select("""
             person = %s
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))
@@ -1210,25 +1216,6 @@ class Person(
         except SQLObjectNotFound:
             return False
 
-    @property
-    def is_openid_enabled(self):
-        """See `IPerson`."""
-        if not self.is_valid_person:
-            return False
-
-        if config.launchpad.openid_users == 'all':
-            return True
-
-        openid_users = getUtility(IPersonSet).getByName(
-                config.launchpad.openid_users
-                )
-        assert openid_users is not None, \
-                'No Person %s found' % config.launchpad.openid_users
-        if self.inTeam(openid_users):
-            return True
-
-        return False
-
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See `IPerson`."""
@@ -1684,7 +1671,12 @@ class Person(
         # fetches the rows when they're needed.
         for location in locations:
             location.person._location = location
-        return [location.person for location in locations]
+        participants = set(location.person for location in locations)
+        # Cache the ValidPersonCache query for all mapped participants.
+        if len(participants) > 0:
+            sql = "id IN (%s)" % ",".join(sqlvalues(*participants))
+            list(ValidPersonCache.select(sql))
+        return list(participants)
 
     @property
     def unmapped_participants(self):
@@ -1874,6 +1866,9 @@ class Person(
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            # Skip mailing lists because if the mailing list is purged, it's
+            # not a problem.  Do this check separately below.
+            ('mailinglist', 'team')
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -1914,6 +1909,12 @@ class Person(
                 'a source package subscriber']):
             if count > 0:
                 warnings.add(warning)
+
+        # Non-purged mailing list check.
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
+            warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)
@@ -2049,7 +2050,7 @@ class Person(
         query = ['POFileTranslator.person = %s' % sqlvalues(self),
                  'POFileTranslator.pofile = POFile.id',
                  'POFile.language = Language.id',
-                 "Language.code != 'en'"]
+                 "Language.code <> 'en'"]
         history = POFileTranslator.select(
             ' AND '.join(query),
             prejoins=[

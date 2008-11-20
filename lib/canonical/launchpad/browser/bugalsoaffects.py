@@ -172,6 +172,11 @@ class AlsoAffectsStep(LaunchpadFormView):
         self.actions = actions
         return super(AlsoAffectsStep, self).render()
 
+    @property
+    def cancel_url(self):
+        """Return the URL for the current context, i.e. bug."""
+        return canonical_url(self.context)
+
 
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
@@ -313,6 +318,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
 
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
 
+    initial_focus_widget = 'bug_url'
     step_name = 'specify_remote_bug_url'
     target_field_names = ()
 
@@ -332,7 +338,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
             for field_name in self.field_names
             if field_name in self.target_field_names]
         self.bugwatch_widgets = [self.widgets['bug_url']]
-        self.compulsory_widgets = [self.widgets['visited_steps']]
 
     def getTarget(self, data=None):
         """Return the fix target.
@@ -615,7 +620,8 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget)
+    custom_widget('link_upstream_how',
+                  LaunchpadRadioWidget, _displayItemForMissingValue=False)
     custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
     custom_widget('upstream_email_address_done',
                   StrippedTextWidget, displayWidth=42)
@@ -842,8 +848,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         existing_product = form.FormField(
             Choice(__name__='existing_product',
                    title=_("Existing project"), required=True,
-                   vocabulary=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['existing_product'])
+                   vocabulary=SimpleVocabulary(terms)))
         self.form_fields += form.Fields(existing_product)
         if 'field.existing_product' not in self.request.form:
             # This is the first time the form is being submitted, so the
@@ -919,4 +924,3 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         if set_bugtracker:
             data['product'].bugtracker = view.task_added.bugwatch.bugtracker
         self.next_url = canonical_url(view.task_added)
-

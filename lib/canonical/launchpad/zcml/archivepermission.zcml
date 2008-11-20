@@ -5,19 +5,43 @@
   i18n_domain="launchpad">
 
   <!-- ArchivePermission -->
-  <content class="canonical.launchpad.database.ArchivePermission">
+  <class class="canonical.launchpad.database.ArchivePermission">
     <allow interface="canonical.launchpad.interfaces.IArchivePermission"/>
-  </content>
+  </class>
 
   <!-- ArchivePermissionSet -->
-  <content class="canonical.launchpad.database.ArchivePermissionSet">
-    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet"/>
-  </content>
+  <class class="canonical.launchpad.database.ArchivePermissionSet">
+    <implements
+      interface="canonical.launchpad.interfaces.IArchivePermissionSet"/>
+  </class>
 
   <securedutility
     class="canonical.launchpad.database.ArchivePermissionSet"
     provides="canonical.launchpad.interfaces.IArchivePermissionSet">
-    <allow interface="canonical.launchpad.interfaces.IArchivePermissionSet" />
+    <allow attributes="checkAuthenticated componentsForUploader
+                       uploadersForComponent packagesForUploader
+                       uploadersForPackage queueAdminsForComponent
+                       componentsForQueueAdmin permissionsForPerson"/>
+    <require
+      permission="launchpad.Edit"
+      attributes="newPackageUploader newComponentUploader newQueueAdmin
+                  deletePackageUploader deleteComponentUploader
+                  deleteQueueAdmin"
+      />
   </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.archivepermission.IArchiveUploader"
+    path_expression="string:+upload"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.archivepermission.ArchivePermissionURL"
+  />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.archivepermission.IArchiveQueueAdmin"
+    path_expression="string:+queue-admin"
+    attribute_to_parent="archive"
+    urldata="canonical.launchpad.browser.archivepermission.ArchivePermissionURL"
+  />
 
 </configure>

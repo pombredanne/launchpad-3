@@ -11,7 +11,6 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -22,6 +21,8 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -520,11 +521,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
+    oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    openid_identifier = TextLine(
-        title=_("Key used to generate opaque OpenID identities."),
-        readonly=True, required=False)
+    sshkeys = Attribute(_('List of SSH keys'))
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -544,9 +543,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_openid_enabled = Bool(
-        title=_("This user can use Launchpad as an OpenID provider."),
-        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -1961,6 +1957,10 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
 
 
 class InvalidName(Exception):
