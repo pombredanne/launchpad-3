@@ -63,6 +63,8 @@ from bzrlib.urlutils import unescape
 from twisted.internet import defer
 from twisted.python import failure
 
+from zope.interface import implements, Interface
+
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
     BlockingProxy, CachingAuthserverClient, trap_fault)
@@ -144,7 +146,23 @@ def get_puller_server():
     return _MultiServer(hosted_server, mirrored_server)
 
 
+class ITransportDispatch(Interface):
+    """Turns descriptions of transports into transports."""
+
+    def makeTransport(transport_tuple):
+        """Return a transport and trailing path for 'transport_tuple'.
+
+        :param transport_tuple: a tuple of (transport_type, transport_data,
+            trailing_path), as returned by IBranchFileSystem['translatePath'].
+
+        :return: A transport and a path on that transport that point to a
+            place that matches the one described in transport_tuple.
+        :rtype: (`bzrlib.transport.Transport`, str)
+        """
+
+
 class SimpleTransportDispatch:
+    implements(ITransportDispatch)
 
     def __init__(self, base_transport):
         self.base_transport = base_transport
@@ -184,6 +202,7 @@ class SimpleTransportDispatch:
 
 
 class TransportDispatch:
+    implements(ITransportDispatch)
 
     def __init__(self, hosted_transport, mirrored_transport):
         self._hosted_dispatch = SimpleTransportDispatch(hosted_transport)
@@ -246,10 +265,9 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         returns a Deferred that fires information about how a path can be
         translated into a transport. See `IBranchFilesystem['translatePath']`.
 
-    :ivar _transport_dispatch: An object has a method 'makeTransport' that
-        takes the successful output of '_authserver.translatePath' and returns
-        a tuple (transport, trailing_path)
-    XXX: JonathanLange 2008-11-19: Specify this interface better.
+    :ivar _transport_dispatch: An `ITransportDispatch` provider used to
+        convert the data from the authserver into an actual transport and
+        path on that transport.
     """
 
     def __init__(self, scheme, authserver, user_id):
