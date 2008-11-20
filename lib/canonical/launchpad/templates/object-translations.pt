@@ -27,6 +27,15 @@
     </metal:heading>
 
     <div metal:fill-slot="main">
+      <ul class="helplinks">
+        <li>
+          <a href="https://help.launchpad.net/Translations"
+             id="link-to-translations-help"
+             >Help for translations
+          </a>
+        </li>
+      </ul>
+
       <div tal:replace="structure context/@@+potlist" />
     </div>
 

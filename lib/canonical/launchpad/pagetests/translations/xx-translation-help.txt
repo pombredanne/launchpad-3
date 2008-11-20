@@ -1,0 +1,74 @@
+= Translation help =
+
+Links to Translation help on https://help.launchpad.net/ links are
+available on a number of translation pages in Launchpad.
+
+Method findHelpLink will return a link if it's found, or print a warning
+if it isn't.
+
+    >>> def findHelpLink(url):
+    ...     help_webpage = u'https://help.launchpad.net/Translations'
+    ...     browser.open(url)
+    ...     main_content = find_main_content(browser.contents)
+    ...     try:
+    ...         help_link = main_content.find(id="link-to-translations-help")
+    ...         if not help_link['href'].startswith(help_webpage):
+    ...             print "Help link on %s points to '%s' instead of '%s'" % (
+    ...                 url, help_link['href'], help_webpage)
+    ...         else:
+    ...             return help_link
+    ...     except:
+    ...         print "No help link on %s" % (url)
+
+The Translations start page provides a link to official documentation.
+
+    >>> help_link = findHelpLink('http://translations.launchpad.dev/')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations'
+    >>> extract_text(help_link)
+    u'Help for translations'
+
+Links to translation help are provided on a number of translation related
+pages.  Namely, on a Distribution and DistroSeries pages:
+
+    >>> help_link = findHelpLink('http://translations.launchpad.dev/ubuntu')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations'
+    >>> extract_text(help_link)
+    u'Help for translations'
+
+    >>> help_link = findHelpLink(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations'
+    >>> extract_text(help_link)
+    u'Help for translations'
+
+Product and ProductSeries translations pages also provide direct link to
+the translations help.
+
+    >>> help_link = findHelpLink(
+    ...     'http://translations.launchpad.dev/evolution')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations'
+    >>> extract_text(help_link)
+    u'Help for translations'
+
+    >>> help_link = findHelpLink(
+    ...     'http://translations.launchpad.dev/evolution/trunk')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations'
+    >>> extract_text(help_link)
+    u'Help for translations'
+
+Each PO template overview page also provides a link to documentation for
+translation, but this one takes people directly to translators'
+documentation.
+
+    >>> help_link = findHelpLink(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+    ...     'evolution-2.2')
+    >>> help_link['href']
+    u'https://help.launchpad.net/Translations/StartingToTranslate'
+    >>> extract_text(help_link)
+    u'Help for translations'
