@@ -27,6 +27,7 @@ __all__ = [
 
 import operator
 
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
@@ -59,7 +60,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailout.branchmergeproposal import (
     BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
+    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -998,6 +999,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
+
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @cachedproperty
     def initial_values(self):

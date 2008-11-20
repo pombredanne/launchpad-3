@@ -13,7 +13,6 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
@@ -93,7 +92,7 @@ class OpenIDApplicationNavigation(Navigation):
                 return identity
         # Redirect /~user-name to equivalent persistent identity URLs.
         person = getUtility(IPersonSet).getByName(name)
-        if (person is not None and person.is_openid_enabled
+        if (person is not None
             and person.account.status == AccountStatus.ACTIVE):
             openid_identity = IOpenIDPersistentIdentity(person.account)
             target = openid_identity.openid_identity_url
