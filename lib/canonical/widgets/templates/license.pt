@@ -37,14 +37,18 @@
     </label>
   </div>
 
-  <tal:if tal:condition="view/allow_pending_license">
-      <tal:then 
-        tal:define="global checkbox_padding string:padding-left: 20px" />
-  </tal:if>
-  <div tal:attributes="style checkbox_padding|nothing"
-       onclick="setLicensePendingStatus(false)">
-    <input tal:replace="structure view/checkbox_matrix" />
-  </div>
+  <tal:allowpending tal:condition="view/allow_pending_license">
+    <div tal:attributes="style checkbox_padding|nothing"
+         tal:define="global checkbox_padding string:padding-left: 20px"
+         onclick="setLicensePendingStatus(false)">
+      <input tal:replace="structure view/checkbox_matrix" />
+    </div>
+  </tal:allowpending>
+  <tal:donotallowpending tal:condition="not:view/allow_pending_license">
+    <div tal:attributes="style checkbox_padding|nothing">
+      <input tal:replace="structure view/checkbox_matrix" />
+    </div>
+  </tal:donotallowpending>
 
   <p>
     Launchpad.net is free to use for software projects that share
