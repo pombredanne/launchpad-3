@@ -53,33 +53,33 @@ class TestSimpleTransportDispatch(TestCase):
         self.factory = SimpleTransportDispatch(self.base_transport)
 
     def test_writable_false_ignored(self):
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (BRANCH_TRANSPORT, dict(id=5, writable=False), ''))
         transport.mkdir('.bzr')
         self.assertEqual(['.bzr'], transport.list_dir('.'))
 
     def test_writable_implies_writable(self):
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
         transport.mkdir('.bzr')
         self.assertEqual(['.bzr'], transport.list_dir('.'))
 
     def test_gets_id_directory(self):
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (BRANCH_TRANSPORT, dict(id=5, writable=True), ''))
         transport.mkdir('.bzr')
         self.assertEqual(
             ['.bzr'], self.base_transport.list_dir('00/00/00/05'))
 
     def test_returns_trailing_path(self):
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (BRANCH_TRANSPORT, dict(id=5, writable=True), '.bzr/foo'))
         self.assertEqual('.bzr/foo', path)
 
-    def test_make_transport_control(self):
-        # make_transport returns a control transport for the tuple.
+    def test_makeTransport_control(self):
+        # makeTransport returns a control transport for the tuple.
         self.assertRaises(
-            UnknownTransportType, self.factory.make_transport,
+            UnknownTransportType, self.factory.makeTransport,
             (CONTROL_TRANSPORT, {}, ''))
 
 
@@ -141,23 +141,23 @@ class TestTransportDispatch(TestCase):
         data = transport.get_bytes(".bzr/README")
         self.assertEqual("Hello", data)
 
-    def test_make_transport_control(self):
-        # make_transport returns a control transport for the tuple.
+    def test_makeTransport_control(self):
+        # makeTransport returns a control transport for the tuple.
         log = []
         self.factory._transport_factories[CONTROL_TRANSPORT] = (
             lambda default_stack_on, trailing_path:
                 log.append(default_stack_on))
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (CONTROL_TRANSPORT, {'default_stack_on': 'foo'}, 'bar/baz'))
         self.assertEqual('bar/baz', path)
         self.assertEqual(['foo'], log)
 
-    def test_make_transport_branch(self):
-        # make_transport returns a control transport for the tuple.
+    def test_makeTransport_branch(self):
+        # makeTransport returns a control transport for the tuple.
         log = []
         self.factory._transport_factories[BRANCH_TRANSPORT] = (
             lambda id, writable, trailing_path: log.append((id, writable)))
-        transport, path = self.factory.make_transport(
+        transport, path = self.factory.makeTransport(
             (BRANCH_TRANSPORT, {'id': 1, 'writable': True}, 'bar/baz'))
         self.assertEqual('bar/baz', path)
         self.assertEqual([(1, True)], log)

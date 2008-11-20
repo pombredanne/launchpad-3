@@ -166,7 +166,7 @@ class SimpleTransportDispatch:
             raise PermissionDenied(
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
-    def make_transport(self, transport_tuple):
+    def makeTransport(self, transport_tuple):
         transport_type, data, trailing_path = transport_tuple
         if transport_type != BRANCH_TRANSPORT:
             raise UnknownTransportType(transport_type)
@@ -193,7 +193,7 @@ class TransportDispatch:
             CONTROL_TRANSPORT: self._makeControlTransport,
             }
 
-    def make_transport(self, transport_tuple):
+    def makeTransport(self, transport_tuple):
         transport_type, data, trailing_path = transport_tuple
         factory = self._transport_factories[transport_type]
         data['trailing_path'] = trailing_path
@@ -204,7 +204,7 @@ class TransportDispatch:
             dispatch = self._hosted_dispatch
         else:
             dispatch = self._mirrored_dispatch
-        transport, ignored = dispatch.make_transport(
+        transport, ignored = dispatch.makeTransport(
             (BRANCH_TRANSPORT, dict(id=id), trailing_path))
         if not writable:
             transport = get_transport('readonly+' + transport.base)
@@ -246,7 +246,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         returns a Deferred that fires information about how a path can be
         translated into a transport. See `IBranchFilesystem['translatePath']`.
 
-    :ivar _transport_dispatch: An object has a method 'make_transport' that
+    :ivar _transport_dispatch: An object has a method 'makeTransport' that
         takes the successful output of '_authserver.translatePath' and returns
         a tuple (transport, trailing_path)
     XXX: JonathanLange 2008-11-19: Specify this interface better.
@@ -268,7 +268,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         """See `AsyncVirtualServer.translateVirtualPath`.
 
         Call 'translatePath' on the authserver with the fragment and then use
-        'make_transport' on the _transport_dispatch to translate that result
+        'makeTransport' on the _transport_dispatch to translate that result
         into a transport and trailing path.
         """
         deferred = self._authserver.translatePath('/' + virtual_url_fragment)
@@ -278,7 +278,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
             raise NoSuchFile(virtual_url_fragment)
 
         return deferred.addCallbacks(
-            self._transport_dispatch.make_transport, path_not_translated)
+            self._transport_dispatch.makeTransport, path_not_translated)
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
@@ -430,12 +430,13 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = self._authserver.createBranch(virtual_url_fragment)
 
         def translate_fault(failure):
-            # One might think that it would make sense to raise NoSuchFile
-            # here, but that makes the client do "clever" things like say
-            # "Parent directory of
+            # We turn NOT_FOUND_FAULT_CODE into a PermissionDenied, even
+            # though one might think that it would make sense to raise
+            # NoSuchFile. Sadly, raising that makes the client do "clever"
+            # things like say "Parent directory of
             # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch does not
             # exist. You may supply --create-prefix to create all leading
-            # parent directories." Which is just misleading.
+            # parent directories", which is just misleading.
             fault = trap_fault(
                 failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
             raise PermissionDenied(fault.faultString)
