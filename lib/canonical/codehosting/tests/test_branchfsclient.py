@@ -86,7 +86,6 @@ class TestTrapFault(TestCase):
         self.assertEqual('example failure', fault.faultString)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
