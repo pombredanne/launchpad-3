@@ -6,19 +6,16 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
-
 from textwrap import dedent
-
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing.layers import DatabaseFunctionalLayer
+import unittest
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.browser.person import PersonView
 from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
