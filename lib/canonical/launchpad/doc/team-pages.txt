@@ -134,5 +134,3 @@ user.
     Send an email to this team through Launchpad
     >>> print view.specific_contact_text
     Contact this team
-
-XXX Maybe broken when no contact address.

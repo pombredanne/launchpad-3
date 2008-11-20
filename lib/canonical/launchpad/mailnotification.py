@@ -1834,7 +1834,7 @@ def send_direct_contact_email(sender_email, recipients_email, subject, body):
     :param sender_email: The email address of the sender.
     :type sender_email: string
     :param recipients_email: The email address of the recipients.
-    :type recipients_email:' list of string
+    :type recipients_email:' list of strings
     :param subject: The Subject header.
     :type subject: unicode
     :param body: The message body.
