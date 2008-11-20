@@ -46,7 +46,7 @@ class PersonView_openid_identity_url_TestCase(unittest.TestCase):
         self.assertEquals(
             'http://launchpad.dev/~eris', self.view.openid_identity_url)
 
-    def test_should_beproduction_profile_page_when_not_delegating(self):
+    def test_should_be_production_profile_page_when_not_delegating(self):
         """When the profile page is not delegated, the OpenID identity URL
         should be the one on the main production site."""
         config.push('non-delegating', dedent('''
