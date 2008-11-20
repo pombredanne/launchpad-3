@@ -1391,23 +1391,3 @@ IHWSubmissionDeviceSet.getDevices().
     ________ ---> Unknown Intel USB hub usb
     ____________ ---> Plustek OpticPro UT12 usb
     ________________ ---> Plustek OpticPro UT12 plustek
-
-    >>> for submission_device in submitted_devices:
-    ...     device = submission_device.device_driver_link.device
-    ...     driver = submission_device.device_driver_link.driver
-    ...     print submission_device.id,
-    ...     print device.bus_vendor.vendor_name.name, device.name,
-    ...     if driver is not None:
-    ...         print driver.name,
-    ...     else:
-    ...         print '(no driver)',
-    ...     if submission_device.parent is not None:
-    ...         print submission_device.parent.id
-    ...     else:
-    ...         print '(no parent)'
-    23 Intel   82801GBM/GHM (ICH7 Family) USB2 EHCI Controller  ehci_hcd  22
-    24 Intel   82801GBM/GHM (ICH7 Family) USB2 EHCI Controller  usb       23
-    25 Unknown Intel USB hub                                    usb       24
-    26 Plustek OpticPro UT12                                    usb       25
-    27 Plustek OpticPro UT12                                    plustek   26
-    22 Tonka   Tuffbook 2600                        (no driver) (no parent)
