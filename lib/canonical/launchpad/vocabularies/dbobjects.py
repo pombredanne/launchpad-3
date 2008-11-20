@@ -93,18 +93,38 @@ from canonical.launchpad.database import (
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTrackerType, DistroSeriesStatus, EmailAddressStatus,
-    IBranch, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, ISpecification,
-    SpecificationFilter, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus, PersonVisibility)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.bugtask import (
+    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.language import ILanguage
+from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.milestone import IMilestoneSet
+from canonical.launchpad.interfaces.person import (
+    IPerson, IPersonSet, ITeam, PersonVisibility)
+from canonical.launchpad.interfaces.pillar import IPillarName
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.specification import (
+    ISpecification, SpecificationFilter)
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import (
     DateTimeFormatterAPI, FormattersAPI)
 from canonical.launchpad.webapp.vocabulary import (
