@@ -189,8 +189,8 @@ class TransportDispatch:
         self._hosted_dispatch = SimpleTransportDispatch(hosted_transport)
         self._mirrored_dispatch = SimpleTransportDispatch(mirrored_transport)
         self._transport_factories = {
-            BRANCH_TRANSPORT: self.make_branch_transport,
-            CONTROL_TRANSPORT: self.make_control_transport,
+            BRANCH_TRANSPORT: self._makeBranchTransport,
+            CONTROL_TRANSPORT: self._makeControlTransport,
             }
 
     def make_transport(self, transport_tuple):
@@ -199,7 +199,7 @@ class TransportDispatch:
         data['trailing_path'] = trailing_path
         return factory(**data), trailing_path
 
-    def make_branch_transport(self, id, writable, trailing_path=''):
+    def _makeBranchTransport(self, id, writable, trailing_path=''):
         if writable:
             dispatch = self._hosted_dispatch
         else:
@@ -210,7 +210,7 @@ class TransportDispatch:
             transport = get_transport('readonly+' + transport.base)
         return transport
 
-    def make_control_transport(self, default_stack_on, trailing_path=None):
+    def _makeControlTransport(self, default_stack_on, trailing_path=None):
         """Make a transport that points to a control directory.
 
         A control directory is a .bzr directory containing a 'control.conf'
@@ -244,8 +244,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
 
     :ivar _authserver: An object that has a method 'translatePath' that
         returns a Deferred that fires information about how a path can be
-        translated into a transport.
-    XXX: JonathanLange 2008-11-19: Specify this interface better.
+        translated into a transport. See `IBranchFilesystem['translatePath']`.
 
     :ivar _transport_dispatch: An object has a method 'make_transport' that
         takes the successful output of '_authserver.translatePath' and returns

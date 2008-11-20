@@ -99,35 +99,36 @@ class TestTransportDispatch(TestCase):
             self.hosted_transport, self.mirrored_transport)
 
     def test_control_conf_read_only(self):
-        transport = self.factory.make_control_transport(
+        transport = self.factory._makeControlTransport(
             default_stack_on='/~foo/bar/baz')
         self.assertRaises(
             errors.TransportNotPossible,
             transport.put_bytes, '.bzr/control.conf', 'data')
 
     def test_control_conf_with_stacking(self):
-        transport = self.factory.make_control_transport(
+        transport = self.factory._makeControlTransport(
             default_stack_on='/~foo/bar/baz')
         control_conf = transport.get_bytes('.bzr/control.conf')
         self.assertEqual('default_stack_on = /~foo/bar/baz\n', control_conf)
 
     def test_control_conf_with_no_stacking(self):
-        transport = self.factory.make_control_transport('')
+        transport = self.factory._makeControlTransport(
+            default_stack_on='')
         self.assertEqual([], transport.list_dir('.'))
 
     def test_writable_false_implies_readonly(self):
-        transport = self.factory.make_branch_transport(id=5, writable=False)
+        transport = self.factory._makeBranchTransport(id=5, writable=False)
         self.assertRaises(
             errors.TransportNotPossible, transport.put_bytes,
             '.bzr/README', 'data')
 
     def test_writable_implies_writable(self):
-        transport = self.factory.make_branch_transport(id=5, writable=True)
+        transport = self.factory._makeBranchTransport(id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(['.bzr'], transport.list_dir('.'))
 
     def test_gets_id_directory(self):
-        transport = self.factory.make_branch_transport(id=5, writable=True)
+        transport = self.factory._makeBranchTransport(id=5, writable=True)
         transport.mkdir('.bzr')
         self.assertEqual(
             ['.bzr'], self.hosted_transport.list_dir('00/00/00/05'))
@@ -136,7 +137,7 @@ class TestTransportDispatch(TestCase):
         self.mirrored_transport.mkdir_multi(
             ['00', '00/00', '00/00/00', '00/00/00/05', '00/00/00/05/.bzr'])
         self.mirrored_transport.put_bytes('00/00/00/05/.bzr/README', "Hello")
-        transport = self.factory.make_branch_transport(id=5, writable=False)
+        transport = self.factory._makeBranchTransport(id=5, writable=False)
         data = transport.get_bytes(".bzr/README")
         self.assertEqual("Hello", data)
 
@@ -238,7 +239,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
     # XXX: Test that translateVirtualPath returns a transport that is a child
     # of the appropriate transport (hosted, mirrored) and that the trailing
     # path is correct. OR, test that it basically returns
-    # make_branch_transport. OR, don't worry, let test_filesystem handle this
+    # _makeBranchTransport. OR, don't worry, let test_filesystem handle this
     # bit.
 
     def test_get_url(self):
@@ -265,7 +266,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
 
     # XXX: Test that translateVirtualPath returns a transport that is a child
     # of the transport and that the trailing path is correct. OR, test that it
-    # basically returns make_branch_transport.
+    # basically returns _makeBranchTransport.
 
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no
