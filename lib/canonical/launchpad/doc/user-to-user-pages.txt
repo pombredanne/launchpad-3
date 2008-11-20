@@ -277,7 +277,9 @@ are sent, one to each team member.
     ...         message_bodies.add(message.get_payload())
     ...     print 'Senders:', message_senders
     ...     print 'Subjects:', message_subjects
-    ...     print 'Bodies:', message_bodies
+    ...     print 'Bodies:'
+    ...     for body in sorted(message_bodies):
+    ...         print body
     ...     print '# of Message-IDs:', len(message_ids)
     ...     print 'Recipients:'
     ...     for recipient in sorted(message_recipients):
@@ -290,7 +292,12 @@ Everyone does get a unique copy of the message though.
     >>> print_messages()
     Senders: set(['Bart <bart@example.com>'])
     Subjects: set(['Hello Guadamen'])
-    Bodies: set(['Can one of you help me?'])
+    Bodies:
+    Can one of you help me?
+    --
+    This message was sent by Launchpad via the Contact user/team
+    link on your profile page.  For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 9
     Recipients:
         Alexander Limi <limi@plone.org>
@@ -338,8 +345,14 @@ the new contact address.
     To: GuadaMen <guadamen@example.com>
     Subject: Hello again Guadamen
     ...
+    X-Launchpad-Message-Rationale: ContactViaWeb
+    ...
     <BLANKLINE>
     Can one of you help me?
+    -- 
+    This message was sent by Launchpad via the Contact user/team
+    link on your profile page.  For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
 
 The Guadamen team creates a mailing list and sets it to be the contact
 address.
@@ -372,7 +385,12 @@ Bart's message gets sent to the mailing list.
     >>> print_messages()
     Senders: set(['Bart <bart@example.com>'])
     Subjects: set(['My last question for Guadamen'])
-    Bodies: set(['Really, can one of you help me!'])
+    Bodies:
+    Really, can one of you help me!
+    -- 
+    This message was sent by Launchpad via the Contact user/team
+    link on your profile page.  For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
     # of Message-IDs: 1
     Recipients:
         GuadaMen <guadamen@lists.launchpad.dev>
@@ -389,3 +407,40 @@ Bart has now reached his quota and can send no more contact messages today.
     >>> print_notifications(view)
     Your message was not sent because you have exceeded your daily quota of
     3 messages to contact users. Try again in ...
+
+
+== Identifying information ==
+
+Every contact message has a special Launchpad header so that people can tell
+that the message came to them through Launchpad.   It also has a footer that
+contains an explanation as well.
+
+    >>> cris = factory.makePerson(email='cris@example.com', name='cris')
+    >>> dave = factory.makePerson(email='dave@example.com', name='dave')
+    >>> login_person(cris)
+
+    >>> view = create_view(
+    ...     cris, dave, {
+    ...         'field.field.from_': 'cris@example.com',
+    ...         'field.subject': 'Hi Dave',
+    ...         'field.message': 'Can you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print raw_msg
+    Content-Type: text/plain; charset="us-ascii"
+    ...
+    From: Cris <cris@example.com>
+    To: Dave <dave@example.com>
+    Subject: Hi Dave
+    ...
+    X-Launchpad-Message-Rationale: ContactViaWeb
+    ...
+    <BLANKLINE>
+    Can you help me?
+    <BLANKLINE>
+    -- 
+    This message was sent by Launchpad via the Contact user/team
+    link on your profile page.  For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
