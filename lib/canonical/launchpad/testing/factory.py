@@ -963,7 +963,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         owner = getUtility(IPersonSet).getByName(owner_name)
         display_name = SPACE.join(
             word.capitalize() for word in team_name.split('-'))
-        team = self.makeTeam(owner, displayname=display_name, name=team_name)
+        team = getUtility(IPersonSet).getByName(team_name)
+        if team is None:
+            team = self.makeTeam(
+                owner, displayname=display_name, name=team_name)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
