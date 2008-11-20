@@ -2378,7 +2378,11 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def openid_identity_url(self):
         """The public OpenID identity URL. That's the profile page."""
-        return canonical_url(self.context)
+        profile_url = URI(canonical_url(self.context))
+        if not config.vhost.mainsite.openid_delegate_profile:
+            # Change the host to point to the production site.
+            profile_url.host = config.launchpad.non_restricted_hostname
+        return str(profile_url)
 
     @property
     def subscription_policy_description(self):
