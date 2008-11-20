@@ -1081,16 +1081,17 @@ class BranchSet:
         :raise: A subclass of LaunchpadFault
         """
         path_segments = path.split('/', 3)
+        series_name = None
         if len(path_segments) > 3:
             suffix = path_segments[3]
         else:
             suffix = None
         if len(path_segments) == 1:
-            [project_name] = path_segments
-            return self._getBranchForProject(project_name), suffix
+            [product_name] = path_segments
+            branch = self._getBranchForProject(product_name)
         elif len(path_segments) == 2:
-            project_name, series_name = path_segments
-            return self._getBranchForSeries(project_name, series_name), suffix
+            product_name, series_name = path_segments
+            branch = self._getBranchForSeries(product_name, series_name)
         else:
             owner, product, name = path_segments[:3]
             if owner[0] != '~':
@@ -1100,7 +1101,14 @@ class BranchSet:
             if branch is None:
                 self._getNonexistentBranch(owner, product)
                 raise NoSuchBranch(path)
-            return branch, suffix
+        if len(path_segments) < 3 and not check_permission(
+            'launchpad.View', branch):
+            if series_name is None:
+                series = self._getProduct(product_name).development_focus
+                series_name = series.name
+            raise NoBranchForSeries(series_name)
+        return branch, suffix
+
 
     @staticmethod
     def _getProduct(product_name):

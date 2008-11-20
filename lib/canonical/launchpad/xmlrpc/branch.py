@@ -14,6 +14,7 @@ import os
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -230,9 +231,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
         try:
-            branch, suffix = getUtility(IBranchSet).getByLPPath(path)
-        except NoSuchProject, e:
-            pillar = getUtility(IPillarNameSet).getByName(e.project_name)
+            branch, suffix = getUtility(IBranchSet).getByLPPath(strip_path)
+            branch = removeSecurityProxy(branch)
+        except faults.NoSuchBranch:
+            branch = _NonexistentBranch(strip_path)
+            suffix = None
+        except faults.NoSuchProduct, e:
+            pillar = getUtility(IPillarNameSet).getByName(e.product_name)
             if pillar:
                 if IProject.providedBy(pillar):
                     pillar_type = 'project group'
@@ -242,9 +247,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
                     raise AssertionError(
                         "pillar of unknown type %s" % pillar)
                 return faults.NoDefaultBranchForPillar(
-                    project_name, pillar_type)
+                    e.product_name, pillar_type)
             else:
-                return faults.NoSuchProduct(project_name)
-        if not check_permission('launchpad.View', branch):
-            return faults.NoBranchForSeries(series)
+                return faults.NoSuchProduct(e.product_name)
+        except faults.LaunchpadFault, e:
+            return e
         return self._getResultDict(branch, suffix)

@@ -253,7 +253,7 @@ class TestExpandURL(TestCaseWithFactory):
             'foo/bar/baz', faults.InvalidBranchIdentifier('foo/bar/baz'))
         self.assertFault(
             'foo/bar/baz/qux',
-            faults.InvalidBranchIdentifier('foo/bar/baz'))
+            faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
 
         # Should be invalid even if the branch exists.
         trunk = self.product.development_focus.user_branch
