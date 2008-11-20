@@ -20,7 +20,8 @@ import re
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
-from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
 from storm.expr import Or
 from zope.component import getUtility
 from zope.interface import implements, classProvides
@@ -99,6 +100,8 @@ class OpenIDRPConfig(SQLBase):
         dbName='creation_rationale', notNull=True,
         schema=PersonCreationRationale,
         default=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
+    can_query_any_team = BoolCol(
+        dbName='can_query_any_team', notNull=True, default=False)
 
     def allowed_sreg(self):
         value = self._allowed_sreg
@@ -128,8 +131,9 @@ class OpenIDRPConfigSet:
 
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
-            creation_rationale=PersonCreationRationale
-                               .OWNER_CREATED_UNKNOWN_TRUSTROOT):
+            creation_rationale=
+                PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT,
+            can_query_any_team=False):
         """See `IOpenIDRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -139,7 +143,8 @@ class OpenIDRPConfigSet:
         return OpenIDRPConfig(
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,
-            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale)
+            _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale,
+            can_query_any_team=can_query_any_team)
 
     def get(self, id):
         """See `IOpenIDRPConfigSet`"""
@@ -150,7 +155,7 @@ class OpenIDRPConfigSet:
 
     def getAll(self):
         """See `IOpenIDRPConfigSet`"""
-        return OpenIDRPConfig.select()
+        return OpenIDRPConfig.select(orderBy=['displayname','trust_root'])
 
     def getByTrustRoot(self, trust_root):
         """See `IOpenIDRPConfigSet`"""
@@ -233,14 +238,22 @@ class OpenIDRPSummarySet:
     """A set of OpenID RP Summaries."""
     implements(IOpenIDRPSummarySet)
 
-    def getByIdentifier(self, identifier):
-        """See `IOpenIDRPSummarySet`.
-
-        :raise AssertionError: If the identifier is used by more than
-            one account.
-        """
-        return OpenIDRPSummary.selectBy(
-            openid_identifier=identifier, orderBy='id')
+    def getByIdentifier(self, identifier, only_unknown_trust_roots=False):
+        """See `IOpenIDRPSummarySet`."""
+        # XXX: flacoste 2008-11-17 bug=274774: Normalize the trust_root
+        # in OpenIDRPSummary.
+        if only_unknown_trust_roots:
+            result = OpenIDRPSummary.select("""
+            CASE
+                WHEN OpenIDRPSummary.trust_root LIKE '%%/'
+                THEN OpenIDRPSummary.trust_root
+                ELSE OpenIDRPSummary.trust_root || '/'
+            END NOT IN (SELECT trust_root FROM OpenIdRPConfig)
+            AND openid_identifier = %s
+                """ % sqlvalues(identifier))
+        else:
+            result = OpenIDRPSummary.selectBy(openid_identifier=identifier)
+        return result.orderBy('id')
 
     def _assert_identifier_is_not_reused(self, account, identifier):
         """Assert no other account in the summaries has the identifier."""

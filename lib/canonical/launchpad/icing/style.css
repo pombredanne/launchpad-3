@@ -179,6 +179,12 @@ table.form .error {background: none;}
   padding-left: 18px;
 }
 
+/* Warning messages inlined in the page. */
+.inline-warning {
+    color: red;
+    font-weight: bold;
+}
+
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
@@ -218,6 +224,7 @@ table.listing div.actions {
 /* Text fields occupy as much of the page width as possible, minus a safety
 margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
+textarea.codereviewcomment { font-family: monospace; }
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */

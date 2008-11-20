@@ -6,7 +6,7 @@ related to a bug watch will be sent only to members of that team.
 
     >>> from canonical.config import config
     >>> config.malone.comment_syncing_team
-    'launchpad'
+    'launchpad-beta-testers'
 
 Only imported comments are affected. If a bug comment is associated with
 a bug watch, or a comment is added from the Bug Watch Updater, it won't
