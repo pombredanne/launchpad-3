@@ -73,9 +73,6 @@
 
        var inputs = main_area.queryAll("input.line-through-when-checked");
        inputs.each(function(input) {
-           if (input.get("tagName") == "DIV") {
-               return;
-           }
            input.on("click", function(e) {
                var input = e.currentTarget;
                var label = Y.get(input.get("parentNode"));
