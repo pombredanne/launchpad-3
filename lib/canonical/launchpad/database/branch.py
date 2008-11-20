@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
+    IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.database.branchmergeproposal import (
@@ -64,7 +64,8 @@ from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc.faults import (
-    InvalidProductIdentifier, NoBranchForSeries, NoSuchProduct, NoSuchSeries)
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -1041,6 +1042,21 @@ class BranchSet:
         else:
             return branch
 
+    def _getNonexistentBranch(self, owner_name, project_name):
+        """Return an appropriate response for a non-existent branch.
+
+        :param unique_name: A string of the form "~user/project/branch".
+        :return: A _NonexistentBranch object or a Fault if the user or project
+            do not exist.
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        if owner is None:
+            raise NoSuchPersonWithName(owner_name)
+        if project_name != '+junk':
+            project = getUtility(IProductSet).getByName(project_name)
+            if project is None:
+                raise NoSuchProduct(project_name)
+
     @staticmethod
     def _getByUniqueNameElements(owner_name, product_name, branch_name):
         if product_name == '+junk':
@@ -1059,6 +1075,11 @@ class BranchSet:
         return Branch.selectOne(query, clauseTables=tables)
 
     def getByLPPath(self, path):
+        """Resolve the path of an lp: URL to a branch and suffix.
+
+        :return: (branch, suffix)
+        :raise: A subclass of LaunchpadFault
+        """
         path_segments = path.split('/', 3)
         if len(path_segments) > 3:
             suffix = path_segments[3]
@@ -1066,14 +1087,20 @@ class BranchSet:
             suffix = None
         if len(path_segments) == 1:
             [project_name] = path_segments
-            result = self._getBranchForProject(project_name)
+            return self._getBranchForProject(project_name), suffix
         elif len(path_segments) == 2:
             project_name, series_name = path_segments
-            return self._getBranchForSeries(project_name, series_name), None
+            return self._getBranchForSeries(project_name, series_name), suffix
         else:
             owner, product, name = path_segments[:3]
+            if owner[0] != '~':
+                raise InvalidBranchIdentifier(path)
             owner = owner[1:]
-            return self._getByUniqueNameElements(owner, product, name), suffix
+            branch = self._getByUniqueNameElements(owner, product, name)
+            if branch is None:
+                self._getNonexistentBranch(owner, product)
+                raise NoSuchBranch(path)
+            return branch, suffix
 
     @staticmethod
     def _getProduct(product_name):
@@ -1111,9 +1138,9 @@ class BranchSet:
     def _getSeriesBranch(self, series):
         """Return the branch for the given series.
 
-        :return: The branch for the given series or faults.NoBranchForSeries
-            if there is no such branch, or if the branch is invisible to the
-            user.
+        :return: The branch for the given series
+        :raise: faults.NoBranchForSeries if there is no such branch, or if the
+            branch is invisible to the user.
         """
         branch = series.series_branch
         if (branch is None or not check_permission('launchpad.View', branch)):

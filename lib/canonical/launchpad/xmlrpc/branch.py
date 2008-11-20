@@ -201,23 +201,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         else:
             return self._getNonexistentBranch(unique_name)
 
-    def _getNonexistentBranch(self, unique_name):
-        """Return an appropriate response for a non-existent branch.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :return: A _NonexistentBranch object or a Fault if the user or project
-            do not exist.
-        """
-        owner_name, project_name, branch_name = unique_name[1:].split('/')
-        owner = getUtility(IPersonSet).getByName(owner_name)
-        if owner is None:
-            return faults.NoSuchPersonWithName(owner_name)
-        if project_name != '+junk':
-            project = getUtility(IProductSet).getByName(project_name)
-            if project is None:
-                return faults.NoSuchProduct(project_name)
-        return _NonexistentBranch(unique_name)
-
     def _getResultDict(self, branch, suffix=None):
         """Return a result dict with a list of URLs for the given branch.
 
