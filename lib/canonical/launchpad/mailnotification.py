@@ -236,7 +236,7 @@ class BugNotificationBuilder:
             ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
 
     def build(self, from_address, to_address, body, subject, email_date,
-              rationale_header=None, references=None, message_id=None):
+              rationale=None, references=None, message_id=None):
         """Constructs the notification.
 
         :param from_address: The From address of the notification.
@@ -245,7 +245,7 @@ class BugNotificationBuilder:
         :type body: unicode
         :param subject: The Subject of the notification.
         :param email_date: The Date for the notification.
-        :param rationale_header: The rationale for why the recipient is
+        :param rationale: The rationale for why the recipient is
             receiving this notification.
         :param references: A value for the References header.
         :param message_id: A value for the Message-ID header.
@@ -274,9 +274,8 @@ class BugNotificationBuilder:
         else:
             message['Subject'] = "%s %s" % (subject_prefix, subject)
 
-        if rationale_header is not None:
-            message.add_header(
-                'X-Launchpad-Message-Rationale', rationale_header)
+        if rationale is not None:
+            message.add_header('X-Launchpad-Message-Rationale', rationale)
 
         return message
 
@@ -316,13 +315,13 @@ def _send_bug_details_to_new_bug_subscribers(
 
     bug_notification_builder = BugNotificationBuilder(bug)
     for to_addr in sorted(to_addrs):
-        reason, rationale_header = recipients.getReason(to_addr)
+        reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
             reason=reason)
         msg = bug_notification_builder.build(
             from_addr, to_addr, contents, subject, email_date,
-            rationale_header=rationale_header, references=references)
+            rationale=rationale, references=references)
         sendmail(msg)
 
 

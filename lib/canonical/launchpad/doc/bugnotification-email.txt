@@ -607,18 +607,18 @@ and passed to <builder>.build().
     >>> print notification_email.get_payload()
     A test body.
 
-BugNotificationBuilder() also accepts parameters for rationale_header,
+BugNotificationBuilder() also accepts parameters for rationale,
 references and message_id.
 
     >>> notification_email = bug_four_notification_builder.build(
     ...     from_address, 'foo.bar@canonical.com',
     ...     "A test body.", "A test subject.", sending_date,
-    ...     rationale_header='Because-I-said-so',
+    ...     rationale='Because-I-said-so',
     ...     references=['<12345@launchpad.net>'],
     ...     message_id='<67890@launchpad.net>')
 
-The rationale_header parameter is used to set the
-X-Launchpad-Message-Rationale header.
+The X-Launchpad-Message-Rationale header is set from the rationale
+parameter.
 
     >>> print notification_email['X-Launchpad-Message-Rationale']
     Because-I-said-so

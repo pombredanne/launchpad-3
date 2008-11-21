@@ -112,7 +112,7 @@ def construct_email_notifications(bug_notifications):
     bug_notification_builder = BugNotificationBuilder(bug)
     for address, recipient in recipients.items():
         reason = recipient.reason_body
-        rationale_header = recipient.reason_header
+        rationale = recipient.reason_header
 
         body_data = {
             'content': mail_wrapper.format(content),
@@ -141,7 +141,7 @@ def construct_email_notifications(bug_notifications):
         body = get_email_template(email_template) % body_data
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
-            rationale_header, references, msgid)
+            rationale, references, msgid)
         messages.append(msg)
 
     return bug_notifications, messages
