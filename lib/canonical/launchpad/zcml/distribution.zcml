@@ -228,6 +228,15 @@
     template="../templates/distribution-newmirror.pt">
   </browser:page>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    permission="zope.Public"
+    name="+search"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPackageSearchView"
+    template="../templates/distribution-search.pt"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionView"
@@ -241,11 +250,6 @@
       name="+series"
       facet="overview"
       template="../templates/distribution-series.pt"
-      />
-    <browser:page
-      name="+search"
-      facet="overview"
-      template="../templates/distribution-search.pt"
       />
     <browser:page
       name="+builds"
