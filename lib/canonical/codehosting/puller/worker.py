@@ -20,7 +20,6 @@ import bzrlib.ui
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.branchfs import get_puller_server
-from canonical.codehosting.bzrutils import get_branch_stacked_on_url
 from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces.branch import (
     BranchType, get_blacklisted_hostnames)
@@ -218,6 +217,7 @@ class BranchPolicy:
 
     def transformFallbackLocation(self, branch, url):
         """XXX."""
+        return url
         raise NotImplementedError(self.transformFallbackLocation)
 
     def checkOneURL(self, url):
@@ -255,8 +255,9 @@ class BranchMirrorer(object):
             log messages are discarded.
         """
         Branch.hooks.install_named_hook(
-            'transform_fallback_location', self._transformFallbackLocation,
-            'BranchMirrorer._transformFallbackLocation')
+            'transform_fallback_location', self.transformFallbackLocationHook,
+            'BranchMirrorer.transformFallbackLocationHook')
+        self._seen_urls = set()
         self.policy = policy
         self.protocol = protocol
         if log is not None:
@@ -270,12 +271,14 @@ class BranchMirrorer(object):
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
         """
-        self._seen_urls = set()
         url = self.checkAndFollowBranchReference(url)
         return Branch.open(url)
 
-    def _transformFallbackLocation(self, branch, url):
+    def transformFallbackLocationHook(self, branch, url):
         """XXX."""
+        if url in self._seen_urls:
+            raise BranchLoopError()
+        self._seen_urls.add(url)
         new_url = self.policy.transformFallbackLocation(branch, url)
         return self.checkAndFollowBranchReference(new_url)
 
@@ -685,7 +688,7 @@ class PullerWorker:
                    "%s." % (self.branch_type.title,))
             self._mirrorFailed(msg)
 
-        except BranchReferenceLoopError, e:
+        except BranchLoopError, e:
             msg = "Circular branch reference."
             self._mirrorFailed(msg)
 

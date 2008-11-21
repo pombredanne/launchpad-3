@@ -21,11 +21,11 @@ from bzrlib.transport import get_transport
 
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.worker import (
-    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
-    BranchPolicy, BranchReferenceForbidden, BranchReferenceLoopError,
+    BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchLoopError,
+    BranchMirrorer, BranchPolicy, BranchReferenceForbidden,
     HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy,
-    PullerWorkerProtocol, StackingLoopError, get_vfs_format_classes,
-    install_worker_ui_factory, StackedOnBranchNotFound)
+    PullerWorkerProtocol, StackedOnBranchNotFound, get_vfs_format_classes,
+    install_worker_ui_factory)
 from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
@@ -330,57 +330,53 @@ class TestBranchMirrorerCheckSource(TestCase):
     def testCheckInitialURL(self):
         # checkSource rejects all URLs that are not allowed.
         opener = self.makeBranchMirrorer(None, [], set(['a']))
-        self.assertRaises(BadUrl, opener.checkSource, 'a')
+        self.assertRaises(BadUrl, opener.checkAndFollowBranchReference, 'a')
 
     def testNotReference(self):
-        # When branch references are forbidden, checkSource does not raise on
-        # non-references.
+        # When branch references are forbidden, checkAndFollowBranchReference
+        # does not raise on non-references.
         opener = self.makeBranchMirrorer(False, ['a', None])
-        # This raises a NotBranchError since it passes the checks and tries to
-        # open 'a'.
-        self.assertRaises(NotBranchError, opener.checkSource, 'a')
+        self.assertEquals('a', opener.checkAndFollowBranchReference('a'))
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
-        # checkSource raises BranchReferenceForbidden if branch references are
+        # checkAndFollowBranchReference raises BranchReferenceForbidden if branch references are
         # forbidden and the source URL points to a branch reference.
         opener = self.makeBranchMirrorer(False, ['a', 'b'])
         self.assertRaises(
-            BranchReferenceForbidden, opener.checkSource, 'a')
+            BranchReferenceForbidden, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
-        # checkSource does not raise if following references is allowed and
+        # checkAndFollowBranchReference does not raise if following references is allowed and
         # the source URL points to a branch reference to a permitted location.
         opener = self.makeBranchMirrorer(True, ['a', 'b', None])
-        # This raises a NotBranchError since it passes the checks and tries to
-        # open 'a'.
-        self.assertRaises(NotBranchError, opener.checkSource, 'a')
+        self.assertEquals('b', opener.checkAndFollowBranchReference('a'))
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
-        # checkSource checks if the URL a reference points to is safe.
+        # checkAndFollowBranchReference checks if the URL a reference points to is safe.
         opener = self.makeBranchMirrorer(
             True, ['a', 'b', None], unsafe_urls=set('b'))
-        self.assertRaises(BadUrl, opener.checkSource, 'a')
+        self.assertRaises(BadUrl, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
-        # checkSource raises BranchReferenceLoopError if following references
+        # checkAndFollowBranchReference raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a self-referencing branch
         # reference.
         opener = self.makeBranchMirrorer(True, ['a', 'a'])
         self.assertRaises(
-            BranchReferenceLoopError, opener.checkSource, 'a')
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
-        # checkSource raises BranchReferenceLoopError if following references
+        # checkAndFollowBranchReference raises BranchReferenceLoopError if following references
         # is allowed and the source url points to a loop of branch references.
         references = ['a', 'b', 'a']
         opener = self.makeBranchMirrorer(True, references)
         self.assertRaises(
-            BranchReferenceLoopError, opener.checkSource, 'a')
+            BranchLoopError, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
 
@@ -407,7 +403,10 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         opener = self.makeBranchMirrorer(
             [stacked_branch.base, stacked_on_branch.base])
         # This doesn't raise an exception.
-        opener.checkSource(stacked_branch.base)
+        self.assertEquals(
+            stacked_on_branch.base,
+            opener.transformFallbackLocationHook(
+                stacked_branch, stacked_on_branch.base))
 
     def testUnstackableRepository(self):
         # checkSource treats branches with UnstackableRepositoryFormats as
@@ -470,7 +469,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         a = self.make_branch('a', format='1.6')
         a.set_stacked_on_url(a.base)
         opener = self.makeBranchMirrorer([a.base])
-        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
+        self.assertRaises(BranchLoopError, opener.checkSource, a.base)
 
     def testLoopStackedBranch(self):
         # checkSource raises StackingLoopError if a branch is stacked in such
@@ -481,8 +480,8 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         a.set_stacked_on_url(b.base)
         b.set_stacked_on_url(a.base)
         opener = self.makeBranchMirrorer([a.base, b.base])
-        self.assertRaises(StackingLoopError, opener.checkSource, a.base)
-        self.assertRaises(StackingLoopError, opener.checkSource, b.base)
+        self.assertRaises(BranchLoopError, opener.checkSource, a.base)
+        self.assertRaises(BranchLoopError, opener.checkSource, b.base)
 
 
 class TestReferenceMirroring(TestCaseWithTransport):

@@ -16,7 +16,7 @@ from bzrlib.errors import (
 
 from canonical.codehosting.puller.worker import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
-    BranchReferenceForbidden, BranchReferenceLoopError, PullerWorker,
+    BranchReferenceForbidden, BranchLoopError, PullerWorker,
     PullerWorkerProtocol, StackedOnBranchNotFound)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.uri import InvalidURIError
@@ -209,9 +209,9 @@ class TestErrorCatching(unittest.TestCase):
         self.assertEqual(expected_msg, msg)
 
     def testBranchReferenceLoopError(self):
-        # BranchReferenceLoopError exceptions are caught.
+        # BranchLoopError exceptions are caught.
         msg = self.getMirrorFailureForException(
-            BranchReferenceLoopError())
+            BranchLoopError())
         self.assertEqual("Circular branch reference.", msg)
 
     def testInvalidURIError(self):
