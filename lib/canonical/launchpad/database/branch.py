@@ -59,6 +59,7 @@ from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.uri import URI
 
 
 class Branch(SQLBase):
@@ -987,9 +988,11 @@ class BranchSet:
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.codehosting.supermirror_root
-        if url.startswith(prefix):
-            branch = self.getByUniqueName(url[len(prefix):])
+        schemes = ('http', 'sftp', 'bzr+ssh')
+        uri = URI(url)
+        codehosting_host = URI(config.codehosting.supermirror_root).host
+        if uri.scheme in schemes and uri.host == codehosting_host:
+            branch = self.getByUniqueName(uri.path.lstrip('/'))
         else:
             branch = Branch.selectOneBy(url=url)
         if branch is None:

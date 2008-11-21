@@ -991,5 +991,40 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
             [(rev.revision_id, revision_number)])
 
 
+class TestGetByUrl(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBranch(self):
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_http(self):
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ssh(self):
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_sftp(self):
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ftp(self):
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertIs(None, branch2)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
