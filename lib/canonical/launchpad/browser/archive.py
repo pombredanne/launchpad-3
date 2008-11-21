@@ -875,7 +875,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     schema = IArchiveEditDependenciesForm
 
     custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget,
-                  cssClass='line-through-when-checked')
+                  cssClass='line-through-when-checked ppa-dependencies')
     custom_widget('primary_dependencies', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
 
@@ -1008,12 +1008,18 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     def _remove_dependencies(self, data):
         """Perform the removal of the selected dependencies."""
         selected_dependencies = data.get('selected_dependencies', [])
-        if len(selected_dependencies) == 0:
-            return
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
+            # Check if the dependency wasn't already removed by
+            # _add_primary_dependencies.
+            if self.context.getArchiveDependency(dependency) is None:
+                selected_dependencies.remove(dependency)
+                continue
             self.context.removeArchiveDependency(dependency)
+
+        if len(selected_dependencies) == 0:
+            return
 
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
@@ -1095,9 +1101,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.next_url = self.request.URL
 
         # Process the form.
-        self._remove_dependencies(data)
-        self._add_ppa_dependencies(data)
         self._add_primary_dependencies(data)
+        self._add_ppa_dependencies(data)
+        self._remove_dependencies(data)
 
         # Issue a notification if anything was changed.
         if len(self.messages) > 0:
