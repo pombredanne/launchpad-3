@@ -24,7 +24,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfs import (
     AsyncLaunchpadTransport, LaunchpadInternalServer, LaunchpadServer,
-    SimpleTransportDispatch, TransportDispatch, UnknownTransportType)
+    BranchTransportDispatch, TransportDispatch, UnknownTransportType)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import FatLocalTransport
@@ -43,14 +43,14 @@ def branch_to_path(branch, add_slash=True):
     return path
 
 
-class TestSimpleTransportDispatch(TestCase):
+class TestBranchTransportDispatch(TestCase):
 
     def setUp(self):
-        super(TestSimpleTransportDispatch, self).setUp()
+        super(TestBranchTransportDispatch, self).setUp()
         memory_server = MemoryServer()
         memory_server.setUp()
         self.base_transport = get_transport(memory_server.get_url())
-        self.factory = SimpleTransportDispatch(self.base_transport)
+        self.factory = BranchTransportDispatch(self.base_transport)
 
     def test_writable_false_ignored(self):
         transport, path = self.factory.makeTransport(

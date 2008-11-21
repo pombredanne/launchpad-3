@@ -161,7 +161,15 @@ class ITransportDispatch(Interface):
         """
 
 
-class SimpleTransportDispatch:
+class BranchTransportDispatch:
+    """Turns BRANCH_TRANSPORT tuples into transports that point to branches.
+
+    This transport dispatch knows how branches are laid out on the disk in a
+    particular "area". It doesn't know anything about the "hosted" or
+    "mirrored" areas.
+
+    This is used directly by our internal services (puller and scanner).
+    """
     implements(ITransportDispatch)
 
     def __init__(self, base_transport):
@@ -185,6 +193,11 @@ class SimpleTransportDispatch:
                 FORBIDDEN_DIRECTORY_ERROR % (segments[0],))
 
     def makeTransport(self, transport_tuple):
+        """See `ITransportDispatch`.
+
+        :raise PermissionDenied: If the path on the branch's transport is
+            forbidden because it's not in ALLOWED_DIRECTORIES.
+        """
         transport_type, data, trailing_path = transport_tuple
         if transport_type != BRANCH_TRANSPORT:
             raise UnknownTransportType(transport_type)
@@ -193,20 +206,26 @@ class SimpleTransportDispatch:
         try:
             ensure_base(transport)
         except TransportNotPossible:
-            # For now, silently ignore TransportNotPossible. This is raised
-            # when transport is read-only. In the future, we probably want to
-            # pass only writable transports in here: not sure.
-            # XXX JonathanLange
+            # Silently ignore TransportNotPossible. This is raised when the
+            # base transport is read-only.
             pass
         return transport, trailing_path
 
 
 class TransportDispatch:
+    """Make transports for hosted, mirrored areas and virtual control dirs.
+
+    This transport dispatch knows about whether a particular branch should be
+    served from the hosted or mirrored area. It also knows how to serve .bzr
+    control directories for products (to enable default stacking).
+
+    This is used for the rich codehosting VFS that we serve publically.
+    """
     implements(ITransportDispatch)
 
     def __init__(self, hosted_transport, mirrored_transport):
-        self._hosted_dispatch = SimpleTransportDispatch(hosted_transport)
-        self._mirrored_dispatch = SimpleTransportDispatch(mirrored_transport)
+        self._hosted_dispatch = BranchTransportDispatch(hosted_transport)
+        self._mirrored_dispatch = BranchTransportDispatch(mirrored_transport)
         self._transport_factories = {
             BRANCH_TRANSPORT: self._makeBranchTransport,
             CONTROL_TRANSPORT: self._makeControlTransport,
@@ -322,7 +341,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         """
         super(LaunchpadInternalServer, self).__init__(
             scheme, authserver, LAUNCHPAD_SERVICES)
-        self._transport_dispatch = SimpleTransportDispatch(branch_transport)
+        self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
