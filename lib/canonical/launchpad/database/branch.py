@@ -1026,10 +1026,12 @@ class BranchSet:
         if uri.scheme in schemes and uri.host == codehosting_host:
             branch = self.getByUniqueName(uri.path.lstrip('/'))
         elif uri.scheme == 'lp':
-            if uri.host not in ('edge', 'production', None):
-                branch = None
-            else:
-                branch = self.getByLPPath(uri.path.lstrip('/'))[0]
+            branch = None
+            if uri.host in ('edge', 'production', None):
+                try:
+                    branch = self.getByLPPath(uri.path.lstrip('/'))[0]
+                except NoSuchBranch:
+                    pass
         else:
             branch = Branch.selectOneBy(url=url)
         if branch is None:

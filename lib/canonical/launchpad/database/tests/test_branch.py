@@ -1096,8 +1096,15 @@ class TestGetByUrl(TestCaseWithFactory):
 
         If a hostname is supplied, it must be "edge" or "production".
         """
-        branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchPersonWithName,
+                          branch_set.getByUrl, 'lp:~aa/b/c')
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertIs(None, branch2)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
         branch2 = branch_set.getByUrl('lp:~aa/b/c')
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
