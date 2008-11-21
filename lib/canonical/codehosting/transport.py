@@ -58,6 +58,8 @@ def get_chrooted_transport(url):
 
 def get_readonly_transport(transport):
     """Wrap `transport` in a readonly transport."""
+    if transport.base.startswith('readonly+'):
+        return transport
     return get_transport('readonly+' + transport.base)
 
 
