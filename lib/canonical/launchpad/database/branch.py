@@ -1080,7 +1080,8 @@ class BranchSet:
                 raise InvalidBranchIdentifier(path)
             owner = owner[1:]
             branch = klass._getByUniqueNameElements(owner, product, name)
-            if branch is None:
+            if (branch is None or
+                not check_permission('launchpad.View', branch)):
                 klass._checkOwnerProduct(owner, product)
                 raise NoSuchBranch(path)
         return branch, suffix

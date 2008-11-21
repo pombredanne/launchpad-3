@@ -14,7 +14,6 @@ import os
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -26,7 +25,6 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
@@ -218,7 +216,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return faults.InvalidBranchIdentifier(path)
         try:
             branch, suffix = getUtility(IBranchSet).getByLPPath(strip_path)
-            branch = removeSecurityProxy(branch)
         except faults.NoSuchBranch:
             return self._getUniqueNameResultDict(strip_path)
         except faults.NoSuchProduct, e:
