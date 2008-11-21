@@ -236,7 +236,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
-    def test_translateBranchPath_hosted(self):
+    def test_translate_branch_path_hosted(self):
         # translateVirtualPath returns a writable transport like that returned
         # by TransportDispatch.makeTransport for branches we can write to.
         branch = self.factory.makeBranch(
@@ -258,7 +258,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
             self.assertEqual(file_data, expected_transport.get_bytes(path))
         return deferred.addCallback(check_branch_transport)
 
-    def test_translateBranchPath_mirrored(self):
+    def test_translate_branch_path_mirrored(self):
         # translateVirtualPath returns a read-only transport for branches we
         # can't write to.
         branch = self.factory.makeBranch(branch_type=BranchType.HOSTED)
@@ -291,9 +291,24 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         return LaunchpadInternalServer(
             'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
 
-    # XXX: Test that translateVirtualPath returns a transport that is a child
-    # of the transport and that the trailing path is correct. OR, test that it
-    # basically returns _makeBranchTransport.
+    def test_translate_branch_path(self):
+        branch = self.factory.makeBranch()
+        dispatch = self.server._transport_dispatch.makeTransport((
+            BRANCH_TRANSPORT, {'id': branch.id, 'writable': True},
+            '.bzr/README'))
+        expected_transport, expected_path = dispatch
+
+        deferred = self.server.translateVirtualPath(
+            '%s/.bzr/README' % (branch.unique_name,))
+        def check_branch_transport((transport, path)):
+            self.assertEqual(expected_path, path)
+            # Can't test for equality of transports, since URLs and object
+            # identity differ.
+            file_data = self.factory.getUniqueString()
+            transport.mkdir(os.path.dirname(path))
+            transport.put_bytes(path, file_data)
+            self.assertEqual(file_data, expected_transport.get_bytes(path))
+        return deferred.addCallback(check_branch_transport)
 
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no
