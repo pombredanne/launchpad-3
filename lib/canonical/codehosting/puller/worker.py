@@ -35,7 +35,7 @@ __all__ = [
     'BadUrlSsh',
     'BranchMirrorer',
     'BranchPolicy',
-    'BranchReferenceLoopError',
+    'BranchLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
@@ -43,7 +43,6 @@ __all__ = [
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
-    'StackingLoopError',
     'URLChecker',
     ]
 
@@ -73,16 +72,13 @@ class BranchReferenceForbidden(Exception):
     """
 
 
-class BranchReferenceLoopError(Exception):
+class BranchLoopError(Exception):
     """Encountered a branch reference cycle.
 
     A branch reference may point to another branch reference, and so on. A
     branch reference cycle is an infinite loop of references.
+    XXX
     """
-
-
-class StackingLoopError(Exception):
-    """Encountered a branch stacking cycle."""
 
 
 class StackedOnBranchNotFound(Exception):
@@ -220,6 +216,10 @@ class BranchPolicy:
         """
         raise NotImplementedError(self.shouldFollowReferences)
 
+    def transformFallbackLocation(self, branch, url):
+        """XXX."""
+        raise NotImplementedError(self.transformFallbackLocation)
+
     def checkOneURL(self, url):
         """Check the safety of the source URL.
 
@@ -254,6 +254,9 @@ class BranchMirrorer(object):
             arguments to log messages in the scheduler, or None, in which case
             log messages are discarded.
         """
+        Branch.hooks.install_named_hook(
+            'transform_fallback_location', self._transformFallbackLocation,
+            'BranchMirrorer._transformFallbackLocation')
         self.policy = policy
         if log is not None:
             self.log = log
@@ -266,8 +269,14 @@ class BranchMirrorer(object):
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
         """
-        self.checkSource(url)
+        self._seen_urls = set()
+        url = self.checkAndFollowBranchReference(url)
         return Branch.open(url)
+
+    def _transformFallbackLocation(self, branch, url):
+        """XXX."""
+        new_url = self.policy.transformFallbackLocation(branch, url)
+        return self.checkAndFollowBranchReference(new_url)
 
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
@@ -277,76 +286,23 @@ class BranchMirrorer(object):
         bzrdir = BzrDir.open(url)
         return bzrdir.get_branch_reference()
 
-    def _iter_references(self, url):
-        """Iterate over branch references starting at 'url'.
-
-        The iterator will include 'url' and keep iterating until a real branch
-        is finally referenced.
-
-        :raise BranchReferenceLoopError: If the branch references form a loop.
+    def checkAndFollowBranchReference(self, url):
+        """
+        :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
             references.
         """
-        traversed_urls = set()
         while True:
-            if url in traversed_urls:
-                raise BranchReferenceLoopError()
-            yield url
-            traversed_urls.add(url)
-            url = self.followReference(url)
-            if url is None:
-                break
+            if url in self._seen_urls:
+                raise BranchLoopError()
+            self.policy.checkOneURL(url)
+            self._seen_urls.add(url)
+            next_url = self.followReference(url)
+            if next_url is None:
+                return url
+            url = next_url
             if not self.policy.shouldFollowReferences():
                 raise BranchReferenceForbidden(url)
-
-    def _iter_stacked_on(self, url):
-        """Iterate over stacked-on branches, starting at 'url'.
-
-        The iterator will start with 'url' and iterate over any branch
-        references it finds until it reaches a real branch. Once it gets
-        there, it yield the stacked-on url (if any), and then check *that* for
-        branch references.
-
-        :raise BranchReferenceLoopError: If the branch references form a loop.
-        :raise BranchReferenceForbidden: If this opener forbids branch
-            references.
-        :raise StackingLoopError: If the stacked branches form a loop.
-        """
-        traversed_urls = set()
-        while True:
-            if url in traversed_urls:
-                raise StackingLoopError()
-            resolved_url = None
-            for url in self._iter_references(url):
-                traversed_urls.add(url)
-                yield url
-                resolved_url = url
-            bzrdir = BzrDir.open(resolved_url)
-            try:
-                url = get_branch_stacked_on_url(bzrdir)
-            except (errors.NotStacked, errors.UnstackableBranchFormat):
-                break
-            # Join here so that we are always yielding an absolute URL -- the
-            # stacked-on url can be relative to the base of the stacked
-            # branch. Doing this lets us use the same check for stacked-on
-            # URLs as we do for branch references.
-            url = urlutils.join(resolved_url, url)
-
-    def checkSource(self, url):
-        """Check `url` is safe to pull a branch from.
-
-        :param url: URL of the location to check.
-        :raise BranchReferenceForbidden: the source location contains a branch
-            reference, and branch references are not allowed for this branch
-            type.
-        :raise BranchReferenceLoopError: the source location contains a branch
-            reference that leads to a reference cycle.
-        :raise BadUrl: `checkOneURL` is expected to raise this or a subclass
-            when it finds a URL it deems to be unsafe.
-        :raise StackingLoopError: If the stacked branches form a loop.
-        """
-        for url in self._iter_stacked_on(url):
-            self.policy.checkOneURL(url)
 
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
