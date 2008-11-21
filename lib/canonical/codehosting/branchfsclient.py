@@ -40,14 +40,14 @@ class BranchFileSystemClient:
     cache the results here.
     """
 
-    def __init__(self, authserver, user_id):
-        """Construct a caching authserver.
+    def __init__(self, branchfs_endpoint, user_id):
+        """Construct a caching branchfs_endpoint.
 
-        :param authserver: An XML-RPC proxy that implements callRemote.
+        :param branchfs_endpoint: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
         """
-        self._authserver = authserver
+        self._branchfs_endpoint = branchfs_endpoint
         self._cache = {}
         self._user_id = user_id
 
@@ -80,22 +80,17 @@ class BranchFileSystemClient:
         raise NotInCache(path)
 
     def createBranch(self, branch_path):
-        """Create a branch on the authserver.
+        """Create a Launchpad `IBranch` in the database.
 
-        This raises any Faults that might be raised by the authserver's
+        This raises any Faults that might be raised by the branchfs_endpoint's
         `createBranch` method, so for more information see
-        `IHostedBranchStorage.createBranch`.
+        `IBranchFileSystem.createBranch`.
 
-        :param owner: The owner of the branch. A string that is the name of a
-            Launchpad `IPerson`.
-        :param product: The project that the branch belongs to. A string that
-            is either '+junk' or the name of a Launchpad `IProduct`.
-        :param branch: The name of the branch to create.
-
+        :param branch_path: The path to the branch to create.
         :return: A `Deferred` that fires the ID of the created branch.
         """
         return defer.maybeDeferred(
-            self._authserver.callRemote, 'createBranch', self._user_id,
+            self._branchfs_endpoint.callRemote, 'createBranch', self._user_id,
             branch_path)
 
     def requestMirror(self, branch_id):
@@ -104,8 +99,8 @@ class BranchFileSystemClient:
         :param branch_id: The database ID of the branch.
         """
         return defer.maybeDeferred(
-            self._authserver.callRemote, 'requestMirror', self._user_id,
-            branch_id)
+            self._branchfs_endpoint.callRemote,
+            'requestMirror', self._user_id, branch_id)
 
     def translatePath(self, path):
         """Translate 'path'."""
@@ -113,8 +108,8 @@ class BranchFileSystemClient:
             return defer.succeed(self._getFromCache(path))
         except NotInCache:
             deferred = defer.maybeDeferred(
-                self._authserver.callRemote, 'translatePath', self._user_id,
-                path)
+                self._branchfs_endpoint.callRemote,
+                'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
 
