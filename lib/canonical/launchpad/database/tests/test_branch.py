@@ -1049,19 +1049,12 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
 
 
 class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
 
     layer = LaunchpadFunctionalLayer
 
-    def make_branch(self):
-        owner = self.factory.makePerson(name='aa')
-        product = self.factory.makeProduct('bb')
-        branch = self.factory.makeBranch(
-            owner=owner, product=product, name='c')
-        series = self.factory.makeSeries(name='dd', product=product,
-                                         user_branch=branch)
-        return branch
-
     def test_getByLPPath_with_three_parts(self):
+        """Test the behaviour with three-part names."""
         branch_set = getUtility(IBranchSet)
         self.assertRaises(
             InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
@@ -1076,6 +1069,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual((branch, None), branch_set.getByLPPath('~aa/bb/c'))
 
     def test_getByLPPath_with_two_parts(self):
+        """Test the behaviour with two-part names."""
         branch_set = getUtility(IBranchSet)
         self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
         product = self.factory.makeProduct('bb')
@@ -1088,6 +1082,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             (series.user_branch, None), branch_set.getByLPPath('bb/dd'))
 
     def test_getByLPPath_with_one_part(self):
+        """Test the behaviour with one names."""
         branch_set = getUtility(IBranchSet)
         self.assertRaises(
             InvalidProductIdentifier, branch_set.getByLPPath, 'b')
@@ -1098,6 +1093,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         product.development_focus.user_branch = branch
         self.assertEqual((branch, None), branch_set.getByLPPath('bb'))
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -1042,21 +1042,6 @@ class BranchSet:
         else:
             return branch
 
-    def _getNonexistentBranch(self, owner_name, project_name):
-        """Return an appropriate response for a non-existent branch.
-
-        :param unique_name: A string of the form "~user/project/branch".
-        :return: A _NonexistentBranch object or a Fault if the user or project
-            do not exist.
-        """
-        owner = getUtility(IPersonSet).getByName(owner_name)
-        if owner is None:
-            raise NoSuchPersonWithName(owner_name)
-        if project_name != '+junk':
-            project = getUtility(IProductSet).getByName(project_name)
-            if project is None:
-                raise NoSuchProduct(project_name)
-
     @staticmethod
     def _getByUniqueNameElements(owner_name, product_name, branch_name):
         if product_name == '+junk':
@@ -1074,7 +1059,8 @@ class BranchSet:
             tables = ['Person', 'Product']
         return Branch.selectOne(query, clauseTables=tables)
 
-    def getByLPPath(self, path):
+    @classmethod
+    def getByLPPath(klass, path):
         """Resolve the path of an lp: URL to a branch and suffix.
 
         :return: (branch, suffix)
@@ -1086,74 +1072,60 @@ class BranchSet:
             suffix = path_segments[3]
         else:
             suffix = None
-        if len(path_segments) == 1:
-            [product_name] = path_segments
-            branch = self._getBranchForProject(product_name)
-        elif len(path_segments) == 2:
-            product_name, series_name = path_segments
-            branch = self._getBranchForSeries(product_name, series_name)
+        if len(path_segments) < 3:
+            branch = klass._getProductBranch(*path_segments)
         else:
             owner, product, name = path_segments[:3]
             if owner[0] != '~':
                 raise InvalidBranchIdentifier(path)
             owner = owner[1:]
-            branch = self._getByUniqueNameElements(owner, product, name)
+            branch = klass._getByUniqueNameElements(owner, product, name)
             if branch is None:
-                self._getNonexistentBranch(owner, product)
+                klass._checkOwnerProduct(owner, product)
                 raise NoSuchBranch(path)
-        if len(path_segments) < 3 and not check_permission(
-            'launchpad.View', branch):
-            if series_name is None:
-                series = self._getProduct(product_name).development_focus
-                series_name = series.name
-            raise NoBranchForSeries(series_name)
         return branch, suffix
 
-
     @staticmethod
-    def _getProduct(product_name):
+    def _getProductBranch(product_name, series_name=None):
+        """Return the branch for a product.
+
+        :param product_name: The name of the branch's product.
+        :param series_name: The name of the branch's series.  If not supplied,
+            the product development focus will be used.
+        :return: The branch.
+        :raise: A subclass of LaunchpadFault.
+        """
         if not valid_name(product_name):
             raise InvalidProductIdentifier(product_name)
         product = getUtility(IProductSet).getByName(product_name)
         if product is None:
             raise NoSuchProduct(product_name)
-        return product
-
-    def _getBranchForProject(self, project_name):
-        """Return the branch for the development focus of the given project.
-
-        :param project_name: The name of a Launchpad project.
-        :return: The Branch object.
-        """
-        project = self._getProduct(project_name)
-        series = project.development_focus
-        return self._getSeriesBranch(series)
-
-    def _getBranchForSeries(self, project_name, series_name):
-        """Return the branch for the given series on the given project.
-
-        :param project_name: The name of a Launchpad project.
-        :param series_name: The name of a series on that project.
-        :return: The branch for that series or a Fault if the project or the
-            series do not exist.
-        """
-        project = self._getProduct(project_name)
-        series = project.getSeries(series_name)
-        if series is None:
-            raise NoSuchSeries(series_name, project)
-        return self._getSeriesBranch(series)
-
-    def _getSeriesBranch(self, series):
-        """Return the branch for the given series.
-
-        :return: The branch for the given series
-        :raise: faults.NoBranchForSeries if there is no such branch, or if the
-            branch is invisible to the user.
-        """
+        if series_name is None:
+            series = product.development_focus
+        else:
+            series = product.getSeries(series_name)
+            if series is None:
+                raise NoSuchSeries(series_name, product)
         branch = series.series_branch
         if (branch is None or not check_permission('launchpad.View', branch)):
             raise NoBranchForSeries(series)
         return branch
+
+    @classmethod
+    def _checkOwnerProduct(klass, owner_name, product_name):
+        """Return an appropriate response for a non-existent branch.
+
+        :param unique_name: A string of the form "~user/project/branch".
+        :return: A _NonexistentBranch object or a Fault if the user or project
+            do not exist.
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        if owner is None:
+            raise NoSuchPersonWithName(owner_name)
+        if product_name != '+junk':
+            project = getUtility(IProductSet).getByName(product_name)
+            if project is None:
+                raise NoSuchProduct(product_name)
 
     def getRewriteMap(self):
         """See `IBranchSet`."""
