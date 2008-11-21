@@ -1,5 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+# XXX: Gavin Panella 2008-11-21 bug=300725: This module need
+# refactoring and/or splitting into a package or packages.
+
 """Event handlers that send email notifications."""
 
 __metaclass__ = type
