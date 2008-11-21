@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'BlockingProxy',
     'CachingAuthserverClient',
+    'NotInCache',
     'trap_fault',
     ]
 
@@ -23,6 +24,10 @@ class BlockingProxy:
 
     def callRemote(self, method_name, *args):
         return getattr(self._proxy, method_name)(*args)
+
+
+class NotInCache(Exception):
+    """Raised when we try to get a path from the cache that's not present."""
 
 
 class CachingAuthserverClient:
@@ -45,9 +50,30 @@ class CachingAuthserverClient:
             requests. An integer.
         """
         self._authserver = authserver
-        self._branch_info_cache = {}
-        self._stacked_branch_cache = {}
+        self._cache = {}
         self._user_id = user_id
+
+    def _getMatchedPart(self, path, transport_tuple):
+        """Return the part of 'path' that the endpoint actually matched."""
+        trailing_length = len(transport_tuple[2])
+        if trailing_length == 0:
+            matched_part = path
+        else:
+            matched_part = path[:-trailing_length]
+        return matched_part.rstrip('/')
+
+    def _addToCache(self, transport_tuple, path):
+        (transport_type, data, trailing_path) = transport_tuple
+        matched_part = self._getMatchedPart(path, transport_tuple)
+        self._cache[matched_part] = (transport_type, data)
+        return transport_tuple
+
+    def _getFromCache(self, path):
+        for object_path, (transport_type, data) in self._cache.iteritems():
+            if path.startswith(object_path):
+                trailing_path = path[len(object_path):].lstrip('/')
+                return (transport_type, data, trailing_path)
+        raise NotInCache(path)
 
     def createBranch(self, branch_path):
         """Create a branch on the authserver.
@@ -68,19 +94,6 @@ class CachingAuthserverClient:
             self._authserver.callRemote, 'createBranch', self._user_id,
             branch_path)
 
-    def getDefaultStackedOnBranch(self, product):
-        branch_name = self._stacked_branch_cache.get(product)
-        if branch_name is not None:
-            return defer.succeed(branch_name)
-
-        deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getDefaultStackedOnBranch',
-            self._user_id, product)
-        def add_to_cache(branch_name):
-            self._stacked_branch_cache[product] = branch_name
-            return branch_name
-        return deferred.addCallback(add_to_cache)
-
     def requestMirror(self, branch_id):
         """Mark a branch as needing to be mirrored.
 
@@ -92,8 +105,15 @@ class CachingAuthserverClient:
 
     def translatePath(self, path):
         """Translate 'path'."""
-        return defer.maybeDeferred(
-            self._authserver.callRemote, 'translatePath', self._user_id, path)
+        try:
+            return defer.succeed(self._getFromCache(path))
+        except NotInCache:
+            deferred = defer.maybeDeferred(
+                self._authserver.callRemote, 'translatePath', self._user_id,
+                path)
+            deferred.addCallback(self._addToCache, path)
+            return deferred
+
 
 
 def trap_fault(failure, *fault_codes):

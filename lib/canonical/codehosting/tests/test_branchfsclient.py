@@ -11,7 +11,7 @@ from twisted.trial.unittest import TestCase
 from twisted.web.xmlrpc import Fault
 
 from canonical.codehosting.branchfsclient import (
-    CachingAuthserverClient, trap_fault)
+    CachingAuthserverClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 
@@ -34,6 +34,87 @@ class TestCachingAuthserverClient(TestCase):
             self.assertEqual,
             (BRANCH_TRANSPORT, dict(id=branch.id, writable=False), ''))
         return deferred
+
+    def test_get_matched_part(self):
+        # We cache results based on the part of the URL that the server
+        # matched. _getMatchedPart returns that part, based on the path given
+        # and the returned data.
+        branch = self.factory.makeBranch()
+        requested_path = '/%s/a/b' % branch.unique_name
+        matched_part = self.client._getMatchedPart(
+            requested_path,
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'a/b'))
+        self.assertEqual('/%s' % branch.unique_name, matched_part)
+
+    def test_get_matched_part_no_trailing_slash(self):
+        branch = self.factory.makeBranch()
+        requested_path = '/%s' % branch.unique_name
+        matched_part = self.client._getMatchedPart(
+            requested_path,
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''))
+        self.assertEqual('/%s' % branch.unique_name, matched_part)
+
+    def test_get_matched_part_no_trailing_path(self):
+        branch = self.factory.makeBranch()
+        requested_path = '/%s/' % branch.unique_name
+        matched_part = self.client._getMatchedPart(
+            requested_path,
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''))
+        self.assertEqual('/%s' % branch.unique_name, matched_part)
+
+    def test_path_translation_cache(self):
+        # We can retrieve data that we've added to the cache. The data we
+        # retrieve looks an awful lot like the data that the endpoint sends.
+        branch = self.factory.makeBranch()
+        fake_data = self.factory.getUniqueString()
+        self.client._addToCache(
+            (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
+        result = self.client._getFromCache('/%s/foo/bar' % branch.unique_name)
+        transport_type, data, trailing_path = result
+        self.assertEqual(BRANCH_TRANSPORT, transport_type)
+        self.assertEqual(fake_data, data)
+        self.assertEqual('foo/bar', trailing_path)
+
+    def test_not_in_cache(self):
+        # _getFromCache raises an error when the given path isn't in the
+        # cache.
+        self.assertRaises(
+            NotInCache, self.client._getFromCache, "foo")
+
+    def test_translatePath_retrieves_from_cache(self):
+        branch = self.factory.makeBranch()
+        # We'll store fake data in the cache to show that we get data from
+        # the cache if it's present.
+        fake_data = self.factory.getUniqueString()
+        self.client._addToCache(
+            (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
+        requested_path = '/%s/foo/bar' % branch.unique_name
+        deferred = self.client.translatePath(requested_path)
+        def path_translated((transport_type, data, trailing_path)):
+            self.assertEqual(BRANCH_TRANSPORT, transport_type)
+            self.assertEqual(fake_data, data)
+            self.assertEqual('foo/bar', trailing_path)
+        return deferred.addCallback(path_translated)
+
+    def test_translatePath_adds_to_cache(self):
+        branch = self.factory.makeBranch()
+        deferred = self.client.translatePath('/' + branch.unique_name)
+        deferred.addCallback(
+            self.assertEqual,
+            self.client._getFromCache('/' + branch.unique_name))
+        return deferred
+
+    def test_errors_not_cached(self):
+        # Don't cache failed translations. What would be the point?
+        deferred = self.client.translatePath('/foo/bar/baz')
+        def translated_successfully(result):
+            self.fail(
+                "Translated successfully. Expected error, got %r" % result)
+        def failed_translation(failure):
+            self.assertRaises(
+                NotInCache, self.client._getFromCache, '/foo/bar/baz')
+        return deferred.addCallbacks(
+            translated_successfully, failed_translation)
 
 
 class TestTrapFault(TestCase):
