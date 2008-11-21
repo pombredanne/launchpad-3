@@ -70,10 +70,8 @@ class TestBranchFileSystemClient(TestCase):
         self.client._addToCache(
             (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
         result = self.client._getFromCache('/%s/foo/bar' % branch.unique_name)
-        transport_type, data, trailing_path = result
-        self.assertEqual(BRANCH_TRANSPORT, transport_type)
-        self.assertEqual(fake_data, data)
-        self.assertEqual('foo/bar', trailing_path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
 
     def test_not_in_cache(self):
         # _getFromCache raises an error when the given path isn't in the
