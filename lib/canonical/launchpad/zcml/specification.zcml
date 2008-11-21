@@ -175,9 +175,13 @@
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
     <browser:widget
-      field="whiteboard"
+      field="summary"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="10" />
     <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
@@ -195,7 +199,7 @@
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
+      height="15" />
   </browser:editform>
 
   <browser:editform
@@ -329,7 +333,7 @@
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-dependency.pt"
     />
 
@@ -341,7 +345,7 @@
     label="Remove a dependency"
     fields="dependency"
     keyword_arguments="dependency"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
   </browser:generalform>
 

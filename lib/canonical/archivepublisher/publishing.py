@@ -251,6 +251,11 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.serieses:
             for pocket, suffix in pocketsuffix.items():
+                if self.canModifySuite(distroseries, pocket):
+                    # We don't want to mark release pockets dirty in a
+                    # stable distroseries, no matter what other bugs
+                    # that precede here have dirtied it.
+                    continue
                 clauses = [base_query]
                 clauses.append("pocket = %s" % sqlvalues(pocket))
                 clauses.append("distroseries = %s" % sqlvalues(distroseries))
@@ -450,6 +455,12 @@ class Publisher(object):
             self.apt_handler.requestReleaseFile(
                 suite_name, component.name, arch_name)
 
+    def canModifySuite(self, distroseries, pocket):
+        """Return True if the distroseries is stable and pocket is release."""
+        return (not distroseries.isUnstable() and
+                not self.archive.allowUpdatesToReleasePocket() and
+                pocket == PackagePublishingPocket.RELEASE)
+
     def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
         """Last check before publishing a dirty suite.
 
@@ -457,9 +468,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if (not distroseries.isUnstable() and
-            not self.archive.allowUpdatesToReleasePocket
-            and pocket == PackagePublishingPocket.RELEASE):
+        if self.canModifySuite(distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 

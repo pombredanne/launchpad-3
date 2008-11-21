@@ -352,9 +352,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
-                                set_state=None, dependent_branch=None):
+                                set_state=None, dependent_branch=None,
+                                product=None):
         """Create a proposal to merge based on anonymous branches."""
-        product = _DEFAULT
+        if not product:
+            product = _DEFAULT
         if dependent_branch is not None:
             product = dependent_branch.product
         if target_branch is None:
@@ -460,7 +462,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
-        branch.updateScannedDetails(parent.revision_id, sequence)
+        branch.updateScannedDetails(parent, sequence)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
@@ -961,7 +963,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         owner = getUtility(IPersonSet).getByName(owner_name)
         display_name = SPACE.join(
             word.capitalize() for word in team_name.split('-'))
-        team = self.makeTeam(owner, displayname=display_name, name=team_name)
+        team = getUtility(IPersonSet).getByName(team_name)
+        if team is None:
+            team = self.makeTeam(
+                owner, displayname=display_name, name=team_name)
         # Any member of the mailing-list-experts team can review a list
         # registration.  It doesn't matter which one.
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
@@ -982,4 +987,3 @@ class LaunchpadObjectFactory(ObjectFactory):
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
             msg_id = make_msgid('launchpad')
         return msg_id
-
