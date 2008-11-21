@@ -94,6 +94,15 @@ def _check_translation_perms(permission, translators, person):
     return False
 
 
+def _person_has_not_licensed_translations(person):
+    """Whether a person has not agreed to BSD license for their translations.
+    """
+    if (person.translations_relicensing_agreement is not None and
+        person.translations_relicensing_agreement is False):
+        return True
+    else:
+        return False
+
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
@@ -127,6 +136,11 @@ def _can_edit_translations(pofile, person):
         if person.inTeam(product.owner):
             return True
 
+    # If a person has decided not to license their translations under BSD
+    # license they can't edit translations.
+    if _person_has_not_licensed_translations(person):
+        return False
+
     # Finally, check whether the user is member of the translation team or
     # owner for the given PO file.
     translators = [t.translator for t in pofile.translators]
@@ -145,6 +159,12 @@ def _can_add_suggestions(pofile, person):
     """
     if person is None:
         return False
+
+    # If a person has decided not to license their translations under BSD
+    # license they can't edit translations.
+    if _person_has_not_licensed_translations(person):
+        return False
+
     if _can_edit_translations(pofile, person):
         return True
 
@@ -425,11 +445,14 @@ class POFile(SQLBase, POFileMixIn):
             return u','.join(emails)
         elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
+            SPACE = u' '
             if text is not None:
+                if text == u'':
+                    text = SPACE
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
             # Contributions' header; see bug #133817 for details.
-            names.extend([u'',
+            names.extend([SPACE,
                           u'Launchpad Contributions:'])
             names.extend([
                 contributor.displayname

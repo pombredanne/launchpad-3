@@ -21,12 +21,30 @@
       <td tal:content="context/status/title" />
     </tr>
     <tr>
-      <th>Source packages:</th>
-      <td tal:content="context/sourcecount" />
+      <tal:define define="sourcecount context/sourcecount">
+        <tal:sources condition="sourcecount">
+          <th>Source packages:</th>
+          <td tal:content="context/sourcecount" />
+        </tal:sources>
+        <tal:no_sources condition="not: sourcecount">
+          <td colspan=2>
+            No sources imported or published.
+          </td>
+        </tal:no_sources>
+      </tal:define>
     </tr>
     <tr>
-      <th>Binary packages:</th>
-      <td tal:content="context/binarycount" />
+      <tal:define define="binarycount context/binarycount">
+        <tal:binaries condition="binarycount">
+          <th>Binary packages:</th>
+          <td tal:content="context/binarycount" />
+        </tal:binaries>
+        <tal:no_binaries condition="not: binarycount">
+          <td colspan=2>
+            No binaries imported or published.
+          </td>
+        </tal:no_binaries>
+      </tal:define>
     </tr>
     <tr tal:condition="context/parent_series">
       <th>Derives from:</th>

@@ -10,12 +10,12 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
-    Link)
+    action, canonical_url, enabled_with_permission, ContextMenu,
+    GetitemNavigation, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 
@@ -84,24 +84,17 @@ class DistroArchSeriesBinariesView:
         return BatchNavigator(binary_packages, self.request)
 
 
-class DistroArchSeriesAddView(SQLObjectAddView):
+class DistroArchSeriesAddView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
+    schema = IDistroArchSeries
+    field_names = ['architecturetag', 'processorfamily', 'official',
+                   'supports_virtualized']
+    label = _('Create a port')
 
-    def create(self, architecturetag, processorfamily, official, owner,
-               supports_virtualized):
+    @action(_('Continue'), name='continue')
+    def create_action(self, action, data):
         """Create a new Port."""
         distroarchseries = self.context.newArch(
-            architecturetag, processorfamily, official, owner,
-            supports_virtualized)
-        self._nextURL = canonical_url(distroarchseries)
-        return distroarchseries
-
-    def nextURL(self):
-        return self._nextURL
-
-
+            data['architecturetag'], data['processorfamily'],
+            data['official'], self.user, data['supports_virtualized'])
+        self.next_url = canonical_url(distroarchseries)

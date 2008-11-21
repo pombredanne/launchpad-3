@@ -389,14 +389,21 @@ class StoreSelector:
     classProvides(IStoreSelector)
 
     @staticmethod
+    def getDefaultFlavor():
+        """Return the DEFAULT_FLAVOR for the current thread."""
+        return getattr(_local, 'default_store_flavor', DEFAULT_FLAVOR)
+
+    @staticmethod
     def setDefaultFlavor(flavor):
         """Change what the DEFAULT_FLAVOR is for the current thread."""
-        assert flavor != DEFAULT_FLAVOR, "Can't set DEFAULT to DEFAULT"
         _local.default_store_flavor = flavor
 
     @staticmethod
     def get(name, flavor):
-        """See IStoreSelector."""
+        """See `IStoreSelector`."""
         if flavor == DEFAULT_FLAVOR:
-            flavor = getattr(_local, 'default_store_flavor', MASTER_FLAVOR)
+            flavor = StoreSelector.getDefaultFlavor()
+            if flavor == DEFAULT_FLAVOR:
+                # None set, use MASTER by default.
+                flavor = MASTER_FLAVOR
         return getUtility(IZStorm).get('%s-%s' % (name, flavor))
