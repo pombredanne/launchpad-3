@@ -1,0 +1,15 @@
+    >>> from zope.component import getUtility, getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+    >>> from canonical.launchpad.browser import TranslationImportQueueEntryView
+    >>> from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> setFirstLayer(request, TranslationsLayer)
+    >>> queue = getUtility(ITranslationImportQueue)
+    >>> entry = queue[1]
+    >>> entry.path
+    u'po/evolution-2.2-test.pot'
+    >>> view = getMultiAdapter((entry, request), name='+index')
+    >>> isinstance(view, TranslationImportQueueEntryView)
+    True

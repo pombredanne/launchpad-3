@@ -121,6 +121,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Execute default initialisation.
         LaunchpadFormView.initialize(self)
 
+# XXX: HenningEggers 2008-11-21 bug=300608: This code is too generic to be in
+#      the view and should be factored out. 
     def _checkProductOrPackage(self, obj):
         """Check if the given object is linked to the same productseries
         or sourcepackage as the context.
@@ -212,7 +214,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if name is None:
             self.setFieldError('name', 'Please specify a name for '
                                'the template.')
-        if not valid_name(name):
+        elif not valid_name(name):
             self.setFieldError('name', 'Please specify a valid name for '
                                'the template. Names must be all lower '
                                'case and start with a letter or number.')

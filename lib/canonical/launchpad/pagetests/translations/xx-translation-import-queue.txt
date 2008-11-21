@@ -124,21 +124,20 @@ Now, we attach a new file to an already existing translation resource.
   ...     print tag.renderContents()
   Thank you for your upload. The file content will be imported soon...
 
-The import queue should have two additional entries with the last upload as
+The import queue should have three additional entries with the last upload as
 the last entry.
 
   >>> anon_browser.open('http://translations.launchpad.dev/+imports')
-  >>> content = find_main_content(anon_browser.contents)
-  >>> nav_index = content.find('td', attrs={'class':"batch-navigation-index"})
-  >>> nav_index.findAll('strong')
-  [<strong>1</strong>, <strong>5</strong>]
-  >>> table = content.find('table', id="import-entries-list")
+  >>> nav_index = first_tag_by_class(anon_browser.contents,
+  ...     'batch-navigation-index')
+  >>> print extract_text(nav_index)
+  1 &rarr; 5 of 5 results
+  >>> table = find_tag_by_id(anon_browser.contents, 'import-entries-list')
   >>> last_row = table.findAll('tr')[10]
-  >>> a_tags = last_row.findAll('a')
-  >>> print a_tags[0].string
-  evolution.pot
-  >>> print a_tags[1].string
+  >>> print extract_text(last_row)
+  evolution.pot in
   evolution in Ubuntu Hoary
+  Needs Review
 
 Open the edit form for the third entry.
 
@@ -155,8 +154,7 @@ names for the template are rejected.
   >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports/3/+index
-  >>> content = find_main_content(browser.contents)
-  >>> message = content.find('div', attrs={'class':"message"})
+  >>> message = find_tags_by_class(browser.contents, 'message')[1]
   >>> print message.string
   Please specify a valid name...
 
@@ -181,30 +179,23 @@ And provide information for this IPOFile to be newly created.
   >>> print browser.url
   http://translations.launchpad.dev/+imports
 
-And we get that entry approved and with a place where it will be imported
+And we get the enties approved and with a place where they will be imported.
 
   >>> anon_browser.open('http://translations.launchpad.dev/+imports')
-  >>> content = find_main_content(anon_browser.contents)
-  >>> nav_index = content.find('td', attrs={'class':"batch-navigation-index"})
-  >>> nav_index.findAll('strong')
-  [<strong>1</strong>, <strong>5</strong>]
-  >>> table = content.find('table', id="import-entries-list")
-  >>> rows = table.findAll('tr')
-  >>> a_tags = rows[0].findAll('a')
-  >>> print a_tags[0].string
-  pkgconf-mozilla.pot
-  >>> print a_tags[1].string
+  >>> imports_table = find_tag_by_id(
+  ...     anon_browser.contents, 'import-entries-list')
+  >>> print extract_text(imports_table)
+  pkgconf-mozilla.pot in
   Mozilla Firefox Series: 1.0
-  >>> print rows[0].findAll('td')[2].string
   Approved
-  >>> a_tags = rows[3].findAll('a')
-  >>> print a_tags[0].string
-  po/es.po
-  >>> print a_tags[1].string
+  ...
+  Template "pkgconf-mozilla" in Mozilla Firefox 1.0
+  po/es.po in
   Mozilla Firefox Series: 1.0
-  >>> print rows[3].findAll('td')[2].string
   Approved
-
+  ...    
+  Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0
+  ...
 
 Removing from the import queue
 ------------------------------
