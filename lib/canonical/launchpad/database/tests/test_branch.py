@@ -40,6 +40,9 @@ from canonical.launchpad.database.specificationbranch import (
     )
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -1078,6 +1081,53 @@ class TestGetByUrl(TestCaseWithFactory):
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
+
+
+class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getByLPPath_with_three_parts(self):
+        """Test the behaviour with three-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
+        self.assertRaises(
+            NoSuchPersonWithName, branch_set.getByLPPath, '~aa/bb/c')
+        owner = self.factory.makePerson(name='aa')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        self.assertEqual((branch, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_two_parts(self):
+        """Test the behaviour with two-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
+        series = self.factory.makeSeries(name='dd', product=product)
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
+        series.user_branch = self.factory.makeBranch()
+        branch_set.getByLPPath('bb/dd')
+        self.assertEqual(
+            (series.user_branch, None), branch_set.getByLPPath('bb/dd'))
+
+    def test_getByLPPath_with_one_part(self):
+        """Test the behaviour with one names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
+        # We are not testing the security proxy here, so remove it.
+        product = removeSecurityProxy(self.factory.makeProduct('bb'))
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
+        branch = self.factory.makeBranch()
+        product.development_focus.user_branch = branch
+        self.assertEqual((branch, None), branch_set.getByLPPath('bb'))
 
 
 def test_suite():
