@@ -16,6 +16,8 @@ from cStringIO import StringIO
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
+from storm.locals import SQL, Join
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -36,6 +38,8 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
@@ -1087,22 +1091,45 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-        package_caches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND
-            archive IN %s AND
+
+        store = Store.of(self)
+        find_spec = (
+            DistroSeriesPackageCache,
+            BinaryPackageName,
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            )
+        origin = [
+            DistroSeriesPackageCache,
+            Join(
+                BinaryPackageName,
+                DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id
+                )
+            ]
+        package_caches = store.using(*origin).find(
+            find_spec,
+            """DistroSeriesPackageCache.distroseries = %s AND
+            DistroSeriesPackageCache.archive IN %s AND
             (fti @@ ftq(%s) OR
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=['binarypackagename'],
-            distinct=True)
-        return [DistroSeriesBinaryPackage(
-            distroseries=self,
-            binarypackagename=cache.binarypackagename, cache=cache)
-            for cache in package_caches]
+                   quote(text), quote_like(text))
+            ).config(distinct=True)
+
+        ranked_package_caches = package_caches.order_by('rank DESC')
+
+        # Create a function that will decorate the results, converting
+        # them from the find_spec above into a DSBP:
+        def result_to_dsbp((cache, binary_package_name, rank)):
+            return DistroSeriesBinaryPackage(
+                distroseries=cache.distroseries,
+                binarypackagename=binary_package_name,
+                cache=cache)
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSBPs
+        return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):

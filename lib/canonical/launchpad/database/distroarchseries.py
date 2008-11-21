@@ -12,6 +12,8 @@ from zope.component import getUtility
 
 from sqlobject import (
     BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
+from storm.locals import SQL, Join
+from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
@@ -24,6 +26,8 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
 from canonical.launchpad.validators.person import validate_public_person
@@ -144,33 +148,58 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
+        store = Store.of(self)
+        origin = [
+            BinaryPackageRelease,
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.binarypackagerelease ==
+                    BinaryPackageRelease.id
+                ),
+            Join(
+                BinaryPackageName,
+                BinaryPackageRelease.binarypackagename ==
+                    BinaryPackageName.id
+                )
+            ]
+        find_spec = (
+            BinaryPackageRelease,
+            BinaryPackageName,
+            SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" % 
+                sqlvalues(text))
+            )
         archives = self.distroseries.distribution.getArchiveIDList()
-        bprs = BinaryPackageRelease.select("""
+        result = store.using(*origin).find(
+            find_spec,
+            """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.dateremoved is NULL AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
             """ % (quote(self), quote(archives),
-                   quote(text), quote_like(text)),
-            selectAlso="""
-                rank(BinaryPackageRelease.fti, ftq(%s))
-                AS rank""" % sqlvalues(text),
-            clauseTables=['BinaryPackagePublishingHistory',
-                          'BinaryPackageName'],
-            prejoinClauseTables=["BinaryPackageName"],
-            orderBy=['-rank', 'BinaryPackageName.name'],
-            distinct=True)
+                   quote(text), quote_like(text))
+            ).config(distinct=True)
+
+        result = result.order_by("rank DESC, BinaryPackageName.name")
+
         # import here to avoid circular import problems
         from canonical.launchpad.database import (
             DistroArchSeriesBinaryPackageRelease)
-        return [DistroArchSeriesBinaryPackageRelease(
-                    distroarchseries=self,
-                    binarypackagerelease=bpr) for bpr in bprs]
+
+        # Create a function that will decorate the results, converting
+        # them from the find_spec above into DASBPRs:
+        def result_to_dasbpr(
+            (binary_package_release, binary_package_name, rank)
+            ):
+            return DistroArchSeriesBinaryPackageRelease(
+                distroarchseries=self,
+                binarypackagerelease=binary_package_release
+                )
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSPs
+        return DecoratedResultSet(result, result_to_dasbpr)
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""

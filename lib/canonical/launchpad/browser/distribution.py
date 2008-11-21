@@ -557,7 +557,7 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
         self.search_requested = True
 
         results = self.search_results()
-        self.matches = len(results)
+        self.matches = results.count()
         if self.matches > 5:
             self.detailed = False
         else:

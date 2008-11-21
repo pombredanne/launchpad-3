@@ -63,7 +63,7 @@ class DistroArchSeriesBinariesView:
         if self.text:
             self.searchrequested = True
             results = self.searchresults()
-            self.matches = len(results)
+            self.matches = results.count()
             if self.matches > 5:
                 self.detailed = False
             else:
