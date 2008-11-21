@@ -27,7 +27,7 @@ examples that follow:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet,
+    ...     IBugDelta, IBugSet, IPersonSet, IBugTaskSet,
     ...     ICve, IEmailAddressSet)
     >>> from canonical.launchpad.components.bug import BugDelta
 
@@ -289,7 +289,7 @@ As you might expect, get_bug_edit_notification_texts handles generating the
 text representations of the changes when a bug task is edited.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugTaskDelta, IBugTaskSet)
+    ...     BugTaskStatus, IBugTaskSet)
     >>> from canonical.launchpad.database.bugtask import BugTaskDelta
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
@@ -419,7 +419,7 @@ We can also add a bugwatch while adding a new bugtask.
 
 Adding a CVE will generate a notification that looks as follows:
 
-    >>> from canonical.launchpad.interfaces import CveStatus, IBugCve
+    >>> from canonical.launchpad.interfaces import CveStatus
 
     >>> class MockCVE:
     ...     implements(ICve)
