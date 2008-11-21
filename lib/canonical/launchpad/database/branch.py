@@ -1025,6 +1025,11 @@ class BranchSet:
         codehosting_host = URI(config.codehosting.supermirror_root).host
         if uri.scheme in schemes and uri.host == codehosting_host:
             branch = self.getByUniqueName(uri.path.lstrip('/'))
+        elif uri.scheme == 'lp':
+            if uri.host not in ('edge', 'production', None):
+                branch = None
+            else:
+                branch = self.getByLPPath(uri.path.lstrip('/'))[0]
         else:
             branch = Branch.selectOneBy(url=url)
         if branch is None:

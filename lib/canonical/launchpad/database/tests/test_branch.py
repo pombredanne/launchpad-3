@@ -1082,6 +1082,20 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
 
+    def test_getByURL_with_lp(self):
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
 
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
