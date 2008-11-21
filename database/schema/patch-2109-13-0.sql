@@ -4,9 +4,7 @@ SET client_min_messages=ERROR;
 
 -- Refer to a source package with the pair (DistroSeries, SourcePackageName)
 ALTER TABLE Branch
-    ADD COLUMN distroseries int REFERENCES DistroSeries(id);
-
-ALTER TABLE Branch
+    ADD COLUMN distroseries int REFERENCES DistroSeries(id),
     ADD COLUMN sourcepackagename int REFERENCES SourcePackageName(id);
 
 -- A Branch can either be a product branch, a personal branch (i.e. +junk) or
@@ -37,20 +35,21 @@ ALTER TABLE Branch
 --       are easy to search for.
 
 DROP INDEX branch_name_owner_product_key;
+-- Redundant? Drop next cycle - need to confirm not used for weird joins.
+-- DROP INDEX branch__product__id__idx;
 
-CREATE UNIQUE INDEX branch_name_owner_product_key
-    ON Branch(name, owner, (COALESCE(product, (-1))))
-    WHERE distroseries IS NULL;
+CREATE UNIQUE INDEX branch__product__owner__name__key
+    ON Branch(product, owner, name)
+    WHERE product IS NOT NULL;
 
+CREATE UNIQUE INDEX branch__owner__name__key
+    ON Branch(owner, name)
+    WHERE product IS NULL AND distroseries IS NULL;
 
--- I guess we need to index:
---     - this pair
---     - the "unique name": owner, distribution, sourcepackagename, name
-
-CREATE UNIQUE INDEX branch__distroseries__sourcepackagename__key
-    ON Branch(name, owner, distroseries, sourcepackagename)
+-- Also used for foreign key lookups when modifying DistroSeries
+CREATE UNIQUE INDEX branch__ds__spn__owner__name__key
+    ON Branch(distroseries, sourcepackagename, owner, name)
     WHERE distroseries IS NOT NULL;
-
 
 -- Link /ubuntu/<suite>/<package> to a branch.
 CREATE TABLE SeriesSourcePackageBranch (
@@ -62,11 +61,11 @@ CREATE TABLE SeriesSourcePackageBranch (
     registrant integer NOT NULL REFERENCES Person(id),
     date_created timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    CONSTRAINT branchsourcepackageseries__branch__distroseries__pocket__key
-        UNIQUE (branch, distroseries, pocket, sourcepackagename)
+    CONSTRAINT branchsourcepackageseries__ds__spn__pocket__branch__key
+        UNIQUE (distroseries, sourcepackagename, pocket, branch)
 );
 
-CREATE INDEX seriessourcepackagebranch__branch
+CREATE INDEX seriessourcepackagebranch__branch__idx
     ON SeriesSourcePackageBranch(branch);
 
 -- For person merge.
