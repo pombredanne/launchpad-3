@@ -31,15 +31,13 @@ class NotInCache(Exception):
 
 
 class BranchFileSystemClient:
-    """Wrapper for the authserver that caches responses for a particular user.
+    """Wrapper for the branch filesystem endpoint for a particular user.
 
-    This only wraps the methods that are used for serving branches via a
-    Bazaar transport: createBranch, requestMirror and translatePath.
-
-    In the normal course of operation, our Bazaar transport translates from
-    "virtual branch identifier" (currently '~owner/product/name') to a branch
-    ID. It does this many, many times for a single Bazaar operation. Thus, it
-    makes sense to cache results from the authserver.
+    This wrapper caches the results of calls to translatePath in order to
+    avoid a large number of roundtrips. In the normal course of operation, our
+    Bazaar transport translates virtual paths to real paths on disk using this
+    client. It does this many, many times for a single Bazaar operation, so we
+    cache the results here.
     """
 
     def __init__(self, authserver, user_id):
@@ -63,12 +61,18 @@ class BranchFileSystemClient:
         return matched_part.rstrip('/')
 
     def _addToCache(self, transport_tuple, path):
+        """Cache the given 'transport_tuple' results for 'path'.
+
+        :return: the 'transport_tuple' as given, so we can use this as a
+            callback.
+        """
         (transport_type, data, trailing_path) = transport_tuple
         matched_part = self._getMatchedPart(path, transport_tuple)
         self._cache[matched_part] = (transport_type, data)
         return transport_tuple
 
     def _getFromCache(self, path):
+        """Get the cached 'transport_tuple' for 'path'."""
         for object_path, (transport_type, data) in self._cache.iteritems():
             if path.startswith(object_path):
                 trailing_path = path[len(object_path):].lstrip('/')
