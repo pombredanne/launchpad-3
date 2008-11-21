@@ -1070,7 +1070,8 @@ class TestGetByUrl(TestCaseWithFactory):
         """getByUrl recognizes LP branches for bzr+ssh URLs."""
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
-        branch2 = branch_set.getByUrl('bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        branch2 = branch_set.getByUrl(
+            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_sftp(self):
