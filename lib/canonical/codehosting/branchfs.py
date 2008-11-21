@@ -119,8 +119,8 @@ def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
     authserver = BlockingProxy(proxy)
-    branch_transport = get_transport(
-        'readonly+' + config.supermirror.warehouse_root_url)
+    branch_transport = get_readonly_transport(
+        get_transport(config.supermirror.warehouse_root_url))
     return LaunchpadInternalServer(
         'lp-mirrored:///', authserver, branch_transport)
 
@@ -245,7 +245,7 @@ class TransportDispatch:
         transport, ignored = dispatch.makeTransport(
             (BRANCH_TRANSPORT, dict(id=id), trailing_path))
         if not writable:
-            transport = get_transport('readonly+' + transport.base)
+            transport = get_readonly_transport(transport)
         return transport
 
     def _makeControlTransport(self, default_stack_on, trailing_path=None):
@@ -269,7 +269,7 @@ class TransportDispatch:
         format = BzrDirFormat.get_default_format()
         bzrdir = format.initialize_on_transport(transport)
         bzrdir.get_config().set_default_stack_on(unescape(default_stack_on))
-        return get_transport('readonly+' + transport.base)
+        return get_readonly_transport(transport)
 
 
 class _BaseLaunchpadServer(AsyncVirtualServer):
@@ -442,7 +442,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
-        mirror_transport = get_transport('readonly+' + mirror_transport.base)
+        mirror_transport = get_readonly_transport(mirror_transport)
         self._transport_dispatch = TransportDispatch(
             hosted_transport, mirror_transport)
 
