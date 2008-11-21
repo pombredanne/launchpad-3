@@ -221,15 +221,24 @@ class BugNotificationBuilder:
             self.common_headers.append(
                 ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
 
-        # Add X-Launchpad-Bug-Private and -Bug-Security-Vulnerability
-        # headers. These are simple yes/no values denoting privacy and
-        # security for the bug.
-        self.common_headers.append(
-            ('X-Launchpad-Bug-Private', (
-                    bug.private and 'yes' or 'no')))
-        self.common_headers.append(
-            ('X-Launchpad-Bug-Security-Vulnerability', (
-                    bug.security_related and 'yes' or 'no')))
+        # Add the X-Launchpad-Bug-Private header. This is a simple
+        # yes/no value denoting privacy for the bug.
+        if bug.private:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'no'))
+
+        # Add the X-Launchpad-Bug-Security-Vulnerability header to
+        # denote security for this bug. This follows the same form as
+        # the -Bug-Private header.
+        if bug.security_related:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'no'))
 
         # Add the -Bug-Commenters header, a space-separated list of
         # distinct IDs of people who have commented on the bug. The
@@ -240,7 +249,7 @@ class BugNotificationBuilder:
 
     def build(self, from_address, to_address, body, subject, email_date,
               rationale=None, references=None, message_id=None):
-        """Constructs the notification.
+        """Construct the notification.
 
         :param from_address: The From address of the notification.
         :param to_address: The To address for the notification.

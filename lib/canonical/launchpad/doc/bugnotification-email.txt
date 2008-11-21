@@ -572,10 +572,10 @@ from the bug so that they are not calculated for every recipient.
     X-Launchpad-Bug-Security-Vulnerability: yes
     X-Launchpad-Bug-Commenters: name12
 
-The method accepts a number of parameters and returns an instance of
-email.MIMEText. The most basic invokation of this method requires a bug,
-a from address, a to address, a body, a subject and a sending date for
-the mail.
+The build() method of a builder accepts a number of parameters and
+returns an instance of email.MIMEText. The most basic invokation of
+this method requires a from address, a to address, a body, a subject
+and a sending date for the mail.
 
     >>> from datetime import datetime
     >>> import pytz
@@ -607,7 +607,7 @@ and passed to <builder>.build().
     >>> print notification_email.get_payload()
     A test body.
 
-BugNotificationBuilder() also accepts parameters for rationale,
+The <builder>.build() method also accepts parameters for rationale,
 references and message_id.
 
     >>> notification_email = bug_four_notification_builder.build(
@@ -633,11 +633,6 @@ will be auto-generated if it is not supplied.
 
     >>> print notification_email['Message-Id']
     <67890@launchpad.net>
-
-The X-Launchpad-Bug-Commenters header is always calculated.
-
-    >>> print notification_email['X-Launchpad-Bug-Commenters']
-    name12
 
 The message subject will always have [Bug <bug_id>] prepended to it.
 
