@@ -1053,36 +1053,48 @@ class TestGetByUrl(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def makeBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
         return self.factory.makeBranch(
             owner=owner, product=product, name='c')
 
     def test_getByUrl_with_http(self):
+        """getByUrl recognizes LP branches for http URLs."""
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_ssh(self):
+        """getByUrl recognizes LP branches for bzr+ssh URLs."""
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_sftp(self):
+        """getByUrl recognizes LP branches for sftp URLs."""
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrl_with_ftp(self):
+        """getByUrl does not recognize LP branches for ftp URLs.
+
+        This is because Launchpad doesn't currently support ftp.
+        """
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
 
     def test_getByURL_with_lp(self):
+        """lp: URLs are supported, with and without a hostname.
+
+        If a hostname is supplied, it must be "edge" or "production".
+        """
         branch = self.makeBranch()
         branch_set = getUtility(IBranchSet)
         branch2 = branch_set.getByUrl('lp:~aa/b/c')
