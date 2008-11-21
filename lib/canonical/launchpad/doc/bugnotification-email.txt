@@ -552,11 +552,25 @@ of the bug itself.
 
 == Construction of bug notification emails ==
 
-mailnotification.py contains a function, construct_bug_notification(),
-which is used to construct bug notification emails.
+mailnotification.py contains a class, BugNotificationBuilder, which is
+used to construct bug notification emails.
 
     >>> from canonical.launchpad.mailnotification import (
-    ...     construct_bug_notification)
+    ...     BugNotificationBuilder)
+
+When instantiatiated it derives a list of common unchanging headers
+from the bug so that they are not calculated for every recipient.
+
+    >>> bug_four_notification_builder = BugNotificationBuilder(bug_four)
+    >>> for header in bug_four_notification_builder.common_headers:
+    ...     print ': '.join(header)
+    Reply-To: Bug 4 <4@bugs.launchpad.net>
+    Sender: bounces@canonical.com
+    X-Launchpad-Bug: product=firefox; ...; assignee=None;
+    X-Launchpad-Bug-Tags: bar foo
+    X-Launchpad-Bug-Private: yes
+    X-Launchpad-Bug-Security-Vulnerability: yes
+    X-Launchpad-Bug-Commenters: name12
 
 The method accepts a number of parameters and returns an instance of
 email.MIMEText. The most basic invokation of this method requires a bug,
@@ -570,12 +584,13 @@ the mail.
     >>> sending_date = datetime(
     ...     2008, 5, 20, 10, 5, 47, tzinfo=pytz.timezone('Europe/Prague'))
 
-    >>> notification_email = construct_bug_notification(
-    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    >>> notification_email = bug_four_notification_builder.build(
+    ...     from_address, 'foo.bar@canonical.com',
     ...     "A test body.", "A test subject.", sending_date)
 
-The fields of the generated notification email will be set according to
-the parameters that were passed to construct_bug_notification().
+The fields of the generated notification email will be set according
+to the parameters that were used to instantiate BugNotificationBuilder
+and passed to <builder>.build().
 
     >>> print notification_email['From']
     Launchpad Bug Tracker <4@bugs.launchpad.net>
@@ -592,15 +607,15 @@ the parameters that were passed to construct_bug_notification().
     >>> print notification_email.get_payload()
     A test body.
 
-construct_bug_notification() also accepts parameters for
-rationale_header, references and msgid.
+BugNotificationBuilder() also accepts parameters for rationale_header,
+references and message_id.
 
-    >>> notification_email = construct_bug_notification(
-    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    >>> notification_email = bug_four_notification_builder.build(
+    ...     from_address, 'foo.bar@canonical.com',
     ...     "A test body.", "A test subject.", sending_date,
     ...     rationale_header='Because-I-said-so',
     ...     references=['<12345@launchpad.net>'],
-    ...     msgid='<67890@launchpad.net>')
+    ...     message_id='<67890@launchpad.net>')
 
 The rationale_header parameter is used to set the
 X-Launchpad-Message-Rationale header.
@@ -613,8 +628,8 @@ The references parameter sets the the References header of the email.
     >>> print notification_email['References']
     <12345@launchpad.net>
 
-And the msgid parameter is used to set the Message-Id header. It will be
-auto-generated if it is not supplied.
+And the message_id parameter is used to set the Message-Id header. It
+will be auto-generated if it is not supplied.
 
     >>> print notification_email['Message-Id']
     <67890@launchpad.net>
@@ -626,8 +641,8 @@ The X-Launchpad-Bug-Commenters header is always calculated.
 
 The message subject will always have [Bug <bug_id>] prepended to it.
 
-    >>> notification_email = construct_bug_notification(
-    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    >>> notification_email = bug_four_notification_builder.build(
+    ...     from_address, 'foo.bar@canonical.com',
     ...     "A test body.", "Yet another message", sending_date)
 
     >>> print notification_email['Subject']
@@ -636,8 +651,8 @@ The message subject will always have [Bug <bug_id>] prepended to it.
 If the subject passed is None the email subject will be set to [Bug
 <bug_id>].
 
-    >>> notification_email = construct_bug_notification(
-    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    >>> notification_email = bug_four_notification_builder.build(
+    ...     from_address, 'foo.bar@canonical.com',
     ...     "A test body.", None, sending_date)
 
     >>> print notification_email['Subject']

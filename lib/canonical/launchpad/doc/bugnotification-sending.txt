@@ -1001,6 +1001,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: test@canonical.com
     Reply-To: Bug 2 <2@bugs.launchpad.net>
+    ...
     References: foo@example.com-332342--1231
     ...
     X-Launchpad-Message-Rationale: Assignee
@@ -1018,6 +1019,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
@@ -1035,6 +1037,7 @@ makes it write out the emails it sends.
     From: Sample Person <test@canonical.com>
     To: foo.bar@canonical.com
     Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
     References: sdsdfsfd
     ...
     X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
