@@ -67,7 +67,7 @@ from zope.interface import implements, Interface
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.branchfsclient import (
-    BlockingProxy, CachingAuthserverClient, trap_fault)
+    BlockingProxy, BranchFileSystemClient, trap_fault)
 from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
@@ -298,7 +298,7 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
             branches.
         """
         AsyncVirtualServer.__init__(self, scheme)
-        self._authserver = CachingAuthserverClient(authserver, user_id)
+        self._authserver = BranchFileSystemClient(authserver, user_id)
         self._is_set_up = False
 
     def translateVirtualPath(self, virtual_url_fragment):

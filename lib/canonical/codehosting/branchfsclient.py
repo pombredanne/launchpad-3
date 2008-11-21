@@ -8,7 +8,7 @@ This code talks to the internal XML-RPC server for the branch filesystem.
 __metaclass__ = type
 __all__ = [
     'BlockingProxy',
-    'CachingAuthserverClient',
+    'BranchFileSystemClient',
     'NotInCache',
     'trap_fault',
     ]
@@ -30,7 +30,7 @@ class NotInCache(Exception):
     """Raised when we try to get a path from the cache that's not present."""
 
 
-class CachingAuthserverClient:
+class BranchFileSystemClient:
     """Wrapper for the authserver that caches responses for a particular user.
 
     This only wraps the methods that are used for serving branches via a

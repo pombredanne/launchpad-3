@@ -11,20 +11,20 @@ from twisted.trial.unittest import TestCase
 from twisted.web.xmlrpc import Fault
 
 from canonical.codehosting.branchfsclient import (
-    CachingAuthserverClient, NotInCache, trap_fault)
+    BranchFileSystemClient, NotInCache, trap_fault)
 from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
 
 
-class TestCachingAuthserverClient(TestCase):
-    """Tests for `CachingAuthserverClient`."""
+class TestBranchFileSystemClient(TestCase):
+    """Tests for `BranchFileSystemClient`."""
 
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.user = self.factory.makePerson()
         self._xmlrpc_client = XMLRPCWrapper(frontend.getFilesystemEndpoint())
-        self.client = CachingAuthserverClient(
+        self.client = BranchFileSystemClient(
             self._xmlrpc_client, self.user.id)
 
     def test_translatePath(self):
