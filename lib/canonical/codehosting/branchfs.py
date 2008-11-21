@@ -118,11 +118,11 @@ def is_lock_directory(absolute_path):
 def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
+    branchfs_endpoint = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.supermirror.warehouse_root_url))
     return LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, branch_transport)
+        'lp-mirrored:///', branchfs_endpoint, branch_transport)
 
 
 def get_puller_server():
@@ -133,16 +133,16 @@ def get_puller_server():
     area and is read/write.
     """
     proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    authserver = BlockingProxy(proxy)
-    hosted_transport = get_readonly_transport(
-        get_chrooted_transport(config.codehosting.branches_root))
+    branchfs_endpoint = BlockingProxy(proxy)
+    hosted_transport = get_chrooted_transport(
+        config.codehosting.branches_root)
     mirrored_transport = get_chrooted_transport(
         config.supermirror.branchesdest)
     hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', authserver,
+        'lp-hosted:///', branchfs_endpoint,
         get_readonly_transport(hosted_transport))
     mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, mirrored_transport)
+        'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
 
 
@@ -392,9 +392,9 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # products and people from the VFS.
         virtual_url_fragment = self._abspath(relpath)
         path_segments = virtual_url_fragment.lstrip('/').split('/')
-        # XXX: JonathanLange 2008-11-19: This code assumes stuff about the
-        # VFS! We need to figure out the best way to delegate the decision
-        # about permission-to-delete to the XML-RPC server.
+        # XXX: JonathanLange 2008-11-19 bug=300551: This code assumes stuff
+        # about the VFS! We need to figure out the best way to delegate the
+        # decision about permission-to-delete to the XML-RPC server.
         if len(path_segments) <= 3:
             return defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment)))
