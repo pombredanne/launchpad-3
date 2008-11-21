@@ -1287,6 +1287,25 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
+    def _checkConflict(self, conflict_source):
+        """Whether a given PackageUploadSource conflict with the context.
+
+        :param conflict_source: a `PackageUploadSource` to be checked
+            against this context.
+        :return: True if the checked `PackageUploadSource` contains a
+            `SourcePackageRelease` with the same name and version.
+             Otherwise, False is returned.
+        """
+        conflict_release = conflict_source.sourcepackagerelease
+        proposed_name = self.sourcepackagerelease.name
+        proposed_version = self.sourcepackagerelease.version
+
+        if (conflict_release.name == proposed_name and
+            conflict_release.version == proposed_version):
+            return True
+
+        return False
+
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
@@ -1298,15 +1317,25 @@ class PackageUploadSource(SQLBase):
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
                 exact_match=True)
-            if uploads.count() > 0:
+            # Isolate conflicting PackageUploadSources.
+            conflict_candidates = [
+                upload.sources[0] for upload in uploads
+                if len(list(upload.sources)) > 0]
+            # Isolate only conflicting SourcePackageRelease.
+            conflicts = [
+                source for source in conflict_candidates
+                if self._checkConflict(source)]
+            # If there are any conflicting SourcePackageRelease the
+            # upload cannot be accepted.
+            if len(conflicts) > 0:
                 raise QueueInconsistentStateError(
                     "The source %s is already accepted in %s/%s and you "
                     "cannot upload the same version within the same "
                     "distribution. You have to modify the source version "
                     "and re-upload." % (
-                    self.sourcepackagerelease.title,
-                    distroseries.distribution.name,
-                    distroseries.name))
+                        self.sourcepackagerelease.title,
+                        distroseries.distribution.name,
+                        distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
