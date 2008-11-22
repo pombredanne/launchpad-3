@@ -65,6 +65,60 @@ we only have 3 PPAs in sampledata they are all presented.
 Nothing suitable in the sampledata, check the end of this document for
 further tests.
 
+== Other distributions PPAs ==
+
+Currently we only support PPAs for ubuntu, although the '+ppas' page
+is presented for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("PPAs").click()
+    >>> print anon_browser.title
+    Debian GNU/Linux Personal Package Archives
+
+Those pages present coherent data for a distribution with no PPAs.
+
+PPA supported architectures reflects what we have in sampledata.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    PPA supported series
+    3.1 "Sarge" - frozen
+    3.0 "Woody" - current
+      i386 (official)
+
+Archive and package counter are empty.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
+    Statistics
+    0 registered PPAs
+    0 active PPAs
+    0 published sources
+    0 published binaries
+
+No recent uploads.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
+    Latest uploads
+
+No most-active PPAs list.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    Most active
+    PPAs with the highest number of uploads in the last 7 days.
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> for ppa_row in find_tags_by_class(
+    ...     anon_browser.contents, 'ppa_batch_row'):
+    ...     print extract_text(ppa_row)
+
+Let's get back to the Ubuntu PPAs page for the next tests.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("PPAs").click()
+
 
 == Searching PPAs ==
 

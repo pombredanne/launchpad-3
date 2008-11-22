@@ -685,11 +685,17 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    number_of_ppa_sources = Attribute(
-        'Number of published sources in public PPAs.')
+    def getNumberOfPPASourcesForDistribution(distribution):
+        """Return the number of sources for PPAs in a given distribution.
 
-    number_of_ppa_binaries = Attribute(
-        'Number of published binaries in public PPAs.')
+        Only public and published sources are considered.
+        """
+
+    def getNumberOfPPABinariesForDistribution(distribution):
+        """Return the number of binaries for PPAs in a given distribution.
+
+        Only public and published sources are considered.
+        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
