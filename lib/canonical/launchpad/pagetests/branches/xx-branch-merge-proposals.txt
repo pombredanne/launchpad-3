@@ -70,9 +70,8 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Proposed merge of Klingon support in GNOME Terminal into
-      GNOME Terminal Mainline
-
+    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+      lp://dev/~name12/gnome-terminal/main
 
 == Landing Targets ==
 
@@ -297,6 +296,25 @@ Only the last request is listed, showing the last review type.
                                                  Request another review
 
 
+== Commenting on a Merge Proposal ==
+
+Merge proposal comments should be converted to html in the case of referenced
+bugs and urls.
+
+    >>> sample_browser.getLink('[Review]').click()
+    >>> sample_browser.getControl('Comment').value = 'This fixes bug #1'
+    >>> sample_browser.getControl('Save Review').click()
+    >>> comment = find_tag_by_id(sample_browser.contents, 'comment1')
+    >>> print comment.find('div',
+    ...     {'class': 'boardCommentBody codereviewcomment'}).contents[1]
+    <p>This fixes
+    <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></p>
+
+
+Consume notification.
+
+    >>> [_unused] = pop_notifications()
+
 == Marking as merged ==
 
 When a branch has been merged into the target branch, the proposal should
@@ -342,8 +360,8 @@ An email notification is also created.
 
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Proposed merge of Klingon support in GNOME Terminal into GNOME Terminal
-    Mainline updated
+    Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
+      lp://dev/~name12/gnome-terminal/main updated
     >>> print notification.get_payload(decode=True)
     The proposal to merge lp://dev/~name12/gnome-terminal/klingon
     into lp://dev/~name12/gnome-terminal/main
@@ -437,11 +455,11 @@ new proposal has been created.
     >>> # The order of notifications appears to be non-deterministic
     >>> subjects.sort()
     >>> print subjects[0]
-    Proposed merge of ~name12/gnome-terminal/scanned into
-      GNOME Terminal Mainline
+    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+      lp://dev/~name12/gnome-terminal/main
     >>> print subjects[1]
-    Proposed merge of ~name12/gnome-terminal/scanned into
-       GNOME Terminal Mainline updated
+    Proposed merge of lp://dev/~name12/gnome-terminal/scanned into
+      lp://dev/~name12/gnome-terminal/main updated
 
 The new merge proposal is created as needs review, and there is
 a link back to the superseded proposal.

@@ -11,6 +11,12 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import (
+    IDistroArchSeriesBinaryPackageRelease)
+from canonical.launchpad.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease)
+
+from canonical.lazr.fields import Reference
 
 class IDistroSeriesBinaryPackage(Interface):
     """A binary package in a distroseries."""
@@ -34,3 +40,15 @@ class IDistroSeriesBinaryPackage(Interface):
 
     current_publishings = Attribute("The BinaryPackagePublishing records "
         "for this binary package name in this distroseries.")
+
+    last_published = Reference(
+        IDistroArchSeriesBinaryPackageRelease,
+        title=_("The most recently published BinaryPackageRelease for this "
+                "binary package in this distroseries."))
+
+    last_sourcepackagerelease = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("The DistroSeriesSourcePackageRelease that was used to "
+                "generate the most recently published binary package "
+                "release"))
+
