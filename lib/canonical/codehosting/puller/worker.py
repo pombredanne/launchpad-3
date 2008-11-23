@@ -217,6 +217,7 @@ class BranchPolicy:
 
     def transformFallbackLocation(self, branch, url):
         """XXX."""
+        return urlutils.join(branch.base, url)
         return url
         raise NotImplementedError(self.transformFallbackLocation)
 
