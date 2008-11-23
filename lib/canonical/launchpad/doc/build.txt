@@ -979,18 +979,40 @@ Likewise when logged in as cprov:
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
 
+A user who is a buildd admin is not allowed to see the build records for
+private builds. Even though they are admin, privacy must be maintained.
+
+    >>> person = LaunchpadObjectFactory().makePerson()
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName('launchpad-buildd-admins')
+    >>> buildd_admins.addMember(person, person)
+    >>> login(person.preferredemail.email)
+    >>> bob_builds = bob.getBuildRecords(user=admin)
+
+Define a helper function to catch the security exception:
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> def print_builds_with_exception(builds):
+    ...     try:
+    ...         print_build_details(bob_builds)
+    ...     except Unauthorized:
+    ...         print "Generated Unauthorized exception as expected"
+    ...     else:
+    ...         print "FAIL: should raise Unauthorized exception"
+
+And try to access the builds:
+
+    >>> print_builds_with_exception(bob_builds)
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    Generated Unauthorized exception as expected
+
 When logged in as anonymous this will generate a securtity exception
 when accessing the builds:
 
-    >>> from zope.security.interfaces import Unauthorized
     >>> login(ANONYMOUS)
     >>> bob_builds = bob.getBuildRecords(user=admin)
-    >>> try:
-    ...     print_build_details(bob_builds)
-    ... except Unauthorized:
-    ...     print "Generated Unauthorized exception as expected"
-    ... else:
-    ...     print "FAIL: should raise Unauthorized exception"
+    >>> print_builds_with_exception(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected

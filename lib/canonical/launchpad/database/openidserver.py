@@ -238,14 +238,22 @@ class OpenIDRPSummarySet:
     """A set of OpenID RP Summaries."""
     implements(IOpenIDRPSummarySet)
 
-    def getByIdentifier(self, identifier):
-        """See `IOpenIDRPSummarySet`.
-
-        :raise AssertionError: If the identifier is used by more than
-            one account.
-        """
-        return OpenIDRPSummary.selectBy(
-            openid_identifier=identifier, orderBy='id')
+    def getByIdentifier(self, identifier, only_unknown_trust_roots=False):
+        """See `IOpenIDRPSummarySet`."""
+        # XXX: flacoste 2008-11-17 bug=274774: Normalize the trust_root
+        # in OpenIDRPSummary.
+        if only_unknown_trust_roots:
+            result = OpenIDRPSummary.select("""
+            CASE
+                WHEN OpenIDRPSummary.trust_root LIKE '%%/'
+                THEN OpenIDRPSummary.trust_root
+                ELSE OpenIDRPSummary.trust_root || '/'
+            END NOT IN (SELECT trust_root FROM OpenIdRPConfig)
+            AND openid_identifier = %s
+                """ % sqlvalues(identifier))
+        else:
+            result = OpenIDRPSummary.selectBy(openid_identifier=identifier)
+        return result.orderBy('id')
 
     def _assert_identifier_is_not_reused(self, account, identifier):
         """Assert no other account in the summaries has the identifier."""
