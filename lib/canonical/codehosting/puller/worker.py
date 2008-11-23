@@ -258,7 +258,6 @@ class BranchMirrorer(object):
         Branch.hooks.install_named_hook(
             'transform_fallback_location', self.transformFallbackLocationHook,
             'BranchMirrorer.transformFallbackLocationHook')
-        self._seen_urls = set()
         self.policy = policy
         self.protocol = protocol
         if log is not None:
@@ -272,6 +271,7 @@ class BranchMirrorer(object):
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
         """
+        self._seen_urls = set()
         url = self.checkAndFollowBranchReference(url)
         return Branch.open(url)
 

@@ -216,7 +216,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
     def testRaisesStackedOnBranchNotFoundRemirror(self):
-        # If the stacked-on branch cannot be found in the mirrored area on an
+        # If the stacked-on branch cannot be in found the mirrored area on an
         # update, then raise StackedOnBranchNotFound. This will ensure the
         # puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
@@ -325,6 +325,7 @@ class TestBranchMirrorerCheckSource(TestCase):
                          unsafe_urls=None):
         policy = BlacklistPolicy(should_follow_references, unsafe_urls)
         opener = self.StubbedBranchMirrorer(references, policy)
+        opener._seen_urls = set()
         return opener
 
     def testCheckInitialURL(self):
