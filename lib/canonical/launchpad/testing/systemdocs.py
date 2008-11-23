@@ -172,8 +172,13 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 
 
 def create_initialized_view(context, name, form=None, layer=None,
-                            server_url=None, method='GET', principal=None):
+                            server_url=None, method=None, principal=None):
     """Return a view that has already been initialized."""
+    if method is None:
+        if form is None:
+            method = 'GET'
+        else:
+            method = 'POST'
     view = create_view(
         context, name, form, layer, server_url, method, principal)
     view.initialize()
