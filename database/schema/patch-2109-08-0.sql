@@ -5,9 +5,9 @@ ALTER TABLE OpenIdRpConfig
   
 UPDATE OpenIdRpConfig SET can_query_any_team = TRUE
 WHERE (
-        trust_root LIKE 'https://%.canonical.com'
+        trust_root LIKE 'https://%.canonical.com%'
         OR trust_root = 'https://www.ubuntuone.com/'
-        OR trust_root LIKE 'https://%.launchpad.net'
+        OR trust_root LIKE 'https://%.launchpad.net%'
     )
     AND trust_root NOT LIKE  '%shop%';
 
