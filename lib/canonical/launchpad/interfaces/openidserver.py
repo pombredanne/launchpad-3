@@ -191,10 +191,12 @@ class IOpenIDRPSummary(Interface):
 class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
 
-    def getByIdentifier(identifier):
+    def getByIdentifier(identifier, only_unknown_trust_roots=False):
         """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
+        :param only_unknown_trust_roots: if True, only records for trust roots
+            which there is no IOpenIDRPConfig entry will be returned.
         :return: An iterator of IOpenIDRPSummary objects.
         """
 
