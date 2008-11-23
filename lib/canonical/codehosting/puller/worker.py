@@ -276,9 +276,6 @@ class BranchMirrorer(object):
 
     def transformFallbackLocationHook(self, branch, url):
         """XXX."""
-        if url in self._seen_urls:
-            raise BranchLoopError()
-        self._seen_urls.add(url)
         new_url = self.policy.transformFallbackLocation(branch, url)
         return self.checkAndFollowBranchReference(new_url)
 

@@ -403,10 +403,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         opener = self.makeBranchMirrorer(
             [stacked_branch.base, stacked_on_branch.base])
         # This doesn't raise an exception.
-        self.assertEquals(
-            stacked_on_branch.base,
-            opener.transformFallbackLocationHook(
-                stacked_branch, stacked_on_branch.base))
+        opener.open(stacked_branch.base)
 
     def testUnstackableRepository(self):
         # checkSource treats branches with UnstackableRepositoryFormats as
@@ -415,7 +412,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
             'unstacked', BzrBranchFormat7(), RepositoryFormatKnitPack1())
         opener = self.makeBranchMirrorer([branch.base])
         # This doesn't raise an exception.
-        opener.checkSource(branch.base)
+        opener.open(branch.base)
 
     def testAllowedRelativeURL(self):
         # checkSource passes on absolute urls to checkOneURL, even if the
@@ -429,7 +426,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         # absolute URL.
         self.assertNotEqual('../base-branch', stacked_on_branch.base)
         # This doesn't raise an exception.
-        opener.checkSource(stacked_branch.base)
+        opener.open(stacked_branch.base)
 
     def testAllowedRelativeNested(self):
         # Relative URLs are resolved relative to the stacked branch.
@@ -441,7 +438,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         c.set_stacked_on_url('../../b')
         opener = self.makeBranchMirrorer([c.base, b.base, a.base])
         # This doesn't raise an exception.
-        opener.checkSource(c.base)
+        opener.open(c.base)
 
     def testForbiddenURL(self):
         # checkSource raises a BadUrl exception if a branch is stacked on a
@@ -450,7 +447,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         stacked_branch = self.make_branch('stacked-branch', format='1.6')
         stacked_branch.set_stacked_on_url(stacked_on_branch.base)
         opener = self.makeBranchMirrorer([stacked_branch.base])
-        self.assertRaises(BadUrl, opener.checkSource, stacked_branch.base)
+        self.assertRaises(BadUrl, opener.open, stacked_branch.base)
 
     def testForbiddenURLNested(self):
         # checkSource raises a BadUrl exception if a branch is stacked on a
@@ -461,7 +458,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         c = self.make_branch('c', format='1.6')
         c.set_stacked_on_url(b.base)
         opener = self.makeBranchMirrorer([c.base, b.base])
-        self.assertRaises(BadUrl, opener.checkSource, c.base)
+        self.assertRaises(BadUrl, opener.open, c.base)
 
     def testSelfStackedBranch(self):
         # checkSource raises StackingLoopError if a branch is stacked on
@@ -469,7 +466,7 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         a = self.make_branch('a', format='1.6')
         a.set_stacked_on_url(a.base)
         opener = self.makeBranchMirrorer([a.base])
-        self.assertRaises(BranchLoopError, opener.checkSource, a.base)
+        self.assertRaises(BranchLoopError, opener.open, a.base)
 
     def testLoopStackedBranch(self):
         # checkSource raises StackingLoopError if a branch is stacked in such
@@ -480,8 +477,8 @@ class TestBranchMirrorerStacking(TestCaseWithTransport):
         a.set_stacked_on_url(b.base)
         b.set_stacked_on_url(a.base)
         opener = self.makeBranchMirrorer([a.base, b.base])
-        self.assertRaises(BranchLoopError, opener.checkSource, a.base)
-        self.assertRaises(BranchLoopError, opener.checkSource, b.base)
+        self.assertRaises(BranchLoopError, opener.open, a.base)
+        self.assertRaises(BranchLoopError, opener.open, b.base)
 
 
 class TestReferenceMirroring(TestCaseWithTransport):
