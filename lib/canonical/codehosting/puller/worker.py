@@ -255,7 +255,6 @@ class BranchMirrorer(object):
             arguments to log messages in the scheduler, or None, in which case
             log messages are discarded.
         """
-        self._seen_urls = set()
         self.policy = policy
         self.protocol = protocol
         if log is not None:
