@@ -11,7 +11,6 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -22,6 +21,8 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -1956,6 +1957,10 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
 
 
 class InvalidName(Exception):
