@@ -9,7 +9,7 @@ import shutil
 from StringIO import StringIO
 
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.urlutils import local_path_from_url
+from bzrlib import urlutils
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
@@ -35,6 +35,9 @@ class BlacklistPolicy(BranchPolicy):
         if url in self._unsafe_urls:
             raise BadUrl(url)
 
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url)
+
 
 class AcceptAnythingPolicy(BlacklistPolicy):
     """Accept anything, to make testing easier."""
@@ -57,6 +60,9 @@ class WhitelistPolicy(BranchPolicy):
     def checkOneURL(self, url):
         if url.rstrip('/') not in self.allowed_urls:
             raise BadUrl(url)
+
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url)
 
 
 class PullerWorkerMixin:
@@ -126,7 +132,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             tree.commit('rev1')
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path],
+             urlutils.local_path_from_url(tree.branch.base), hosted_path],
             retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)

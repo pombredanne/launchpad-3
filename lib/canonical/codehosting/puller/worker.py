@@ -217,8 +217,6 @@ class BranchPolicy:
 
     def transformFallbackLocation(self, branch, url):
         """XXX."""
-        return urlutils.join(branch.base, url)
-        return url
         raise NotImplementedError(self.transformFallbackLocation)
 
     def checkOneURL(self, url):
@@ -276,7 +274,11 @@ class BranchMirrorer(object):
             url = self.checkAndFollowBranchReference(url)
             return Branch.open(url)
         finally:
-            Branch.hooks['transform_fallback_location'] = []
+            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
+            # to remove a hook.  The linked bug report asks for an API to do
+            # it.
+            Branch.hooks['transform_fallback_location'].remove(
+                self.transformFallbackLocationHook)
 
     def transformFallbackLocationHook(self, branch, url):
         """XXX."""
@@ -293,6 +295,8 @@ class BranchMirrorer(object):
 
     def checkAndFollowBranchReference(self, url):
         """
+        XXX
+
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
             references.
@@ -432,6 +436,34 @@ class HostedBranchPolicy(BranchPolicy):
         """
         return False
 
+    def _bzrdirExists(self, url):
+        try:
+            BzrDir.open(url)
+        except errors.NotBranchError:
+            return False
+        else:
+            return True
+
+    def _adjustPathURL(self, url):
+        hosted_url = 'lp-hosted://' + url
+        if self._bzrdirExists(hosted_url):
+            return hosted_url
+        mirrored_url = 'lp-mirror://' + url
+        if self._bzrdirExists(mirrored_url):
+            return mirrored_url
+        raise StackedOnBranchNotFound()
+
+    def transformFallbackLocation(self, branch, url):
+        """XXX."""
+        if url.startswith('/'):
+            return self._adjustPathURL(url)
+        uri = URI(url)
+        launchpad_domain = config.vhost.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            return self._adjustPathURL(uri.path)
+        else:
+            raise BranchLoopError('argh')
+
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
 
@@ -480,6 +512,10 @@ class MirroredBranchPolicy(BranchPolicy):
         """
         return True
 
+    def transformFallbackLocation(self, branch, url):
+        """XXX."""
+        return urlutils.join(branch.base, url)
+
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
 
@@ -514,6 +550,11 @@ class ImportedBranchPolicy(BranchPolicy):
         code-import system should never produce branch references.
         """
         return False
+
+    def transformFallbackLocation(self, branch, url):
+        """XXX."""
+        # Shouldn't be stacking here!
+        raise AssertionError("")
 
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
