@@ -38,13 +38,5 @@
 
 </div>
 
-<metal:block fill-slot="help">
-
-  <p>Launchpad is integrated with the <a
-    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
-    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
-
-</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
-
 </body>
 </html>

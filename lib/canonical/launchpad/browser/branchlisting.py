@@ -69,7 +69,7 @@ class BranchListingItem(BranchBadges):
 
     @property
     def bzr_identity(self):
-        """We have the product series, so don't issue the query again."""
+        """Produce the bzr identity from our known associated series."""
         return bazaar_identity(
             self.context, self.associated_product_series,
             self.is_development_focus)

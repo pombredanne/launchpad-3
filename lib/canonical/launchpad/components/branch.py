@@ -6,7 +6,6 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.config import config
 from canonical.launchpad.components import ObjectDelta
 from canonical.launchpad.interfaces import IBranchDelta, IBranchMergeProposal
 from canonical.launchpad.webapp import snapshot
