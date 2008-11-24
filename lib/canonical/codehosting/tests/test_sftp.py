@@ -20,11 +20,10 @@ from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.config import config
-from canonical.codehosting.branchfsclient import BlockingProxy
+from canonical.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from canonical.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
 from canonical.codehosting.sshserver import LaunchpadAvatar
-from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 
@@ -77,18 +76,27 @@ class TestSFTPAdapter(TrialTestCase):
 
     layer = TwistedLayer
 
+    def setUp(self):
+        TrialTestCase.setUp(self)
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.branchfs_endpoint = XMLRPCWrapper(
+            frontend.getFilesystemEndpoint())
+
     def makeLaunchpadAvatar(self):
-        fake_launchpad = FakeLaunchpad()
-        user_dict = fake_launchpad.getUser(1)
-        branchfs_proxy = BlockingProxy(fake_launchpad)
-        return LaunchpadAvatar(user_dict, branchfs_proxy)
+        user = self.factory.makePerson()
+        user_dict = dict(id=user.id, name=user.name)
+        return LaunchpadAvatar(user_dict, self.branchfs_endpoint)
 
     def test_canAdaptToSFTPServer(self):
-        server = ISFTPServer(self.makeLaunchpadAvatar())
+        avatar = self.makeLaunchpadAvatar()
+        server = ISFTPServer(avatar)
         self.assertIsInstance(server, TransportSFTPServer)
+        product = self.factory.makeProduct()
+        branch_name = self.factory.getUniqueString()
         deferred = server.makeDirectory(
-            '~testuser/firefox/baz/.bzr', {'permissions': 0777})
-        self.addCleanup(shutil.rmtree, config.codehosting.branches_root)
+            '~%s/%s/%s' % (avatar.username, product.name, branch_name),
+            {'permissions': 0777})
         return deferred
 
 

@@ -48,10 +48,11 @@ def main():
 
     for instance in ['main_master', 'main_slave']:
         pidfile = os.path.join(
-            config.canonical.pid_dir, 'lpslon_%s.pid' % instance)
+            config.canonical.pid_dir, 'lpslon_%s_%s.pid' % (
+                instance, config.instance_name))
         logfile = os.path.join(
             config.root, 'database', 'replication',
-            'lpslon_%s.log' % instance)
+            'lpslon_%s_%s.log' % (instance, config.instance_name))
         connection_string = ConnectionString(
             getattr(config.database, instance))
         connection_string.user = 'slony'
@@ -64,7 +65,7 @@ def main():
             if options.lag is not None:
                 slon_args = "%s -l '%s'" % (slon_args, options.lag)
             cmd = [
-                "start-stop-daemon",
+                "/sbin/start-stop-daemon",
                 "--start",
                 "--background",
                 "--pidfile", pidfile,
@@ -83,7 +84,7 @@ def main():
             log.info("Stopping %s slon daemon." % instance)
             log.debug("PID file %s" % pidfile)
             cmd = [
-                "start-stop-daemon",
+                "/sbin/start-stop-daemon",
                 "--stop",
                 "--pidfile", pidfile,
                 "--oknodo"]

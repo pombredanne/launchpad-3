@@ -126,6 +126,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
             <iframe style="display: none"
                     id="popup_iframe_%s"
+                    src="javascript:void(0);"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)
 

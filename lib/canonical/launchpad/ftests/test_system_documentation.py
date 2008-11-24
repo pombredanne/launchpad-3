@@ -128,8 +128,10 @@ def cveSetUp(test):
     setUp(test)
 
 def statisticianSetUp(test):
+    test_dbuser = config.statistician.dbuser
+    test.globs['test_dbuser'] = test_dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
     tearDown(test)
@@ -781,14 +783,6 @@ special = {
             tearDown=zopelessLaunchpadSecurityTearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    # Also run the pillar.txt doctest under the Zopeless layer.
-    # This exposed bug #149632.
-    'pillar.txt-zopeless': LayeredDocFileSuite(
-            '../doc/pillar.txt',
-            setUp=setUp, tearDown=tearDown,
-            #layer=ExperimentalLaunchpadZopelessLayer
-            layer=LaunchpadZopelessLayer
-            ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
             stdout_logging=False,
@@ -867,6 +861,8 @@ special = {
         '../doc/karmacache.txt',
         layer=LaunchpadZopelessLayer,
         setUp=setUp, tearDown=tearDown),
+    'filebug-data-parser.txt': LayeredDocFileSuite(
+        '../doc/filebug-data-parser.txt')
     }
 
 

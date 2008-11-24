@@ -39,6 +39,11 @@ class CurrentOpenIDEndPoint:
         return allvhosts.configs[cls.getVHost()].rooturl + '+openid'
 
     @classmethod
+    def getOldServiceURL(cls):
+        """The OpenID server URL (/+openid) for the current request."""
+        return allvhosts.configs['openid'].rooturl + '+openid'
+
+    @classmethod
     def supportsURL(cls, identity_url):
         """Does the OpenID current vhost support the identity_url?"""
         if cls.isRequestForOldVHost():

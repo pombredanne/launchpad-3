@@ -17,8 +17,10 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.servers import (
     WebServicePublication, WebServiceTestRequest)
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.systemhomes import WebServiceApplication
 
 def main():
+    WebServiceApplication.cached_wadl = None # do not use cached file version
     execute_zcml_for_scripts()
 
     # Request the WADL from the root resource.
@@ -36,7 +38,6 @@ def main():
     request.setPublication(WebServicePublication(None))
     login(ANONYMOUS, request)
     print request.publication.getApplication(request)(request)
-
     return 0
 
 if __name__ == '__main__':

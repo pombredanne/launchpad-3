@@ -650,6 +650,14 @@ def print_tag_with_id(contents, id):
     print extract_text(tag)
 
 
+def print_errors(contents):
+    """Print all the errors on the page."""
+    errors = find_tags_by_class(contents, 'error')
+    error_texts = [extract_text(error) for error in errors]
+    for error in error_texts:
+        print error
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -736,6 +744,7 @@ def setUpGlobs(test):
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location
     test.globs['print_location_apps'] = print_location_apps
     test.globs['print_navigation_links'] = print_navigation_links

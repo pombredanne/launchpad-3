@@ -741,6 +741,27 @@ hasn't changed.
     True
 
 
+=== Processing multiple suites in the same batch ===
+
+Both, 'lenny' and 'hoary' (as partner) will be processed in the same
+batch.
+
+    >>> gina_proc = [
+    ...     sys.executable, 'scripts/gina.py', 'lenny', 'partner']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+
+    >>> print proc.stderr.read()
+    INFO    creating lockfile
+    ...
+    INFO    === Processing debian/lenny/release ===
+    ...
+    INFO    === Processing ubuntu/hoary/release ===
+    ...
+
+    >>> proc.wait()
+    0
+
+
 === Other tests ===
 
 For kicks, finally, run gina on a configured but incomplete archive:

@@ -697,8 +697,8 @@ def main():
         log.info("Executing generated SQL using slonik")
         if replication.helpers.execute_slonik("""
             execute script (
-                set id=@lpmain_set_id,
-                event node=@master_id,
+                set id=@lpmain_set,
+                event node=@master_node,
                 filename='%s');
             """ % slonik_sql.name, sync=0):
             return 0

@@ -20,7 +20,7 @@
       does not have any strings to be translated through Launchpad.  If
       you think this is incorrect, please see if the subject has already
       come up under
-      <a href="https://answers.launchpad.net/rosetta/">Answers</a>.
+      <a tal:attributes="href view/answers_url">Answers</a>.
       If it hasn't, file a new question there.  Thank you.
     </p>
   </tal:block>

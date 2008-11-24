@@ -81,12 +81,19 @@ Librarian.
     >>> transaction.commit()
 
 Now, if we pass the token to the filebug view, the extra_data
-attribute will be set with the actual data.
+attribute will be set with the actual data. Also, the used parser will
+be available on the view itself. This is useful later, for doing
+cleanup.
 
     >>> request = LaunchpadTestRequest()
     >>> filebug_view = create_view(ubuntu_firefox, request)
+    >>> print filebug_view.data_parser
+    None
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
+    >>> filebug_view.data_parser
+    <...FileBugDataParser object at ...>
+
     >>> filebug_view.extra_data.extra_description
     u'This should be added to the description.'
 
@@ -531,6 +538,7 @@ NotFound error is raised.
     Traceback (most recent call last):
     ...
     NotFound:...
+
 
 == Adding tags to filed bugs ==
 

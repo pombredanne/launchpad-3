@@ -25,9 +25,11 @@ import transaction
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    BranchSubscriptionNotificationLevel, BugBranchStatus,
+    IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
     IStaticDiffJobSource, NotFoundError, RepositoryFormat)
+from canonical.launchpad.interfaces.branch import (
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -348,6 +350,32 @@ class BranchMailer:
         self.trans_manager.commit()
 
 
+class BranchMergeDetectionHandler:
+    """Handle merge detection events."""
+
+    def mergeProposalMerge(self, proposal):
+        """Handle a detected merge of a proposal."""
+        proposal.markAsMerged()
+        proposal.source_branch.lifecycle_status = (
+            BranchLifecycleStatus.MERGED)
+
+    def mergeOfTwoBranches(self, source, target):
+        """Handle the merge of source into target."""
+        # If the target branch is not the development focus, then don't update
+        # the status of the source branch.
+        dev_focus = target.product.development_focus
+        if target != dev_focus.user_branch:
+            return
+        # If the source branch is a series branch, then don't change the
+        # lifecycle status of it at all.
+        if source.associatedProductSeries().count() > 0:
+            return
+
+        # In other cases, we now want to update the lifecycle status of the
+        # source branch to merged.
+        source.lifecycle_status = BranchLifecycleStatus.MERGED
+
+
 class WarehouseBranchPolicy(BranchPolicy):
 
     def checkOneURL(self, url):
@@ -387,6 +415,7 @@ class BzrSync:
         self.db_branch = branch
         self._bug_linker = BugBranchLinker(self.db_branch)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
+        self._merge_handler = BranchMergeDetectionHandler()
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch, handling locking.
@@ -462,7 +491,47 @@ class BzrSync:
         self.trans_manager.begin()
         self.updateBranchStatus(bzr_history)
         self.autoMergeProposals(bzr_ancestry)
+        self.autoMergeBranches(bzr_ancestry)
         self.trans_manager.commit()
+
+    def autoMergeBranches(self, bzr_ancestry):
+        """Detect branches that have been merged."""
+        # We only check branches that have been merged into the branch that is
+        # being scanned as we already have the ancestry handy.  It is much
+        # more work to determine which other branches this branch has been
+        # merged into.  At this stage the merge detection only checks other
+        # branches merged into the scanned one.
+
+        # Only do this for non-junk branches.
+        if self.db_branch.product is None:
+            return
+        # Get all the active branches for the product, and if the
+        # last_scanned_revision is in the ancestry, then mark it as merged.
+        branches = getUtility(IBranchSet).getBranchesForContext(
+            context=self.db_branch.product,
+            lifecycle_statuses=(
+                BranchLifecycleStatus.NEW,
+                BranchLifecycleStatus.DEVELOPMENT,
+                BranchLifecycleStatus.EXPERIMENTAL,
+                BranchLifecycleStatus.MATURE,
+                BranchLifecycleStatus.ABANDONED))
+        for branch in branches:
+            last_scanned = branch.last_scanned_id
+            # If the branch doesn't have any revisions, not any point setting
+            # anything.
+            if last_scanned is None or last_scanned == NULL_REVISION:
+                # Skip this branch.
+                pass
+            elif branch == self.db_branch:
+                # No point merging into ourselves.
+                pass
+            elif self.db_branch.last_scanned_id == last_scanned:
+                # If the tip revisions are the same, then it is the same
+                # branch, not one merged into the other.
+                pass
+            elif last_scanned in bzr_ancestry:
+                self._merge_handler.mergeOfTwoBranches(
+                    branch, self.db_branch)
 
     def autoMergeProposals(self, bzr_ancestry):
         """Detect merged proposals."""
@@ -475,7 +544,7 @@ class BzrSync:
         # ui by a person, of by PQM once it is integrated.
         for proposal in self.db_branch.landing_candidates:
             if proposal.source_branch.last_scanned_id in bzr_ancestry:
-                proposal.markAsMerged()
+                self._merge_handler.mergeProposalMerge(proposal)
 
         # Now check the landing targets.
         final_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
@@ -487,7 +556,7 @@ class BzrSync:
                 branch_revision = proposal.target_branch.getBranchRevision(
                     revision_id=tip_rev_id)
                 if branch_revision is not None:
-                    proposal.markAsMerged()
+                    self._merge_handler.mergeProposalMerge(proposal)
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
@@ -680,16 +749,13 @@ class BzrSync:
     def updateBranchStatus(self, bzr_history):
         """Update the branch-scanner status in the database Branch table."""
         # Record that the branch has been updated.
-        self.logger.info("Updating branch scanner status.")
         if len(bzr_history) > 0:
             last_revision = bzr_history[-1]
+            revision = getUtility(IRevisionSet).getByRevisionId(last_revision)
         else:
-            last_revision = NULL_REVISION
+            revision = None
 
-        # FIXME: move that conditional logic down to updateScannedDetails.
-        # -- DavidAllouche 2007-02-22
         revision_count = len(bzr_history)
-        if ((last_revision != self.db_branch.last_scanned_id)
-                or (revision_count != self.db_branch.revision_count)):
-            self.db_branch.updateScannedDetails(
-                last_revision, revision_count)
+        self.logger.info(
+            "Updating branch scanner status: %s revs", revision_count)
+        self.db_branch.updateScannedDetails(revision, revision_count)

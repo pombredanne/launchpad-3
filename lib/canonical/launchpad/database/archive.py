@@ -40,18 +40,24 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadSource)
 from canonical.launchpad.interfaces.archive import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
-    IDistributionArchive, IPPA)
+    ArchiveDependencyError, ArchivePurpose, DistroSeriesNotFound,
+    IArchive, IArchiveSet, IDistributionArchive, IPPA, PocketNotFound,
+    SourceNotFound)
 from canonical.launchpad.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
+from canonical.launchpad.scripts.packagecopier import (
+    CannotCopy, check_copy, do_copy)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -662,39 +668,37 @@ class Archive(SQLBase):
 
         return PublishedPackage.selectFirst(query, orderBy=['-id'])
 
-    def getArchiveDependency(self, dependency, pocket, component):
+    def getArchiveDependency(self, dependency):
         """See `IArchive`."""
         return ArchiveDependency.selectOneBy(
-            archive=self, dependency=dependency, pocket=pocket,
-            component=component)
+            archive=self, dependency=dependency)
 
-    def removeArchiveDependency(self, dependency, pocket, component):
+    def removeArchiveDependency(self, dependency):
         """See `IArchive`."""
-        dependency = self.getArchiveDependency(dependency, pocket, component)
+        dependency = self.getArchiveDependency(dependency)
         if dependency is None:
             raise AssertionError("This dependency does not exist.")
         dependency.destroySelf()
 
-    def addArchiveDependency(self, dependency, pocket, component):
+    def addArchiveDependency(self, dependency, pocket, component=None):
         """See `IArchive`."""
         if dependency == self:
             raise ArchiveDependencyError(
                 "An archive should not depend on itself.")
 
-        if not dependency.is_ppa:
+        a_dependency = self.getArchiveDependency(dependency)
+        if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Archive dependencies only applies to PPAs.")
-        else:
+                "Only one dependency record per archive is supported.")
+
+        if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to RELEASE pocket.")
-            if component.id is not getUtility(IComponentSet)['main'].id:
+                    "Non-primary archives only support the RELEASE pocket.")
+            if (component is not None and
+                component.id is not getUtility(IComponentSet)['main'].id):
                 raise ArchiveDependencyError(
-                    "PPA dependencies only applies to 'main' component.")
-
-        if self.getArchiveDependency(dependency, pocket, component):
-            raise ArchiveDependencyError(
-                "This dependency is already recorded.")
+                    "Non-primary archives only support the 'main' component.")
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
@@ -815,8 +819,7 @@ class Archive(SQLBase):
                 PackageUpload.changesfileID == LibraryFileAlias.id,
                 )
         else:
-            raise AssertionError(
-                "'%s' filename and/or extension is not supported." % filename)
+            raise NotFoundError(filename)
 
         def do_query():
             result = store.find((LibraryFileAlias), *(base_clauses + clauses))
@@ -843,6 +846,90 @@ class Archive(SQLBase):
             raise NotFoundError(filename)
 
         return archive_file
+
+    def syncSources(self, source_names, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        # Find and validate the source package names in source_names.
+        sources = []
+        name_utility = getUtility(ISourcePackageNameSet)
+        for name in source_names:
+            try:
+                source_package_name = name_utility[name]
+            except NotFoundError, e:
+                # Webservice-friendly exception.
+                raise SourceNotFound(e)
+            # Grabbing the item at index 0 ensures it's the most recent
+            # publication.
+            sources.append(
+                from_archive.getPublishedSources(
+                    name=name, exact_match=True)[0])
+
+        return self._copySources(
+            sources, to_pocket, to_series, include_binaries)
+
+    def syncSource(self, source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        # Find and validate the source package version required.
+        try:
+            source_package_name = getUtility(
+                ISourcePackageNameSet)[source_name]
+        except NotFoundError, e:
+            # Webservice-friendly exception.
+            raise SourceNotFound(e)
+
+        source = from_archive.getPublishedSources(
+            name=source_name, version=version, exact_match=True)
+
+        self._copySources(source, to_pocket, to_series, include_binaries)
+
+    def _copySources(self, sources, to_pocket, to_series=None,
+                     include_binaries=False):
+        """Private helper function to copy sources to this archive.
+        
+        It takes a list of SourcePackagePublishingHistory but the other args
+        are strings.
+        """
+        # Convert the to_pocket string to its enum.
+        try:
+            pocket = PackagePublishingPocket.items[to_pocket.upper()]
+        except KeyError, error:
+            raise PocketNotFound(error)
+
+        # Now convert the to_series string to a real distroseries.
+        if to_series is not None:
+            result = getUtility(IDistroSeriesSet).queryByName(
+                self.distribution, to_series)
+            if result is None:
+                raise DistroSeriesNotFound(to_series)
+            series = result
+        else:
+            series = None
+
+        # Validate the copy.
+        broken_copies = []
+        for source in sources:
+            try:
+                check_copy(
+                    source, self, series, pocket, include_binaries)
+            except CannotCopy, reason:
+                broken_copies.append("%s (%s)" % (source.displayname, reason))
+
+        if len(broken_copies) != 0:
+            raise CannotCopy("\n".join(broken_copies))
+
+        # Perform the copy.
+        copies = do_copy(
+            sources, self, series, pocket, include_binaries)
+
+        if len(copies) == 0:
+            raise CannotCopy("Packages already copied.")
+
+        # Return a list of string names of packages that were copied.
+        return [
+            copy.sourcepackagerelease.sourcepackagename.name
+            for copy in copies]
 
 
 class ArchiveSet:
