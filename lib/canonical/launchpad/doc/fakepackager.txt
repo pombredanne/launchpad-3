@@ -82,7 +82,7 @@ Now we can build the source package using the generated tarball.
     >>> changesfile_path = packager.listAvailableUploads()[0]
     >>> changesfile = open(changesfile_path)
     >>> print changesfile.read()
-    Format: 1.7
+    Format: ...
     Date: ...
     Source: biscuit
     Binary: biscuit

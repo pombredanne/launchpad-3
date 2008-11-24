@@ -13,11 +13,13 @@ __all__ = [
     'Section',
     'SectionSchema',
     'as_host_port',
+    'as_timedelta',
     'as_username_groupname',
     ]
 
 
 import StringIO
+import datetime
 import grp
 import os
 import pwd
@@ -96,11 +98,11 @@ class Section:
 
         :param schema: The ISectionSchema that defines this ISection.
         """
-        self.schema = schema
+        # Use __dict__ because __getattr__ limits access to self.options.
+        self.__dict__['schema'] = schema
         if _options is None:
-            self._options = dict([(key, schema[key]) for key in schema])
-        else:
-            self._options = _options
+            _options = dict([(key, schema[key]) for key in schema])
+        self.__dict__['_options'] = _options
 
     def __getitem__(self, key):
         """See `ISection`"""
@@ -113,6 +115,10 @@ class Section:
         else:
             raise AttributeError(
                 "No section key named %s." % name)
+
+    def __setattr__(self, name, value):
+        """Callsites cannot mutate the config by direct manipulation."""
+        raise AttributeError("Config options cannot be set directly.")
 
     @property
     def category_and_section_names(self):
@@ -694,3 +700,55 @@ def as_username_groupname(value=None):
         user  = pwd.getpwuid(os.getuid()).pw_name
         group = grp.getgrgid(os.getgid()).gr_name
     return user, group
+
+
+def _sort_order(a, b):
+    """Sort timedelta suffixes from greatest to least."""
+    if len(a) == 0:
+        return -1
+    if len(b) == 0:
+        return 1
+    order = dict(
+        w=0,    # weeks
+        d=1,    # days
+        h=2,    # hours
+        m=3,    # minutes
+        s=4,    # seconds
+        )
+    suffix_a = order.get(a[-1])
+    suffix_b = order.get(b[-1])
+    if suffix_a is None or suffix_b is None:
+        raise ValueError
+    return cmp(suffix_a, suffix_b)
+
+
+def as_timedelta(value):
+    """Convert a value string to the equivalent timedeta."""
+    # Technically, the regex will match multiple decimal points in the
+    # left-hand side, but that's okay because the float/int conversion below
+    # will properly complain if there's more than one dot.
+    components = sorted(re.findall(r'([\d.]+[smhdw])', value),
+                        cmp=_sort_order)
+    # Complain if the components are out of order.
+    if ''.join(components) != value:
+        raise ValueError
+    keywords = dict((interval[0].lower(), interval)
+                    for interval in ('weeks', 'days', 'hours',
+                                     'minutes', 'seconds'))
+    keyword_arguments = {}
+    for interval in components:
+        if len(interval) == 0:
+            raise ValueError
+        keyword = keywords.get(interval[-1].lower())
+        if keyword is None:
+            raise ValueError
+        if keyword in keyword_arguments:
+            raise ValueError
+        if '.' in interval[:-1]:
+            converted = float(interval[:-1])
+        else:
+            converted = int(interval[:-1])
+        keyword_arguments[keyword] = converted
+    if len(keyword_arguments) == 0:
+        raise ValueError
+    return datetime.timedelta(**keyword_arguments)

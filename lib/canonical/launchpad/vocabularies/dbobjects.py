@@ -78,6 +78,7 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
@@ -1396,6 +1397,20 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+
+        # Prefetch products and distributions for rendering
+        # milestones: optimization to reduce the number of queries.
+        product_ids = set(
+            removeSecurityProxy(milestone).productID
+            for milestone in visible_milestones)
+        distro_ids = set(
+            removeSecurityProxy(milestone).distributionID
+            for milestone in visible_milestones)
+        if len(product_ids) > 0:
+            list(Product.select("id IN %s" % sqlvalues(product_ids)))
+        if len(distro_ids) > 0:
+            list(Distribution.select("id IN %s" % sqlvalues(distro_ids)))
+
         return sorted(visible_milestones, key=attrgetter('displayname'))
 
     def __iter__(self):
@@ -1593,14 +1608,21 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         all_specs = self.context.target.specifications(
-            filter=[SpecificationFilter.ALL])
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
         return self._filter_specs(all_specs)
 
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        return obj in self._all_specs()
+        # We don't use self._all_specs here, since it will call
+        # self._filter_specs(all_specs) which will cause all the specs
+        # to be loaded, whereas obj in all_specs will query a single object.
+        all_specs = self.context.target.specifications(
+            filter=[SpecificationFilter.ALL],
+            prejoin_people=False)
+        return obj in all_specs and len(self._filter_specs([obj])) > 0
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):

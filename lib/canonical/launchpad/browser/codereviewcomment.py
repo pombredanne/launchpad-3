@@ -8,18 +8,17 @@ __all__ = [
     'CodeReviewCommentView',
     ]
 
+from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface, implements
-from zope.schema import Choice, Text, TextLine
+from zope.schema import Text
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title
-from canonical.launchpad.interfaces import (
-    CodeReviewVote, ICodeReviewComment)
+from canonical.launchpad.interfaces import ICodeReviewComment
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
-    Link)
+    action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
+    LaunchpadView, Link)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 
@@ -40,7 +39,8 @@ class CodeReviewCommentContextMenu(ContextMenu):
     links = ['reply']
 
     def reply(self):
-        return Link('+reply', 'Reply', icon='add')
+        enabled = self.context.branch_merge_proposal.isMergable()
+        return Link('+reply', 'Reply', icon='add', enabled=enabled)
 
 
 class CodeReviewCommentView(LaunchpadView):
@@ -79,26 +79,25 @@ class CodeReviewCommentSummary(LaunchpadView):
 
     @property
     def message_summary(self):
-        return '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH])
+        """Return an elided message with the first X lines of the comment."""
+        short_message = (
+            '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH]))
+        short_message += "..."
+        return short_message
 
 
 class IEditCodeReviewComment(Interface):
     """Interface for use as a schema for CodeReviewComment forms."""
 
-    subject = Title(title=_('Subject'), required=False)
-
-    comment = Text(title=_('Comment'), required=False)
-
-    vote = Choice(
-        title=_('Vote'), required=False, vocabulary=CodeReviewVote)
-
-    vote_tag = TextLine(title=_('Tag'), required=False)
+    comment = Text(title=_('Comment'), required=True)
 
 
 class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
     schema = IEditCodeReviewComment
+
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
 
     @property
     def is_reply(self):
@@ -121,12 +120,12 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             return None
 
-    @action('Add')
+    @action('Save Comment', name='add')
     def add_action(self, action, data):
         """Create the comment..."""
         comment = self.branch_merge_proposal.createComment(
-            self.user, data['subject'], data['comment'], data['vote'],
-            data['vote_tag'], self.reply_to)
+            self.user, subject=None, content=data['comment'],
+            parent=self.reply_to)
 
     @property
     def next_url(self):

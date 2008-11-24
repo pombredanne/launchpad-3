@@ -184,7 +184,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer, subscriber = self.makeMailer(
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Vote: Approve DBTAG', body.splitlines()[0])
+        self.assertEqual('Vote: Approve dbtag', body.splitlines()[0])
         self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 

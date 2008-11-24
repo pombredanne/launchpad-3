@@ -46,7 +46,6 @@ data has successfully been uploaded.
     Status: 200 Ok
     Content-Length: ...
     Content-Type: text/html;charset=utf-8
-    Set-Cookie: launchpad_tests=...
     X-Launchpad-Hwdb-Submission: OK data stored
     ...
 
@@ -61,9 +60,9 @@ If fields are not set, the response contains a header explaining this
 error.
 
     >>> submit_data['Unique Submission Key:'] = 'unique-id-2'
-    >>> for field in ('Date Created:', 'Distribution Release:', 
-    ...               'Distribution:', 'Email address:', 
-    ...               'Processor Architecture:', 'System name:', 
+    >>> for field in ('Date Created:', 'Distribution Release:',
+    ...               'Distribution:', 'Email address:',
+    ...               'Processor Architecture:', 'System name:',
     ...               'Unique Submission Key:'):
     ...     wrong_data = submit_data.copy()
     ...     del wrong_data[field]
@@ -121,8 +120,8 @@ The file with the test data must also be provided.
     ...
     X-Launchpad-Hwdb-Submission: Error in field 'submission_data' - Required input is missing.
     ...
- 
-If a submission uses an already existing submission key, the submission 
+
+If a submission uses an already existing submission key, the submission
 is rejected and an explaining header is added to the response.
 
     >>> wrong_data = submit_data.copy()
@@ -182,4 +181,3 @@ The field "Email address:" musr contain a valid email address.
     ...
     X-Launchpad-Hwdb-Submission: Error in field 'emailaddress' - Invalid email address
     ...
-

@@ -32,6 +32,8 @@ def valid_email(emailaddr):
     True
     >>> valid_email('user@z.de')
     True
+    >>> valid_email('bob=dobbs@example.com')
+    True
 
     >>> valid_email('user@z..de')
     False
@@ -47,7 +49,7 @@ def valid_email(emailaddr):
     >>> valid_email('keith@-risby-family.co.uk')
     False
     """
-    email_re = r"^[_\.0-9a-zA-Z-+]+@(([0-9a-zA-Z-]{1,}\.)*)[a-zA-Z]{2,}$"
+    email_re = r"^[_\.0-9a-zA-Z-+=]+@(([0-9a-zA-Z-]{1,}\.)*)[a-zA-Z]{2,}$"
     email_match = re.match(email_re, emailaddr)
     if not email_match:
         return False

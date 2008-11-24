@@ -139,7 +139,7 @@ helpful message.
     This branch has not been mirrored yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/firefox/main/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/firefox/main/+merges
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
 because those branches are only mirrored internally.
@@ -150,7 +150,7 @@ because those branches are only mirrored internally.
     This branch has not been pushed to yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/pushed/+merges
 
     >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
@@ -158,7 +158,7 @@ because those branches are only mirrored internally.
     This branch has not been imported yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
+    Merge Proposals: http://code.launchpad.dev/~vcs-imports/evolution/main/+merges
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -170,7 +170,7 @@ available for download as soon as they are published.
     This branch has not been scanned yet.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/mirrored/+merges
     Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/mirrored/files
 
 If a branch has been mirrored and scanned, and has no revisions, then it is
@@ -182,7 +182,7 @@ empty.
     This branch is empty.
     >>> print_navigation_links(browser.contents)
     Details
-    Merging: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
+    Merge Proposals: http://code.launchpad.dev/~name12/gnome-terminal/scanned/+merges
     Source Code: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned/files
 
 == Branch Details ==

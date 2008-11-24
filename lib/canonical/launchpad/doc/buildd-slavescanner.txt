@@ -1034,31 +1034,48 @@ Let's try it again.
     >>> setupBuildQueue(candidate, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
+    >>> candidate.destroySelf()
+
 But this time We will create a valid publication on partner hoary/i386.
 
-    >>> create_binary_publication_for(
-    ...    partner_archive, hoary, PackagePublishingStatus.PUBLISHED)
+    >>> from canonical.launchpad.interfaces.component import IComponentSet
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('foo.bar@canonical.com')
+    >>> pub_source = test_publisher.getPubSource(
+    ...    archive=partner_archive, distroseries=hoary,
+    ...    status=PackagePublishingStatus.PUBLISHED,
+    ...    component='partner')
+    >>> pub_binaries = test_publisher.getPubBinaries(
+    ...     archive=partner_archive, pub_source=pub_source,
+    ...     distroseries=hoary, status=PackagePublishingStatus.PUBLISHED)
+    >>> partner_build = pub_binaries[0].binarypackagerelease.build
+    >>> partner_candidate = partner_build.buildqueue_record
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
 Now when we dispatch the partner build, since it has one published
 binary in hoary/i386, the partner archive gets included in the builder
 sources_list.
 
-    >>> a_builder.dispatchBuildCandidate(candidate)
+    >>> a_builder.dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
-    ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+    ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
     Archives:
-     deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-security main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu hoary-updates main restricted universe multiverse
-     deb http://ftpmaster.internal/ubuntu-partner hoary main
+     deb http://ftpmaster.internal/ubuntu hoary
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-security
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu hoary-updates
+         main restricted universe multiverse
+     deb http://ftpmaster.internal/ubuntu-partner hoary partner
     Suite: hoary
     Archive Purpose: PARTNER
     Archive Private: False
 
-    >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
-    >>> candidate.destroySelf()
+    >>> partner_candidate.destroySelf()
 
 Similarly, PPA builds pass the 'archives' arguments:
 
@@ -1200,7 +1217,6 @@ Mark's PPA:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> sabdfl_archive = getUtility(IPersonSet).getByName('sabdfl').archive
 
-    >>> from canonical.launchpad.interfaces.component import IComponentSet
     >>> unused_dep = cprov_archive.addArchiveDependency(
     ...      sabdfl_archive, PackagePublishingPocket.RELEASE,
     ...      getUtility(IComponentSet)['main'])

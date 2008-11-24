@@ -48,6 +48,10 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             dbName='account', foreignKey='Account', notNull=False,
             default=None)
 
+    def __repr__(self):
+        return '<EmailAddress at 0x%x <%s> [%s]>' % (
+            id(self), self.email, self.status)
+
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.

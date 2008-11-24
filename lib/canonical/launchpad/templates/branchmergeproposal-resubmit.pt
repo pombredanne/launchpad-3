@@ -12,12 +12,7 @@
 
 <body>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/source_branch/@@+heading"/>
-
 <div metal:fill-slot="main">
-
-  <tal:proposal-heading tal:replace="structure context/@@+heading"/>
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info">
@@ -28,15 +23,15 @@
   </div>
 
   <div id="source-revisions">
-  <h2 style="clear: both">Unmerged revisions</h2>
-
     <tal:history-available condition="context/source_branch/revision_count"
                            define="branch context/source_branch;
                                    revisions view/unlanded_revisions">
+      <h2>Unmerged revisions</h2>
       <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
     </tal:history-available>
 
     <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+      <h2>Unmerged revisions</h2>
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>

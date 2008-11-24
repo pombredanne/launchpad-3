@@ -516,12 +516,18 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
 
-        # Make a published source, a source that's been removed from disk
-        # and one that's waiting to be deleted, each in different pockets.
-        # We'll also have a binary waiting to be deleted.
+        # Make a published source, a deleted source in the release
+        # pocket, a source that's been removed from disk and one that's
+        # waiting to be deleted, each in different pockets.  The deleted
+        # source in the release pocket should not be processed.  We'll
+        # also have a binary waiting to be deleted.
         published_source = self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
+
+        deleted_source_in_release_pocket = self.getPubSource(
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.DELETED)
 
         removed_source = self.getPubSource(
             scheduleddeletiondate=UTC_NOW,
@@ -541,6 +547,21 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A2_markPocketsWithDeletionsDirty()
 
         # Only the pockets with pending deletions are marked as dirty.
+        expected_dirty_pockets = [
+            ('breezy-autotest', PackagePublishingPocket.RELEASE),
+            ('breezy-autotest', PackagePublishingPocket.SECURITY),
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)
+            ]
+        self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
+
+        # If the distroseries is CURRENT, then the release pocket is not
+        # marked as dirty.
+        self.ubuntutest['breezy-autotest'].status = (
+            DistroSeriesStatus.CURRENT)
+
+        publisher.dirty_pockets = set()
+        publisher.A2_markPocketsWithDeletionsDirty()
+
         expected_dirty_pockets = [
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
             ('breezy-autotest', PackagePublishingPocket.BACKPORTS)
