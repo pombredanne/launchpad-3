@@ -34,15 +34,17 @@ class TestMergeProposalMailing(TestCase):
 
     def makeProposalWithSubscriber(self):
         registrant = self.factory.makePerson(
-            displayname='Baz Qux', email='baz.qux@example.com')
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+            name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
+        product = self.factory.makeProduct(name='super-product')
+        bmp = self.factory.makeBranchMergeProposal(registrant=registrant,
+            product=product)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
-        bmp.source_branch.title = 'foo'
-        bmp.target_branch.title = 'bar'
+        bmp.source_branch.name = 'fix-foo-for-bar'
+        bmp.target_branch.name = 'bar'
         return bmp, subscriber
 
     def test_generateCreationEmail(self):
@@ -57,7 +59,7 @@ class TestMergeProposalMailing(TestCase):
         bmp.root_message_id = None
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
-Baz Qux has proposed merging lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6.
+Baz Qux has proposed merging lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar.
 
 Whiteboard:
 I think this would be good.
@@ -66,7 +68,9 @@ I think this would be good.
 %s
 %s
 """ % (canonical_url(bmp), reason.getReason()), body)
-        self.assertEqual('Proposed merge of foo into bar', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
+            'lp://dev/~person-name9/super-product/bar', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
@@ -164,12 +168,14 @@ I think this would be good.
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Proposed merge of foo into bar updated', subject)
+        self.assertEqual('Proposed merge of '
+            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
+            'lp://dev/~person-name9/super-product/bar updated', subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
-The proposal to merge lp://dev/~person-name15/product-name10/branch17 into lp://dev/~person-name4/product-name10/branch6 has been updated.
+The proposal to merge lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar has been updated.
 
     Status: Work in progress => Needs review
 

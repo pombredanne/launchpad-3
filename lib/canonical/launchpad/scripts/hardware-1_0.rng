@@ -427,7 +427,7 @@
                 <attribute name="type">
                     <value>int</value>
                 </attribute>
-                <data type="int">
+                <data type="long">
                     <except>
                         <value/>
                     </except>

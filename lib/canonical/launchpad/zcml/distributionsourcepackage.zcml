@@ -38,6 +38,10 @@
       attributes="newQuestion createQuestionFromBug addAnswerContact
                   removeAnswerContact"
       />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="bug_reporting_guidelines"
+      />
   </class>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"

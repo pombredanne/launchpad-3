@@ -31,8 +31,7 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import (
-    block_implicit_flushes, quote, SQLBase, sqlvalues)
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -631,6 +630,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     @property
     def all_blocked(self):
+        """See `ISpecification`."""
         blocked = set()
         self._find_all_blocked(blocked)
         return sorted(blocked, key=lambda s: (s.definition_status,

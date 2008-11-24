@@ -3,7 +3,12 @@
 """Bug comment browser view classes."""
 
 __metaclass__ = type
-__all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
+__all__ = [
+    'BugComment',
+    'BugCommentView',
+    'build_comments_from_chunks',
+    'should_display_remote_comments',
+    ]
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -18,7 +23,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.config import config
 
 
-def _should_display_remote_comments(user):
+def should_display_remote_comments(user):
     """Return whether remote comments should be displayed for the user."""
     # comment_syncing_team can be either None or '' to indicate unset.
     if config.malone.comment_syncing_team:
@@ -38,7 +43,7 @@ def _should_display_remote_comments(user):
 
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
     """Build BugComments from MessageChunks."""
-    display_if_from_bugwatch = _should_display_remote_comments(
+    display_if_from_bugwatch = should_display_remote_comments(
         getUtility(ILaunchBag).user)
 
     comments = {}

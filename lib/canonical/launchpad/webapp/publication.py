@@ -454,6 +454,27 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to
+        # only clear the SQL records and timeout when we are preparing for a
+        # view (or a side effect). Otherwise, we don't want to clear the
+        # records because they are what the error reporting utility uses to
+        # create OOPS reports with the SQL commands that led up to the error.
+        # At the moment, we can only distinguish based on the "note" argument:
+        # an undocumented argument of this undocumented method.
+        if note in ('application error-handling',
+                    'application error-handling side-effect'):
+            da.clear_request_started()
+            da.set_request_started()
+
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)

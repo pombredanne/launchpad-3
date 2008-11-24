@@ -17,7 +17,12 @@ and Landscape developers.
     >>> from canonical.config import config
     >>> config.launchpad.restrict_to_team == ''
     True
-    >>> config.launchpad.restrict_to_team = 'landscape-developers'
+
+    >>> restrict_data = """
+    ...     [launchpad]
+    ...     restrict_to_team: landscape-developers
+    ...     """
+    >>> config.push('restrict_data', restrict_data)
 
 When in this condition, anonymous users are shown a special trimmed-down
 login page when they go to any page.
@@ -116,7 +121,7 @@ Now that the user is logged in, they will be directed to the
 
 Set restrict_to_team back to being a server that is open to anyone.
 
-    >>> config.launchpad.restrict_to_team = ''
+    >>> config_data = config.pop('restrict_data')
 
 Note that the info page still works even when the server is open.
 
