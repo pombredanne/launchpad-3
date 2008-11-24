@@ -122,7 +122,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         LaunchpadFormView.initialize(self)
 
 # XXX: HenningEggers 2008-11-21 bug=300608: This code is too generic to be in
-#      the view and should be factored out. 
+#      the view and should be factored out.
     def _checkProductOrPackage(self, obj):
         """Check if the given object is linked to the same productseries
         or sourcepackage as the context.
@@ -355,6 +355,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     @action("Approve")
     def change_action(self, action, data):
         """Process the form we got from the submission."""
+        self._change_action(data)
+
+    def _change_action(self, data):
+        """Private function to be called by the doctest."""
         file_type = data.get('file_type')
 
         if file_type == TranslationFileType.PO:
