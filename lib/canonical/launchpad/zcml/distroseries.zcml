@@ -330,22 +330,14 @@
     template="../templates/milestone-add.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner supports_virtualized"
-    arguments="architecturetag processorfamily official owner"
-    keyword_arguments="supports_virtualized"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/distroseries-addport.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

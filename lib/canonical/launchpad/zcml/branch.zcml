@@ -132,6 +132,7 @@
         template="../templates/branch-heading.pt" />
   </browser:pages>
 
+  <!-- Temporarily disabling queues
   <browser:page
     name="+merge-queue"
     for="canonical.launchpad.interfaces.IBranch"
@@ -139,6 +140,7 @@
     facet="branches"
     permission="zope.Public"
     template="../templates/branch-merge-queue.pt" />
+  -->
 
   <browser:page
     name="+portlet-subscribers"
@@ -182,6 +184,14 @@
       name="+edit"
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/branch-edit.pt" />
+
+  <browser:page
+      name="+reviewer"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchReviewerEditView"
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-edit.pt" />

@@ -17,7 +17,8 @@
                        votes root_comment all_comments
                        isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
-                       getUnlandedSourceBranchRevisions root_message_id"/>
+                       getUnlandedSourceBranchRevisions root_message_id
+                       getUsersVoteReference"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
@@ -120,14 +121,6 @@
       permission="launchpad.View"
       template="../templates/branchmergeproposal-votes.pt" />
 
-  <browser:page
-      name="+votes-with-links"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalVoteLinkView"
-      facet="branches"
-      permission="launchpad.View"
-      template="../templates/branchmergeproposal-votes.pt" />
-
   <browser:pages
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalEditView"
@@ -148,12 +141,12 @@
       template="../templates/branchmergeproposal-delete.pt" />
 
   <browser:page
-      name="+work-in-progress"
+      name="+edit-status"
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"
+      class="canonical.launchpad.browser.BranchMergeProposalChangeStatusView"
       facet="branches"
       permission="launchpad.Edit"
-      template="../templates/branchmergeproposal-work-in-progress.pt" />
+      template="../templates/branchmergeproposal-editstatus.pt" />
 
   <browser:page
       name="+request-review"
@@ -170,14 +163,6 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-resubmit.pt" />
-
-  <browser:page
-      name="+review"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.BranchMergeProposalReviewView"
-      facet="branches"
-      permission="launchpad.Edit"
-      template="../templates/branchmergeproposal-review.pt" />
 
   <browser:page
       name="+enqueue"
@@ -234,6 +219,23 @@
       facet="branches"
       permission="launchpad.View"
       template="../templates/branchmergeproposal-pagelet-subscribers.pt" />
+
+  <browser:page
+      name="+comment"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.CodeReviewCommentAddView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/codereviewcomment-reply.pt" />
+
+  <browser:page
+      name="+review"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalAddVoteView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branchmergeproposal-vote.pt" />
+
 
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

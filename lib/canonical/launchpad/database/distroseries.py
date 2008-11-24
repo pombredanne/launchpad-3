@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
@@ -34,7 +34,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
@@ -324,7 +324,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = """
             SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status = %s AND
+            SourcePackagePublishingHistory.status IN %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -333,7 +333,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(
                     self,
                     self.distribution.all_distro_archive_ids,
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
             query, distinct=True,
@@ -349,14 +349,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.status IN %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(
-                    PackagePublishingStatus.PUBLISHED,
+                    active_publishing_status,
                     PackagePublishingPocket.RELEASE,
                     self,
                     self.distribution.all_distro_archive_ids)
@@ -557,12 +557,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the distribution that are visible and not English
         langidset = set(
             language.id for language in Language.select('''
-                Language.visible = TRUE AND
+                Language.visible IS TRUE AND
                 Language.id = POFile.language AND
-                Language.code != 'en' AND
+                Language.code <> 'en' AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distroseries = %s AND
-                POTemplate.iscurrent = TRUE
+                POTemplate.iscurrent IS TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
                 distinct=True,

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from optparse import OptionParser, OptionValueError
+import logging
 from pytz import timezone
 from unittest import TestLoader
 
@@ -15,6 +16,8 @@ from zope.component import getUtility
 from storm.store import Store
 
 from canonical.launchpad.ftests import sync
+from canonical.launchpad.database.translationrelicensingagreement import (
+    TranslationRelicensingAgreement)
 from canonical.launchpad.interfaces import (
     IPersonSet, RosettaTranslationOrigin)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
@@ -28,14 +31,25 @@ def make_script(args=None):
     """Create a `RemoveTranslations` script with given options."""
     if isinstance(args, basestring):
         args = [args]
-    return RemoveTranslations('remove-translations-test', test_args=args)
+    script = RemoveTranslations('remove-translations-test', test_args=args)
+    script.logger.setLevel(logging.ERROR)
+    return script
 
 
 class TestRemoveTranslationsConstraints(TestCase):
     """Test safety net for translations removal options."""
     layer = LaunchpadZopelessLayer
 
-    def disabled_test_RecklessRemoval(self):
+    def setUp(self):
+        # Acquire privileges to delete TranslationMessages.  We won't
+        # actually do that here, but we'll go through all the motions.
+        self.layer.switchDbUser('postgres')
+
+    def _check_options(self, opts):
+        """Get `_check_constraints_safety`'s answer for given options."""
+        return make_script(opts)._check_constraints_safety()
+
+    def test_RecklessRemoval(self):
         # The script will refuse to run if no specific person or id is
         # targeted.  Operator error is more likely than a use case for
         # casually deleting lots of loosely-specified translations.
@@ -47,44 +61,70 @@ class TestRemoveTranslationsConstraints(TestCase):
             '--msgid=foo',
             '--origin=1',
             '--force',
+            '--dry-run',
             ]
         script = make_script(opts)
-        self.assertRaises(LaunchpadScriptFailure, script.run)
+        self.assertRaises(LaunchpadScriptFailure, script.main)
 
         # The same removal will work if we add, say, a submitter id.
         opts.append('--submitter=8134719')
-        make_script(opts).run()
+        make_script(opts).main()
 
     def test_RemoveBySubmitter(self):
         # Removing all translations by one submitter is allowed.
-        script = make_script('--submitter=1')
-        approval, message = script._check_constraints_safety()
+        approval, message = self._check_options('--submitter=1')
         self.assertTrue(approval)
 
     def test_RemoveByReviewer(self):
         # Removing all translations by one reviewer is allowed.
-        script = make_script('--reviewer=1')
-        approval, message = script._check_constraints_safety()
+        approval, message = self._check_options('--reviewer=1')
         self.assertTrue(approval)
 
     def test_RemoveById(self):
         # Removing by ids is allowed.
-        script = make_script(['--id=1', '--id=2', '--id=3'])
-        approval, message = script._check_constraints_safety()
+        approval, message = self._check_options(
+            ['--id=1', '--id=2', '--id=3'])
         self.assertTrue(approval)
 
     def test_RemoveByPOFile(self):
         # Removing all translations for a template is not allowed by default.
         opts = ['--potemplate=1']
-        script = make_script(opts)
-        approval, message = script._check_constraints_safety()
+        approval, message = self._check_options(opts)
         self.assertFalse(approval)
 
         # The --force option overrides the safety check.
         opts.append('--force')
-        script = make_script(opts)
-        approval, message = script._check_constraints_safety()
+        approval, message = self._check_options(opts)
         self.assertIn("Safety override in effect", message)
+        self.assertTrue(approval)
+
+    def test_remove_by_license_rejection(self):
+        # Can't just remove _all_ translations by people who rejected
+        # the licensing agreement.
+        approval, message = self._check_options(['--reject-license'])
+        self.assertFalse(approval)
+
+        # We can do that for the non-imported ones, however...
+        approval, message = self._check_options([
+            '--reject-license', '--is-imported=False'])
+        self.assertTrue(approval)
+
+        # ...though not for the imported ones.
+        approval, message = self._check_options([
+            '--reject-license', '--is-imported=True'])
+        self.assertFalse(approval)
+
+        # Similar for ones submitted directly in Launchpad.
+        approval, message = self._check_options([
+            '--reject-license', '--origin=ROSETTAWEB'])
+        self.assertTrue(approval)
+        approval, message = self._check_options([
+            '--reject-license', '--origin=SCM'])
+        self.assertFalse(approval)
+
+        # We can bypass the check using --force.
+        approval, message = self._check_options([
+            '--reject-license', '--force'])
         self.assertTrue(approval)
 
 
@@ -258,7 +298,7 @@ class TestRemoveTranslations(TestCase):
             self._getContents(self.de_pofile),
             ["Diese Nachricht soll nicht erloescht werden."])
 
-    def _remove(self, **kwargs):
+    def _removeMessages(self, **kwargs):
         """Front-end for `remove_translations`.  Flushes changes first."""
         Store.of(self.potemplate).flush()
         return remove_translations(**kwargs)
@@ -266,7 +306,7 @@ class TestRemoveTranslations(TestCase):
     def test_RemoveNone(self):
         # If no messages match the given constraints, nothing is
         # deleted.
-        rowcount = self._remove(
+        rowcount = self._removeMessages(
             submitter=1, ids=[self.de_message.id], language_code='br')
         self.assertEqual(rowcount, 0)
         self._checkInvariant()
@@ -285,7 +325,8 @@ class TestRemoveTranslations(TestCase):
                 "Double Dutch",
                 ])
 
-        rowcount = self._remove(ids=[new_nl_message1.id, new_nl_message2.id])
+        rowcount = self._removeMessages(
+            ids=[new_nl_message1.id, new_nl_message2.id])
 
         self.assertEqual(rowcount, 2)
         self._checkInvariant()
@@ -302,7 +343,7 @@ class TestRemoveTranslations(TestCase):
         # on reviewer instead.
         new_nl_message.reviewer = self.potemplate.owner
 
-        rowcount = self._remove(submitter=carlos)
+        rowcount = self._removeMessages(submitter=carlos)
 
         self._checkInvariant()
 
@@ -315,7 +356,7 @@ class TestRemoveTranslations(TestCase):
         new_nl_message.reviewer = carlos
         new_de_message.reviewer = carlos
 
-        rowcount = self._remove(reviewer=carlos)
+        rowcount = self._removeMessages(reviewer=carlos)
 
         self._checkInvariant()
 
@@ -337,7 +378,8 @@ class TestRemoveTranslations(TestCase):
             lock_timestamp=datetime.now(timezone('UTC')))
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
-        rowcount = self._remove(ids=ids, potemplate=self.potemplate.id)
+        rowcount = self._removeMessages(
+            ids=ids, potemplate=self.potemplate.id)
 
         self._checkInvariant()
         self.assertEqual(self._getContents(unrelated_nl_pofile), ["Foe"])
@@ -349,7 +391,8 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Bar')
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Cafe')
 
-        self._remove(ids=[message.id, self.de_message.id], language_code='nl')
+        self._removeMessages(
+            ids=[message.id, self.de_message.id], language_code='nl')
 
         self._checkInvariant()
 
@@ -359,7 +402,7 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, 'Hi')
         message = self._setTranslation(potmsgset, self.nl_pofile, 'Hoi')
 
-        self._remove(
+        self._removeMessages(
             ids=[message.id, self.de_message.id], language_code='de',
             not_language=True)
 
@@ -372,7 +415,7 @@ class TestRemoveTranslations(TestCase):
         self.nl_message.is_current = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_current=True)
+        self._removeMessages(ids=ids, is_current=True)
 
         self.nl_message.is_current = True
         self._checkInvariant()
@@ -385,7 +428,7 @@ class TestRemoveTranslations(TestCase):
         new_de_message.is_current = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_current=False)
+        self._removeMessages(ids=ids, is_current=False)
 
         self._checkInvariant()
 
@@ -397,7 +440,7 @@ class TestRemoveTranslations(TestCase):
         new_de_message.is_imported = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_imported=True)
+        self._removeMessages(ids=ids, is_imported=True)
 
         self._checkInvariant()
 
@@ -408,7 +451,7 @@ class TestRemoveTranslations(TestCase):
         self.nl_message.is_imported = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._remove(ids=ids, is_imported=False)
+        self._removeMessages(ids=ids, is_imported=False)
 
         self.nl_message.is_imported = False
         self._checkInvariant()
@@ -418,7 +461,7 @@ class TestRemoveTranslations(TestCase):
         (new_nl_message, new_de_message) = self._makeMessages(
             "save", "bewaren", "speichern")
 
-        self._remove(msgid_singular="save")
+        self._removeMessages(msgid_singular="save")
 
         self._checkInvariant()
 
@@ -431,10 +474,138 @@ class TestRemoveTranslations(TestCase):
         self.assertEqual(new_nl_message.origin, RosettaTranslationOrigin.SCM)
         self.assertEqual(new_de_message.origin, RosettaTranslationOrigin.SCM)
 
-        self._remove(
+        self._removeMessages(
             potemplate=self.potemplate, origin=RosettaTranslationOrigin.SCM)
 
         self._checkInvariant()
+
+    def test_remove_by_license_rejection(self):
+        # Remove translations submitted by users who rejected the
+        # licensing agreement.
+        refusenik = self.factory.makePerson()
+
+        self._makeMessages(
+            "Don't download this song", "Niet delen", "Nicht teilen",
+            submitter=refusenik)
+
+        TranslationRelicensingAgreement(
+            person=refusenik, allow_relicensing=False)
+
+        self._removeMessages(reject_license=True)
+
+        self._checkInvariant()
+
+    def test_remove_unlicensed_none(self):
+        # Removing translations whose submitters rejected our
+        # translations license does not affect translations by those who
+        # haven't answered the question yet.
+        self._removeMessages(reject_license=True)
+
+        self._checkInvariant()
+
+    def test_remove_unlicensed_when_licensed(self):
+        # Removing translations whose submitters rejected our
+        # translations license does not affect translations by those who
+        # agreed to license.
+        answer = TranslationRelicensingAgreement(
+            person=self.nl_message.submitter, allow_relicensing=True)
+
+        try:
+            self._removeMessages(reject_license=True)
+            self._checkInvariant()
+        finally:
+            # Clean up.
+            answer.destroySelf()
+
+    def test_remove_unlicensed_restriction(self):
+        # When removing unlicensed translations, other restrictions
+        # still apply.
+        self.nl_message.is_imported = True
+        self.de_message.is_imported = True
+        answer = TranslationRelicensingAgreement(
+            person=self.nl_message.submitter, allow_relicensing=False)
+
+        try:
+            self._removeMessages(reject_license=True, is_imported=False)
+            self._checkInvariant()
+        finally:
+            # Clean up.
+            answer.destroySelf()
+
+
+class TestRemoveTranslationsUnmasking(TestCase):
+    """Test that `remove_translations` "unmasks" imported messages.
+
+    When a current, non-imported message is deleted, the deletion code
+    checks whether there is also an imported translation.  If there was,
+    it makes sense to make the imported message the current one (as it
+    would have been if the deleted message had never been there in the
+    first place).
+    """
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('postgres')
+
+        # Set up a template with a Laotian translation file.  There's
+        # one message to be translated.
+        factory = LaunchpadObjectFactory()
+        self.pofile = factory.makePOFile('lo')
+        potemplate = self.pofile.potemplate
+        self.potmsgset = factory.makePOTMsgSet(potemplate, 'foo')
+
+    def _setTranslation(self, text, is_imported=False):
+        return self.potmsgset.updateTranslation(
+            self.pofile, self.pofile.owner, {0: text},
+            is_imported=is_imported,
+            lock_timestamp=datetime.now(timezone('UTC')))
+
+    def test_unmask_imported_message(self):
+        # Basic use case: imported message is unmasked.
+        cleanups = []
+        try:
+            imported = self._setTranslation('imported', is_imported=True)
+            cleanups.append(imported)
+            current = self._setTranslation('current', is_imported=False)
+            cleanups.append(current)
+            self.assertFalse(imported.is_current, "Broken test setup.")
+            self.assertTrue(imported.is_imported, "Broken test setup.")
+            self.assertTrue(current.is_current, "Broken test setup.")
+            self.assertFalse(current.is_imported, "Broken test setup.")
+            Store.of(current).flush()
+
+            remove_translations(ids=[current.id])
+
+            sync(imported)
+            self.assertTrue(imported.is_imported)
+            self.assertTrue(imported.is_current)
+        finally:
+            # Clean up.
+            remove_translations(ids=[message.id for message in cleanups])
+
+    def test_unmask_right_message(self):
+        # Unmasking picks the right message, and doesn't try to violate
+        # the unique constraint on is_imported.
+        cleanups = []
+        try:
+            inactive = self._setTranslation('inactive')
+            cleanups.append(inactive)
+            imported = self._setTranslation('imported', is_imported=True)
+            cleanups.append(imported)
+            current = self._setTranslation('current', is_imported=False)
+            self.assertFalse(inactive.is_current, "Broken test setup.")
+            self.assertFalse(inactive.is_imported, "Broken test setup.")
+            Store.of(current).flush()
+
+            remove_translations(ids=[current.id])
+
+            sync(imported)
+            sync(inactive)
+            self.assertTrue(imported.is_current)
+            self.assertFalse(inactive.is_current)
+        finally:
+            # Clean up.
+            remove_translations(ids=[message.id for message in cleanups])
 
 
 def test_suite():
