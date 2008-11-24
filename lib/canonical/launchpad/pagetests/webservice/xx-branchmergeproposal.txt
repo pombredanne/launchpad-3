@@ -1,9 +1,18 @@
-== Create a new merge proposal ==
-
-
-
-
 == Get an existing merge proposal ==
+
+Branch merge proposals can be fetched through the API.
+
+
+    >>> login('foo.bar@canonical.com')
+    >>> proposal = factory.makeBranchMergeProposal()
+    >>> proposal_url = canonical_url(proposal, rootsite='api')
+    >>> logout()
+
+    >>> merge_proposal = webservice.get(proposal_url).jsonBody()
+    >>> from canonical.lazr.testing.webservice import pprint_entry
+    >>> pprint_entry(merge_proposal)
+
+== Create a new merge proposal ==
 
 
 
