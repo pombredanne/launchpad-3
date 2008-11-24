@@ -42,14 +42,18 @@ Now we create the entry in the queue.
     >>> print pot_entry.path
     demo.pot
 
-The view is named "+index" and it is found on the TranslationsLayer.
+The view is named "+index" and it is found on the TranslationsLayer. We want
+to get it new for each subsequent test.
 
-    >>> request = LaunchpadTestRequest()
-    >>> setFirstLayer(request, TranslationsLayer)
-    >>> view = getMultiAdapter((pot_entry, request), name='+index')
+    >>> def getTranslationEntryView(entry):
+    ...     request = LaunchpadTestRequest()
+    ...     setFirstLayer(request, TranslationsLayer)
+    ...     view = getMultiAdapter((entry, request), name='+index')
+    ...     view.initialize()
+    ...     return view
+    >>> view = getTranslationEntryView(pot_entry)
     >>> isinstance(view, TranslationImportQueueEntryView)
     True
-    >>> view.initialize()
 
 Upon initialisation the view sets the file type.
 
@@ -57,7 +61,6 @@ Upon initialisation the view sets the file type.
     ...     print key, val
     file_type Translation Template (POT)
     path demo.pot
-
 
 Validating correct data should not produce an error.
 
@@ -77,6 +80,7 @@ Validating correct data should not produce an error.
 But declaring a different file type would require different data, so we get
 some errors.
 
+    >>> view = getTranslationEntryView(pot_entry)
     >>> data = {
     ...     'file_type': TranslationFileType.PO,
     ...     'path': 'demo.pot',
@@ -88,7 +92,7 @@ some errors.
 
 Also, the filename must be given and the template name must be a valid name.
 
-    >>> view.errors = []
+    >>> view = getTranslationEntryView(pot_entry)
     >>> data = {
     ...     'file_type': TranslationFileType.POT,
     ...     'path': None,
@@ -105,7 +109,7 @@ Specifying po file data for po templates is not a good idea either.
     >>> from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
     >>> potemplate = getUtility(IPOTemplateSet).getPOTemplateByPathAndOrigin(
     ...     'po/evolution-2.2.pot', productseries)
-    >>> view.errors = []
+    >>> view = getTranslationEntryView(pot_entry)
     >>> data = {
     ...     'file_type': TranslationFileType.POT,
     ...     'path': 'demo.po',
@@ -118,7 +122,7 @@ Specifying po file data for po templates is not a good idea either.
 
 But if it works if you decide that the file in question really is a po file.
 
-    >>> view.errors = []
+    >>> view = getTranslationEntryView(pot_entry)
     >>> data = {
     ...     'file_type': TranslationFileType.PO,
     ...     'path': 'demo.po',
@@ -131,6 +135,7 @@ The potemplate entry for the new template is also created.
 
     >>> from canonical.launchpad.interfaces.translationimportqueue import (
     ...     RosettaImportStatus)
+    >>> view = getTranslationEntryView(pot_entry)
     >>> view.context.potemplate == None
     True
     >>> data = {
@@ -138,6 +143,7 @@ The potemplate entry for the new template is also created.
     ...     'path': 'demo.pot',
     ...     'name': 'demo-name',
     ...     'translation_domain': 'demo-domain'}
+    >>> view.validate(data)
     >>> view._change_action(data)
     >>> view.context.status == RosettaImportStatus.APPROVED
     True
