@@ -15,7 +15,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     FakeTransportServer)
 from canonical.launchpad.database.diff import Diff, StaticDiff
-from canonical.launchpad.interfaces import (IDiff, IStaticDiff,)
+from canonical.launchpad.interfaces import (
+    IDiff, IStaticDiff, IStaticDiffSource,
+)
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -52,6 +54,9 @@ class TestStaticDiff(BzrTestCase):
 
     def test_providesInterface(self):
         verifyObject(IStaticDiff, StaticDiff())
+
+    def test_providesSourceInterface(self):
+        verifyObject(IStaticDiffSource, StaticDiff)
 
     def test_acquire_existing(self):
         self.useBzrBranches()
