@@ -184,8 +184,8 @@ class BranchMergeProposal(SQLBase):
     def title(self):
         """See `IBranchMergeProposal`."""
         return "Proposed merge of %(source)s into %(target)s" % {
-            'source': self.source_branch.displayname,
-            'target': self.target_branch.displayname}
+            'source': self.source_branch.bzr_identity,
+            'target': self.target_branch.bzr_identity}
 
     @property
     def all_comments(self):

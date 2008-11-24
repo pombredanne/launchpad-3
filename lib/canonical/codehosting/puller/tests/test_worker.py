@@ -619,6 +619,16 @@ class TestMirroredBranchPolicy(TestCase):
             '/foo',
             policy.getStackedOnURLForDestinationBranch(None, destination_url))
 
+    def test_stacked_on_url_for_mirrored_branch(self):
+        # If the default stacked-on URL is also the URL for the branch being
+        # mirrored, then the stacked-on URL for destination branch is None.
+        stacked_on_url = '/foo'
+        policy = MirroredBranchPolicy(stacked_on_url)
+        destination_url = 'http://example.com/foo'
+        self.assertIs(
+            None,
+            policy.getStackedOnURLForDestinationBranch(None, destination_url))
+
 
 class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     """Tests for the client-side implementation of the protocol used to

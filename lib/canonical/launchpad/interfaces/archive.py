@@ -9,6 +9,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
     'CannotCopy',
+    'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
     'IArchiveEditDependenciesForm',
@@ -71,6 +72,11 @@ class DistroSeriesNotFound(Exception):
 
 
 class SourceNotFound(Exception):
+    """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+
+class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
 
