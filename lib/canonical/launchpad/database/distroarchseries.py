@@ -19,6 +19,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.interfaces import (
     IDistroArchSeries, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchSeriesSet,
@@ -26,8 +28,6 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.decoratedresultset import (
-    DecoratedResultSet)
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
 from canonical.launchpad.validators.person import validate_public_person

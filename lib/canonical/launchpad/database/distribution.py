@@ -24,6 +24,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.binarypackagename import (
@@ -35,8 +37,6 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
-from canonical.launchpad.database.decoratedresultset import (
-    DecoratedResultSet)
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (

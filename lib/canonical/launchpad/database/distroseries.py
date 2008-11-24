@@ -23,12 +23,14 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, flush_database_caches,
     flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
@@ -38,8 +40,6 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.decoratedresultset import (
-    DecoratedResultSet)
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)

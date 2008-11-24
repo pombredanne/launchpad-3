@@ -4,7 +4,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <class class="canonical.launchpad.database.decoratedresultset.DecoratedResultSet">
+    <class class="canonical.launchpad.components.decoratedresultset.DecoratedResultSet">
         <allow interface="storm.zope.interfaces.IResultSet" />
         <allow attributes="__getslice__" />
     </class>

@@ -48,7 +48,7 @@ results obtained from our undecorated result set:
 The original result set and the decorator function are then used to
 create the decorated result set:
 
-    >>> from canonical.launchpad.database.decoratedresultset import (
+    >>> from canonical.launchpad.components.decoratedresultset import (
     ...     DecoratedResultSet)
     >>> decorated_result_set = DecoratedResultSet(result_set,
     ...     result_decorator)
