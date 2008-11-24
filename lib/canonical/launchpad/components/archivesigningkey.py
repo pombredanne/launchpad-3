@@ -79,33 +79,50 @@ class ArchiveSigningKey:
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
 
-        gpghandler = getUtility(IGPGHandler)
-        key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-
         key_displayname = "%s signing key" % self.archive.title
-        secret_key = gpghandler.generateKey(key_displayname)
+        secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
+        self._setupSigningKey(secret_key)
+
+    def setSigningKey(self, key_path):
+        """See `IArchiveSigningKey`."""
+        assert self.archive.signing_key is None, (
+            "Cannot override signing_keys.")
+        assert os.path.exists(key_path), (
+            "%s does not exist" % key_path)
+
+        secret_key = getUtility(IGPGHandler).importSecretKey(
+            open(key_path).read())
+        self._setupSigningKey(secret_key)
+
+    def _setupSigningKey(self, secret_key):
+        """Mandatory setup for signing keys.
+
+        * Export the secret key into the protect disk location.
+        * Export the public key in the repository root.
+        * Store the public GPGKey reference in the database and update
+          the context archive.signing_key.
+        """
         self.exportSecretKey(secret_key)
 
-        pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
+        pub_key = getUtility(IGPGHandler).retrieveKey(secret_key.fingerprint)
         self.exportPublicKey(pub_key)
 
-        # Store a IGPGKey with the public key information.
         algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
-        gpg_key = getUtility(IGPGKeySet).new(
+        key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
+        self.archive.signing_key = getUtility(IGPGKeySet).new(
             key_owner, pub_key.keyid, pub_key.fingerprint, pub_key.keysize,
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
 
-        # Assign the public key reference to the context IArchive.
-        self.archive.signing_key = gpg_key
-
-    def signRepository(self):
+    def signRepository(self, suite):
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is not None, (
             "No signing key available for %s" % self.archive.title)
 
-        release_file_path = os.path.join(self._archive_root_path, 'Release')
+        suite_path = os.path.join(self._archive_root_path, 'dists', suite)
+        release_file_path = os.path.join(suite_path, 'Release')
         assert os.path.exists(release_file_path), (
-            "Release file doesn't exist in the repository")
+            "Release file doesn't exist in the repository: %s"
+            % release_file_path)
 
         secret_key_export = open(
             self.getPathForSecretKey(self.archive.signing_key)).read()
@@ -119,6 +136,6 @@ class ArchiveSigningKey:
             mode=gpgme.SIG_MODE_DETACH)
 
         release_signature_file = open(
-            os.path.join(self._archive_root_path, 'Release.gpg'), 'w')
+            os.path.join(suite_path, 'Release.gpg'), 'w')
         release_signature_file.write(signature)
         release_signature_file.close()

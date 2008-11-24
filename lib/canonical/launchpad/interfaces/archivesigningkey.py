@@ -67,9 +67,26 @@ class IArchiveSigningKey(Interface):
         """
 
     def generateSigningKey():
-        """Generate a new GPG secret/public key pair."""
+        """Generate a new GPG secret/public key pair.
 
-    def signRepository():
-        """Sign the corresponding repository."""
+        :raises: `AssertionError` if the context archive already has a
+            `signing_key`.
+        """
+
+    def setSigningKey(key_path):
+        """Set a given secret key export as the context archive signing key.
+
+        :raises: `AssertionError` if the context archive already has a
+            `signing_key`.
+        :raises: `AssertionError` if the given 'key_path' does not exist.
+        """
+
+    def signRepository(suite):
+        """Sign the corresponding repository.
+
+        :param suite: suite name to be signed.
+        :raises: `AssertionError` if the context archive has no `signing_key`
+            or there is no Release file in the given suite.
+        """
 
 

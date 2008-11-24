@@ -147,9 +147,21 @@ in the expected path.
     >>> print open(archive_signing_key.public_key_path).read()
     Secret False
 
-Use an `IArchiveSigningKey` to generate and assign a real signing_key.
+At this point we can use the `IArchiveSigningKey` to generate and
+assign a real signing_key, although this procedure depends heavily on
+machine entropy and ends up being very slow in our test machine.
 
-    >>> archive_signing_key.generateSigningKey()
+    ### archive_signing_key.generateSigningKey()
+
+We will use a pre-exiting key in our tree which is virtually
+identical to the one that would be generated. The key will be 'set' by
+using a method `IArchiveSigningKey` skips the key generation but uses
+exactly the same procedure for setting the signing_key information.
+
+    >>> import os
+    >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+    >>> key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+    >>> archive_signing_key.setSigningKey(key_path)
 
 The assigned key is a sign-only, password-less 1024-RSA GPG key owner
 by the 'PPA key guard' celebrity and represented by a IGPGKey record.
@@ -219,25 +231,29 @@ for archive which already contains a 'signing_key'.
 When signing repositores we assert they contain the right format and
 the expected file.
 
-    >>> archive_signing_key.signRepository()
+    >>> test_suite = 'hoary'
+    >>> archive_signing_key.signRepository(test_suite)
     Traceback (most recent call last):
     ...
-    AssertionError: Release file doesn't exist in the repository
+    AssertionError: Release file doesn't exist in the repository:
+    /var/tmp/ppa.test/cprov/ubuntutest/dists/hoary/Release
 
 It produces a detached signature for the repository Release current
 file contents.
 
     >>> import os
 
-    >>> release_path = os.path.join(
+    >>> suite_path = os.path.join(
     ...     os.path.dirname(archive_signing_key.public_key_path),
-    ...     'Release')
+    ...     'dists', test_suite)
+    >>> os.makedirs(suite_path)
+    >>> release_path = os.path.join(suite_path, 'Release')
 
     >>> release_file = open(release_path, 'w')
     >>> release_file.write('This is a fake release file.')
     >>> release_file.close()
 
-    >>> archive_signing_key.signRepository()
+    >>> archive_signing_key.signRepository(test_suite)
 
     >>> print open(release_path + '.gpg').read()
     -----BEGIN PGP SIGNATURE-----
@@ -268,7 +284,7 @@ have a 'signing_key' set,  it raises an error.
 
     >>> cprov.archive.signing_key = None
 
-    >>> archive_signing_key.signRepository()
+    >>> archive_signing_key.signRepository(test_suite)
     Traceback (most recent call last):
     ...
     AssertionError: No signing key available for PPA for Celso Providelo

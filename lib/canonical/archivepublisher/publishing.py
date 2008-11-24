@@ -25,9 +25,13 @@ from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
-    PackagePublishingStatus)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archivesigningkey import (
+    IArchiveSigningKey)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.publishing import (
+    pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
+
 from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
@@ -541,6 +545,15 @@ class Publisher(object):
             self._writeSumLine(full_name, f, file_name, sha256)
 
         f.close()
+
+        # Skip signature if the archive signing key is undefined.
+        if self.archive.signing_key is None:
+            self.log.debug("No signing key available, skipping signature.")
+            return
+
+        # Sign the repository.
+        archive_signer = IArchiveSigningKey(self.archive)
+        archive_signer.signRepository(full_name)
 
     def _writeDistroArchSeries(self, distroseries, pocket, component,
                                 architecture, all_files):
