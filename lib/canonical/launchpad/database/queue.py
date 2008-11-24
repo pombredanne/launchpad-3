@@ -11,12 +11,13 @@ __all__ = [
     'PackageUploadSet',
     ]
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
+
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -615,6 +616,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = summary_text
             CHANGESFILE = guess_encoding("".join(changes_lines))
+            USERS_ADDRESS = config.launchpad.users_address,
 
         class RejectedMessage:
             """Rejected message."""
@@ -626,6 +628,7 @@ class PackageUpload(SQLBase):
             SIGNER = ''
             MAINTAINER = ''
             SPR_URL = ''
+            USERS_ADDRESS = config.launchpad.users_address,
 
         default_recipient = "%s <%s>" % (
             config.uploader.default_recipient_name,

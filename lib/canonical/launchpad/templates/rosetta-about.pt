@@ -43,9 +43,11 @@
       <h2>Join the Launchpad Translations community</h2>
 
       <p>
-        To participate in the development and testing of Launchpad Translations,        join the <a
-        href="http://lists.canonical.com/mailman/listinfo/launchpad-users">
-	Launchpad users mailing list</a>, where we discuss new 
+        To participate in the development and testing of Launchpad
+        Translations, join the
+        <a href="launchpad-users"
+           tal:attributes="href view/launchpad_users_team"
+	   >Launchpad users mailing list</a>, where we discuss new 
         features, bugs and other issues.
       </p>
 
