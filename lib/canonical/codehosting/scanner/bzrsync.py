@@ -75,10 +75,9 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_diff(db_branch, bzr_branch, bzr_revision):
+def get_diff(bzr_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    :param db_branch: A `canonical.launchpad.databse.Branch` object.
     :param bzr_branch: A `bzrlib.branch.Branch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
@@ -283,8 +282,7 @@ class BranchMailer:
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
             if self.generate_diffs:
-                revision_diff = get_diff(
-                    self.db_branch, bzr_branch, bzr_revision)
+                revision_diff = get_diff(bzr_branch, bzr_revision)
             else:
                 revision_diff = ''
             # Use the first (non blank) line of the commit message
