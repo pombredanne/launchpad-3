@@ -51,6 +51,8 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
@@ -193,6 +195,53 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(email)
         return person
 
+    def makePersonByName(self, first_name, set_preferred_email=True,
+                         use_default_autosubscribe_policy=False):
+        """Create a new person with the given first name.
+
+        The person will be given two email addresses, with the 'long form'
+        (e.g. anne.person@example.com) as the preferred address.  Return
+        the new person object.
+
+        The person will also have their mailing list auto-subscription
+        policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
+        set to True. (This requires the Launchpad.Edit permission).  This
+        is useful for testing, where we often want precise control over
+        when a person gets subscribed to a mailing list.
+
+        :param first_name: First name of the person, capitalized.
+        :type first_name: string
+        :param set_preferred_email: Flag specifying whether
+            <name>.person@example.com should be set as the user's
+            preferred email address.
+        :type set_preferred_email: bool
+        :param use_default_autosubscribe_policy: Flag specifying whether
+            the person's `mailing_list_auto_subscribe_policy` should be set.
+        :type use_default_autosubscribe_policy: bool
+        """
+        variable_name = first_name.lower()
+        full_name = first_name + ' Person'
+        # E.g. firstname.person@example.com will be an alternative address.
+        preferred_address = variable_name + '.person@example.com'
+        # E.g. aperson@example.org will be the preferred address.
+        alternative_address = variable_name[0] + 'person@example.org'
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            preferred_address,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            name=variable_name, displayname=full_name)
+        if set_preferred_email:
+            person.setPreferredEmail(email)
+
+        if not use_default_autosubscribe_policy:
+            # Shut off list auto-subscription so that we have direct control
+            # over subscriptions in the doctests.
+            person.mailing_list_auto_subscribe_policy = \
+                MailingListAutoSubscribePolicy.NEVER
+        getUtility(IEmailAddressSet).new(alternative_address, person,
+                                         EmailAddressStatus.VALIDATED,
+                                         person.account)
+        return person
+        
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.

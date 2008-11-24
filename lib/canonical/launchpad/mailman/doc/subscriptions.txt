@@ -154,9 +154,9 @@ only in case are the same address.
 Emma joins Launchpad as normal, then subscribes a mixed-case alternative
 email address.
 
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> from canonical.launchpad.testing.factory import factory
     >>> login('foo.bar@canonical.com')
-    >>> emma = new_person('Emma')
+    >>> emma = factory.makePersonByName('Emma')
     >>> email = email_set.new(
     ...     'EmmaXPerson@example.org', emma, account=emma.account)
     >>> email.status = EmailAddressStatus.VALIDATED
