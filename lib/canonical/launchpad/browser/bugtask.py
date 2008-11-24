@@ -2700,6 +2700,20 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hide the links when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
+    @property
+    def current_user_affected_status(self):
+        """Is the current user marked as affected by this bug?"""
+        return self.context.isUserAffected(self.user)
+
+    @property
+    def affects_form_value(self):
+        """The value to use in the inline me too form."""
+        affected = self.context.isUserAffected(self.user)
+        if affected is None or affected == False:
+            return 'YES'
+        else:
+            return 'NO'
+
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""

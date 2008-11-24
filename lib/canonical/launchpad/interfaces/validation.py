@@ -604,9 +604,5 @@ def validate_date_interval(start_date, end_date, error_msg=None):
     """
     if error_msg is None:
         error_msg = _("This event can't start after it ends.")
-    errors = []
     if start_date >= end_date:
-        errors.append(LaunchpadValidationError(error_msg))
-    if errors:
-        raise WidgetsError(errors)
-
+        raise WidgetsError([LaunchpadValidationError(error_msg)])

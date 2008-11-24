@@ -14,7 +14,7 @@ import operator
 
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In
-from storm.store import Store
+from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -86,9 +86,40 @@ class DistributionSourcePackage(BugTargetBase,
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
-    def bug_reporting_guidelines(self):
+    def _self_in_database(self):
+        """Return the equivalent database-backed record of self."""
+        # XXX: allenap 2008-11-13 bug=297736: This is a temporary
+        # measure while DistributionSourcePackage is not yet hooked
+        # into the database but we need access to some of the fields
+        # in the database.
+        return Store.of(self.distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename == (
+                self.sourcepackagename),
+            DistributionSourcePackageInDatabase.distribution == (
+                self.distribution)
+            ).one()
+
+    def _get_bug_reporting_guidelines(self):
         """See `IBugTarget`."""
-        return self.distribution.bug_reporting_guidelines
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is not None:
+            return dsp_in_db.bug_reporting_guidelines
+        return None
+
+    def _set_bug_reporting_guidelines(self, value):
+        """See `IBugTarget`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.bug_reporting_guidelines = value
+
+    bug_reporting_guidelines = property(
+        _get_bug_reporting_guidelines,
+        _set_bug_reporting_guidelines)
 
     def __getitem__(self, version):
         return self.getVersion(version)
@@ -316,3 +347,26 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+
+class DistributionSourcePackageInDatabase(Storm):
+    """Temporary class to allow access to the database."""
+
+    # XXX: allenap 2008-11-13 bug=297736: This is a temporary measure
+    # while DistributionSourcePackage is not yet hooked into the
+    # database but we need access to some of the fields in the
+    # database.
+
+    __storm_table__ = 'DistributionSourcePackage'
+
+    id = Int(primary=True)
+
+    distribution_id = Int(name='distribution')
+    distribution = Reference(
+        distribution_id, 'Distribution.id')
+
+    sourcepackagename_id = Int(name='sourcepackagename')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
+
+    bug_reporting_guidelines = Unicode()

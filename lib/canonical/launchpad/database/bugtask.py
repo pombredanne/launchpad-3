@@ -424,7 +424,8 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete", "date_left_new",
-        "date_triaged", "date_fix_committed", "date_fix_released")
+        "date_triaged", "date_fix_committed", "date_fix_released",
+        "date_left_closed")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -487,6 +488,8 @@ class BugTask(SQLBase, BugTaskMixin):
     date_fix_committed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
     date_fix_released = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_left_closed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -817,6 +820,10 @@ class BugTask(SQLBase, BugTaskMixin):
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = when
+
+        if ((old_status in RESOLVED_BUGTASK_STATUSES) and
+            (new_status in UNRESOLVED_BUGTASK_STATUSES)):
+            self.date_left_closed = when
 
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier

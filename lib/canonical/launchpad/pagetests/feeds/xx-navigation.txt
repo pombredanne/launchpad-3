@@ -64,7 +64,11 @@ XXX: statik 2007-10-18 bug=154114: We don't yet normalize case in
 query strings.
 
     >>> from canonical.config import config
-    >>> config.launchpad.is_bug_search_feed_active = True
+    >>> bug_search_feed_data = """
+    ...     [launchpad]
+    ...     is_bug_search_feed_active: True
+    ...     """
+    >>> config.push('bug_search_feed_data', bug_search_feed_data)
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...     'field.scope=all&search=Search+Bug+Reports&aaa=foo')
     >>> browser.url
@@ -126,4 +130,4 @@ These html feeds should only exist on feeds.launchpad.dev:
 
 Revert configuration change after tests are finished.
 
-    >>> config.launchpad.is_bug_search_feed_active = False
+    >>> config_data = config.pop('bug_search_feed_data')

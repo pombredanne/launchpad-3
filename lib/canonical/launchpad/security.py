@@ -36,6 +36,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
@@ -727,6 +729,18 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its source
+    package information"""
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins))
+
+
 class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
@@ -1176,16 +1190,27 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.ExpensiveRequest'
     usedfor = ISourcePackage
 
+    def _userInAnyOfTheTeams(self, user, archive_permissions):
+        if archive_permissions is None or len(archive_permissions) == 0:
+            return False
+        for permission in archive_permissions:
+            if user.inTeam(permission.person):
+                return True
+        return False
+
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
         Admins and Translations admins have access, as does the owner of
-        the translation group (if applicable).
+        the translation group (if applicable) and distribution uploaders.
         """
-        translation_group = self.obj.distribution.translationgroup
+        distribution = self.obj.distribution
+        translation_group = distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            # User is part of the 'driver' team for the distribution.
+            (self._userInAnyOfTheTeams(user, distribution.uploaders)) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1339,9 +1364,18 @@ class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
     def checkAuthenticated(self, user):
-        """Private restricts to admins, BuilddAdmins, archive members."""
+        """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
             # Anyone can see non-private archives.
+            return True
+
+        if user.inTeam(self.obj.archive.owner):
+            # Anyone in the PPA team gets the nod.
+            return True
+
+        # LP admins may also see it.
+        lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
             return True
 
         # If the permission check on the sourcepackagerelease for this
@@ -1353,7 +1387,8 @@ class ViewBuildRecord(EditBuildRecord):
         if auth_spr.checkAuthenticated(user):
             return True
 
-        return EditBuildRecord.checkAuthenticated(self, user)
+        # You're not a celebrity, get out of here.
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
@@ -1787,7 +1822,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj._cached_published_archives:
-            if check_permission('launchpad.View', archive):
+            auth_archive = ViewArchive(archive)
+            if auth_archive.checkAuthenticated(user):
                 return True
         return False
 

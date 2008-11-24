@@ -50,6 +50,7 @@ GLOBAL_NAMES = set([
     'print_action_links',
     'print_batch_header',
     'print_comments',
+    'print_errors',
     'print_location',
     'print_location_apps',
     'print_navigation_links',
