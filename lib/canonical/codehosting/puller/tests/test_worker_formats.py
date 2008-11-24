@@ -13,8 +13,12 @@ from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack5)
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
-from bzrlib.tests.repository_implementations.test_repository import (
-            TestCaseWithRepository)
+try:
+    from bzrlib.tests.repository_implementations.test_repository import (
+                TestCaseWithRepository)
+except ImportError:
+    from bzrlib.tests.per_repository import TestCaseWithRepository
+
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.tests.helpers import LoomTestMixin
