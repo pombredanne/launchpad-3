@@ -253,6 +253,7 @@ class BranchMirrorer(object):
             arguments to log messages in the scheduler, or None, in which case
             log messages are discarded.
         """
+        self._seen_urls = None
         self.policy = policy
         self.protocol = protocol
         if log is not None:
@@ -279,6 +280,7 @@ class BranchMirrorer(object):
             # it.
             Branch.hooks['transform_fallback_location'].remove(
                 self.transformFallbackLocationHook)
+            self._seen_urls = None
 
     def transformFallbackLocationHook(self, branch, url):
         """XXX."""
@@ -302,10 +304,11 @@ class BranchMirrorer(object):
             references.
         """
         while True:
-            if url in self._seen_urls:
-                raise BranchLoopError()
+            if self._seen_urls is not None:
+                if url in self._seen_urls:
+                    raise BranchLoopError()
+                self._seen_urls.add(url)
             self.policy.checkOneURL(url)
-            self._seen_urls.add(url)
             next_url = self.followReference(url)
             if next_url is None:
                 return url
@@ -336,6 +339,8 @@ class BranchMirrorer(object):
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
         if stacked_on_url is not None:
+            if not stacked_on_url.startswith('/'):
+                stacked_on_url = URI(stacked_on_url).path
             # We resolve the stacked_on_url relative to the destination_url
             # because a common case for stacked_on_url will be
             # /~user/project/branch and we want to check the branch already
@@ -350,7 +355,17 @@ class BranchMirrorer(object):
             revision_id = None
         else:
             revision_id = 'null:'
-        bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
+        Branch.hooks.install_named_hook(
+            'transform_fallback_location', self.transformFallbackLocationHook,
+            'BranchMirrorer.transformFallbackLocationHook')
+        try:
+            bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
+        finally:
+            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
+            # to remove a hook.  The linked bug report asks for an API to do
+            # it.
+            Branch.hooks['transform_fallback_location'].remove(
+                self.transformFallbackLocationHook)
         branch = Branch.open(destination_url)
         return branch
 
@@ -389,6 +404,8 @@ class BranchMirrorer(object):
         # source branch.
         stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
+        if stacked_on_url and not stacked_on_url.startswith('/'):
+            stacked_on_url = URI(stacked_on_url).path
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,

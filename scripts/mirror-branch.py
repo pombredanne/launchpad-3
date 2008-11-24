@@ -68,6 +68,8 @@ def force_bzr_to_use_urllib():
                             'HttpTransport_urllib')
     register_lazy_transport('https://', 'bzrlib.transport.http._urllib',
                             'HttpTransport_urllib')
+    register_lazy_transport('bzr+ssh://', 'foo', 'bar')
+    
 
 
 if __name__ == '__main__':
