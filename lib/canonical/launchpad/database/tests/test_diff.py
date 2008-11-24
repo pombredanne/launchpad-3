@@ -85,6 +85,14 @@ class TestStaticDiff(BzrTestCase):
         diff2 = StaticDiff.acquire('rev1', 'rev2', tree.branch.repository)
         self.assertFalse(diff1 is diff2)
 
+    def test_acquireFromText(self):
+        diff_a = 'a'
+        diff_b = 'b'
+        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', diff_a)
+        self.assertEqual('rev1', static_diff.from_revision_id)
+        self.assertEqual('rev2', static_diff.to_revision_id)
+        static_diff2 = StaticDiff.acquireFromText('rev1', 'rev2', diff_b)
+        self.assertIs(static_diff, static_diff2)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

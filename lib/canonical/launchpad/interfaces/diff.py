@@ -55,3 +55,9 @@ class IStaticDiffSource(Interface):
 
     def acquire(from_revision_id, to_revision_id, repository):
         """Get or create a StaticDiff."""
+
+    def acquireFromText(from_revision_id, to_revision_id, text):
+        """Get or create a StaticDiff from a string.
+
+        If a StaticDiff exists for this revision_id pair, the text is ignored.
+        """

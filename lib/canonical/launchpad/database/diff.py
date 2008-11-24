@@ -40,11 +40,15 @@ class Diff(SQLBase):
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
+        diff_content.seek(0)
+        return klass.fromFile(diff_content)
+
+    @classmethod
+    def fromFile(klass, diff_content):
         size = diff_content.tell()
         if size == 0:
-            diff_content.write(' ')
+            diff_content = StringIO(' ')
             size = 1
-        diff_content.seek(0)
         x = getUtility(ILibraryFileAliasSet).create('meeple',
             size, diff_content, 'text/x-diff')
         return klass(diff_text=x)
@@ -72,6 +76,17 @@ class StaticDiff(SQLBase):
         from_tree = repository.revision_tree(from_revision_id)
         to_tree = repository.revision_tree(to_revision_id)
         diff = Diff.fromTrees(from_tree, to_tree)
+        return klass(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
+            diff=diff)
+
+    @classmethod
+    def acquireFromText(klass, from_revision_id, to_revision_id, text):
+        existing_diff = klass.selectOneBy(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
+        if existing_diff is not None:
+            return existing_diff
+        diff = Diff.fromFile(StringIO(text))
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)
