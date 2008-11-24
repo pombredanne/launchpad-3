@@ -1,0 +1,20 @@
+== Create a new merge proposal ==
+
+
+
+
+== Get an existing merge proposal ==
+
+
+
+
+== Vote on a merge proposal ==
+
+
+
+
+== Mark a merge proposal as merged ==
+
+
+
+
