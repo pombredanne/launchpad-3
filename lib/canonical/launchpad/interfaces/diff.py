@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IDiff',
     'IStaticDiff',
+    'IStaticDiffSource',
     ]
 
 from zope.schema import (
@@ -48,3 +49,9 @@ class IStaticDiff(Interface):
 
     def destroySelf():
         """Destroy this object."""
+
+
+class IStaticDiffSource(Interface):
+
+    def acquire(from_revision_id, to_revision_id, repository):
+        """Get or create a StaticDiff."""

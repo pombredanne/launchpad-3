@@ -27,9 +27,10 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    NotFoundError, RepositoryFormat)
+    IStaticDiffSource, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
+    )
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -89,7 +90,8 @@ def get_diff(bzr_branch, bzr_revision):
         basis = NULL_REVISION
     basis_spec = 'revid:%s' % basis
     revision_spec = 'revid:%s' % bzr_revision.revision_id
-    StaticDiff.acquire(basis, bzr_revision.revision_id, bzr_branch.repository)
+    static_diff = getUtility(IStaticDiffSource).acquire(
+        basis, bzr_revision.revision_id, bzr_branch.repository)
     transaction.commit()
     lfa = static_diff.diff.diff_text
     lfa.open()

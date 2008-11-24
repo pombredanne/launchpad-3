@@ -12,12 +12,12 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.revisionspec import RevisionSpec
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IDiff, IStaticDiff)
+    IDiff, IStaticDiff, IStaticDiffSource)
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
 
@@ -54,6 +54,8 @@ class StaticDiff(SQLBase):
     """A diff from one revision to another."""
 
     implements(IStaticDiff)
+
+    classProvides(IStaticDiffSource)
 
     from_revision_id = StringCol()
 
