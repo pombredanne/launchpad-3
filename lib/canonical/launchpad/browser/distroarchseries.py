@@ -52,7 +52,7 @@ class DistroArchSeriesView(BuildRecordsView):
 
 class DistroArchSeriesPackageSearchView(AbstractPackageSearchView):
     """Customised PackageSearchView for DistroArchSeries"""
-    def context_specific_search(self):
+    def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchBinaryPackages(self.text)
 

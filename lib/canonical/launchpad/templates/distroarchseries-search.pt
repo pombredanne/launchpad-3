@@ -10,15 +10,12 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Binary package search results</h1>
-    </metal:heading>
-
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-details" /> 
     </metal:portlets>
 
 <div metal:fill-slot="main">
+  <h1>Binary package search results</h1>
 
   <form name="search" method="GET">
     <div>
@@ -42,48 +39,7 @@
     </div>
   </form>
 
-  <div id="search-results">
-
-  <tal:search_requested condition="view/search_requested">
-
-    <tal:batch define="batch view/batchnav/currentBatch">
-
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
-
-      <ul class="search_results" tal:condition="batch">
-        <li tal:repeat="dasbpr batch">
-          <img src="/@@/package-binary" />
-          <a tal:attributes="href dasbpr/fmt:url;
-                             title dasbpr/title"
-             class="packagetitle"
-             tal:content="dasbpr/name"/>:
-          <div style="margin-left: 30px; font-size: 80%;"
-               tal:content="dasbpr/summary">
-            Gee whiz special package.
-            <span tal:replace="dasbpr/description"
-                  tal:condition="view/detailed">
-              Gee whiz special package description goes here if there are
-              fewer than 5 matches.
-            </span>
-          </div>
-        </li>
-      </ul>
-
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
-
-      <tal:no_matches condition="not: view/matches">
-
-        No packages matching '<span tal:replace="view/text">amarok</span>'
-        are published in
-        <span tal:replace="context/displayname">hoary</span>.
-
-      </tal:no_matches>
-
-    </tal:batch>
-
-  </tal:search_requested>
-
-  </div>
+  <metal:package-search use-macro="context/@@+macros/search-results" />
 
 </div>
 

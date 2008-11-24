@@ -25,7 +25,7 @@ class AbstractPackageSearchView:
         self.search_requested = False
         if self.text:
             self.search_requested = True
-            results = self.search_results()
+            results = self.searchResults()
             self.matches = len(results)
             if self.matches > 5:
                 self.detailed = False
@@ -34,7 +34,7 @@ class AbstractPackageSearchView:
 
             self.batchnav = BatchNavigator(results, self.request)
 
-    def search_results(self):
+    def searchResults(self):
         """Search for packages matching the request text.
         
         Try to find the packages that match the given text, then present
@@ -42,14 +42,14 @@ class AbstractPackageSearchView:
         once.
         """
         if self._results is None:
-            self._results = self.context_specific_search()
+            self._results = self.contextSpecificSearch()
         return self._results
 
-    def context_specific_search(self):
+    def contextSpecificSearch(self):
         """Calls the context specific search.
         
         To be overridden by subclass.
         """
-        raise TypeError(
+        raise NotImplementedError(
             "do_context_specific_search needs to be implemented in sub-class"
             )

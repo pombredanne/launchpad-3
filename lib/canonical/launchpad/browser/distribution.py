@@ -542,7 +542,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
 class DistributionPackageSearchView(AbstractPackageSearchView):
     """Customised PackageSearchView for Distribution"""
 
-    def context_specific_search(self):
+    def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchSourcePackages(self.text)
 

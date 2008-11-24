@@ -59,6 +59,13 @@
     </browser:pages>
 
     <browser:page
+     for="canonical.launchpad.interfaces.IDistroArchSeries"
+     name="+macros"
+     permission="zope.Public"
+     template="../templates/packagesearch-macros.pt"
+     />
+
+    <browser:page
       for="canonical.launchpad.interfaces.IDistroArchSeries"
       permission="zope.Public"
       name="+search"

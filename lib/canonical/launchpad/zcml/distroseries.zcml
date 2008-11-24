@@ -153,6 +153,13 @@
     />
 
   <browser:page
+     for="canonical.launchpad.interfaces.IDistroSeries"
+     name="+macros"
+     permission="zope.Public"
+     template="../templates/packagesearch-macros.pt"
+     />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="zope.Public"
     name="+search"

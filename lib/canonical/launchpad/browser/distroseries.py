@@ -295,7 +295,7 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 class DistroSeriesPackageSearchView(AbstractPackageSearchView):
     """Customised PackageSearchView for DistroSeries"""
 
-    def context_specific_search(self):
+    def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
