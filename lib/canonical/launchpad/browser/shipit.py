@@ -345,7 +345,12 @@ class ShipItRequestView(GeneralFormView):
             field_values[field_name] = quantities[arch]
         return field_values
 
-    def standardShipItRequests(self):
+    @cachedproperty
+    def has_multiple_options(self):
+        return len(self.standard_options) > 1
+
+    @cachedproperty
+    def standard_options(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
         requests = getUtility(IStandardShipItRequestSet).getByFlavour(
             self.flavour, self.user)
@@ -409,7 +414,7 @@ class ShipItRequestView(GeneralFormView):
                     'Expected an id but got "%s"' % ordertype)
         if self.current_order_standard_id:
             return self.current_order_standard_id
-        for standardrequest in self.standardShipItRequests():
+        for standardrequest in self.standard_options:
             if standardrequest.isdefault:
                 return standardrequest.id
 
@@ -1161,6 +1166,7 @@ class ShipItSurveyView(LaunchpadFormView):
 
     schema = ShipItSurveySchema
     custom_widget('environment', LabeledMultiCheckBoxWidget)
+    custom_widget('platform', CheckBoxMatrixWidget, column_count=2)
     custom_widget('evaluated_uses', CheckBoxMatrixWidget, column_count=3)
     custom_widget('used_in', LabeledMultiCheckBoxWidget)
     custom_widget('interested_in_paid_support', LabeledMultiCheckBoxWidget)

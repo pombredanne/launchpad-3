@@ -1152,6 +1152,7 @@ The current references to the branch table are shown here.
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
     branch.stacked_on
+    branchjob.branch
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch
@@ -1161,6 +1162,7 @@ The current references to the branch table are shown here.
     codeimport.branch
     productseries.import_branch
     productseries.user_branch
+    seriessourcepackagebranch.branch
     specificationbranch.branch
 
 (Unfortunately, references can form a graph-- note that codereviewcomments

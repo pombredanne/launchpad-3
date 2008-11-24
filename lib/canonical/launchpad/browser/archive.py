@@ -41,7 +41,7 @@ from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import (
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+    check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -965,9 +965,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Perform deletion of the source and its binaries.
         for dependency in selected_dependencies:
-            self.context.removeArchiveDependency(
-                dependency, PackagePublishingPocket.RELEASE,
-                getUtility(IComponentSet)['main'])
+            self.context.removeArchiveDependency(dependency)
 
         self.refreshSelectedDependenciesWidget()
 
@@ -1004,9 +1002,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                                "An archive should not depend on itself.")
             return
 
-        if self.context.getArchiveDependency(
-            dependency_candidate, PackagePublishingPocket.RELEASE,
-            getUtility(IComponentSet)['main']):
+        if self.context.getArchiveDependency(dependency_candidate):
             self.setFieldError('dependency_candidate',
                                "This dependency is already recorded.")
             return

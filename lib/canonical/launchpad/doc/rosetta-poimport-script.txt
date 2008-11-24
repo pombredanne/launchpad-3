@@ -46,11 +46,20 @@ We clean the import queue.
     >>> translation_import_queue.entryCount()
     0
 
+Product must have privileges which allow suggestions from those
+without special privileges, like "cprov": structured privileges are
+enough (but we could go with "open" as well, which would allow not
+only suggestions but full translations as well).
+
+    >>> from canonical.launchpad.interfaces import TranslationPermission
+    >>> product = pofile.potemplate.productseries.product
+    >>> product.translationpermission = TranslationPermission.STRUCTURED
+
 We add a PO file to the import queue, approving it along the way.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_content, False, rosetta_experts,
+    ...     pofile.path, pofile_content, False, cprov,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
     ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
@@ -60,8 +69,8 @@ We add a PO file to the import queue, approving it along the way.
     >>> translation_import_queue.entryCount()
     1
 
-Now we can try to run the import script, making sure that the DB user
-it runs under has enough privileges to create a new account.
+Now we run the import script, making sure that the DB user it runs under
+has enough privileges for the script to run to completion.
 
     >>> import os
     >>> import sys
@@ -79,10 +88,10 @@ it runs under has enough privileges to create a new account.
     INFO    Importing: Serbian (sr) translation of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
     <BLANKLINE>
-
-And we can see that there is now an Account for 'danilo@canonical.com'.
-
     >>> transaction.commit()
+
+A new Account for 'danilo@canonical.com' is created.
+
     >>> danilo = getUtility(IPersonSet).getByEmail('danilo@canonical.com')
     >>> danilo.displayname
     u'Danilo \u0160egan'

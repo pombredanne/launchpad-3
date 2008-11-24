@@ -15,7 +15,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
+    BrokenTextError, ILaunchpadCelebrities, IPOTMsgSet,
     RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.launchpad.helpers import shortlist
@@ -26,6 +26,24 @@ from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.database.translationtemplateitem import (
     TranslationTemplateItem)
+
+
+# Msgids that indicate translation credit messages, and their
+# contexts.
+credit_message_ids = {
+    # Regular gettext credits messages.
+    u'translation-credits': None,
+    u'translator-credits': None,
+    u'translator_credits': None,
+
+    # KDE credits messages.
+    u'Your emails': u'EMAIL OF TRANSLATORS',
+    u'Your names': u'NAME OF TRANSLATORS',
+
+    # Old KDE credits messages.
+    u'_: EMAIL OF TRANSLATORS\nYour emails': None,
+    u'_: NAME OF TRANSLATORS\nYour names': None,
+    }
 
 
 class POTMsgSet(SQLBase):
@@ -46,24 +64,38 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    _cached_singular_text = None
+
+    def __storm_invalidated__(self):
+        self._cached_singular_text = None
+
     @property
     def singular_text(self):
         """See `IPOTMsgSet`."""
-        format_importer = getUtility(
-            ITranslationImporter).getTranslationFormatImporter(
-                self.potemplate.source_file_format)
-        if format_importer.uses_source_string_msgids:
-            # This format uses English translations as the way to store the
-            # singular_text.
-            english_language = getUtility(ILanguageSet)['en']
-            translation_message = self.getCurrentTranslationMessage(
-                english_language)
-            if (translation_message is not None and
-                translation_message.msgstr0 is not None):
-                return translation_message.msgstr0.translation
+        if self._cached_singular_text is not None:
+            return self._cached_singular_text
 
-        # By default, singular text is the msgid_singular.
+        if self.potemplate.uses_english_msgids:
+            self._cached_singular_text = self.msgid_singular.msgid
+            return self._cached_singular_text
+
+        # Singular text is stored as an "English translation."
+        translation_message = self.getCurrentTranslationMessage(
+            getUtility(ILaunchpadCelebrities).english)
+        if translation_message is not None:
+            msgstr0 = translation_message.msgstr0
+            if msgstr0 is not None:
+                self._cached_singular_text = msgstr0.translation
+                return self._cached_singular_text
+
+        # There is no "English translation," at least not yet.  Return
+        # symbolic msgid, but do not cache--an English text may still be
+        # imported.
         return self.msgid_singular.msgid
+
+    def clearCachedSingularText(self):
+        """Clear cached result for `singular_text`, if any."""
+        self._cached_singular_text = None
 
     @property
     def plural_text(self):
@@ -347,8 +379,8 @@ class POTMsgSet(SQLBase):
 
     def _makeTranslationMessageCurrent(self, pofile, new_message, is_imported,
                                        submitter):
-        current_message = self.getCurrentTranslationMessage(
-            pofile.language)
+        """Make the given translation message the current one."""
+        current_message = self.getCurrentTranslationMessage(pofile.language)
         if is_imported:
             # A new imported message is made current
             # only if there is no existing current message
@@ -533,6 +565,12 @@ class POTMsgSet(SQLBase):
                     pofile, matching_message, is_imported, submitter)
 
         if is_imported:
+            # If there is no previously existing imported message,
+            # make this one current (revert current to imported).
+            if self.getImportedTranslationMessage(pofile.language,
+                                                  pofile.variant) is None:
+                matching_message.is_current = True
+
             # Note that the message is imported.
             matching_message.is_imported = is_imported
 
@@ -668,35 +706,18 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
-        return (self.msgid_singular is not None and
-                self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits',
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'Your emails',
-            ])
+        return self.is_translation_credit
 
     @property
     def is_translation_credit(self):
         """See `IPOTMsgSet`."""
         # msgid_singular.msgid is pre-joined everywhere where
         # is_translation_credit is used
-        if self.msgid_singular is None:
+        if self.msgid_singular.msgid not in credit_message_ids:
             return False
-        regular_credits = self.msgid_singular.msgid in [
-            u'translation-credits',
-            u'translator-credits',
-            u'translator_credits' ]
-        old_kde_credits = self.msgid_singular.msgid in [
-            u'_: EMAIL OF TRANSLATORS\nYour emails',
-            u'_: NAME OF TRANSLATORS\nYour names'
-            ]
-        kde_credits = ((self.msgid_singular.msgid == u'Your emails' and
-                        self.context == u'EMAIL OF TRANSLATORS') or
-                       (self.msgid_singular.msgid == u'Your names' and
-                        self.context == u'NAME OF TRANSLATORS'))
-        return (regular_credits or old_kde_credits or kde_credits)
+
+        expected_context = credit_message_ids[self.msgid_singular.msgid]
+        return expected_context is None or (self.context == expected_context)
 
     def makeHTMLID(self, suffix=None):
         """See `IPOTMsgSet`."""
