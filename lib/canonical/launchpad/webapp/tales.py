@@ -193,7 +193,7 @@ class MenuAPI:
                 context, INavigationMenu, name=selectedfacetname)
         except NoCanonicalUrl:
             menu = None
-        if menu is None:
+        if menu is None or menu.disabled:
             return {}
         else:
             menu.request = self._request
@@ -1003,6 +1003,17 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
         'title-link': 'titleLink'}
 
+    def traverse(self, name, furtherPath):
+        """Special case traversal to support multiple link formats."""
+        for link_name, func in (('project-link', self.projectLink),
+                           ('title-link', self.titleLink),
+                           ('bzr-link', self.bzrLink)):
+            if name == link_name:
+                extra_path = '/'.join(reversed(furtherPath))
+                del furtherPath[:]
+                return func(extra_path)
+        return ObjectFormatterAPI.traverse(self, name, furtherPath)
+
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
         branch = self._context
@@ -1012,12 +1023,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             title = branch.title
         else:
             title = "(no title)"
-        if branch.author is not None:
-            author = branch.author.name
-        else:
-            author = branch.owner.name
         return {
-            'author': author,
+            'bzr_identity': branch.bzr_identity,
             'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
             'title': cgi.escape(title),
@@ -1031,6 +1038,13 @@ class BranchFormatterAPI(ObjectFormatterAPI):
             '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
             '&nbsp;%(unique_name)s</a>' % self._args(view_name))
+
+    def bzrLink(self, view_name):
+        """A hyperlinked branch icon with the unique name."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(bzr_identity)s</a>' % self._args(view_name))
 
     def projectLink(self, view_name):
         """A hyperlinked branch icon with the name and title."""

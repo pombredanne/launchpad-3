@@ -288,8 +288,15 @@ class IPOTemplate(IRosettaStats):
             '''))
 
     date_last_updated = Datetime(
-            title=_('Date for last update'),
-            required=True)
+        title=_('Date for last update'),
+        required=True)
+
+    uses_english_msgids = Bool(
+        title=_("Uses English strings as msgids"), readonly=True,
+        description=_("""
+            Some formats, such as Mozilla's XPI, use symbolic msgids where
+            gettext uses the original English strings to identify messages.
+            """))
 
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""

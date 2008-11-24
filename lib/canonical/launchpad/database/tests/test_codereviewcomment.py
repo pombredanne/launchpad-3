@@ -40,8 +40,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
-        self.assertEqual(
-            'Re: Proposed merge of source-branch into target-branch',
+        self.assertEqual('Re: Proposed merge of '
+            'lp://dev/~person-name2/product-name8/branch4 into '
+            'lp://dev/~person-name13/product-name8/branch15',
             comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 
@@ -57,7 +58,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
         self.assertEqual(CodeReviewVote.ABSTAIN, reply.vote)
-        self.assertEqual('My tag', reply.vote_tag)
+        self.assertEqual('my tag', reply.vote_tag)
 
     def test_createReplyCommentNoSubject(self):
         comment = self.bmp.createComment(

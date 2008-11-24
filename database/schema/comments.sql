@@ -43,6 +43,16 @@ COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
+COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
+COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+
+-- BranchJob
+
+COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch.';
+COMMENT ON COLUMN BranchJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchJob.branch IS 'The branch that this job is for.';
+COMMENT ON COLUMN BranchJob.job_type IS 'The type of job, like new revisions, or attribute change.';
+COMMENT ON COLUMN BranchJob.json_data IS 'Data that is specific to the type of job, whether this be the revisions to send email out for, or the changes that were recorded for the branch.';
 
 -- BranchMergeProposal
 
@@ -77,6 +87,14 @@ COMMENt ON COLUMN BranchMergeProposal.root_message_id IS 'The root message of th
 COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
+-- BranchMergeProposalJob
+
+COMMENT ON TABLE BranchMergeProposalJob IS 'Contains references to jobs that are executed for a branch merge proposal.';
+COMMENT ON COLUMN BranchMergeProposalJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN BranchMergeProposalJob.branch_merge_proposal IS 'The branch merge proposal that this job is for.';
+COMMENT ON COLUMN BranchMergeProposalJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
+COMMENT ON COLUMN BranchMergeProposalJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
+
 -- BranchMergeRobot
 
 COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
@@ -85,6 +103,16 @@ COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to 
 COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
 COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
 COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
+
+-- SeriesSourcePackageBranch
+
+COMMENT ON TABLE SeriesSourcePackageBranch IS 'Link between branches and distribution suite.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.distroseries IS 'The distroseries the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.pocket IS 'The pocket the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.sourcepackagename IS 'The sourcepackagename the branch is linked to.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked to a distribution suite.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
+COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
 
 -- BranchSubscription
 
@@ -179,6 +207,7 @@ COMMENT ON COLUMN BugTask.date_left_new IS 'The date when this bug first transit
 COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned to a status >= TRIAGED.';
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
+COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 
 
 -- BugNotification
@@ -343,24 +372,6 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
--- CodeMailJob
-COMMENT ON TABLE CodeMailJob IS 'A job to generate a mail related to code.';
-COMMENT ON COLUMN CodeMailJob.body IS 'The body for the mail.';
-COMMENT ON COLUMN CodeMailJob.branch_project_name IS 'The name of the project this mail is about.';
-COMMENT ON COLUMN CodeMailJob.branch_url IS 'The URL for the branch this message is about.';
-COMMENT ON COLUMN CodeMailJob.date_created IS 'The date this CodeMailJob was created.';
-COMMENT ON COLUMN CodeMailJob.footer IS 'The footer for the mail.';
-COMMENT ON COLUMN CodeMailJob.from_address IS 'The address for the mail from header.';
-COMMENT ON COLUMN CodeMailJob.in_reply_to IS 'The Message-Id of the message this message is a reply to.';
-COMMENT ON COLUMN CodeMailJob.job IS 'The Job for this CodeMailJob.';
-COMMENT ON COLUMN CodeMailJob.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not included in the mail.';
-COMMENT ON COLUMN CodeMailJob.rationale IS 'The rationale for the X-Launchpad-Message-Rationale header.';
-COMMENT ON COLUMN CodeMailJob.reply_to_address IS 'The address for the mail reply-to header.';
-COMMENT ON COLUMN CodeMailJob.rfc822msgid IS 'The Message-Id to use in the mail.';
-COMMENT ON COLUMN CodeMailJob.static_diff IS 'A diff to include in the mail.';
-COMMENT ON COLUMN CodeMailJob.subject IS 'The subject line for the mail.';
-COMMENT ON COLUMN CodeMailJob.to_address IS 'The address the mail should be sent to.';
-
 
 -- CodeReviewMessage
 
@@ -513,7 +524,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 -- MergeDirectiveJob
 COMMENT ON TABLE MergeDirectiveJob IS 'A job to process a merge directive.';
 COMMENT ON COLUMN MergeDirectiveJob.job IS 'The job associated with this MergeDirectiveJob.';
-COMMENT ON COLUMN MergeDirectiveJob.message IS 'Full MIME content of the message containing the merge directive.';
+COMMENT ON COLUMN MergeDirectiveJob.merge_directive IS 'Full MIME content of the message containing the merge directive.';
 COMMENt ON COLUMN MergeDirectiveJob.action IS 'Enumeration of the action to perform with the merge directive; push or create merge proposal.';
 
 
@@ -538,12 +549,6 @@ COMMENT ON COLUMN PreviewDiff.diff IS 'The last Diff generated for this PreviewD
 COMMENT ON COLUMN PreviewDiff.dependent_revision_id IS 'The dependant branch revision_id used to generate this diff.';
 COMMENT ON COLUMN PreviewDiff.source_revision_id IS 'The source branch revision_id used to generate this diff.';
 COMMENT ON COLUMN PreviewDiff.target_revision_id IS 'The target branch revision_id used to generate this diff.';
-
-
--- PreviewDiffJob
-COMMENT ON TABLE PreviewDiffJob IS 'Describes a job to create a preview diff.';
-COMMENT ON COLUMN PreviewDiffJob.job IS 'A Job containing more information about this PreviewDiffJob.';
-COMMENT ON COLUMN PreviewDiffJob.branch_merge_proposal IS 'The BranchMergeProposal to generate the PreviewDiff for.';
 
 
 -- Product
@@ -597,6 +602,7 @@ COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the
 --COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
+COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
 
 -- ProductReleaseFile
 
@@ -802,16 +808,6 @@ COMMENT ON COLUMN StaticDiff.from_revision_id IS 'The revision-id that the diff 
 COMMENT ON COLUMN StaticDiff.diff IS 'The Diff.';
 COMMENT ON COLUMN StaticDiff.to_revision_id IS 'The revision-id that the diff is to.';
 
--- StaticDiffJob
-
-COMMENT ON TABLE StaticDiffJob IS 'Jobs to generate static diffs.';
-COMMENT ON COLUMN StaticDiffJob.branch IS 'The Branch to use for resolving revision specs.';
-COMMENT ON COLUMN StaticDiffJob.branch_merge_proposal IS 'A BranchMergeProposal that should refer to the resulting diff.';
-COMMENT ON COLUMN StaticDiffJob.from_revision_spec IS 'The revision spec that the diff will be from.';
-COMMENT ON COLUMN StaticDiffJob.job IS 'The Job for this StaticDiffJob.';
-COMMENT ON COLUMN StaticDiffJob.to_revision_spec IS 'The revision spec that the diff will be to.';
-
-
 -- TeamMembership
 COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
 COMMENT ON COLUMN TeamMembership.person IS 'The person.';
@@ -1007,6 +1003,7 @@ COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff f
 COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
 COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
 COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+COMMENT ON COLUMN PackageDiff.status IS 'Request status, PENDING(0) when created then goes to COMPLETED(1) or FAILED(2), both terminal status where diff_content and date_fulfilled will contain the results of the request.';
 
 
 -- PackageUpload
@@ -1837,6 +1834,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from last import attempt.';
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
@@ -2004,6 +2002,7 @@ COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Shoul
 COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
+COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
@@ -2121,21 +2120,21 @@ COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver co
 -- Job
 
 COMMENT ON TABLE Job IS 'Common info about a job.';
+COMMENT ON COLUMN Job.requester IS 'Ther person who requested this job (if applicable).';
+COMMENT ON COLUMN Job.reason IS 'The reason that this job was created (if applicable)';
+COMMENT ON COLUMN Job.status IS 'An enum (JobStatus) indicating the job status, one of: new, in-progress, complete, failed, cancelling, cancelled.';
+COMMENT ON COLUMN Job.progress IS 'The percentage complete.  Can be NULL for some jobs that do not report progress.';
+COMMENT ON COLUMN Job.last_report_seen IS 'The last time the progress was reported.';
+COMMENT ON COLUMN Job.next_report_due IS 'The next time a progress report is expected.';
 COMMENT ON COLUMN Job.attempt_count IS 'The number of times this job has been attempted.';
-COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
-COMMENT ON COLUMN Job.date_ended IS 'If the job has ended, the time when the job ended.';
-COMMENT ON COLUMN Job.date_started IS 'If the job has started, the time when the job started.';
-COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
-COMMENT ON COLUMN Job.log IS 'If provided, a log of the last attempt to run the job.';
+COMMENT ON COLUMN Job.max_retries IS 'The maximum number of retries valid for this job.';
+COMMENT ON COLUMN Job.log IS 'If provided, this is the tail of the log file being generated by the running job.';
 COMMENT ON COLUMN Job.scheduled_start IS 'The time when the job should start';
-COMMENT ON COLUMN Job.status IS 'An enum indicating the job status, with 0 meaning "waiting".';
+COMMENT ON COLUMN Job.lease_expires IS 'The time when the lease expires.';
+COMMENT ON COLUMN Job.date_created IS 'The time when the job was created.';
+COMMENT ON COLUMN Job.date_started IS 'If the job has started, the time when the job started.';
+COMMENT ON COLUMN Job.date_finished IS 'If the job has finished, the time when the job finished.';
 
-
--- JobDependency
-
-COMMENT ON TABLE JobDependency IS 'Dependency table for jobs.';
-COMMENT ON COLUMN JobDependency.prerequisite IS 'A Job that must be performed before another job.';
-COMMENT ON COLUMN JobDependency.dependant IS 'A Job that must be performed after another job.';
 
 -- StructuralSubscription
 COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
