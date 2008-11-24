@@ -200,6 +200,9 @@ class BranchFormat(DBEnumeratedType):
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
 
+    BZR_LOOM_3 = DBItem(
+        107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
+
 
 class RepositoryFormat(DBEnumeratedType):
     """Repository on-disk format.
