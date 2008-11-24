@@ -1052,10 +1052,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
-        # The source branch is also marked as merged.
-        self.assertEqual(
-            BranchLifecycleStatus.MERGED,
-            proposal.source_branch.lifecycle_status)
 
     def test_autoMergeProposals_real_merge_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
@@ -1068,10 +1064,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
-        # The source branch is also marked as merged.
-        self.assertEqual(
-            BranchLifecycleStatus.MERGED,
-            proposal.source_branch.lifecycle_status)
 
     def test_autoMergeProposals_rejected_proposal(self):
         # If there is a merge proposal where the tip of the source is in the
