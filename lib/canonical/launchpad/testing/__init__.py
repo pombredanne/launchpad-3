@@ -205,6 +205,13 @@ class TestCaseWithFactory(TestCase):
         login(user)
         self.factory = LaunchpadObjectFactory()
 
+    def useTempDir(self):
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        self.addCleanup(lambda: os.chdir(cwd))
+
     def tearDown(self):
         logout()
         TestCase.tearDown(self)
