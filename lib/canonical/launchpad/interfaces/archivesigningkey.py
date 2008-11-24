@@ -17,7 +17,13 @@ from canonical.launchpad.interfaces.archive import IArchive
 
 
 class IArchiveSigningKey(Interface):
-    """`ArchiveSigningKey` interface."""
+    """`ArchiveSigningKey` interface.
+
+    `IArchive` adapter for operations using its 'signing_key'.
+
+    Note that this adapter only works on zopeless mode for generating
+    new signing keys.
+    """
 
     archive = Object(
         title=_('Corresponding IArchive'), required=True, schema=IArchive)

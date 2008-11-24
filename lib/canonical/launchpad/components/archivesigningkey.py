@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
-def exportKey(key, export_path):
+def export_key(key, export_path):
     """Export the given key in the given export_path.
 
     Create full path if it doesn't exist.
@@ -53,13 +53,6 @@ class ArchiveSigningKey:
         naked_pub_config = removeSecurityProxy(self.archive.getPubConfig())
         return naked_pub_config.archiveroot
 
-    def _setSigningKey(self, gpg_key):
-        # XXX cprov 20081104: setting 'signing_archive' requires lp.Admin
-        # on IArchive and we better not relax it system-wide.
-        from zope.security.proxy import removeSecurityProxy
-        naked_archive = removeSecurityProxy(self.archive)
-        naked_archive.signing_key = gpg_key
-
     def getPathForSecretKey(self, key):
         """See `IArchiveSigningKey`."""
         return os.path.join(
@@ -74,12 +67,12 @@ class ArchiveSigningKey:
     def exportSecretKey(self, key):
         """See `IArchiveSigningKey`."""
         assert key.secret, "Only secret keys should be exported."
-        exportKey(key, self.getPathForSecretKey(key))
+        export_key(key, self.getPathForSecretKey(key))
 
     def exportPublicKey(self, key):
         """See `IArchiveSigningKey`."""
         assert not key.secret, "Only public keys should be exported."
-        exportKey(key, self.public_key_path)
+        export_key(key, self.public_key_path)
 
     def generateSigningKey(self):
         """See `IArchiveSigningKey`."""
@@ -103,7 +96,7 @@ class ArchiveSigningKey:
             algorithm, active=True, can_encrypt=pub_key.can_encrypt)
 
         # Assign the public key reference to the context IArchive.
-        self._setSigningKey(gpg_key)
+        self.archive.signing_key = gpg_key
 
     def signRepository(self):
         """See `IArchiveSigningKey`."""
