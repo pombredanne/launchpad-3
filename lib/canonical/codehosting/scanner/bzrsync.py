@@ -354,7 +354,7 @@ class BranchMergeDetectionHandler:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
 
-    def _updateSourceBranch(self, source):
+    def _markSourceBranchMerged(self, source):
         # If the source branch is a series branch, then don't change the
         # lifecycle status of it at all.
         if source.associatedProductSeries().count() > 0:
@@ -375,7 +375,7 @@ class BranchMergeDetectionHandler:
         # branch.
         if proposal.target_branch.associatedProductSeries().count() == 0:
             return
-        self._updateSourceBranch(proposal.source_branch)
+        self._markSourceBranchMerged(proposal.source_branch)
 
     def mergeOfTwoBranches(self, source, target):
         """Handle the merge of source into target."""
@@ -387,7 +387,7 @@ class BranchMergeDetectionHandler:
         dev_focus = target.product.development_focus
         if target != dev_focus.user_branch:
             return
-        self._updateSourceBranch(source)
+        self._markSourceBranchMerged(source)
 
 
 class WarehouseBranchPolicy(BranchPolicy):
