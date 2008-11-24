@@ -25,14 +25,14 @@
       tal:attributes="value request/text|nothing" />
 
     <input type="submit" value="Search"
-        tal:condition="not: view/searchrequested" />
+        tal:condition="not: view/search_requested" />
     <input type="submit" value="Search Again"
-        tal:condition="view/searchrequested" />
+        tal:condition="view/search_requested" />
 
   </form>
 
   <div id="search-results">
-    <tal:search_requested condition="view/searchrequested">
+    <tal:search_requested condition="view/search_requested">
 
       <tal:batch define="batch view/batchnav/currentBatch">
 

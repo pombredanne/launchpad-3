@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
@@ -29,6 +30,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.abstractpackagesearch import (
+    AbstractPackageSearchView)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.queue import QueueItemsView
@@ -44,7 +47,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
@@ -290,25 +292,17 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
             'Request a full language pack export')
 
 
+class DistroSeriesPackageSearchView(AbstractPackageSearchView):
+    """Customised PackageSearchView for DistroSeries"""
+
+    def context_specific_search(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchPackages(self.text)
+
+
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
-        self.text = self.request.form.get('text')
-        self.matches = 0
-        self._results = None
-
-        self.searchrequested = False
-        if self.text:
-            self.searchrequested = True
-            results = self.searchresults()
-            self.matches = results.count()
-            if self.matches > 5:
-                self.detailed = False
-            else:
-                self.detailed = True
-
-            self.batchnav = BatchNavigator(results, self.request)
-
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
@@ -333,15 +327,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
             unused_language_packs.remove(self.context.language_pack_proposed)
 
         return unused_language_packs
-
-    def searchresults(self):
-        """Try to find the packages in this distro series that match
-        the given text, then present those as a list.
-        """
-        if self._results is None:
-            self._results = self.context.searchPackages(self.text)
-
-        return self._results
 
     def requestDistroLangs(self):
         """Produce a set of DistroSeriesLanguage and

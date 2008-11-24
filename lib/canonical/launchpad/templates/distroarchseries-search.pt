@@ -44,7 +44,7 @@
 
   <div id="search-results">
 
-  <tal:search_requested condition="view/searchrequested">
+  <tal:search_requested condition="view/search_requested">
 
     <tal:batch define="batch view/batchnav/currentBatch">
 
