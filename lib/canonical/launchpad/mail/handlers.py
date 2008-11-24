@@ -22,8 +22,8 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
     IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
     IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
-    IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    IMessageSet, IQuestionSet, ISpecificationSet, IStaticDiffSource,
+    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -701,6 +701,10 @@ class CodeHandler:
         comment_text, md = self.findMergeDirectiveAndComment(message)
         source, target = self._acquireBranchesForProposal(md, submitter)
         bmp = source.addLandingTarget(submitter, target, needs_review=True)
+        if md.patch is not None:
+            diff_source = getUtility(IStaticDiffSource)
+            bmp.review_diff = diff_source.acquireFromText(
+                md.base_revision_id, md.revision_id, md.patch)
         if comment_text.strip() == '':
             comment = None
         else:

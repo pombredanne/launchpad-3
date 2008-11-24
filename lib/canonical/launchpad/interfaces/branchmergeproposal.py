@@ -165,6 +165,9 @@ class IBranchMergeProposal(Interface):
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))
 
+    review_diff = Attribute(
+        _('The diff to be used for reviews.'))
+
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
 
