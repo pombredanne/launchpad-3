@@ -1364,9 +1364,18 @@ class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
     def checkAuthenticated(self, user):
-        """Private restricts to admins, BuilddAdmins, archive members."""
+        """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
             # Anyone can see non-private archives.
+            return True
+
+        if user.inTeam(self.obj.archive.owner):
+            # Anyone in the PPA team gets the nod.
+            return True
+
+        # LP admins may also see it.
+        lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
             return True
 
         # If the permission check on the sourcepackagerelease for this
@@ -1378,7 +1387,8 @@ class ViewBuildRecord(EditBuildRecord):
         if auth_spr.checkAuthenticated(user):
             return True
 
-        return EditBuildRecord.checkAuthenticated(self, user)
+        # You're not a celebrity, get out of here.
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the build if it's not private."""
@@ -1812,7 +1822,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj._cached_published_archives:
-            if check_permission('launchpad.View', archive):
+            auth_archive = ViewArchive(archive)
+            if auth_archive.checkAuthenticated(user):
                 return True
         return False
 
