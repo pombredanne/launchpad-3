@@ -783,14 +783,6 @@ special = {
             tearDown=zopelessLaunchpadSecurityTearDown,
             layer=LaunchpadZopelessLayer,
             ),
-    # Also run the pillar.txt doctest under the Zopeless layer.
-    # This exposed bug #149632.
-    'pillar.txt-zopeless': LayeredDocFileSuite(
-            '../doc/pillar.txt',
-            setUp=setUp, tearDown=tearDown,
-            #layer=ExperimentalLaunchpadZopelessLayer
-            layer=LaunchpadZopelessLayer
-            ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
             stdout_logging=False,

@@ -29,6 +29,8 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_sourcepublication)
 
 
 def is_completely_built(source):
@@ -276,6 +278,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
             distroseries=destination_series, pocket=pocket)
         if source_in_destination.count() == 0:
             source_copy = source.copyTo(destination_series, pocket, archive)
+            close_bugs_for_sourcepublication(source_copy)
             copies.append(source_copy)
             if not include_binaries:
                 source_copy.createMissingBuilds()

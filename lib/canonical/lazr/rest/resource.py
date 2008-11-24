@@ -205,12 +205,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
@@ -1104,7 +1120,7 @@ class ServiceRootResource(HTTPResource):
         """Handle a GET request."""
         method = self.getRequestMethod(REQUEST)
         if method is None:
-            result = HTTP_METHOD_OVERRIDE_ERROR
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
         elif method == "GET":
             result = self.do_GET()
         else:
