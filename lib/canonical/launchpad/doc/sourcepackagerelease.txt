@@ -325,10 +325,10 @@ Files in source/ have that directory stripped off.
     >>> print _filter_ubuntu_translation_file('source/bar.po')
     bar.po
 
-Files in source/debian/* are ignored.  They are generally debconf
+Files in source/debian/po/* are ignored.  They are generally debconf
 translations, unused in Ubuntu.
 
-    >>> print _filter_ubuntu_translation_file('source/debian/bar.po')
+    >>> print _filter_ubuntu_translation_file('source/debian/po/bar.po')
     None
 
 

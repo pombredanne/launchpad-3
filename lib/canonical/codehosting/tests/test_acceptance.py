@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import atexit
 from StringIO import StringIO
 import os
 import sys
@@ -14,15 +15,16 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
-
+    LockFailed, NotBranchError, PermissionDenied, SmartProtocolError,
+    TransportNotPossible)
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, ServerTestCase)
+    adapt_suite, exception_names, LoomTestMixin)
 from canonical.codehosting.tests.servers import (
-    make_bzr_ssh_server, make_sftp_server)
+    CodeHostingTac, set_up_test_user, SSHCodeHostingServer)
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -30,16 +32,65 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing import LayerInvariantError, ZopelessAppServerLayer
+from canonical.testing.profiled import profiled
 
 
-class SSHTestCase(ServerTestCase):
+class SSHServerLayer(ZopelessAppServerLayer):
 
-    layer = ZopelessAppServerLayer
-    server = None
+    _tac_handler = None
+
+    @classmethod
+    def getTacHandler(cls):
+        if cls._tac_handler is None:
+            cls._tac_handler = CodeHostingTac(
+                config.codehosting.branches_root,
+                config.supermirror.branchesdest)
+        return cls._tac_handler
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        tac_handler = SSHServerLayer.getTacHandler()
+        tac_handler.setUp()
+        SSHServerLayer._reset()
+        atexit.register(tac_handler.tearDown)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        SSHServerLayer._reset()
+        SSHServerLayer.getTacHandler().tearDown()
+
+    @classmethod
+    @profiled
+    def _reset(cls):
+        """Reset the storage."""
+        SSHServerLayer.getTacHandler().clear()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        SSHServerLayer._reset()
+        set_up_test_user('testuser', 'testteam')
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        SSHServerLayer._reset()
+
+
+class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
+
+    layer = SSHServerLayer
+    scheme = None
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
+        tac_handler = SSHServerLayer.getTacHandler()
+        self.server = SSHCodeHostingServer(self.scheme, tac_handler)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -48,6 +99,38 @@ class SSHTestCase(ServerTestCase):
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
+
+    def __str__(self):
+        return self.id()
+
+    def assertTransportRaises(self, exception, f, *args, **kwargs):
+        """A version of assertRaises() that also catches SmartProtocolError.
+
+        If SmartProtocolError is raised, the error message must
+        contain the exception name.  This is to cover Bazaar's
+        handling of unexpected errors in the smart server.
+        """
+        # XXX: JonathanLange 2008-10-16 bug=246792: This helper should not be
+        # needed, but some of the exceptions we raise (such as
+        # PermissionDenied) are not yet handled by the smart server protocol
+        # as of Bazaar 1.7.
+        names = exception_names(exception)
+        try:
+            f(*args, **kwargs)
+        except SmartProtocolError, inst:
+            for name in names:
+                if name in str(inst):
+                    break
+            else:
+                raise self.failureException("%s not raised" % names)
+            return inst
+        except exception, inst:
+            return inst
+        else:
+            raise self.failureException("%s not raised" % names)
+
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
 
     def assertBranchesMatch(self, local_url, remote_url):
         """Assert that two branches have the same last revision."""
@@ -137,10 +220,8 @@ class SSHTestCase(ServerTestCase):
 class SmokeTest(SSHTestCase):
     """Smoke test for repository support."""
 
-    def getDefaultServer(self):
-        return make_bzr_ssh_server()
-
     def setUp(self):
+        self.scheme = 'bzr+ssh'
         super(SmokeTest, self).setUp()
         self.first_tree = 'first'
         self.second_tree = 'second'
@@ -204,9 +285,6 @@ class AcceptanceTests(SSHTestCase):
         finally:
             captured_stderr, sys.stderr = sys.stderr, real_stderr
         return ret, captured_stderr.getvalue()
-
-    def getDefaultServer(self):
-        return make_sftp_server()
 
     def makeDatabaseBranch(self, owner_name, product_name, branch_name,
                            branch_type=BranchType.HOSTED, private=False):
@@ -348,7 +426,8 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
-    def test_push_triggers_mirror_request(self):
+    # XXX: salgado, 2008-11-05: https://launchpad.net/bugs/294117
+    def disabled_test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
         remote_url = self.getTransportURL(
             '~testuser/+junk/totally-new-branch')
@@ -472,9 +551,6 @@ class AcceptanceTests(SSHTestCase):
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the codehosting smartserver."""
 
-    def getDefaultServer(self):
-        return make_bzr_ssh_server()
-
     def makeMirroredBranch(self, person_name, product_name, branch_name):
         ro_branch_url = self.createBazaarBranch(
             person_name, product_name, branch_name)
@@ -556,7 +632,14 @@ def make_server_tests(base_suite, servers):
 
 def make_smoke_tests(base_suite):
     from bzrlib import tests
-    from bzrlib.tests import repository_implementations
+    try:
+        from bzrlib.tests.repository_implementations import (
+            all_repository_format_scenarios,
+        )
+    except ImportError:
+        from bzrlib.tests.per_repository import (
+            all_repository_format_scenarios,
+        )
     excluded_scenarios = [
         # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
         # when you try).
@@ -570,7 +653,7 @@ def make_smoke_tests(base_suite):
         # remote server.
         'RemoteRepositoryFormat',
         ]
-    scenarios = repository_implementations.all_repository_format_scenarios()
+    scenarios = all_repository_format_scenarios()
     scenarios = [
         scenario for scenario in scenarios
         if scenario[0] not in excluded_scenarios
@@ -586,10 +669,10 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    suite.addTest(make_server_tests(
-        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
 
     suite.addTest(make_server_tests(
-            unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
-    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
+            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
+    # XXX DaniloSegan 2008-10-24: see #288695.
+    #suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

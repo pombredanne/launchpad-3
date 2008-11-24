@@ -14,13 +14,12 @@ extension:
  * Source changesfile: '_source.changes';
  * Package diffs: '.diff.gz';
 
-Any other extension will result in a `AssertionError`.
+Any other extension will result in a `NotFoundError`.
 
     >>> cprov.archive.getFileByName('biscuit.cookie')
     Traceback (most recent call last):
     ...
-    AssertionError: 'biscuit.cookie' filename and/or extension is not
-    supported.
+    NotFoundError: 'biscuit.cookie'
 
 Create a test source publication.
 
@@ -161,13 +160,12 @@ of the following file type in its context.
     >>> print build.title
     i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
 
-Unsupported filename lookups also result in an `AssertionError`.
+Unsupported filename lookups also result in a `NotFoundError`.
 
     >>> build.getFileByName('biscuit.cookie')
     Traceback (most recent call last):
     ...
-    AssertionError: 'biscuit.cookie' filename and/or extension is not
-    supported.
+    NotFoundError: 'biscuit.cookie'
 
 And unreachable files in `NotFoundError`.
 

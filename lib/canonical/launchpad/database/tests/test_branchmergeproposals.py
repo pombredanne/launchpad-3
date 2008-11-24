@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposalGetter)
+    BranchMergeProposalGetter, is_valid_transition)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -99,7 +99,8 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
     def assertTerminatingState(self, from_state):
         """Assert that the proposal cannot go to any other state."""
         for status in BranchMergeProposalStatus.items:
-            self.assertBadTransition(from_state, status)
+            if status != from_state:
+                self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
         """We can go from work in progress to any other state."""
@@ -123,12 +124,45 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
 
-        for status in (wip, needs_review, code_approved, rejected,
+        for status in (wip, needs_review, code_approved,
                        merged, queued, merge_failed):
             # All bad, rejected is a final state.
             self.assertBadTransition(rejected, status)
+        # Rejected -> Rejected is valid.
+        self.assertGoodTransition(rejected, rejected)
         # Can resubmit (supersede) a rejected proposal.
         self.assertGoodTransition(rejected, superseded)
+
+    def assertValidTransitions(self, expected, proposal, to_state, by_user):
+        # Check the valid transitions for the merge proposal by the specified
+        # user.
+        valid = set()
+        for state in BranchMergeProposalStatus.items:
+            if is_valid_transition(proposal, state, to_state, by_user):
+                valid.add(state)
+        self.assertEqual(expected, valid)
+
+    def test_transition_to_rejected_by_reviewer(self):
+        # A proposal should be able to go from any states to rejected if the
+        # user is a reviewer, except for superseded, merged or queued.
+        valid_transitions = set(BranchMergeProposalStatus.items)
+        valid_transitions -= set(
+            [BranchMergeProposalStatus.MERGED,
+             BranchMergeProposalStatus.QUEUED,
+             BranchMergeProposalStatus.SUPERSEDED])
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertValidTransitions(
+            valid_transitions, proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.target_branch.owner)
+
+    def test_transition_to_rejected_by_non_reviewer(self):
+        # A non-reviewer should not be able to set a proposal as rejected.
+        proposal = self.factory.makeBranchMergeProposal()
+        # It is always valid to go to the same state.
+        self.assertValidTransitions(
+            set([BranchMergeProposalStatus.REJECTED]),
+            proposal, BranchMergeProposalStatus.REJECTED,
+            proposal.source_branch.owner)
 
     def test_transitions_from_merged(self):
         """Merged is a terminal state, so no transitions are valid."""
@@ -186,6 +220,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.MERGE_FAILED)
         self.assertIs(None, proposal.queue_position)
+
+    def test_transitions_to_wip_resets_reviewer(self):
+        # When a proposal was approved and is moved back into work in progress
+        # the reviewer, date reviewed, and reviewed revision are all reset.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertIsNot(None, proposal.reviewer)
+        self.assertIsNot(None, proposal.date_reviewed)
+        self.assertIsNot(None, proposal.reviewed_revision_id)
+        proposal.setAsWorkInProgress()
+        self.assertIs(None, proposal.reviewer)
+        self.assertIs(None, proposal.date_reviewed)
+        self.assertIs(None, proposal.reviewed_revision_id)
 
     def test_transitions_from_superseded(self):
         """Superseded is a terminal state, so no transitions are valid."""
@@ -753,7 +801,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_nominate_creates_reference(self):
         """A new vote reference is created when a reviewer is nominated."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
@@ -765,24 +813,47 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
+
+    def test_nominate_multiple_with_different_types(self):
+        # While an individual can only be requested to do one review
+        # (test_nominate_updates_reference) a team can have multiple
+        # nominations for different review types.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-1')
+        # Second nomination of the same type fails.
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='general-2')
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            ['general-1', 'general-2'],
+            sorted([review.review_type for review in votes]))
 
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
-        login(merge_proposal.source_branch.owner.preferredemail.email)
+        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         reference = merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='General')
-        self.assertEqual('General', reference.review_type)
+        self.assertEqual('general', reference.review_type)
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
             review_type='Specific')
         # Note we're using the reference from the first call
-        self.assertEqual('Specific', reference.review_type)
+        self.assertEqual('specific', reference.review_type)
 
     def test_comment_with_vote_creates_reference(self):
         """A comment with a vote creates a vote reference."""
@@ -833,10 +904,10 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal.nominateReviewer(
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner,
-            review_type='General')
+            review_type='general')
         comment = merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content',
-            vote=CodeReviewVote.APPROVE)
+            vote=CodeReviewVote.APPROVE, review_type='general')
 
         votes = list(merge_proposal.votes)
         self.assertEqual(1, len(votes))
@@ -844,7 +915,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(reviewer, vote_reference.reviewer)
         self.assertEqual(merge_proposal.source_branch.owner,
                          vote_reference.registrant)
-        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual('general', vote_reference.review_type)
         self.assertEqual(comment, vote_reference.comment)
 
 

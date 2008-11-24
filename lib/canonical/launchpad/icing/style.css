@@ -179,6 +179,12 @@ table.form .error {background: none;}
   padding-left: 18px;
 }
 
+/* Warning messages inlined in the page. */
+.inline-warning {
+    color: red;
+    font-weight: bold;
+}
+
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
@@ -218,6 +224,7 @@ table.listing div.actions {
 /* Text fields occupy as much of the page width as possible, minus a safety
 margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
+.codereviewcomment {font: 120% monospace;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
 table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
@@ -1278,6 +1285,22 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS  {color: black;}
+.mergestatusNEEDS_REVIEW      {color: #f60;}
+.mergestatusCODE_APPROVED     {color: green;}
+.mergestatusREJECTED          {color: red;}
+.mergestatusMERGED            {color: green;}
+.mergestatusMERGE_FAILED      {color: red;}
+.mergestatusQUEUED            {color: black;}
+.mergestatusSUPERSEDED        {color: grey;}
+
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -1289,6 +1312,19 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.greylink a:link, .greylink a:visited {
+  color: grey;
+}
+
+.commentSuffix {
+  height: 2.5em;
+}
+.commentVote {
+  float: right;
+}
+
+.back-link { margin-top: 3em; }
 
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
@@ -1343,6 +1379,7 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
+
 
 /* --- Blueprints --- */
 

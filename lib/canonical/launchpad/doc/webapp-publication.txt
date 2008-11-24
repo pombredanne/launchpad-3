@@ -790,11 +790,15 @@ available as launchpad.publicationticks in the WSGI environment.
 
 If an exception is raised during traversal or object publication, we'll
 store the ticks up to the point in which the exception is raised.  This
-is done inside the handleException() hook.
+is done inside the handleException() hook.  (The hook also sets and resets
+the request timer from canonical.launchpad.webapp.adapter, so you'll notice
+some calls to prepare that code to what handleException expects.)
 
 If the exception is raised before we even start the traversal, then
 there's nothing to store.
 
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     clear_request_started, set_request_started)
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> import sys
@@ -802,12 +806,14 @@ there's nothing to store.
     ...     raise Exception()
     ... except:
     ...     exc_info = sys.exc_info()
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the traversal, but haven't finished it, we'll only have
 the ticks for the traversal and not for the publication.
@@ -821,6 +827,7 @@ the ticks for the traversal and not for the publication.
     True
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
+    >>> clear_request_started()
 
 If we started the publication (which means the traversal has been
 completed), we'll have the ticks for the traversal and the ticks for
@@ -829,6 +836,7 @@ the publication, up to the point where it was forcefully stopped.
     >>> publication.afterTraversal(request, None)
     >>> publication.callObject(request, TestView(TestContext(), request))
     u'Result'
+    >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
     ERROR:SiteError:http://localhost
@@ -1032,6 +1040,10 @@ the OAuthNonce table.
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     DEFAULT_FLAVOR, IStoreSelector)
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -1215,6 +1227,7 @@ principal's access_level and scope will match what was specified in the
 token.
 
     >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> getUtility(IStoreSelector).setDefaultFlavor(DEFAULT_FLAVOR)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()

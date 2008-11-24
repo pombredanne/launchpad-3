@@ -958,7 +958,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                      ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
                      ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
                      ('long', 'integer', None, None),
-                     ('int', 'int', -2**31, 2**31-1))
+                     ('int', 'long', -2**63, 2**63-1))
         for property_type, relax_ng_type, min_value, max_value in type_info:
             self._testIntegerProperty(
                 property_type, relax_ng_type, min_value, max_value)
@@ -1279,7 +1279,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
             ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
             ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
-            ('int', 'int', -2**31, 2**31-1),
+            ('int', 'long', -2**63, 2**63-1),
             ('long', 'integer', None, None))
         for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
             self._testIntegerValueTag(property_type, value_type,

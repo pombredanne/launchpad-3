@@ -12,40 +12,10 @@
 
 <body>
 
-<metal:heading fill-slot="before_nav_menu"
-               tal:content="structure context/source_branch/@@+heading"/>
-
 <div metal:fill-slot="main">
 
-  <tal:proposal-heading tal:replace="structure context/@@+heading"/>
-
   <div metal:use-macro="context/@@launchpad_form/form">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      <p>
-        <tal:set-status tal:condition="not: view/is_needs_review">
-          Requesting a review will indicate that the changes in
-          <tal:source-branch
-           replace="structure context/source_branch/fmt:link"/>
-          are ready to be merged into
-          <tal:target-branch replace="structure context/target_branch/fmt:link"
-          />.
-          You may also request particular people to review it.
-        </tal:set-status>
-        <tal:not-set-status tal:condition="view/is_needs_review">
-          The changes in
-          <tal:source-branch
-           replace="structure context/source_branch/fmt:link"/>
-          have already been marked as ready to be merged into
-          <tal:target-branch replace="structure context/target_branch/fmt:link"
-          />.
-          You can still request particular people to review it.
-        </tal:not-set-status>
-      </p>
-      <div style="clear: both"></div>
-    </div>
   </div>
-  <tal:votes replace="structure context/@@+votes"/>
 
 </div>
 
