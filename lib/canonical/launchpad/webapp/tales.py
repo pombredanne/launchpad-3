@@ -2131,7 +2131,7 @@ class FormattersAPI:
                     'white-space: -moz-pre-wrap;'
                     'white-space: -o-pre-wrap;'
                     'word-wrap: break-word;'
-                    '"> %s </pre>'
+                    '">%s</pre>'
                     % linkified_text
                     )
 
