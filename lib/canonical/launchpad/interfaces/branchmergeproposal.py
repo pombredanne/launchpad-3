@@ -25,8 +25,10 @@ from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_write_operation, exported)
 
@@ -139,10 +141,11 @@ class IBranchMergeProposal(Interface):
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_('The person who registered the landing target.'))
 
-    source_branch = Choice(
-        title=_('Source Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
-        description=_("The branch that has code to land."))
+    source_branch = exported(
+        Reference(
+            title=_('Source Branch'), schema=IBranch,
+            required=True, readonly=True,
+            description=_("The branch that has code to land.")))
 
     target_branch = Choice(
         title=_('Target Branch'),

@@ -13,6 +13,7 @@ Branch merge proposals can be fetched through the API.
     >>> pprint_entry(merge_proposal)
     resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
     self_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18/+merge/1'
+    source_branch_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18'
 
 == Create a new merge proposal ==
 
