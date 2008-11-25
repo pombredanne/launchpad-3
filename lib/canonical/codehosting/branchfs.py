@@ -711,7 +711,7 @@ def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
         being served.
     :param hosted_url: Where the branches are uploaded to.
     :param mirror_url: Where all Launchpad branches are mirrored.
-    :return: A `LaunchpadTransport`.
+    :return: A `LaunchpadServer`.
     """
     # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
     hosted_transport = get_chrooted_transport(hosted_url)
