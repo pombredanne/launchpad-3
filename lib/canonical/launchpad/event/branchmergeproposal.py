@@ -13,7 +13,12 @@ from zope.component.interfaces import ObjectEvent
 from zope.interface import implements
 
 from canonical.launchpad.event.interfaces import (
-    IBranchMergeProposalApprovedEvent, IBranchMergeProposalRejectedEvent)
+    IBranchMergeProposalApprovedEvent,
+    IBranchMergeProposalRejectedEvent,
+    INewBranchMergeProposalEvent,
+    INewCodeReviewCommentEvent,
+    IReviewerNominatedEvent,
+    )
 
 
 class BranchMergeProposalReviewedEvent(ObjectEvent):
@@ -32,3 +37,18 @@ class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
 class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
     """See `IBranchMergeProposalRejectedEvent`."""
     implements(IBranchMergeProposalRejectedEvent)
+
+
+class NewBranchMergeProposalEvent(ObjectEvent):
+    """A new merge has been proposed."""
+    implements(INewBranchMergeProposalEvent)
+
+
+class ReviewerNominatedEvent(ObjectEvent):
+    """A reviewer has been nominated."""
+    implements(IReviewerNominatedEvent)
+
+
+class NewCodeReviewCommentEvent(ObjectEvent):
+    """A new comment has been added to the merge proposal."""
+    implements(INewCodeReviewCommentEvent)
