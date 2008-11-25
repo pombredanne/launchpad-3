@@ -136,10 +136,11 @@ class IBranchMergeProposal(Interface):
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this question."))
 
-    registrant = PublicPersonChoice(
-        title=_('Person'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_('The person who registered the landing target.'))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Person'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_('The person who registered the landing target.')))
 
     source_branch = exported(
         Reference(
