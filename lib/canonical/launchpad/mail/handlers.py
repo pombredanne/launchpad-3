@@ -22,8 +22,9 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
     IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
     IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet, IStaticDiffSource,
+    IMessageSet, IQuestionSet, ISpecificationSet,
     IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
+from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
