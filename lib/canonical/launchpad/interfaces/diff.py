@@ -10,10 +10,8 @@ __all__ = [
     'IStaticDiffSource',
     ]
 
-from zope.schema import (
-    Object, Int, Text, TextLine)
-from zope.interface import (
-    Interface)
+from zope.schema import Object, Int, Text, TextLine
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -52,6 +50,7 @@ class IStaticDiff(Interface):
 
 
 class IStaticDiffSource(Interface):
+    """Component that can acquire StaticDiffs."""
 
     def acquire(from_revision_id, to_revision_id, repository):
         """Get or create a StaticDiff."""

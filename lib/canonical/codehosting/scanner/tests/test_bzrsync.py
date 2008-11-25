@@ -62,22 +62,33 @@ def run_as_db_user(username):
 
 
 class FakeTransportServer:
+    """Set up a fake transport at a given URL prefix.
+
+    For testing purposes.
+    """
 
     def __init__(self, transport, url_prefix='lp-mirrored:///'):
+        """Constructor.
+
+        :param transport: The backing transport to store the data with.
+        :param url_prefix: The URL prefix to access this transport.
+        """
         self._transport = transport
         self._url_prefix = url_prefix
         self._chroot_server = None
 
     def setUp(self):
+        """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted file
+        # entire virtual filesystem here, we fake it by having a chrooted
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
         self._chroot_server.setUp()
 
     def tearDown(self):
+        """Deactivate the transport URL."""
         self._chroot_server.tearDown
         unregister_transport(self._url_prefix, self._transportFactory)
 
