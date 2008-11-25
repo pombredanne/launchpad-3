@@ -325,6 +325,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         if bazaar != '.bzr':
             return
         product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            return
         default_branch = product.default_stacked_on_branch
         if default_branch is None:
             return

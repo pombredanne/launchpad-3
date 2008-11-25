@@ -915,6 +915,17 @@ class BranchFileSystemTest(TestCaseWithFactory):
              {'id': branch.id, 'writable': False},
              escape(child_path)), translation)
 
+    def test_translatePath_no_such_junk_branch(self):
+        requester = self.factory.makePerson()
+        path = '/~%s/+junk/.bzr/branch-format' % (requester.name,)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branches_in_parent_dirs_not_found(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = '/~%s/%s/.bzr/branch-format' % (requester.name, product.name)
+        self.assertNotFound(requester, path)
+
     def test_translatePath_no_such_branch(self):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
