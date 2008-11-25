@@ -179,10 +179,11 @@ class IBranchMergeProposal(Interface):
         _("The revision id that has been approved by the reviewer."))
 
 
-    commit_message = Summary(
-        title=_("Commit Message"), required=False,
-        description=_("The commit message that should be used when merging "
-                      "the source branch."))
+    commit_message = exported(
+        Summary(
+            title=_("Commit Message"), required=False,
+            description=_("The commit message that should be used when "
+                          "merging the source branch.")))
 
     queue_position = Int(
         title=_("Queue Position"), required=False, readonly=True,
