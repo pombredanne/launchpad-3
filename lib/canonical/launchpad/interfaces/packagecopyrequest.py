@@ -148,31 +148,31 @@ class IPackageCopyRequest(Interface):
 
     def markAsInprogress():
         """Mark this request as being in progress.
-        
+
         Update the 'status' and 'date_started' properties as appropriate.
         """
 
     def markAsComplete():
         """Mark this request as completed.
-        
+
         Update the 'status' and 'date_completed' properties as appropriate.
         """
 
     def markAsFailed():
         """Mark this request as failed.
-        
+
         Update the 'status' and 'date_completed' properties as appropriate.
         """
 
     def markAsCanceling():
         """Mark this request as canceling.
-        
+
         Update the 'status' as appropriate.
         """
 
     def markAsCancelled():
         """Mark this request as cancelled.
-        
+
         Update the 'status' and 'date_completed' properties as appropriate.
         """
 

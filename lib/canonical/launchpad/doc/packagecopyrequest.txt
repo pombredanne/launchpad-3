@@ -16,7 +16,7 @@ Let's prepare a few things we'll need for the subsequent tests.
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
 In order to instantiate a package copy request we require a source and
-taget package location.
+target package location.
 
     >>> source = build_package_location('ubuntutest', suite='breezy-autotest')
     >>> target = build_package_location('ubuntutest', suite='breezy-autotest')
@@ -149,7 +149,7 @@ Now we change its status to 'canceling'.
     >>> canceling_pcr.status == PackageCopyStatus.CANCELING
     True
 
-Please not that marking a package copy requests as 'canceling' does not
+Please note that marking a package copy requests as 'canceling' does not
 affect its 'date_started' value.
 
     >>> canceling_pcr.date_started is None
@@ -165,7 +165,7 @@ and being in a certain state.
     >>> cancelled_pcrs[0].status == PackageCopyStatus.CANCELLED
     True
 
-Make sure that the returned package copy requests do belong to Celso.
+Make sure that the returned package copy requests do belong to Mark.
 
     >>> len([pcr for pcr in cancelled_pcrs if pcr.requester != sabdfl]) == 0
     True
@@ -211,7 +211,7 @@ distroseries.
     ...      if pcr.target_distroseries != warty]) == 0
     True
 
-Last but not least we want to see that package copy requests that target
+Last but not least we want to see the package copy requests that target
 the rebuild archive.
 
     >>> rebuild_pcrs = pcr_set.getByTargetArchive(rebuild_archive)
