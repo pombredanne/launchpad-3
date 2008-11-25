@@ -452,7 +452,8 @@ You cannot turn a team with a mailing list into a private team.
     >>> team_one.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     Traceback (most recent call last):
     ...
-    ValueError: This team cannot be made private since it is referenced by a mailinglist.
+    ImmutableVisibilityError: This team cannot be made private since it is
+    referenced by a mailing list.
 
 However, you can give a private team a mailing list.
 
@@ -474,7 +475,8 @@ Once a private team has a mailing list though, it cannot be made public.
     >>> thereminists.visibility = PersonVisibility.PUBLIC
     Traceback (most recent call last):
     ...
-    ValueError: This team cannot be made public since it has a mailing list
+    ImmutableVisibilityError: This team cannot be made public since it has a
+    mailing list
 
 
 == Welcome messages ==

@@ -449,7 +449,7 @@ codereviewcomment_index = 'Code review comment'
 codereviewcomment_reply = 'Reply to code review comment'
 
 def contact_user(context, view):
-    return view.specific_contact_text
+    return view.specific_contact_title_text
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
