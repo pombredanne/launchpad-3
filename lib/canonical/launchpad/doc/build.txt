@@ -677,7 +677,11 @@ Cprov can also see his own builds of course:
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
         RELEASE
 
-Buildd admins specifically are not allowed to see private builds.
+    >>> bob_builds.count()
+    16
+
+Buildd admins specifically are not allowed to see private builds, which will
+be filtered from the list returned:
 
     >>> buildd_admin = LaunchpadObjectFactory().makePerson()
     >>> buildd_admins = getUtility(
@@ -685,6 +689,16 @@ Buildd admins specifically are not allowed to see private builds.
     >>> buildd_admins.addMember(buildd_admin, buildd_admin)
     >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
     >>> print_build_details(bob_builds)
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    RELEASE
+    
+    >>> bob_builds.count()
+    13
 
 You can filter on build state:
 
