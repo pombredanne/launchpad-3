@@ -77,6 +77,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertEqual(
             source_branch.repository._format.__class__,
             mirrored_branch.repository._format.__class__)
+        return mirrored_branch
 
     def assertRanSuccessfully(self, command, retcode, stdout, stderr):
         """Assert that the command ran successfully.
@@ -221,7 +222,7 @@ class TestBranchPuller(PullerBranchTestCase):
         tree = self.make_branch_and_tree('.')
         tree.commit('rev1')
         db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror() # XXX necessary??
+        db_branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -266,15 +267,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-
-        # To open this branch, we're going to need to use the Launchpad vfs.
-        server = get_puller_server()
-        server.setUp()
-        self.addCleanup(server.tearDown)
-
-        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
-        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
-        mirrored_branch = Branch.open(mirrored_url)
+        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
         self.assertEqual(
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
@@ -294,15 +287,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-
-        # To open this branch, we're going to need to use the Launchpad vfs.
-        server = get_puller_server()
-        server.setUp()
-        self.addCleanup(server.tearDown)
-
-        mirrored_url = 'lp-mirrored:///%s' % db_branch.unique_name
-        self.assertMirrored(tree.basedir, db_branch, mirrored_url)
-        mirrored_branch = Branch.open(mirrored_url)
+        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
         self.assertRaises(
             errors.NotStacked, mirrored_branch.get_stacked_on_url)
 
