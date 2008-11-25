@@ -231,8 +231,11 @@ class IBranchMergeProposal(Interface):
         "This is generated from the source and target branch, and used "
         "as the tal fmt:link text and for email subjects.")
 
-    merge_reporter = Attribute(
-        "The user that marked the branch as merged.")
+    merge_reporter = exported(
+        PublicPersonChoice(
+            title=_("Merge Reporter"), vocabulary="ValidPerson",
+            required=False, readonly=True,
+            description=_("The user that marked the branch as merged.")))
 
     supersedes = Attribute(
         "The branch merge proposal that this one supersedes.")

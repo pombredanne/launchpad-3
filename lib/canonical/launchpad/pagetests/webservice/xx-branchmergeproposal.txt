@@ -18,6 +18,7 @@ Branch merge proposals can be fetched through the API.
     date_review_requested: None
     date_reviewed: None
     dependent_branch_link: None
+    merge_reporter_link: None
     merged_revno: None
     queue_position: None
     queue_status: u'Work in progress'
