@@ -162,14 +162,11 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        accessing_user = self.factory.makePerson()
         transaction.commit()
         self.pushBranchAsUser(db_branch.owner, db_branch)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        owner_branch = self.openBranchAsUser(db_branch.owner, db_branch)
-        user_branch = self.openBranchAsUser(accessing_user, db_branch)
-        
+        self.assertMirrored(db_branch)
 
     def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
