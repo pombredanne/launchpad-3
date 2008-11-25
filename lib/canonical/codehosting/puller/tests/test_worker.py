@@ -30,6 +30,7 @@ from canonical.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from canonical.launchpad.interfaces.branch import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory, TestCase
+from canonical.launchpad.webapp.uri import URI
 from canonical.testing import reset_logging
 
 
@@ -277,7 +278,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         to_mirror.mirrorWithoutChecks()
         self.assertEqual(
             ['setStackedOn', str(to_mirror.branch_id),
-             stacked_branch.get_stacked_on_url()],
+             URI(stacked_branch.get_stacked_on_url()).path],
             get_netstrings(protocol_output.getvalue()))
 
     def testSendsStackedInfoBasedOnDestinationURL(self):
@@ -294,7 +295,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             policy=PrearrangedStackedBranchPolicy(base_branch.base))
         to_mirror.mirrorWithoutChecks()
         self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), base_branch.base],
+            ['setStackedOn', str(to_mirror.branch_id), URI(base_branch.base).path],
             get_netstrings(protocol_output.getvalue()))
 
 
