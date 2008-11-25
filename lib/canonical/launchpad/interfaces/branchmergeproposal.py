@@ -204,10 +204,11 @@ class IBranchMergeProposal(Interface):
             description=_("The revision number on the target branch which "
                           "contains the merge from the source branch.")))
 
-    date_merged = Datetime(
-        title=_('Date Merged'), required=False,
-        description=_("The date that the source branch was merged into the "
-                      "target branch"))
+    date_merged = exported(
+        Datetime(
+            title=_('Date Merged'), required=False,
+            description=_("The date that the source branch was merged into "
+                          "the target branch")))
 
     title = Attribute(
         "A nice human readable name to describe the merge proposal. "
