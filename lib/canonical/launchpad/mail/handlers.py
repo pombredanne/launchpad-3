@@ -5,6 +5,8 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+from bzrlib.errors import NotAMergeDirective
+from bzrlib.merge_directive import MergeDirective
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
@@ -14,8 +16,9 @@ from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
+    BranchType, BugAttachmentType, BugNotificationLevel,
+    CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBranchMergeProposalGetter, IBranchSet, IBugAttachmentSet,
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
     IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
     IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
@@ -509,6 +512,14 @@ class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
 
 
+class NonLaunchpadTarget(Exception):
+    """Target branch is not registered with Launchpad."""
+
+
+class MissingMergeDirective(Exception):
+    """Emailed merge proposal lacks a merge directive"""
+
+
 class CodeHandler:
     """Mail handler for the code domain."""
 
@@ -524,6 +535,18 @@ class CodeHandler:
         }
 
     def process(self, mail, email_addr, file_alias):
+        """Process an email for the code domain.
+
+        Emails may be converted to CodeReviewComments, and / or
+        BranchMergeProposals.
+        """
+        if email_addr.startswith('merge@'):
+            self.processMergeProposal(mail)
+            return True
+        else:
+            return self.processComment(mail, email_addr, file_alias)
+
+    def processComment(self, mail, email_addr, file_alias):
         """Process an email and create a CodeReviewComment.
 
         The only mail command understood is 'vote', which takes 'approve',
@@ -616,6 +639,74 @@ class CodeHandler:
             return getter.get(merge_proposal_id)
         except SQLObjectNotFound:
             raise NonExistantBranchMergeProposalAddress(email_addr)
+
+    def _acquireBranchesForProposal(self, md, submitter):
+        """Find or create DB Branches from a MergeDirective.
+
+        If the target is not a Launchpad branch, NonLaunchpadTarget will be
+        raised.  If the source is not a Launchpad branch, a REMOTE branch will
+        be created implicitly, with submitter as its owner/registrant.
+
+        :param md: The `MergeDirective` to get branch URLs from.
+        :param submitter: The `Person` who requested that the merge be
+            performed.
+        :return: source_branch, target_branch
+        """
+        branches = getUtility(IBranchSet)
+        mp_source = branches.getByUrl(md.source_branch)
+        mp_target = branches.getByUrl(md.target_branch)
+        if mp_target is None:
+            raise NonLaunchpadTarget()
+        if mp_source is None:
+            basename = urlparse(md.source_branch)[2].split('/')[-1]
+            name = basename
+            count = 1
+            while not branches.isBranchNameAvailable(
+                submitter, mp_target.product, name):
+                name = '%s-%d' % (basename, count)
+                count += 1
+            mp_source = branches.new(
+                BranchType.REMOTE, name, submitter, submitter,
+                mp_target.product, md.source_branch)
+        return mp_source, mp_target
+
+    def findMergeDirectiveAndComment(self, message):
+        """Extract the comment and Merge Directive from a SignedMessage."""
+        body = None
+        md = None
+        for part in message.walk():
+            if part.is_multipart():
+                continue
+            payload = part.get_payload(decode=True)
+            if part['Content-type'].startswith('text/plain'):
+                body = payload
+            try:
+                md = MergeDirective.from_lines(payload.splitlines(True))
+            except NotAMergeDirective:
+                pass
+            if None not in (body, md):
+                return body, md
+        else:
+            raise MissingMergeDirective()
+
+    def processMergeProposal(self, message):
+        """Generate a merge proposal (and comment) from an email message.
+
+        The message is expected to contain a merge directive in one of its
+        parts.  Its values are used to generate a BranchMergeProposal.
+        If the message has a non-empty body, it is turned into a
+        CodeReviewComment.
+        """
+        submitter = getUtility(ILaunchBag).user
+        comment_text, md = self.findMergeDirectiveAndComment(message)
+        source, target = self._acquireBranchesForProposal(md, submitter)
+        bmp = source.addLandingTarget(submitter, target, needs_review=True)
+        if comment_text.strip() == '':
+            comment = None
+        else:
+            comment = bmp.createComment(
+                submitter, message['Subject'], comment_text)
+        return bmp, comment
 
 
 class SpecificationHandler:

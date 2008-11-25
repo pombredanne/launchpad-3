@@ -341,7 +341,7 @@ class IBuildSet(Interface):
     def getBuildsForBuilder(builder_id, status=None, name=None):
         """Return build records touched by a builder.
 
-        If status is provided, only builders with that status will
+        If status is provided, only builds with that status will
         be returned. If name is passed, return only build which the
         sourcepackagename matches (SQL LIKE).
         """

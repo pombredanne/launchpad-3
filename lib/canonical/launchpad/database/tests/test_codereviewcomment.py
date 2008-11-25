@@ -40,8 +40,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
-        self.assertEqual(
-            'Re: Proposed merge of source-branch into target-branch',
+        self.assertEqual('Re: Proposed merge of '
+            'lp://dev/~person-name2/product-name8/branch4 into '
+            'lp://dev/~person-name13/product-name8/branch15',
             comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 

@@ -67,9 +67,9 @@ def _filter_ubuntu_translation_file(filename):
 
     filename = filename[len(source_prefix):]
 
-    if filename.startswith('debian/'):
-        # Skip filenames in debian/*.  They're from debconf translations,
-        # which Ubuntu doesn't use.
+    if filename.startswith('debian/po/'):
+        # Skip filenames in debian/po/*.  They're from debconf
+        # translations, which are treated separately in Ubuntu.
         return None
 
     return filename

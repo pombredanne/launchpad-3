@@ -35,6 +35,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
+from storm.expr import And
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -92,9 +93,10 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, ITeam, ImmutableVisibilityError, InvalidName,
+    JoinNotAllowed, NameAlreadyTaken, PersonCreationRationale,
+    PersonVisibility, PersonalStanding, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -171,14 +173,15 @@ def validate_person_visibility(person, attr, value):
 
     if (value == PersonVisibility.PUBLIC and
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        mailing_list is not None):
-        raise ValueError('This team cannot be made public since it has '
-                         'a mailing list')
+        mailing_list is not None and
+        mailing_list.status != MailingListStatus.PURGED):
+        raise ImmutableVisibilityError(
+            'This team cannot be made public since it has a mailing list')
 
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
-            raise ValueError(warning)
+            raise ImmutableVisibilityError(warning)
 
     return value
 
@@ -1173,15 +1176,17 @@ class Person(
     @property
     def karma_category_caches(self):
         """See `IPerson`."""
-        return KarmaCache.select(
-            AND(
-                KarmaCache.q.personID == self.id,
-                KarmaCache.q.categoryID != None,
-                KarmaCache.q.productID == None,
-                KarmaCache.q.projectID == None,
-                KarmaCache.q.distributionID == None,
-                KarmaCache.q.sourcepackagenameID == None),
-            orderBy=['category'])
+        store = Store.of(self)
+        conditions = And(
+            KarmaCache.category == KarmaCategory.id,
+            KarmaCache.person == self.id,
+            KarmaCache.product == None,
+            KarmaCache.project == None,
+            KarmaCache.distribution == None,
+            KarmaCache.sourcepackagename == None)
+        result = store.find((KarmaCache, KarmaCategory), conditions)
+        result = result.order_by(KarmaCategory.title)
+        return [karma_cache for (karma_cache, category) in result]
 
     @property
     def karma(self):
@@ -1213,25 +1218,6 @@ class Person(
             return True
         except SQLObjectNotFound:
             return False
-
-    @property
-    def is_openid_enabled(self):
-        """See `IPerson`."""
-        if not self.is_valid_person:
-            return False
-
-        if config.launchpad.openid_users == 'all':
-            return True
-
-        openid_users = getUtility(IPersonSet).getByName(
-                config.launchpad.openid_users
-                )
-        assert openid_users is not None, \
-                'No Person %s found' % config.launchpad.openid_users
-        if self.inTeam(openid_users):
-            return True
-
-        return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1885,6 +1871,9 @@ class Person(
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
+            # Skip mailing lists because if the mailing list is purged, it's
+            # not a problem.  Do this check separately below.
+            ('mailinglist', 'team')
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -1925,6 +1914,12 @@ class Person(
                 'a source package subscriber']):
             if count > 0:
                 warnings.add(warning)
+
+        # Non-purged mailing list check.
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if (mailing_list is not None and
+            mailing_list.status != MailingListStatus.PURGED):
+            warnings.add('a mailing list')
 
         # Compose warning string.
         warnings = sorted(warnings)

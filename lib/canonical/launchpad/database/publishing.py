@@ -51,7 +51,7 @@ from canonical.launchpad.interfaces import (
     PoolFileOverwriteError)
 from canonical.launchpad.interfaces.publishing import (
     IPublishingSet, active_publishing_status)
-from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
+from canonical.launchpad.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.person import validate_public_person

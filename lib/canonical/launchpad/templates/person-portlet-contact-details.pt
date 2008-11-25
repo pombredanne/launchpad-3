@@ -27,19 +27,33 @@
             <tal:no_preferredemail
               condition="view/email_address_visibility/are_none_available">
               <tal:is-team condition="context/isTeam">
-                No contact address <br /><small>(Launchpad notifications are
-                sent to all team members)</small>
+                No contact address
+                (<a href="+contactuser"
+                    tal:attributes="title view/contactuser_link_title"
+                    tal:content="view/specific_contact_text">Contact</a>)
+                 <br /><small>(Launchpad notifications are
+                               sent to all team members)</small>
               </tal:is-team>
               <tal:not-team condition="not:context/isTeam">
+                <tal:comment replace="nothing">
+                BarryWarsaw 06-Nov-2008 this code does not appear to be
+                touched in our current test suite.  Is it ever possible in
+                production?  Because I don't know, I'm not removing it, but I
+                am making it DTRT if it ever gets hit.
+                </tal:comment>
                 No public address provided.
-                (<a href="+contactuser">Contact this user</a>)
+                (<a href="+contactuser"
+                    tal:attributes="title view/contactuser_link_title"
+                    tal:content="view/specific_contact_text">Contact</a>)
               </tal:not-team>
             </tal:no_preferredemail>
 
             <tal:cant-view-hidden-emails
               condition="view/email_address_visibility/are_hidden">
               No public address provided.
-              (<a href="+contactuser">Contact this user</a>)
+                (<a href="+contactuser"
+                    tal:attributes="title view/contactuser_link_title"
+                    tal:content="view/specific_contact_text">Contact</a>)
             </tal:cant-view-hidden-emails>
 
             <tal:emails
@@ -51,7 +65,9 @@
                   tal:condition="view/email_address_visibility/are_public"/>
                 <tal:email replace="email">foo2@bar.com</tal:email>
                 <tal:contact condition="repeat/email/start">
-                  (<a href="+contactuser">Contact this user</a>)
+                (<a href="+contactuser"
+                    tal:attributes="title view/contactuser_link_title"
+                    tal:content="view/specific_contact_text">Contact</a>)
                 </tal:contact>
                 <br tal:omit-tag="repeat/email/end" />
               </span>
@@ -128,19 +144,16 @@
           </tr>
         </tal:keys>
 
-        <tal:can-view-openid-login
-          condition="context/required:launchpad.Edit">
-          <tr tal:condition="context/is_openid_enabled">
-            <th>OpenID login:</th>
-            <td title="This URL is not disclosed to others.">
-              <img src="/@@/private" alt="" />
-              <tal:openid-login content="view/openid_identity_url" />
-              <span class="help"
-                  ><a href="https://help.launchpad.net/OpenID"
-                     >(What&rsquo;s&nbsp;this?)</a></span>
-            </td>
-          </tr>
-        </tal:can-view-openid-login>
+        <tr tal:condition="not: context/is_team">
+          <th>OpenID login:</th>
+          <td>
+            <img src="/@@/private" alt="" />
+            <tal:openid-login content="view/openid_identity_url" />
+            <span class="help"
+                ><a href="https://help.launchpad.net/OpenID"
+                   >(What&rsquo;s&nbsp;this?)</a></span>
+          </td>
+        </tr>
 
       </tbody>
     </table>
