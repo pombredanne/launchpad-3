@@ -14,10 +14,9 @@ from urlparse import urlparse
 
 import transaction
 
-from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib import errors
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
@@ -50,28 +49,34 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, db_branch):
+    def assertMirrored(self, db_branch, source_branch=None, accessing_user=None):
         """Assert that 'db_branch' was mirrored succesfully.
 
-        :param source_path: The URL of the branch that was mirrored.
         :param db_branch: The `IBranch` representing the branch that was
             mirrored.
-        :param destination_path: If specified, the URL to examine for the
-            destination branch. If unspecified, look directly at the mirrored
-            area on the filesystem.
+        :param source_branch: XXX
+        :param accessing_user: XXX
         """
-        accessing_user = self.factory.makePerson()
+        if source_branch is None:
+            source_branch = self.openBranchAsUser(db_branch, db_branch.owner)
+        if accessing_user is None:
+            accessing_user = self.factory.makePerson()
         transaction.commit()
         self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
             db_branch.last_mirror_attempt, db_branch.last_mirrored)
         self.assertEqual(0, db_branch.mirror_failures)
-        hosted_branch = self.openBranchAsUser(db_branch.owner, db_branch)
-        mirrored_branch = self.openBranchAsUser(accessing_user, db_branch)
+        mirrored_branch = self.openBranchAsUser(db_branch, accessing_user)
         self.assertEqual(
-            hosted_branch.last_revision(), db_branch.last_mirrored_id)
+            source_branch.last_revision(), db_branch.last_mirrored_id)
         self.assertEqual(
-            hosted_branch.last_revision(), mirrored_branch.last_revision())
+            source_branch.last_revision(), mirrored_branch.last_revision())
+        self.assertEqual(
+            source_branch._format.__class__,
+            mirrored_branch._format.__class__)
+        self.assertEqual(
+            source_branch.repository._format.__class__,
+            mirrored_branch.repository._format.__class__)
 
     def assertRanSuccessfully(self, command, retcode, stdout, stderr):
         """Assert that the command ran successfully.
@@ -140,16 +145,16 @@ class TestBranchPuller(PullerBranchTestCase):
         self.addCleanup(lp_server.tearDown)
         return lp_server
 
-    def openBranchAsUser(self, user, db_branch):
+    def openBranchAsUser(self, db_branch, user):
         lp_server = self.getLPServerForUser(user)
         return Branch.open(lp_server.get_url() + db_branch.unique_name)
 
-    def pushBranchAsUser(self, user, db_branch, tree=None, format=None):
+    def pushBranch(self, db_branch, tree=None, format=None):
         if tree is None:
             tree = self.make_branch_and_tree(
                 self.factory.getUniqueString(), format=format)
             tree.commit('rev1')
-        lp_server = self.getLPServerForUser(user)
+        lp_server = self.getLPServerForUser(db_branch.owner)
         dest_transport = get_transport(lp_server.get_url() + db_branch.unique_name)
         try:
             dir_to = BzrDir.open_from_transport(dest_transport)
@@ -163,7 +168,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # Run the puller on a populated hosted branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         transaction.commit()
-        self.pushBranchAsUser(db_branch.owner, db_branch)
+        self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
@@ -172,13 +177,12 @@ class TestBranchPuller(PullerBranchTestCase):
         # When the format of a branch changes, we completely remirror it.
         # First we push up and mirror the branch in one format.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
-        self.pushToBranch(db_branch, pack_tree)
-        db_branch.requestMirror()
         transaction.commit()
+        pack_tree = self.make_branch_and_tree('pack', format='pack-0.92')
+        self.pushBranch(db_branch, tree=pack_tree)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        self.assertMirrored(db_branch)
         # Then we upgrade the to a different format and ask for it to be
         # mirrored again.
         upgrade(self.getHostedPath(db_branch), format_registry.get('1.6')())
@@ -187,35 +191,29 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
-        # In addition, we check that the format of the branch in the mirrored
-        # area is what we expect.
-        mirrored_branch = Branch.open(self.getMirroredPath(db_branch))
-        self.assertIsInstance(mirrored_branch._format, BzrBranchFormat7)
-        self.assertIsInstance(
-            mirrored_branch.repository._format, RepositoryFormatKnitPack5)
+        self.assertMirrored(db_branch)
 
     def test_mirror_hosted_loom_branch(self):
         # Run the puller over a branch with looms enabled.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        loom_tree = self.makeLoomBranchAndTree('loom')
-        self.pushToBranch(db_branch, loom_tree)
-        db_branch.requestMirror()
         transaction.commit()
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        self.pushBranch(db_branch, tree=loom_tree)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        self.assertMirrored(db_branch)
 
     def test_mirror_private_branch(self):
         # Run the puller with a private branch in the queue.
-        db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        self.pushToBranch(db_branch)
-        db_branch.requestMirror()
-        db_branch.private = True
+        db_branch = self.factory.makeBranch(BranchType.HOSTED, private=True)
+        accessing_user = self.factory.makePerson()
+        self.factory.makeBranchSubscription(
+            branch=db_branch, person=accessing_user)
         transaction.commit()
+        self.pushBranch(db_branch)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        self.assertMirrored(db_branch, accessing_user=accessing_user)
 
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
@@ -223,16 +221,11 @@ class TestBranchPuller(PullerBranchTestCase):
         tree = self.make_branch_and_tree('.')
         tree.commit('rev1')
         db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        db_branch.requestMirror() # XXX necessary??
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        # XXX: StuartBishop 2008-03-12 bug=193253: The first argument used to
-        # be db_branch.url, but this triggered Bug #193253 where for some
-        # reason Branch.open via HTTP makes an incomplete request to the
-        # HttpServer leaving a dangling thread. Our test suite now fails
-        # tests leaving dangling threads.
-        self.assertMirrored(tree.basedir, db_branch)
+        self.assertMirrored(db_branch, source_branch=tree.branch)
 
     def _makeDefaultStackedOnBranch(self, private=False):
         """Make a default stacked-on branch.
@@ -343,11 +336,7 @@ class TestBranchPuller(PullerBranchTestCase):
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
 
-        # XXX: StuartBishop 2008-03-12 bug=193253: check that the branch is
-        # mirrored by going straight to the filesystem, rather than over HTTP.
-        # This is to avoid Bazaar opening an HTTP connection that never
-        # closes.
-        self.assertMirrored(branch_path, db_branch)
+        self.assertMirrored(db_branch, source_branch=tree.branch)
 
     def test_mirror_empty(self):
         # Run the puller on an empty pull queue.
