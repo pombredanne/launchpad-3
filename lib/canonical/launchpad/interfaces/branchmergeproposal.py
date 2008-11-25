@@ -211,8 +211,11 @@ class IBranchMergeProposal(Interface):
             required=False, readonly=True,
             description=_("The person that queued up the branch.")))
 
-    queued_revision_id = Attribute(
-        _("The revision id that has been queued for landing."))
+    queued_revision_id = exported(
+        Text(
+            title=_("Queued Revision ID"), readonly=True,
+            description=_("The revision id that has been queued for "
+                          "landing.")))
 
     merged_revno = exported(
         Int(
@@ -237,10 +240,18 @@ class IBranchMergeProposal(Interface):
             required=False, readonly=True,
             description=_("The user that marked the branch as merged.")))
 
-    supersedes = Attribute(
-        "The branch merge proposal that this one supersedes.")
-    superseded_by = Attribute(
-        "The branch merge proposal that supersedes this one.")
+    #supersedes = exported(
+    #    Reference(
+    #        title=_("Supersedes"),
+    #        schema=IBranchMergeProposal, required=True, readonly=True,
+    #        description=_("The branch merge proposal that this one "
+    #                      "supersedes.")))
+    #superseded_by = exported(
+    #    Reference(
+    #        title=_("Superseded By"), schema=IBranchMergeProposal,
+    #        required=True, readonly=True,
+    #        description=_(
+    #            "The branch merge proposal that supersedes this one.")))
 
     date_created = exported(
         Datetime(
