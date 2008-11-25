@@ -208,8 +208,9 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         def create_branch(requester):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
+            escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
             try:
-                branch_tokens = branch_path.strip('/').split('/')
+                branch_tokens = escaped_path.split('/')
                 personName, productName, branchName = branch_tokens
             except ValueError:
                 return Fault(
