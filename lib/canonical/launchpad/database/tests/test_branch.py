@@ -1092,26 +1092,31 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
 
-    def test_getByURL_with_lp(self):
-        """lp: URLs are supported, with and without a hostname.
-
-        If a hostname is supplied, it must be "edge" or "production".
-        """
+    def test_getByURL_with_lp_prefix(self):
+        """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchSet)
-        self.assertRaises(NoSuchPersonWithName,
-                          branch_set.getByUrl, 'lp:~aa/b/c')
+        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
+        self.assertRaises(NoSuchPersonWithName, branch_set.getByUrl, url)
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
-        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        branch2 = branch_set.getByUrl(url)
         self.assertIs(None, branch2)
         branch = self.factory.makeBranch(
             owner=owner, product=product, name='c')
-        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        branch2 = branch_set.getByUrl(url)
         self.assertEqual(branch, branch2)
+
+    def test_getByURL_for_production(self):
+        """test_getByURL works with production values."""
+        branch_set = getUtility(IBranchSet)
+        branch = self.makeBranch()
+        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
         self.assertIs(None, branch2)
         branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
         self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')

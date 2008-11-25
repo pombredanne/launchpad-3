@@ -1028,7 +1028,12 @@ class BranchSet:
             branch = self.getByUniqueName(uri.path.lstrip('/'))
         elif uri.scheme == 'lp':
             branch = None
-            if uri.host in ('edge', 'production', None):
+            allowed_hosts = set
+            for host in config.codehosting.lp_url_hosts.split(','):
+                if host == '':
+                    host = None
+                allowed_hosts.add(host)
+            if uri.host in allowed_hosts:
                 try:
                     branch = self.getByLPPath(uri.path.lstrip('/'))[0]
                 except NoSuchBranch:
