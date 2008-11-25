@@ -48,7 +48,9 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
     IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
-from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
+from canonical.launchpad.interfaces.branch import (
+    IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -1273,8 +1275,8 @@ class BranchSet:
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
+        if (LAUNCHPAD_SERVICES == visible_by_user or
+            user_has_special_branch_access(visible_by_user)):
             return query
 
         if len(query) > 0:
