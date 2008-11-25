@@ -1067,7 +1067,17 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
         branch = self.factory.makeBranch(
             owner=owner, product=product, name='c')
-        self.assertEqual((branch, None), branch_set.getByLPPath('~aa/bb/c'))
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_junk_branch(self):
+        """Test the behaviour with junk branches."""
+        owner = self.factory.makePerson(name='aa')
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
+        branch = self.factory.makeBranch(owner=owner, product=None, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
 
     def test_getByLPPath_with_two_parts(self):
         """Test the behaviour with two-part names."""
@@ -1078,9 +1088,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         series = self.factory.makeSeries(name='dd', product=product)
         self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
         series.user_branch = self.factory.makeBranch()
-        branch_set.getByLPPath('bb/dd')
         self.assertEqual(
-            (series.user_branch, None), branch_set.getByLPPath('bb/dd'))
+            (series.user_branch, None, series),
+            branch_set.getByLPPath('bb/dd'))
 
     def test_getByLPPath_with_one_part(self):
         """Test the behaviour with one names."""
@@ -1093,7 +1103,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
         branch = self.factory.makeBranch()
         product.development_focus.user_branch = branch
-        self.assertEqual((branch, None), branch_set.getByLPPath('bb'))
+        self.assertEqual(
+            (branch, None, product.development_focus),
+            branch_set.getByLPPath('bb'))
 
 
 class TestGetBranchForContextVisibleUser(TestCaseWithFactory):

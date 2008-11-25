@@ -61,7 +61,6 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.validators.name import valid_name
@@ -1063,11 +1062,6 @@ class BranchSet:
 
     @classmethod
     def getByLPPath(klass, path):
-        """Resolve the path of an lp: URL to a branch and suffix.
-
-        :return: (branch, suffix)
-        :raise: A subclass of LaunchpadFault
-        """
         path_segments = path.split('/', 3)
         series_name = None
         if len(path_segments) > 3:
@@ -1075,18 +1069,18 @@ class BranchSet:
         else:
             suffix = None
         if len(path_segments) < 3:
-            branch = klass._getProductBranch(*path_segments)
+            branch, series = klass._getProductBranch(*path_segments)
         else:
+            series = None
             owner, product, name = path_segments[:3]
             if owner[0] != '~':
                 raise InvalidBranchIdentifier(path)
             owner = owner[1:]
             branch = klass._getByUniqueNameElements(owner, product, name)
-            if (branch is None or
-                not check_permission('launchpad.View', branch)):
+            if branch is None:
                 klass._checkOwnerProduct(owner, product)
                 raise NoSuchBranch(path)
-        return branch, suffix
+        return branch, suffix, series
 
     @staticmethod
     def _getProductBranch(product_name, series_name=None):
@@ -1110,16 +1104,16 @@ class BranchSet:
             if series is None:
                 raise NoSuchSeries(series_name, product)
         branch = series.series_branch
-        if (branch is None or not check_permission('launchpad.View', branch)):
+        if branch is None:
             raise NoBranchForSeries(series)
-        return branch
+        return branch, series
 
     @classmethod
     def _checkOwnerProduct(klass, owner_name, product_name):
         """Return an appropriate response for a non-existent branch.
 
         :param unique_name: A string of the form "~user/project/branch".
-        :return: A _NonexistentBranch object or a Fault if the user or project
+        :raise: A _NonexistentBranch object or a Fault if the user or project
             do not exist.
         """
         owner = getUtility(IPersonSet).getByName(owner_name)

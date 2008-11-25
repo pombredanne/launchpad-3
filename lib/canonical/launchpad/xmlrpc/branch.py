@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
@@ -214,8 +215,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
+        branch_set = getUtility(IBranchSet)
         try:
-            branch, suffix = getUtility(IBranchSet).getByLPPath(strip_path)
+            branch, suffix, series = branch_set.getByLPPath(strip_path)
+            if not check_permission('launchpad.View', branch):
+                if series is None:
+                    raise faults.NoSuchBranch(strip_path)
+                else:
+                    raise faults.NoBranchForSeries(series)
         except faults.NoSuchBranch:
             return self._getUniqueNameResultDict(strip_path)
         except faults.NoSuchProduct, e:
