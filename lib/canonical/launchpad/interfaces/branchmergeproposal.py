@@ -173,8 +173,22 @@ class IBranchMergeProposal(Interface):
             vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
             description=_("The current state of the proposal.")))
 
-    reviewer = Attribute(
-        _("The person that accepted (or rejected) the code for merging."))
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Default Review Team'),
+            required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The reviewer of a branch is the person or team "
+                          "that is responsible for reviewing proposals and "
+                          "merging into this branch.")))
+
+
+    reviewer = exported(
+        PublicPersonChoice(
+            title=_('Review person or team'), required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The person that accepted (or rejected) the code "
+                          "for merging.")))
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
