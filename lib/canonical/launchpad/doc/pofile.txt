@@ -1146,7 +1146,7 @@ Contributions:" is used as a header for the added credits.
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     names_of_translators)
-    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 Lets add a newly supported KDE context message with credit strings
 split into two: context and message, instead of a single message with
@@ -1159,7 +1159,7 @@ embedded context.
 prepareTranslationCredits works on such messages as well:
 
     >>> alsa_translation.prepareTranslationCredits(new_kde_name_credits)
-    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 Similar happens for email credits as with name credits.
 

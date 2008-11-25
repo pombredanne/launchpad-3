@@ -481,7 +481,8 @@ class SpecificationEditView(LaunchpadEditFormView):
     schema = ISpecification
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
-    custom_widget('whiteboard', TextAreaWidget, height=5)
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('whiteboard', TextAreaWidget, height=10)
     custom_widget('specurl', TextWidget, width=60)
 
     @action(_('Change'), name='change')
@@ -499,6 +500,7 @@ class SpecificationEditView(LaunchpadEditFormView):
 class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
+    custom_widget('whiteboard', TextAreaWidget, height=15)
 
 
 class SpecificationEditPeopleView(SpecificationEditView):
