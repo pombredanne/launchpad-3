@@ -27,16 +27,16 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
     IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
-    IStaticDiffSource, NotFoundError, RepositoryFormat)
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet,
-    )
+    BranchFormat, BranchLifecycleStatus, ControlFormat, IBranchSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
+from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.webapp.uri import URI
 
 
