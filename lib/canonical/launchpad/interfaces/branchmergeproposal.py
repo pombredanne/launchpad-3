@@ -378,8 +378,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def createComment(owner, subject, content=None, vote=None,
-                      review_type=None,
-                      parent=None, _date_created=None):
+                      review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
         :param owner: The person who the message is from.
@@ -388,9 +387,6 @@ class IBranchMergeProposal(Interface):
             unspecified, the text of the merge proposal is used.
         :param parent: The previous CodeReviewComment in the thread.  If
             unspecified, the root message is used.
-        :param _date_created: The date the message was created.  Provided only
-            for testing purposes, as it can break
-            BranchMergeProposal.root_message.
         """
 
     def createCommentFromMessage(message, vote, review_type):
