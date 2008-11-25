@@ -27,6 +27,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, export_write_operation, exported)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -125,6 +127,8 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
+
+    export_as_webservice_entry()
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,

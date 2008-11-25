@@ -11,6 +11,8 @@ Branch merge proposals can be fetched through the API.
     >>> merge_proposal = webservice.get(proposal_url).jsonBody()
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
+    resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
+    self_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18/+merge/1'
 
 == Create a new merge proposal ==
 
