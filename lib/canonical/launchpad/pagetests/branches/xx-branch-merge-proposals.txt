@@ -307,8 +307,10 @@ bugs and urls.
     >>> comment = find_tag_by_id(sample_browser.contents, 'comment1')
     >>> print comment.find('div',
     ...     {'class': 'boardCommentBody codereviewcomment'}).contents[1]
-    <p>This fixes
-    <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></p>
+    <pre ...
+    This fixes
+    <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a>
+    </pre>
 
 
 Consume notification.
