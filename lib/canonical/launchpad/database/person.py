@@ -35,6 +35,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
+from storm.expr import And
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -1175,15 +1176,17 @@ class Person(
     @property
     def karma_category_caches(self):
         """See `IPerson`."""
-        return KarmaCache.select(
-            AND(
-                KarmaCache.q.personID == self.id,
-                KarmaCache.q.categoryID != None,
-                KarmaCache.q.productID == None,
-                KarmaCache.q.projectID == None,
-                KarmaCache.q.distributionID == None,
-                KarmaCache.q.sourcepackagenameID == None),
-            orderBy=['category'])
+        store = Store.of(self)
+        conditions = And(
+            KarmaCache.category == KarmaCategory.id,
+            KarmaCache.person == self.id,
+            KarmaCache.product == None,
+            KarmaCache.project == None,
+            KarmaCache.distribution == None,
+            KarmaCache.sourcepackagename == None)
+        result = store.find((KarmaCache, KarmaCategory), conditions)
+        result = result.order_by(KarmaCategory.title)
+        return [karma_cache for (karma_cache, category) in result]
 
     @property
     def karma(self):
