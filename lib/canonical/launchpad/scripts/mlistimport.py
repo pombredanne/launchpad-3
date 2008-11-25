@@ -10,7 +10,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.person import IPersonSet
@@ -51,5 +52,9 @@ class Importer:
             email = email_set.getByEmail(address)
             assert email is not None, (
                 'Address has no IEmailAddress? %s' % address)
+            if email.status not in (EmailAddressStatus.PREFERRED,
+                                    EmailAddressStatus.VALIDATED):
+                # XXX Log this.
+                continue
             person.join(self.team)
             self.mailing_list.subscribe(person, email)

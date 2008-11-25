@@ -6,10 +6,8 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
-
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.teammembership import ITeamMembershipSet
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -31,11 +29,12 @@ class TestMailingListImports(unittest.TestCase):
         self.cris = factory.makePersonByName('Cris')
         self.dave = factory.makePersonByName('Dave')
         self.elly = factory.makePersonByName('Elly')
+        self.teamowner = factory.makePersonByName('Teamowner')
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
-            'aardvarks', 'anne')
+            'aardvarks', 'teamowner')
 
     def test_simple_import_membership(self):
-        # Test the import of a list/team's membership, where all email
+        # Test the import of a list/team membership, where all email
         # addresses being imported actually exist in Launchpad.
         importer = Importer('aardvarks')
         importer.importAddresses((
@@ -45,17 +44,67 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        team_memberships = getUtility(ITeamMembershipSet)
-        for person in (self.anne, self.bart, self.cris, self.dave, self.elly):
-            membership = team_memberships.getByPersonAndTeam(
-                person, self.team)
-            self.assertTrue(membership is not None,
-                            '%s is not a member of %s'
-                            % (person.name, self.team.name))
-            subscription = self.mailing_list.getSubscription(person)
-            self.assertTrue(subscription is not None,
-                            '%s is not subscribed to the %s mailing list'
-                            % (person.name, self.team.name))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+
+    def test_import_with_non_persons(self):
+        # Test the import of a list/team membership where not all the
+        # email addresses are associated with registered people.
+        importer = Importer('aardvarks')
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            # Non-persons.
+            'fperson@example.org',
+            'gwen.person@example.com',
+            'hperson@example.org',
+            ))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+
+    def test_import_with_invalid_emails(self):
+        # Test the import of a list/team membership where all the
+        # emails are associated with valid people, but not all of the
+        # email addresses are validated.
+        importer = Importer('aardvarks')
+        # Give Anne a new invalid email address.
+        factory.makeEmail('anne.x.person@example.net', self.anne,
+                          EmailAddressStatus.NEW)
+        importer.importAddresses((
+            # Import Anne's alternative address.
+            'anne.x.person@example.net',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+        
 
 
 def test_suite():

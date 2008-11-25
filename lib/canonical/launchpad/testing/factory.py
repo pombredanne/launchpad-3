@@ -241,6 +241,25 @@ class LaunchpadObjectFactory(ObjectFactory):
                                          EmailAddressStatus.VALIDATED,
                                          person.account)
         return person
+
+    def makeEmail(self, address, person, email_status=None):
+        """Create a new email address for a person.
+
+        :param address: The email address to create.
+        :type address: string
+        :param person: The person to assign the email address to.
+        :type person: `IPerson`
+        :param email_status: The default status of the email address,
+            if given.  If not given, `EmailAddressStatus.VALIDATED`
+            will be used.
+        :type email_status: `EmailAddressStatus`
+        :return: The newly created email address.
+        :rtype: `IEmailAddress`
+        """
+        if email_status is None:
+            email_status = EmailAddressStatus.VALIDATED
+        return getUtility(IEmailAddressSet).new(
+            address, person, email_status, person.account)
         
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN):
