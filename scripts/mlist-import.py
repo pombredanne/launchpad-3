@@ -15,6 +15,8 @@ __all__ = [
 
 
 import sys
+import logging
+import textwrap
 
 # pylint: disable-msg=W0403
 import _pythonpath
@@ -25,7 +27,7 @@ from canonical.launchpad.scripts.mlistimport import Importer
 
 class MailingListImport(LaunchpadScript):
     """
-    %prog [options]
+    %prog [options] team_name
 
     Import various mailing list artifacts into a Launchpad mailing
     list.  This script allows you to import e.g. the membership list

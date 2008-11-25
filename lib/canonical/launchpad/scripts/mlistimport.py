@@ -14,7 +14,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
 from canonical.launchpad.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
+    CannotSubscribe, IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts import QuietFakeLogger
 
@@ -57,17 +57,23 @@ class Importer:
                 continue
             person = person_set.getByEmail(address)
             if person is None or person.isTeam():
-                self.log.error('No person for address:', address)
+                self.log.error('No person for address: %s', address)
                 continue
             email = email_set.getByEmail(address)
             assert email is not None, (
                 'Address has no IEmailAddress? %s' % address)
             if email.status not in (EmailAddressStatus.PREFERRED,
                                     EmailAddressStatus.VALIDATED):
-                self.log.error('No valid email for address:', address)
+                self.log.error('No valid email for address: %s', address)
                 continue
-            person.join(self.team)
-            self.mailing_list.subscribe(person, email)
+            # Turn off may_subscribe_to_list because we want to explicitly
+            # force subscription without relying on the person's
+            # auto-subscribe policy.
+            person.join(self.team, may_subscribe_to_list=False)
+            try:
+                self.mailing_list.subscribe(person, email)
+            except CannotSubscribe, error:
+                self.log.error(str(error))
 
     def importFromFile(self, filename):
         """Import all addresses given in the named file.

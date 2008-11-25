@@ -28,7 +28,9 @@ class CapturingLogger(FakeLogger):
         self.io = StringIO()
 
     def message(self, prefix, *stuff, **kws):
-        print >> self.io, prefix, ' '.join(stuff)
+        # XXX BarryWarsaw 25-Nov-2008 (bug=302183). FakeLogger is broken.
+        fmt = stuff[0]
+        print >> self.io, prefix, fmt % stuff[1:]
 
 
 class TestMailingListImports(unittest.TestCase):
@@ -150,6 +152,51 @@ class TestMailingListImports(unittest.TestCase):
             sorted(email.email
                    for email in self.mailing_list.getSubscribedAddresses()),
             [u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+
+    def test_already_joined(self):
+        # Test import when a user is already joined to the team, but
+        # not subscribed to the mailing list.
+        importer = Importer('aardvarks')
+        self.anne.join(self.team)
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+
+    def test_already_subscribed(self):
+        # Test import when a user is already joined to the team, and
+        # subscribed to its mailing list.
+        importer = Importer('aardvarks')
+        self.anne.join(self.team)
+        self.mailing_list.subscribe(self.anne)
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bperson@example.org',
              u'cris.person@example.com', u'dperson@example.org',
              u'elly.person@example.com'])
 
