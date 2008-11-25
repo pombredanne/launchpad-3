@@ -48,7 +48,8 @@ archive (for snaphots).
 Finally, we have all that's needed to instantiate the package copy request.
 
     >>> pcr_set = getUtility(IPackageCopyRequestSet)
-    >>> new_pcr = pcr_set.new(source, target, cprov)
+    >>> new_pcr = pcr_set.new(
+    ...     source, target, cprov, reason=u'We need to test this stuff!')
 
 Let's have a look at it. Please note that the source and the target
 components are not set by default. Also, the date started and completed are

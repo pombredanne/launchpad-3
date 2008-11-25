@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = ['PackageCopyRequest', 'PackageCopyRequestSet']
 
+import itertools
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -19,36 +20,53 @@ from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
-from sqlobject import BoolCol, ForeignKey, StringCol
+from storm.locals import Bool, Enum, Int, DateTime, Reference, Storm, Unicode
 
 
-class PackageCopyRequest(SQLBase):
+def _construct_enum_mapping(db_item_cls):
+    enum_map = dict(
+        zip([i for i in db_item_cls.items],
+            itertools.count(1)))
+    return enum_map
+
+
+class PackageCopyRequest(Storm):
     implements(IPackageCopyRequest)
-    _table = 'PackageCopyRequest'
-    _defaultOrder = 'id'
+    __storm_table__ = 'PackageCopyRequest'
+    id = Int(primary=True)
 
-    target_archive = ForeignKey(foreignKey='Archive', notNull=True)
-    target_distroseries = ForeignKey(foreignKey='DistroSeries', notNull=False)
-    target_component = ForeignKey(foreignKey='Component', notNull=False)
-    target_pocket = EnumCol(schema=PackagePublishingPocket, notNull=False)
+    target_archive_id = Int(name='target_archive', allow_none=False)
+    target_archive = Reference(target_archive_id, 'Archive.id')
+    target_distroseries_id = Int(name='target_distroseries', allow_none=True)
+    target_distroseries = Reference(target_distroseries_id, 'DistroSeries.id')
+    target_component_id = Int(name='target_component', allow_none=True)
+    target_component = Reference(target_component_id, 'Component.id')
+    target_pocket = Enum(map=_construct_enum_mapping(PackagePublishingPocket))
 
-    copy_binaries = BoolCol(notNull=True, default=False)
+    copy_binaries = Bool(allow_none=False, default=False)
 
-    source_archive = ForeignKey(foreignKey='Archive', notNull=True)
-    source_distroseries = ForeignKey(foreignKey='DistroSeries', notNull=False)
-    source_component = ForeignKey(foreignKey='Component', notNull=False)
-    source_pocket = EnumCol(schema=PackagePublishingPocket, notNull=False)
+    source_archive_id = Int(name='source_archive', allow_none=False)
+    source_archive = Reference(source_archive_id, 'Archive.id')
+    source_distroseries_id = Int(name='source_distroseries', allow_none=True)
+    source_distroseries = Reference(source_distroseries_id, 'DistroSeries.id')
+    source_component_id = Int(name='source_component', allow_none=True)
+    source_component = Reference(source_component_id, 'Component.id')
+    source_pocket = Enum(map=_construct_enum_mapping(PackagePublishingPocket))
 
-    requester = ForeignKey(
-        foreignKey='Person', notNull=True,
-        storm_validator=validate_public_person)
+    requester_id = Int(name='requester', allow_none=False)
+    requester = Reference(requester_id, 'Person.id')
 
-    status = EnumCol(schema=PackageCopyStatus, notNull=True)
-    reason = StringCol(notNull=False)
+    requester_id = Int(
+        name='requester', allow_none=False, validator=validate_public_person)
+    requester = Reference(requester_id, 'Person.id')
 
-    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    date_started = UtcDateTimeCol(notNull=False)
-    date_completed = UtcDateTimeCol(notNull=False)
+    status = Enum(
+        allow_none=False, map=_construct_enum_mapping(PackageCopyStatus))
+    reason = Unicode(allow_none=True)
+
+    date_created = DateTime(allow_none=False, default=UTC_NOW)
+    date_started = DateTime(allow_none=True)
+    date_completed = DateTime(allow_none=True)
 
     def __str__(self):
         """See `IPackageCopyRequest`"""
@@ -63,12 +81,12 @@ class PackageCopyRequest(SQLBase):
             # Does the property have a name?
             name = getattr(property, 'name', None)
             if name is not None:
-                return name
+                return str(name)
 
             # Does the property have a title?
             title = getattr(property, 'title', None)
             if title is not None:
-                return title
+                return str(title)
 
             # Return the string representation of the property as a last
             # resort.
@@ -120,25 +138,39 @@ class PackageCopyRequest(SQLBase):
         self.date_completed = UTC_NOW
 
 
+def _set_location_data(pcr, location, prefix):
+    """Copies source/target package location data to copy requests."""
+    # Set the archive first, must be present.
+    assert location.archive is not None, (
+        '%s archive must be set in package location' % prefix)
+    setattr(pcr, '%s_archive' % prefix, location.archive)
+    # Now set the optional data if present.
+    optional_location_data = ('distroseries', 'component', 'pocket')
+    for datum_name in optional_location_data:
+        value = getattr(location, datum_name, None)
+        if value is not None:
+            setattr(pcr, '%s_%s' % (prefix, datum_name), value)
+
+
 class PackageCopyRequestSet:
     implements(IPackageCopyRequestSet)
 
     def new(
         self, source, target, requester, copy_binaries=False, reason=None):
         """See `IPackageCopyRequestSet`"""
-        return PackageCopyRequest(
-            target_archive=target.archive,
-            target_distroseries=target.distroseries,
-            target_component=target.component,
-            target_pocket=target.pocket,
-            copy_binaries=copy_binaries,
-            source_archive=source.archive,
-            source_distroseries=source.distroseries,
-            source_component=source.component,
-            source_pocket=source.pocket,
-            requester=requester,
-            status=PackageCopyStatus.NEW,
-            reason=reason)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        pcr = PackageCopyRequest()
+        for location_data in ((source, 'source'), (target, 'target')):
+            _set_location_data(pcr, *location_data)
+        pcr.requester = requester
+        if copy_binaries == True:
+            pcr.copy_binaries = True
+        if reason is not None:
+            pcr.reason = reason
+
+        pcr.status = PackageCopyStatus.NEW
+        store.add(pcr)
+        return pcr
 
     def getByPersonAndStatus(self, requester, status=None):
         """See `IPackageCopyRequestSet`"""
