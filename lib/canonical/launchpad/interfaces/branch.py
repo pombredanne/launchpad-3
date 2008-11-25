@@ -37,7 +37,8 @@ __all__ = [
     'MIRROR_TIME_INCREMENT',
     'RepositoryFormat',
     'UICreatableBranchType',
-    'UnknownBranchTypeError'
+    'UnknownBranchTypeError',
+    'user_has_special_branch_access',
     ]
 
 from cgi import escape
@@ -78,7 +79,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -199,6 +201,9 @@ class BranchFormat(DBEnumeratedType):
     BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
+
+    BZR_LOOM_3 = DBItem(
+        107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
 class RepositoryFormat(DBEnumeratedType):
@@ -1026,12 +1031,14 @@ class IBranchSet(Interface):
         """Find the branch associated with an lp: path.
 
         Recognized formats:
-        "~/owner/product/name" (same as unique name)
+        "~owner/product/name" (same as unique name)
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
-        :return: an `IBranch`
-        :raises: `NotFoundError` if the branch does not exist.
+        :return: a tuple of `IBranch`, extra_path, series.  Series is the
+            series, if any, used to perform the lookup.
+        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
+            of `LaunchpadFault`.
         """
 
     def getBranchesToScan():
@@ -1361,3 +1368,14 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+def user_has_special_branch_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)

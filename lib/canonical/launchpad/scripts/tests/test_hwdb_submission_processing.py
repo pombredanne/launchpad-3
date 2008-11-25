@@ -62,7 +62,8 @@ class TestCaseHWDB(TestCase):
     UDI_PCI_PCCARD_BRIDGE = '/org/freedesktop/Hal/devices/pci_1217_7134'
     UDI_PCCARD_DEVICE = '/org/freedesktop/Hal/devices/pci_9004_6075'
 
-    UDI_SCSI_CONTROLLER_PCI_SIDE = '/org/freedesktop/Hal/devices/pci_9004_6075'
+    UDI_SCSI_CONTROLLER_PCI_SIDE = (
+        '/org/freedesktop/Hal/devices/pci_9004_6075')
     UDI_SCSI_CONTROLLER_SCSI_SIDE = (
         '/org/freedesktop/Hal/devices/pci_9004_6075_scsi_host')
     UDI_SCSI_DISK = '/org/freedesktop/Hal/devices/scsi_disk'
@@ -2442,9 +2443,10 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         'properties': {
             'info.bus': ('scsi', 'str'),
             'info.linux.driver': ('sd', 'str'),
-            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE, 'str'),
-            'scsi.vendor': ('SEAGATE', 'str'),
-            'scsi.model': ('ST36530N', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE,
+                            'str'),
+            'scsi.vendor': ('WDC', 'str'),
+            'scsi.model': ('WD12345678', 'str'),
             },
         }
 
@@ -2619,11 +2621,11 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         parser.buildDeviceList(self.parsed_data)
 
         # The database does not know yet about the vendor name
-        # 'SEAGATE'...
+        # 'WDC'...
         vendor_name_set = getUtility(IHWVendorNameSet)
-        vendor_name = vendor_name_set.getByName('SEAGATE')
+        vendor_name = vendor_name_set.getByName('WDC')
         self.assertEqual(vendor_name, None,
-                         'Expected None looking up vendor name "SEAGATE" in '
+                         'Expected None looking up vendor name "WDC" in '
                          'HWVendorName, got %r.' % vendor_name)
 
         # ...as well as the vendor ID (which is identical to the vendor
@@ -2631,9 +2633,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         vendor_id_set = getUtility(IHWVendorIDSet)
         # Note that we must provide a string with exactly 8 characters
         # as the vendor ID of a SCSI device.
-        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'SEAGATE ')
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'WDC     ')
         self.assertEqual(vendor_id, None,
-                         'Expected None looking up vendor ID "SEAGATE " in '
+                         'Expected None looking up vendor ID "WDC     " in '
                          'HWVendorID for the SCSI bus, got %r.' % vendor_id)
 
         # HALDevice.ensureVendorIDVendorNameExists() creates these
@@ -2641,14 +2643,14 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         scsi_disk = parser.hal_devices[self.UDI_SCSI_DISK]
         scsi_disk.ensureVendorIDVendorNameExists()
 
-        vendor_name = vendor_name_set.getByName('SEAGATE')
-        self.assertEqual(vendor_name.name, 'SEAGATE',
-                         'Expected to find vendor name "SEAGATE" in '
+        vendor_name = vendor_name_set.getByName('WDC')
+        self.assertEqual(vendor_name.name, 'WDC',
+                         'Expected to find vendor name "WDC" in '
                          'HWVendorName, got %r.' % vendor_name.name)
 
-        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'SEAGATE ')
-        self.assertEqual(vendor_id.vendor_id_for_bus, 'SEAGATE ',
-                         'Expected "SEAGATE " as vendor_id_for_bus, '
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'WDC     ')
+        self.assertEqual(vendor_id.vendor_id_for_bus, 'WDC     ',
+                         'Expected "WDC     " as vendor_id_for_bus, '
                          'got %r.' % vendor_id.vendor_id_for_bus)
         self.assertEqual(vendor_id.bus, HWBus.SCSI,
                          'Expected HWBUS.SCSI as bus, got %s.'
@@ -3119,9 +3121,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         Run process_pending_submissions with three submissions; one
         of the submisisons contains invalid data.
         """
-        # We have already one submisson in the DB sample data;
-        # let's fill the associated Librarian file with some
-        # test data.
+        # We have already one submisson with the status SUBMITTED in the
+        # DB sample data; let's fill the associated Librarian file with
+        # some test data.
         submission_set = getUtility(IHWSubmissionSet)
         submission = submission_set.getBySubmissionKey(
             'test_submission_id_1')
@@ -3148,7 +3150,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             submission.submission_key for submission in valid_submissions]
         self.assertEqual(
             valid_submission_keys,
-            [u'test_submission_id_1', u'submission-6'],
+            [u'test_submission_id_1', u'sample-submission', u'submission-6'],
             'Unexpected set of valid submissions: %r' % valid_submission_keys)
 
         invalid_submissions = submission_set.getByStatus(
