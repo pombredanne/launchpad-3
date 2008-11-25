@@ -147,11 +147,12 @@ class IBranchMergeProposal(Interface):
             required=True, readonly=True,
             description=_("The branch that has code to land.")))
 
-    target_branch = Choice(
-        title=_('Target Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
-        description=_(
-            "The branch that the source branch will be merged into."))
+    target_branch = exported(
+        Reference(
+            title=_('Target Branch'),
+            schema=IBranch, required=True, readonly=True,
+            description=_(
+                "The branch that the source branch will be merged into.")))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
