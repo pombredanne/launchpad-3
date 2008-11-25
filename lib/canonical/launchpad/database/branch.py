@@ -1062,6 +1062,7 @@ class BranchSet:
 
     @classmethod
     def getByLPPath(klass, path):
+        """See `IBranchSet`."""
         path_segments = path.split('/', 3)
         series_name = None
         if len(path_segments) > 3:
