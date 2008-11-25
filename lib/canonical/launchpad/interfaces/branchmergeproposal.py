@@ -205,10 +205,11 @@ class IBranchMergeProposal(Interface):
             title=_("Queue Position"), required=False, readonly=True,
             description=_("The position in the queue.")))
 
-    queuer = Choice(
-        title=_('Queuer'), vocabulary='ValidPerson',
-        required=False, readonly=True,
-        description=_("The person that queued up the branch."))
+    queuer = exported(
+        PublicPersonChoice(
+            title=_('Queuer'), vocabulary='ValidPerson',
+            required=False, readonly=True,
+            description=_("The person that queued up the branch.")))
 
     queued_revision_id = Attribute(
         _("The revision id that has been queued for landing."))

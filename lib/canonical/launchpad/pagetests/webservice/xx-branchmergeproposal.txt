@@ -21,6 +21,7 @@ Branch merge proposals can be fetched through the API.
     merged_revno: None
     queue_position: None
     queue_status: u'Work in progress'
+    queuer_link: None
     registrant_link: u'http://api.launchpad.dev/beta/~person-name13'
     resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
     reviewer_link: None
