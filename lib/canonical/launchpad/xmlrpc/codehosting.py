@@ -35,6 +35,7 @@ from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
@@ -182,7 +183,11 @@ def run_with_login(login_id, function, *args, **kwargs):
     requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
-    login_person(requester)
+    # XXX gary 21-Oct-2008 bug 285808
+    # We should reconsider using a ftest helper for production code.  For now,
+    # we explicitly keep the code from using a test request by using a basic
+    # participation.
+    login_person(requester, Participation())
     try:
         return function(requester, *args, **kwargs)
     finally:

@@ -1610,3 +1610,118 @@ If there is a matching archive it is returned.
     ...     ubuntutest, ArchivePurpose.COPY, name="test-rebuild-one")
     >>> print candidate.name
     test-rebuild-one
+
+
+== Synchronising sources from other archives ==
+
+IArchive.syncSources is a convenience wrapper around the copying code
+in canonical.launchpad.scripts.packagecopier.  It allows the caller to
+provide a list of sources that can be copied to the context archive.
+
+First we use the SoyuzTestPublisher to make some test publications in
+hoary:
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.1", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package2", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="pack", version="1.0", archive=cprov.archive)
+
+Now we have package1 1.0 and 1.1, and package2 1.0 in cprov's PPA.  We
+can ask syncSources to synchronise these packages into sabdfl's PPA in the
+release pocket:
+
+    >>> sources = ["package1", "package2"]
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    [u'package1', u'package2']
+    >>> [sabdfl_one] = sabdfl.archive.getPublishedSources(name="package1")
+    >>> print sabdfl_one.sourcepackagerelease.version
+    1.1
+    >>> [sabdfl_two] = sabdfl.archive.getPublishedSources(name="package2")
+    >>> print sabdfl_two.sourcepackagerelease.version
+    1.0
+
+Notice that the latest version of package_one was copied, ignoring the
+older one.
+
+Repeating this source copy gives an error:
+
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    CannotCopy:
+        package1 1.1 in hoary (same version already building...
+        package2 1.0 in hoary (same version already building...
+
+Repeating this copy with binaries also gives an error:
+
+    >>> sabdfl.archive.syncSources(
+    ...     sources, cprov.archive, "release", include_binaries=True)
+    Traceback (most recent call last):
+    ...
+    CannotCopy:
+        package1 1.1 in hoary (source has no binaries to be copied)
+        package2 1.0 in hoary (source has no binaries to be copied)
+
+Specifying non-existent source names, pocket names or distroseries names
+all result in a NotFound exception:
+
+    >>> sabdfl.archive.syncSources(["bogus"], cprov.archive, "release")
+    Traceback (most recent call last):
+    ...
+    SourceNotFound: 'bogus'
+
+    >>> sabdfl.archive.syncSources(sources, cprov.archive, "badpocket")
+    Traceback (most recent call last):
+    ...
+    PocketNotFound: 'BADPOCKET'
+
+    >>> sabdfl.archive.syncSources(
+    ...     sources, cprov.archive, "release", to_series="badseries")
+    Traceback (most recent call last):
+    ...
+    DistroSeriesNotFound: badseries
+
+
+We can also specify a single source to be copied with the `syncSource`
+call.  This allows a version to be specified so older versions can be
+pulled.
+
+Set up v1.0 and 1.1 of "package3":
+
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.0", archive=cprov.archive)
+    >>> discard = test_publisher.getPubSource(
+    ...     sourcename="package3", version="1.1", archive=cprov.archive)
+
+The underlying package discovery has the ability to do substring matches
+on the supplied package names.  However, this feature is not being used
+as it's potentially dangerous, since through the API there is no "are
+you sure!" type transaction.
+
+When copying a single package, if we supply a package name of "pack" it will
+only match one of the test packages we created above rather than all of them:
+
+    >>> sabdfl.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> [pack] = sabdfl.archive.getPublishedSources(
+    ...     name="pack", exact_match=True)
+    >>> print pack.sourcepackagerelease.version
+    1.0
+
+Copy package3 1.0 explicitly:
+
+    >>> sabdfl.archive.syncSource("package3", "1.0", cprov.archive, "release")
+    >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
+    >>> print sabdfl_three.sourcepackagerelease.version
+    1.0
+

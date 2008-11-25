@@ -311,7 +311,9 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> proposal.source_branch.title = 'baz'
     >>> proposal.target_branch.title = 'qux'
     >>> test_tales("proposal/fmt:link", proposal=proposal)
-    u'<a href="...">Proposed merge of baz into qux</a>'
+    u'<a href="...">Proposed merge of
+    lp://dev/~person-name38/product-name30/branch40 into
+    lp://dev/~person-name24/product-name30/branch26</a>'
 
 
 === Code review comments ===
@@ -399,7 +401,10 @@ to support the branch deletion code.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
-    u'http://launchpad.dev/bugs/bugtrackers/email'
+    u'/bugs/bugtrackers/email'
+
+(The url is relative if possible, and our test request claims to be from
+launchpad.dev, so the url is relative.)
 
 As are 'link', 'external-link', 'external-title-link' and 'aliases',
 which help when hiding email addresses from users who are not logged
@@ -459,9 +464,9 @@ in.
 The "standard" 'url' name is supported:
 
     >>> test_tales("bugwatch/fmt:url", bugwatch=sf_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/13'
+    u'/bugs/12/+watch/13'
     >>> test_tales("bugwatch/fmt:url", bugwatch=email_bugwatch)
-    u'http://launchpad.dev/bugs/12/+watch/14'
+    u'/bugs/12/+watch/14'
 
 As are 'external-link' and 'external-link-short', which help when
 hiding email addresses from users who are not logged in:
@@ -805,7 +810,7 @@ Test the 'fmt:url' namespace for canonical urls.
 
     >>> object_having_url = ObjectThatHasUrl()
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'http://launchpad.dev/bonobo/saki'
+    u'/bonobo/saki'
 
 Now, we need to test that it gets the correct application URL from the
 request.

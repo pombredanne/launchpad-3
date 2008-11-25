@@ -11,6 +11,7 @@ __all__ = [
 from datetime import datetime
 import re
 
+from bzrlib.revision import NULL_REVISION
 import pytz
 
 from zope.component import getUtility
@@ -48,7 +49,8 @@ from canonical.launchpad.interfaces import (
     IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
-    bazaar_identity, IBranchNavigationMenu)
+    bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -535,12 +537,37 @@ class Branch(SQLBase):
             return None
         return Revision.selectOneBy(revision_id=tip_revision_id)
 
-    def updateScannedDetails(self, revision_id, revision_count):
+    def updateScannedDetails(self, db_revision, revision_count):
         """See `IBranch`."""
-        self.date_last_modified = UTC_NOW
-        self.last_scanned = UTC_NOW
-        self.last_scanned_id = revision_id
-        self.revision_count = revision_count
+        # By taking the minimum of the revision date and the date created, we
+        # cap the revision date to make sure that we don't use a future date.
+        # The date created is set to be the time that the revision was created
+        # in the database, so if the revision_date is a future date, then we
+        # use the date created instead.
+        if db_revision is None:
+            revision_id = NULL_REVISION
+            revision_date = UTC_NOW
+        else:
+            revision_id = db_revision.revision_id
+            revision_date = min(
+                db_revision.revision_date, db_revision.date_created)
+
+        # If the branch has changed through either a different tip revision or
+        # revision count, then update.
+        if ((revision_id != self.last_scanned_id) or
+            (revision_count != self.revision_count)):
+            # If the date of the last revision is greated than the date last
+            # modified, then bring the date last modified forward to the last
+            # revision date (as long as the revision date isn't in the
+            # future).
+            if db_revision is None or revision_date > self.date_last_modified:
+                self.date_last_modified = revision_date
+            self.last_scanned = UTC_NOW
+            self.last_scanned_id = revision_id
+            self.revision_count = revision_count
+            if self.lifecycle_status in (BranchLifecycleStatus.MERGED,
+                                         BranchLifecycleStatus.ABANDONED):
+                self.lifecycle_status = BranchLifecycleStatus.DEVELOPMENT
 
     def getNotificationRecipients(self):
         """See `IBranch`."""
@@ -1139,8 +1166,8 @@ class BranchSet:
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
+        if (LAUNCHPAD_SERVICES == visible_by_user or
+            user_has_special_branch_access(visible_by_user)):
             return query
 
         if len(query) > 0:

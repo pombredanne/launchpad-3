@@ -24,7 +24,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
-from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw
+from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -59,7 +59,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import Person, ValidPersonCache
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
@@ -393,10 +393,23 @@ class Bug(SQLBase):
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscription.select("""
-            Person.id = BugSubscription.person AND
-            BugSubscription.bug = %d""" % self.id,
-            orderBy="displayname", clauseTables=["Person"])
+        # Cache valid persons so that <person>.is_valid_person can
+        # return from the cache. This operation was previously done at
+        # the same time as retrieving the bug subscriptions (as a left
+        # join). However, this ran slowly (far from optimal query
+        # plan), so we're doing it as two queries now.
+        valid_persons = Store.of(self).find(
+            ValidPersonCache,
+            ValidPersonCache.id == BugSubscription.personID,
+            BugSubscription.bug == self)
+        # Suck in all the records so that they're actually cached.
+        list(valid_persons)
+        # Do the main query.
+        return Store.of(self).find(
+            BugSubscription,
+            BugSubscription.personID == Person.id,
+            BugSubscription.bug == self).order_by(
+            Func('person_sort_key', Person.displayname, Person.name))
 
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
@@ -723,6 +736,13 @@ class Bug(SQLBase):
             bugcve = BugCve(bug=self, cve=cve)
             notify(SQLObjectCreatedEvent(bugcve, user=user))
             return bugcve
+
+    # XXX intellectronica 2008-11-06 Bug #294858:
+    # See canonical.launchpad.interfaces.bug
+    def linkCVEAndReturnNothing(self, cve, user):
+        """See `IBug`."""
+        self.linkCVE(cve, user)
+        return None
 
     def unlinkCVE(self, cve, user=None):
         """See `IBug`."""
