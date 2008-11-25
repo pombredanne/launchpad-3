@@ -185,9 +185,10 @@ class IBranchMergeProposal(Interface):
             description=_("The commit message that should be used when "
                           "merging the source branch.")))
 
-    queue_position = Int(
-        title=_("Queue Position"), required=False, readonly=True,
-        description=_("The position in the queue."))
+    queue_position = exported(
+        Int(
+            title=_("Queue Position"), required=False, readonly=True,
+            description=_("The position in the queue.")))
 
     queuer = Choice(
         title=_('Queuer'), vocabulary='ValidPerson',

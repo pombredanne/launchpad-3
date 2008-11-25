@@ -13,6 +13,7 @@ Branch merge proposals can be fetched through the API.
     >>> pprint_entry(merge_proposal)
     commit_message: None
     dependent_branch_link: None
+    queue_position: None
     queue_status: u'Work in progress'
     resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
     self_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18/+merge/1'
