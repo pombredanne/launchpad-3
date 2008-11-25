@@ -245,11 +245,10 @@ class TestBranchPuller(PullerBranchTestCase):
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
-        # Put a Bazaar branch into the mirrored area.
-        default_branch_path = self.getMirroredPath(default_branch)
-        ensure_base(get_transport(default_branch_path))
-        BzrDir.create_branch_convenience(
-            default_branch_path, format=format_registry.get('1.6')())
+        transaction.commit()
+        self.pushBranch(default_branch)
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
         return default_branch
 
     def test_stack_mirrored_branch(self):
