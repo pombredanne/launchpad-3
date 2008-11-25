@@ -335,7 +335,8 @@ class FakeBranchFilesystem:
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
         try:
-            branch_tokens = branch_path.strip('/').split('/')
+            escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+            branch_tokens = escaped_path.split('/')
             owner_name, product_name, branch_name = branch_tokens
         except ValueError:
             return Fault(
