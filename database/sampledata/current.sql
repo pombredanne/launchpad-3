@@ -755,6 +755,7 @@ INSERT INTO account (id, date_created, creation_rationale, status, date_status_s
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243617, '2008-03-06 09:55:27.289842', 1, 20, '2008-06-16 07:02:18.857109', 'Tim Penhey', 'CALDpFr', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243622, '2008-05-12 17:38:38.798696', 8, 20, '2008-06-16 07:02:18.857109', 'Commercial Member', 'rPwGRk4', NULL, NULL);
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243623, '2008-06-27 14:49:11.149508', 8, 20, '2008-06-27 14:49:11.149508', 'Brad Crittenden', 'mTmeENb', NULL, NULL);
+INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (243624, '2008-11-04 12:59:26.965843', 8, 20, '2008-11-04 13:09:43.807125', 'PPA key guard', 'cF4PNk3', NULL, '771/ppa-key-guard');
 
 
 ALTER TABLE account ENABLE TRIGGER ALL;
@@ -813,6 +814,7 @@ INSERT INTO accountpassword (id, account, password) VALUES (243624, 26, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243625, 7, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243626, 3, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243627, 10, 'test');
+INSERT INTO accountpassword (id, account, password) VALUES (243628, 243624, 'test');
 
 
 ALTER TABLE accountpassword ENABLE TRIGGER ALL;
@@ -2289,6 +2291,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created, account) VALU
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (77, 'former-user@canonical.com', 70, 3, '2006-05-12 17:38:38.798696', 70);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (78, 'bac@canonical.com', 243623, 4, '2008-06-27 14:49:11.149508', 243623);
 INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (79, 'admin@canonical.com', 16, 2, '2008-08-05 12:01:32.086327', 16);
+INSERT INTO emailaddress (id, email, person, status, date_created, account) VALUES (80, 'ppa-key-guard@launchpad.net', 243625, 4, '2008-11-04 12:59:26.965843', 243624);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -4553,6 +4556,7 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243622, 'Commercial Member', NULL, NULL, 'commercial-member', NULL, NULL, NULL, NULL, 1, NULL, '2008-05-12 17:38:38.798696', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243622);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243623, 'Brad Crittenden', NULL, NULL, 'bac', NULL, NULL, NULL, NULL, 1, NULL, '2008-06-27 14:49:11.149508', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243623);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243624, 'Commercial Subscription Approvers', 243623, NULL, 'commercial-approvers', NULL, NULL, NULL, NULL, 1, NULL, '2008-06-27 14:49:38.676264', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243625, 'PPA key guard', NULL, NULL, 'ppa-key-guard', NULL, NULL, NULL, NULL, 1, NULL, '2008-11-04 12:59:26.965843', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, '', NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 243624);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -9084,6 +9088,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (190, 32, 26);
 INSERT INTO teamparticipation (id, team, person) VALUES (191, 32, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (192, 32, 6);
 INSERT INTO teamparticipation (id, team, person) VALUES (193, 32, 10);
+INSERT INTO teamparticipation (id, team, person) VALUES (194, 243625, 243625);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
