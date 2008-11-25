@@ -34,6 +34,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationException, BranchCreationForbidden,
@@ -166,7 +168,8 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None, needs_review=False):
+                         date_created=None, needs_review=False,
+                         initial_comment=None, requested_reviews=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -218,13 +221,25 @@ class Branch(SQLBase):
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
             date_review_requested = None
 
+        if requested_reviews is None:
+            requested_reviews = []
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status)
-        notify(SQLObjectCreatedEvent(bmp))
+
+        if initial_comment is not None:
+            bmp.createComment(
+                registrant, None, initial_comment, _notify_listeners=False)
+
+        for reviewer, review_type in requested_reviews:
+            bmp.nominateReviewer(
+                reviewer, registrant, review_type, _notify_listeners=False)
+
+        notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
     def getStackedBranches(self):

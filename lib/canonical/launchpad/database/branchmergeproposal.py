@@ -35,7 +35,8 @@ from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
-    BranchMergeProposalApprovedEvent, BranchMergeProposalRejectedEvent)
+    BranchMergeProposalApprovedEvent, BranchMergeProposalRejectedEvent,
+    NewCodeReviewCommentEvent, ReviewerNominatedEvent)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
@@ -408,8 +409,9 @@ class BranchMergeProposal(SQLBase):
         return proposal
 
     def nominateReviewer(self, reviewer, registrant, review_type=None,
-                         _date_created=DEFAULT):
+                         _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
+        # Return the existing vote reference or create a new one.
         # Lower case the review type.
         if review_type is not None:
             review_type = review_type.lower()
@@ -421,6 +423,8 @@ class BranchMergeProposal(SQLBase):
                 reviewer=reviewer,
                 date_created=_date_created)
         vote_reference.review_type = review_type
+        if _notify_listeners:
+            notify(ReviewerNominatedEvent(vote_reference))
         return vote_reference
 
     def deleteProposal(self):
@@ -448,8 +452,12 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence', limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
-                      review_type=None, parent=None, _date_created=DEFAULT):
+                      review_type=None, parent=None, _date_created=DEFAULT,
+                      _notify_listeners=True):
         """See `IBranchMergeProposal`."""
+        #:param _date_created: The date the message was created.  Provided only
+        #    for testing purposes, as it can break
+        #    BranchMergeProposal.root_message.
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:
@@ -471,7 +479,8 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
-        return self.createCommentFromMessage(message, vote, review_type)
+        return self.createCommentFromMessage(
+            message, vote, review_type, _notify_listeners=_notify_listeners)
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -520,7 +529,8 @@ class BranchMergeProposal(SQLBase):
             reviewer=user,
             review_type=review_type)
 
-    def createCommentFromMessage(self, message, vote, review_type):
+    def createCommentFromMessage(self, message, vote, review_type,
+                                 _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Lower case the review type.
         if review_type is not None:
@@ -541,6 +551,8 @@ class BranchMergeProposal(SQLBase):
             vote_reference.reviewer = message.owner
             vote_reference.review_type = review_type
             vote_reference.comment = code_review_message
+        if _notify_listeners:
+            notify(NewCodeReviewCommentEvent(code_review_message))
         return code_review_message
 
 
