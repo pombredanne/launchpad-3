@@ -77,7 +77,7 @@ class TestBranchTransportDispatch(TestCase):
         self.assertEqual('.bzr/foo', path)
 
     def test_makeTransport_control(self):
-        # makeTransport returns a control transport for the tuple.
+        # makeTransport raises UnknownTransportType for the control transport.
         self.assertRaises(
             UnknownTransportType, self.factory.makeTransport,
             (CONTROL_TRANSPORT, {}, ''))
@@ -309,6 +309,16 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
             transport.put_bytes(path, file_data)
             self.assertEqual(file_data, expected_transport.get_bytes(path))
         return deferred.addCallback(check_branch_transport)
+
+    def test_translate_control_dir_path(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        branch = self.factory.makeBranch()
+        branch.product.development_focus.user_branch = branch
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.NoSuchFile, transport.list_dir, "~%s/%s/.bzr/"
+            % (branch.owner.name, branch.product.name))
 
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no

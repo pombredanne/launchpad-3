@@ -314,8 +314,14 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
             trap_fault(failure, faults.PathTranslationError.error_code)
             raise NoSuchFile(virtual_url_fragment)
 
-        return deferred.addCallbacks(
+        def unknown_transport_type(failure):
+            failure.trap(UnknownTransportType)
+            raise NoSuchFile(virtual_url_fragment)
+
+        deferred.addCallbacks(
             self._transport_dispatch.makeTransport, path_not_translated)
+        deferred.addErrback(unknown_transport_type)
+        return deferred
 
 
 class LaunchpadInternalServer(_BaseLaunchpadServer):
