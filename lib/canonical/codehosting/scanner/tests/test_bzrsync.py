@@ -952,11 +952,11 @@ class TestScanFormatKnit(BzrSyncTestCase):
 
 
 class TestScanBranchFormat7(BzrSyncTestCase):
-    """Test scanning of development format branchs."""
+    """Test scanning of format 7 (i.e. stacking-supporting) branches."""
 
     def makeBzrBranchAndTree(self, db_branch):
         return BzrSyncTestCase.makeBzrBranchAndTree(
-            self, db_branch, 'development1')
+            self, db_branch, '1.6')
 
     def testRecognizeDevelopment(self):
         """Ensure scanner records correct format for development branches."""
