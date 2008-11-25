@@ -37,7 +37,8 @@ __all__ = [
     'MIRROR_TIME_INCREMENT',
     'RepositoryFormat',
     'UICreatableBranchType',
-    'UnknownBranchTypeError'
+    'UnknownBranchTypeError',
+    'user_has_special_branch_access',
     ]
 
 from cgi import escape
@@ -78,7 +79,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
@@ -1352,3 +1354,14 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+def user_has_special_branch_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
