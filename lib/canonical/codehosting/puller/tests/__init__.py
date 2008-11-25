@@ -36,7 +36,7 @@ class BlacklistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url)
+        return urlutils.join(branch.base, url), True
 
 
 class AcceptAnythingPolicy(BlacklistPolicy):
@@ -62,7 +62,7 @@ class WhitelistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url)
+        return urlutils.join(branch.base, url), True
 
 
 class PullerWorkerMixin:

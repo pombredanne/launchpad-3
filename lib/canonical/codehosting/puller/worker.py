@@ -284,8 +284,11 @@ class BranchMirrorer(object):
 
     def transformFallbackLocationHook(self, branch, url):
         """XXX."""
-        new_url = self.policy.transformFallbackLocation(branch, url)
-        return self.checkAndFollowBranchReference(new_url)
+        new_url, check = self.policy.transformFallbackLocation(branch, url)
+        if check:
+            return self.checkAndFollowBranchReference(new_url)
+        else:
+            return new_url
 
     def followReference(self, url):
         """Get the branch-reference value at the specified url.
@@ -339,7 +342,7 @@ class BranchMirrorer(object):
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
         if stacked_on_url is not None:
-            if not stacked_on_url.startswith('/'):
+            if '://' in stacked_on_url:
                 stacked_on_url = URI(stacked_on_url).path
             # We resolve the stacked_on_url relative to the destination_url
             # because a common case for stacked_on_url will be
@@ -404,7 +407,7 @@ class BranchMirrorer(object):
         # source branch.
         stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
-        if stacked_on_url and not stacked_on_url.startswith('/'):
+        if stacked_on_url and '://' in stacked_on_url:
             stacked_on_url = URI(stacked_on_url).path
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
@@ -465,19 +468,19 @@ class HostedBranchPolicy(BranchPolicy):
         hosted_url = 'lp-hosted://' + url
         if self._bzrdirExists(hosted_url):
             return hosted_url
-        mirrored_url = 'lp-mirror://' + url
+        mirrored_url = 'lp-mirrored://' + url
         if self._bzrdirExists(mirrored_url):
             return mirrored_url
         raise StackedOnBranchNotFound()
 
     def transformFallbackLocation(self, branch, url):
         """XXX."""
-        if url.startswith('/'):
-            return self._adjustPathURL(url)
+        if '://' not in url:
+            return self._adjustPathURL(url), False
         uri = URI(url)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
-            return self._adjustPathURL(uri.path)
+            return self._adjustPathURL(uri.path), False
         else:
             raise BranchLoopError('argh')
 
@@ -531,7 +534,7 @@ class MirroredBranchPolicy(BranchPolicy):
 
     def transformFallbackLocation(self, branch, url):
         """XXX."""
-        return urlutils.join(branch.base, url)
+        return urlutils.join(branch.base, url), True
 
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
