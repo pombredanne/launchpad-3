@@ -677,6 +677,15 @@ Cprov can also see his own builds of course:
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
         RELEASE
 
+Buildd admins specifically are not allowed to see private builds.
+
+    >>> buildd_admin = LaunchpadObjectFactory().makePerson()
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName('launchpad-buildd-admins')
+    >>> buildd_admins.addMember(buildd_admin, buildd_admin)
+    >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
+    >>> print_build_details(bob_builds)
+
 You can filter on build state:
 
     >>> bob_failed_builds = bob.getBuildRecords(
@@ -982,11 +991,7 @@ Likewise when logged in as cprov:
 A user who is a buildd admin is not allowed to see the build records for
 private builds. Even though they are admin, privacy must be maintained.
 
-    >>> person = LaunchpadObjectFactory().makePerson()
-    >>> buildd_admins = getUtility(
-    ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> buildd_admins.addMember(person, person)
-    >>> login(person.preferredemail.email)
+    >>> login(buildd_admin.preferredemail.email)
     >>> bob_builds = bob.getBuildRecords(user=admin)
 
 Define a helper function to catch the security exception:
