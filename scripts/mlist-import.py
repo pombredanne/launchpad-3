@@ -9,13 +9,18 @@
 # - Import archives.
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'MailingListImport',
+    ]
 
+
+import sys
 
 # pylint: disable-msg=W0403
 import _pythonpath
 
 from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.mlistimport import Importer
 
 
 class MailingListImport(LaunchpadScript):
@@ -34,6 +39,13 @@ class MailingListImport(LaunchpadScript):
         self.usage = textwrap.dedent(self.__doc__)
         super(MailingListImport, self).__init__(name, dbuser)
 
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option('-f', '--filename', default='-', help=(
+            'The file name containing the addresses to import, one '
+            "per line.  If '-' is used or this option is not given, "
+            'then addresses are read from standard input.'))
+
     def main(self):
         """See `LaunchpadScript`."""
         team_name = None
@@ -43,6 +55,21 @@ class MailingListImport(LaunchpadScript):
             self.parser.error('Too many arguments')
         else:
             team_name = self.args[0]
+
+        importer = Importer(team_name, self.logger)
+
+        if self.options.filename == '-':
+            # Read all the addresses from standard input, parse them
+            # here, and use the direct interface to the importer.
+            addresses = []
+            while True:
+                line = sys.stdin.readline()
+                if line == '':
+                    break
+                addresses.append(line[:-1])
+            importer.importAddresses(addresses)
+        else:
+            importer.importFromFile(self.options.filename)
 
         # All done; commit the database changes.
         self.txn.commit()

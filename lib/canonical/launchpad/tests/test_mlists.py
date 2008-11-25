@@ -10,14 +10,25 @@ import errno
 import tempfile
 import unittest
 
+# Don't use cStringIO in case Unicode leaks through.
+from StringIO import StringIO
+
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 factory = LaunchpadObjectFactory()
+
+class CapturingLogger(FakeLogger):
+    def __init__(self):
+        self.io = StringIO()
+
+    def message(self, prefix, *stuff, **kws):
+        print >> self.io, prefix, ' '.join(stuff)
 
 
 class TestMailingListImports(unittest.TestCase):
@@ -39,6 +50,8 @@ class TestMailingListImports(unittest.TestCase):
         # A temporary filename for some of the tests.
         fd, self.filename = tempfile.mkstemp()
         os.close(fd)
+        # A capturing logger.
+        self.logger = CapturingLogger()
 
     def tearDown(self):
         try:
@@ -57,6 +70,27 @@ class TestMailingListImports(unittest.TestCase):
             'cris.person@example.com',
             'dperson@example.org',
             'elly.person@example.com',
+            ))
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bperson@example.org',
+             u'cris.person@example.com', u'dperson@example.org',
+             u'elly.person@example.com'])
+
+    def test_extended_import_membership(self):
+        # Test the import of a list/team membership, where all email
+        # addresses being imported actually exist in Launchpad.
+        importer = Importer('aardvarks')
+        importer.importAddresses((
+            'anne.person@example.com (Anne Person)',
+            'Bart Q. Person <bperson@example.org>',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com (Elly Q. Person)',
             ))
         self.assertEqual(
             sorted(person.name for person in self.team.allmembers),
@@ -203,6 +237,68 @@ class TestMailingListImports(unittest.TestCase):
             [u'bart.person@example.com',
              u'cperson@example.org', u'dperson@example.org',
              u'eperson@example.org'])
+
+    def test_logging(self):
+        # Test that nothing gets logged when all imports are fine.
+        importer = Importer('aardvarks')
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertEqual(self.logger.io.getvalue(), '')
+
+    def test_logging_extended(self):
+        # Test that nothing gets logged when all imports are fine.
+        importer = Importer('aardvarks', self.logger)
+        importer.importAddresses((
+            'anne.person@example.com (Anne Person)',
+            'Bart Q. Person <bperson@example.org>',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com (Elly Q. Person)',
+            ))
+        self.assertEqual(self.logger.io.getvalue(), '')
+
+    def test_logging_with_non_persons(self):
+        # Test that non-persons that were not imported are logged.
+        importer = Importer('aardvarks', self.logger)
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            # Non-persons.
+            'fperson@example.org',
+            'gwen.person@example.com',
+            'hperson@example.org',
+            ))
+        self.assertEqual(
+            self.logger.io.getvalue(),
+            ('ERROR No person for address: fperson@example.org\n'
+             'ERROR No person for address: gwen.person@example.com\n'
+             'ERROR No person for address: hperson@example.org\n'))
+
+    def test_logging_with_invalid_emails(self):
+        # Test that invalid emails that were not imported are logged.
+        importer = Importer('aardvarks', self.logger)
+        # Give Anne a new invalid email address.
+        factory.makeEmail('anne.x.person@example.net', self.anne,
+                          EmailAddressStatus.NEW)
+        importer.importAddresses((
+            # Import Anne's alternative address.
+            'anne.x.person@example.net',
+            'bperson@example.org',
+            'cris.person@example.com',
+            'dperson@example.org',
+            'elly.person@example.com',
+            ))
+        self.assertEqual(
+            self.logger.io.getvalue(),
+            'ERROR No valid email for address: anne.x.person@example.net\n')
 
 
 def test_suite():

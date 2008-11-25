@@ -16,12 +16,13 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.scripts import QuietFakeLogger
 
 
 class Importer:
     """Perform mailing list imports for command line scripts."""
 
-    def __init__(self, team_name):
+    def __init__(self, team_name, log=None):
         self.team_name = team_name
         self.team = getUtility(IPersonSet).getByName(team_name)
         assert self.team is not None, (
@@ -31,6 +32,10 @@ class Importer:
             'Team has no mailing list: %s' % team_name)
         assert self.mailing_list.status == MailingListStatus.ACTIVE, (
             'Team mailing list is not active: %s' % team_name)
+        if log is None:
+            self.log = QuietFakeLogger()
+        else:
+            self.log = log
 
     def importAddresses(self, addresses):
         """Import all addresses.
@@ -45,17 +50,21 @@ class Importer:
         """
         email_set = getUtility(IEmailAddressSet)
         person_set = getUtility(IPersonSet)
-        for address in addresses:
+        for entry in addresses:
+            real_name, address = parseaddr(entry)
+            # address could be empty or None.
+            if not address:
+                continue
             person = person_set.getByEmail(address)
             if person is None or person.isTeam():
-                # XXX Log this.
+                self.log.error('No person for address:', address)
                 continue
             email = email_set.getByEmail(address)
             assert email is not None, (
                 'Address has no IEmailAddress? %s' % address)
             if email.status not in (EmailAddressStatus.PREFERRED,
                                     EmailAddressStatus.VALIDATED):
-                # XXX Log this.
+                self.log.error('No valid email for address:', address)
                 continue
             person.join(self.team)
             self.mailing_list.subscribe(person, email)
@@ -70,15 +79,9 @@ class Importer:
         :param filename: The name of the file containing email address.
         :type filename: string
         """
-        addresses = []
         in_file = open(filename)
         try:
-            for line in in_file:
-                real_name, email_address = parseaddr(line)
-                # email_address could be empty or None.
-                if not email_address:
-                    continue
-                addresses.append(email_address)
+            addresses = list(in_file)
         finally:
             in_file.close()
         self.importAddresses(addresses)
