@@ -1035,7 +1035,8 @@ class IBranchSet(Interface):
         "product/series" (branch associated with a product series)
         "product" (development focus of product)
 
-        :return: a tuple of `IBranch`, extra_path
+        :return: a tuple of `IBranch`, extra_path, series.  Series is the
+            series, if any, used to perform the lookup.
         :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
             of `LaunchpadFault`.
         """
