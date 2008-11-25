@@ -221,3 +221,18 @@ the rebuild archive.
     >>> len([pcr for pcr in rebuild_pcrs
     ...      if pcr.target_archive != rebuild_archive]) == 0
     True
+
+The archive must be set in both the source and the target location. Otherwise
+the instantiation of the package copy request will fail.
+
+    >>> target.archive = None
+    >>> will_fail = pcr_set.new(source, target, cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: target archive must be set in package location
+
+    >>> source.archive = None
+    >>> will_fail_as_well = pcr_set.new(source, snapshot_target, sabdfl)
+    Traceback (most recent call last):
+    ...
+    AssertionError: source archive must be set in package location
