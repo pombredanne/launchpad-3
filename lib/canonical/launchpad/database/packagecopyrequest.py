@@ -21,8 +21,7 @@ from storm.locals import Bool, Enum, Int, DateTime, Reference, Storm, Unicode
 
 def _construct_enum_mapping(db_item_cls):
     """Helper function, constructs DBItem to storm enumeration mappings."""
-    return dict(
-        zip([i for i in db_item_cls.items], itertools.count(1)))
+    return dict(zip(db_item_cls.items, itertools.count(1)))
 
 
 class PackageCopyRequest(Storm):
