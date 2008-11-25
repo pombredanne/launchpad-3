@@ -154,12 +154,13 @@ class IBranchMergeProposal(Interface):
             description=_(
                 "The branch that the source branch will be merged into.")))
 
-    dependent_branch = Choice(
-        title=_('Dependent Branch'),
-        vocabulary='BranchRestrictedOnProduct', required=False, readonly=True,
-        description=_("The branch that the source branch branched from. "
-                      "If this is the same as the target branch, then leave "
-                      "this field blank."))
+    dependent_branch = exported(
+        Reference(
+            title=_('Dependent Branch'),
+            schema=IBranch, required=False, readonly=True,
+            description=_("The branch that the source branch branched from. "
+                          "If this is the same as the target branch, then "
+                          "leave this field blank.")))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
