@@ -500,7 +500,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
         branch_id = self.branchfs.createBranch(
-            owner.id, '/~%s/%s/%s' % (owner.name, product.name, name))
+            owner.id, escape('/~%s/%s/%s' % (owner.name, product.name, name)))
         login(ANONYMOUS)
         branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
@@ -524,7 +524,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
         branch_id = self.branchfs.createBranch(
-            owner.id, '/~%s/%s/%s' % (owner.name, '+junk', name))
+            owner.id, escape('/~%s/%s/%s' % (owner.name, '+junk', name)))
         login(ANONYMOUS)
         branch = self.branch_set.get(branch_id)
         self.assertEqual(owner, branch.owner)
@@ -540,7 +540,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         team = self.factory.makeTeam(owner)
         name = self.factory.getUniqueString()
         fault = self.branchfs.createBranch(
-            owner.id, '/~%s/+junk/%s' % (team.name, name))
+            owner.id, escape('/~%s/+junk/%s' % (team.name, name)))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE,
             'Cannot create team-owned junk branches.', fault)
@@ -551,7 +551,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "Project 'no-such-product' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, '/~%s/no-such-product/%s' % (owner.name, name))
+            owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -565,7 +565,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
                    % (creator.displayname, other_person.displayname))
         fault = self.branchfs.createBranch(
             creator.id,
-            '/~%s/%s/%s' % (other_person.name, product.name, name))
+            escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
@@ -577,7 +577,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = ("Invalid branch name %r. %s"
                    % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
         fault = self.branchfs.createBranch(
-            owner.id, '/~%s/%s/%s' % (owner.name, product.name, invalid_name))
+            owner.id, escape(
+                '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
@@ -588,7 +589,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, '/~no-one/%s/%s' % (product.name, name))
+            owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -600,7 +601,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
-            owner.id, '/~no-one/no-product/%s' % (name,))
+            owner.id, escape('/~no-one/no-product/%s' % (name,)))
         self.assertFaultEqual(
             NOT_FOUND_FAULT_CODE, message, fault)
 
@@ -608,8 +609,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # Trying to create a branch at a path that's not valid for branches
         # raises a PermissionDenied fault.
         owner = self.factory.makePerson()
-        fault = self.branchfs.createBranch(owner.id, '/~%s' % owner.name)
-        message = "Cannot create branch at '/~%s'" % owner.name
+        path = escape('/~%s' % owner.name)
+        fault = self.branchfs.createBranch(owner.id, path)
+        message = "Cannot create branch at '%s'" % path
         self.assertFaultEqual(
             PERMISSION_DENIED_FAULT_CODE, message, fault)
 
