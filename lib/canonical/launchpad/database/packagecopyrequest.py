@@ -1,5 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['PackageCopyRequest', 'PackageCopyRequestSet']
@@ -21,13 +20,13 @@ from storm.locals import Bool, Enum, Int, DateTime, Reference, Storm, Unicode
 
 
 def _construct_enum_mapping(db_item_cls):
-    enum_map = dict(
-        zip([i for i in db_item_cls.items],
-            itertools.count(1)))
-    return enum_map
+    """Helper function, constructs DBItem to storm enumeration mappings."""
+    return dict(
+        zip([i for i in db_item_cls.items], itertools.count(1)))
 
 
 class PackageCopyRequest(Storm):
+    """See `IPackageCopyRequest`."""
     implements(IPackageCopyRequest)
     __storm_table__ = 'PackageCopyRequest'
     id = Int(primary=True)
@@ -66,14 +65,15 @@ class PackageCopyRequest(Storm):
     date_completed = DateTime(allow_none=True)
 
     def __str__(self):
-        """See `IPackageCopyRequest`"""
+        """See `IPackageCopyRequest`."""
 
-        def get_name_or_nothing(property_name, nothing_indicator='-'):
+        def get_name_or_nothing(property_name, nothing='-'):
+            """Helper method, returns property value if set or 'nothing'."""
             property = getattr(self, property_name, None)
 
             # Return straight-away if property is not set.
             if property is None:
-                return nothing_indicator
+                return nothing
 
             # Does the property have a name?
             name = getattr(property, 'name', None)
@@ -111,26 +111,26 @@ class PackageCopyRequest(Storm):
         return result
 
     def markAsInprogress(self):
-        """See `IPackageCopyRequest`"""
+        """See `IPackageCopyRequest`."""
         self.status = PackageCopyStatus.INPROGRESS
         self.date_started = UTC_NOW
 
-    def markAsComplete(self):
-        """See `IPackageCopyRequest`"""
+    def markAsCompleted(self):
+        """See `IPackageCopyRequest`."""
         self.status = PackageCopyStatus.COMPLETE
         self.date_completed = UTC_NOW
 
     def markAsFailed(self):
-        """See `IPackageCopyRequest`"""
+        """See `IPackageCopyRequest`."""
         self.status = PackageCopyStatus.FAILED
         self.date_completed = UTC_NOW
 
     def markAsCanceling(self):
-        """See `IPackageCopyRequest`"""
+        """See `IPackageCopyRequest`."""
         self.status = PackageCopyStatus.CANCELING
 
     def markAsCancelled(self):
-        """See `IPackageCopyRequest`"""
+        """See `IPackageCopyRequest`."""
         self.status = PackageCopyStatus.CANCELLED
         self.date_completed = UTC_NOW
 
@@ -150,11 +150,12 @@ def _set_location_data(pcr, location, prefix):
 
 
 class PackageCopyRequestSet:
+    """See `IPackageCopyRequestSet`."""
     implements(IPackageCopyRequestSet)
 
     def new(
         self, source, target, requester, copy_binaries=False, reason=None):
-        """See `IPackageCopyRequestSet`"""
+        """See `IPackageCopyRequestSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         pcr = PackageCopyRequest()
         for location_data in ((source, 'source'), (target, 'target')):
@@ -170,7 +171,7 @@ class PackageCopyRequestSet:
         return pcr
 
     def getByPersonAndStatus(self, requester, status=None):
-        """See `IPackageCopyRequestSet`"""
+        """See `IPackageCopyRequestSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         base_clauses = (PackageCopyRequest.requester == requester,)
         if status is not None:
@@ -181,21 +182,21 @@ class PackageCopyRequestSet:
             PackageCopyRequest, *(base_clauses + optional_clauses))
 
     def getByTargetDistroSeries(self, distroseries):
-        """See `IPackageCopyRequestSet`"""
+        """See `IPackageCopyRequestSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             PackageCopyRequest,
             PackageCopyRequest.target_distroseries == distroseries)
 
     def getBySourceDistroSeries(self, distroseries):
-        """See `IPackageCopyRequestSet`"""
+        """See `IPackageCopyRequestSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             PackageCopyRequest,
             PackageCopyRequest.source_distroseries == distroseries)
 
     def getByTargetArchive(self, archive):
-        """See `IPackageCopyRequestSet`"""
+        """See `IPackageCopyRequestSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             PackageCopyRequest,

@@ -1,4 +1,4 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """PackageCopyRequest interfaces."""
@@ -152,7 +152,7 @@ class IPackageCopyRequest(Interface):
         Update the 'status' and 'date_started' properties as appropriate.
         """
 
-    def markAsComplete():
+    def markAsCompleted():
         """Mark this request as completed.
 
         Update the 'status' and 'date_completed' properties as appropriate.

@@ -98,7 +98,7 @@ The completed package copy request will have a "date completed" set.
 
     >>> completed_pcr = pcr_set.new(source, target, cprov)
     >>> completed_pcr.markAsInprogress()
-    >>> completed_pcr.markAsComplete()
+    >>> completed_pcr.markAsCompleted()
 
     >>> completed_pcr.status == PackageCopyStatus.COMPLETE
     True
