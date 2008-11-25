@@ -50,7 +50,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, source_path, db_branch, destination_path=None):
+    def assertMirrored(self, db_branch):
         """Assert that 'db_branch' was mirrored succesfully.
 
         :param source_path: The URL of the branch that was mirrored.
@@ -60,14 +60,14 @@ class TestBranchPuller(PullerBranchTestCase):
             destination branch. If unspecified, look directly at the mirrored
             area on the filesystem.
         """
+        accessing_user = self.factory.makePerson()
+        transaction.commit()
         self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
             db_branch.last_mirror_attempt, db_branch.last_mirrored)
         self.assertEqual(0, db_branch.mirror_failures)
-        hosted_branch = Branch.open(source_path)
-        if destination_path is None:
-            destination_path = self.getMirroredPath(db_branch)
-        mirrored_branch = Branch.open(destination_path)
+        hosted_branch = self.openBranchAsUser(db_branch.owner, db_branch)
+        mirrored_branch = self.openBranchAsUser(accessing_user, db_branch)
         self.assertEqual(
             hosted_branch.last_revision(), db_branch.last_mirrored_id)
         self.assertEqual(
@@ -122,18 +122,54 @@ class TestBranchPuller(PullerBranchTestCase):
         self.addCleanup(http_server.tearDown)
         return http_server.get_url().rstrip('/')
 
+    def getLPServerForUser(self, user):
+        upload_directory = config.codehosting.branches_root
+        mirror_directory = config.supermirror.branchesdest
+        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
+
+        from canonical.codehosting.branchfs import get_lp_server
+        from bzrlib import urlutils
+        import xmlrpclib
+        upload_url = urlutils.local_path_to_url(upload_directory)
+        mirror_url = urlutils.local_path_to_url(mirror_directory)
+        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
+
+        lp_server = get_lp_server(
+            branchfs_client, user.id, upload_url, mirror_url)
+        lp_server.setUp()
+        self.addCleanup(lp_server.tearDown)
+        return lp_server
+
+    def openBranchAsUser(self, user, db_branch):
+        lp_server = self.getLPServerForUser(user)
+        return Branch.open(lp_server.get_url() + db_branch.unique_name)
+
+    def pushBranchAsUser(self, user, db_branch, tree=None, format=None):
+        if tree is None:
+            tree = self.make_branch_and_tree(
+                self.factory.getUniqueString(), format=format)
+            tree.commit('rev1')
+        lp_server = self.getLPServerForUser(user)
+        dest_transport = get_transport(lp_server.get_url() + db_branch.unique_name)
+        try:
+            dir_to = BzrDir.open_from_transport(dest_transport)
+        except errors.NotBranchError:
+            # create new branch
+            tree.branch.bzrdir.clone_on_transport(dest_transport)
+        else:
+            tree.branch.push(dir_to.open_branch())
+
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
-        # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
-        # due to an unidentified bug in bzrlib.trace, possibly related to bug
-        # 124849.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
-        self.pushToBranch(db_branch)
-        db_branch.requestMirror()
+        accessing_user = self.factory.makePerson()
         transaction.commit()
+        self.pushBranchAsUser(db_branch.owner, db_branch)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(self.getHostedPath(db_branch), db_branch)
+        owner_branch = self.openBranchAsUser(db_branch.owner, db_branch)
+        user_branch = self.openBranchAsUser(accessing_user, db_branch)
+        
 
     def test_remirror_hosted_branch(self):
         # When the format of a branch changes, we completely remirror it.
