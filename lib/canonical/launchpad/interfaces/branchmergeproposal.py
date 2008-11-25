@@ -11,16 +11,13 @@ __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
-    'IBranchMergeProposalApprovedEvent',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalListingBatchNavigator',
-    'IBranchMergeProposalRejectedEvent',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.component.interfaces import IObjectEvent
 from zope.schema import Choice, Datetime, Int, List, Text
 
 from canonical.launchpad import _
@@ -443,16 +440,3 @@ class IBranchMergeProposalGetter(Interface):
 
         :return: A dict keyed on the proposals.
         """
-
-
-class IBranchMergeProposalReviewEvent(IObjectEvent):
-    """A reviewer has approved or rejected the proposed merge."""
-    reviewer = Attribute("The person who reviewed the proposal.")
-
-
-class IBranchMergeProposalApprovedEvent(IBranchMergeProposalReviewEvent):
-    """A reviewer has approved the proposed merge."""
-
-
-class IBranchMergeProposalRejectedEvent(IBranchMergeProposalReviewEvent):
-    """A reviewer has rejected the proposed merge."""

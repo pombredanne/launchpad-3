@@ -14,7 +14,6 @@ from email.Utils import make_msgid
 
 from storm.expr import And
 from storm.store import Store
-from zope.component.interfaces import ObjectEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -35,12 +34,13 @@ from canonical.launchpad.database.codereviewvote import (
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    BranchMergeProposalApprovedEvent, BranchMergeProposalRejectedEvent)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalApprovedEvent,
-    IBranchMergeProposalGetter, IBranchMergeProposalRejectedEvent,
+    IBranchMergeProposal, IBranchMergeProposalGetter,
     UserNotBranchReviewer, WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -695,21 +695,3 @@ class BranchMergeProposalQueryBuilder:
                 """ % {'tables': ', '.join(self._tables),
                        'where_clause': ' AND '.join(self._where_clauses)})
         return query
-
-
-class BranchMergeProposalReviewedEvent(ObjectEvent):
-    """A reviewer has approved or rejected the proposed merge."""
-
-    def __init__(self, proposal, reviewer):
-        ObjectEvent.__init__(self, proposal)
-        self.reviewer = reviewer
-
-
-class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalApprovedEvent`."""
-    implements(IBranchMergeProposalApprovedEvent)
-
-
-class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalRejectedEvent`."""
-    implements(IBranchMergeProposalRejectedEvent)
