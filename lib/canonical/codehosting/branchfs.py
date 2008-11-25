@@ -514,6 +514,11 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
             virtual_url_fragment)
 
+        def cb(value):
+            print virtual_url_fragment, '->', value
+            return value
+        deferred.addCallback(cb)
+
         def not_a_branch(failure):
             """Called when the path simply could not point to a branch."""
             failure.trap(NotABranchPath)
@@ -699,3 +704,23 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
             return defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment)))
         return AsyncVirtualTransport.rmdir(self, relpath)
+
+
+def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
+    """Create a Launchpad smart server.
+
+    :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
+        branch file system end-point.
+    :param user_id: A unique database ID of the user whose branches are
+        being served.
+    :param hosted_url: Where the branches are uploaded to.
+    :param mirror_url: Where all Launchpad branches are mirrored.
+    :return: A `LaunchpadTransport`.
+    """
+    # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+    hosted_transport = get_chrooted_transport(hosted_url)
+    mirror_transport = get_chrooted_transport(mirror_url)
+    lp_server = LaunchpadServer(
+        BlockingProxy(branchfs_client), user_id,
+        hosted_transport, mirror_transport)
+    return lp_server
