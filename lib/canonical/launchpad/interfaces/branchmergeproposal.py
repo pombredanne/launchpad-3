@@ -223,14 +223,18 @@ class IBranchMergeProposal(Interface):
     superseded_by = Attribute(
         "The branch merge proposal that supersedes this one.")
 
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_review_requested = Datetime(
-        title=_('Date Review Requested'), required=False, readonly=True)
-    date_reviewed = Datetime(
-        title=_('Date Reviewed'), required=False, readonly=True)
-    date_queued = Datetime(
-        title=_('Date Queued'), required=False, readonly=True)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True))
+    date_review_requested = exported(
+        Datetime(
+            title=_('Date Review Requested'), required=False, readonly=True))
+    date_reviewed = exported(
+        Datetime(
+            title=_('Date Reviewed'), required=False, readonly=True))
+    date_queued = exported(
+        Datetime(
+            title=_('Date Queued'), required=False, readonly=True))
     # Cannote use Object as this would cause circular dependencies.
     root_comment = Attribute(
         _("The first message in discussion of this merge proposal"))

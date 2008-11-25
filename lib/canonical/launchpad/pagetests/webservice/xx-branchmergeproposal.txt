@@ -12,7 +12,11 @@ Branch merge proposals can be fetched through the API.
     >>> from canonical.lazr.testing.webservice import pprint_entry
     >>> pprint_entry(merge_proposal)
     commit_message: None
+    date_created: ...
     date_merged: None
+    date_queued: None
+    date_review_requested: None
+    date_reviewed: None
     dependent_branch_link: None
     merged_revno: None
     queue_position: None
