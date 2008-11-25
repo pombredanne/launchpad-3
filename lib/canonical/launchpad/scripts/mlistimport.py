@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 
+from email.Utils import parseaddr
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.emailaddress import (
@@ -58,3 +59,26 @@ class Importer:
                 continue
             person.join(self.team)
             self.mailing_list.subscribe(person, email)
+
+    def importFromFile(self, filename):
+        """Import all addresses given in the named file.
+
+        The named file has email address to import, one per line.  The lines
+        may be formatted using any format recognized by
+        `email.Utils.parseaddr()`.
+
+        :param filename: The name of the file containing email address.
+        :type filename: string
+        """
+        addresses = []
+        in_file = open(filename)
+        try:
+            for line in in_file:
+                real_name, email_address = parseaddr(line)
+                # email_address could be empty or None.
+                if not email_address:
+                    continue
+                addresses.append(email_address)
+        finally:
+            in_file.close()
+        self.importAddresses(addresses)

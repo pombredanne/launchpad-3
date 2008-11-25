@@ -4,6 +4,10 @@
 
 __metaclass__ = type
 
+
+import os
+import errno
+import tempfile
 import unittest
 
 from canonical.launchpad.ftests import login
@@ -32,6 +36,16 @@ class TestMailingListImports(unittest.TestCase):
         self.teamowner = factory.makePersonByName('Teamowner')
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
             'aardvarks', 'teamowner')
+        # A temporary filename for some of the tests.
+        fd, self.filename = tempfile.mkstemp()
+        os.close(fd)
+
+    def tearDown(self):
+        try:
+            os.remove(self.filename)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership, where all email
@@ -104,7 +118,91 @@ class TestMailingListImports(unittest.TestCase):
             [u'bperson@example.org',
              u'cris.person@example.com', u'dperson@example.org',
              u'elly.person@example.com'])
-        
+
+    def test_import_from_file(self):
+        # Test importing addresses from a file.
+        importer = Importer('aardvarks')
+        # Write the addresses to import to a file.  Use various
+        # combinations of formats supported by parseaddr().
+        out_file = open(self.filename, 'w')
+        try:
+            print >> out_file, 'Anne Person <anne.person@example.com>'
+            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
+            print >> out_file, 'cperson@example.org'
+            print >> out_file, 'dperson@example.org (Dave Person)'
+            print >> out_file, 'Elly Q. Person <eperson@example.org'
+        finally:
+            out_file.close()
+        importer.importFromFile(self.filename)
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bart.person@example.com',
+             u'cperson@example.org', u'dperson@example.org',
+             u'eperson@example.org'])
+
+    def test_import_from_file_with_non_persons(self):
+        # Test the import of a list/team membership from a file where
+        # not all the email addresses are associated with registered
+        # people.
+        importer = Importer('aardvarks')
+        # Write the addresses to import to a file.  Use various
+        # combinations of formats supported by parseaddr().
+        out_file = open(self.filename, 'w')
+        try:
+            print >> out_file, 'Anne Person <anne.person@example.com>'
+            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
+            print >> out_file, 'cperson@example.org'
+            print >> out_file, 'dperson@example.org (Dave Person)'
+            print >> out_file, 'Elly Q. Person <eperson@example.org'
+            # Non-persons.
+            print >> out_file, 'fperson@example.org (Fred Q. Person)'
+            print >> out_file, 'Gwen Person <gwen.person@example.com>'
+            print >> out_file, 'hperson@example.org'
+            print >> out_file, 'iris.person@example.com'
+        finally:
+            out_file.close()
+        importer.importFromFile(self.filename)
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'anne.person@example.com', u'bart.person@example.com',
+             u'cperson@example.org', u'dperson@example.org',
+             u'eperson@example.org'])
+
+    def test_import_from_file_with_invalid_emails(self):
+        # Test importing addresses from a file with invalid emails.
+        importer = Importer('aardvarks')
+        # Give Anne a new invalid email address.
+        factory.makeEmail('anne.x.person@example.net', self.anne,
+                          EmailAddressStatus.NEW)
+        # Write the addresses to import to a file.  Use various
+        # combinations of formats supported by parseaddr().
+        out_file = open(self.filename, 'w')
+        try:
+            print >> out_file, 'Anne Person <anne.x.person@example.net>'
+            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
+            print >> out_file, 'cperson@example.org'
+            print >> out_file, 'dperson@example.org (Dave Person)'
+            print >> out_file, 'Elly Q. Person <eperson@example.org'
+        finally:
+            out_file.close()
+        importer.importFromFile(self.filename)
+        self.assertEqual(
+            sorted(person.name for person in self.team.allmembers),
+            [u'bart', u'cris', u'dave', u'elly', u'teamowner'])
+        self.assertEqual(
+            sorted(email.email
+                   for email in self.mailing_list.getSubscribedAddresses()),
+            [u'bart.person@example.com',
+             u'cperson@example.org', u'dperson@example.org',
+             u'eperson@example.org'])
 
 
 def test_suite():
