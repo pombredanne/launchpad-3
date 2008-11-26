@@ -1155,7 +1155,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             requested_reviews = []
             reviewer = data.get('reviewer')
             if reviewer is not None:
-                requested_reviews.append(reviewer, data.get('review_type'))
+                requested_reviews.append((reviewer, data.get('review_type')))
 
             # Always default to needs review until we have the wonder of AJAX
             # and an advanced expandable section.
