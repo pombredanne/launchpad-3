@@ -256,25 +256,26 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
-    def _makeDefaultStackedOnBranch(self, private=False, branch_type=BranchType.HOSTED):
+    def _makeDefaultStackedOnBranch(self, private=False,
+                                    branch_type=BranchType.HOSTED):
         """Make a default stacked-on branch.
 
         This creates a database branch on a product that allows default
         stacking, makes it the default stacked-on branch for that product,
-        then creates a Bazaar branch for it. The Bazaar branch goes directly
-        into the mirrored area and has a stackable format.
+        then creates a Bazaar branch for it.
 
         :return: `IBranch`.
         """
         # Make the branch.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeBranch(
-            product=product, private=private, name='trunk', branch_type=branch_type)
+            product=product, private=private, name='trunk',
+            branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
-        transaction.commit()
         if branch_type == BranchType.HOSTED:
+            transaction.commit()
             self.pushBranch(default_branch)
             puller_type = 'upload'
         elif branch_type == BranchType.MIRRORED:
@@ -283,9 +284,11 @@ class TestBranchPuller(PullerBranchTestCase):
             default_branch.url = self.serveOverHTTP()
             default_branch.requestMirror()
             puller_type = 'mirror'
+            transaction.commit()
         else:
-            1/0
-        transaction.commit()
+            raise AssertionError(
+                "don't know how to make a %s default branch"
+                % branch_type.TITLE)
         command, retcode, output, error = self.runPuller(puller_type)
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertNotEqual(None, default_branch.last_mirror_attempt)
@@ -306,7 +309,8 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
+        mirrored_branch = self.assertMirrored(
+            db_branch, source_branch=tree.branch)
         self.assertEqual(
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
