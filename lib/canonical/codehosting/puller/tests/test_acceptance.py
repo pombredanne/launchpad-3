@@ -17,6 +17,7 @@ import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.config import TransportConfig
 from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
@@ -310,8 +311,9 @@ class TestBranchPuller(PullerBranchTestCase):
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
 
-    def test_stack_when_defaulted_stack_on_is_mirrored_branch(self):
-        default_branch = self._makeDefaultStackedOnBranch(branch_type=BranchType.MIRRORED)
+    def test_stack_when_default_stack_on_is_mirrored_branch(self):
+        default_branch = self._makeDefaultStackedOnBranch(
+            branch_type=BranchType.MIRRORED)
         db_branch = self.factory.makeBranch(
             BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
@@ -319,6 +321,21 @@ class TestBranchPuller(PullerBranchTestCase):
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch)
+
+    def test_manual_stacking(self):
+        default_branch = self._makeDefaultStackedOnBranch()
+        db_branch = self.factory.makeBranch(
+            BranchType.HOSTED, product=default_branch.product)
+        transaction.commit()
+        self.pushBranch(db_branch, format='1.6')
+        branch_config = TransportConfig(
+            get_transport(self.getHostedPath(db_branch)), 'branch.conf')
+        branch_config.set_option('stacked_on_location', 'http://bazaar.launchpad.dev/' + default_branch.unique_name)
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        branch_config.set_option('stacked_on_location', '')
+        mirrored_branch = self.assertMirrored(db_branch)
+        self.assertEqual('/' + default_branch.unique_name, mirrored_branch.get_stacked_on_url())
 
     def test_stack_mirrored_branch_onto_private(self):
         # If the default stacked-on branch is private then mirrored branches
