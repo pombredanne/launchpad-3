@@ -33,7 +33,6 @@ from canonical.launchpad.database.codereviewvote import (
     CodeReviewVoteReference)
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.event.branchmergeproposal import (
     BranchMergeProposalApprovedEvent, BranchMergeProposalRejectedEvent,
     NewCodeReviewCommentEvent, ReviewerNominatedEvent)
@@ -455,9 +454,9 @@ class BranchMergeProposal(SQLBase):
                       review_type=None, parent=None, _date_created=DEFAULT,
                       _notify_listeners=True):
         """See `IBranchMergeProposal`."""
-        #:param _date_created: The date the message was created.  Provided only
-        #    for testing purposes, as it can break
-        #    BranchMergeProposal.root_message.
+        #:param _date_created: The date the message was created.  Provided
+        #    only for testing purposes, as it can break
+        # BranchMergeProposal.root_message.
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:

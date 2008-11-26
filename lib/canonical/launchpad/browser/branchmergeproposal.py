@@ -44,7 +44,6 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
@@ -57,8 +56,6 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.mailout.branchmergeproposal import (
-    BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
