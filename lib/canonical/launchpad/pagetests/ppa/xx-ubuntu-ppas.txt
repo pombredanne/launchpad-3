@@ -91,33 +91,24 @@ Archive and package counter are empty.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
     Statistics
-    0 registered PPAs
-    0 active PPAs
-    0 published sources
-    0 published binaries
+    Debian does not have any registered PPA.
 
-No recent uploads.
+'Latest uploads' section is not presented.
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
-    Latest uploads
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    None
 
-No most-active PPAs list.
+'Most active' section is not presented.
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
-    Most active
-    PPAs with the highest number of uploads in the last 7 days.
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
+The 'search' form is also suppresed.
 
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> for ppa_row in find_tags_by_class(
-    ...     anon_browser.contents, 'ppa_batch_row'):
-    ...     print extract_text(ppa_row)
-
-Let's get back to the Ubuntu PPAs page for the next tests.
-
-    >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("PPAs").click()
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Search'
 
 
 == Searching PPAs ==
@@ -128,6 +119,8 @@ Description, Sources and Binaries, the latter two being a count.
 The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
