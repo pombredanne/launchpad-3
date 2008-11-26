@@ -43,7 +43,7 @@
         style="text-align: center"
       >
         <img src="/@@/launchpad-logo-and-name.png" 
-             style="margin-bottom: 1em"/>
+             style="margin: 0 9em 1em 0"/>
         <br />
 
         <input id="text" type="text" name="field.text" size="50" />
@@ -52,12 +52,6 @@
         <br />
 
       <div class="three column left" id="featured-projects">
-        <h2>What is it?</h2>
-        <p id="application-summary">
-          Launchpad is a hosting service for open source projects that's
-          big on collaboration.
-          <a href="/+tour">Take a tour...</a>
-        </p>
         <h2>Featured projects</h2>
         <table>
           <tr>
@@ -130,22 +124,25 @@
         </div>
       </div>
 
-      <div class="three column right">
-        <h2>Do:</h2>
-        <ul style="font-size: larger">
-          <li><a href="/projects/+new-guided">Create a Project</a></li>
-          <li><a href="/people/+newteam">Create a Team</a></li>
-        </ul>
-        <h2>See:</h2>
-        <ul style="font-size: larger">
-          <li><a href="/projects">Browse Projects</a></li>
-          <li><a href="/people">Browse People &amp; Teams</a></li>
-        </ul>
+      <div class="three column right" id="portlets">
+        <div class="portlet portlet-home">
+            <a href="/projects/+new-guided">Create a Project</a><br/>
+            <a href="/people/+newteam">Create a Team</a>
+        </div>
+        <div class="portlet portlet-home">
+            <a href="/projects">Browse Projects</a><br/>
+            <a href="/people">Browse People &amp; Teams</a>
+        </div>
+        <h2>What is Launchpad?</h2>
+        <p id="application-summary">
+          Launchpad is a hosting service for open source projects that's
+          big on collaboration.<br/>
+          <a href="/+tour">Take a tour...</a>
+        </p>
       </div>
 
     </div><!--main-->
     <div metal:fill-slot="help">
-    <!-- XXX: Do we still want this?-->
       <p>
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.

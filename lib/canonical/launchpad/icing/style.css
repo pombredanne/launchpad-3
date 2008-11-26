@@ -1066,6 +1066,21 @@ div.aside {clear: right; float: right; margin-left: 20px; width: 200px;}
   -o-border-radius: 5px;
   -webkit-border-radius: 5px;
 }
+
+#portlets .portlet-home {
+  background-color: #8890ff;
+  width: 220px;
+  padding: 1em 0 1em 1em;
+  margin-top: 1em;
+}
+.portlet-home a {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: white;
+}
+.portlet-home li {
+  list-style: none;
+}
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
