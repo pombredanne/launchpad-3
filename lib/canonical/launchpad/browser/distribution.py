@@ -48,8 +48,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.packagesearchviewbase import (
-    PackageSearchViewBase)
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (

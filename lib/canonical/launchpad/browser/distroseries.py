@@ -32,8 +32,7 @@ from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearchviewbase import (
-    PackageSearchViewBase)
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
