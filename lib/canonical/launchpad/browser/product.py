@@ -1641,7 +1641,7 @@ class ProductBranchListingView(BranchListingView):
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @property
+    @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
         return getUtility(IBranchSet).getBranchesForContext(
