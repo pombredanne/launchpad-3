@@ -39,7 +39,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
 
   <subscriber
