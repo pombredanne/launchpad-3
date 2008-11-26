@@ -1028,7 +1028,7 @@ class BranchSet:
             branch = self.getByUniqueName(uri.path.lstrip('/'))
         elif uri.scheme == 'lp':
             branch = None
-            allowed_hosts = set
+            allowed_hosts = set()
             for host in config.codehosting.lp_url_hosts.split(','):
                 if host == '':
                     host = None
