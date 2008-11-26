@@ -47,6 +47,11 @@ class TestBranchFileSystemClient(TestCase):
         self.assertEqual('/%s' % branch.unique_name, matched_part)
 
     def test_get_matched_part_no_trailing_slash(self):
+        # _getMatchedPart always returns the absolute path to the object that
+        # the server matched, even if there is no trailing slash and no
+        # trailing path.
+        #
+        # This test is added to exercise a corner case.
         branch = self.factory.makeBranch()
         requested_path = '/%s' % branch.unique_name
         matched_part = self.client._getMatchedPart(
@@ -55,6 +60,11 @@ class TestBranchFileSystemClient(TestCase):
         self.assertEqual('/%s' % branch.unique_name, matched_part)
 
     def test_get_matched_part_no_trailing_path(self):
+        # _getMatchedPart always returns the absolute path to the object that
+        # the server matched, even if there is a trailing slash and no
+        # trailing path.
+        #
+        # This test is added to exercise a corner case.
         branch = self.factory.makeBranch()
         requested_path = '/%s/' % branch.unique_name
         matched_part = self.client._getMatchedPart(
@@ -80,6 +90,8 @@ class TestBranchFileSystemClient(TestCase):
             NotInCache, self.client._getFromCache, "foo")
 
     def test_translatePath_retrieves_from_cache(self):
+        # If the path already has a prefix in the cache, we use that prefix to
+        # translate the path.
         branch = self.factory.makeBranch()
         # We'll store fake data in the cache to show that we get data from
         # the cache if it's present.
@@ -95,6 +107,8 @@ class TestBranchFileSystemClient(TestCase):
         return deferred.addCallback(path_translated)
 
     def test_translatePath_adds_to_cache(self):
+        # translatePath adds successful path translations to the cache, thus
+        # allowing for future translations to be retrieved from the cache.
         branch = self.factory.makeBranch()
         deferred = self.client.translatePath('/' + branch.unique_name)
         deferred.addCallback(
