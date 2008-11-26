@@ -26,10 +26,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IMessageApprovalSet, IPersonSet,
-    MailingListStatus, PersonCreationRationale, PostedMessageStatus,
-    TeamSubscriptionPolicy)
+    ILaunchpadCelebrities, IMailingListSet, IMessageApprovalSet, IPersonSet,
+    MailingListStatus, PostedMessageStatus, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
