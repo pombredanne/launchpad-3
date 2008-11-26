@@ -152,7 +152,8 @@ class BMPMailer(BaseMailer):
 
         extra_template_params = {'reviews': '', 'comment': '', 'gap': ''}
         if len(requested_reviews) > 0:
-            extra_template_params['reviews'] = 'Requested reviews: %s' % (
+            requested_reviews.insert(0, 'Requested reviews:')
+            extra_template_params['reviews'] = (
                 '\n    '.join(requested_reviews))
 
         initial_comment = merge_proposal.root_comment
@@ -160,7 +161,7 @@ class BMPMailer(BaseMailer):
             extra_template_params['comment'] = (
                 initial_comment.message.text_contents)
             if len(requested_reviews) > 0:
-                extra_template_params['gap'] = '\n\n\n'
+                extra_template_params['gap'] = '\n\n'
 
         return klass(
             '%(proposal_title)s',
