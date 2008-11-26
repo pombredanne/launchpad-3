@@ -15,7 +15,7 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private name require_virtualized"
+                      private name require_virtualized signing_key"
       />
   </class>
 
@@ -30,6 +30,12 @@
       provides="canonical.launchpad.webapp.badge.IHasBadges"
       factory="canonical.launchpad.browser.ArchiveBadges"
       permission="zope.Public"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.archive.IArchive"
+      provides="canonical.launchpad.interfaces.archivesigningkey.IArchiveSigningKey"
+      factory="canonical.launchpad.components.archivesigningkey.ArchiveSigningKey"
       />
 
   <browser:menus

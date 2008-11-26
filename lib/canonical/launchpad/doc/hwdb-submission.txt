@@ -14,7 +14,7 @@ The POST data consists of the following fields:
     in the SQL table Distribution, column name.
   * distroseries: The distroseries version. The value should match a value
     in the SQL table distroseries, column version
-  * processorfamily: The name of the processorfamily. The value should 
+  * processorfamily: The name of the processorfamily. The value should
     match a value in the SQL table Processorfamily, column name.
   * system: The system name as returned by HAL (system.vendor, system.product)
   * submission_data: An XML file containing the collected data. This file is
@@ -66,7 +66,7 @@ The submitted data is stored in raw_submission.
     >>> submission.raw_submission.read()
     'some data.'
 
-A reference to distroarchseries is created for the fields distribution, 
+A reference to distroarchseries is created for the fields distribution,
 distroseries, architecture.
 
     >>> submission.distroarchseries.distroseries.distribution.name
@@ -110,7 +110,7 @@ to Launchpad, we refuse the submissions.
     >>> submit_view.initialize()
     >>> print submission_set.getBySubmissionKey(u'unique-id-3')
     None
-    
+
     >>> form['field.submission_key'] = u'unique-id-4'
     >>> invalid_form = form.copy()
     >>> invalid_form['field.architecture'] = 'no architecture'
@@ -219,8 +219,9 @@ occurs when a submission is processed, its status is set to INVALID and
 according error is logged. For details, see
 lib/canonical/launchpad/scripts/tests/test_hwdb_submission_processing.py.
 
-We have currently three unprocessed submissions in the database, and no
-submissions with the status PROCESSED or INVALID.
+We have currently three unprocessed submissions in the database, one
+submission with the status PROCESSED and no submissions with the status
+INVALID.
 
     >>> from canonical.launchpad.interfaces.hwdb import (
     ...     HWSubmissionProcessingStatus)
@@ -233,8 +234,9 @@ submissions with the status PROCESSED or INVALID.
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
-    >>> print processed_submissions.count()
-    0
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
     >>> print invalid_submissions.count()
@@ -276,8 +278,9 @@ submissions are unchanged.
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
-    >>> print processed_submissions.count()
-    0
+    >>> for submission in processed_submissions:
+    ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
     >>> for submission in invalid_submissions:
@@ -311,6 +314,7 @@ Now we have one valid, two invalid and no unprocessed submissions.
     ...     HWSubmissionProcessingStatus.PROCESSED)
     >>> for submission in processed_submissions:
     ...     print submission.submission_key, submission.status.title
+    sample-submission Processed
     unique-id-68 Processed
 
     >>> invalid_submissions = submission_set.getByStatus(
@@ -338,7 +342,7 @@ in previous tests.
     80
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED).count()
-    1
+    2
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
@@ -361,7 +365,7 @@ processing loop terminates properly, when the parameter "-m" is given.
     20
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED).count()
-    61
+    62
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
@@ -379,7 +383,7 @@ unprocessed submissions and process all of them.
     100
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED).count()
-    61
+    62
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
@@ -398,7 +402,7 @@ unprocessed submissions and process all of them.
     0
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED).count()
-    161
+    162
     >>> print submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID).count()
     2
