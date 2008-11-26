@@ -30,10 +30,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.abstractpackagesearch import (
-    AbstractPackageSearchView)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagesearchviewbase import (
+    PackageSearchViewBase)
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
@@ -292,7 +292,7 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
             'Request a full language pack export')
 
 
-class DistroSeriesPackageSearchView(AbstractPackageSearchView):
+class DistroSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroSeries"""
 
     def contextSpecificSearch(self):
