@@ -16,11 +16,11 @@ import urlparse
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
-from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
+import transaction
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
+from canonical.launchpad.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -83,19 +84,20 @@ def get_diff(bzr_branch, bzr_revision):
     :return: A byte string that is the diff of the changes introduced by
         `bzr_revision` on `bzr_branch`.
     """
-    repo = bzr_branch.repository
-    if bzr_revision.parent_ids:
-        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-        tree_new, tree_old = repo.revision_trees(ids)
+    if len(bzr_revision.parent_ids) > 0:
+        basis = bzr_revision.parent_ids[0]
     else:
-        # can't get both trees at once, so one at a time
-        tree_new = repo.revision_tree(bzr_revision.revision_id)
-        tree_old = repo.revision_tree(NULL_REVISION)
-
-    diff_content = StringIO()
-    show_diff_trees(tree_old, tree_new, diff_content)
-    raw_diff = diff_content.getvalue()
-    return raw_diff.decode('utf8', 'replace')
+        basis = NULL_REVISION
+    basis_spec = 'revid:%s' % basis
+    revision_spec = 'revid:%s' % bzr_revision.revision_id
+    static_diff = getUtility(IStaticDiffSource).acquire(
+        basis, bzr_revision.revision_id, bzr_branch.repository)
+    transaction.commit()
+    lfa = static_diff.diff.diff_text
+    lfa.open()
+    revision_diff = lfa.read().decode('utf8', 'replace')
+    static_diff.destroySelf()
+    return revision_diff
 
 
 def get_revision_message(bzr_branch, bzr_revision):
