@@ -42,14 +42,14 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.abstractpackagesearch import (
-    AbstractPackageSearchView)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.archive import traverse_archive
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.packagesearchviewbase import (
+    PackageSearchViewBase)
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
@@ -539,10 +539,10 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionPackageSearchView(AbstractPackageSearchView):
+class DistributionPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for Distribution"""
 
-    def context_specific_search(self):
+    def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchSourcePackages(self.text)
 

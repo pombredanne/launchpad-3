@@ -11,15 +11,15 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.abstractpackagesearch import (
-    AbstractPackageSearchView)
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagesearchviewbase import (
+    PackageSearchViewBase)
 from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import GetitemNavigation
-from canonical.launchpad.webapp.launchpadform import (action,
-    LaunchpadFormView)
-from canonical.launchpad.webapp.menu import (ContextMenu, 
-    enabled_with_permission, Link)
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link)
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
@@ -50,9 +50,10 @@ class DistroArchSeriesView(BuildRecordsView):
     """Default DistroArchSeries view class."""
 
 
-class DistroArchSeriesPackageSearchView(AbstractPackageSearchView):
+class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
     """Customised PackageSearchView for DistroArchSeries"""
-    def context_specific_search(self):
+
+    def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchBinaryPackages(self.text)
 
