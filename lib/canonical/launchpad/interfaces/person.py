@@ -11,17 +11,19 @@ __all__ = [
     'IHasStanding',
     'INewPerson',
     'INewPersonForm',
-    'InvalidName',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'ImmutableVisibilityError',
+    'InvalidName',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -708,8 +710,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
-    archive = Attribute(
-        "The Archive owned by this person, his PPA.")
+    archive = exported(
+        Reference(title=_("Personal Package Archive"),
+                  description=_("The Archive owned by this person, his PPA."),
+                  schema=Interface)) # Really IArchive, see archive.py
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
@@ -1956,6 +1960,10 @@ class ITeamContactAddressForm(Interface):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+
+
+class ImmutableVisibilityError(Exception):
+    """A change in team membership visibility is not allowed."""
 
 
 class InvalidName(Exception):
