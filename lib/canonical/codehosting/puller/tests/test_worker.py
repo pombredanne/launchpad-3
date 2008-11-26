@@ -217,7 +217,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
 
     def testRaisesStackedOnBranchNotFoundRemirror(self):
-        # If the stacked-on branch cannot be in found the mirrored area on an
+        # If the stacked-on branch cannot be found in the mirrored area on an
         # update, then raise StackedOnBranchNotFound. This will ensure the
         # puller will mirror the stacked branch as soon as the stacked-on
         # branch has been mirrored.
@@ -300,8 +300,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             get_netstrings(protocol_output.getvalue()))
 
 
-class TestBranchMirrorerCheckSource(TestCase):
-    """Unit tests for `BranchMirrorer.checkSource`."""
+class TestBranchMirrorerCheckAndFollowBranchReference(TestCase):
+    """Unit tests for `BranchMirrorer.checkAndFollowBranchReference`."""
 
     class StubbedBranchMirrorer(BranchMirrorer):
         """BranchMirrorer that provides canned answers.
@@ -312,8 +312,8 @@ class TestBranchMirrorerCheckSource(TestCase):
         """
 
         def __init__(self, references, policy):
-            super(TestBranchMirrorerCheckSource.StubbedBranchMirrorer,
-                  self).__init__(policy)
+            parent_cls = TestBranchMirrorerCheckAndFollowBranchReference
+            super(parent_cls.StubbedBranchMirrorer, self).__init__(policy)
             self._reference_values = {}
             for i in range(len(references) - 1):
                 self._reference_values[references[i]] = references[i+1]
@@ -327,7 +327,6 @@ class TestBranchMirrorerCheckSource(TestCase):
                          unsafe_urls=None):
         policy = BlacklistPolicy(should_follow_references, unsafe_urls)
         opener = self.StubbedBranchMirrorer(references, policy)
-        opener._seen_urls = set()
         return opener
 
     def testCheckInitialURL(self):
@@ -390,7 +389,7 @@ class TestBranchMirrorerCheckSource(TestCase):
 class TestBranchMirrorerStacking(TestCaseWithTransport):
 
     def makeBranchMirrorer(self, allowed_urls):
-        policy = WhitelistPolicy(True, allowed_urls)
+        policy = WhitelistPolicy(True, allowed_urls, True)
         return BranchMirrorer(policy)
 
     def makeBranch(self, path, branch_format, repository_format):

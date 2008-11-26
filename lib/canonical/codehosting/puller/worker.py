@@ -253,7 +253,8 @@ class BranchMirrorer(object):
             arguments to log messages in the scheduler, or None, in which case
             log messages are discarded.
         """
-        self._seen_urls = None
+        self._seen_urls = set()
+        #self._seen_urls = None
         self.policy = policy
         self.protocol = protocol
         if log is not None:
@@ -271,7 +272,6 @@ class BranchMirrorer(object):
             'transform_fallback_location', self.transformFallbackLocationHook,
             'BranchMirrorer.transformFallbackLocationHook')
         try:
-            self._seen_urls = set()
             url = self.checkAndFollowBranchReference(url)
             return Branch.open(url)
         finally:
@@ -280,7 +280,7 @@ class BranchMirrorer(object):
             # it.
             Branch.hooks['transform_fallback_location'].remove(
                 self.transformFallbackLocationHook)
-            self._seen_urls = None
+            self._seen_urls = set()
 
     def transformFallbackLocationHook(self, branch, url):
         """XXX."""
@@ -307,10 +307,9 @@ class BranchMirrorer(object):
             references.
         """
         while True:
-            if self._seen_urls is not None:
-                if url in self._seen_urls:
-                    raise BranchLoopError()
-                self._seen_urls.add(url)
+            if url in self._seen_urls:
+                raise BranchLoopError()
+            self._seen_urls.add(url)
             self.policy.checkOneURL(url)
             next_url = self.followReference(url)
             if next_url is None:

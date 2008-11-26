@@ -36,7 +36,7 @@ class BlacklistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url), True
+        return urlutils.join(branch.base, url), False
 
 
 class AcceptAnythingPolicy(BlacklistPolicy):
@@ -49,10 +49,11 @@ class AcceptAnythingPolicy(BlacklistPolicy):
 class WhitelistPolicy(BranchPolicy):
     """Branch policy that only allows certain URLs."""
 
-    def __init__(self, should_follow_references, allowed_urls=None):
+    def __init__(self, should_follow_references, allowed_urls=None, check=False):
         if allowed_urls is None:
             allowed_urls = []
         self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)
+        self.check = check
 
     def shouldFollowReferences(self):
         return self._should_follow_references
@@ -62,7 +63,7 @@ class WhitelistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url), True
+        return urlutils.join(branch.base, url), self.check
 
 
 class PullerWorkerMixin:

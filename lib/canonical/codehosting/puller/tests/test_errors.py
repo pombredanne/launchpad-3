@@ -208,7 +208,7 @@ class TestErrorCatching(unittest.TestCase):
         expected_msg = 'Not a branch.'
         self.assertEqual(expected_msg, msg)
 
-    def testBranchReferenceLoopError(self):
+    def testBranchLoopError(self):
         # BranchLoopError exceptions are caught.
         msg = self.getMirrorFailureForException(
             BranchLoopError())
