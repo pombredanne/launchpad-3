@@ -148,7 +148,9 @@ class TestBranchPuller(PullerBranchTestCase):
         and the user has launchpad.Edit on the branch and opened from the
         mirrored area otherwise.
         """
-        # We use the configured directories because ... XXX
+        # We use the configured directories because these tests run the puller
+        # in a subprocess which would have no way of knowing which directories
+        # to look in if we used freshly created temporary directories.
         upload_directory = config.codehosting.branches_root
         mirror_directory = config.supermirror.branchesdest
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
