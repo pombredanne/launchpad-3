@@ -32,7 +32,6 @@ approve or reject.
     ... I have a question about this team.
     ... """)
 
-    >>> from canonical.launchpad.ftests import login
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
 
