@@ -16,7 +16,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.ICodeReviewComment
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
     handler="canonical.launchpad.subscribers.karma.code_review_comment_added" />
 
   <adapter
