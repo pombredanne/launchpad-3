@@ -515,11 +515,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = super(LaunchpadServer, self).translateVirtualPath(
             virtual_url_fragment)
 
-        def cb(value):
-            print virtual_url_fragment, '->', value
-            return value
-        deferred.addCallback(cb)
-
         def not_a_branch(failure):
             """Called when the path simply could not point to a branch."""
             failure.trap(NotABranchPath)

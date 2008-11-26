@@ -255,7 +255,7 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
-    def _makeDefaultStackedOnBranch(self, private=False):
+    def _makeDefaultStackedOnBranch(self, private=False, branch_type=BranchType.HOSTED):
         """Make a default stacked-on branch.
 
         This creates a database branch on a product that allows default
@@ -268,14 +268,26 @@ class TestBranchPuller(PullerBranchTestCase):
         # Make the branch.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeBranch(
-            product=product, private=private, name='trunk', branch_type=BranchType.MIRRORED)
+            product=product, private=private, name='trunk', branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
         transaction.commit()
-        self.pushBranch(default_branch)
-        command, retcode, output, error = self.runPuller('upload')
+        if branch_type == BranchType.HOSTED:
+            self.pushBranch(default_branch)
+            puller_type = 'upload'
+        elif branch_type == BranchType.MIRRORED:
+            tree = self.make_branch_and_tree('.', format='1.6')
+            tree.commit('rev1')
+            default_branch.url = self.serveOverHTTP()
+            default_branch.requestMirror()
+            puller_type = 'mirror'
+        else:
+            1/0
+        transaction.commit()
+        command, retcode, output, error = self.runPuller(puller_type)
         self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertNotEqual(None, default_branch.last_mirror_attempt)
         return default_branch
 
     def test_stack_mirrored_branch(self):
@@ -299,38 +311,14 @@ class TestBranchPuller(PullerBranchTestCase):
             mirrored_branch.get_stacked_on_url())
 
     def test_stack_when_defaulted_stack_on_is_mirrored_branch(self):
-        # XXX
-        default_branch = self._makeDefaultStackedOnBranch()
+        default_branch = self._makeDefaultStackedOnBranch(branch_type=BranchType.MIRRORED)
         db_branch = self.factory.makeBranch(
             BranchType.HOSTED, product=default_branch.product)
-        self.pushToBranch(db_branch, format='1.6')
-        hosted_path = self.getHostedPath(db_branch)
-        Branch.open(hosted_path)._set_config_location('stacked_on_location', '/'+default_branch.unique_name)
-        db_branch.requestMirror()
         transaction.commit()
+        self.pushBranch(db_branch, format='1.6')
         command, retcode, output, error = self.runPuller('upload')
-        print (output, error)
         self.assertRanSuccessfully(command, retcode, output, error)
-
-        # To open this branch, we're going to need to use the Launchpad vfs.
-        from canonical.codehosting.branchfs import get_lp_server
-        from bzrlib import urlutils
-        import xmlrpclib
-        upload_directory = config.codehosting.branches_root
-        mirror_directory = config.supermirror.branchesdest
-        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
-
-        upload_url = urlutils.local_path_to_url(upload_directory)
-        mirror_url = urlutils.local_path_to_url(mirror_directory)
-        branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
-
-        lp_server = get_lp_server(
-            branchfs_client, default_branch.owner.id, upload_url, mirror_url)
-        lp_server.setUp()
-        self.addCleanup(lp_server.tearDown)
-
-        hosted_url = 'lp-%s:///%s' % (id(lp_server), db_branch.unique_name)
-        Branch.open(hosted_url)
+        self.assertMirrored(db_branch)
 
     def test_stack_mirrored_branch_onto_private(self):
         # If the default stacked-on branch is private then mirrored branches
