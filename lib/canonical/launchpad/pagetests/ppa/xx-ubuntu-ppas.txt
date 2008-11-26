@@ -227,15 +227,12 @@ and the select control that lets you update them:
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    3 source packages
-    (9.5 MiB)
-    3 binary packages
-    (3 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print results
+    None
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -464,15 +461,12 @@ properly.
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    1 source package
-    (9.5 MiB)
-    1 binary package
-    (0 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print results
+    None
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:

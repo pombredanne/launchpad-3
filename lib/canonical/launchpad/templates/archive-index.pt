@@ -82,7 +82,9 @@
 
       <tal:active_ppa condition="ppa_active">
 
-      <tal:contents tal:define="archive context">
+      <tal:contents tal:define="archive context"
+		    tal:condition="python: False">
+        <!--Disabled section due to performance issues. -->
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
