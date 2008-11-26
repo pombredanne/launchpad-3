@@ -77,7 +77,7 @@ class RecipientReason:
         merge_proposal = vote_reference.branch_merge_proposal
         branch = merge_proposal.source_branch
         return klass(vote_reference.reviewer, recipient, branch,
-                     merge_proposal, 'reviewer',
+                     merge_proposal, 'Reviewer',
                      '%(entity_is)s requested to review %(merge_proposal)s.')
 
     def getReason(self):
