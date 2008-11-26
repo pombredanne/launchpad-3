@@ -240,18 +240,18 @@ class IBranchMergeProposal(Interface):
             required=False, readonly=True,
             description=_("The user that marked the branch as merged.")))
 
-    #supersedes = exported(
-    #    Reference(
-    #        title=_("Supersedes"),
-    #        schema=IBranchMergeProposal, required=True, readonly=True,
-    #        description=_("The branch merge proposal that this one "
-    #                      "supersedes.")))
-    #superseded_by = exported(
-    #    Reference(
-    #        title=_("Superseded By"), schema=IBranchMergeProposal,
-    #        required=True, readonly=True,
-    #        description=_(
-    #            "The branch merge proposal that supersedes this one.")))
+    supersedes = exported(
+        Reference(
+            title=_("Supersedes"),
+            schema=Interface, required=True, readonly=True,
+            description=_("The branch merge proposal that this one "
+                          "supersedes.")))
+    superseded_by = exported(
+        Reference(
+            title=_("Superseded By"), schema=Interface,
+            required=True, readonly=True,
+            description=_(
+                "The branch merge proposal that supersedes this one.")))
 
     date_created = exported(
         Datetime(
@@ -504,3 +504,7 @@ class IBranchMergeProposalApprovedEvent(IBranchMergeProposalReviewEvent):
 
 class IBranchMergeProposalRejectedEvent(IBranchMergeProposalReviewEvent):
     """A reviewer has rejected the proposed merge."""
+
+for name in ['supersedes', 'superseded_by']:
+    IBranchMergeProposal[name].schema = IBranchMergeProposal
+

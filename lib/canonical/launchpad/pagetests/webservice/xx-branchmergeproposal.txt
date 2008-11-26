@@ -29,6 +29,8 @@ Branch merge proposals can be fetched through the API.
     reviewer_link: None
     self_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18/+merge/1'
     source_branch_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18'
+    superseded_by_link: None
+    supersedes_link: None
     target_branch_link: u'http://api.launchpad.dev/beta/~person-name2/product-name8/branch4'
 
 == Create a new merge proposal ==
