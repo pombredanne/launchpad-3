@@ -244,7 +244,7 @@ class PackageUpload(SQLBase):
         :raise NonBuildableSourceUploadError: when the uploaded source
             doesn't result in any builds in its targeted distroseries.
         """
-        if len(builds) == 0:
+        if len(builds) == 0 and self.isPPA():
             raise NonBuildableSourceUploadError(
                 "Cannot build any of the architectures requested: %s" %
                 sourcepackagerelease.architecturehintlist)
