@@ -33,18 +33,4 @@ Branch merge proposals can be fetched through the API.
     supersedes_link: None
     target_branch_link: u'http://api.launchpad.dev/beta/~person-name2/product-name8/branch4'
 
-== Create a new merge proposal ==
-
-
-
-
-== Vote on a merge proposal ==
-
-
-
-
-== Mark a merge proposal as merged ==
-
-
-
 
