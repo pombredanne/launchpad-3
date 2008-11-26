@@ -245,6 +245,7 @@ class LaunchpadBranch:
         def convert_fault(failure):
             failure.trap(Fault)
             fault = failure.value
+            path = '~%s/%s/%s' % (self._owner, self._product, self._name)
             if fault.faultCode == NOT_FOUND_FAULT_CODE:
                 # One might think that it would make sense to raise
                 # NoSuchFile here, but that makes the client do "clever"
@@ -253,9 +254,9 @@ class LaunchpadBranch:
                 # does not exist.  You may supply --create-prefix to
                 # create all leading parent directories."  Which is just
                 # misleading.
-                raise PermissionDenied(fault.faultString)
+                raise PermissionDenied(path, fault.faultString)
             elif fault.faultCode == PERMISSION_DENIED_FAULT_CODE:
-                raise PermissionDenied(fault.faultString)
+                raise PermissionDenied(path, fault.faultString)
             else:
                 raise
 

@@ -350,7 +350,7 @@
         <iframe
           id="help-pane-content"
           class="invisible"
-          src="javascript:false;"></iframe>
+          src="javascript:void(0);"></iframe>
       </div>
       <div id="help-footer">
         <span id="help-close"></span>

@@ -2133,12 +2133,15 @@ class FormattersAPI:
         if not self._stringtoformat:
             return self._stringtoformat
         else:
+            linkified_text = re_substitute(self._re_linkify,
+                self._linkify_substitution, break_long_words,
+                cgi.escape(self._stringtoformat))
             return ('<pre style="'
                     'white-space: -moz-pre-wrap;'
                     'white-space: -o-pre-wrap;'
                     'word-wrap: break-word;'
                     '">%s</pre>'
-                    % cgi.escape(self._stringtoformat)
+                    % linkified_text
                     )
 
     # Match lines that start with one or more quote symbols followed
