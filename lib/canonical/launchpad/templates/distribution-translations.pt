@@ -52,7 +52,7 @@
       Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
 
-    <ul>
+    <ul id="distroseries-list">
       <li tal:repeat="distroseries view/secondary_translatable_serieses">
         <a tal:attributes="href distroseries/fmt:url"
                  tal:content=
