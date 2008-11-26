@@ -268,8 +268,7 @@ def spec_branch_created(spec_branch, event):
 def branch_merge_proposed(proposal, event):
     """Assign karma to the user who proposed the merge."""
     product = proposal.source_branch.product
-    if event.user is not None:
-        event.user.assignKarma('branchmergeproposed', product=product)
+    proposal.registrant.assignKarma('branchmergeproposed', product=product)
 
 
 @block_implicit_flushes
