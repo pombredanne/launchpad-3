@@ -1106,6 +1106,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     BinaryPackageName.id
                 )
             ]
+
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
         package_caches = store.using(*origin).find(
             find_spec,
             """DistroSeriesPackageCache.distroseries = %s AND

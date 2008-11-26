@@ -26,7 +26,7 @@ can add limits to the query *before* it is evaluated (batching), while
 still ensuring that when the query is evaluated the result is converted
 into the expected content class.
 
-First, create the un-decorated result set of all distributions:
+First, we'll create the un-decorated result set of all distributions:
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from storm.store import Store
@@ -87,7 +87,7 @@ just work like normally:
 
 There is currently a bug in the Storm API whereby calling count (or
 other aggregates) on a storm ResultSet does not respect the distinct
-config function (https://bugs.edge.launchpad.net/storm/+bug/217644):
+config option (https://bugs.edge.launchpad.net/storm/+bug/217644):
 
     >>> from canonical.launchpad.database import (BinaryPackageRelease,
     ...     BinaryPackagePublishingHistory)
@@ -100,7 +100,7 @@ config function (https://bugs.edge.launchpad.net/storm/+bug/217644):
     >>> results.count()
     26
 
-But the DecoratedResultSet covers up this bug (until it is fixed in
+But the DecoratedResultSet works around this bug (until it is fixed in
 storm):
     >>> def dummy_result_decorator(result):
     ...     return result

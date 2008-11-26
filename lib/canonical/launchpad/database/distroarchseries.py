@@ -169,6 +169,10 @@ class DistroArchSeries(SQLBase):
                 sqlvalues(text))
             )
         archives = self.distroseries.distribution.getArchiveIDList()
+
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
         result = store.using(*origin).find(
             find_spec,
             """
@@ -190,12 +194,10 @@ class DistroArchSeries(SQLBase):
         # Create a function that will decorate the results, converting
         # them from the find_spec above into DASBPRs:
         def result_to_dasbpr(
-            (binary_package_release, binary_package_name, rank)
-            ):
+            (binary_package_release, binary_package_name, rank)):
             return DistroArchSeriesBinaryPackageRelease(
                 distroarchseries=self,
-                binarypackagerelease=binary_package_release
-                )
+                binarypackagerelease=binary_package_release)
 
         # Return the decorated result set so the consumer of these
         # results will only see DSPs

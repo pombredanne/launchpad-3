@@ -922,6 +922,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
         dsp_caches = store.using(*origin).find(
             find_spec,
             """distribution = %s AND
