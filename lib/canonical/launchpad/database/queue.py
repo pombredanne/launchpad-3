@@ -616,7 +616,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = summary_text
             CHANGESFILE = guess_encoding("".join(changes_lines))
-            USERS_ADDRESS = config.launchpad.users_address,
+            USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
