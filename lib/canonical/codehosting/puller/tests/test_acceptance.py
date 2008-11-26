@@ -54,7 +54,7 @@ class TestBranchPuller(PullerBranchTestCase):
         """Assert that 'db_branch' was mirrored succesfully.
 
         This method checks that the fields on db_branch show that the branch
-        has been mirrored succesfully, and checks that the Bazaar source and
+        has been mirrored successfully, and checks that the Bazaar source and
         destination branches (from the puller's point of view) are consistent
         with this and each other.
 
@@ -138,6 +138,17 @@ class TestBranchPuller(PullerBranchTestCase):
         return http_server.get_url().rstrip('/')
 
     def getLPServerForUser(self, user):
+        """Construct a LaunchpadServer that serves branches as seen by `user`.
+
+        Given 'db_branch', a database branch object 'db_branch', and
+        'lp_server', the server returned by this method,
+        'Branch.open(lp_server.get_url() + db_branch.unique_name)' will open
+        the branch as 'user' sees it as a client of the code hosting service,
+        i.e. it will be opened from the hosting area if the branch type HOSTED
+        and the user has launchpad.Edit on the branch and opened from the
+        mirrored area otherwise.
+        """
+        # We use the configured directories because ... XXX
         upload_directory = config.codehosting.branches_root
         mirror_directory = config.supermirror.branchesdest
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
@@ -153,10 +164,18 @@ class TestBranchPuller(PullerBranchTestCase):
         return lp_server
 
     def openBranchAsUser(self, db_branch, user):
+        """Open the branch as 'user' would see it as a client of codehosting.
+        """
         lp_server = self.getLPServerForUser(user)
         return Branch.open(lp_server.get_url() + db_branch.unique_name)
 
     def pushBranch(self, db_branch, tree=None, format=None):
+        """Push a Bazaar branch to db_branch.
+
+        This method pushes the branch of the supplied tree (or an empty branch
+        containing one revision if no tree is suppplied) to the location
+        represented by the database branch 'db_branch'.
+        """
         if tree is None:
             tree = self.make_branch_and_tree(
                 self.factory.getUniqueString(), format=format)
