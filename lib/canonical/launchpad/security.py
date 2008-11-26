@@ -1364,6 +1364,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
+    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
+    # otherwise users are likely to get 403 errors, or worse.
+
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
