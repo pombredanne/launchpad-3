@@ -317,7 +317,11 @@ class TestBranchPuller(PullerBranchTestCase):
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
 
-    def test_stack_when_default_stack_on_is_mirrored_branch(self):
+    def test_hosted_branch_stacked_on_mirrored_branch(self):
+        # If a hosted branch is stacked on a mirrored branch, the puller opens
+        # the hosted branch stacked on the copy of the branch in the mirrored
+        # area, rather than trying to open it stacked on the non-existent
+        # version of the branch in the hosted area.
         default_branch = self._makeDefaultStackedOnBranch(
             branch_type=BranchType.MIRRORED)
         db_branch = self.factory.makeBranch(
@@ -326,21 +330,33 @@ class TestBranchPuller(PullerBranchTestCase):
         self.pushBranch(db_branch, format='1.6')
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(db_branch)
+        mirrored_branch = self.assertMirrored(db_branch)
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
 
     def test_manual_stacking(self):
+        # If the user manually stacks on a launchpad branch, the branch.conf
+        # file of the resulting branch will contain the full URL of the
+        # manually selected branch.  The puller still manages to open the
+        # branch and sets the stacking information of the branch in the
+        # mirrored area to be the most compatible "/" + unique_name form.
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeBranch(
             BranchType.HOSTED, product=default_branch.product)
         transaction.commit()
         self.pushBranch(db_branch, format='1.6')
+        # Because Bazaar can't access branches over bzr+ssh in this test, we
+        # cheat and set the stacking information directly.
         branch_config = TransportConfig(
             get_transport(self.getHostedPath(db_branch)), 'branch.conf')
         branch_config.set_option(
             'stacked_on_location',
-            'http://bazaar.launchpad.dev/' + default_branch.unique_name)
+            'bzr+ssh://bazaar.launchpad.dev/' + default_branch.unique_name)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
+        # We clear the stacking information again here so that assertMirrored
+        # can open the branch in the hosted area.
         branch_config.set_option('stacked_on_location', '')
         mirrored_branch = self.assertMirrored(db_branch)
         self.assertEqual(
