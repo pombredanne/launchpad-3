@@ -186,7 +186,7 @@ class IBranchMergeProposal(Interface):
     reviewer = exported(
         PublicPersonChoice(
             title=_('Review person or team'), required=False,
-            vocabulary='ValidPersonOrTeam',
+            readonly=True, vocabulary='ValidPersonOrTeam',
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
 
@@ -214,18 +214,21 @@ class IBranchMergeProposal(Interface):
     queued_revision_id = exported(
         Text(
             title=_("Queued Revision ID"), readonly=True,
+            required=False,
             description=_("The revision id that has been queued for "
                           "landing.")))
 
     merged_revno = exported(
         Int(
             title=_("Merged Revision Number"), required=False,
+            readonly=True,
             description=_("The revision number on the target branch which "
                           "contains the merge from the source branch.")))
 
     date_merged = exported(
         Datetime(
             title=_('Date Merged'), required=False,
+            readonly=True,
             description=_("The date that the source branch was merged into "
                           "the target branch")))
 
@@ -243,13 +246,13 @@ class IBranchMergeProposal(Interface):
     supersedes = exported(
         Reference(
             title=_("Supersedes"),
-            schema=Interface, required=True, readonly=True,
+            schema=Interface, required=False, readonly=True,
             description=_("The branch merge proposal that this one "
                           "supersedes.")))
     superseded_by = exported(
         Reference(
             title=_("Superseded By"), schema=Interface,
-            required=True, readonly=True,
+            required=False, readonly=True,
             description=_(
                 "The branch merge proposal that supersedes this one.")))
 

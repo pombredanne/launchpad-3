@@ -1108,7 +1108,6 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
-
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
