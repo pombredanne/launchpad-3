@@ -396,7 +396,8 @@ class _BaseLaunchpadServer(Server):
             def branch_not_found(failure):
                 failure.trap(BranchNotFound)
                 if path == '':
-                    # We are trying to translate a branch path that doesn't exist.
+                    # We are trying to translate a branch path that doesn't
+                    # exist.
                     return failure
                 else:
                     # We are trying to translate a path within a branch that

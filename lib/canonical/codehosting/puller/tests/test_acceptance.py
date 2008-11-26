@@ -51,7 +51,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, db_branch, source_branch=None, accessing_user=None):
+    def assertMirrored(self, db_branch, source_branch=None,
+                       accessing_user=None):
         """Assert that 'db_branch' was mirrored succesfully.
 
         This method checks that the fields on db_branch show that the branch
@@ -184,7 +185,8 @@ class TestBranchPuller(PullerBranchTestCase):
                 self.factory.getUniqueString(), format=format)
             tree.commit('rev1')
         lp_server = self.getLPServerForUser(db_branch.owner)
-        dest_transport = get_transport(lp_server.get_url() + db_branch.unique_name)
+        dest_transport = get_transport(
+            lp_server.get_url() + db_branch.unique_name)
         try:
             dir_to = BzrDir.open_from_transport(dest_transport)
         except errors.NotBranchError:
@@ -334,12 +336,16 @@ class TestBranchPuller(PullerBranchTestCase):
         self.pushBranch(db_branch, format='1.6')
         branch_config = TransportConfig(
             get_transport(self.getHostedPath(db_branch)), 'branch.conf')
-        branch_config.set_option('stacked_on_location', 'http://bazaar.launchpad.dev/' + default_branch.unique_name)
+        branch_config.set_option(
+            'stacked_on_location',
+            'http://bazaar.launchpad.dev/' + default_branch.unique_name)
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         branch_config.set_option('stacked_on_location', '')
         mirrored_branch = self.assertMirrored(db_branch)
-        self.assertEqual('/' + default_branch.unique_name, mirrored_branch.get_stacked_on_url())
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
 
     def test_stack_mirrored_branch_onto_private(self):
         # If the default stacked-on branch is private then mirrored branches
@@ -356,7 +362,8 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
+        mirrored_branch = self.assertMirrored(
+            db_branch, source_branch=tree.branch)
         self.assertRaises(
             errors.NotStacked, mirrored_branch.get_stacked_on_url)
 

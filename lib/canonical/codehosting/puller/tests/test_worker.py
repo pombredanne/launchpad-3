@@ -295,7 +295,8 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             policy=PrearrangedStackedBranchPolicy(base_branch.base))
         to_mirror.mirrorWithoutChecks()
         self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), URI(base_branch.base).path],
+            ['setStackedOn', str(to_mirror.branch_id),
+             URI(base_branch.base).path],
             get_netstrings(protocol_output.getvalue()))
 
 
@@ -342,39 +343,43 @@ class TestBranchMirrorerCheckSource(TestCase):
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
-        # checkAndFollowBranchReference raises BranchReferenceForbidden if branch references are
-        # forbidden and the source URL points to a branch reference.
+        # checkAndFollowBranchReference raises BranchReferenceForbidden if
+        # branch references are forbidden and the source URL points to a
+        # branch reference.
         opener = self.makeBranchMirrorer(False, ['a', 'b'])
         self.assertRaises(
             BranchReferenceForbidden, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
-        # checkAndFollowBranchReference does not raise if following references is allowed and
-        # the source URL points to a branch reference to a permitted location.
+        # checkAndFollowBranchReference does not raise if following references
+        # is allowed and the source URL points to a branch reference to a
+        # permitted location.
         opener = self.makeBranchMirrorer(True, ['a', 'b', None])
         self.assertEquals('b', opener.checkAndFollowBranchReference('a'))
         self.assertEquals(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
-        # checkAndFollowBranchReference checks if the URL a reference points to is safe.
+        # checkAndFollowBranchReference checks if the URL a reference points
+        # to is safe.
         opener = self.makeBranchMirrorer(
             True, ['a', 'b', None], unsafe_urls=set('b'))
         self.assertRaises(BadUrl, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
-        # checkAndFollowBranchReference raises BranchReferenceLoopError if following references
-        # is allowed and the source url points to a self-referencing branch
-        # reference.
+        # checkAndFollowBranchReference raises BranchReferenceLoopError if
+        # following references is allowed and the source url points to a
+        # self-referencing branch reference.
         opener = self.makeBranchMirrorer(True, ['a', 'a'])
         self.assertRaises(
             BranchLoopError, opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
-        # checkAndFollowBranchReference raises BranchReferenceLoopError if following references
-        # is allowed and the source url points to a loop of branch references.
+        # checkAndFollowBranchReference raises BranchReferenceLoopError if
+        # following references is allowed and the source url points to a loop
+        # of branch references.
         references = ['a', 'b', 'a']
         opener = self.makeBranchMirrorer(True, references)
         self.assertRaises(
