@@ -446,10 +446,10 @@ The "sources list" widget isn't presented for empty PPAs either.
 
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
-    >>> sources_list is None
-    True
+    >>> print sources_list
+    None
 
-Users will only be able to see it for PPA that have, at least, one
+Users will only be able to see it for PPAs that have, at least, one
 published source.
 
     >>> from canonical.launchpad.ftests.ppa import publishToPPA
@@ -464,7 +464,7 @@ published source.
     deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
     deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
 
-Same for the 'URL' page section, now the repository url is linkified.
+Also the repository URL is an actual link.
 
     >>> print anon_browser.getLink(
     ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
