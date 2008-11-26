@@ -538,7 +538,6 @@ class BranchMergeProposal(SQLBase):
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=review_type)
-        notify(SQLObjectCreatedEvent(code_review_message))
         # Get the appropriate CodeReviewVoteReference for the reviewer.
         # If there isn't one, then create one, otherwise set the comment
         # reference.

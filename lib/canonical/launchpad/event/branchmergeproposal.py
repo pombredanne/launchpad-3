@@ -7,6 +7,9 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposalApprovedEvent',
     'BranchMergeProposalRejectedEvent',
+    'NewBranchMergeProposalEvent',
+    'NewCodeReviewCommentEvent',
+    'ReviewerNominatedEvent',
     ]
 
 from zope.component.interfaces import ObjectEvent
