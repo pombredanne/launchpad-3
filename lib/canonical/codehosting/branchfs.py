@@ -703,7 +703,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
 
 
 def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
-    """Create a Launchpad smart server.
+    """Create a Launchpad server.
 
     :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
         branch file system end-point.

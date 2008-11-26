@@ -11,6 +11,7 @@ from subprocess import PIPE, Popen
 import sys
 import unittest
 from urlparse import urlparse
+import xmlrpclib
 
 import transaction
 
@@ -20,12 +21,12 @@ from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
+from bzrlib import urlutils
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.codehosting.branchfs import get_puller_server
-from canonical.codehosting.bzrutils import ensure_base
+from canonical.codehosting.branchfs import get_lp_server
 from canonical.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
@@ -52,10 +53,18 @@ class TestBranchPuller(PullerBranchTestCase):
     def assertMirrored(self, db_branch, source_branch=None, accessing_user=None):
         """Assert that 'db_branch' was mirrored succesfully.
 
+        This method checks that the fields on db_branch show that the branch
+        has been mirrored succesfully, and checks that the Bazaar source and
+        destination branches (from the puller's point of view) are consistent
+        with this and each other.
+
         :param db_branch: The `IBranch` representing the branch that was
             mirrored.
-        :param source_branch: XXX
-        :param accessing_user: XXX
+        :param source_branch: The source branch.  If not passed, look for the
+            branch in the hosted area.
+        :param accessing_user: Open the mirrored branch as this user.  If not
+            supplied create a fresh user for this -- but this won't work for a
+            private branch.
         """
         if source_branch is None:
             source_branch = self.openBranchAsUser(db_branch, db_branch.owner)
@@ -133,9 +142,6 @@ class TestBranchPuller(PullerBranchTestCase):
         mirror_directory = config.supermirror.branchesdest
         branchfs_endpoint_url = config.codehosting.branchfs_endpoint
 
-        from canonical.codehosting.branchfs import get_lp_server
-        from bzrlib import urlutils
-        import xmlrpclib
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
         branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
