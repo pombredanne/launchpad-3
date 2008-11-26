@@ -1078,11 +1078,12 @@ def get_bug_privacy_filter(user):
     # other half of this condition (see code above) does not
     # use TeamParticipation at all.
     return """
-        (Bug.private = FALSE OR Bug.id in (
+        (Bug.private = FALSE OR EXISTS (
              SELECT BugSubscription.bug
              FROM BugSubscription, TeamParticipation
              WHERE TeamParticipation.person = %(personid)s AND
-                   BugSubscription.person = TeamParticipation.team))
+                   BugSubscription.person = TeamParticipation.team AND
+                   BugSubscription.bug = Bug.id))
                      """ % sqlvalues(personid=user.id)
 
 
