@@ -5,6 +5,12 @@ Branch merge proposals can be fetched through the API.
 
     >>> login('foo.bar@canonical.com')
     >>> proposal = factory.makeBranchMergeProposal()
+    >>> proposal.source_branch.owner.name = 'source'
+    >>> proposal.source_branch.name = 'fix-it'
+    >>> proposal.source_branch.product.name = 'fooix'
+    >>> proposal.target_branch.owner.name = 'target'
+    >>> proposal.target_branch.name = 'trunk'
+    >>> proposal.target_branch.product.name = 'fooix'
     >>> proposal_url = canonical_url(proposal, rootsite='api')
     >>> logout()
 
@@ -27,10 +33,10 @@ Branch merge proposals can be fetched through the API.
     registrant_link: u'http://api.launchpad.dev/beta/~person-name13'
     resource_type_link: u'http://api.launchpad.dev/beta/#branch_merge_proposal'
     reviewer_link: None
-    self_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18/+merge/...'
-    source_branch_link: u'http://api.launchpad.dev/beta/~person-name16/product-name8/branch18'
+    self_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it/+merge/...'
+    source_branch_link: u'http://api.launchpad.dev/beta/~source/fooix/fix-it'
     superseded_by_link: None
     supersedes_link: None
-    target_branch_link: u'http://api.launchpad.dev/beta/~person-name2/product-name8/branch4'
+    target_branch_link: u'http://api.launchpad.dev/beta/~target/fooix/trunk'
 
 
