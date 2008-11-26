@@ -14,7 +14,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposalGetter, is_valid_transition)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
-from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
@@ -495,7 +496,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         source_branch = self.factory.makeBranch()
         target_branch = self.factory.makeBranch(product=source_branch.product)
         registrant = self.factory.makePerson()
-        result, event = self.assertNotifies(SQLObjectCreatedEvent,
+        result, event = self.assertNotifies(
+            NewBranchMergeProposalEvent,
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, event.object)
 
