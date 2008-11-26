@@ -853,8 +853,8 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
-The `IArchiveDependency` object itself implement a 'title' property,
-which on PPA dependencies default to the PPA title.
+The `IArchiveDependency` object itself implement a 'title'
+property. For PPA dependencies the title defaults to the PPA title.
 
     >>> print archive_dependency.title
     PPA for Mark Shuttleworth

@@ -49,9 +49,10 @@ class ArchiveDependency(SQLBase):
         if self.dependency.is_ppa:
             return self.dependency.title
 
+        pocket_title = "%s - %s" % (
+            self.dependency.title, self.pocket.name)
+
         if self.component is None:
-            pocket_title = "%s - %s" % (
-                self.dependency.title, self.pocket.name)
             return pocket_title
 
         full_title = "%s - %s" % (

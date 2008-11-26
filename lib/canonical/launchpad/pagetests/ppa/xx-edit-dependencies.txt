@@ -205,12 +205,14 @@ the warning message) are omitted from the PPA overview page
 
 == Primary dependencies ==
 
-A user can modify modify how a PPA depends on its corresponding
+A user can modify how a PPA depends on its corresponding
 primary archive.
 
-A set of predefined options is presented as radio-button
-selection. When the page the selected option represents the state of
-the PPA.
+A set of predefined options is presented as a radio button
+selection.
+
+When the page is loaded the selected option for 'Dependency
+configuration' field represents the current state of the PPA.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
