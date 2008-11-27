@@ -749,8 +749,8 @@ class BugWatchUpdater(object):
         # We only push those comments that haven't been pushed
         # already. We don't push any comments not associated with
         # the bug watch.
-        for bug_message in bug_watch.unpushed_comments:
-            message = bug_message.message
+        for unpushed_comment in bug_watch.unpushed_comments:
+            message = unpushed_comment.message
 
             # Format the comment so that it includes information
             # about the Launchpad bug.
@@ -764,7 +764,7 @@ class BugWatchUpdater(object):
 
             assert remote_comment_id is not None, (
                 "A remote_comment_id must be specified.")
-            bug_message.remote_comment_id = remote_comment_id
+            unpushed_comment.remote_comment_id = remote_comment_id
 
             pushed_comments += 1
 

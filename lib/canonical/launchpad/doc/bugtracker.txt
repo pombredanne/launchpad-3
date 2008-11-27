@@ -13,7 +13,6 @@ and an external bug, see bugwatch.txt.
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.timezone('UTC'))
 
-    >>> from operator import attrgetter
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
     ...         bugtracker.getBugWatchesNeedingUpdate(23),

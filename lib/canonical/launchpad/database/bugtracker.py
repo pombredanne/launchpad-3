@@ -8,7 +8,9 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
+from datetime import datetime, timedelta
 from itertools import chain
+from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
 # simple, and is heavily used by the rest of urllib, hence is unlikely
 # to change or go away.
@@ -186,24 +188,24 @@ class BugTracker(SQLBase):
         :return: The UNION of the bug watches that need checking and
             those with unpushed comments.
         """
-        lastchecked_time_sql = SQL(
-            "now() at time zone 'UTC' - interval '%s hours'" %
-            sqlvalues(hours_since_last_check))
+        lastchecked_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(hours=hours_since_last_check))
 
         lastchecked_clause = Or(
-            BugWatch.lastchecked < lastchecked_time_sql,
+            BugWatch.lastchecked < lastchecked_cutoff,
             BugWatch.lastchecked == None)
 
         store = Store.of(self)
 
         bug_watches_needing_checking = store.find(
             BugWatch,
-            BugWatch.bugtracker == self.id,
+            BugWatch.bugtracker == self,
             lastchecked_clause)
 
         bug_watches_with_unpushed_comments = store.find(
             BugWatch,
-            BugWatch.bugtracker == self.id,
+            BugWatch.bugtracker == self,
             BugMessage.bugwatch == BugWatch.id,
             BugMessage.remote_comment_id == None)
 

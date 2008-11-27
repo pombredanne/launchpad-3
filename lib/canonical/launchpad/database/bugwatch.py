@@ -208,8 +208,8 @@ class BugWatch(SQLBase):
         store = Store.of(self)
         bug_messages = store.find(
             BugMessage,
-            BugMessage.bug == self.bug.id,
-            BugMessage.bugwatch == self.id,
+            BugMessage.bug == self.bug,
+            BugMessage.bugwatch == self,
             BugMessage.remote_comment_id == None)
 
         return bug_messages
