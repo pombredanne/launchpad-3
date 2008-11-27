@@ -26,11 +26,12 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Text, TextLine)
+    Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
@@ -152,6 +153,9 @@ class IArchive(IHasOwner):
             Interface, # Redefined to IDistribution later.
             title=_("The distribution that uses or is used by this "
                     "archive.")))
+
+    signing_key = Object(
+        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
@@ -685,11 +689,17 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    number_of_ppa_sources = Attribute(
-        'Number of published sources in public PPAs.')
+    def getNumberOfPPASourcesForDistribution(distribution):
+        """Return the number of sources for PPAs in a given distribution.
 
-    number_of_ppa_binaries = Attribute(
-        'Number of published binaries in public PPAs.')
+        Only public and published sources are considered.
+        """
+
+    def getNumberOfPPABinariesForDistribution(distribution):
+        """Return the number of binaries for PPAs in a given distribution.
+
+        Only public and published sources are considered.
+        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
@@ -732,6 +742,12 @@ class IArchiveSet(Interface):
         """Return all PPAs the given user can participate.
 
         The result is ordered by PPA owner's displayname.
+        """
+
+    def getPPAsPendingSigningKey():
+        """Return all PPAs pending signing key generation.
+
+        The result is ordered by archive creation date.
         """
 
     def getLatestPPASourcePublicationsForDistribution(distribution):
@@ -844,3 +860,9 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+# This is patched here to avoid even more circular imports in
+# interfaces/person.py.
+from canonical.launchpad.interfaces.person import IPersonPublic
+IPersonPublic['archive'].schema = IArchive
+

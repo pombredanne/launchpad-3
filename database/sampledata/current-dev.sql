@@ -2402,6 +2402,13 @@ ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 ALTER TABLE hwdevice DISABLE TRIGGER ALL;
 
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (1, 1, 'MS-7369', NULL, 'MS-7369', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (2, 2, '0x0455', NULL, 'MCP65 USB Controller', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (3, 3, '0x6560', NULL, 'CY7C65640 USB-2.0 "TetraHub"', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (4, 4, '0x2026', NULL, 'USB2.0 Card Reader', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (5, 2, '0x045d', NULL, 'MCP65 SATA Controller', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (6, 5, 'DVD RW AD-7170S ', NULL, 'DVD RW AD-7170S', 0);
+INSERT INTO hwdevice (id, bus_vendor_id, bus_product_id, variant, name, submissions) VALUES (7, 6, 'ST3250820NS     ', NULL, 'ST3250820NS', 0);
 
 
 ALTER TABLE hwdevice ENABLE TRIGGER ALL;
@@ -2416,6 +2423,24 @@ ALTER TABLE hwdeviceclass ENABLE TRIGGER ALL;
 
 ALTER TABLE hwdevicedriverlink DISABLE TRIGGER ALL;
 
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (1, 1, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (2, 2, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (3, 2, 1);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (4, 2, 2);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (5, 3, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (6, 3, 2);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (7, 4, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (8, 4, 2);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (9, 4, 3);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (10, 4, 4);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (11, 3, 5);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (12, 2, 5);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (13, 5, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (14, 5, 6);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (15, 6, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (16, 6, 7);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (17, 7, NULL);
+INSERT INTO hwdevicedriverlink (id, device, driver) VALUES (18, 7, 4);
 
 
 ALTER TABLE hwdevicedriverlink ENABLE TRIGGER ALL;
@@ -2430,6 +2455,13 @@ ALTER TABLE hwdevicenamevariant ENABLE TRIGGER ALL;
 
 ALTER TABLE hwdriver DISABLE TRIGGER ALL;
 
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (1, 'linux-image-2.6.24-19-generic', 'ehci_hcd', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (2, 'linux-image-2.6.24-19-generic', 'usb', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (3, 'linux-image-2.6.24-19-generic', 'usb-storage', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (4, 'linux-image-2.6.24-19-generic', 'sd', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (5, 'linux-image-2.6.24-19-generic', 'hub', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (6, 'linux-image-2.6.24-19-generic', 'ahci', NULL);
+INSERT INTO hwdriver (id, package_name, name, license) VALUES (7, 'linux-image-2.6.24-19-generic', 'sr', NULL);
 
 
 ALTER TABLE hwdriver ENABLE TRIGGER ALL;
@@ -2438,6 +2470,7 @@ ALTER TABLE hwdriver ENABLE TRIGGER ALL;
 ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
 INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, owner, distroarchseries, raw_submission, system_fingerprint, raw_emailaddress) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1, 'test@canonical.com');
+INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, owner, distroarchseries, raw_submission, system_fingerprint, raw_emailaddress) VALUES (2, '2008-09-26 17:19:18', '2008-09-30 08:19:00.222131', 1, 2, false, false, 'sample-submission', 12, 6, 92, 2, 'test@canonical.com');
 
 
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
@@ -2452,6 +2485,27 @@ ALTER TABLE hwsubmissionbug ENABLE TRIGGER ALL;
 
 ALTER TABLE hwsubmissiondevice DISABLE TRIGGER ALL;
 
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (1, 1, 2, NULL, 11);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (2, 2, 2, 1, 121);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (3, 3, 2, 2, 121);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (4, 4, 2, 3, 122);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (5, 5, 2, 4, 123);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (6, 6, 2, 5, 123);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (7, 7, 2, 6, 124);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (8, 8, 2, 7, 124);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (9, 9, 2, 8, 125);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (10, 10, 2, 9, 136);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (11, 10, 2, 9, 130);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (12, 10, 2, 9, 127);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (13, 10, 2, 9, 133);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (14, 11, 2, 6, 139);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (15, 12, 2, 4, 140);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (16, 13, 2, 1, 65);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (17, 14, 2, 16, 65);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (18, 15, 2, 17, 67);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (19, 16, 2, 18, 67);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (20, 17, 2, 17, 71);
+INSERT INTO hwsubmissiondevice (id, device_driver_link, submission, parent, hal_device_id) VALUES (21, 18, 2, 20, 71);
 
 
 ALTER TABLE hwsubmissiondevice ENABLE TRIGGER ALL;
@@ -2460,6 +2514,7 @@ ALTER TABLE hwsubmissiondevice ENABLE TRIGGER ALL;
 ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
 
 INSERT INTO hwsystemfingerprint (id, fingerprint) VALUES (1, 'TONKA TUFFBOOK2600');
+INSERT INTO hwsystemfingerprint (id, fingerprint) VALUES (2, 'MSI MS-7369');
 
 
 ALTER TABLE hwsystemfingerprint ENABLE TRIGGER ALL;
@@ -2509,6 +2564,12 @@ ALTER TABLE hwtestanswerdevice ENABLE TRIGGER ALL;
 
 ALTER TABLE hwvendorid DISABLE TRIGGER ALL;
 
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (1, 0, 'MSI', 1);
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (2, 1, '0x10de', 5);
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (3, 2, '0x04b4', 6);
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (4, 2, '0x0dda', 2);
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (5, 7, 'Optiarc', 3);
+INSERT INTO hwvendorid (id, bus, vendor_id_for_bus, vendor_name) VALUES (6, 7, 'SEAGATE', 4);
 
 
 ALTER TABLE hwvendorid ENABLE TRIGGER ALL;
@@ -2516,6 +2577,12 @@ ALTER TABLE hwvendorid ENABLE TRIGGER ALL;
 
 ALTER TABLE hwvendorname DISABLE TRIGGER ALL;
 
+INSERT INTO hwvendorname (id, name) VALUES (1, 'MSI');
+INSERT INTO hwvendorname (id, name) VALUES (2, 'Unknown');
+INSERT INTO hwvendorname (id, name) VALUES (3, 'Optiarc');
+INSERT INTO hwvendorname (id, name) VALUES (4, 'SEAGATE');
+INSERT INTO hwvendorname (id, name) VALUES (5, 'nVidia Corporation');
+INSERT INTO hwvendorname (id, name) VALUES (6, 'Cypress Semiconductor Corp.');
 
 
 ALTER TABLE hwvendorname ENABLE TRIGGER ALL;
@@ -3483,6 +3550,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (91, 91, 'upload_22_log.txt', 'application/text', NULL, '2008-07-07 22:30:01.123456', '2008-07-07 22:30:01.123456', false);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (92, 92, 'sample-submission-2.xml', 'application/x-bzip2', NULL, '2008-09-30 08:19:00.222131', '2008-09-30 08:19:00.222131', false);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3576,6 +3644,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (90, '2008-05-08 10:10:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4caa', false, '8a8a67b8dbc5f203ae8712092c68c7aa');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (91, '2008-07-07 22:30:01.123456', NULL, 10, '0c805a60b31058a1018680f99447033dcb9d4c01', false, '8a8a67b8dbc5f203ae8712092c68c701');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (92, '2008-09-30 08:19:00.222131', NULL, 10, 'f10e2821bbbea527ea02200352313bc059445190', false, '7815696ecbf1c96e6894b779456d330e');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
