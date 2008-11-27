@@ -11,6 +11,7 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.transport import get_transport
 from canonical.testing import LaunchpadZopelessLayer, DatabaseFunctionalLayer
 from sqlobject import SQLObjectNotFound
+import transaction
 
 from canonical.codehosting.scanner.tests.test_bzrsync import (
     FakeTransportServer)
@@ -107,6 +108,16 @@ class TestStaticDiff(BzrTestCase):
         self.assertEqual('rev2', static_diff.to_revision_id)
         static_diff2 = StaticDiff.acquireFromText('rev1', 'rev2', diff_b)
         self.assertIs(static_diff, static_diff2)
+
+    def test_acquireFromTextEmpty(self):
+        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', '')
+        self.assertEqual('', static_diff.diff.text)
+
+    def test_acquireFromTextNonEmpty(self):
+        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', 'abc')
+        transaction.commit()
+        self.assertEqual('abc', static_diff.diff.text)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
