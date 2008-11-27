@@ -15,12 +15,13 @@
     <allow
       interface="canonical.launchpad.interfaces.diff.IStaticDiffSource" />
   </securedutility>
-  <class class="canonical.launchpad.database.StaticDiffJob">
-    <allow interface="canonical.launchpad.interfaces.IStaticDiffJob" />
+  <class class="canonical.launchpad.database.diff.StaticDiffJob">
+    <allow interface="canonical.launchpad.interfaces.diff.IStaticDiffJob" />
   </class>
   <securedutility
-      class="canonical.launchpad.database.StaticDiffJobSource"
-      provides="canonical.launchpad.interfaces.IStaticDiffJobSource" >
-    <allow interface="canonical.launchpad.interfaces.IStaticDiffJobSource" />
+      class="canonical.launchpad.database.diff.StaticDiffJobSource"
+      provides="canonical.launchpad.interfaces.diff.IStaticDiffJobSource" >
+    <allow
+     interface="canonical.launchpad.interfaces.diff.IStaticDiffJobSource" />
   </securedutility>
 </configure>
