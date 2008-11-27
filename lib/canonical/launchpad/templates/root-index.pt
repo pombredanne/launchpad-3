@@ -125,7 +125,7 @@
       </div>
 
       <div class="three column right">
-      <div id="portlets" style="margin-left: 1em;">
+      <div id="portlets" style="margin-left: 5em;">
         <div class="portlet portlet-home">
             <a href="/projects/+new-guided">Create a Project</a><br/>
             <a href="/people/+newteam">Create a Team</a>
