@@ -61,16 +61,44 @@
 
 <script type="text/javascript">
    YUI().use("node-style", function(Y) {
+
+       // Highlight (setting bold font-weight) the label for the
+       // selected option in a given NodesList. Assumes the input is
+       // contained by the label.
+       function highlight_checked (nodes) {
+           nodes.each(function(input) {
+               var label = Y.get(input.get("parentNode"));
+               if (input.get("checked")) {
+                   label.setStyle("fontWeight", "bold");
+               }
+               else {
+                   label.setStyle("fontWeight", "normal");
+               }
+           });
+       };
+
        var main_area = Y.get("#mainarea");
 
+       // Highlight the selected radio button input on page load.
        var inputs = main_area.queryAll("input.highlight-selected");
+       highlight_checked(inputs);
+
+       // Install signal handlers for all radio-button inputs to
+       // recalculate with options should be highlighted when one of
+       // them is clicked.
        inputs.each(function(input) {
-           if (input.get("checked")) {
-               var label = Y.get(input.get("parentNode"));
-               label.setStyle("fontWeight", "bold");
-           }
+           input.on("click", function(e) {
+               var main_area = Y.get("#mainarea");
+               var inputs = main_area.queryAll("input.highlight-selected");
+               highlight_checked(inputs);
+           });
        });
 
+       // Install handlers to decorate selected check-box inputs when
+       // they get clicked. Selected options text will be decorated with
+       // 'line-through' style and rendered in 'red'. Options not
+       // selected (or unselected) text will be rendered in 'blue' and
+       // without any decoration.
        var inputs = main_area.queryAll("input.line-through-when-checked");
        inputs.each(function(input) {
            input.on("click", function(e) {
