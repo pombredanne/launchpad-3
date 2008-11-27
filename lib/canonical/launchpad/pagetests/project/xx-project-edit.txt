@@ -63,13 +63,21 @@ The project summary shows the status as reviewed.
   Reviewed
 
 Administrators can also change the maintainer and registrant indepedent of
-each other.
+each other, as well as adding aliases to the project group.
 
   >>> admin_browser.open('http://launchpad.dev/new-name')
   >>> admin_browser.getLink('Administer').click()
   >>> admin_browser.getControl('Maintainer').value = 'cprov'
   >>> admin_browser.getControl('Registrant').value = 'ddaa'
+  >>> admin_browser.getControl('Aliases').value
+  ''
+  >>> admin_browser.getControl('Aliases').value = 'old-name'
   >>> admin_browser.getControl('Change').click()
+
+  >>> admin_browser.getLink('Administer').click()
+  >>> admin_browser.getControl('Aliases').value
+  'old-name'
+  >>> admin_browser.goBack()
 
 The project maintainer and registrant are now updated.
 
