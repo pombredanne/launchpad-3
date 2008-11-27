@@ -35,7 +35,7 @@ access 'Copy package' page from any PPA.
     LinkNotFoundError
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/~cprov/+archive/+copy-packages')
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+copy-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ... 'launchpad.AnyPerson')
@@ -48,7 +48,7 @@ PPA in order to be able to copy packages.
     >>> jblack_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
@@ -76,7 +76,7 @@ provided link.
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
