@@ -365,7 +365,6 @@ class BranchMirrorer(object):
         # so that we can nicely signal to the scheduler that the pulling of
         # this branch should be deferred before we even create the branch in
         # the mirrored area.
-        # XXX combine this with transformFallbackLocation?
         stacked_on_url = (
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))

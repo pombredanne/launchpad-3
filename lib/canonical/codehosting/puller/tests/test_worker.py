@@ -295,8 +295,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             policy=PrearrangedStackedBranchPolicy(base_branch.base))
         to_mirror.mirrorWithoutChecks()
         self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id),
-             URI(base_branch.base).path],
+            ['setStackedOn', str(to_mirror.branch_id), base_branch.base],
             get_netstrings(protocol_output.getvalue()))
 
 

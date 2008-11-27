@@ -277,12 +277,14 @@ class TestBranchPuller(PullerBranchTestCase):
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
+        # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
             transaction.commit()
             self.pushBranch(default_branch)
             puller_type = 'upload'
         elif branch_type == BranchType.MIRRORED:
-            tree = self.make_branch_and_tree('.')
+            tree = self.make_branch_and_tree('.', format='1.6')
+            tree.commit('rev1')
             default_branch.url = self.serveOverHTTP()
             default_branch.requestMirror()
             puller_type = 'mirror'
@@ -291,9 +293,9 @@ class TestBranchPuller(PullerBranchTestCase):
             raise AssertionError(
                 "don't know how to make a %s default branch"
                 % branch_type.TITLE)
+        # Pull it.
         command, retcode, output, error = self.runPuller(puller_type)
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertNotEqual(None, default_branch.last_mirror_attempt)
         return default_branch
 
     def test_stack_mirrored_branch(self):
