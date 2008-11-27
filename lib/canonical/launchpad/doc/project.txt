@@ -43,6 +43,8 @@ aliases, though.
     # Need to login as an LP admin to set a project's aliases.
     >>> login('foo.bar@canonical.com')
     >>> gnome.setAliases(['dwarf'])
+    >>> gnome.aliases
+    [u'dwarf']
     >>> login(ANONYMOUS)
     >>> projectset['dwarf'].name
     u'gnome'

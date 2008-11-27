@@ -63,6 +63,8 @@ aliases, though.
     u'a52dec'
     
     >>> a52dec.setAliases(['a51dec'])
+    >>> a52dec.aliases
+    [u'a51dec']
     >>> productset['a51dec'].name
     u'a52dec'
     >>> productset.getByName('a51dec').name

@@ -40,6 +40,8 @@ can be used to look up distributions by their aliases too.
     # Need to login as an LP admin to set a project's aliases.
     >>> login('foo.bar@canonical.com')
     >>> gentoo.setAliases(['jackass'])
+    >>> gentoo.aliases
+    [u'jackass']
     >>> login(ANONYMOUS)
     >>> distroset['jackass'].name
     u'gentoo'
