@@ -79,7 +79,7 @@ popup. A valid term is the owner username.
 
 An empty request doesn't change anything.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = ''
+    >>> admin_browser.getControl("Add PPA dependency").value = ''
     >>> admin_browser.getControl("Save").click()
 
     >>> print_ppa_dependencies(admin_browser.contents)
@@ -87,7 +87,7 @@ An empty request doesn't change anything.
 
 An unknown term results in an error.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'whatever'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'whatever'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -99,7 +99,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -112,7 +112,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -123,7 +123,7 @@ Trying to add a dependency that is already recorded results in a error.
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'cprov'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'cprov'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -133,7 +133,7 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -344,7 +344,7 @@ The form can perform multiple actions in a single submit.
 
 First we will create a PPA dependency for No privileged' PPA.
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'no-priv'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv'
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -376,7 +376,7 @@ RELEASE.
     >>> admin_browser.getControl(
     ...     "PPA for No Privileges Person").selected = True
 
-    >>> admin_browser.getControl("Add PPA Dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
 
     >>> admin_browser.getControl(
     ...     "Depend only on RELEASE pocket, no SECURITY or UPDATES "
@@ -415,7 +415,7 @@ processed.
 At anytime the form can be cancelled and the user will be taken to the
 PPA context page and the action won't be executed.
 
-    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
+    >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
     >>> admin_browser.getLink("Cancel").click()
 
     >>> print admin_browser.title

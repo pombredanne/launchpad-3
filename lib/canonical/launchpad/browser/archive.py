@@ -927,7 +927,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             terms.append(term)
         return form.Fields(
             List(__name__='selected_dependencies',
-                 title=_('Current dependencies'),
+                 title=_('Extra dependencies'),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
                  default=[],
