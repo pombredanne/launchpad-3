@@ -33,8 +33,15 @@
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url">url</a></h2>
+      <h2 style="margin-top: 0">
+        URL:
+        <a tal:condition="ppa_active"
+           tal:attributes="href context/archive_url"
+           tal:content="context/archive_url">url</a>
+        <tal:no-link
+           condition="not: ppa_active"
+           content="context/archive_url">url</tal:no-link>
+      </h2>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -50,9 +57,13 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <h2>apt sources.list entries</h2>
+      <div tal:condition="ppa_active">
 
-      <tal:entries replace="structure view/sources_list_entries" />
+        <h2>apt sources.list entries</h2>
+
+        <tal:entries replace="structure view/sources_list_entries" />
+
+      </div>
 
       <div id="ppa-dependencies" tal:condition="context/dependencies">
 
