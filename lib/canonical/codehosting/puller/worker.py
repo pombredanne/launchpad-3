@@ -72,11 +72,11 @@ class BranchReferenceForbidden(Exception):
 
 
 class BranchLoopError(Exception):
-    """Encountered a branch reference cycle.
+    """Encountered a branch cycle.
 
-    A branch reference may point to another branch reference, and so on. A
-    branch reference cycle is an infinite loop of references.
-    XXX
+    A URL may point to a branch reference or it may point to a stacked branch.
+    In either case, it's possible for there to be a cycle in these references,
+    and this exception is raised when we detect such a cycle.
     """
 
 
@@ -201,7 +201,13 @@ class BranchPolicy:
         :return: The URL of the branch to stack the mirrored copy on. None if
             the mirrored copy should not be stacked.
         """
-        return get_stacked_on_url(source_branch)
+        stacked_on_url = get_stacked_on_url(source_branch)
+        if stacked_on_url is None:
+            return None
+        elif '://' in stacked_on_url: # XXX explain this!
+            return URI(stacked_on_url).path
+        else:
+            return stacked_on_url
 
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.
@@ -216,7 +222,15 @@ class BranchPolicy:
         raise NotImplementedError(self.shouldFollowReferences)
 
     def transformFallbackLocation(self, branch, url):
-        """XXX."""
+        """Validate, maybe modify, 'url' to be used as a stacked-on location.
+
+        :param branch:  The branch that is being opened.
+        :param url: The URL that the branch provides for its stacked-on
+            location.
+        :return: (new_url, check) where 'new_url' is the URL of the branch to
+            actually open and 'check' is true if 'new_url' needs to be
+            validated by checkAndFollowBranchReference.
+        """
         raise NotImplementedError(self.transformFallbackLocation)
 
     def checkOneURL(self, url):
@@ -254,7 +268,6 @@ class BranchMirrorer(object):
             log messages are discarded.
         """
         self._seen_urls = set()
-        #self._seen_urls = None
         self.policy = policy
         self.protocol = protocol
         if log is not None:
@@ -280,10 +293,17 @@ class BranchMirrorer(object):
             # it.
             Branch.hooks['transform_fallback_location'].remove(
                 self.transformFallbackLocationHook)
+            # We reset _seen_urls here to avoid multiple calls to open giving
+            # spurious loop exceptions.
             self._seen_urls = set()
 
     def transformFallbackLocationHook(self, branch, url):
-        """XXX."""
+        """Installed as the 'transform_fallback_location' Branch hook.
+
+        This method calls `transformFallbackLocation` on the policy object and
+        either returns the url it provides or passes it back to
+        checkAndFollowBranchReference.
+        """
         new_url, check = self.policy.transformFallbackLocation(branch, url)
         if check:
             return self.checkAndFollowBranchReference(new_url)
@@ -299,8 +319,12 @@ class BranchMirrorer(object):
         return bzrdir.get_branch_reference()
 
     def checkAndFollowBranchReference(self, url):
-        """
-        XXX
+        """Check URL (and possibly the referenced URL) for safety.
+
+        This method cheks that `url` passes the policies `checkOneURL` method,
+        and if `url` refers to a branch references checks whether references
+        are allowed and whether the references URL passes muster also --
+        recursively, until a real branch is found.
 
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
@@ -337,26 +361,28 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
+        # We check to see if the stacked on branch exists in the mirrored area
+        # so that we can nicely signal to the scheduler that the pulling of
+        # this branch should be deferred before we even create the branch in
+        # the mirrored area.
+        # XXX combine this with transformFallbackLocation?
         stacked_on_url = (
             self.policy.getStackedOnURLForDestinationBranch(
                 source_branch, destination_url))
         if stacked_on_url is not None:
-            if '://' in stacked_on_url:
-                stacked_on_url = URI(stacked_on_url).path
-            # We resolve the stacked_on_url relative to the destination_url
-            # because a common case for stacked_on_url will be
-            # /~user/project/branch and we want to check the branch already
-            # exists in the mirrored area.
             stacked_on_url = urlutils.join(destination_url, stacked_on_url)
             try:
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
+        # XXX check if we still need this
         if isinstance(source_branch, LoomSupport):
             # Looms suck.
             revision_id = None
         else:
             revision_id = 'null:'
+        # clone_on_transport will reopen the source branch, so we need to
+        # install our hook again.
         Branch.hooks.install_named_hook(
             'transform_fallback_location', self.transformFallbackLocationHook,
             'BranchMirrorer.transformFallbackLocationHook')
@@ -396,18 +422,14 @@ class BranchMirrorer(object):
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
 
-        This methdo pulls 'source_branch' into 'dest_branch' and sets the
+        This method pulls 'source_branch' into 'dest_branch' and sets the
         stacked-on URL of 'dest_branch' to match 'source_branch'.
 
         This method assumes that 'source_branch' and 'dest_branch' both have
         the same format.
         """
-        # Make sure the mirrored branch is stacked the same way as the
-        # source branch.
         stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
-        if stacked_on_url and '://' in stacked_on_url:
-            stacked_on_url = URI(stacked_on_url).path
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
@@ -456,6 +478,7 @@ class HostedBranchPolicy(BranchPolicy):
         return False
 
     def _bzrdirExists(self, url):
+        """Return whether a BzrDir exists at `url`."""
         try:
             BzrDir.open(url)
         except errors.NotBranchError:
@@ -463,25 +486,32 @@ class HostedBranchPolicy(BranchPolicy):
         else:
             return True
 
-    def _adjustPathURL(self, url):
-        hosted_url = 'lp-hosted://' + url
+    def _adjustPathURL(self, path):
+        """Given an absolute path """
+        hosted_url = 'lp-hosted://' + path
         if self._bzrdirExists(hosted_url):
             return hosted_url
-        mirrored_url = 'lp-mirrored://' + url
+        mirrored_url = 'lp-mirrored://' + path
         if self._bzrdirExists(mirrored_url):
             return mirrored_url
         raise StackedOnBranchNotFound()
 
     def transformFallbackLocation(self, branch, url):
-        """XXX."""
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        For hosted branches, the situation is complicated.
+        XXX much more here!
+        """
         if '://' not in url:
             return self._adjustPathURL(url), False
         uri = URI(url)
+        if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
+            raise BadUrlScheme(uri.scheme, uri)
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             return self._adjustPathURL(uri.path), False
         else:
-            raise BranchLoopError('argh')
+            raise BadUrl(uri)
 
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
@@ -513,7 +543,8 @@ class MirroredBranchPolicy(BranchPolicy):
         """See `BranchPolicy.getStackedOnURLForDestinationBranch`.
 
         Mirrored branches are stacked on the default stacked-on branch of
-        their product.
+        their product, except when we're mirroring the default stacked-on
+        branch itself.
         """
         if self.stacked_on_url is None:
             return None
@@ -532,7 +563,11 @@ class MirroredBranchPolicy(BranchPolicy):
         return True
 
     def transformFallbackLocation(self, branch, url):
-        """XXX."""
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        For mirrored branches, we stack on whatever the remote branch claims
+        to stack on, but this URL still needs to be checked.
+        """
         return urlutils.join(branch.base, url), True
 
     def checkOneURL(self, url):
@@ -571,9 +606,11 @@ class ImportedBranchPolicy(BranchPolicy):
         return False
 
     def transformFallbackLocation(self, branch, url):
-        """XXX."""
-        # Shouldn't be stacking here!
-        raise AssertionError("")
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        Import branches should not be stacked, ever.
+        """
+        raise AssertionError("Import branch unexpectedly stacked!")
 
     def checkOneURL(self, url):
         """See `BranchPolicy.checkOneURL`.
