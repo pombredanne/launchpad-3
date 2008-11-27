@@ -231,8 +231,8 @@ XXX cprov 20081126: The 'package counters' page section is disabled
 due to bad performance on large PPAs.
 
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print results
-    None
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -465,8 +465,8 @@ XXX cprov 20081126: The 'package counters' page section is disabled
 due to bad performance on large PPAs.
 
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> print results
-    None
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:

@@ -82,12 +82,15 @@
 
       <tal:active_ppa condition="ppa_active">
 
+      <!--Disabled section due to performance issues. -->
       <tal:contents tal:define="archive context"
-		    tal:condition="python: False">
-        <!--Disabled section due to performance issues. -->
+                    tal:condition="python: False">
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
+      <p id="package_counters" class="discreet">
+        Package counters and estimated archive size temporarily unavailable.
+      </p>
 
       <div class="actions" style="float:right;">
         <tal:builds
