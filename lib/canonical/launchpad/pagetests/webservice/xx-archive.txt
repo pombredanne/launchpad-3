@@ -11,7 +11,7 @@ This works for PPAs:
     >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
     distribution_link: u'http://.../ubuntu'
-    name: u'default'
+    name: u'ppa'
     owner_link: u'http://.../~cprov'
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive'

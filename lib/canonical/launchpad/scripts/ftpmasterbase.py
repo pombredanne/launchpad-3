@@ -110,6 +110,10 @@ class SoyuzScript(LaunchpadScript):
             help='Archive owner name in case of PPA operations')
 
         self.parser.add_option(
+            '--ppa-name', dest='archive_name', action='store',
+            help='PPA name in case of PPA operations')
+
+        self.parser.add_option(
             '-j', '--partner', dest='partner_archive', default=False,
             action='store_true',
             help='Specify partner archive')
@@ -242,7 +246,8 @@ class SoyuzScript(LaunchpadScript):
                 self.options.distribution_name,
                 self.options.suite,
                 ArchivePurpose.PPA,
-                self.options.archive_owner_name)
+                self.options.archive_owner_name,
+                self.options.archive_name)
         else:
             self.location = build_package_location(
                 self.options.distribution_name,

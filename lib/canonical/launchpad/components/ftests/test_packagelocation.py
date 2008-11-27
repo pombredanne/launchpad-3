@@ -17,10 +17,10 @@ class TestPackageLocation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
-                           purpose=None, person_name=None):
+                           purpose=None, person_name=None, ppa_name=None):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
-            distribution_name, suite, purpose, person_name)
+            distribution_name, suite, purpose, person_name, ppa_name)
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
@@ -34,7 +34,8 @@ class TestPackageLocation(unittest.TestCase):
     def testSetupLocationForPPA(self):
         """`PackageLocation` for PPA archives."""
         location = self.getPackageLocation(purpose=ArchivePurpose.PPA,
-                                           person_name='cprov')
+                                           person_name='cprov',
+                                           ppa_name="ppa")
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -70,7 +71,8 @@ class TestPackageLocation(unittest.TestCase):
             PackageLocationError,
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
-            person_name='beeblebrox')
+            person_name='beeblebrox',
+            ppa_name="ppa")
 
     def testSetupLocationUnknownPPA(self):
         """`PackageLocationError` is raised on unknown PPA."""
@@ -78,7 +80,8 @@ class TestPackageLocation(unittest.TestCase):
             PackageLocationError,
             self.getPackageLocation,
             purpose=ArchivePurpose.PPA,
-            person_name='kiko')
+            person_name='kiko',
+            ppa_name="ppa")
 
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the
@@ -88,7 +91,8 @@ class TestPackageLocation(unittest.TestCase):
             self.getPackageLocation,
             distribution_name='ubuntutest',
             purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov',
+            ppa_name="ppa")
 
     def testComparison(self):
         """Check if PackageLocation objects can be compared."""
@@ -124,7 +128,7 @@ class TestPackageLocation(unittest.TestCase):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov', ppa_name="ppa")
         self.assertNotEqual(location_cprov_ppa, location_ubuntutest)
 
         location_ubuntu_partner = self.getPackageLocation(
@@ -157,7 +161,7 @@ class TestPackageLocation(unittest.TestCase):
 
         location_cprov_ppa = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PPA,
-            person_name='cprov')
+            person_name='cprov', ppa_name="ppa")
         self.assertEqual(
             str(location_cprov_ppa),
             'cprov: hoary-RELEASE')
