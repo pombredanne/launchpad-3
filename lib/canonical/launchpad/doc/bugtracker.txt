@@ -295,3 +295,50 @@ We will forge some BugMessage records before trying again:
     * bug: 2
     - remote bug: 42
     - message subject: You are Number 4.
+
+
+== Filing a bug on the remote tracker ==
+
+The IBugTracker interface defines a method, getBugFilingLink(), which
+returns the URL of the bug filing form on the remote bug tracker. It
+accepts a parameter, remote_product_name, which is the name of the
+product on the remote tracker and is used to ensure that the bug filing
+form is set to file a bug on the correct remote product.
+
+    >>> print mozilla_bugzilla.getBugFilingLink('testproduct')
+    https://bugzilla.mozilla.org/enter_bug.cgi?product=testproduct
+
+Depending on the bugtrackertype of the BugTracker instance, a different
+URL will be returned.
+
+    >>> print debbugs.getBugFilingLink('testproduct')
+    Foo
+
+    >>> example_roundup = factory.makeBugTracker(BugTrackerType.ROUNDUP)
+    >>> print example_roundup.getBugFilingLink('testproduct')
+
+    >>> example_trac = factory.makeBugTracker(BugTrackerType.TRAC)
+    >>> print example_trac.getBugFilingLink('testproduct')
+
+    >>> example_sourceforge = factory.makeBugTracker(
+    ...     BugTrackerType.SOURCEFORGE)
+    >>> print example_sourceforge.getBugFilingLink('testproduct')
+
+    >>> example_mantis = factory.makeBugTracker(BugTrackerType.MANTIS)
+    >>> print example_mantis.getBugFilingLink('testproduct')
+
+    >>> example_rt = factory.makeBugTracker(BugTrackerType.RT)
+    >>> print example_rt.getBugFilingLink('testproduct')
+
+    >>> example_savane = factory.makeBugTracker(BugTrackerType.SAVANE)
+    >>> print example_savane.getBugFilingLink('testproduct')
+
+    >>> example_phpproject = factory.makeBugTracker(BugTrackerType.PHPPROJECT)
+    >>> print example_phpproject.getBugFilingLink('testproduct')
+
+The EMAILADDRESS BugTrackerType is a special case and returns None.
+
+    >>> example_emailaddress = factory.makeBugTracker(
+    ...     BugTrackerType.EMAILADDRESS)
+    >>> print example_emailaddress.getBugFilingLink('testproduct')
+    None
