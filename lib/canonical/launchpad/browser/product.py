@@ -150,7 +150,6 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid product name
         product = self.context.getByName(name)
         if product is None:
             raise NotFoundError(name)

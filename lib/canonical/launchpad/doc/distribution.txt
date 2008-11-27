@@ -28,9 +28,23 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
-Or, to grab one by name, use:
+Or, to grab one by name, use either getByName() or __getitem__().  They both
+can be used to look up distributions by their aliases too.
 
     >>> gentoo = distroset.getByName("gentoo")
+    >>> gentoo.name
+    u'gentoo'
+    >>> distroset["gentoo"].name
+    u'gentoo'
+
+    # Need to login as an LP admin to set a project's aliases.
+    >>> login('foo.bar@canonical.com')
+    >>> gentoo.setAliases(['jackass'])
+    >>> login(ANONYMOUS)
+    >>> distroset['jackass'].name
+    u'gentoo'
+    >>> distroset.getByName('jackass').name
+    u'gentoo'
 
 Let's make sure a distribution object properly implements its interfaces.
 

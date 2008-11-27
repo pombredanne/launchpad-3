@@ -872,15 +872,12 @@ class Person(
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
-
         if product_name is None or product_name == '+junk':
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))
         else:
-            product = Product.selectOneBy(name=product_name)
+            product = getUtility(IPillarNameSet).getByName(product_name)
             if product is None:
                 return None
             return Branch.selectOneBy(owner=self, product=product,

@@ -51,9 +51,22 @@ Let's call that evo from now onwards just so the tests can be clearer.
 
     >>> evo = p
 
-We'll also fetch the a52dec product from the database.
+To fetch a product we use IProductSet.getByName() or IProductSet.__getitem__.
+The former will, by default, reeturn active and inactive products, while the
+later returns only active ones. Both can be used to look up products by their
+aliases, though.
 
     >>> a52dec = productset.getByName('a52dec')
+    >>> a52dec.name
+    u'a52dec'
+    >>> productset['a52dec'].name
+    u'a52dec'
+    
+    >>> a52dec.setAliases(['a51dec'])
+    >>> productset['a51dec'].name
+    u'a52dec'
+    >>> productset.getByName('a51dec').name
+    u'a52dec'
 
 Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:

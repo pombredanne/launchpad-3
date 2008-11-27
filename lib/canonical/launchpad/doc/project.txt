@@ -29,20 +29,32 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
 
 == Looking up existing projects ==
 
-We can get a project using IProjectSet, by supplying the project's name.
+To fetch a project we use IProjectSet.getByName() or IProjectSet.__getitem__.
+The former will, by default, reeturn active and inactive projects, while the
+latter returns only active ones. Both can be used to look up projects by their
+aliases, though.
 
     >>> gnome = projectset['gnome']
     >>> gnome.name
     u'gnome'
+    >>> projectset.getByName('gnome').name
+    u'gnome'
 
-    >>> verifyObject(IProject, gnome)
-    True
+    # Need to login as an LP admin to set a project's aliases.
+    >>> login('foo.bar@canonical.com')
+    >>> gnome.setAliases(['dwarf'])
+    >>> login(ANONYMOUS)
+    >>> projectset['dwarf'].name
+    u'gnome'
+    >>> projectset.getByName('dwarf').name
+    u'gnome'
 
 Make sure that a project provides the IProject interface.
 
+    >>> verifyObject(IProject, gnome)
+    True
     >>> IProject.providedBy(gnome)
     True
-
 
 If there is no project with the specified name, a NotFoundError will be
 raised.
@@ -70,7 +82,6 @@ the project.
 
 The inactive project will still be accessible using
 IProjectSet.getByName(), though.
-But it should be shown using the getByName()
 
     >>> gnome = getUtility(IProjectSet).getByName('gnome')
     >>> gnome.name
