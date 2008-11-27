@@ -102,7 +102,7 @@ class TestPopulateArchiveScript(unittest.TestCase):
 
         # Check for zero exit code.
         self.assertEqual(
-            return_code, 0, "%s, %s, %s" % (return_code, out, err))
+            return_code, 0, "=> %s\n=> %s\n=> %s\n" % (return_code, out, err))
 
         # Make sure the copy archive with the desired name was
         # created
