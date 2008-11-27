@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Functions to copy translations from parent to child distroseries."""
 
@@ -43,7 +43,7 @@ def _copy_active_translations_to_new_series(
     """
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
-        sqlvalues(child, child.parent))
+        sqlvalues(child, child.parent_series))
 
     # Because this function only deals with the case where "child" is a new
     # distroseries without any existing translations attached, it can afford
