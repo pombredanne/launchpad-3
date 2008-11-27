@@ -29,8 +29,9 @@
          2005-09-16
        </span>
        <span tal:condition="view/wasDeleted">(Reason:
-         <span tal:replace="view/removal_comment/fmt:shorten/60">sample reason.
-         </span>)
+         <tal:removal-comment tal:replace="view/removal_comment/fmt:shorten/60">
+           sample reason.
+         </tal:removal-comment>)
        </span>
      </td>
   </tr>

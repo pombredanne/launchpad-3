@@ -28,16 +28,23 @@ and properties for querying the publishing history record:
     ...    (foo_pub, LaunchpadTestRequest()), name="+listing-compact")
     >>> view.wasDeleted()
     True
+    >>> view.context.removal_comment
+    u'I do not like it.'
     >>> view.removal_comment
     u'I do not like it.'
 
 If the publishing record does not include a removal comment, then
-the view property returns 'None provided.':
+the view property returns 'None provided.' (Note, setting the removal
+comment requires going through the secure record and flushing before
+it will be reflected in the normal record)
 
-    >>> view = getMultiAdapter(
-    ...    (alsa_pub, LaunchpadTestRequest()), name="+listing-compact")
-    >>> view.wasDeleted()
-    False
+    >>> login('foo.bar@canonical.com')
+    >>> foo_pub.secure_record.removal_comment = None
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+    >>> print view.context.removal_comment
+    None
     >>> view.removal_comment
     u'None provided.'
 
