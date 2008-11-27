@@ -1532,8 +1532,10 @@ class Person(
         return EmailAddress.select(query)
 
     @property
-    def allwikis(self):
-        return getUtility(IWikiNameSet).getAllWikisByPerson(self)
+    def wiki_names(self):
+        """See `IPerson`."""
+        result =  Store.of(self).find(WikiName, WikiName.person == self.id)
+        return result.order_by(WikiName.wiki, WikiName.wikiname)
 
     @property
     def title(self):
@@ -3608,10 +3610,6 @@ class WikiNameSet:
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
-
-    def getAllWikisByPerson(self, person):
-        """See `IWikiNameSet`."""
-        return WikiName.selectBy(person=person)
 
     def get(self, id):
         """See `IWikiNameSet`."""

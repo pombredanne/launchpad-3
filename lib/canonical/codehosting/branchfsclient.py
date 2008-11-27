@@ -64,7 +64,7 @@ class CachingAuthserverClient:
         """
         deferred = defer.maybeDeferred(
             self._authserver.callRemote, 'createBranch', self._user_id,
-            owner, product, branch)
+            '/~%s/%s/%s' % (owner, product, branch))
 
         def clear_cache(branch_id):
             # Clear the cache for this branch. We *could* populate it with

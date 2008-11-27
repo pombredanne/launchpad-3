@@ -2878,7 +2878,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
 
-        for w in context.allwikis:
+        for w in context.wiki_names:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to

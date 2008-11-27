@@ -418,20 +418,57 @@ any package ever published in the context PPA.
 
 == Empty PPAs ==
 
-An empty PPA lists no packages and uses apt sources lines for the
-distribution's current release, as a guess.
+An empty PPA doesn't list any packages and it also doesn't present the
+'apt sources lines ' widget and the repository 'URL' since they would
+link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
+    This archive is public
+    PPA for No Privileges Person
     URL: http://ppa.launchpad.dev/no-priv/ubuntu
-    ...
-    deb http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    ...
+    I am not allowed to say, I have no privs.
+    Packages
     This PPA does not contain any packages yet.
     ...
+
+Note that the 'URL' page section contains the URL to the repository
+but it's not linkified.
+
+    >>> anon_browser.getLink("http://ppa.launchpad.dev/no-priv/ubuntu")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The "sources list" widget isn't presented for empty PPAs either.
+
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print sources_list
+    None
+
+Users will only be able to see it for PPAs that have, at least, one
+published source.
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print extract_text(sources_list)
+    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+
+Also the repository URL is an actual link.
+
+    >>> print anon_browser.getLink(
+    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ubuntu
 
 
 == PPA Builds ==
@@ -658,8 +695,6 @@ can check how it looks.
     ...     "sabdfl", "breezy-autotest", "commercialpackage", "1.0-1")
 
     >>> publishToTeamPPA(team_name="ubuntu-team")
-
-    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
 
     >>> logout()
     >>> transaction.commit()
