@@ -16,6 +16,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionLanguagePackAdminView',
     'DistributionNavigation',
+    'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
     'DistributionPPASearchView',
     'DistributionSeriesMirrorsRSSView',
@@ -47,6 +48,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
@@ -536,34 +538,17 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
+class DistributionPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for Distribution"""
+
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchSourcePackages(self.text)
+
+
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
                        UsesLaunchpadMixin):
     """Default Distribution view class."""
-
-    def initialize(self):
-        """Initialize template control fields.
-
-        Also check if the search action was invoked and setup a batched
-        list with the results if necessary.
-        """
-        # initialize control fields
-        self.matches = 0
-
-        # check if the user invoke search, if not dismiss
-        self.text = self.request.form.get('text', None)
-        if not self.text:
-            self.search_requested = False
-            return
-        self.search_requested = True
-
-        results = self.search_results()
-        self.matches = len(results)
-        if self.matches > 5:
-            self.detailed = False
-        else:
-            self.detailed = True
-
-        self.batchnav = BatchNavigator(results, self.request)
 
     @cachedproperty
     def translation_focus(self):
@@ -575,14 +560,6 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
             return self.context.currentseries
         else:
             return self.context.translation_focus
-
-    def search_results(self):
-        """Return IDistributionSourcePackages according given a text.
-
-        Try to find the source packages in this distribution that match
-        the given text.
-        """
-        return self.context.searchSourcePackages(self.text)
 
     def secondary_translatable_serieses(self):
         """Return a list of IDistroSeries that aren't the translation_focus.
