@@ -21,9 +21,16 @@ else:
     dbuser = None
 
 import transaction
+
 from zope.component import getUtility
+from zope.configuration import xmlconfig
+
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+print 'execute_zcml_for_scripts()...'
 execute_zcml_for_scripts()
+print 'xmlconfig.file()...'
+xmlconfig.file('script.zcml', execute=True)
 
 #
 # setup connection to the db
@@ -48,7 +55,9 @@ def switch_db_user(dbuser, commit_first=True):
 # pylint: disable-msg=W0614,W0401
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing.systemdocs import (
+    create_initialized_view, create_view)
 
 from zope.interface.verify import verifyObject
 
@@ -57,23 +66,25 @@ import rlcompleter
 readline.parse_and_bind('tab: complete')
 
 # Mimic the real interactive interpreter's loading of any $PYTHONSTARTUP file.
+print 'Reading $PYTHONSTARTUP...'
 startup = os.environ.get('PYTHONSTARTUP')
 if startup:
     execfile(startup)
 
-# Bring in useful bits of Storm
+# Bring in useful bits of Storm.
 from storm.locals import *
 from storm.expr import *
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
         SLAVE_FLAVOR, DEFAULT_FLAVOR)
+
+print 'Initializing storm...'
 store_selector = getUtility(IStoreSelector)
 store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
 
-#
-# Let's get a few handy objects going
-#
+# Let's get a few handy objects going.
 if dbuser == 'launchpad':
+    print 'Creating a few handy objects...'
     d = Distribution.get(1)
     p = Person.get(1)
     ds = DistroSeries.get(1)
@@ -83,3 +94,7 @@ if dbuser == 'launchpad':
     b1 = Bug.get(1)
     s = Specification.get(1)
     q = Question.get(1)
+
+# Having a factory instance is handy.
+print 'Creating the factory...'
+factory = LaunchpadObjectFactory()
