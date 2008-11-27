@@ -26,7 +26,7 @@ class Diff(SQLBase):
 
     implements(IDiff)
 
-    diff_text = ForeignKey(foreignKey='LibraryFileAlias', notNull=True)
+    diff_text = ForeignKey(foreignKey='LibraryFileAlias')
 
     diff_lines_count = IntCol()
 
@@ -35,6 +35,14 @@ class Diff(SQLBase):
     added_lines_count = IntCol()
 
     removed_lines_count = IntCol()
+
+    @property
+    def text(self):
+        if self.diff_text is None:
+            return ''
+        else:
+            self.diff_text.open()
+            return self.diff_text.read()
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree):
@@ -58,10 +66,10 @@ class Diff(SQLBase):
         :size: The number of bytes in the diff text.
         """
         if size == 0:
-            diff_content = StringIO(' ')
-            size = 1
-        diff_text = getUtility(ILibraryFileAliasSet).create('diff.diff',
-            size, diff_content, 'text/x-diff')
+            diff_text = None
+        else:
+            diff_text = getUtility(ILibraryFileAliasSet).create(
+            'static.diff', size, diff_content, 'text/x-diff')
         return klass(diff_text=diff_text)
 
 
