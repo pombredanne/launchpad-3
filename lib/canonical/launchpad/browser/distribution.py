@@ -638,12 +638,14 @@ class DistributionPPASearchView(LaunchpadView):
     @property
     def number_of_ppa_sources(self):
         """The number of sources published across all PPAs."""
-        return getUtility(IArchiveSet).number_of_ppa_sources
+        return getUtility(IArchiveSet).getNumberOfPPASourcesForDistribution(
+            self.context)
 
     @property
     def number_of_ppa_binaries(self):
         """The number of binaries published across all PPAs."""
-        return getUtility(IArchiveSet).number_of_ppa_binaries
+        return getUtility(IArchiveSet).getNumberOfPPABinariesForDistribution(
+            self.context)
 
     @property
     def latest_ppa_source_publications(self):
