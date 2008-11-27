@@ -1229,7 +1229,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cur = cursor()
         cur.execute("""
             SELECT SPN.id, SPN.name,
-            COUNT(DISTINCT Bugtask.bug) AS total_bugs,
+            COUNT(DISTINCT Bugtask.bug) AS open_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
             COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
@@ -1261,7 +1261,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND spn.name NOT IN %(excluded_packages)s
             GROUP BY SPN.id, SPN.name
             HAVING COUNT(DISTINCT Bugtask.bug) > 0
-            ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
+            ORDER BY open_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
@@ -1315,7 +1315,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
         results = []
-        for (spn_id, spn_name, total_bugs, bugs_triaged,
+        for (spn_id, spn_name, open_bugs, bugs_triaged,
              bugs_affecting_upstream, bugs_with_upstream_bugwatch) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
@@ -1325,7 +1325,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             else:
                 product = None
             results.append(
-                (dsp, product, total_bugs, bugs_triaged,
+                (dsp, product, open_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
