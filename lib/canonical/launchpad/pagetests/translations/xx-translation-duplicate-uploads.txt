@@ -1,0 +1,181 @@
+Duplicate Uploads
+=================
+
+Users may choose to upload the same file name more than once. This may be
+done for the following reasons:
+
+* The upload is an update of an already uploaded file.
+* The upload is to a different template within the same productseries.
+  (Although this doesn't make too much sense as different templates should
+  have different file names on the user's local system.)
+* The user made an error.
+
+The upload logic discern between the first two cases and handles the error
+case gracefully.
+
+The first case is a common use case. The user wants to update the date
+of the file in the import queue as long as it has not been imported. This
+requires the first version of the file being uploaded first.
+
+  >>> from StringIO import StringIO
+  >>> evo_owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+pots/evolution-2.2/+upload')
+  >>> evo_owner_browser.getControl('File').add_file(StringIO('# foo\n'),
+  ...     'text/x-gettext-translation-template', 'evolution.pot')
+  >>> evo_owner_browser.getControl('Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+upload'
+
+The upload appears as a new entry at the end of the import queue.
+
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+imports')
+  >>> print extract_text(first_tag_by_class(anon_browser.contents,
+  ...     'batch-navigation-index'))
+  1
+  &rarr;
+  3
+  of
+  3
+  results
+  >>> print extract_text(find_tag_by_id(anon_browser.contents,
+  ...     'import-entries-list'))
+  po...
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2" in Evolution trunk
+
+Repeating the same upload with change file content.
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+pots/evolution-2.2/+upload')
+  >>> evo_owner_browser.getControl('File').add_file(StringIO('# bar\n'),
+  ...     'text/x-gettext-translation-template', 'evolution.pot')
+  >>> evo_owner_browser.getControl('Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+upload'
+
+The queue does not change.
+
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+imports')
+  >>> print extract_text(first_tag_by_class(anon_browser.contents,
+  ...     'batch-navigation-index'))
+  1
+  &rarr;
+  3
+  of
+  3
+  results
+  >>> print extract_text(find_tag_by_id(anon_browser.contents,
+  ...     'import-entries-list'))
+  po...
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2" in Evolution trunk
+
+Next: upload the same file to a different template.
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+pots/evolution-2.2-test/+upload')
+  >>> evo_owner_browser.getControl('File').add_file(StringIO('# foo\n'),
+  ...     'text/x-gettext-translation-template', 'evolution.pot')
+  >>> evo_owner_browser.getControl('Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2-test/+upload'
+
+The upload appears as a new entry at the end of the import queue.
+
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+imports')
+  >>> print extract_text(first_tag_by_class(anon_browser.contents,
+  ...     'batch-navigation-index'))
+  1
+  &rarr;
+  4
+  of
+  4
+  results
+  >>> print extract_text(find_tag_by_id(anon_browser.contents,
+  ...     'import-entries-list'))
+  po...
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2" in Evolution trunk
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2-test" in Evolution trunk
+
+Finally: upload the same file to the productseries.
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+  >>> evo_owner_browser.getControl('File').add_file(StringIO('# foo\n'),
+  ...     'text/x-gettext-translation-template', 'evolution.pot')
+  >>> evo_owner_browser.getControl('Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2-test/+upload'
+
+The upload appears as a new entry at the end of the import queue but has
+no upload target-
+
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+imports')
+  >>> print extract_text(first_tag_by_class(anon_browser.contents,
+  ...     'batch-navigation-index'))
+  1
+  &rarr;
+  5
+  of
+  5
+  results
+  >>> print extract_text(find_tag_by_id(anon_browser.contents,
+  ...     'import-entries-list'))
+  po...
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2" in Evolution trunk
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
+  Will be imported into
+  Template "evolution-2.2-test" in Evolution trunk
+  evolution.pot in
+  Evolution Series: trunk
+  Needs Review
+  Uploaded by
+  Sample Person
+  on...
