@@ -374,7 +374,6 @@ class BranchMirrorer(object):
                 Branch.open(stacked_on_url)
             except errors.NotBranchError:
                 raise StackedOnBranchNotFound()
-        # XXX check if we still need this
         if isinstance(source_branch, LoomSupport):
             # Looms suck.
             revision_id = None
