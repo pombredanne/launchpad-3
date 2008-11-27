@@ -103,8 +103,11 @@ asserts the archive is indeed a COPY and if the name is valid.
 We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> factory = LaunchpadObjectFactory()
+    >>> rebuild_owner = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
 Only 'valid' (traversable) names can be set.
@@ -121,6 +124,28 @@ Valid names work as expected.
     there-we-go
 
     >>> login(ANONYMOUS)
+
+Please note that copy archive titles include the owner name as well as
+the archive's name.
+
+    >>> rebuild_archive.title
+    u'Copy archive there-we-go for J\xc3\xbcrgen'
+
+The "is_copy" property allows us to ask an archive whether it's a copy
+archive.
+
+    >>> rebuild_archive.is_copy
+    True
+
+    >>> cprov_archive.is_copy
+    False
+
+Uploads to copy archives are not allowed.
+
+    >>> rebuild_archive.canUpload(cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Uploads to copy archives are not allowed.
 
 
 == Published Source and Binary Lookup ==
@@ -1200,7 +1225,7 @@ including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    14
+    15
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1724,4 +1749,3 @@ Copy package3 1.0 explicitly:
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
-

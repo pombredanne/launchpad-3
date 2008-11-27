@@ -9,21 +9,17 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
-    SQLObjectNotFound)
+    BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
+from canonical.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     quote, quote_like, SQLBase, sqlvalues, cursor)
-
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
-
 from canonical.launchpad.database.bugtarget import BugTargetBase
-
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
@@ -67,24 +63,41 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.url import urlparse
-
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchivePermissionSet,
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
-    ISourcePackageName, IStructuralSubscriptionTarget, MirrorContent,
-    MirrorStatus, NotFoundError, PackagePublishingStatus, PackageUploadStatus,
-    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionSet)
+from canonical.launchpad.interfaces.distributionmirror import (
+    MirrorContent, MirrorStatus)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.packaging import PackagingType
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName)
+from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
 from canonical.launchpad.interfaces.publishing import active_publishing_status
-
-from canonical.archivepublisher.debversion import Version
-
 from canonical.launchpad.validators.name import sanitize_name, valid_name
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.url import urlparse
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -202,7 +215,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return Archive.select("""
             Distribution = %s AND
-            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
+            Purpose IN %s""" % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES)
             )
 
     @cachedproperty
