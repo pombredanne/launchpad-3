@@ -12,21 +12,23 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.revisionspec import RevisionSpec
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from canonical.database.sqlbase import SQLBase
 
+from canonical.launchpad.interfaces.diff import (
+    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob,
+    IStaticDiffJobSource)
 from canonical.launchpad.database.job import Job
-from canonical.launchpad.interfaces import (
-    IDiff, IStaticDiff, IStaticDiffJob, IStaticDiffJobSource)
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 class Diff(SQLBase):
+    """See `IDiff`."""
 
     implements(IDiff)
 
-    diff_text = ForeignKey(foreignKey='LibraryFileAlias', notNull=True)
+    diff_text = ForeignKey(foreignKey='LibraryFileAlias')
 
     diff_lines_count = IntCol()
 
@@ -36,25 +38,49 @@ class Diff(SQLBase):
 
     removed_lines_count = IntCol()
 
+    @property
+    def text(self):
+        if self.diff_text is None:
+            return ''
+        else:
+            self.diff_text.open()
+            return self.diff_text.read()
+
     @classmethod
     def fromTrees(klass, from_tree, to_tree):
+        """Create a Diff from two Bazaar trees.
+
+        :from_tree: The old tree in the diff.
+        :to_tree: The new tree in the diff.
+        """
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
         size = diff_content.tell()
-        if size == 0:
-            diff_content.write(' ')
-            size = 1
         diff_content.seek(0)
-        x = getUtility(ILibraryFileAliasSet).create('meeple',
-            size, diff_content, 'text/x-diff')
-        return klass(diff_text=x)
+        return klass.fromFile(diff_content, size)
+
+    @classmethod
+    def fromFile(klass, diff_content, size):
+        """Create a Diff from a textual diff.
+
+        :diff_content: The diff text
+        :size: The number of bytes in the diff text.
+        """
+        if size == 0:
+            diff_text = None
+        else:
+            diff_text = getUtility(ILibraryFileAliasSet).create(
+            'static.diff', size, diff_content, 'text/x-diff')
+        return klass(diff_text=diff_text)
 
 
 class StaticDiff(SQLBase):
     """A diff from one revision to another."""
 
     implements(IStaticDiff)
+
+    classProvides(IStaticDiffSource)
 
     from_revision_id = StringCol()
 
@@ -64,6 +90,7 @@ class StaticDiff(SQLBase):
 
     @classmethod
     def acquire(klass, from_revision_id, to_revision_id, repository):
+        """See `IStaticDiffSource`."""
         existing_diff = klass.selectOneBy(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id)
         if existing_diff is not None:
@@ -71,6 +98,18 @@ class StaticDiff(SQLBase):
         from_tree = repository.revision_tree(from_revision_id)
         to_tree = repository.revision_tree(to_revision_id)
         diff = Diff.fromTrees(from_tree, to_tree)
+        return klass(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
+            diff=diff)
+
+    @classmethod
+    def acquireFromText(klass, from_revision_id, to_revision_id, text):
+        """See `IStaticDiffSource`."""
+        existing_diff = klass.selectOneBy(
+            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
+        if existing_diff is not None:
+            return existing_diff
+        diff = Diff.fromFile(StringIO(text), len(text))
         return klass(
             from_revision_id=from_revision_id, to_revision_id=to_revision_id,
             diff=diff)

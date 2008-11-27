@@ -7,14 +7,13 @@ __metaclass__ = type
 __all__ = [
     'IDiff',
     'IStaticDiff',
+    'IStaticDiffSource',
     'IStaticDiffJob',
     'IStaticDiffJobSource',
     ]
 
-from zope.schema import (
-    Object, Int, Text, TextLine)
-from zope.interface import (
-    Interface)
+from zope.schema import Object, Int, Text, TextLine
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.job import IJob
@@ -23,6 +22,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 class IDiff(Interface):
     """A diff that is stored in the Library."""
+
+    text = Text(title=_('Textual contents of a diff.'))
 
     diff_text = Object(
         title=_('Content of this diff'), required=True,
@@ -51,6 +52,19 @@ class IStaticDiff(Interface):
 
     def destroySelf():
         """Destroy this object."""
+
+
+class IStaticDiffSource(Interface):
+    """Component that can acquire StaticDiffs."""
+
+    def acquire(from_revision_id, to_revision_id, repository):
+        """Get or create a StaticDiff."""
+
+    def acquireFromText(from_revision_id, to_revision_id, text):
+        """Get or create a StaticDiff from a string.
+
+        If a StaticDiff exists for this revision_id pair, the text is ignored.
+        """
 
 
 class IStaticDiffJob(Interface):

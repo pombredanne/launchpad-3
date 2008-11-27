@@ -206,6 +206,7 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
 
     def useTempDir(self):
+        """Use a temporary directory for this test."""
         tempdir = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tempdir))
         cwd = os.getcwd()
