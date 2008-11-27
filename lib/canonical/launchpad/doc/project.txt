@@ -374,15 +374,7 @@ a project.
 
     >>> from canonical.launchpad.ftests.test_project_milestone import (
     ...     ProjectMilestoneTest)
-    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    ...     IBugTaskSet, IProjectSet)
-    >>> def product_milestone_info(milestone_name, product_name):
-    ...     product = productset[product_name]
-    ...     milestone = milestoneset.getByNameAndProduct(
-    ...         milestone_name, product)
-    ...     if milestone:
-    ...         print 'product', product_name, 'visible:', milestone.visible,
-    ...         print 'expected:', milestone.dateexpected
+    >>> from canonical.launchpad.interfaces import IProjectSet
     >>> login('foo.bar@canonical.com')
     >>> test_helper = ProjectMilestoneTest(helper_only=True)
     >>> test_helper.setUpProjectMilestoneTests()
