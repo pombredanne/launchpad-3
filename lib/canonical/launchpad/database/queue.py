@@ -1287,16 +1287,16 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
-    def _checkConflict(self, conflict_source):
-        """Whether a given PackageUploadSource conflict with the context.
+    def _checkConflictWith(self, upload_source):
+        """Whether a given PackageUploadSource conflicts with the context.
 
-        :param conflict_source: a `PackageUploadSource` to be checked
+        :param upload_source: a `PackageUploadSource` to be checked
             against this context.
         :return: True if the checked `PackageUploadSource` contains a
             `SourcePackageRelease` with the same name and version.
              Otherwise, False is returned.
         """
-        conflict_release = conflict_source.sourcepackagerelease
+        conflict_release = upload_source.sourcepackagerelease
         proposed_name = self.sourcepackagerelease.name
         proposed_version = self.sourcepackagerelease.version
 
@@ -1323,8 +1323,8 @@ class PackageUploadSource(SQLBase):
                 if len(list(upload.sources)) > 0]
             # Isolate only conflicting SourcePackageRelease.
             conflicts = [
-                source for source in conflict_candidates
-                if self._checkConflict(source)]
+                upload_source for upload_source in conflict_candidates
+                if self._checkConflictWith(upload_source)]
             # If there are any conflicting SourcePackageRelease the
             # upload cannot be accepted.
             if len(conflicts) > 0:

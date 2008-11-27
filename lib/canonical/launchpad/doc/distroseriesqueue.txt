@@ -709,17 +709,17 @@ Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
   pmount  0.1-1  i386
 
 We will setup a very peculiar environment to test this aspect of
-`getQueueItems`. First we will include another a unmatching source
+`getQueueItems`. First we will include another a non-matching source
 version of pmount (0.1-2) into the binary pmount upload we already
 have in the sampledata.
 
   >>> [binary_queue] = queue_items
-  >>> unmatching_pmount = ubuntu.getSourcePackage('pmount')['0.1-2']
+  >>> non_matching_pmount = ubuntu.getSourcePackage('pmount')['0.1-2']
   >>> unused = binary_queue.addSource(
-  ...    unmatching_pmount.sourcepackagerelease)
+  ...    non_matching_pmount.sourcepackagerelease)
 
-It continues to be returned when we query the queue for 'pmount
-0.1-1', via the existing binary path.
+'pmount 0.1-1' binary upload continues to be returned when we query
+the queue for 'pmount 0.1-1', via the existing binary path.
 
   >>> queue_items = breezy_autotest.getQueueItems(
   ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
