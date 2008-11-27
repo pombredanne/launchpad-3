@@ -91,8 +91,8 @@ class ArchivePopulator(SoyuzScript):
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
             copy_archive = getUtility(IArchiveSet).new(
-                ArchivePurpose.COPY, registrant, to_archive, to_distribution,
-                reason)
+                ArchivePurpose.COPY, registrant, to_archive,
+                the_destination.distribution, reason)
             the_destination.archive = copy_archive
         else:
             raise SoyuzScriptError(
@@ -102,7 +102,7 @@ class ArchivePopulator(SoyuzScript):
         # archive population parameters in the database.
         pcr = getUtility(IPackageCopyRequestSet).new(
             the_origin, the_destination, registrant,
-            copy_binaries=include_binaries, reason=reason)
+            copy_binaries=include_binaries, reason=unicode(reason))
 
         # Clone the source packages. We currently do not support the copying
         # of binary packages. It's a forthcoming feature.
@@ -121,18 +121,10 @@ class ArchivePopulator(SoyuzScript):
         if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(
                 "error: origin distribution not specified.")
-        if (not_specified(self.options.from_suite) and
-            not_specified(self.options.from_component)):
-            raise SoyuzScriptError(
-                "error: must specify either origin suite or component.")
 
         if not_specified(self.options.to_distribution):
             raise SoyuzScriptError(
                 "error: destination distribution not specified.")
-        if (not_specified(self.options.to_suite) and
-            not_specified(self.options.to_component)):
-            raise SoyuzScriptError(
-                "error: must specify either destination suite or component.")
 
         if not_specified(self.options.to_user):
             raise SoyuzScriptError("error: copy archive owner not specified.")
@@ -162,6 +154,8 @@ class ArchivePopulator(SoyuzScript):
         """Parse command line arguments for copy archive creation/population.
         """
         SoyuzScript.add_my_options(self)
+
+        self.parser.remove_option('-a')
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
