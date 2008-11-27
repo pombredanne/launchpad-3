@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 class IDiff(Interface):
     """A diff that is stored in the Library."""
 
+    text = Text(title=_('Textual contents of a diff.'))
+
     diff_text = Object(
         title=_('Content of this diff'), required=True,
         schema=ILibraryFileAlias)
