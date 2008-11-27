@@ -251,8 +251,9 @@ class TestBranchDeletion(TestCaseWithFactory):
         """A branch that has some revisions can be deleted."""
         revision = self.factory.makeRevision()
         self.branch.createBranchRevision(0, revision)
-        # Need to commit the addition to make sure that appropiate DB state is
-        # there.
+        # Need to commit the addition to make sure that the branch revisions
+        # are recorded as there and that the appropriate deferred foreign keys
+        # are set up.
         transaction.commit()
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")

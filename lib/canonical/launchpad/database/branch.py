@@ -698,8 +698,8 @@ class Branch(SQLBase):
         if self.canBeDeleted():
             # BranchRevisions are taken care of a cascading delete
             # in the database.
-            # XXX: TimPenhey 28-Nov-2008, bug 301595
-            # cascading delete removed by accident, adding explicit delte
+            # XXX: TimPenhey 28-Nov-2008, bug 302956
+            # cascading delete removed by accident, adding explicit delete
             # back in temporarily.
             Store.of(self).find(
                 BranchRevision, BranchRevision.branch == self).remove()
