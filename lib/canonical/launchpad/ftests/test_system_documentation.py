@@ -88,6 +88,13 @@ def uploaderTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
+
+def archivepublisherSetUp(test):
+    """Setup the archive publisher script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+
+
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
@@ -364,6 +371,10 @@ special = {
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
+            ),
+    'archive-signing.txt': LayeredDocFileSuite(
+            '../doc/archive-signing.txt',
+            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
