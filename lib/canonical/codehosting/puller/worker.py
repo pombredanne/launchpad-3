@@ -204,7 +204,11 @@ class BranchPolicy:
         stacked_on_url = get_stacked_on_url(source_branch)
         if stacked_on_url is None:
             return None
-        elif '://' in stacked_on_url: # XXX explain this!
+        elif '://' in stacked_on_url:
+            # If we've gotten this far, stacked_on_url is "safe" (i.e. it's a
+            # Launchpad URL of some form or other), so we can set the stack on
+            # url of the destination branch to be the most access-method
+            # compatible '/~user/project/branch' string.
             return URI(stacked_on_url).path
         else:
             return stacked_on_url
@@ -485,7 +489,14 @@ class HostedBranchPolicy(BranchPolicy):
             return True
 
     def _adjustPathURL(self, path):
-        """Given an absolute path """
+        """Given a branch unique name, return the best stacking URL for it.
+
+        If the path represents a hosted branch, then we should return a
+        lp-hosted:/// URL.  If it's mirrored, we should return a
+        lp-mirrored:/// URL.  We tell the difference by trying to open BzrDirs
+        at the two locations -- only going as far as BzrDir to avoid getting
+        into the mess of branch references and stacked branches.
+        """
         hosted_url = 'lp-hosted://' + path
         if self._bzrdirExists(hosted_url):
             return hosted_url
@@ -498,7 +509,25 @@ class HostedBranchPolicy(BranchPolicy):
         """See `BranchPolicy.transformFallbackLocation`.
 
         For hosted branches, the situation is complicated.
-        XXX much more here!
+
+        If the user pushes and the default stacking policy does it's think,
+        the stacked_on_url will be of the form /~user/product/trunk.  If this
+        URL corresponds to a hosted branch, then we want to stack on
+        lp-hosted:///~user/product/trunk, (although the usual URL joining
+        rules would also do the right thing).  If, however, the default stack
+        on branch is mirrored, we need to stack on
+        lp-mirrored:///~user/product/trunk.
+
+        If the user pushes with a command line like::
+
+            $ bzr push lp:~user/project/branch --stacked-on \
+                lp:~user/project/stack-on
+
+        Then the stacked_on_url will be a full bzr+ssh or http URL.  We treat
+        such URLs as if they were just the '/~user/project/branch' part, and
+        process this as above.
+
+        All other URLs are forbidden.
         """
         if '://' not in url:
             return self._adjustPathURL(url), False
