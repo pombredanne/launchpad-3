@@ -36,6 +36,12 @@ class BlacklistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        This class is not used for testing our smarter stacking features so we
+        just do the simplest thing: return the URL that would be used anyway
+        and don't check it.
+        """
         return urlutils.join(branch.base, url), False
 
 
@@ -63,6 +69,11 @@ class WhitelistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        Here we return the URL that would be used anyway and optionally check
+        it.
+        """
         return urlutils.join(branch.base, url), self.check
 
 

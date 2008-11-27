@@ -264,7 +264,8 @@ class TestBranchPuller(PullerBranchTestCase):
 
         This creates a database branch on a product that allows default
         stacking, makes it the default stacked-on branch for that product,
-        then creates a Bazaar branch for it.
+        creates a Bazaar branch for it and pulls it over into the mirrored
+        area.
 
         :return: `IBranch`.
         """
@@ -281,8 +282,7 @@ class TestBranchPuller(PullerBranchTestCase):
             self.pushBranch(default_branch)
             puller_type = 'upload'
         elif branch_type == BranchType.MIRRORED:
-            tree = self.make_branch_and_tree('.', format='1.6')
-            tree.commit('rev1')
+            tree = self.make_branch_and_tree('.')
             default_branch.url = self.serveOverHTTP()
             default_branch.requestMirror()
             puller_type = 'mirror'
