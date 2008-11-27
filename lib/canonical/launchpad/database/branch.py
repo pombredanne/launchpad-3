@@ -63,7 +63,7 @@ from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
@@ -1022,7 +1022,10 @@ class BranchSet:
         """See `IBranchSet`."""
         assert not url.endswith('/')
         schemes = ('http', 'sftp', 'bzr+ssh')
-        uri = URI(url)
+        try:
+            uri = URI(url)
+        except InvalidURIError:
+            return None
         codehosting_host = URI(config.codehosting.supermirror_root).host
         if uri.scheme in schemes and uri.host == codehosting_host:
             branch = self.getByUniqueName(uri.path.lstrip('/'))
