@@ -330,7 +330,7 @@ class BranchMirrorer(object):
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
 
-        This method checks that `url` passes the policies `checkOneURL`
+        This method checks that `url` passes the policy's `checkOneURL`
         method, and if `url` refers to a branch reference, it checks whether
         references are allowed and whether the reference's URL passes muster
         also -- recursively, until a real branch is found.

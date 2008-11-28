@@ -344,7 +344,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # file of the resulting branch will contain the full URL of the
         # manually selected branch.  The puller still manages to open the
         # branch and sets the stacking information of the branch in the
-        # mirrored area to be the most compatible "/" + unique_name form.\ We
+        # mirrored area to be the most compatible "/" + unique_name form.  We
         # have to cheat rather to test this because the full URLs don't work
         # in the environment this test is run in, so we set the stacking URL
         # in the hosted area directory after we've pushed it and then clear it
