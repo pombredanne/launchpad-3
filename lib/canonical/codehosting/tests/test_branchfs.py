@@ -269,6 +269,19 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
             self.assertEqual(True, transport.is_readonly())
         return deferred.addCallback(check_branch_transport)
 
+    def test_createBranch_error_translation(self):
+        # createBranch raises PermissionDenied if we try to create a branch
+        # for, say, a product that doesn't exist.
+        branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
+        deferred = self.server.createBranch(branch_url)
+        deferred = self.assertFailure(deferred, errors.PermissionDenied)
+        def check_exception(exception):
+            self.assertEqual(branch_url, exception.path)
+            self.assertEqual(
+                ": Project 'no-such-product' does not exist.",
+                exception.extra)
+        return deferred.addCallback(check_exception)
+
     def test_get_url(self):
         # The URL of the server is 'lp-<number>:///', where <number> is the
         # id() of the server object. Including the id allows for multiple

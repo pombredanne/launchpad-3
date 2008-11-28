@@ -482,7 +482,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # parent directories", which is just misleading.
             fault = trap_fault(
                 failure, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE)
-            raise PermissionDenied(fault.faultString)
+            raise PermissionDenied(virtual_url_fragment, fault.faultString)
 
         return deferred.addErrback(translate_fault)
 
