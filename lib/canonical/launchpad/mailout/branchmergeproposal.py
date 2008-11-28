@@ -166,6 +166,13 @@ class BMPMailer(BaseMailer):
             headers['In-Reply-To'] = self.merge_proposal.root_message_id
         return headers
 
+    def _addAttachments(self, ctrl):
+        if self.merge_proposal.review_diff is not None:
+            ctrl.addAttachment(
+                self.merge_proposal.review_diff.diff.text,
+                content_type='text/x-diff', inline=True,
+                filename='review.diff')
+
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
         params = BaseMailer._getTemplateParams(self, email)

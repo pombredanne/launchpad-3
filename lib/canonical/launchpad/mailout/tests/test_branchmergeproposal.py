@@ -3,6 +3,7 @@
 """Tests for BranchMergeProposal mailings"""
 
 from unittest import TestLoader, TestCase
+import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -10,6 +11,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
+from canonical.launchpad.database.diff import StaticDiff
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.interfaces import (
@@ -32,12 +34,20 @@ class TestMergeProposalMailing(TestCase):
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
-    def makeProposalWithSubscriber(self):
+    def makeProposalWithSubscriber(self, diff_text=None):
+        if diff_text is not None:
+            review_diff = StaticDiff.acquireFromText(
+                self.factory.getUniqueString('revid'),
+                self.factory.getUniqueString('revid'),
+                diff_text)
+            transaction.commit()
+        else:
+            review_diff = None
         registrant = self.factory.makePerson(
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant,
-            product=product)
+        bmp = self.factory.makeBranchMergeProposal(
+            registrant=registrant, product=product, review_diff=review_diff)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -107,6 +117,17 @@ I think this would be good.
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('<root-message-id>', ctrl.headers['In-Reply-To'])
+
+    def test_generateEmail_attaches_diff(self):
+        bmp, subscriber = self.makeProposalWithSubscriber(
+            diff_text="Fake diff")
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        (attachment,) = ctrl.attachments
+        self.assertEqual('text/x-diff', attachment['Content-Type'])
+        self.assertEqual('inline; filename="review.diff"',
+                         attachment['Content-Disposition'])
+        self.assertEqual('Fake diff', attachment.get_payload(decode=True))
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

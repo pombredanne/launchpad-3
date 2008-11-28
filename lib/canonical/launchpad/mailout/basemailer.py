@@ -60,8 +60,10 @@ class BaseMailer:
         headers = self._getHeaders(email)
         subject = self._getSubject(email)
         body = self._getBody(email)
-        return MailController(
+        ctrl = MailController(
             self.from_address, to_address, subject, body, headers)
+        self._addAttachments(ctrl)
+        return ctrl
 
     def _getSubject(self, email):
         """The subject template expanded with the template params."""
@@ -81,6 +83,9 @@ class BaseMailer:
         if self.message_id is not None:
             headers['Message-Id'] = self.message_id
         return headers
+
+    def _addAttachments(self, ctrl):
+        pass
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
