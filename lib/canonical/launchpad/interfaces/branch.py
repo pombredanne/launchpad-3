@@ -759,7 +759,7 @@ class IBranch(IHasOwner):
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
-                         requested_reviews=None):
+                         review_requests=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -780,7 +780,7 @@ class IBranch(IHasOwner):
             review right now.
         :param initial_comment: An optional initial comment can be added
             when adding the new target.
-        :param requested_reviews: An optional list of (`Person`, review_type).
+        :param review_requests: An optional list of (`Person`, review_type).
         """
 
     def getStackedBranches():

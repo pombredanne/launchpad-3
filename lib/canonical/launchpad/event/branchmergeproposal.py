@@ -5,8 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchMergeProposalApprovedEvent',
-    'BranchMergeProposalRejectedEvent',
+    'BranchMergeProposalStatusChangeEvent',
     'NewBranchMergeProposalEvent',
     'NewCodeReviewCommentEvent',
     'ReviewerNominatedEvent',
@@ -16,30 +15,23 @@ from zope.component.interfaces import ObjectEvent
 from zope.interface import implements
 
 from canonical.launchpad.event.interfaces import (
-    IBranchMergeProposalApprovedEvent,
-    IBranchMergeProposalRejectedEvent,
+    IBranchMergeProposalStatusChangeEvent,
     INewBranchMergeProposalEvent,
     INewCodeReviewCommentEvent,
     IReviewerNominatedEvent,
     )
 
 
-class BranchMergeProposalReviewedEvent(ObjectEvent):
-    """A reviewer has approved or rejected the proposed merge."""
+class BranchMergeProposalStatusChangeEvent(ObjectEvent):
+    """See `IBranchMergeProposalStatusChangeEvent`."""
 
-    def __init__(self, proposal, reviewer):
+    implements(IBranchMergeProposalStatusChangeEvent)
+
+    def __init__(self, proposal, user, from_state, to_state):
         ObjectEvent.__init__(self, proposal)
-        self.reviewer = reviewer
-
-
-class BranchMergeProposalApprovedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalApprovedEvent`."""
-    implements(IBranchMergeProposalApprovedEvent)
-
-
-class BranchMergeProposalRejectedEvent(BranchMergeProposalReviewedEvent):
-    """See `IBranchMergeProposalRejectedEvent`."""
-    implements(IBranchMergeProposalRejectedEvent)
+        self.user = user
+        self.from_state = from_state
+        self.to_state = to_state
 
 
 class NewBranchMergeProposalEvent(ObjectEvent):

@@ -4,8 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'IBranchMergeProposalApprovedEvent',
-    'IBranchMergeProposalRejectedEvent',
+    'IBranchMergeProposalStatusChangeEvent',
     'IJoinTeamEvent',
     'IKarmaAssignedEvent',
     'IMessageHeldEvent',
@@ -72,17 +71,11 @@ class IMessageHeldEvent(ISQLObjectCreatedEvent):
     message_id = Attribute('The Message-ID of the held message.')
 
 
-class IBranchMergeProposalReviewEvent(IObjectEvent):
-    """A reviewer has approved or rejected the proposed merge."""
-    reviewer = Attribute("The person who reviewed the proposal.")
-
-
-class IBranchMergeProposalApprovedEvent(IBranchMergeProposalReviewEvent):
-    """A reviewer has approved the proposed merge."""
-
-
-class IBranchMergeProposalRejectedEvent(IBranchMergeProposalReviewEvent):
-    """A reviewer has rejected the proposed merge."""
+class IBranchMergeProposalStatusChangeEvent(IObjectEvent):
+    """A merge proposal has changed state."""
+    user = Attribute("The user who updated the proposal.")
+    from_state = Attribute("The previous queue_status.")
+    to_state = Attribute("The updated queue_status.")
 
 
 class INewBranchMergeProposalEvent(IObjectEvent):

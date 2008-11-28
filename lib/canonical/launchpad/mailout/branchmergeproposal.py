@@ -104,11 +104,14 @@ class BMPMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
-                 extra_template_params=None):
+                 requested_reviews=None, comment=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.merge_proposal = merge_proposal
-        self.extra_template_params = extra_template_params
+        if requested_reviews is None:
+            requested_reviews = []
+        self.requested_reviews = requested_reviews
+        self.comment = comment
 
     def sendAll(self):
         BaseMailer.sendAll(self)
@@ -129,45 +132,17 @@ class BMPMailer(BaseMailer):
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        # Add any reviewers to the recipients if they are not already there.
-        # Don't add a team reviewer to the recipients as they are only going
-        # to get emails normally if they are subscribed to one of the
-        # branches, and if they are subscribed, they'll be getting this email
-        # aleady.
-        requested_reviews = []
-        for pending_review in merge_proposal.votes:
-            reviewer = pending_review.reviewer
-            if pending_review.review_type is None:
-                requested_reviews.append(reviewer.unique_displayname)
-            else:
-                requested_reviews.append(
-                    "%s: %s" % (reviewer.unique_displayname,
-                                pending_review.review_type))
-            if (reviewer not in recipients) and (not reviewer.is_team):
-                recipients[reviewer] = RecipientReason.forReviewer(
-                    pending_review, reviewer)
+
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
         from_address = klass._format_user_address(from_user)
-
-        extra_template_params = {'reviews': '', 'comment': '', 'gap': ''}
-        if len(requested_reviews) > 0:
-            requested_reviews.insert(0, 'Requested reviews:')
-            extra_template_params['reviews'] = (
-                '\n    '.join(requested_reviews))
-
-        initial_comment = merge_proposal.root_comment
-        if initial_comment is not None:
-            extra_template_params['comment'] = (
-                initial_comment.message.text_contents)
-            if len(requested_reviews) > 0:
-                extra_template_params['gap'] = '\n\n'
 
         return klass(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
-            extra_template_params=extra_template_params)
+            requested_reviews=merge_proposal.votes,
+            comment=merge_proposal.root_comment)
 
     @classmethod
     def forModification(klass, old_merge_proposal, merge_proposal, from_user):
@@ -218,6 +193,7 @@ class BMPMailer(BaseMailer):
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
+        # Expand the requested reviews.
         params = BaseMailer._getTemplateParams(self, email)
         params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
@@ -226,8 +202,28 @@ class BMPMailer(BaseMailer):
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
-            'whiteboard': self.merge_proposal.whiteboard
+            'comment': '',
+            'gap': '',
+            'reviews': '',
+            'whiteboard': '', # No more whiteboard.
             })
-        if self.extra_template_params is not None:
-            params.update(self.extra_template_params)
+
+        requested_reviews = []
+        for review in self.requested_reviews:
+            reviewer = review.reviewer
+            if review.review_type is None:
+                requested_reviews.append(reviewer.unique_displayname)
+            else:
+                requested_reviews.append(
+                    "%s: %s" % (reviewer.unique_displayname,
+                                review.review_type))
+        if len(requested_reviews) > 0:
+            requested_reviews.insert(0, 'Requested reviews:')
+            params['reviews'] = ('\n    '.join(requested_reviews))
+
+        if self.comment is not None:
+            params['comment'] = (self.comment.message.text_contents)
+            if len(requested_reviews) > 0:
+                params['gap'] = '\n\n'
+
         return params

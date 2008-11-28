@@ -6,6 +6,8 @@ application."""
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IDistribution, IProduct, QuestionAction)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.mailnotification import get_bug_delta
 
 
@@ -287,24 +289,21 @@ def code_review_comment_added(code_review_comment, event):
 
 
 @block_implicit_flushes
-def branch_merge_approved(proposal, event):
+def branch_merge_status_changed(proposal, event):
     """Assign karma to the user who approved the merge."""
     product = proposal.source_branch.product
-    user = event.reviewer
+    user = event.user
 
-    if user == proposal.registrant:
-        user.assignKarma('branchmergeapprovedown', product=product)
+    if event.to_state == BranchMergeProposalStatus.CODE_APPROVED:
+        if user == proposal.registrant:
+            user.assignKarma('branchmergeapprovedown', product=product)
+        else:
+            user.assignKarma('branchmergeapproved', product=product)
+    elif event.to_state == BranchMergeProposalStatus.REJECTED:
+        if user == proposal.registrant:
+            user.assignKarma('branchmergerejectedown', product=product)
+        else:
+            user.assignKarma('branchmergerejected', product=product)
     else:
-        user.assignKarma('branchmergeapproved', product=product)
-
-
-@block_implicit_flushes
-def branch_merge_rejected(proposal, event):
-    """Assign karma to the user who rejected the merge."""
-    product = proposal.source_branch.product
-    user = event.reviewer
-
-    if user == proposal.registrant:
-        user.assignKarma('branchmergerejectedown', product=product)
-    else:
-        user.assignKarma('branchmergerejected', product=product)
+        # Only care about approved and rejected right now.
+        pass

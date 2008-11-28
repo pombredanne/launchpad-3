@@ -169,7 +169,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, requested_reviews=None):
+                         initial_comment=None, review_requests=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -221,8 +221,8 @@ class Branch(SQLBase):
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
             date_review_requested = None
 
-        if requested_reviews is None:
-            requested_reviews = []
+        if review_requests is None:
+            review_requests = []
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
@@ -235,7 +235,7 @@ class Branch(SQLBase):
             bmp.createComment(
                 registrant, None, initial_comment, _notify_listeners=False)
 
-        for reviewer, review_type in requested_reviews:
+        for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
                 reviewer, registrant, review_type, _notify_listeners=False)
 

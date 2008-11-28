@@ -34,14 +34,14 @@ from canonical.launchpad.database.codereviewvote import (
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event.branchmergeproposal import (
-    BranchMergeProposalApprovedEvent, BranchMergeProposalRejectedEvent,
-    NewCodeReviewCommentEvent, ReviewerNominatedEvent)
+    BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent)
 from canonical.launchpad.interfaces.branch import IBranchNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
     BranchMergeProposalStatus, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
+    WrongBranchMergeProposal)
 from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
@@ -219,6 +219,19 @@ class BranchMergeProposal(SQLBase):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
                     subscription, recipient, self, rationale)
+        # Add in all the individuals that have been asked for a review,
+        # or who have reviewed.  These people get added to the recipients
+        # with the rationalie of "Reviewer".
+        # Don't add a team reviewer to the recipients as they are only going
+        # to get emails normally if they are subscribed to one of the
+        # branches, and if they are subscribed, they'll be getting this email
+        # aleady.
+        for review in self.votes:
+            reviewer = review.reviewer
+            if not reviewer.is_team:
+                recipients[reviewer] = RecipientReason.forReviewer(
+                    review, reviewer)
+
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -277,6 +290,7 @@ class BranchMergeProposal(SQLBase):
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
+        old_state = self.queue_status
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
@@ -286,18 +300,18 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = UTC_NOW
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
+        notify(BranchMergeProposalStatusChangeEvent(
+                self, reviewer, old_state, next_state))
 
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
-        notify(BranchMergeProposalApprovedEvent(self, reviewer))
 
     def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
-        notify(BranchMergeProposalRejectedEvent(self, reviewer))
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""

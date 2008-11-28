@@ -15,7 +15,8 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposalGetter, is_valid_transition)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event.branchmergeproposal import (
-    NewBranchMergeProposalEvent)
+    NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
@@ -432,6 +433,36 @@ class TestRootComment(TestCase):
         self.assertEqual(comment3, self.merge_proposal.root_comment)
 
 
+class TestCreateCommentNotifications(TestCaseWithFactory):
+    """Test the notifications are raised at the right times."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notify_on_nominate(self):
+        # Ensure that a notification is emitted when a new comment is added.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        commenter = self.factory.makePerson()
+        login_person(commenter)
+        result, event = self.assertNotifies(
+            NewCodeReviewCommentEvent,
+            merge_proposal.createComment,
+            owner=commenter,
+            subject='A review.')
+        self.assertEqual(result, event.object)
+
+    def test_notify_on_nominate_suppressed_if_requested(self):
+        # Ensure that the notification is supressed if the notify listeners
+        # parameger is set to False.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        commenter = self.factory.makePerson()
+        login_person(commenter)
+        self.assertNoNotification(
+            merge_proposal.createComment,
+            owner=commenter,
+            subject='A review.',
+            _notify_listeners=False)
+
+
 class TestMergeProposalAllComments(TestCase):
     """Tester for `BranchMergeProposal.all_comments`."""
 
@@ -583,6 +614,20 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             set([source_subscriber, target_subscriber, dependent_subscriber,
                  source_owner, target_owner, dependent_owner]),
             set(recipients.keys()))
+
+    def test_getNotificationRecipientsIncludesReviewers(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        # Both of the branch owners are now subscribed to their own
+        # branches with full code review notification level set.
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        login_person(source_owner)
+        reviewer = self.factory.makePerson()
+        bmp.nominateReviewer(reviewer, registrant=source_owner)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        subscriber_set = set([source_owner, target_owner, reviewer])
+        self.assertEqual(subscriber_set, set(recipients.keys()))
 
 
 class TestGetAddress(TestCaseWithFactory):
@@ -794,6 +839,30 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_notify_on_nominate(self):
+        # Ensure that a notification is emitted on nomination.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        result, event = self.assertNotifies(
+            ReviewerNominatedEvent,
+            merge_proposal.nominateReviewer,
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner)
+        self.assertEqual(result, event.object)
+
+    def test_notify_on_nominate_suppressed_if_requested(self):
+        # Ensure that a notification is suppressed if notify listeners is set
+        # to False.
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        self.assertNoNotification(
+            merge_proposal.nominateReviewer,
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            _notify_listeners=False)
 
     def test_no_initial_votes(self):
         """A new merge proposal has no votes."""

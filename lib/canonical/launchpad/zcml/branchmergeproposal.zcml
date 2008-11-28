@@ -54,13 +54,8 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.IBranchMergeProposalApprovedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_approved" />
-
-  <subscriber
-    for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.IBranchMergeProposalRejectedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_rejected" />
+         canonical.launchpad.event.interfaces.IBranchMergeProposalStatusChangeEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed" />
 
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
