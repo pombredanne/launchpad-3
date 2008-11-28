@@ -157,13 +157,13 @@ class TestBranch(TestCaseWithFactory):
         self.assertRaises(AssertionError, branch.getPullURL)
 
 
-class TestBranchDeletion(TestCase):
+class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        login('test@canonical.com')
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -252,22 +252,18 @@ class TestBranchDeletion(TestCase):
 
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
-        # We want the changes done in the setup to stay around, and by
-        # default the switchDBUser aborts the transaction.
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision = RevisionSet().new(
-            revision_id='some-unique-id', log_body='commit message',
-            revision_date=None, revision_author='ddaa@localhost',
-            parent_ids=[], properties=None)
+        revision = self.factory.makeRevision()
         self.branch.createBranchRevision(0, revision)
+        # Need to commit the addition to make sure that the branch revisions
+        # are recorded as there and that the appropriate deferred foreign keys
+        # are set up.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
         self.branch.destroySelf()
+        # Commit again to trigger the deferred indices.
+        transaction.commit()
         self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
