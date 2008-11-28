@@ -279,15 +279,19 @@ class TestBranchPuller(PullerBranchTestCase):
         series.user_branch = default_branch
         # Arrange for it to be pulled.
         if branch_type == BranchType.HOSTED:
-            transaction.commit()
-            self.pushBranch(default_branch)
             puller_type = 'upload'
+            transaction.commit()
+            # For hosted branches, we just push it into the hosted area via
+            # the codehosting vfs.
+            self.pushBranch(default_branch)
         elif branch_type == BranchType.MIRRORED:
+            puller_type = 'mirror'
+            # For mirrored branches, we serve the branch over HTTP, point the
+            # database branch at this HTTP server and call requestMirror()
             tree = self.make_branch_and_tree('.', format='1.6')
             tree.commit('rev1')
             default_branch.url = self.serveOverHTTP()
             default_branch.requestMirror()
-            puller_type = 'mirror'
             transaction.commit()
         else:
             raise AssertionError(

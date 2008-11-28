@@ -55,7 +55,8 @@ class AcceptAnythingPolicy(BlacklistPolicy):
 class WhitelistPolicy(BranchPolicy):
     """Branch policy that only allows certain URLs."""
 
-    def __init__(self, should_follow_references, allowed_urls=None, check=False):
+    def __init__(self, should_follow_references, allowed_urls=None,
+                 check=False):
         if allowed_urls is None:
             allowed_urls = []
         self.allowed_urls = set(url.rstrip('/') for url in allowed_urls)

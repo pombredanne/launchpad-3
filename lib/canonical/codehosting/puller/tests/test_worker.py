@@ -346,7 +346,8 @@ class TestBranchMirrorerCheckAndFollowBranchReference(TestCase):
         # branch reference.
         opener = self.makeBranchMirrorer(False, ['a', 'b'])
         self.assertRaises(
-            BranchReferenceForbidden, opener.checkAndFollowBranchReference, 'a')
+            BranchReferenceForbidden,
+            opener.checkAndFollowBranchReference, 'a')
         self.assertEquals(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
