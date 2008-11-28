@@ -95,16 +95,15 @@
        });
 
        // Install handlers to decorate selected check-box inputs when
-       // they get clicked. Selected options text will be decorated with
-       // 'line-through' style and rendered in 'red'. Options not
-       // selected (or unselected) text will be rendered in 'blue' and
-       // without any decoration.
+       // they get clicked. Selected options text (next sibling) will
+       // be decorated with 'line-through' style and rendered in
+       // 'red'. Options not selected (or unselected) text will be
+       // rendered in 'blue' and without any decoration.
        var inputs = main_area.queryAll("input.line-through-when-checked");
        inputs.each(function(input) {
            input.on("click", function(e) {
                var input = e.currentTarget;
-               var label = Y.get(input.get("parentNode"));
-               var link = Y.get(label.get("lastChild"));
+               var link = input.next();
                if (input.get("checked")) {
                    link.setStyle("color", "red");
                    link.setStyle("textDecoration", "line-through");

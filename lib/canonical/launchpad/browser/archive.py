@@ -23,6 +23,7 @@ __all__ = [
 import urllib
 
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
@@ -68,7 +69,8 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets import (
+    LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -874,7 +876,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveEditDependenciesForm
 
-    custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget,
+    custom_widget('selected_dependencies', PlainMultiCheckBoxWidget,
                   cssClass='line-through-when-checked ppa-dependencies')
     custom_widget('primary_dependencies', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
