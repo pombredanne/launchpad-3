@@ -87,10 +87,11 @@ class BMPMailer(BaseMailer):
     """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
-                 from_address, delta=None, message_id=None):
+                 from_address, delta=None, message_id=None, review_diff=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.merge_proposal = merge_proposal
+        self.review_diff = review_diff
 
     def sendAll(self):
         BaseMailer.sendAll(self)
@@ -117,7 +118,8 @@ class BMPMailer(BaseMailer):
         return klass(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
-            from_address, message_id=get_msgid())
+            from_address, message_id=get_msgid(),
+            review_diff=merge_proposal.review_diff)
 
     @classmethod
     def forModification(klass, old_merge_proposal, merge_proposal, from_user):
