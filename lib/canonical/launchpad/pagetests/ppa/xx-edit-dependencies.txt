@@ -182,9 +182,7 @@ On successful removals, a notification is rendered and the list of
 dependencies is refreshed.
 
     >>> admin_browser.getControl(
-    ...     "PPA for Mark Shuttleworth").selected = True
-    >>> admin_browser.getControl(
-    ...     "PPA for No Privileges Person").selected = True
+    ...     name="field.selected_dependencies").value = ['sabdfl', 'no-priv']
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -264,7 +262,7 @@ The user can remove a primary dependency by selecting it and clicking
 'Save' as it's done for PPA dependencies.
 
     >>> admin_browser.getControl(
-    ...     "Primary Archive for Ubuntu Linux - PROPOSED").selected = True
+    ...     name="field.selected_dependencies").value = ['ubuntu-team']
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -374,7 +372,7 @@ from 'Mark Shuttleworth' PPA and modify the primary dependency to
 RELEASE.
 
     >>> admin_browser.getControl(
-    ...     "PPA for No Privileges Person").selected = True
+    ...     name="field.selected_dependencies").value = ['no-priv']
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
 
