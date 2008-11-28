@@ -69,7 +69,7 @@ class Diff(SQLBase):
             diff_text = None
         else:
             diff_text = getUtility(ILibraryFileAliasSet).create(
-            'static.diff', size, diff_content, 'text/x-diff')
+                'static.diff', size, diff_content, 'text/x-diff')
         return klass(diff_text=diff_text)
 
 
