@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
     ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
     ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
-    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
-    IStandardShipItRequestSet, ITranslationGroupSet, License,
-    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISourcePackageNameSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
     TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
@@ -317,7 +317,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, **optional_branch_args):
+                   private=False, stacked_on=None, distroseries=None,
+                   sourcepackagename=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -331,8 +332,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is _DEFAULT:
-            product = self.makeProduct()
+        if distroseries is None and sourcepackagename is None:
+            if product is _DEFAULT:
+                product = self.makeProduct()
+        elif distroseries is not None and sourcepackagename is not None:
+            assert product is _DEFAULT, (
+                "Passed source package AND product details")
+            product = None
+        else:
+            raise AssertionError(
+                "Must pass both sourcepackagename and distroseries.")
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -344,6 +353,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 'Unrecognized branch type: %r' % (branch_type,))
         branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
@@ -987,3 +997,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
             msg_id = make_msgid('launchpad')
         return msg_id
+
+    def makeSourcePackageName(self, name=None):
+        """Make an `ISourcePackageName`."""
+        if name is None:
+            name = self.getUniqueString()
+        return getUtility(ISourcePackageNameSet).new(name)

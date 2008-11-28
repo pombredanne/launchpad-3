@@ -121,6 +121,7 @@
     <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
+    <include file="seriessourcepackagebranch.zcml" />
     <include file="shipit.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />

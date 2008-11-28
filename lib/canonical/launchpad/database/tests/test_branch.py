@@ -42,8 +42,7 @@ from canonical.launchpad.database.specificationbranch import (
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -69,7 +68,7 @@ class TestCodeImport(TestCase):
 class TestBranchGetRevision(TestCaseWithFactory):
     """Make sure that `Branch.getBranchRevision` works as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -125,7 +124,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_pullURLHosted(self):
         # Hosted branches are pulled from internal Launchpad URLs.
@@ -152,6 +151,30 @@ class TestBranch(TestCaseWithFactory):
         # AssertionError.
         branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
+
+    def test_unique_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            '~%s/%s/%s' % (
+                branch.owner.name, branch.product.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual(
+            '~%s/+junk/%s' % (branch.owner.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '~%s/%s/%s/%s/%s' % (
+                branch.owner.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name, branch.name),
+            branch.unique_name)
 
 
 class TestBranchDeletion(TestCase):
@@ -685,7 +708,7 @@ class StackedBranches(TestCaseWithFactory):
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
