@@ -107,8 +107,8 @@ We will create a COPY archive and modify its name.
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
-Please note that copy archives are created with their 'publish'
-flag turned off.
+By default, copy archives are created with their 'publish' flag
+turned off, so that the publisher ignores them.
 
     >>> rebuild_archive.publish == False
     True
