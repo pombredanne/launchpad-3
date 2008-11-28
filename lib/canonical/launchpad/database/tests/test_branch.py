@@ -41,6 +41,9 @@ from canonical.launchpad.database.specificationbranch import (
     )
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
@@ -154,13 +157,13 @@ class TestBranch(TestCaseWithFactory):
         self.assertRaises(AssertionError, branch.getPullURL)
 
 
-class TestBranchDeletion(TestCase):
+class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        login('test@canonical.com')
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -249,22 +252,18 @@ class TestBranchDeletion(TestCase):
 
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
-        # We want the changes done in the setup to stay around, and by
-        # default the switchDBUser aborts the transaction.
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision = RevisionSet().new(
-            revision_id='some-unique-id', log_body='commit message',
-            revision_date=None, revision_author='ddaa@localhost',
-            parent_ids=[], properties=None)
+        revision = self.factory.makeRevision()
         self.branch.createBranchRevision(0, revision)
+        # Need to commit the addition to make sure that the branch revisions
+        # are recorded as there and that the appropriate deferred foreign keys
+        # are set up.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
         self.branch.destroySelf()
+        # Commit again to trigger the deferred indices.
+        transaction.commit()
         self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
@@ -1044,6 +1043,139 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+
+class TestGetByUrl(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_http(self):
+        """getByUrl recognizes LP branches for http URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ssh(self):
+        """getByUrl recognizes LP branches for bzr+ssh URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl(
+            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_sftp(self):
+        """getByUrl recognizes LP branches for sftp URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ftp(self):
+        """getByUrl does not recognize LP branches for ftp URLs.
+
+        This is because Launchpad doesn't currently support ftp.
+        """
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertIs(None, branch2)
+
+    def test_getByURL_with_lp_prefix(self):
+        """lp: URLs for the configured prefix are supported."""
+        branch_set = getUtility(IBranchSet)
+        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
+        self.assertRaises(NoSuchPersonWithName, branch_set.getByUrl, url)
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        branch2 = branch_set.getByUrl(url)
+        self.assertIs(None, branch2)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        branch2 = branch_set.getByUrl(url)
+        self.assertEqual(branch, branch2)
+
+    def test_getByURL_for_production(self):
+        """test_getByURL works with production values."""
+        branch_set = getUtility(IBranchSet)
+        branch = self.makeBranch()
+        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+
+class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getByLPPath_with_three_parts(self):
+        """Test the behaviour with three-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
+        self.assertRaises(
+            NoSuchPersonWithName, branch_set.getByLPPath, '~aa/bb/c')
+        owner = self.factory.makePerson(name='aa')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_junk_branch(self):
+        """Test the behaviour with junk branches."""
+        owner = self.factory.makePerson(name='aa')
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
+        branch = self.factory.makeBranch(owner=owner, product=None, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
+
+    def test_getByLPPath_with_two_parts(self):
+        """Test the behaviour with two-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
+        series = self.factory.makeSeries(name='dd', product=product)
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
+        series.user_branch = self.factory.makeBranch()
+        self.assertEqual(
+            (series.user_branch, None, series),
+            branch_set.getByLPPath('bb/dd'))
+
+    def test_getByLPPath_with_one_part(self):
+        """Test the behaviour with one names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
+        # We are not testing the security proxy here, so remove it.
+        product = removeSecurityProxy(self.factory.makeProduct('bb'))
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
+        branch = self.factory.makeBranch()
+        product.development_focus.user_branch = branch
+        self.assertEqual(
+            (branch, None, product.development_focus),
+            branch_set.getByLPPath('bb'))
 
 
 class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
