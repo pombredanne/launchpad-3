@@ -164,8 +164,8 @@ def traverse_named_ppa(person_name, ppa_name):
             ubuntu, person_name, ppa_name)
     if archive is None:
         raise NotFoundError("%s/%s", (person_name, ppa_name))
-    else:
-        return archive
+
+    return archive
 
 
 class DistributionArchiveURL:
@@ -204,7 +204,7 @@ class PPAURL:
 
     @property
     def path(self):
-        return u"+archive/%s" % self.context.name.lower()
+        return u"+archive/%s" % self.context.name
 
 
 class ArchiveNavigation(Navigation, FileNavigationMixin):

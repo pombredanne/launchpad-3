@@ -110,7 +110,7 @@ class SoyuzScript(LaunchpadScript):
             help='Archive owner name in case of PPA operations')
 
         self.parser.add_option(
-            '--ppa-name', dest='archive_name', action='store',
+            '--ppa-name', dest='archive_name', action='store', default="ppa",
             help='PPA name in case of PPA operations')
 
         self.parser.add_option(

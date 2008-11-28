@@ -96,7 +96,8 @@ def build_package_location(distribution_name, suite=None, purpose=None,
             distribution, person_name, ppa_name)
         if archive is None:
             raise PackageLocationError(
-                "Could not find a PPA for %s/%s" % (person_name, ppa_name))
+                "Could not find a PPA for %s named %s"
+                % (person_name, ppa_name))
         if distribution != archive.distribution:
             raise PackageLocationError(
                 "The specified archive is not for distribution %s"
