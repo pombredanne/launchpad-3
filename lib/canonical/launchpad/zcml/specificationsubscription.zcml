@@ -23,18 +23,14 @@
     for="canonical.launchpad.interfaces.ISpecificationSubscription"
     name="+edit" />
 
-  <browser:editform
+  <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionEditView"
     facet="specifications"
-    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
-    label="Edit subscription"
-    fields="essential"
     permission="launchpad.Edit"
     template="../templates/specificationsubscription-edit.pt"
-    >
-  </browser:editform>
+    />
 
   <subscriber
       for="canonical.launchpad.interfaces.ISpecificationSubscription

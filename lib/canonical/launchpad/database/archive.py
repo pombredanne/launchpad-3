@@ -1020,26 +1020,26 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         return iter(Archive.select())
 
-    @property
-    def number_of_ppa_sources(self):
+    def getNumberOfPPASourcesForDistribution(self, distribution):
         cur = cursor()
         query = """
              SELECT SUM(sources_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE
-        """ % sqlvalues(ArchivePurpose.PPA)
+             WHERE purpose = %s AND private = FALSE AND
+                   distribution = %s
+        """ % sqlvalues(ArchivePurpose.PPA, distribution)
         cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
         return int(size)
 
-    @property
-    def number_of_ppa_binaries(self):
+    def getNumberOfPPABinariesForDistribution(self, distribution):
         cur = cursor()
         query = """
              SELECT SUM(binaries_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE
-        """ % sqlvalues(ArchivePurpose.PPA)
+             WHERE purpose = %s AND private = FALSE AND
+                   distribution = %s
+        """ % sqlvalues(ArchivePurpose.PPA, distribution)
         cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
