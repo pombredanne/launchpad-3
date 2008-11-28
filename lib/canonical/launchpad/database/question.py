@@ -61,7 +61,7 @@ from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr import DBItem, decorates, Item
+from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:
@@ -1053,27 +1053,6 @@ class QuestionPersonSearch(QuestionSearch):
         return constraints
 
 
-# XXX: The only remaining problem with this aproach is that the identities of
-# Person and PersonWLC are not the same, so callsites can't feed them to a
-# set(), for instance.
-class PersonWithLanguagesCached:
-    decorates(IPerson)
-
-    def __init__(self, person, languages):
-        self.context = person
-        self._languages = languages
-
-    @property
-    def languages(self):
-        return self._languages
-
-    # This is a storm attribute that is needed here because we want to fool
-    # storm into thinking that instances of this class are Person instances.
-    @property
-    def __storm_object_info__(self):
-        return self.context.__storm_object_info__
-
-
 class QuestionTargetMixin:
     """Mixin class for `IQuestionTarget`."""
 
@@ -1177,10 +1156,11 @@ class QuestionTargetMixin:
         results = store.using(*origin).find(tuple(columns), conditions)
         D = {}
         for person, language in results:
-            default_entry = PersonWithLanguagesCached(person, [])
-            entry = D.setdefault(person, default_entry)
+            if person not in D:
+                person._languages_cache = []
+                D[person] = person
             if language is not None:
-                entry.languages.append(language)
+                person._languages_cache.append(language)
         return sorted(D.values(), key=operator.attrgetter('displayname'))
 
     @property
@@ -1195,7 +1175,7 @@ class QuestionTargetMixin:
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert person.languages.count() > 0, (
+        assert len(person.languages) > 0, (
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())

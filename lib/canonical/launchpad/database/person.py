@@ -47,6 +47,8 @@ from canonical.database.sqlbase import (
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.lazr.utils import safe_hasattr
+
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bugtarget import HasBugsBase
@@ -336,12 +338,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = SQLRelatedJoin('Language', joinColumn='person',
-                            otherColumn='language',
-                            intermediateTable='PersonLanguage',
-                            orderBy='englishname')
-
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -369,6 +365,24 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    # XXX: Need to use storm-native API in the three methods below.
+    @cachedproperty('_languages_cache')
+    def languages(self):
+        return list(Language.select(
+            AND(Language.q.id==PersonLanguage.q.languageID,
+                PersonLanguage.q.personID==self.id),
+            clauseTables=['PersonLanguage']))
+
+    def addLanguage(self, language):
+        PersonLanguage(person=self, language=language)
+        if safe_hasattr(self, '_languages_cache'):
+            del self._languages_cache
+
+    def removeLanguage(self, language):
+        PersonLanguage.selectOneBy(person=self, language=language).destroySelf()
+        if safe_hasattr(self, '_languages_cache'):
+            del self._languages_cache
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
