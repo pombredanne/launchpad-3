@@ -325,10 +325,10 @@ class BranchMirrorer(object):
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
 
-        This method cheks that `url` passes the policies `checkOneURL` method,
-        and if `url` refers to a branch references checks whether references
-        are allowed and whether the references URL passes muster also --
-        recursively, until a real branch is found.
+        This method checks that `url` passes the policies `checkOneURL`
+        method, and if `url` refers to a branch reference, it checks whether
+        references are allowed and whether the reference's URL passes muster
+        also -- recursively, until a real branch is found.
 
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch

@@ -195,6 +195,14 @@ class TestBranchPuller(PullerBranchTestCase):
         else:
             tree.branch.push(dir_to.open_branch())
 
+    def setUpMirroredBranch(self, db_branch, format=None):
+        """Make a tree in the cwd and serve it over HTTP, returning the URL.
+        """
+        tree = self.make_branch_and_tree('.', format=format)
+        tree.commit('rev1')
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
@@ -249,10 +257,7 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
-        tree = self.make_branch_and_tree('.')
-        tree.commit('rev1')
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -288,10 +293,7 @@ class TestBranchPuller(PullerBranchTestCase):
             puller_type = 'mirror'
             # For mirrored branches, we serve the branch over HTTP, point the
             # database branch at this HTTP server and call requestMirror()
-            tree = self.make_branch_and_tree('.', format='1.6')
-            tree.commit('rev1')
-            default_branch.url = self.serveOverHTTP()
-            default_branch.requestMirror()
+            self.setUpMirroredBranch(default_branch, format='1.6')
             transaction.commit()
         else:
             raise AssertionError(
@@ -308,12 +310,7 @@ class TestBranchPuller(PullerBranchTestCase):
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeBranch(
             BranchType.MIRRORED, product=default_branch.product)
-
-        tree = self.make_branch_and_tree('.', format='1.6')
-        tree.commit('rev1')
-
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -342,11 +339,16 @@ class TestBranchPuller(PullerBranchTestCase):
             mirrored_branch.get_stacked_on_url())
 
     def test_manual_stacking(self):
-        # If the user manually stacks on a launchpad branch, the branch.conf
+        # If the user manually stacks on a Launchpad branch, the branch.conf
         # file of the resulting branch will contain the full URL of the
         # manually selected branch.  The puller still manages to open the
         # branch and sets the stacking information of the branch in the
-        # mirrored area to be the most compatible "/" + unique_name form.
+        # mirrored area to be the most compatible "/" + unique_name form.\ We
+        # have to cheat rather to test this because the full URLs don't work
+        # in the environment this test is run in, so we set the stacking URL
+        # in the hosted area directory after we've pushed it and then clear it
+        # again so that assertMirrored can work.  The test is still valid
+        # though, as the paths are as they should be when the puller is run.
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeBranch(
             BranchType.HOSTED, product=default_branch.product)
@@ -376,11 +378,7 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeBranch(
             BranchType.MIRRORED, product=default_branch.product)
 
-        tree = self.make_branch_and_tree('.', format='1.6')
-        tree.commit('rev1')
-
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
