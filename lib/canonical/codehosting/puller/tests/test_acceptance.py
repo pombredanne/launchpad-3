@@ -202,6 +202,7 @@ class TestBranchPuller(PullerBranchTestCase):
         tree.commit('rev1')
         db_branch.url = self.serveOverHTTP()
         db_branch.requestMirror()
+        return tree
 
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.

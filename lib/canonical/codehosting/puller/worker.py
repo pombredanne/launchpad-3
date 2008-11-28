@@ -279,18 +279,13 @@ class BranchMirrorer(object):
         else:
             self.log = lambda *args: None
 
-    def open(self, url):
-        """Open the Bazaar branch at url, first checking for safety.
-
-        What safety means is defined by a subclasses `followReference` and
-        `checkOneURL` methods.
-        """
+    def _runWithTransformFallbackLocationHookInstalled(
+            self, callable, *args, **kw):
         Branch.hooks.install_named_hook(
             'transform_fallback_location', self.transformFallbackLocationHook,
             'BranchMirrorer.transformFallbackLocationHook')
         try:
-            url = self.checkAndFollowBranchReference(url)
-            return Branch.open(url)
+            return callable(*args, **kw)
         finally:
             # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
             # to remove a hook.  The linked bug report asks for an API to do
@@ -300,6 +295,16 @@ class BranchMirrorer(object):
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()
+
+    def open(self, url):
+        """Open the Bazaar branch at url, first checking for safety.
+
+        What safety means is defined by a subclasses `followReference` and
+        `checkOneURL` methods.
+        """
+        url = self.checkAndFollowBranchReference(url)
+        return self._runWithTransformFallbackLocationHookInstalled(
+            Branch.open, url)
 
     def transformFallbackLocationHook(self, branch, url):
         """Installed as the 'transform_fallback_location' Branch hook.
@@ -383,19 +388,8 @@ class BranchMirrorer(object):
             revision_id = None
         else:
             revision_id = 'null:'
-        # clone_on_transport will reopen the source branch, so we need to
-        # install our hook again.
-        Branch.hooks.install_named_hook(
-            'transform_fallback_location', self.transformFallbackLocationHook,
-            'BranchMirrorer.transformFallbackLocationHook')
-        try:
-            bzrdir.clone_on_transport(dest_transport, revision_id=revision_id)
-        finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
+        self._runWithTransformFallbackLocationHookInstalled(
+            bzrdir.clone_on_transport, dest_transport, revision_id=revision_id)
         branch = Branch.open(destination_url)
         return branch
 
