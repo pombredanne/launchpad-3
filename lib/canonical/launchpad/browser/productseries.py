@@ -415,23 +415,29 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
         if (ext in translation_importer.supported_file_extensions):
-            # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
+                # Add it to the queue.
+            entry = translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
                 productseries=self.context)
-
-            self.request.response.addInfoNotification(
-                structured(
-                'Thank you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Launchpad.'
-                ' You can track its status from the <a href="%s/+imports">'
-                'Translation Import Queue</a>' % canonical_url(self.context)))
+            if entry != None:
+                self.request.response.addInfoNotification(
+                    structured(
+                    'Thank you for your upload. The file content will be '
+                    'reviewed soon by an admin and then imported into '
+                    'Launchpad. You can track its status from the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        canonical_url(self.context))))
+            else:
+                self.request.response.addWarningNotification(
+                    "The file could not be uploaded because there are "
+                    "already conflicting uploads with the same path.")
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
-            num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
-                content, True, self.user,
-                productseries=self.context)
+            (num, conflicts) = (
+                translation_import_queue_set.addOrUpdateEntriesFromTarball(
+                    content, True, self.user,
+                    productseries=self.context))
 
             if num > 0:
                 self.request.response.addInfoNotification(
@@ -442,10 +448,26 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                     ' <a href="%s/+imports">Translation Import Queue</a>' % (
                         num,
                         canonical_url(self.context))))
+                if len(conflicts) > 0:
+                    self.request.response.addWarningNotification(
+                        structured(
+                        "%d files could not be uploaded because their "
+                        "path names conflict with existing uploads. "
+                        "The conflicting file names were: <br>"
+                        "<ul><li>%s</li></ul>" %(
+                             len(conflicts),
+                             "</li><li>".join(conflicts))))
             else:
-                self.request.response.addWarningNotification(
-                    "Nothing has happened. The tarball you uploaded does not"
-                    " contain any file that the system can understand.")
+                if len(conflicts) == 0:
+                    self.request.response.addWarningNotification(
+                        "Nothing has happened. The tarball you uploaded does "
+                        "not contain any file that the system can "
+                        "understand.")
+                else:
+                    self.request.response.addWarningNotification(
+                        "Nothing has happened. The paths of the files in the "
+                        "tarball you uploaded conflict with "
+                        "existing uploads.")
         else:
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"

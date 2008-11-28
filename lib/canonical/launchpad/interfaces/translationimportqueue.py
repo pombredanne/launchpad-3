@@ -9,15 +9,24 @@ from canonical.launchpad.interfaces import TranslationFileFormat
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
+from canonical.launchpad.interfaces.translationcommonformat import (
+    TranslationImportExportBaseException)
+
 __metaclass__ = type
 
 __all__ = [
+    'TranslationImportQueueConflictError',
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
     'IHasTranslationImports',
     'RosettaImportStatus',
     ]
+
+class TranslationImportQueueConflictError(
+                                    TranslationImportExportBaseException):
+    """A new entry cannot be inserted into the queue because it
+    conflicts with existing entries."""
 
 
 class RosettaImportStatus(DBEnumeratedType):

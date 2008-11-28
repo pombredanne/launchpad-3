@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat)
+    TranslationFileFormat, TranslationImportQueueConflictError)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -600,6 +600,42 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
+    def _findMostSpecificEntry(self, entries):
+        """Return the single most specific entry.
+        
+        :param entries: A list of TranslationImportQueueEntry objects.
+        :return: The most specific entry or None if no such entry exists."""
+
+        # Deal with the simple cases.
+        if entries.count() == 0:
+            return None
+        if entries.count() == 1:
+            return entries[0]
+
+        # Find all entries that have a potemplate set.
+        have_pot = []
+        for entry in entries:
+            if entry.potemplate != None:
+                have_pot.append(entry)
+        if len(have_pot) == 1:
+            return have_pot[0]
+        if len(have_pot) == 0:
+            # No entry has a specific potemplate set, which is ambiguous
+            # and shouldn't actually happen at all.
+            raise TranslationImportQueueConflictError 
+        
+        # Drill down to pofile level.
+        have_po = []
+        for entry in have_pot:
+            if entry.pofile != None:
+                have_po.append(entry)
+        if len(have_po) == 1:
+            return have_po[0]
+        # So we either have multiple entries with pofile or none.
+        # If none that means we have multiple entries with just potemplate.
+        # Either case is ambiguous.
+        raise TranslationImportQueueConflictError 
+        
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
@@ -667,8 +703,11 @@ class TranslationImportQueue:
                 'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
                     productseries))
 
-        entry = TranslationImportQueueEntry.selectOne(' AND '.join(queries))
-
+        entries = TranslationImportQueueEntry.select(' AND '.join(queries))
+        try:
+            entry = self._findMostSpecificEntry(entries)
+        except TranslationImportQueueConflictError:
+            return None
         if entry is not None:
             # It's an update.
             entry.content = alias
@@ -727,6 +766,7 @@ class TranslationImportQueue:
         # wraps the fileobj in a tarfile._Stream instance. We can get rid of
         # this when we upgrade to python2.5 everywhere.
         num_files = 0
+        conflict_files = []
 
         if content.startswith('BZh'):
             mode = "r|bz2"
@@ -736,7 +776,7 @@ class TranslationImportQueue:
             mode = "r|tar"
         else:
             # Not a tarball, we ignore it.
-            return num_files
+            return (num_files, conflict_files)
 
         translation_importer = getUtility(ITranslationImporter)
 
@@ -745,7 +785,7 @@ class TranslationImportQueue:
         except tarfile.ReadError:
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
-            return num_files
+            return (num_files, conflict_files)
 
         for tarinfo in tarball:
             if not tarinfo.isfile():
@@ -774,16 +814,20 @@ class TranslationImportQueue:
                 # Empty.  Ignore.
                 continue
 
-            self.addOrUpdateEntry(
+            
+            entry = self.addOrUpdateEntry(
                 filename, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate)
-            num_files += 1
+            if entry == None:
+                conflict_files.append(filename)
+            else:
+                num_files += 1
 
         tarball.close()
 
-        return num_files
+        return (num_files, conflict_files)
 
     def get(self, id):
         """See ITranslationImportQueue."""

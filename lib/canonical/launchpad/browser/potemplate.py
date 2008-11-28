@@ -292,28 +292,35 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         translation_importer = getUtility(ITranslationImporter)
         if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
-            translation_import_queue.addOrUpdateEntry(
+            entry = translation_import_queue.addOrUpdateEntry(
                 filename, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
-            self.request.response.addInfoNotification(
-                structured(
-                'Thank you for your upload. The file content will be imported'
-                ' soon into Launchpad. You can track its status from the'
-                ' <a href="%s/+imports">Translation Import Queue</a>' %
-                    canonical_url(self.context.translationtarget)))
+            if entry != None:
+                self.request.response.addInfoNotification(
+                    structured(
+                    'Thank you for your upload. The file content will be '
+                    'reviewed soon by an admin and then imported into '
+                    'Launchpad. You can track its status from the '
+                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                        canonical_url(self.context.translationtarget))))
+            else:
+                self.request.response.addWarningNotification(
+                    "The file could not be uploaded because there are "
+                    "already conflicting uploads with the same path.")
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
-            num = translation_import_queue.addOrUpdateEntriesFromTarball(
-                content, True, self.user,
-                sourcepackagename=self.context.sourcepackagename,
-                distroseries=self.context.distroseries,
-                productseries=self.context.productseries,
-                potemplate=self.context)
+            (num, conflicts) = (
+                translation_import_queue_set.addOrUpdateEntriesFromTarball(
+                    content, True, self.user,
+                    sourcepackagename=self.context.sourcepackagename,
+                    distroseries=self.context.distroseries,
+                    productseries=self.context.productseries,
+                    potemplate=self.context))
 
             if num > 0:
                 self.request.response.addInfoNotification(
@@ -325,10 +332,26 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                         num, canonical_url(self.context.translationtarget)
                         )
                     ))
+                if len(conflicts) > 0:
+                    self.request.response.addWarningNotification(
+                        structured(
+                        "%d files could not be uploaded because their "
+                        "path names conflict with existing uploads. "
+                        "The conflicting file names were: <br>"
+                        "<ul><li>%s</li></ul>" %(
+                             len(conflicts),
+                             "</li><li>".join(conflicts))))
             else:
-                self.request.response.addWarningNotification(
-                    "Nothing has happened. The tarball you uploaded does not"
-                    " contain any file that the system can understand.")
+                if len(conflicts) == 0:
+                    self.request.response.addWarningNotification(
+                        "Nothing has happened. The tarball you uploaded does "
+                        "not contain any file that the system can "
+                        "understand.")
+                else:
+                    self.request.response.addWarningNotification(
+                        "Nothing has happened. The paths of the files in the "
+                        "tarball you uploaded conflict with "
+                        "existing uploads.")
         else:
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
