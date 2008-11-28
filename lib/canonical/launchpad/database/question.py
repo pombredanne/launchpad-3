@@ -14,6 +14,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import operator
 import pytz
 
 from email.Utils import make_msgid
@@ -26,6 +27,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import LeftJoin
 from storm.store import Store
 
 from canonical.launchpad.interfaces import (
@@ -59,7 +61,7 @@ from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lazr import DBItem, Item
+from canonical.lazr import DBItem, decorates, Item
 
 
 class notify_question_modified:
@@ -1051,6 +1053,25 @@ class QuestionPersonSearch(QuestionSearch):
         return constraints
 
 
+class PersonWithLanguagesCached:
+    decorates(IPerson)
+
+    def __init__(self, person, languages):
+        self.context = person
+        self._languages = languages
+
+    @property
+    def languages(self):
+        return self._languages
+
+    # XXX: This is a cheap workaround to the problem; instead of changing
+    # _decorates_advice() to make __storm_object_info__ a PassThrough, we can
+    # do that only on the classes in which it's needed.
+#     @property
+#     def __storm_object_info__(self):
+#         return self.context.__storm_object_info__
+
+
 class QuestionTargetMixin:
     """Mixin class for `IQuestionTarget`."""
 
@@ -1130,16 +1151,35 @@ class QuestionTargetMixin:
     @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
-        constraints = []
-        targets = self.getTargetTypes()
-        for column, target in targets.items():
-            if target is None:
-                constraint = "AnswerContact." + column + " IS NULL"
+        # XXX: It may be a good idea to move this code for caching a person's
+        # languages into _selectPersonFromAnswerContacts.
+        store = Store.of(self)
+        from canonical.launchpad.database.person import (
+            Person, PersonLanguage)
+        origin = [
+            AnswerContact,
+            LeftJoin(Person, AnswerContact.person == Person.id),
+            LeftJoin(PersonLanguage,
+                     AnswerContact.personID == PersonLanguage.personID),
+            LeftJoin(Language,
+                     PersonLanguage.language == Language.id)]
+        columns = [Person, Language]
+        conditions = []
+        for key, value in self.getTargetTypes().items():
+            if value is None:
+                constraint = "AnswerContact.%s IS NULL" % key
             else:
-                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
-                    target)
-            constraints.append(constraint)
-        return list(self._selectPersonFromAnswerContacts(constraints, []))
+                constraint = "AnswerContact.%s = %s" % (key, value.id)
+            conditions.append(constraint)
+        conditions = " AND ".join(conditions)
+        results = store.using(*origin).find(tuple(columns), conditions)
+        D = {}
+        for person, language in results:
+            default_entry = PersonWithLanguagesCached(person, [])
+            entry = D.setdefault(person, default_entry)
+            if language is not None:
+                entry.languages.append(language)
+        return sorted(D.values(), key=operator.attrgetter('displayname'))
 
     @property
     def direct_answer_contacts(self):

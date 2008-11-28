@@ -27,6 +27,8 @@ class QuestionMessage(SQLBase):
 
     implements(IQuestionMessage)
 
+    # XXX: This is the reason why my change causes the test suite to be
+    # trapped in an infinite loop.
     decorates(IMessage, context='message')
 
     _table = 'QuestionMessage'
