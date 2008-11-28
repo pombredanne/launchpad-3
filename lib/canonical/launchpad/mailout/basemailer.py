@@ -12,7 +12,7 @@ __all__ = ['BaseMailer']
 
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address, MailController
 from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
@@ -51,14 +51,17 @@ class BaseMailer:
         self.delta = delta
         self.message_id = message_id
 
-    def generateEmail(self, email):
+    def generateEmail(self, email, recipient):
         """Generate the email for this recipient.
 
         :return: (headers, subject, body) of the email.
         """
+        to_address = format_address(recipient.displayname, email)
         headers = self._getHeaders(email)
         subject = self._getSubject(email)
-        return (headers, subject, self._getBody(email))
+        body = self._getBody(email)
+        return MailController(
+            self.from_address, to_address, subject, body, headers)
 
     def _getSubject(self, email):
         """The subject template expanded with the template params."""
@@ -100,7 +103,5 @@ class BaseMailer:
     def sendAll(self):
         """Send notifications to all recipients."""
         for email, recipient in self._recipients.getRecipientPersons():
-            to_address = format_address(recipient.displayname, email)
-            headers, subject, body = self.generateEmail(email)
-            simple_sendmail(
-                self.from_address, to_address, subject, body, headers)
+            ctrl = self.generateEmail(email, recipient)
+            ctrl.send()

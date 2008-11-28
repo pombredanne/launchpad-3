@@ -57,7 +57,7 @@ class TestMergeProposalMailing(TestCase):
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
-        headers, subject, body = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar.
 
@@ -67,18 +67,18 @@ I think this would be good.
 --\x20
 %s
 %s
-""" % (canonical_url(bmp), reason.getReason()), body)
+""" % (canonical_url(bmp), reason.getReason()), ctrl.body)
         self.assertEqual('Proposed merge of '
             'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
-            'lp://dev/~person-name9/super-product/bar', subject)
+            'lp://dev/~person-name9/super-product/bar', ctrl.subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
              'X-Launchpad-Project': bmp.source_branch.product.name,
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
-            headers)
-        self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
+            ctrl.headers)
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
         mailer.sendAll()
 
     def test_RecordMessageId(self):
@@ -86,9 +86,9 @@ I think this would be good.
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         mailer.message_id = '<foobar-example-com>'
-        headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('<foobar-example-com>', headers['Message-Id'])
-        self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual('<foobar-example-com>', ctrl.headers['Message-Id'])
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
         bmp.root_message_id = None
         pop_notifications()
         mailer.sendAll()
@@ -105,8 +105,8 @@ I think this would be good.
         bmp, subscriber = self.makeProposalWithSubscriber()
         bmp.root_message_id = '<root-message-id>'
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('<root-message-id>', headers['In-Reply-To'])
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        self.assertEqual('<root-message-id>', ctrl.headers['In-Reply-To'])
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
@@ -147,10 +147,10 @@ I think this would be good.
     def test_generateEmail(self):
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
-        headers, subject, body = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('Proposed merge of '
             'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
-            'lp://dev/~person-name9/super-product/bar updated', subject)
+            'lp://dev/~person-name9/super-product/bar updated', ctrl.subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
@@ -165,7 +165,7 @@ new commit message
 --\x20
 %s
 %s
-""" % (url, reason), body)
+""" % (url, reason), ctrl.body)
 
     def test_send_merge_proposal_modified_notifications(self):
         """Should send emails when invoked with correct parameters."""
