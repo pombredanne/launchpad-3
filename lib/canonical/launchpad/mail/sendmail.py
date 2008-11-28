@@ -28,6 +28,7 @@ from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
 from email import Charset
 from smtplib import SMTP
 
@@ -126,10 +127,20 @@ class MailController(object):
         self.headers = headers
         self.attachments = []
 
-    def addAttachment(content, content_type='application/octet-stream'):
-        attachment = EmailMessage()
+    def addAttachment(self, content, content_type='application/octet-stream',
+                      inline=False, filename=None):
+        attachment = Message()
         attachment.set_payload(content)
         attachment['Content-type'] = content_type
+        if inline:
+            disposition = 'inline'
+        else:
+            disposition = 'attachment'
+        disposition_kwargs = {}
+        if filename is not None:
+            disposition_kwargs['filename'] = filename
+        attachment.add_header(
+            'Content-Disposition', disposition, **disposition_kwargs)
         self.attachments.append(attachment)
 
     def makeMessage(self):
@@ -148,12 +159,12 @@ class MailController(object):
         if len(self.attachments) == 0:
             msg = MIMEText(self.body.encode('utf-8'), 'plain', 'utf-8')
         else:
-            msg = MIMEMultiPart()
-            body_part = EmailMessage()
+            msg = MIMEMultipart()
+            body_part = Message()
             body_part.set_payload(self.body)
             msg.attach(body_part)
-            for attachment in attachments:
-                mail.attach(attachment)
+            for attachment in self.attachments:
+                msg.attach(attachment)
 
         # The header_body_values may be a list or tuple of values, so we will
         # add a header once for each value provided for that header.
