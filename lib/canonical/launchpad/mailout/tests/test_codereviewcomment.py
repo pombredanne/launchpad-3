@@ -119,16 +119,18 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_generateEmail(self):
         """Ensure mailer's generateEmail method produces expected values."""
         mailer, subscriber = self.makeMailer(as_reply=True)
-        ctrl = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
         message = mailer.code_review_comment.message
         self.assertEqual(ctrl.subject, message.subject)
         self.assertEqual(ctrl.body.splitlines()[:-3],
                          message.text_contents.splitlines())
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.bzr_identity
-        self.assertEqual(body.splitlines()[-3:],
-                         ['-- ', canonical_url(mailer.merge_proposal),
-                          'You are subscribed to branch %s.' % branch_name])
+        self.assertEqual(
+            ctrl.body.splitlines()[-3:], ['-- ',
+            canonical_url(mailer.merge_proposal),
+            'You are subscribed to branch %s.' % branch_name])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
@@ -138,12 +140,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
                     'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
             self.assertEqual(ctrl.headers[header], value)
-        self.assertEqual(expected, headers)
+        self.assertEqual(expected, ctrl.headers)
 
     def test_useRootMessageId(self):
         """Ensure mailer's generateEmail method produces expected values."""
         mailer, subscriber = self.makeMailer(as_reply=False)
-        ctrl = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
         self.assertEqual(mailer.merge_proposal.root_message_id,
                          ctrl.headers['In-Reply-To'])
 
@@ -153,7 +156,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         second_comment = self.factory.makeCodeReviewComment(
             merge_proposal=comment.branch_merge_proposal)
         mailer = CodeReviewCommentMailer.forCreation(second_comment)
-        ctrl = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
         self.assertEqual(comment.branch_merge_proposal.root_message_id,
                          ctrl.headers['In-Reply-To'])
 
@@ -174,7 +178,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that votes are displayed."""
         mailer, subscriber = self.makeMailer(
             vote=CodeReviewVote.APPROVE)
-        ctrl = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
         self.assertEqual('Vote: Approve', ctrl.body.splitlines()[0])
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
@@ -183,7 +188,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         """Ensure that vote tags are displayed."""
         mailer, subscriber = self.makeMailer(
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
-        ctrl = mailer.generateEmail(subscriber)
+        ctrl = mailer.generateEmail(
+            subscriber.preferredemail.email, subscriber)
         self.assertEqual('Vote: Approve dbtag', ctrl.body.splitlines()[0])
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
