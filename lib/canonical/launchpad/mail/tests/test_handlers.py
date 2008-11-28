@@ -443,8 +443,7 @@ class TestCodeHandler(TestCaseWithFactory):
         transaction.commit()
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
-        bmp.review_diff.diff.diff_text.open()
-        self.assertEqual('booga', bmp.review_diff.diff.diff_text.read())
+        self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
 
