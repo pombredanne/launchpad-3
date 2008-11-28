@@ -148,16 +148,12 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
     PPA for No Privileges Person
 
 The dependencies are presented in a separated section (bellow the
-sources.list widget) associated with a warning, telling the users to
-consider the dependencies in their systems if it becomes necessary.
+sources.list widget).
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
     PPA dependencies
-    When installing packages from this PPA you may need to enable one
-    or more of the following PPAs, which have been considered for
-    building packages in this context.
     PPA for Mark Shuttleworth (included ... ago)
     PPA for No Privileges Person (included ... ago)
 
@@ -214,15 +210,11 @@ configuration' field represents the current state of the PPA.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    ( ) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    (*) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    ( ) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    (*) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    ( ) Proposed (backports dependencies and proposed binaries).
 
 The user can modify this aspect by selecting a different option and
 clicking on 'Save'.
@@ -230,8 +222,8 @@ clicking on 'Save'.
 He will see a notification containing a summary of what was changed.
 
     >>> admin_browser.getControl(
-    ...     "Depend also on PROPOSED pocket, i.e. all pockets will be "
-    ...     "used to fetch build dependencies.").selected = True
+    ...     "Proposed (backports dependencies and proposed "
+    ...     "binaries).").selected = True
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -242,15 +234,11 @@ The option submitted by the user is now selected when the page loads.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    ( ) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    ( ) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    (*) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    ( ) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    (*) Proposed (backports dependencies and proposed binaries).
 
 The user can also see a corresponding entry in 'Current dependencies'
 section.
@@ -277,8 +265,7 @@ We will override the primary dependency configuration to only RELEASE
 pocket in order to illustrate another way the user can modify it.
 
     >>> admin_browser.getControl(
-    ...     "Depend only on RELEASE pocket, no SECURITY or UPDATES "
-    ...     "candidates will be used as build dependencies.").selected = True
+    ...     "Basic (only released packages).").selected = True
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -289,15 +276,11 @@ Now we see a PPA configured to depend only on RELEASE pocket.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    (*) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    ( ) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    ( ) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    (*) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    ( ) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    ( ) Proposed (backports dependencies and proposed binaries).
 
     >>> print_ppa_dependencies(admin_browser.contents)
     Primary Archive for Ubuntu Linux - RELEASE
@@ -308,8 +291,8 @@ pre-defined option and the form will restore the default dependencies
 for him.
 
     >>> admin_browser.getControl(
-    ...     "Default dependencies, include RELEASE, SECURITY and "
-    ...     "UPDATES.").selected = True
+    ...     "Default (security dependencies and tested "
+    ...     "updates).").selected = True
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -320,15 +303,11 @@ The default option is now selected.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    ( ) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    (*) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    ( ) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    (*) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    ( ) Proposed (backports dependencies and proposed binaries).
 
 And no dependency overrides are listed.
 
@@ -354,15 +333,11 @@ contains a extra dependency.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    ( ) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    (*) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    ( ) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    ( ) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    (*) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    ( ) Proposed (backports dependencies and proposed binaries).
 
     >>> print_ppa_dependencies(admin_browser.contents)
      PPA for No Privileges Person
@@ -377,8 +352,7 @@ RELEASE.
     >>> admin_browser.getControl("Add PPA dependency").value = 'sabdfl'
 
     >>> admin_browser.getControl(
-    ...     "Depend only on RELEASE pocket, no SECURITY or UPDATES "
-    ...     "candidates will be used as build dependencies.").selected = True
+    ...     "Basic (only released packages).").selected = True
 
     >>> admin_browser.getControl("Save").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
@@ -393,15 +367,11 @@ processed.
 
     >>> print_radio_button_field(
     ...     admin_browser.contents, 'primary_dependencies')
-    (*) Depend only on RELEASE pocket, no SECURITY or UPDATES
-        candidates will be used as build dependencies.
-    ( ) Depend only on RELEASE and SECURITY pockets, no UPDATES
-        candidates will be used as build dependencies.
-    ( ) Default dependencies, include RELEASE, SECURITY and UPDATES.
-    ( ) Depend also on BACKPORTS pocket, additionally to the default
-        archive dependencies.
-    ( ) Depend also on PROPOSED pocket, i.e. all pockets will be
-        used to fetch build dependencies.
+    (*) Basic (only released packages).
+    ( ) Security (basic dependencies and security fixes).
+    ( ) Default (security dependencies and tested updates).
+    ( ) Backports (default dependencies and backports).
+    ( ) Proposed (backports dependencies and proposed binaries).
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth

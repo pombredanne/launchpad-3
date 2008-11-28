@@ -954,23 +954,19 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         """
         release = SimpleTerm(
             PackagePublishingPocket.RELEASE, 'RELEASE',
-            _('Depend only on RELEASE pocket, no SECURITY or UPDATES '
-              'candidates will be used as build dependencies.'))
+            _('Basic (only released packages).'))
         security = SimpleTerm(
             PackagePublishingPocket.SECURITY, 'SECURITY',
-            _('Depend only on RELEASE and SECURITY pockets, no UPDATES '
-              'candidates will be used as build dependencies.'))
+            _('Security (basic dependencies and security fixes).'))
         updates = SimpleTerm(
             PackagePublishingPocket.UPDATES, 'UPDATES',
-            _('Default dependencies, include RELEASE, SECURITY and UPDATES.'))
+            _('Default (security dependencies and tested updates).'))
         backports = SimpleTerm(
             PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
-            _('Depend also on BACKPORTS pocket, additionally to the '
-              'default archive dependencies.'))
+            _('Backports (default dependencies and backports).'))
         proposed = SimpleTerm(
             PackagePublishingPocket.PROPOSED, 'PROPOSED',
-            _('Depend also on PROPOSED pocket, i.e. all pockets will '
-              'be used to fetch build dependencies.'))
+            _('Proposed (backports dependencies and proposed binaries).'))
 
         terms = [release, security, updates, backports, proposed]
 
@@ -987,11 +983,15 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         return form.Fields(
             Choice(__name__='primary_dependencies',
-                   title=_('Dependency configuration'),
+                   title=_(
+                    "%s dependencies"
+                    % self.context.distribution.displayname),
                    vocabulary=primary_dependency_vocabulary,
-                   description=_("Dependencies for this PPA on the %s "
-                                 "primary archive."
-                                 % self.context.distribution.displayname),
+                   description=_(
+                    "Select which packages of the %s primary archive "
+                    "should be used as build-dependencies when building "
+                    "sources in this PPA."
+                    % self.context.distribution.displayname),
                    missing_value=current_term,
                    default=default_value,
                    required=True))
