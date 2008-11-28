@@ -108,7 +108,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers=None):
 
     Returns the `Message-Id`.
     """
-    ctrl = MessageController(from_addr, to_addrs, subject, body, headers)
+    ctrl = MailController(from_addr, to_addrs, subject, body, headers)
     return ctrl.send()
 
 
