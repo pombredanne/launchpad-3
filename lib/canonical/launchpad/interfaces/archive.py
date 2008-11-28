@@ -91,7 +91,7 @@ class IArchive(IHasOwner):
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
-            description=_("""The PPA owner.""")))
+            description=_("""The archive owner.""")))
 
     name = exported(
         TextLine(
@@ -101,16 +101,20 @@ class IArchive(IHasOwner):
 
     description = exported(
         Text(
-            title=_("PPA contents description"), required=False,
-            description=_("A short description of contents of this PPA.")))
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
-        description=_("Whether the PPA is enabled or not."))
+        description=_("Whether the archive is enabled or not."))
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     private = Bool(
         title=_("Private"), required=False,
-        description=_("Whether the PPA is private to the owner or not."))
+        description=_("Whether the archive is private to the owner or not."))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,

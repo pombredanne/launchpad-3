@@ -107,6 +107,12 @@ We will create a COPY archive and modify its name.
     ...     owner=cprov, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
 
+By default, copy archives are created with their 'publish' flag
+turned off, so that the publisher ignores them.
+
+    >>> rebuild_archive.publish == False
+    True
+
 Only 'valid' (traversable) names can be set.
 
     >>> rebuild_archive.name = 'ThereWeGo'
