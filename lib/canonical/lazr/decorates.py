@@ -79,17 +79,13 @@ def _decorates_advice(cls):
         raise TypeError(
             'Cannot use decorates() on a classic class: %s.' % cls)
     classImplements(cls, interface)
-    names = list(interface)
-    # XXX: The line below, in conjunction with QuestionMessage, causes the
-    # doc/answer-tracker to get trapped in an infinite loop.
-    names.append('__storm_object_info__')
-    for name in names:
+    for name in list(interface):
         if not hasattr(cls, name):
             setattr(cls, name, Passthrough(name, contextvar))
 
     # pylint: disable-msg=W0101
     def __eq__(self, other):
-        return getattr(self, contextvar) == other
+        #return getattr(self, contextvar) == other
         context = getattr(self, contextvar)
         if isinstance(other, type(context)):
             return context == other

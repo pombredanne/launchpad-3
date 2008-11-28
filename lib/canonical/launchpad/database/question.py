@@ -1053,6 +1053,9 @@ class QuestionPersonSearch(QuestionSearch):
         return constraints
 
 
+# XXX: The only remaining problem with this aproach is that the identities of
+# Person and PersonWLC are not the same, so callsites can't feed them to a
+# set(), for instance.
 class PersonWithLanguagesCached:
     decorates(IPerson)
 
@@ -1064,12 +1067,11 @@ class PersonWithLanguagesCached:
     def languages(self):
         return self._languages
 
-    # XXX: This is a cheap workaround to the problem; instead of changing
-    # _decorates_advice() to make __storm_object_info__ a PassThrough, we can
-    # do that only on the classes in which it's needed.
-#     @property
-#     def __storm_object_info__(self):
-#         return self.context.__storm_object_info__
+    # This is a storm attribute that is needed here because we want to fool
+    # storm into thinking that instances of this class are Person instances.
+    @property
+    def __storm_object_info__(self):
+        return self.context.__storm_object_info__
 
 
 class QuestionTargetMixin:
