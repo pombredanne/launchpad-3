@@ -54,6 +54,7 @@
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
+    <include file="diff.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="distribution.zcml" />

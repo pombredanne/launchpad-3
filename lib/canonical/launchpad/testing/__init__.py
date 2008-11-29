@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-import unittest
+import os, shutil, tempfile, unittest
 
 from storm.store import Store
 
@@ -210,6 +210,14 @@ class TestCaseWithFactory(TestCase):
         TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
+
+    def useTempDir(self):
+        """Use a temporary directory for this test."""
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        self.addCleanup(lambda: os.chdir(cwd))
 
     def tearDown(self):
         logout()
