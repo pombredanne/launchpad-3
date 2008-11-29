@@ -68,6 +68,12 @@ class TestCase(unittest.TestCase):
         """
         self._cleanups.append((function, arguments, keywordArguments))
 
+    def assertProvides(self, obj, interface):
+        """Assert 'obj' provides 'interface'."""
+        self.assertTrue(
+            interface.providedBy(obj),
+            "%r does not provide %r" % (obj, interface))
+
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
 

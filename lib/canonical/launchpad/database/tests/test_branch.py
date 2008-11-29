@@ -35,7 +35,6 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch,
     )
@@ -45,8 +44,7 @@ from canonical.launchpad.xmlrpc.faults import (
     InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
     NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -72,7 +70,7 @@ class TestCodeImport(TestCase):
 class TestBranchGetRevision(TestCaseWithFactory):
     """Make sure that `Branch.getBranchRevision` works as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -128,7 +126,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_pullURLHosted(self):
         # Hosted branches are pulled from internal Launchpad URLs.
@@ -155,6 +153,30 @@ class TestBranch(TestCaseWithFactory):
         # AssertionError.
         branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
+
+    def test_unique_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            '~%s/%s/%s' % (
+                branch.owner.name, branch.product.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual(
+            '~%s/+junk/%s' % (branch.owner.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '~%s/%s/%s/%s/%s' % (
+                branch.owner.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name, branch.name),
+            branch.unique_name)
 
 
 class TestBranchDeletion(TestCaseWithFactory):
@@ -684,7 +706,7 @@ class StackedBranches(TestCaseWithFactory):
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -1047,7 +1069,7 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
 
 class TestGetByUrl(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def makeBranch(self):
         """Create a branch with aa/b/c as its unique name."""
@@ -1122,7 +1144,7 @@ class TestGetByUrl(TestCaseWithFactory):
 class TestGetByLPPath(TestCaseWithFactory):
     """Ensure URLs are correctly expanded."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_getByLPPath_with_three_parts(self):
         """Test the behaviour with three-part names."""
