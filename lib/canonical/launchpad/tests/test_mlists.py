@@ -62,6 +62,21 @@ class TestMailingListImports(unittest.TestCase):
             if error.errno != errno.ENOENT:
                 raise
 
+    def assertPeople(self, *people):
+        """Assert that `people` are members of the team."""
+        members = set(person.name for person in self.team.allmembers)
+        expected = set(people)
+        # Always add the team owner.
+        expected.add(u'teamowner')
+        self.assertEqual(members, expected)
+
+    def assertAddresses(self, *addresses):
+        """Assert that `addresses` are subscribed to the mailing list."""
+        subscribers = set(
+            email.email for email in self.mailing_list.getSubscribedAddresses())
+        expected = set(addresses)
+        self.assertEqual(subscribers, expected)
+
     def test_simple_import_membership(self):
         # Test the import of a list/team membership, where all email
         # addresses being imported actually exist in Launchpad.
@@ -73,15 +88,11 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
     def test_extended_import_membership(self):
         # Test the import of a list/team membership, where all email
@@ -94,15 +105,11 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com (Elly Q. Person)',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly',)
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
     def test_import_with_non_persons(self):
         # Test the import of a list/team membership where not all the
@@ -119,15 +126,11 @@ class TestMailingListImports(unittest.TestCase):
             'gwen.person@example.com',
             'hperson@example.org',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
     def test_import_with_invalid_emails(self):
         # Test the import of a list/team membership where all the
@@ -145,15 +148,10 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'bperson@example.org', u'cris.person@example.com',
+            u'dperson@example.org', u'elly.person@example.com')
 
     def test_already_joined(self):
         # Test import when a user is already joined to the team, but
@@ -167,15 +165,11 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
     def test_already_subscribed(self):
         # Test import when a user is already joined to the team, and
@@ -190,15 +184,11 @@ class TestMailingListImports(unittest.TestCase):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bperson@example.org',
-             u'cris.person@example.com', u'dperson@example.org',
-             u'elly.person@example.com'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bperson@example.org',
+            u'cris.person@example.com', u'dperson@example.org',
+            u'elly.person@example.com')
 
     def test_import_from_file(self):
         # Test importing addresses from a file.
@@ -215,15 +205,11 @@ class TestMailingListImports(unittest.TestCase):
         finally:
             out_file.close()
         importer.importFromFile(self.filename)
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bart.person@example.com',
-             u'cperson@example.org', u'dperson@example.org',
-             u'eperson@example.org'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bart.person@example.com',
+            u'cperson@example.org', u'dperson@example.org',
+            u'eperson@example.org')
 
     def test_import_from_file_with_non_persons(self):
         # Test the import of a list/team membership from a file where
@@ -247,15 +233,11 @@ class TestMailingListImports(unittest.TestCase):
         finally:
             out_file.close()
         importer.importFromFile(self.filename)
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'anne', u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'anne.person@example.com', u'bart.person@example.com',
-             u'cperson@example.org', u'dperson@example.org',
-             u'eperson@example.org'])
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bart.person@example.com',
+            u'cperson@example.org', u'dperson@example.org',
+            u'eperson@example.org')
 
     def test_import_from_file_with_invalid_emails(self):
         # Test importing addresses from a file with invalid emails.
@@ -275,15 +257,10 @@ class TestMailingListImports(unittest.TestCase):
         finally:
             out_file.close()
         importer.importFromFile(self.filename)
-        self.assertEqual(
-            sorted(person.name for person in self.team.allmembers),
-            [u'bart', u'cris', u'dave', u'elly', u'teamowner'])
-        self.assertEqual(
-            sorted(email.email
-                   for email in self.mailing_list.getSubscribedAddresses()),
-            [u'bart.person@example.com',
-             u'cperson@example.org', u'dperson@example.org',
-             u'eperson@example.org'])
+        self.assertPeople(u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'bart.person@example.com', u'cperson@example.org',
+            u'dperson@example.org', u'eperson@example.org')
 
     def test_logging(self):
         # Test that nothing gets logged when all imports are fine.
@@ -350,4 +327,3 @@ class TestMailingListImports(unittest.TestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
