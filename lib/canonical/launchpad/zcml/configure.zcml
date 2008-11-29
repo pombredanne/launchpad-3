@@ -54,7 +54,9 @@
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
+    <include file="diff.zcml" />
     <include file="datetime.zcml" />
+    <include file="decoratedresultset.zcml" />
     <include file="distribution.zcml" />
     <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackage.zcml" />
@@ -96,6 +98,7 @@
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
     <include file="packagecloner.zcml" />
+    <include file="packagecopyrequest.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />

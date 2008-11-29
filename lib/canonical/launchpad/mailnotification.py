@@ -1,5 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+# XXX: Gavin Panella 2008-11-21 bug=300725: This module need
+# refactoring and/or splitting into a package or packages.
+
 """Event handlers that send email notifications."""
 
 __metaclass__ = type
@@ -191,49 +194,102 @@ def format_rfc2822_date(date):
     return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
 
 
-def construct_bug_notification(bug, from_address, address, body, subject,
-        email_date, rationale_header=None, references=None, msgid=None):
-    """Constructs a MIMEText message based on a bug and a set of headers."""
-    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['From'] = from_address
-    msg['To'] = address
-    msg['Reply-To'] = get_bugmail_replyto_address(bug)
-    if references is not None:
-        msg['References'] = ' '.join(references)
-    msg['Sender'] = config.canonical.bounce_address
-    msg['Date'] = format_rfc2822_date(email_date)
-    if msgid is not None:
-        msg['Message-Id'] = msgid
+class BugNotificationBuilder:
+    """Constructs a MIMEText message for a bug notification.
 
-    subject_prefix = "[Bug %d]" % bug.id
+    Takes a bug and a set of headers and returns a new MIMEText
+    object. Common and expensive to calculate headers are cached
+    up-front.
+    """
 
-    if subject is None:
-        msg['Subject'] = subject_prefix
-    elif subject_prefix in subject:
-        msg['Subject'] = subject
-    else:
-        msg['Subject'] = "%s %s" % (subject_prefix, subject)
+    def __init__(self, bug):
+        self.bug = bug
 
-    # Add X-Launchpad-Bug headers.
-    for bugtask in bug.bugtasks:
-        msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+        # Pre-calculate common headers.
+        self.common_headers = [
+            ('Reply-To', get_bugmail_replyto_address(bug)),
+            ('Sender', config.canonical.bounce_address),
+            ]
 
-    # If the bug has tags we add an X-Launchpad-Bug-Tags header.
-    if bug.tags:
-        tag_string = ' '.join(bug.tags)
-        msg.add_header('X-Launchpad-Bug-Tags', tag_string)
+        # X-Launchpad-Bug
+        self.common_headers.extend(
+            ('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+            for bugtask in bug.bugtasks)
 
-    # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
-    # headers. These are simple yes/no values denoting privacy and
-    # security for the bug.
-    msg.add_header('X-Launchpad-Bug-Private',
-                   (bug.private and 'yes' or 'no'))
-    msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
-                   (bug.security_related and 'yes' or 'no'))
+        # X-Launchpad-Bug-Tags
+        if len(bug.tags) > 0:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Tags', ' '.join(bug.tags)))
 
-    if rationale_header is not None:
-        msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
-    return msg
+        # Add the X-Launchpad-Bug-Private header. This is a simple
+        # yes/no value denoting privacy for the bug.
+        if bug.private:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Private', 'no'))
+
+        # Add the X-Launchpad-Bug-Security-Vulnerability header to
+        # denote security for this bug. This follows the same form as
+        # the -Bug-Private header.
+        if bug.security_related:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'yes'))
+        else:
+            self.common_headers.append(
+                ('X-Launchpad-Bug-Security-Vulnerability', 'no'))
+
+        # Add the -Bug-Commenters header, a space-separated list of
+        # distinct IDs of people who have commented on the bug. The
+        # list is sorted to aid testing.
+        commenters = set(message.owner.name for message in bug.messages)
+        self.common_headers.append(
+            ('X-Launchpad-Bug-Commenters', ' '.join(sorted(commenters))))
+
+    def build(self, from_address, to_address, body, subject, email_date,
+              rationale=None, references=None, message_id=None):
+        """Construct the notification.
+
+        :param from_address: The From address of the notification.
+        :param to_address: The To address for the notification.
+        :param body: The body text of the notification.
+        :type body: unicode
+        :param subject: The Subject of the notification.
+        :param email_date: The Date for the notification.
+        :param rationale: The rationale for why the recipient is
+            receiving this notification.
+        :param references: A value for the References header.
+        :param message_id: A value for the Message-ID header.
+
+        :return: An `email.MIMEText.MIMEText` object.
+        """
+        message = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+        message['Date'] = format_rfc2822_date(email_date)
+        message['From'] = from_address
+        message['To'] = to_address
+
+        # Add the common headers.
+        for header in self.common_headers:
+            message.add_header(*header)
+
+        if references is not None:
+            message['References'] = ' '.join(references)
+        if message_id is not None:
+            message['Message-Id'] = message_id
+
+        subject_prefix = "[Bug %d]" % self.bug.id
+        if subject is None:
+            message['Subject'] = subject_prefix
+        elif subject_prefix in subject:
+            message['Subject'] = subject
+        else:
+            message['Subject'] = "%s %s" % (subject_prefix, subject)
+
+        if rationale is not None:
+            message.add_header('X-Launchpad-Message-Rationale', rationale)
+
+        return message
 
 
 def _send_bug_details_to_new_bug_subscribers(
@@ -269,14 +325,15 @@ def _send_bug_details_to_new_bug_subscribers(
     references = [bug.initial_message.rfc822msgid]
     recipients = bug.getBugNotificationRecipients()
 
+    bug_notification_builder = BugNotificationBuilder(bug)
     for to_addr in sorted(to_addrs):
-        reason, rationale_header = recipients.getReason(to_addr)
+        reason, rationale = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
             reason=reason)
-        msg = construct_bug_notification(
-            bug, from_addr, to_addr, contents, subject, email_date,
-            rationale_header=rationale_header, references=references)
+        msg = bug_notification_builder.build(
+            from_addr, to_addr, contents, subject, email_date,
+            rationale=rationale, references=references)
         sendmail(msg)
 
 

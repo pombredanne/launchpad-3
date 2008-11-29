@@ -270,19 +270,23 @@ The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
 
     >>> packages = ubuntu.searchSourcePackages("mozilla")
-    >>> print len(packages)
+    >>> print packages.count()
     1
 
 The search also matches on exact package names which fti doesn't like,
 and even on substrings:
 
     >>> packages = ubuntu.searchSourcePackages("linux-source-2.6.15")
-    >>> print len(packages)
+    >>> print packages.count()
     1
-    >>> packages = ubuntu.searchSourcePackages("nux-sour")
-    >>> print len(packages)
-    1
-
+    >>> packages = ubuntu.searchSourcePackages('a')
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: mozilla-firefox
+    DistributionSourcePackage: netapplet
+    DistributionSourcePackage: alsa-utils
+    DistributionSourcePackage: foobar
+    DistributionSourcePackage: commercialpackage
 
 === Finding distroseriess and pockets from distribution names ===
 

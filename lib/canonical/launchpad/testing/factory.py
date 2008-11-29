@@ -218,6 +218,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param use_default_autosubscribe_policy: Flag specifying whether
             the person's `mailing_list_auto_subscribe_policy` should be set.
         :type use_default_autosubscribe_policy: bool
+        :return: The newly created person.
+        :rtype: `IPerson`
         """
         variable_name = first_name.lower()
         full_name = first_name + ' Person'
@@ -260,7 +262,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             email_status = EmailAddressStatus.VALIDATED
         return getUtility(IEmailAddressSet).new(
             address, person, email_status, person.account)
-        
+
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
