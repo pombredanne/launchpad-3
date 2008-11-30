@@ -535,3 +535,14 @@ translation provides no text and so is ignored.
     >>> len(suggestions.submissions)
     0
 
+
+== About ==
+
+The translations about page presents the launchpad-users mailing list as the
+place to get more information and help.
+
+    >>> from canonical.launchpad.interfaces import IRosettaApplication
+    >>> application = getUtility(IRosettaApplication)
+    >>> view = create_view(application, '+about', layer=TranslationsLayer)
+    >>> print view.launchpad_users_team
+    http://launchpad.dev/~launchpad-users
