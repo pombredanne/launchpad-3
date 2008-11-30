@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BadBranchSearchContext',
+    'bazaar_identity',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -608,7 +609,7 @@ class IBranch(IHasOwner):
             required=True,
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("Either yourself or a team you are a member of. "
-                        "This controls who can modify the branch.")))
+                          "This controls who can modify the branch.")))
 
     reviewer = exported(
         PublicPersonChoice(
@@ -618,6 +619,22 @@ class IBranch(IHasOwner):
             description=_("The reviewer of a branch is the person or team "
                           "that is responsible for reviewing proposals and "
                           "merging into this branch.")))
+
+    # XXX: JonathanLange 2008-11-24: Export these.
+    distroseries = Choice(
+        title=_("Distribution Series"), required=False,
+        vocabulary='DistroSeries',
+        description=_(
+            "The distribution series that this branch belongs to. Branches "
+            "do not have to belong to a distribution series, they can also "
+            "belong to a project or be junk branches."))
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName',
+        description=_(
+            "The source package that this is a branch of. Source package "
+            "branches always belong to a distribution series."))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -986,16 +1003,18 @@ class IBranchSet(Interface):
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
 
-    def new(branch_type, name, registrant, owner, product, url, title=None,
-            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+    def new(branch_type, name, registrant, owner, product=None, url=None,
+            title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            author=None, summary=None, whiteboard=None, date_created=None,
+            distroseries=None, sourcepackagename=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
 
-        If product is None (indicating a +junk branch) then the owner must not
-        be a team, except for the special case of the ~vcs-imports celebrity.
+        If product, distroseries and sourcepackagename are None (indicating a
+        +junk branch) then the owner must not be a team, except for the
+        special case of the ~vcs-imports celebrity.
         """
 
     def getByProductAndName(product, name):
@@ -1025,6 +1044,20 @@ class IBranchSet(Interface):
         supermirror URL on http://bazaar.launchpad.net/.
 
         Return the default value if no match was found.
+        """
+
+    def getByLPPath(path):
+        """Find the branch associated with an lp: path.
+
+        Recognized formats:
+        "~owner/product/name" (same as unique name)
+        "product/series" (branch associated with a product series)
+        "product" (development focus of product)
+
+        :return: a tuple of `IBranch`, extra_path, series.  Series is the
+            series, if any, used to perform the lookup.
+        :raises: `BranchNotFound`, `NoBranchForSeries`, and other subclasses
+            of `LaunchpadFault`.
         """
 
     def getBranchesToScan():
@@ -1354,6 +1387,44 @@ class BranchPersonSearchContext:
         if restriction is None:
             restriction = BranchPersonSearchRestriction.ALL
         self.restriction = restriction
+
+
+def bazaar_identity(branch, associated_series, is_dev_focus):
+    """Return the shortest lp: style branch identity."""
+    use_series = None
+    lp_prefix = config.codehosting.bzr_lp_prefix
+    # XXX: TimPenhey 2008-05-06 bug=227602
+    # Since at this stage the launchpad name resolution is not
+    # authenticated, we can't resolve series branches that end
+    # up pointing to private branches, so don't show short names
+    # for the branch if it is private.
+
+    # It is possible for +junk branches to be related to a product
+    # series.  However we do not show the shorter name for these
+    # branches as it would be giving extra authority to them.  When
+    # the owner of these branches realises that they want other people
+    # to be able to commit to them, the branches will need to have a
+    # team owner.  When this happens, they will no longer be able to
+    # stay as junk branches, and will need to be associated with a
+    # product.  In this way +junk branches associated with product
+    # series should be self limiting.  We are not looking to enforce
+    # extra strictness in this case, but instead let it manage itself.
+    if not branch.private and branch.product is not None:
+        if is_dev_focus:
+            return lp_prefix + branch.product.name
+
+        for series in associated_series:
+            if (use_series is None or
+                series.datecreated > use_series.datecreated):
+                use_series = series
+    # If there is no series, use the prefix with the unique name.
+    if use_series is None:
+        return lp_prefix + branch.unique_name
+    else:
+        return "%(prefix)s%(product)s/%(series)s" % {
+            'prefix': lp_prefix,
+            'product': use_series.product.name,
+            'series': use_series.name}
 
 
 def user_has_special_branch_access(user):

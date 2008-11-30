@@ -91,7 +91,7 @@ class IArchive(IHasOwner):
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
-            description=_("""The PPA owner.""")))
+            description=_("""The archive owner.""")))
 
     name = exported(
         TextLine(
@@ -101,16 +101,20 @@ class IArchive(IHasOwner):
 
     description = exported(
         Text(
-            title=_("PPA contents description"), required=False,
-            description=_("A short description of contents of this PPA.")))
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
-        description=_("Whether the PPA is enabled or not."))
+        description=_("Whether the archive is enabled or not."))
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     private = Bool(
         title=_("Private"), required=False,
-        description=_("Whether the PPA is private to the owner or not."))
+        description=_("Whether the archive is private to the owner or not."))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -689,11 +693,17 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    number_of_ppa_sources = Attribute(
-        'Number of published sources in public PPAs.')
+    def getNumberOfPPASourcesForDistribution(distribution):
+        """Return the number of sources for PPAs in a given distribution.
 
-    number_of_ppa_binaries = Attribute(
-        'Number of published binaries in public PPAs.')
+        Only public and published sources are considered.
+        """
+
+    def getNumberOfPPABinariesForDistribution(distribution):
+        """Return the number of binaries for PPAs in a given distribution.
+
+        Only public and published sources are considered.
+        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
@@ -854,3 +864,9 @@ IArchive['syncSources'].queryTaggedValue(
 IArchive['syncSource'].queryTaggedValue(
     'lazr.webservice.exported')[
         'params']['from_archive'].schema = IArchive
+
+# This is patched here to avoid even more circular imports in
+# interfaces/person.py.
+from canonical.launchpad.interfaces.person import IPersonPublic
+IPersonPublic['archive'].schema = IArchive
+

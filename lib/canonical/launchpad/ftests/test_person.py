@@ -21,15 +21,16 @@ from canonical.launchpad.interfaces.person import (
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import (
     AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.systemdocs import create_initialized_view
 from canonical.launchpad.validators.person import PrivatePersonLinkageError
 
 
-class TestPerson(unittest.TestCase):
+class TestPerson(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        login('foo.bar@canonical.com')
+        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
         self.person_set = getUtility(IPersonSet)
         self.myteam = self.person_set.getByName('myteam')
         self.otherteam = self.person_set.getByName('otherteam')
@@ -37,6 +38,18 @@ class TestPerson(unittest.TestCase):
         self.product_set = getUtility(IProductSet)
         self.bzr = self.product_set.getByName('bzr')
         self.now = datetime.now(pytz.timezone('UTC'))
+
+    def test_getBranch_looks_up_products_by_aliases(self):
+        """When looking up a person's branch using IPerson.getBranch() it's
+        possible to use either the product's name or any of its aliases.
+        """
+        foobar = self.person_set.getByName('name16')
+        branch = self.factory.makeBranch(owner=foobar, product=self.bzr)
+        self.assertEquals(
+            foobar.getBranch(self.bzr.name, branch.name), branch)
+        self.bzr.setAliases(['bazaar-ng'])
+        self.assertEquals(
+            foobar.getBranch('bazaar-ng', branch.name), branch)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.

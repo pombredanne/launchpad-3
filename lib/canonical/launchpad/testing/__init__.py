@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-import unittest
+import os, shutil, tempfile, unittest
 
 from storm.store import Store
 
@@ -67,6 +67,12 @@ class TestCase(unittest.TestCase):
         even if setUp is aborted by an exception.
         """
         self._cleanups.append((function, arguments, keywordArguments))
+
+    def assertProvides(self, obj, interface):
+        """Assert 'obj' provides 'interface'."""
+        self.assertTrue(
+            interface.providedBy(obj),
+            "%r does not provide %r" % (obj, interface))
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
@@ -204,6 +210,14 @@ class TestCaseWithFactory(TestCase):
         TestCase.setUp(self)
         login(user)
         self.factory = LaunchpadObjectFactory()
+
+    def useTempDir(self):
+        """Use a temporary directory for this test."""
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        self.addCleanup(lambda: os.chdir(cwd))
 
     def tearDown(self):
         logout()

@@ -73,6 +73,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.questioncollection import (
@@ -943,14 +944,14 @@ class ProductSet:
         self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name, active=True)
-        if item is None:
+        """See `IProductSet`."""
+        product = self.getByName(name=name, ignore_inactive=True)
+        if product is None:
             raise NotFoundError(name)
-        return item
+        return product
 
     def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         return iter(self.all_active)
 
     @property
@@ -971,22 +972,19 @@ class ProductSet:
         return results.prejoin(["owner"])
 
     def get(self, productid):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         try:
             return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        if ignore_inactive:
-            product = Product.selectOneBy(name=name, active=True)
-        else:
-            product = Product.selectOneBy(name=name)
-        if product is None:
-            return default
-        return product
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProductSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProduct.providedBy(pillar):
+            return None
+        return pillar
 
     def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""

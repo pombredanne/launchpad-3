@@ -526,11 +526,11 @@ class IProductSet(Interface):
         raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the product with the given name, ignoring inactive products
         if ignore_inactive is True.
 
-        Return the default value if there is no such product.
+        Return None if there is no such product.
         """
 
     def getProductsWithBranches(num_products=None):
