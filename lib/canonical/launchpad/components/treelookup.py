@@ -177,12 +177,15 @@ class LookupTree:
         for branch in branches:
             prune = seen_keys.intersection(branch.keys)
             if len(prune) > 0:
+                if len(prune) == len(branch.keys):
+                    # This branch has no unseen keys, so skip it.
+                    continue
                 branch = copy.copy(branch)
                 branch.keys = tuple(
                     key for key in branch.keys
                     if key not in prune)
-                seen_keys.update(prune)
             pruned_branches.append(branch)
+            seen_keys.update(branch.keys)
 
         self.branches = tuple(pruned_branches)
         self._verify()
