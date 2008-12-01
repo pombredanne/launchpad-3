@@ -1151,6 +1151,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
+    def getOpenBugtasksPerProduct(user, products):
+        """Return open bugtask count for multiple products."""
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
