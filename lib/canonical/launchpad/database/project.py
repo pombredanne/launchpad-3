@@ -9,6 +9,7 @@ __all__ = [
     'ProjectSet',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -27,6 +28,7 @@ from canonical.launchpad.interfaces import (
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -40,7 +42,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -51,10 +53,11 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin,
+              MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               StructuralSubscriptionTargetMixin):
     """A Project"""
@@ -416,7 +419,7 @@ class ProjectSet:
         return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
-        project = Project.selectOneBy(name=name, active=True)
+        project = self.getByName(name=name, ignore_inactive=True)
         if project is None:
             raise NotFoundError(name)
         return project
@@ -437,15 +440,12 @@ class ProjectSet:
             raise NotFoundError(projectid)
         return project
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
-        if ignore_inactive:
-            project = Project.selectOneBy(name=name, active=True)
-        else:
-            project = Project.selectOneBy(name=name)
-        if project is None:
-            return default
-        return project
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProjectSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProject.providedBy(pillar):
+            return None
+        return pillar
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None,

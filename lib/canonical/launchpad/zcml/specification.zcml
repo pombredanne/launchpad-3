@@ -166,51 +166,29 @@
     template="../templates/specification-superseding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+edit"
-    schema="canonical.launchpad.interfaces.ISpecification"
+    for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit title and summary"
-    fields="name title specurl summary whiteboard"
     permission="launchpad.Edit"
-    template="../templates/specification-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-    <browser:widget
-      field="specurl"
-      class="zope.app.form.browser.TextWidget"
-      displayWidth="60" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+whiteboard"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit specification status whiteboard"
-    fields="whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditWhiteboardView"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-edit.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+people"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change the people involved"
-    fields="assignee drafter approver whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditPeopleView"
     permission="launchpad.Edit"
-    template="../templates/specification-people.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
   <browser:generalform
     name="+setdistroseries"
@@ -250,47 +228,29 @@
     template="../templates/specification-goaldecide.pt">
   </browser:page>
 
-  <browser:editform
+  <browser:page
     name="+priority"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change priority"
-    fields="priority direction_approved whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditPriorityView"
     permission="launchpad.Admin"
-    template="../templates/specification-priority.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+status"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change status"
-    fields="definition_status implementation_status whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditStatusView"
     permission="launchpad.Edit"
-    template="../templates/specification-status.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
-  <browser:editform
+  <browser:page
     name="+milestone"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target to a milestone"
-    fields="milestone whiteboard"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditMilestoneView"
     permission="launchpad.Edit"
-    template="../templates/specification-milestone.pt">
-    <browser:widget
-      field="whiteboard"
-      class="zope.app.form.browser.TextAreaWidget"
-      height="5" />
-  </browser:editform>
+    template="../templates/specification-edit.pt"
+    />
 
   <browser:addform
     name="+requestfeedback"
@@ -329,7 +289,7 @@
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-dependency.pt"
     />
 
@@ -341,7 +301,7 @@
     label="Remove a dependency"
     fields="dependency"
     keyword_arguments="dependency"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specification-removedep.pt">
   </browser:generalform>
 

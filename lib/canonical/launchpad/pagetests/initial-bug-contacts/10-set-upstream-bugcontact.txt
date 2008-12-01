@@ -66,3 +66,24 @@ the team should be a bug supervisor.
     >>> sample_browser.url
     'http://launchpad.dev/~name20/+members'
 
+Launchpad admins can set a team as bug supervisor without any warnings,
+however, whether they're in the team or not.
+
+    >>> login('test@canonical.com')
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet)
+    >>> security_team = getUtility(IPersonSet).getByName('name20')
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> foo_bar.inTeam(security_team)
+    False
+
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/testy/+bugsupervisor')
+    >>> admin_browser.getControl('Bug Supervisor').value = 'name20'
+    >>> admin_browser.getControl('Change').click()
+    >>> 'Successfully changed the bug supervisor' in admin_browser.contents
+    True
+

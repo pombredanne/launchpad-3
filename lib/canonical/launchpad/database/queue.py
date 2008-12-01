@@ -11,12 +11,13 @@ __all__ = [
     'PackageUploadSet',
     ]
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
 import os
 import shutil
 import StringIO
 import tempfile
+
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -244,7 +245,7 @@ class PackageUpload(SQLBase):
         :raise NonBuildableSourceUploadError: when the uploaded source
             doesn't result in any builds in its targeted distroseries.
         """
-        if len(builds) == 0:
+        if len(builds) == 0 and self.isPPA():
             raise NonBuildableSourceUploadError(
                 "Cannot build any of the architectures requested: %s" %
                 sourcepackagerelease.architecturehintlist)
@@ -615,6 +616,7 @@ class PackageUpload(SQLBase):
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = summary_text
             CHANGESFILE = guess_encoding("".join(changes_lines))
+            USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
@@ -626,6 +628,7 @@ class PackageUpload(SQLBase):
             SIGNER = ''
             MAINTAINER = ''
             SPR_URL = ''
+            USERS_ADDRESS = config.launchpad.users_address,
 
         default_recipient = "%s <%s>" % (
             config.uploader.default_recipient_name,
@@ -1287,6 +1290,25 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
+    def _conflictWith(self, upload_source):
+        """Whether a given PackageUploadSource conflicts with the context.
+
+        :param upload_source: a `PackageUploadSource` to be checked
+            against this context for source 'name' and 'version' conflict.
+        :return: True if the checked `PackageUploadSource` contains a
+            `SourcePackageRelease` with the same name and version.
+             Otherwise, False is returned.
+        """
+        conflict_release = upload_source.sourcepackagerelease
+        proposed_name = self.sourcepackagerelease.name
+        proposed_version = self.sourcepackagerelease.version
+
+        if (conflict_release.name == proposed_name and
+            conflict_release.version == proposed_version):
+            return True
+
+        return False
+
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
@@ -1298,15 +1320,25 @@ class PackageUploadSource(SQLBase):
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
                 exact_match=True)
-            if uploads.count() > 0:
+            # Isolate conflicting PackageUploadSources.
+            conflict_candidates = [
+                upload.sources[0] for upload in uploads
+                if len(list(upload.sources)) > 0]
+            # Isolate only conflicting SourcePackageRelease.
+            conflicts = [
+                upload_source for upload_source in conflict_candidates
+                if self._conflictWith(upload_source)]
+            # If there are any conflicting SourcePackageRelease the
+            # upload cannot be accepted.
+            if len(conflicts) > 0:
                 raise QueueInconsistentStateError(
                     "The source %s is already accepted in %s/%s and you "
                     "cannot upload the same version within the same "
                     "distribution. You have to modify the source version "
                     "and re-upload." % (
-                    self.sourcepackagerelease.title,
-                    distroseries.distribution.name,
-                    distroseries.name))
+                        self.sourcepackagerelease.title,
+                        distroseries.distribution.name,
+                        distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""

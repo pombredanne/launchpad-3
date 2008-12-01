@@ -75,13 +75,13 @@ versions are not the same across architectures.
 Building these caches we can reach good performance on full and
 partial term searching.
 
-  >>> len(ubuntu.searchSourcePackages('mozilla'))
+  >>> ubuntu.searchSourcePackages('mozilla').count()
   1
 
-  >>> len(ubuntu.searchSourcePackages('moz'))
+  >>> ubuntu.searchSourcePackages('moz').count()
   1
 
-  >>> len(ubuntu.searchSourcePackages('biscoito'))
+  >>> ubuntu.searchSourcePackages('biscoito').count()
   0
 
 The cache update procedure is done by cronscripts/update-pkgcache.py,
@@ -102,7 +102,7 @@ cache when it's updated.
   >>> foobar_pub.status.name
   'DELETED'
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   1
 
   >>> from canonical.launchpad.database import (
@@ -129,7 +129,7 @@ Let's use a fake logger object:
   >>> import transaction
   >>> transaction.commit()
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   0
 
   >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
@@ -147,7 +147,7 @@ cache when it's updated the next time.
   >>> cdrkit_pub.status.name
   'PUBLISHED'
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   0
 
   >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
@@ -186,7 +186,7 @@ after issuing a commit(), bug #3989
 Now we see that the 'cdrkit' source is part of the caches and can be
 reached via searches:
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   1
 
   >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
@@ -207,7 +207,7 @@ cache when it's updated.
   >>> foobar_bin_pub.status.name
   'DELETED'
 
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   1
 
   >>> from canonical.launchpad.database import (
@@ -227,7 +227,7 @@ instance offers a method for removing obsolete records in cache:
 
   >>> transaction.commit()
 
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   0
 
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -244,7 +244,7 @@ cache will be added to it.
   >>> cdrkit_bin_pub.status.name
   'PUBLISHED'
 
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   0
 
   >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -279,7 +279,7 @@ XXX cprov 20061201: see above, same than Source cache interface), bug #3989
 Now we see that the 'cdrkit' binary is part of the caches and can be
 reached via searches:
 
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   1
 
   >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -489,9 +489,95 @@ counters. IDistroSeries provides a method to update its own cache:
 New values were stored:
 
   >>> warty.sourcecount
-  5
+  6
   >>> warty.binarycount
   6
+
+Only PENDING and PUBLISHED publications are considered.
+
+We will use `SoyuzTestPublisher` for creating convenient publications.
+
+  >>> from canonical.database.sqlbase import commit
+  >>> from canonical.launchpad.interfaces.publishing import (
+  ...     PackagePublishingStatus)
+  >>> from canonical.launchpad.tests.test_publishing import (
+  ...     SoyuzTestPublisher)
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+  >>> test_publisher = SoyuzTestPublisher()
+
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> commit()
+
+  >>> unused = test_publisher.setUpDefaultDistroSeries(warty)
+  >>> test_publisher.addFakeChroots()
+
+Let's create one source with a single binary in PENDING status.
+
+  >>> pending_source = test_publisher.getPubSource(
+  ...     sourcename = 'pending-source',
+  ...     status=PackagePublishingStatus.PENDING)
+
+  >>> pending_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="pending-binary", pub_source=pending_source,
+  ...     status=PackagePublishingStatus.PENDING)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in pending_binaries))
+  1
+
+And one source with a single binary in PUBLISHED status.
+
+  >>> published_source = test_publisher.getPubSource(
+  ...     sourcename = 'published-source',
+  ...     status=PackagePublishingStatus.PUBLISHED)
+
+  >>> published_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="published-binary", pub_source=published_source,
+  ...     status=PackagePublishingStatus.PUBLISHED)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in published_binaries))
+  1
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+Exactly 2 new sources and 2 new binaries will be accounted.
+
+  >>> warty.updatePackageCount()
+  >>> warty.sourcecount
+  8
+  >>> warty.binarycount
+  8
+
+Let's create one source with a single binary in DELETED status.
+
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> commit()
+
+  >>> deleted_source = test_publisher.getPubSource(
+  ...     sourcename = 'pending-source',
+  ...     status=PackagePublishingStatus.DELETED)
+
+  >>> deleted_binaries = test_publisher.getPubBinaries(
+  ...     binaryname="pending-binary", pub_source=deleted_source,
+  ...     status=PackagePublishingStatus.DELETED)
+
+  >>> print len(
+  ...     set(pub.binarypackagerelease.name for pub in deleted_binaries))
+  1
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+Distroseries package counters will not account DELETED publications.
+
+  >>> warty.updatePackageCount()
+  >>> warty.sourcecount
+  8
+  >>> warty.binarycount
+  8
 
 A similar mechanism is offered by IDistroArchSeries, but only for
 binaries (of course):
@@ -508,7 +594,7 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  8
+  9
 
 
 == DistroSeriesBinaryPackage cache lookups ==

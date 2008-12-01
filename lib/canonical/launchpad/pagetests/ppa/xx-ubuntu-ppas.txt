@@ -65,6 +65,51 @@ we only have 3 PPAs in sampledata they are all presented.
 Nothing suitable in the sampledata, check the end of this document for
 further tests.
 
+== Other distributions PPAs ==
+
+Currently we only support PPAs for ubuntu, although the '+ppas' page
+is presented for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("PPAs").click()
+    >>> print anon_browser.title
+    Debian GNU/Linux Personal Package Archives
+
+Those pages present coherent data for a distribution with no PPAs.
+
+PPA supported architectures reflects what we have in sampledata.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    PPA supported series
+    3.1 "Sarge" - frozen
+    3.0 "Woody" - current
+      i386 (official)
+
+Archive and package counter are empty.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
+    Statistics
+    Debian does not have any registered PPA.
+
+'Latest uploads' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    None
+
+'Most active' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
+The 'search' form is also suppresed.
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Search'
+
 
 == Searching PPAs ==
 
@@ -74,6 +119,8 @@ Description, Sources and Binaries, the latter two being a count.
 The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
@@ -227,15 +274,12 @@ and the select control that lets you update them:
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    3 source packages
-    (9.5 MiB)
-    3 binary packages
-    (3 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -256,7 +300,7 @@ The headings:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Built</th>
+    <th>Build Status</th>
     </tr>
     </thead>
     ...
@@ -269,7 +313,8 @@ available changesfile.
     ...         print extract_text(ppa_row)
 
     >>> print_ppa_package_rows(anon_browser.contents)
-    Source              Published   Status     Series      Section  Built
+    Source              Published   Status     Series      Section  Build
+        Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
     com...(changesfile)             Pending    Warty       Devel
     ice...(changesfile) 2007-07-09  Published  Warty       Editors
@@ -372,7 +417,8 @@ default, PPA pages will only present PUBLISHED or PENDING packages.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
     comm...(changesfile)        Pending    Warty            Devel
 
@@ -382,7 +428,8 @@ Use can explicitly select 'published' filter and will get the same result.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source          Published   Status     Series           Section  Built
+    Source          Published   Status     Series           Section  Build
+        Status
     cdrkit - 1.0    2007-07-09  Published  Breezy-autotest  Editors  i386
     comm...(changesfile)        Pending    Warty            Devel
 
@@ -393,7 +440,8 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source            Published    Status        Series   Section  Built
+    Source            Published    Status        Series   Section  Build
+        Status
     i...(changesfile) 2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
@@ -404,7 +452,8 @@ any package ever published in the context PPA.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(anon_browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
-    Source             Published    Status     Series      Section  Built
+    Source             Published    Status     Series      Section  Build
+        Status
     cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
     co...(changesfile)              Pending    Warty       Devel
     ic...(changesfile) 2007-07-09   Superseded Warty       Editors
@@ -413,20 +462,57 @@ any package ever published in the context PPA.
 
 == Empty PPAs ==
 
-An empty PPA lists no packages and uses apt sources lines for the
-distribution's current release, as a guess.
+An empty PPA doesn't list any packages and it also doesn't present the
+'apt sources lines ' widget and the repository 'URL' since they would
+link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
     >>> print extract_text(anon_browser.contents)
     PPA for No Privileges Person
     ...
+    This archive is public
+    PPA for No Privileges Person
     URL: http://ppa.launchpad.dev/no-priv/ubuntu
-    ...
-    deb http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu hoary main
-    ...
+    I am not allowed to say, I have no privs.
+    Packages
     This PPA does not contain any packages yet.
     ...
+
+Note that the 'URL' page section contains the URL to the repository
+but it's not linkified.
+
+    >>> anon_browser.getLink("http://ppa.launchpad.dev/no-priv/ubuntu")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The "sources list" widget isn't presented for empty PPAs either.
+
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print sources_list
+    None
+
+Users will only be able to see it for PPAs that have, at least, one
+published source.
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> login(ANONYMOUS)
+    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> sources_list = find_tag_by_id(
+    ...     anon_browser.contents, 'sources-list-entries')
+    >>> print extract_text(sources_list)
+    deb http://ppa.launchpad.dev/no-priv/ubuntu warty main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu warty main
+
+Also the repository URL is an actual link.
+
+    >>> print anon_browser.getLink(
+    ...     "http://ppa.launchpad.dev/no-priv/ubuntu").url
+    http://ppa.launchpad.dev/no-priv/ubuntu
 
 
 == PPA Builds ==
@@ -459,15 +545,12 @@ properly.
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    1 source package
-    (9.5 MiB)
-    1 binary package
-    (0 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -536,7 +619,7 @@ The package row headings show an Uploader column:
     <th>Status</th>
     <th>Series</th>
     <th>Section</th>
-    <th>Built</th>
+    <th>Build Status</th>
     </tr>
     </thead>
     ...
@@ -544,7 +627,8 @@ The package row headings show an Uploader column:
 The package row data shows the uploader:
 
     >>> print_ppa_package_rows(foo_browser.contents)
-    Source                 Uploader Published Status   Series  Section  Built
+    Source                 Uploader Published Status   Series  Section  Build
+        Status
     mozilla-firefox - 0.9  name16             Pending  Hoary   Base
 
 Links from files go to their on-archive locations:
@@ -559,7 +643,7 @@ The uploader name is linkified to that user's home page:
     'http://launchpad.dev/~name16'
 
 
-== PPA Built column ==
+== PPA Build Status column ==
 
 Each row in the PPA package list contains a special column that
 summarises its 'build status'. It contains the following information
@@ -578,7 +662,7 @@ Anyone can see the build status for package in Celso's PPA.
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
 
-    >>> def print_built_status(contents):
+    >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'ppa_package_row')
     ...     headers = rows[0].findAll('th')
     ...     print extract_text(headers[0]), extract_text(headers[-1])
@@ -591,8 +675,8 @@ Anyone can see the build status for package in Celso's PPA.
     ...             built_text = built_text.renderContents()
     ...         print name, built_icon, built_text
 
-    >>> print_built_status(anon_browser.contents)
-    Source                    Built
+    >>> print_build_status(anon_browser.contents)
+    Source                    Build Status
     cdrkit - 1.0              /@@/no i386
     commercialpackage - 1.0-1 /@@/yes None
 
@@ -623,8 +707,8 @@ At this point anyone can also visualise that 'cdrkit' source is being
 built in Celso's PPA.
 
     >>> anon_browser.getLink('View PPA').click()
-    >>> print_built_status(anon_browser.contents)
-    Source                    Built
+    >>> print_build_status(anon_browser.contents)
+    Source                    Build Status
     cdrkit - 1.0              /@@/build-building i386
     commercialpackage - 1.0-1 /@@/yes None
 
@@ -652,8 +736,6 @@ can check how it looks.
     ...     "sabdfl", "breezy-autotest", "commercialpackage", "1.0-1")
 
     >>> publishToTeamPPA(team_name="ubuntu-team")
-
-    >>> publishToPPA("no-priv", "warty", "commercialpackage", "1.0-1")
 
     >>> logout()
     >>> transaction.commit()

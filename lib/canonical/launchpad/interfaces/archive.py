@@ -8,6 +8,9 @@ __metaclass__ = type
 __all__ = [
     'ArchiveDependencyError',
     'ArchivePurpose',
+    'CannotCopy',
+    'ComponentNotFound',
+    'DistroSeriesNotFound',
     'IArchive',
     'IArchiveEditDependenciesForm',
     'IArchivePackageCopyingForm',
@@ -17,14 +20,18 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'PocketNotFound',
+    'SourceNotFound',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, Object, List, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.gpg import IGPGKey
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 
@@ -33,7 +40,7 @@ from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported, export_read_operation,
     export_factory_operation, export_write_operation, operation_parameters,
-    operation_returns_collection_of)
+    operation_returns_collection_of, webservice_error)
 
 
 class ArchiveDependencyError(Exception):
@@ -47,6 +54,34 @@ class ArchiveDependencyError(Exception):
     """
 
 
+# Exceptions used in the webservice that need to be in this file to get
+# picked up therein.
+
+class CannotCopy(Exception):
+    """Exception raised when a copy cannot be performed."""
+    webservice_error(400) #Bad request.
+
+
+class PocketNotFound(Exception):
+    """Invalid pocket."""
+    webservice_error(400) #Bad request.
+
+
+class DistroSeriesNotFound(Exception):
+    """Invalid distroseries."""
+    webservice_error(400) #Bad request.
+
+
+class SourceNotFound(Exception):
+    """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+
+class ComponentNotFound(Exception):
+    """Invalid source name."""
+    webservice_error(400) #Bad request.
+
+
 class IArchive(IHasOwner):
     """An Archive interface"""
     export_as_webservice_entry()
@@ -56,7 +91,7 @@ class IArchive(IHasOwner):
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
-            description=_("""The PPA owner.""")))
+            description=_("""The archive owner.""")))
 
     name = exported(
         TextLine(
@@ -66,16 +101,20 @@ class IArchive(IHasOwner):
 
     description = exported(
         Text(
-            title=_("PPA contents description"), required=False,
-            description=_("A short description of contents of this PPA.")))
+            title=_("Archive contents description"), required=False,
+            description=_("A short description of this archive's contents.")))
 
     enabled = Bool(
         title=_("Enabled"), required=False,
-        description=_("Whether the PPA is enabled or not."))
+        description=_("Whether the archive is enabled or not."))
+
+    publish = Bool(
+        title=_("Publish"), required=False,
+        description=_("Whether the archive is to be published or not."))
 
     private = Bool(
         title=_("Private"), required=False,
-        description=_("Whether the PPA is private to the owner or not."))
+        description=_("Whether the archive is private to the owner or not."))
 
     require_virtualized = Bool(
         title=_("Require Virtualized Builder"), required=False,
@@ -118,6 +157,9 @@ class IArchive(IHasOwner):
             Interface, # Redefined to IDistribution later.
             title=_("The distribution that uses or is used by this "
                     "archive.")))
+
+    signing_key = Object(
+        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
     dependencies = Attribute(
         "Archive dependencies recorded for this archive and ordered by owner "
@@ -515,6 +557,84 @@ class IArchive(IHasOwner):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    @operation_parameters(
+        source_names=List(
+            title=_("Source package names"),
+            value_type=TextLine()),
+        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
+    # Source_names is a string because exporting a SourcePackageName is
+    # rather nonsensical as it only has id and name columns.
+    def syncSources(source_names, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
+        """Synchronise (copy) named sources into this archive from another.
+
+        This method takes string-based paramters and is intended for use
+        in the API.
+
+        :param source_names: a list of string names of packages to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+
+        :raises SourceNotFound: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+
+        :return: a list of string names of packages that could be copied.
+        """
+
+    @operation_parameters(
+        source_name=TextLine(title=_("Source package name")),
+        version=TextLine(title=_("Version")),
+        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
+    # XXX Julian 2008-11-05
+    # This method takes source_name and version as strings because
+    # SourcePackageRelease is not exported on the API yet.  When it is,
+    # we should consider either changing this method or adding a new one
+    # that takes that object instead.
+    def syncSource(source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False):
+        """Synchronise (copy) a single named source into this archive.
+
+        This method takes string-based paramters and is intended for use
+        in the API.
+
+        :param source_name: a string name of the package to copy.
+        :param version: the version of the package to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+
+        :raises SourceNotFound: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+        """
+
+
 
 class IPPA(IArchive):
     """Marker interface so traversal works differently for PPAs."""
@@ -573,11 +693,17 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    number_of_ppa_sources = Attribute(
-        'Number of published sources in public PPAs.')
+    def getNumberOfPPASourcesForDistribution(distribution):
+        """Return the number of sources for PPAs in a given distribution.
 
-    number_of_ppa_binaries = Attribute(
-        'Number of published binaries in public PPAs.')
+        Only public and published sources are considered.
+        """
+
+    def getNumberOfPPABinariesForDistribution(distribution):
+        """Return the number of binaries for PPAs in a given distribution.
+
+        Only public and published sources are considered.
+        """
 
     def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
@@ -620,6 +746,12 @@ class IArchiveSet(Interface):
         """Return all PPAs the given user can participate.
 
         The result is ordered by PPA owner's displayname.
+        """
+
+    def getPPAsPendingSigningKey():
+        """Return all PPAs pending signing key generation.
+
+        The result is ordered by archive creation date.
         """
 
     def getLatestPPASourcePublicationsForDistribution(distribution):
@@ -726,3 +858,15 @@ IArchive['newComponentUploader'].queryTaggedValue(
 IArchive['newQueueAdmin'].queryTaggedValue(
     'lazr.webservice.exported')[
         'return_type'].schema = IArchivePermission
+IArchive['syncSources'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['from_archive'].schema = IArchive
+IArchive['syncSource'].queryTaggedValue(
+    'lazr.webservice.exported')[
+        'params']['from_archive'].schema = IArchive
+
+# This is patched here to avoid even more circular imports in
+# interfaces/person.py.
+from canonical.launchpad.interfaces.person import IPersonPublic
+IPersonPublic['archive'].schema = IArchive
+

@@ -79,8 +79,9 @@ Nor does it appear on the template upload pages.
 Now this is changed: Evolution's owner configures it not to use
 Launchpad Translations.
 
-    >>> from canonical.launchpad.database.product import ProductSet
-    >>> ProductSet().getByName('evolution').official_rosetta = False
+    # Use the raw DB object to bypass the security proxy.
+    >>> from canonical.launchpad.database.product import Product
+    >>> Product.byName('evolution').official_rosetta = False
 
 When the owner now visits the upload page for trunk, there's a notice.
 

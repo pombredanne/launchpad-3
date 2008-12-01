@@ -808,7 +808,7 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
-    def startRequest():
+    def beforeTraversal():
         """Install the database policy into the current thread."""
 
     def afterCall():
