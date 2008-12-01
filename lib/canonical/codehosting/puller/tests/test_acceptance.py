@@ -17,6 +17,7 @@ import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.config import TransportConfig
 from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
@@ -50,7 +51,8 @@ class TestBranchPuller(PullerBranchTestCase):
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
 
-    def assertMirrored(self, db_branch, source_branch=None, accessing_user=None):
+    def assertMirrored(self, db_branch, source_branch=None,
+                       accessing_user=None):
         """Assert that 'db_branch' was mirrored succesfully.
 
         This method checks that the fields on db_branch show that the branch
@@ -183,7 +185,8 @@ class TestBranchPuller(PullerBranchTestCase):
                 self.factory.getUniqueString(), format=format)
             tree.commit('rev1')
         lp_server = self.getLPServerForUser(db_branch.owner)
-        dest_transport = get_transport(lp_server.get_url() + db_branch.unique_name)
+        dest_transport = get_transport(
+            lp_server.get_url() + db_branch.unique_name)
         try:
             dir_to = BzrDir.open_from_transport(dest_transport)
         except errors.NotBranchError:
@@ -191,6 +194,15 @@ class TestBranchPuller(PullerBranchTestCase):
             tree.branch.bzrdir.clone_on_transport(dest_transport)
         else:
             tree.branch.push(dir_to.open_branch())
+
+    def setUpMirroredBranch(self, db_branch, format=None):
+        """Make a tree in the cwd and serve it over HTTP, returning the URL.
+        """
+        tree = self.make_branch_and_tree('.', format=format)
+        tree.commit('rev1')
+        db_branch.url = self.serveOverHTTP()
+        db_branch.requestMirror()
+        return tree
 
     def test_mirror_hosted_branch(self):
         # Run the puller on a populated hosted branch pull queue.
@@ -246,35 +258,50 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
         db_branch = self.factory.makeBranch(BranchType.MIRRORED)
-        tree = self.make_branch_and_tree('.')
-        tree.commit('rev1')
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch)
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
-    def _makeDefaultStackedOnBranch(self, private=False):
+    def _makeDefaultStackedOnBranch(self, private=False,
+                                    branch_type=BranchType.HOSTED):
         """Make a default stacked-on branch.
 
         This creates a database branch on a product that allows default
         stacking, makes it the default stacked-on branch for that product,
-        then creates a Bazaar branch for it. The Bazaar branch goes directly
-        into the mirrored area and has a stackable format.
+        creates a Bazaar branch for it and pulls it over into the mirrored
+        area.
 
         :return: `IBranch`.
         """
         # Make the branch.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeBranch(
-            product=product, private=private)
+            product=product, private=private, name='trunk',
+            branch_type=branch_type)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = default_branch
-        transaction.commit()
-        self.pushBranch(default_branch)
-        command, retcode, output, error = self.runPuller('upload')
+        # Arrange for it to be pulled.
+        if branch_type == BranchType.HOSTED:
+            puller_type = 'upload'
+            transaction.commit()
+            # For hosted branches, we just push it into the hosted area via
+            # the codehosting vfs.
+            self.pushBranch(default_branch)
+        elif branch_type == BranchType.MIRRORED:
+            puller_type = 'mirror'
+            # For mirrored branches, we serve the branch over HTTP, point the
+            # database branch at this HTTP server and call requestMirror()
+            self.setUpMirroredBranch(default_branch, format='1.6')
+            transaction.commit()
+        else:
+            raise AssertionError(
+                "don't know how to make a %s default branch"
+                % branch_type.TITLE)
+        # Pull it.
+        command, retcode, output, error = self.runPuller(puller_type)
         self.assertRanSuccessfully(command, retcode, output, error)
         return default_branch
 
@@ -284,16 +311,63 @@ class TestBranchPuller(PullerBranchTestCase):
         default_branch = self._makeDefaultStackedOnBranch()
         db_branch = self.factory.makeBranch(
             BranchType.MIRRORED, product=default_branch.product)
-
-        tree = self.make_branch_and_tree('.', format='1.6')
-        tree.commit('rev1')
-
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
+        mirrored_branch = self.assertMirrored(
+            db_branch, source_branch=tree.branch)
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
+
+    def test_hosted_branch_stacked_on_mirrored_branch(self):
+        # If a hosted branch is stacked on a mirrored branch, the puller opens
+        # the hosted branch stacked on the copy of the branch in the mirrored
+        # area, rather than trying to open it stacked on the non-existent
+        # version of the branch in the hosted area.
+        default_branch = self._makeDefaultStackedOnBranch(
+            branch_type=BranchType.MIRRORED)
+        db_branch = self.factory.makeBranch(
+            BranchType.HOSTED, product=default_branch.product)
+        transaction.commit()
+        self.pushBranch(db_branch, format='1.6')
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        mirrored_branch = self.assertMirrored(db_branch)
+        self.assertEqual(
+            '/' + default_branch.unique_name,
+            mirrored_branch.get_stacked_on_url())
+
+    def test_manual_stacking(self):
+        # If the user manually stacks on a Launchpad branch, the branch.conf
+        # file of the resulting branch will contain the full URL of the
+        # manually selected branch.  The puller still manages to open the
+        # branch and sets the stacking information of the branch in the
+        # mirrored area to be the most compatible "/" + unique_name form.  We
+        # have to cheat rather to test this because the full URLs don't work
+        # in the environment this test is run in, so we set the stacking URL
+        # in the hosted area directory after we've pushed it and then clear it
+        # again so that assertMirrored can work.  The test is still valid
+        # though, as the paths are as they should be when the puller is run.
+        default_branch = self._makeDefaultStackedOnBranch()
+        db_branch = self.factory.makeBranch(
+            BranchType.HOSTED, product=default_branch.product)
+        transaction.commit()
+        self.pushBranch(db_branch, format='1.6')
+        # Because Bazaar can't access branches over bzr+ssh in this test, we
+        # cheat and set the stacking information directly.
+        branch_config = TransportConfig(
+            get_transport(self.getHostedPath(db_branch)), 'branch.conf')
+        branch_config.set_option(
+            'stacked_on_location',
+            'bzr+ssh://bazaar.launchpad.dev/' + default_branch.unique_name)
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        # We clear the stacking information again here so that assertMirrored
+        # can open the branch in the hosted area.
+        branch_config.set_option('stacked_on_location', '')
+        mirrored_branch = self.assertMirrored(db_branch)
         self.assertEqual(
             '/' + default_branch.unique_name,
             mirrored_branch.get_stacked_on_url())
@@ -305,15 +379,12 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch = self.factory.makeBranch(
             BranchType.MIRRORED, product=default_branch.product)
 
-        tree = self.make_branch_and_tree('.', format='1.6')
-        tree.commit('rev1')
-
-        db_branch.url = self.serveOverHTTP()
-        db_branch.requestMirror()
+        tree = self.setUpMirroredBranch(db_branch, format='1.6')
         transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
-        mirrored_branch = self.assertMirrored(db_branch, source_branch=tree.branch)
+        mirrored_branch = self.assertMirrored(
+            db_branch, source_branch=tree.branch)
         self.assertRaises(
             errors.NotStacked, mirrored_branch.get_stacked_on_url)
 
