@@ -873,15 +873,12 @@ class Person(
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
-
         if product_name is None or product_name == '+junk':
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))
         else:
-            product = Product.selectOneBy(name=product_name)
+            product = getUtility(IPillarNameSet).getByName(product_name)
             if product is None:
                 return None
             return Branch.selectOneBy(owner=self, product=product,
@@ -1177,15 +1174,17 @@ class Person(
     @property
     def karma_category_caches(self):
         """See `IPerson`."""
-        return KarmaCache.select(
-            AND(
-                KarmaCache.q.personID == self.id,
-                KarmaCache.q.categoryID != None,
-                KarmaCache.q.productID == None,
-                KarmaCache.q.projectID == None,
-                KarmaCache.q.distributionID == None,
-                KarmaCache.q.sourcepackagenameID == None),
-            orderBy=['category'])
+        store = Store.of(self)
+        conditions = And(
+            KarmaCache.category == KarmaCategory.id,
+            KarmaCache.person == self.id,
+            KarmaCache.product == None,
+            KarmaCache.project == None,
+            KarmaCache.distribution == None,
+            KarmaCache.sourcepackagename == None)
+        result = store.find((KarmaCache, KarmaCategory), conditions)
+        result = result.order_by(KarmaCategory.title)
+        return [karma_cache for (karma_cache, category) in result]
 
     @property
     def karma(self):
@@ -1534,8 +1533,10 @@ class Person(
         return EmailAddress.select(query)
 
     @property
-    def allwikis(self):
-        return getUtility(IWikiNameSet).getAllWikisByPerson(self)
+    def wiki_names(self):
+        """See `IPerson`."""
+        result =  Store.of(self).find(WikiName, WikiName.person == self.id)
+        return result.order_by(WikiName.wiki, WikiName.wikiname)
 
     @property
     def title(self):
@@ -3632,10 +3633,6 @@ class WikiNameSet:
     def getByWikiAndName(self, wiki, wikiname):
         """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
-
-    def getAllWikisByPerson(self, person):
-        """See `IWikiNameSet`."""
-        return WikiName.selectBy(person=person)
 
     def get(self, id):
         """See `IWikiNameSet`."""

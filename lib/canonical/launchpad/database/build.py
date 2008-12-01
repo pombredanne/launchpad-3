@@ -758,13 +758,12 @@ class BuildSet:
 
         self._handleOptionalParams(queries, status, name)
 
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person

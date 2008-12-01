@@ -31,6 +31,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
+from zope.interface.interfaces import IMethod
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -289,30 +290,24 @@ class NullBugTask(BugTaskMixin):
         else:
             raise AssertionError('Unknown NullBugTask: %r.' % self)
 
-        # Set a bunch of attributes to None, because it doesn't make
+        # Make us provide the interface by setting all required attributes
+        # to None, and define the methods as raising NotImplementedError.
+        # The attributes are set to None because it doesn't make
         # sense for these attributes to have a value when there is no
         # real task there. (In fact, it may make sense for these
         # values to be non-null, but I haven't yet found a use case
         # for it, and I don't think there's any point on designing for
         # that until we've encountered one.)
-        self.id = None
-        self.age = None
-        self.milestone = None
-        self.status = None
-        self.statusexplanation = None
-        self.importance = None
-        self.assignee = None
-        self.bugwatch = None
-        self.owner = None
-        self.conjoined_master = None
-        self.conjoined_slave = None
+        def this_is_a_null_bugtask_method(*args, **kwargs):
+            raise NotImplementedError
 
-        self.datecreated = None
-        self.date_assigned = None
-        self.date_confirmed = None
-        self.date_last_updated = None
-        self.date_inprogress = None
-        self.date_closed = None
+        for name, spec in INullBugTask.namesAndDescriptions(True):
+            if not hasattr(self, name):
+                if IMethod.providedBy(spec):
+                    value = this_is_a_null_bugtask_method
+                else:
+                    value = None
+                setattr(self, name, value)
 
     @property
     def title(self):
