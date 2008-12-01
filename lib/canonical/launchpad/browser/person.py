@@ -4582,7 +4582,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         pillarnames = self._related_projects()[:max_projects]
         products = [pillarname.pillar for pillarname in pillarnames
                     if IProduct.providedBy(pillarname.pillar)]
-        open_bugtask_dict = self.context.getOpenBugtasksPerProduct(
+        open_bugtask_dict = self.context.getOpenBugTasksPerProduct(
             user, products)
         for pillarname in pillarnames:
             pillar = pillarname.pillar

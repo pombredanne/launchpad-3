@@ -2391,7 +2391,7 @@ class Person(
             # We don't want to subscribe to the list.
             return False
 
-    def getOpenBugtasksPerProduct(self, user, products):
+    def getOpenBugTasksPerProduct(self, user, products):
         # Local import of Bug to avoid import loop.
         from canonical.launchpad.database.bug import Bug
         store = Store.of(self)
