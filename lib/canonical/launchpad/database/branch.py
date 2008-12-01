@@ -1042,7 +1042,8 @@ class BranchSet:
 
     def getByUniqueName(self, unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name."""
-        # import locally to avoid circular imports
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Doesn't handle
+        # source package branches.
         match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
         if match is None:
             return default
