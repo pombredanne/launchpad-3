@@ -235,8 +235,8 @@ class LookupTree:
         """Generate a flat representation of this tree.
 
         Generates tuples. The last element in the tuple is the
-        result. The previous elements are the keys that could be
-        followed to reach the result.
+        result. The previous elements are the branches followed to
+        reach the result.
 
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.
