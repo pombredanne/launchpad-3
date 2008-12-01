@@ -223,16 +223,6 @@ class IBranchMergeProposal(Interface):
             description=_("The revision number on the target branch which "
                           "contains the merge from the source branch."))
 
-    # XXX: rockstar - 1 Dec 2008 - Currently, making an attribute readonly
-    # through the API but writable through the webapp.  This attribute is only
-    # to make sure that merged_revno is accessible, but readonly
-    merged_revno_readonly = exported(
-        Int(
-            title=_("Merged Revision Number (Read Only)", required=False,
-            read_only= True
-            description=_("The revision number on the target branch which "
-                          "contains the merge from the source branch.")))
-
     date_merged = exported(
         Datetime(
             title=_('Date Merged'), required=False,
