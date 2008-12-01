@@ -13,6 +13,10 @@ from canonical.launchpad.mail.sendmail import MailController
 class TestMailController(TestCase):
 
     def test_constructor(self):
+        """Test the default construction behavior.
+
+        Defaults should be empty.  The 'to' should be converted to a list.
+        """
         ctrl = MailController(
             'from@example.com', 'to@example.com', 'subject', 'body')
         self.assertEqual('from@example.com', ctrl.from_addr)
@@ -23,6 +27,10 @@ class TestMailController(TestCase):
         self.assertEqual([], ctrl.attachments)
 
     def test_constructor2(self):
+        """Test the explicit construction behavior.
+
+        Since to is a list, it is not converted into a list.
+        """
         ctrl = MailController(
             'from@example.com', ['to1@example.com', 'to2@example.com'],
             'subject', 'body', {'key': 'value'})
@@ -33,6 +41,7 @@ class TestMailController(TestCase):
         self.assertEqual([], ctrl.attachments)
 
     def test_addAttachment(self):
+        """addAttachment should add a part to the list of attachments."""
         ctrl = MailController(
             'from@example.com', 'to@example.com', 'subject', 'body')
         ctrl.addAttachment('content1')
@@ -56,6 +65,7 @@ class TestMailController(TestCase):
             'content2', 'text/plain', inline=True, filename='name1')
 
     def test_MakeMessage_no_attachment(self):
+        """A message without an attachment should have a single body."""
         ctrl = MailController(
             'from@example.com', 'to@example.com', 'subject', 'body')
         message = ctrl.makeMessage()
@@ -65,6 +75,7 @@ class TestMailController(TestCase):
         self.assertEqual('body', message.get_payload(decode=True))
 
     def test_MakeMessage_with_attachment(self):
+        """A message with an attachment should be multipart."""
         ctrl = MailController(
             'from@example.com', 'to@example.com', 'subject', 'body')
         ctrl.addAttachment('attach')
@@ -80,6 +91,7 @@ class TestMailController(TestCase):
         self.assertEqual('attachment', attachment['Content-Disposition'])
 
     def test_MakeMessage_with_specific_attachment(self):
+        """Explicit attachment params should be obeyed."""
         ctrl = MailController(
             'from@example.com', 'to@example.com', 'subject', 'body')
         ctrl.addAttachment(
