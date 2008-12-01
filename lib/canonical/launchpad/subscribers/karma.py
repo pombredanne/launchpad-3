@@ -294,12 +294,18 @@ def branch_merge_status_changed(proposal, event):
     product = proposal.source_branch.product
     user = event.user
 
-    if event.to_state == BranchMergeProposalStatus.CODE_APPROVED:
+    in_progress_states = (
+        BranchMergeProposalStatus.WORK_IN_PROGRESS,
+        BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    if ((event.to_state == BranchMergeProposalStatus.CODE_APPROVED) and
+        (event.from_state in (in_progress_states))):
         if user == proposal.registrant:
             user.assignKarma('branchmergeapprovedown', product=product)
         else:
             user.assignKarma('branchmergeapproved', product=product)
-    elif event.to_state == BranchMergeProposalStatus.REJECTED:
+    elif ((event.to_state == BranchMergeProposalStatus.REJECTED) and
+          (event.from_state in (in_progress_states))):
         if user == proposal.registrant:
             user.assignKarma('branchmergerejectedown', product=product)
         else:

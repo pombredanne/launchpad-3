@@ -139,7 +139,7 @@ in the email.
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch,
-    ...     initial_comment=initial_comment, requested_reviews=reviewers)
+    ...     initial_comment=initial_comment, review_requests=reviewers)
     >>> notifications = pop_notifications()
     >>> for notification in notifications:
     ...     print "%s, %s" % (

@@ -103,6 +103,7 @@ class TestCase(unittest.TestCase):
         elif len(events) > 1:
             raise AssertionError('Events were generated: %s.' %
                                  ', '.join([repr(event) for event in events]))
+        return result
 
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.

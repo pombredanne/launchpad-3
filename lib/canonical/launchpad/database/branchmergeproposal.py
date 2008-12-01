@@ -221,7 +221,7 @@ class BranchMergeProposal(SQLBase):
                     subscription, recipient, self, rationale)
         # Add in all the individuals that have been asked for a review,
         # or who have reviewed.  These people get added to the recipients
-        # with the rationalie of "Reviewer".
+        # with the rationale of "Reviewer".
         # Don't add a team reviewer to the recipients as they are only going
         # to get emails normally if they are subscribed to one of the
         # branches, and if they are subscribed, they'll be getting this email
