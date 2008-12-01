@@ -245,6 +245,37 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             u'bar_1.0-2.dsc: Version older than that in the archive. '
             u'1.0-2 <= 1.0-10')
 
+    def testNamedPPAUpload(self):
+        """Test PPA uploads to a named PPA location.
+
+        PPA uploads can be to a named PPA, but right now only to one
+        called "ppa" until the parallel run of also uploading without
+        a ppa name is over.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "breezy")
+
+    def testNamedPPAUploadWithSeries(self):
+        """Test PPA uploads to a named PPA location and with a distroseries.
+
+        As per testNamedPPAUpload above, but we override the distroseries.
+        """
+        # The 'bar' package already targets 'breezy' as can be seen from
+        # the test above, so we'll set up a new distroseries called
+        # farty and override to use that.
+        self.setupBreezy(name="farty")
+        self.breezy['i386'].supports_virtualized = True # Allow PPA builds.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        queue_root = self.uploadprocessor.last_processed_upload.queue_root
+        self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
+        self.assertEqual(queue_root.distroseries.name, "farty")
+
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
 
@@ -634,7 +665,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Path mismatch 'ubuntu/one/two/three/four'. Use "
-            "~<person>/<distro>/[distroseries]/[files] for PPAs and "
+            "~<person>/ppa_name/<distro>[/distroseries]/[files] for PPAs and "
             "<distro>/[files] for normal uploads.\n"
             "Further error processing "
             "not possible because of a critical previous error.")
