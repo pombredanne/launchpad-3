@@ -79,23 +79,9 @@ def _decorates_advice(cls):
         raise TypeError(
             'Cannot use decorates() on a classic class: %s.' % cls)
     classImplements(cls, interface)
-    for name in list(interface):
+    for name in interface:
         if not hasattr(cls, name):
             setattr(cls, name, Passthrough(name, contextvar))
-
-    # pylint: disable-msg=W0101
-    def __eq__(self, other):
-        #return getattr(self, contextvar) == other
-        context = getattr(self, contextvar)
-        if isinstance(other, type(context)):
-            return context == other
-        return NotImplemented
-    cls.__eq__ = __eq__
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-    cls.__ne__ = __ne__
-
     return cls
 
 
@@ -116,3 +102,4 @@ class Passthrough:
 
     def __delete__(self, inst):
         raise NotImplementedError
+

@@ -60,18 +60,6 @@ delegated.
     >>> IFoo.providedBy(s)
     True
 
-A decorated object compares equally to its raw-object counterpart and to
-itself.
-
-    >>> s == f
-    True
-
-    >>> s == s
-    True
-
-    >>> s == SomeClass(f)
-    True
-
 The decorates function takes an optional keyword argument to change
 attribute containing the object to delegate to. So an existing class,
 such as SomeOtherClass, can declare the name of the attribute to
