@@ -276,6 +276,20 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(queue_root.status, PackageUploadStatus.DONE)
         self.assertEqual(queue_root.distroseries.name, "farty")
 
+    def testNamedPPAUploadWithNonexistentName(self):
+        """Test PPA uploads to a named PPA location that doesn't exist."""
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/BADNAME/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # There's no way of knowing that the BADNAME part is a ppa_name
+        # during the parallel run period, so it can only assume it's a
+        # bad distribution name.
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.rejection_message,
+            "Could not find distribution 'BADNAME'\n"
+            "Further error processing not "
+            "possible because of a critical previous error.")
+
     def testPPAPublisherOverrides(self):
         """Check that PPA components override to main at publishing time,
 
