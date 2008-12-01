@@ -238,22 +238,12 @@ class LookupTree:
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.
         """
-        seen_keys = set()
         for branch in self.branches:
-            # Ordering of keys may be important, so don't use a
-            # set operation here.
-            distinct_branch_keys = tuple(
-                key for key in branch.keys if key not in seen_keys)
-            # Yield this path if we have distinct keys or this is a
-            # default branch.
-            if branch.is_default or len(distinct_branch_keys) > 0:
-                if branch.is_leaf:
-                    yield distinct_branch_keys, branch.result
-                else:
-                    for path in branch.result.flatten():
-                        yield (distinct_branch_keys,) + path
-            # Update the record of seen keys.
-            seen_keys.update(distinct_branch_keys)
+            if branch.is_leaf:
+                yield branch, branch.result
+            else:
+                for path in branch.result.flatten():
+                    yield (branch,) + path
 
     @property
     def min_depth(self):
