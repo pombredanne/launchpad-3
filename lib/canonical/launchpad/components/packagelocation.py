@@ -70,7 +70,7 @@ class PackageLocationError(Exception):
 
 
 def build_package_location(distribution_name, suite=None, purpose=None,
-                           person_name=None, ppa_name=None):
+                           person_name=None, archive_name=None):
     """Convenience function to build PackageLocation objects."""
 
     # XXX kiko 2007-10-24:
@@ -90,10 +90,10 @@ def build_package_location(distribution_name, suite=None, purpose=None,
             "Could not find distribution %s" % err)
 
     if purpose == ArchivePurpose.PPA:
-        assert person_name is not None and ppa_name is not None, (
-            "person_name and ppa_name should be passed for PPA archives.")
+        assert person_name is not None and archive_name is not None, (
+            "person_name and archive_name should be passed for PPA archives.")
         archive = getUtility(IArchiveSet).getPPAByDistributionAndOwnerName(
-            distribution, person_name, ppa_name)
+            distribution, person_name, archive_name)
         if archive is None:
             raise PackageLocationError(
                 "Could not find a PPA for %s named %s"
@@ -103,8 +103,8 @@ def build_package_location(distribution_name, suite=None, purpose=None,
                 "The specified archive is not for distribution %s"
                 % distribution_name)
     elif purpose == ArchivePurpose.PARTNER:
-        assert person_name is None and ppa_name is None, (
-            "person_name and ppa_name shoudn't be passed for "
+        assert person_name is None and archive_name is None, (
+            "person_name and archive_name shoudn't be passed for "
             "PARTNER archive.")
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, purpose)
@@ -113,8 +113,8 @@ def build_package_location(distribution_name, suite=None, purpose=None,
                 "Could not find %s archive for %s" % (
                 purpose.title, distribution_name))
     else:
-        assert person_name is None and ppa_name is None, (
-            "person_name and ppa_name shoudn't be passed when purpose "
+        assert person_name is None and archive_name is None, (
+            "person_name and archive_name shoudn't be passed when purpose "
             "is omitted.")
         archive = distribution.main_archive
 

@@ -732,7 +732,7 @@ class TestCopyPackage(unittest.TestCase):
 
         self.assertRaisesWithContent(
             PackageLocationError,
-            "Could not find a PPA for slatibartfast",
+            "Could not find a PPA for slatibartfast named ppa",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
