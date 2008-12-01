@@ -119,6 +119,13 @@ I think this would be good.
         self.assertEqual('<root-message-id>', ctrl.headers['In-Reply-To'])
 
     def test_generateEmail_attaches_diff(self):
+        """A diff should be attached, with the correct metadata.
+
+        The attached diff should be inline, should have a filename,
+        and should be of type text/x-diff (or text/x-patch), with no declared
+        encoding.  (The only encoding in a diff is the encoding of the input
+        files, which may be inconsistent.)
+        """
         bmp, subscriber = self.makeProposalWithSubscriber(
             diff_text="Fake diff")
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
