@@ -81,12 +81,6 @@
       />
   </class>
 
-  <!-- This is to make PersonWithLanguagesCached have the same security as
-  Person. -->
-  <class class="canonical.launchpad.database.question.PersonWithLanguagesCached">
-    <require like_class="canonical.launchpad.database.Person" />
-  </class>
-
   <browser:menus
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu

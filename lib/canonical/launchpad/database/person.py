@@ -366,13 +366,11 @@ class Person(
 
     personal_standing_reason = StringCol(default=None)
 
-    # XXX: Need to use storm-native API in the three methods below.
     @cachedproperty('_languages_cache')
     def languages(self):
-        return list(Language.select(
-            AND(Language.q.id==PersonLanguage.q.languageID,
-                PersonLanguage.q.personID==self.id),
-            clauseTables=['PersonLanguage']))
+        return list(Store.of(self).find(
+            Language, And(Language.id == PersonLanguage.languageID,
+                          PersonLanguage.personID == self.id)))
 
     def addLanguage(self, language):
         PersonLanguage(person=self, language=language)
@@ -380,7 +378,10 @@ class Person(
             del self._languages_cache
 
     def removeLanguage(self, language):
-        PersonLanguage.selectOneBy(person=self, language=language).destroySelf()
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        PersonLanguage.delete(person_language.id)
         if safe_hasattr(self, '_languages_cache'):
             del self._languages_cache
 
