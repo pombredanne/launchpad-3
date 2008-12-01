@@ -4577,7 +4577,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         spec_count, and question_count.
         """
         projects = []
-        user=getUtility(ILaunchBag).user
+        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
         pillarnames = self._related_projects()[:max_projects]
         products = [pillarname.pillar for pillarname in pillarnames

@@ -2408,8 +2408,9 @@ class Person(
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter != '':
             conditions = And(conditions, privacy_filter)
-        result = store.using(*origin).find((BugTask.productID, SQL('COUNT(*)')),
-                                          conditions)
+        result = store.using(*origin).find(
+            (BugTask.productID, SQL('COUNT(*)')),
+            conditions)
 
         result = result.group_by(BugTask.productID)
         return dict(result)
