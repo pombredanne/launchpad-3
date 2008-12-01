@@ -475,15 +475,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch_title=None,
-                               person_displayname=None):
+    def makeBranchSubscription(self, branch=None, person=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
         :param person_displayname: The displayname for the created Person
         """
-        branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname)
+        if branch is None:
+            branch = self.makeBranch()
+        if person is None:
+            person = self.makePerson()
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
