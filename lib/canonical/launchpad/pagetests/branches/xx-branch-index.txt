@@ -5,26 +5,46 @@ Imports used later in the document:
     >>> import pytz
     >>> from datetime import datetime
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
 
-
-Modifying test data for this test case.
+Modifying/creating test data for this test case.
 
     >>> login('foo.bar@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
     >>> branch = getUtility(IBranchSet).getByUniqueName(
     ...     '~name12/+junk/junk.dev')
     >>> factory.makeRevisionsForBranch(branch, count=5)
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> anonymous_product = factory.makeProduct(
+    ...     name='anonymous-product', owner=sample_person)
+    >>> anonymous_branch = factory.makeBranch(
+    ...     name='anonymous-branch', product=anonymous_product,
+    ...     owner=sample_person)
+    >>> anonymous_product.setAliases(['alias-for-product'])
     >>> logout()
+
+
+== Reaching to branches ==
+
+On the Code site, registered branches are reached by
+/<owner>/<product>/<branch-name>, where <product> can be either a product's
+name or any of its aliases.  In case an alias is used, the user is redirected
+to the branch's canonical URL -- the one which uses the product name.
+
+    >>> anon_browser.open('http://code.launchpad.dev/~name12/anonymous-product'
+    ...                   '/anonymous-branch')
+    >>> anon_browser.url
+    'http://code.launchpad.dev/~name12/anonymous-product/anonymous-branch'
+    >>> anon_browser.open('http://code.launchpad.dev/~name12/alias-for-product'
+    ...                   '/anonymous-branch')
+    >>> anon_browser.url
+    'http://code.launchpad.dev/~name12/anonymous-product/anonymous-branch'
+
 
 == Recent Revisions ==
 
-On the Code site, registered branches are reached by
-/<owner>/<product>/<branch-name>.
+We display the recent revisions of a branch if it has been scanned.
 
     >>> user_browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> assert find_tag_by_id(user_browser.contents, 'merge-summary') is None
@@ -33,8 +53,7 @@ On the Code site, registered branches are reached by
 
 === Heading ===
 
-We display the recent revisions of a branch if it has been scanned. There's a
-"Recent revisions" heading:
+There's a "Recent revisions" heading:
 
     >>> print revisions.h2.renderContents()
     Recent revisions

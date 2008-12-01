@@ -310,9 +310,9 @@ bugs and urls.
     <pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">This fixes <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></pre>
 
 
-Consume notification.
+Consume notifications.
 
-    >>> [_unused] = pop_notifications()
+    >>> _unused = pop_notifications()
 
 == Marking as merged ==
 
@@ -355,9 +355,16 @@ The proposal is now shown as have being merged.
     Status: Merged
     ...
 
-An email notification is also created.
+An email notification is also created and sent to both the subscribers
+and the reviewers.
 
-    >>> [notification] = pop_notifications()
+    >>> notifications = pop_notifications()
+    >>> for notification in notifications:
+    ...     print notification['To']
+    Foo Bar <foo.bar@canonical.com>
+    Mark Shuttleworth <mark@hbd.com>
+    Sample Person <test@canonical.com>
+    >>> notification = notifications[0]
     >>> print notification['Subject']
     Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main updated

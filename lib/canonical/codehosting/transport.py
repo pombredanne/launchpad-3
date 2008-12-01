@@ -112,7 +112,7 @@ class AsyncVirtualTransport(Transport):
         This method is called as an errback by `_call`. Use it to translate
         errors from the server into something that users of the transport
         might expect. This could include translating vfs-specific errors into
-        bzrlib errors (e.g. "couldn't translate" into `NoSuchFile`) or
+        bzrlib errors (e.g. "couldn\'t translate" into `NoSuchFile`) or
         translating underlying paths into virtual paths.
 
         :param failure: A `twisted.python.failure.Failure`.

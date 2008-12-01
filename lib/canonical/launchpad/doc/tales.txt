@@ -290,8 +290,10 @@ title might be interpreted by the browser.
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
-    >>> subscription = factory.makeBranchSubscription('My Branch',
-    ...     'My Person')
+    >>> branch = factory.makeBranch(title='My Branch')
+    >>> person = factory.makePerson(displayname='My Person')
+    >>> subscription = factory.makeBranchSubscription(
+    ...     branch=branch, person=person)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
 

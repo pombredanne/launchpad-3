@@ -39,6 +39,16 @@ removed.
     >>> bound_field.get(firefox)
     u'iceweasel'
 
+If an empty string (or None) is given, all aliases will be removed.
+
+    >>> bound_field.set(firefox, '')
+    >>> bound_field.get(firefox)
+    ''
+
+    >>> bound_field.set(firefox, None)
+    >>> bound_field.get(firefox)
+    ''
+
 Each of these aliases must be valid names and must be unique.
 
     >>> bound_field.validate(u'names_cannot_have_underscores')
