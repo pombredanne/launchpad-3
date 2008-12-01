@@ -35,7 +35,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import Store
-from storm.expr import And
+from storm.expr import And, Join, SQL
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -71,7 +71,7 @@ from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
@@ -123,7 +123,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtask import (
+    BugTask, get_bug_privacy_filter)
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
@@ -2389,6 +2390,30 @@ class Person(
         else:
             # We don't want to subscribe to the list.
             return False
+
+    def getOpenBugtasksPerProduct(self, user, products):
+        # Local import of Bug to avoid import loop.
+        from canonical.launchpad.database.bug import Bug
+        store = Store.of(self)
+        origin = [
+            Bug,
+            Join(BugTask, BugTask.bug == Bug.id),
+            ]
+
+        product_ids = [product.id for product in products]
+        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+                         Bug.duplicateof == None,
+                         BugTask.productID.is_in(product_ids))
+
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter != '':
+            conditions = And(conditions, privacy_filter)
+        result = store.using(*origin).find(
+            (BugTask.productID, SQL('COUNT(*)')),
+            conditions)
+
+        result = result.group_by(BugTask.productID)
+        return dict(result)
 
 
 class PersonSet:

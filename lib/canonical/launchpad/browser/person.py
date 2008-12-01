@@ -147,6 +147,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
+from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.openidserver import (
     IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -4576,15 +4577,24 @@ class PersonRelatedSoftwareView(LaunchpadView):
         spec_count, and question_count.
         """
         projects = []
+        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
-        for pillarname in self._related_projects()[:max_projects]:
+        pillarnames = self._related_projects()[:max_projects]
+        products = [pillarname.pillar for pillarname in pillarnames
+                    if IProduct.providedBy(pillarname.pillar)]
+        open_bugtask_dict = self.context.getOpenBugtasksPerProduct(
+            user, products)
+        for pillarname in pillarnames:
+            pillar = pillarname.pillar
             project = {}
-            project['title'] = pillarname.pillar.title
-            project['url'] = canonical_url(pillarname.pillar)
-            project['bug_count'] = pillarname.pillar.open_bugtasks.count()
-            project['spec_count'] = pillarname.pillar.specifications().count()
-            project['question_count'] = (
-                pillarname.pillar.searchQuestions().count())
+            project['title'] = pillar.title
+            project['url'] = canonical_url(pillar)
+            if IProduct.providedBy(pillar):
+                project['bug_count'] = open_bugtask_dict.get(pillar.id, 0)
+            else:
+                project['bug_count'] = pillar.open_bugtasks.count()
+            project['spec_count'] = pillar.specifications().count()
+            project['question_count'] = pillar.searchQuestions().count()
             projects.append(project)
         return projects
 
