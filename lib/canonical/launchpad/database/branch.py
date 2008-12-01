@@ -1395,6 +1395,9 @@ class BranchSet:
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: Why the hell is
+        # this using SQL? In any case, we want to change this to allow source
+        # packages.
         return Branch.select("""
             BranchMergeProposal.target_branch = Branch.id
             AND BranchMergeProposal.registrant = %s

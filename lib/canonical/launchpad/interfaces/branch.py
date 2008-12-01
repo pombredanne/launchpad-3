@@ -652,6 +652,9 @@ class IBranch(IHasOwner):
             description=_("The project this branch belongs to.")),
         exported_as='project')
 
+    # XXX: JonathanLange 2008-12-01 spec=package-branches: This needs to be
+    # removed and replaced with the name of the container. It's only used for
+    # URL traversal, so maybe we can work out a smarter way of doing that.
     product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
@@ -1002,6 +1005,10 @@ class IBranchSet(Interface):
 
     def getBranch(owner, product, branch_name):
         """Return the branch identified by owner/product/branch_name."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This method
+        # isn't really appropriate once we have source package branches. It's
+        # only used in a couple of places, and all of those places are invalid
+        # anyway.
 
     def new(branch_type, name, registrant, owner, product=None, url=None,
             title=None, lifecycle_status=BranchLifecycleStatus.NEW,
@@ -1063,6 +1070,9 @@ class IBranchSet(Interface):
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
 
+    # XXX: This seems like a strangely motivated method. It gets passed many
+    # products and returns a list summaries for each of them. It's really an
+    # implementation detail, not an API.
     def getActiveUserBranchSummaryForProducts(products):
         """Return the branch count and last commit time for the products.
 
@@ -1171,6 +1181,8 @@ class IBranchSet(Interface):
 
     def getHostedBranchesForPerson(person):
         """Return the hosted branches that the given person can write to."""
+        # XXX: JonathanLange 2008-12-01 spec=package-branches: This API seems
+        # redundant. We can probably delete it.
 
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
@@ -1186,6 +1198,8 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
+        # to change for source package branches.
 
     def getPullQueue(branch_type):
         """Return a queue of branches to mirror using the puller.
@@ -1195,6 +1209,8 @@ class IBranchSet(Interface):
 
     def getTargetBranchesForUsersMergeProposals(user, product):
         """Return a sequence of branches the user has targeted before."""
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
+        # to change for source package branches.
 
     def isBranchNameAvailable(owner, product, branch_name):
         """Is the specified branch_name valid for the owner and product.
@@ -1203,6 +1219,8 @@ class IBranchSet(Interface):
         :param product: A `Product` or None for a junk branch.
         :param branch_name: The proposed branch name.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
+        # to change for source package branches.
 
 
 

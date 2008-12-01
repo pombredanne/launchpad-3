@@ -837,6 +837,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
         The product_name may be None.
         """
+        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API is no
+        # longer appropriate, given source package branches. It's used in
+        # browser/person.py, browser/specification.py.
 
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
