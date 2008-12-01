@@ -15,9 +15,9 @@ Let's do some imports we will need to test this class.
     >>> potemplate = pofile_es.potemplate
     >>> potmsgset = factory.makePOTMsgSet(potemplate=potemplate)
 
-This class links the translations submitted by a translator with the associated
-POFile and POTMsgSet.  TranslationMessage and DummyTranslationMessage both
-implement ITranslationMessage interface:
+This class links the translations submitted by a translator with the
+associated POFile and POTMsgSet.  TranslationMessage and
+DummyTranslationMessage both implement ITranslationMessage interface:
 
     >>> translationmessage = factory.makeTranslationMessage(
     ...     potmsgset=potmsgset, pofile=pofile_es)
@@ -25,9 +25,9 @@ implement ITranslationMessage interface:
     True
 
     >>> serbian = getUtility(ILanguageSet)['sr']
-    >>> dummy_translationmessage = potmsgset.getCurrentDummyTranslationMessage(
+    >>> dummy_message = potmsgset.getCurrentDummyTranslationMessage(
     ...     serbian)
-    >>> verifyObject(ITranslationMessage, dummy_translationmessage)
+    >>> verifyObject(ITranslationMessage, dummy_message)
     True
 
 
