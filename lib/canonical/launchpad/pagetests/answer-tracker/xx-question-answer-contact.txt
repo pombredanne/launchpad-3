@@ -33,7 +33,7 @@ each team that user is an administrator of.
 
     >>> browser.getControl(
     ...     name='field.answer_contact_teams').options
-    ['landscape-developers']
+    ['landscape-developers', 'launchpad-users']
 
 The user can select any of these checkboxes to register as an answer
 contact himself or one of the team for which he's an administrator. In
