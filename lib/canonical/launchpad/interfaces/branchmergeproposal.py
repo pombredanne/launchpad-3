@@ -218,10 +218,11 @@ class IBranchMergeProposal(Interface):
             description=_("The revision id that has been queued for "
                           "landing.")))
 
-    merged_revno = Int(
+    merged_revno = exported(
+        Int(
             title=_("Merged Revision Number"), required=False,
             description=_("The revision number on the target branch which "
-                          "contains the merge from the source branch."))
+                          "contains the merge from the source branch.")))
 
     date_merged = exported(
         Datetime(
