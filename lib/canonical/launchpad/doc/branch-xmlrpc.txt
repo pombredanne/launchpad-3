@@ -38,10 +38,9 @@ Now we can see that a branch got registered:
 
     >>> new_branch = getUtility(IBranchSet).getByUrl(branch_url)
 
-The author and owner got set to the authenticated person; Foo Bar.
+The author_email is now ignored as the author attribute has been
+removed from the branch object.
 
-    >>> print new_branch.author.displayname
-    Foo Bar
     >>> print new_branch.owner.displayname
     Foo Bar
 
@@ -83,8 +82,6 @@ well:
     >>> new_branch = getUtility(IBranchSet).getByUrl(other_branch_url)
     >>> print new_branch.owner.displayname
     Foo Bar
-    >>> print new_branch.author.displayname
-    Sample Person
 
     >>> print new_branch.name
     branch_name
@@ -131,16 +128,6 @@ If we give a product name that doesn't exist, we get an error:
     Traceback (most recent call last):
     ...
     Fault: <Fault 10: 'No such project: non-existing'>
-
-If we give an email address which isn't registered in Launchpad:
-
-    >>> branchset_api.register_branch(
-    ...      new_branch_url, 'branch_name', 'branch_title',
-    ...      'branch description', 'non-existing@canonical.com', 'evolution')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 20: 'Invalid author: No user with the email address
-                      "non-existing@canonical.com" was found'>
 
 If we try to register a branch with an invalid URI:
 
