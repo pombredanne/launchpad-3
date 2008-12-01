@@ -78,7 +78,6 @@ registered as an utility.
 
 The 'get' method on the branch set fetches branches by ID.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> branch = factory.makeBranch(name='foobar')
     >>> print branchset.get(branch.id).name
     foobar

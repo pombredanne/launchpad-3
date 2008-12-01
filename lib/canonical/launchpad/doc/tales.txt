@@ -225,9 +225,7 @@ If the person has no time_zone specified, we use UTC.
 
 For branches, fmt:link links to the branch page.
 
-    >>> from canonical.launchpad.testing import (
-    ...     LaunchpadObjectFactory, login_person)
-    >>> factory = LaunchpadObjectFactory()
+    >>> from canonical.launchpad.testing import login_person
     >>> eric = factory.makePerson(name='eric')
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeBranch(

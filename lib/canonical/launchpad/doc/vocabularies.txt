@@ -1532,7 +1532,6 @@ ValidPerson does not include teams.
 
     >>> # Create a new team.
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> factory = LaunchpadObjectFactory()
     >>> carlos_team = factory.makeTeam(
     ...     owner=carlos, name='carlos-team')
     >>> person_or_team_vocab = vocabulary_registry.get(
