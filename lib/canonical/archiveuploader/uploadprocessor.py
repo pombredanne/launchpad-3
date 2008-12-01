@@ -441,7 +441,7 @@ class UploadProcessor:
                     "Could not find distribution '%s'" % distribution_name)
             archive = distribution.main_archive
 
-        # PPA upload (~<person>/ppa_name/<distro>[/distroseries])
+        # PPA upload (~<person>/<ppa_name>/<distro>[/distroseries])
         elif len(parts) <= 4:
             if not first_path.startswith('~'):
                 raise PPAUploadPathError(
@@ -471,7 +471,7 @@ class UploadProcessor:
                 # ppa_name but no distro supplied, bail out.
                 raise UploadPathError(
                     "Path mismatch '%s'. "
-                    "Use ~<person>/ppa_name/<distro>[/distroseries]/"
+                    "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
                     "[files] for PPAs and <distro>/[files] for normal "
                     "uploads."
                     % (relative_path))
@@ -518,7 +518,7 @@ class UploadProcessor:
         else:
             raise UploadPathError(
                 "Path mismatch '%s'. "
-                "Use ~<person>/ppa_name/<distro>[/distroseries]/"
+                "Use ~<person>/<ppa_name>/<distro>[/distroseries]/"
                 "[files] for PPAs and <distro>/[files] for normal uploads."
                 % (relative_path))
 

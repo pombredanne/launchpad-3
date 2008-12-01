@@ -249,8 +249,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """Test PPA uploads to a named PPA location.
 
         PPA uploads can be to a named PPA, but right now only to one
-        called "ppa" until the parallel run of also uploading without
-        a ppa name is over.
+        called "ppa".  When we switch off the old-style paths, uploading
+        to any named ppa will be possible.
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -268,7 +268,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # the test above, so we'll set up a new distroseries called
         # farty and override to use that.
         self.setupBreezy(name="farty")
-        self.breezy['i386'].supports_virtualized = True # Allow PPA builds.
+        # Allow PPA builds.
+        self.breezy['i386'].supports_virtualized = True
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -679,8 +680,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.rejection_message,
             "Path mismatch 'ubuntu/one/two/three/four'. Use "
-            "~<person>/ppa_name/<distro>[/distroseries]/[files] for PPAs and "
-            "<distro>/[files] for normal uploads.\n"
+            "~<person>/<ppa_name>/<distro>[/distroseries]/[files] for PPAs "
+            "and <distro>/[files] for normal uploads.\n"
             "Further error processing "
             "not possible because of a critical previous error.")
 
