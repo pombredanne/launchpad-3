@@ -218,9 +218,18 @@ class IBranchMergeProposal(Interface):
             description=_("The revision id that has been queued for "
                           "landing.")))
 
-    merged_revno = exported(
-        Int(
+    merged_revno = Int(
             title=_("Merged Revision Number"), required=False,
+            description=_("The revision number on the target branch which "
+                          "contains the merge from the source branch."))
+
+    # XXX: rockstar - 1 Dec 2008 - Currently, making an attribute readonly
+    # through the API but writable through the webapp.  This attribute is only
+    # to make sure that merged_revno is accessible, but readonly
+    merged_revno_readonly = exported(
+        Int(
+            title=_("Merged Revision Number (Read Only)", required=False,
+            read_only= True
             description=_("The revision number on the target branch which "
                           "contains the merge from the source branch.")))
 
