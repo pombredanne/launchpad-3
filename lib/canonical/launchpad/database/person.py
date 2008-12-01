@@ -12,6 +12,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'Person',
+    'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
