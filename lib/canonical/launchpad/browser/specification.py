@@ -16,7 +16,12 @@ __all__ = [
     'SpecificationNavigation',
     'SpecificationView',
     'SpecificationSimpleView',
+    'SpecificationEditMilestoneView',
+    'SpecificationEditPeopleView',
+    'SpecificationEditPriorityView',
+    'SpecificationEditStatusView',
     'SpecificationEditView',
+    'SpecificationEditWhiteboardView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
@@ -35,6 +40,7 @@ from subprocess import Popen, PIPE
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
@@ -56,14 +62,13 @@ from canonical.launchpad.interfaces.specificationbranch import (
 from canonical.launchpad.interfaces.sprintspecification import (
     ISprintSpecification)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
-    Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto, custom_widget)
+    ContextMenu, GeneralFormView, LaunchpadView, LaunchpadEditFormView,
+    LaunchpadFormView, Link, Navigation, action, canonical_url,
+    enabled_with_permission, safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
@@ -471,17 +476,62 @@ class SpecificationView(SpecificationSimpleView):
             self.notices.append(msg)
 
 
-class SpecificationEditView(SQLObjectEditView):
+class SpecificationEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        # we need to ensure that resolution is recorded if the spec is now
-        # resolved
-        user = getUtility(ILaunchBag).user
-        newstate = self.context.updateLifecycleStatus(user)
+    schema = ISpecification
+    field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
+    label = 'Edit specification'
+    custom_widget('summary', TextAreaWidget, height=5)
+    custom_widget('whiteboard', TextAreaWidget, height=10)
+    custom_widget('specurl', TextWidget, width=60)
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        # We need to ensure that resolution is recorded if the spec is now
+        # resolved.
+        newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
+
+
+class SpecificationEditWhiteboardView(SpecificationEditView):
+    label = 'Edit specification status whiteboard'
+    field_names = ['whiteboard']
+    custom_widget('whiteboard', TextAreaWidget, height=15)
+
+
+class SpecificationEditPeopleView(SpecificationEditView):
+    label = 'Change the people involved'
+    field_names = ['assignee', 'drafter', 'approver', 'whiteboard']
+
+
+class SpecificationEditPriorityView(SpecificationEditView):
+    label = 'Change priority'
+    field_names = ['priority', 'direction_approved', 'whiteboard']
+
+    @property
+    def extra_info(self):
+        return ('The priority should reflect the views of the coordinating '
+                'team of %s.' % self.context.target.displayname)
+
+
+class SpecificationEditStatusView(SpecificationEditView):
+    label = 'Change status'
+    field_names = ['definition_status', 'implementation_status', 'whiteboard']
+
+
+class SpecificationEditMilestoneView(SpecificationEditView):
+    label = 'Target to a milestone'
+    field_names = ['milestone', 'whiteboard']
+
+    @property
+    def extra_info(self):
+        return ("Select the milestone of %s in which you would like this "
+                "feature to be implemented."
+                % self.context.target.displayname)
 
 
 class SpecificationGoalProposeView(GeneralFormView):
