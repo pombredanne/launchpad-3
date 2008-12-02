@@ -440,7 +440,6 @@ class TestCodeHandler(TestCaseWithFactory):
         message, source_branch, target_branch = self.makeMergeDirectiveEmail()
         code_handler = CodeHandler()
         bmp, comment = code_handler.processMergeProposal(message)
-        transaction.commit()
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
         self.assertEqual('booga', bmp.review_diff.diff.text)
