@@ -213,8 +213,8 @@ class Archive(SQLBase):
             else:
                 url = config.personalpackagearchive.base_url
             return urlappend(
-                url, self.owner.name + '/' + self.name + '/'
-                     + self.distribution.name)
+                url, "/".join(
+                    (self.owner.name, self.name, self.distribution.name)))
 
         try:
             postfix = archive_postfixes[self.purpose]
