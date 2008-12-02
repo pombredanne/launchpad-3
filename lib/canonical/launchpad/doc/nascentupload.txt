@@ -925,6 +925,7 @@ Now try the "bar" upload:
 
   >>> print bar2.rejection_message
 
+
 == Uploads to copy archives ==
 
 Uploads to copy archives are not allowed.

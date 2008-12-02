@@ -103,7 +103,6 @@ asserts the archive is indeed a COPY and if the name is valid.
 We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> factory = LaunchpadObjectFactory()
     >>> rebuild_owner = factory.makePerson(
     ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
