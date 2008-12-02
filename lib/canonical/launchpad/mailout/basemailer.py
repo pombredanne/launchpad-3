@@ -85,6 +85,10 @@ class BaseMailer:
         return headers
 
     def _addAttachments(self, ctrl):
+        """Add any appropriate attachments to a MailController.
+
+        Default implementation does nothing.
+        """
         pass
 
     def _getTemplateParams(self, email):
