@@ -73,9 +73,7 @@ containing only untranslated or only translations that need reviewing.
 A person is created with a name containing characters that need escaping
 before being used in query strings.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> login('carlos@canonical.com')
-    >>> factory = LaunchpadObjectFactory()
     >>> foobar = factory.makePerson(name='foo+bar', email='blah@test.com')
     >>> message = factory.makeTranslationMessage(translator=foobar)
     >>> person_url = canonical_url(foobar, rootsite='translations')

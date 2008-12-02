@@ -418,7 +418,6 @@ It just takes a running code import job as a parameter.
 
     >>> from canonical.launchpad.testing.codeimporthelpers import (
     ...     make_running_import)
-    >>> factory = LaunchpadObjectFactory()
     >>> running_import = make_running_import(factory=factory)
     >>> running_import_job = running_import.import_job
 
