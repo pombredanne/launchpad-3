@@ -308,54 +308,60 @@ form is set to file a bug on the correct remote product.
     >>> print mozilla_bugzilla.getBugFilingLink('testproduct')
     https://bugzilla.mozilla.org/enter_bug.cgi?product=testproduct
 
-Depending on the bugtrackertype of the BugTracker instance, a different
-URL will be returned.
-
-    >>> print debbugs.getBugFilingLink('testproduct')
-    Foo
-
-    >>> example_roundup = factory.makeBugTracker(BugTrackerType.ROUNDUP)
-    >>> print example_roundup.getBugFilingLink('testproduct')
-    http://bugs.python.org/issue?@template=item
-
-    >>> example_mantis = factory.makeBugTracker(BugTrackerType.MANTIS)
-    >>> print example_mantis.getBugFilingLink('testproduct')
-    http://example.com/bug_report_advanced_page.php
-
 RT (queues).
 
-    >>> example_rt = factory.makeBugTracker(BugTrackerType.RT)
-    >>> print example_rt.getBugFilingLink('testproduct')
-    http://rt.easter-eggs.org/demos/testing/Ticket/Create.html?Queue=9
+    >>> example_rt = factory.makeBugTracker(
+    ...     'http://rt.example.com', BugTrackerType.RT)
+    >>> print example_rt.getBugFilingLink(42)
+    http://rt.example.com/Ticket/Create.html?Queue=42
 
 Sourceforge and kin.
 
     >>> example_sourceforge = factory.makeBugTracker(
-    ...     BugTrackerType.SOURCEFORGE)
+    ...     'http://forge.example.com', BugTrackerType.SOURCEFORGE)
     >>> print example_sourceforge.getBugFilingLink((123, 456))
-    http://sourceforge.net/tracker/?func=add&group_id=123&atid=456
+    http://forge.example.com/tracker/?func=add&group_id=123&atid=456
 
-    >>> example_savane = factory.makeBugTracker(BugTrackerType.SAVANE)
+    >>> example_savane = factory.makeBugTracker(
+    ...     'http://savane.example.com', BugTrackerType.SAVANE)
     >>> print example_savane.getBugFilingLink('testproduct')
-    http://example.com/bugs/?func=additem&group=testproduct
+    http://savane.example.com/bugs/?func=additem&group=testproduct
 
     >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
     >>> print sourceforge.getBugFilingLink((123, 456))
     http://sourceforge.net/tracker2/?func=add&group_id=123&atid=456
 
+Static URLS
+
+    >>> example_phpproject = factory.makeBugTracker(
+    ...     'http://php.example.com', BugTrackerType.PHPPROJECT)
+    >>> print example_phpproject.getBugFilingLink('testproduct')
+    http://php.example.com/report.php
+
+    >>> example_trac = factory.makeBugTracker(
+    ...     'http://trac.example.com', BugTrackerType.TRAC)
+    >>> print example_trac.getBugFilingLink('testproduct')
+    http://trac.example.com/newticket
+
+    >>> example_roundup = factory.makeBugTracker(
+    ...     'http://roundup.example.com', BugTrackerType.ROUNDUP)
+    >>> print example_roundup.getBugFilingLink('testproduct')
+    http://roundup.example.com/issue?@template=item
+
+    >>> example_mantis = factory.makeBugTracker(
+    ...     'http://mantis.example.com', BugTrackerType.MANTIS)
+    >>> print example_mantis.getBugFilingLink('testproduct')
+    http://mantis.example.com/bug_report_advanced_page.php
+
 The EMAILADDRESS BugTrackerType is a special case and returns None.
 
     >>> example_emailaddress = factory.makeBugTracker(
-    ...     BugTrackerType.EMAILADDRESS)
+    ...     'http://bork.example.com', BugTrackerType.EMAILADDRESS)
     >>> print example_emailaddress.getBugFilingLink('testproduct')
     None
 
-Static URLS
+DebBugs
 
-    >>> example_phpproject = factory.makeBugTracker(BugTrackerType.PHPPROJECT)
-    >>> print example_phpproject.getBugFilingLink('testproduct')
-
-    >>> example_trac = factory.makeBugTracker(BugTrackerType.TRAC)
-    >>> print example_trac.getBugFilingLink('testproduct')
-    http://trac.example.com/testproject
+    >>> print debbugs.getBugFilingLink('testproduct')
+    Foo
 

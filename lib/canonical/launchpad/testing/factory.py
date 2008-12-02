@@ -550,11 +550,12 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self, bugtrackertype=None):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
 
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
         if bugtrackertype is None:
             bugtrackertype = BugTrackerType.BUGZILLA
 
