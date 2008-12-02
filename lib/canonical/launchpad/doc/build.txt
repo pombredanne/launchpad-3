@@ -683,7 +683,7 @@ Cprov can also see his own builds of course:
 Buildd admins specifically are not allowed to see private builds, which will
 be filtered from the list returned:
 
-    >>> buildd_admin = LaunchpadObjectFactory().makePerson()
+    >>> buildd_admin = factory.makePerson()
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
     >>> buildd_admins.addMember(buildd_admin, buildd_admin)
