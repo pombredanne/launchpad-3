@@ -77,7 +77,6 @@ Posting malformed data to the team home page raises an error.
 A team's +map page will show a map with markers on the location of all
 members of that team.  That page also lists the local times of members.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> context = factory.makeTeam(salgado)
     >>> len(context.mapped_participants)
     0

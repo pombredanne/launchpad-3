@@ -566,6 +566,9 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
 
     schema = IArchivePackageDeletionForm
 
+    # Maximum number of 'sources' presented.
+    max_sources_presented = 20
+
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
 
     @property
