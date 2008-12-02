@@ -16,6 +16,8 @@ __all__ = [
 from twisted.internet import defer
 from twisted.web.xmlrpc import Fault
 
+from canonical.launchpad.interfaces.codehosting import BRANCH_TRANSPORT
+
 
 class BlockingProxy:
 
@@ -68,7 +70,8 @@ class BranchFileSystemClient:
         """
         (transport_type, data, trailing_path) = transport_tuple
         matched_part = self._getMatchedPart(path, transport_tuple)
-        self._cache[matched_part] = (transport_type, data)
+        if transport_type == BRANCH_TRANSPORT:
+            self._cache[matched_part] = (transport_type, data)
         return transport_tuple
 
     def _getFromCache(self, path):
@@ -112,7 +115,6 @@ class BranchFileSystemClient:
                 'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
-
 
 
 def trap_fault(failure, *fault_codes):

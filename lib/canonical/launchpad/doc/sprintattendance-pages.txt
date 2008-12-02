@@ -100,7 +100,7 @@ include it.
 However, some people may set their location/timezone as hidden, so if
 that's the case we won't include the person's timezone.
 
-    >>> person = LaunchpadObjectFactory().makePerson(
+    >>> person = factory.makePerson(
     ...     name='ubz-last-attendee', time_zone='Europe/London')
     >>> login_person(person)
     >>> person.setLocationVisibility(False)

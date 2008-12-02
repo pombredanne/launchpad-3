@@ -53,7 +53,7 @@ from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
@@ -326,7 +326,6 @@ class ProjectEditView(LaunchpadEditFormView):
             return canonical_url(getUtility(IProjectSet))
 
 
-
 class ProjectReviewView(ProjectEditView):
 
     label = "Review upstream project group details"
@@ -341,7 +340,18 @@ class ProjectReviewView(ProjectEditView):
         need the ability to change it.
         """
         super(ProjectReviewView, self).setUpFields()
-        self.form_fields += self._createRegistrantField()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProject.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project group is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
 
     def _createRegistrantField(self):
         """Return a popup widget person selector for the registrant.
@@ -361,8 +371,8 @@ class ProjectReviewView(ProjectEditView):
                 vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
-                default=self.context.registrant
-                )
+                ),
+            render_context=self.render_context
             )
 
 

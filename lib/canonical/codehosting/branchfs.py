@@ -505,3 +505,23 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return self._authserver.requestMirror(data['id'])
 
         return deferred.addCallback(got_path_info)
+
+
+def get_lp_server(branchfs_client, user_id, hosted_url, mirror_url):
+    """Create a Launchpad server.
+
+    :param branchfs_client: An `xmlrpclib.ServerProxy` (or equivalent) for the
+        branch file system end-point.
+    :param user_id: A unique database ID of the user whose branches are
+        being served.
+    :param hosted_url: Where the branches are uploaded to.
+    :param mirror_url: Where all Launchpad branches are mirrored.
+    :return: A `LaunchpadServer`.
+    """
+    # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+    hosted_transport = get_chrooted_transport(hosted_url)
+    mirror_transport = get_chrooted_transport(mirror_url)
+    lp_server = LaunchpadServer(
+        BlockingProxy(branchfs_client), user_id,
+        hosted_transport, mirror_transport)
+    return lp_server

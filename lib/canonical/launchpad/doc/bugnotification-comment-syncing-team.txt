@@ -25,11 +25,9 @@ Bug Watch Updater.
     >>> import transaction
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> factory = LaunchpadObjectFactory()
     >>> bug = factory.makeBug(
     ...     owner=no_priv,
     ...     bug_watch_url='http://example.com/show_bug.cgi?id=42')

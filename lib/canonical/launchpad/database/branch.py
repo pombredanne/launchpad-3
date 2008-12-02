@@ -34,6 +34,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationException, BranchCreationForbidden,
@@ -108,6 +110,12 @@ class Branch(SQLBase):
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
+    distroseries = ForeignKey(
+        dbName='distroseries', foreignKey='DistroSeries', default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        default=None)
+
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
@@ -172,7 +180,8 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None, needs_review=False):
+                         date_created=None, needs_review=False,
+                         initial_comment=None, review_requests=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -224,13 +233,25 @@ class Branch(SQLBase):
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
             date_review_requested = None
 
+        if review_requests is None:
+            review_requests = []
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status)
-        notify(SQLObjectCreatedEvent(bmp))
+
+        if initial_comment is not None:
+            bmp.createComment(
+                registrant, None, initial_comment, _notify_listeners=False)
+
+        for reviewer, review_type in review_requests:
+            bmp.nominateReviewer(
+                reviewer, registrant, review_type, _notify_listeners=False)
+
+        notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
     def getStackedBranches(self):
@@ -292,10 +313,21 @@ class Branch(SQLBase):
             return '+junk'
         return self.product.name
 
+    def _getContainerName(self):
+        if self.product is not None:
+            return self.product.name
+        if (self.distroseries is not None
+            and self.sourcepackagename is not None):
+            return '%s/%s/%s' % (
+                self.distroseries.distribution.name,
+                self.distroseries.name, self.sourcepackagename.name)
+        return '+junk'
+
     @property
     def unique_name(self):
         """See `IBranch`."""
-        return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
+        return u'~%s/%s/%s' % (
+            self.owner.name, self._getContainerName(), self.name)
 
     @property
     def displayname(self):
@@ -926,11 +958,11 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, registrant, owner, product,
-            url, title=None,
-            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None,
-            branch_format=None, repository_format=None, control_format=None):
+    def new(self, branch_type, name, registrant, owner, product=None,
+            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            author=None, summary=None, whiteboard=None, date_created=None,
+            branch_format=None, repository_format=None, control_format=None,
+            distroseries=None, sourcepackagename=None):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -968,8 +1000,8 @@ class BranchSet:
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
-            control_format=control_format)
-
+            control_format=control_format, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
         # a later date if desired.

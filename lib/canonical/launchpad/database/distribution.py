@@ -83,6 +83,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.publishing import active_publishing_status
 
 from canonical.archivepublisher.debversion import Version
@@ -1395,12 +1396,12 @@ class DistributionSet:
         return sorted(
             shortlist(distros, 100), key=lambda distro: distro._sort_key)
 
-    def getByName(self, distroname):
+    def getByName(self, name):
         """See `IDistributionSet`."""
-        try:
-            return Distribution.byName(distroname)
-        except SQLObjectNotFound:
+        pillar = getUtility(IPillarNameSet).getByName(name)
+        if not IDistribution.providedBy(pillar):
             return None
+        return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):

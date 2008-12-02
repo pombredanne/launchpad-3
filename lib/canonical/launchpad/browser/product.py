@@ -60,7 +60,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -150,7 +150,6 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid product name
         product = self.context.getByName(name)
         if product is None:
             raise NotFoundError(name)
@@ -1180,6 +1179,7 @@ class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
+
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
@@ -1193,7 +1193,18 @@ class ProductAdminView(ProductEditView):
         need the ability to change it.
         """
         super(ProductAdminView, self).setUpFields()
-        self.form_fields += self._createRegistrantField()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProduct.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
 
     def _createRegistrantField(self):
         """Return a popup widget person selector for the registrant.
@@ -1213,8 +1224,8 @@ class ProductAdminView(ProductEditView):
                 vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
-                default=self.context.registrant
-                )
+                ),
+            render_context=self.render_context
             )
 
     def validate(self, data):
