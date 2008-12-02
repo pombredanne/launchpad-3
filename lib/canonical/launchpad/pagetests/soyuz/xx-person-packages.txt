@@ -155,7 +155,7 @@ Let's make a helper function to print the PPA packages from the page:
 And another helper function to set the private flag on a PPA:
 
     >>> def set_private(name, private=True):
-    ...     admin_browser.open("http://launchpad.dev/~%s/+archive" % (
+    ...     admin_browser.open("http://launchpad.dev/~%s/+archive/ppa" % (
     ...         name))
     ...     admin_browser.getLink("Administer archive").click()
     ...     admin_browser.getControl(name="field.private").value = private
@@ -315,7 +315,8 @@ First list the packages in the PPA.
 
 Then delete the 'iceweasel' package.
 
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/+delete-packages")
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/~sabdfl/+archive/ppa/+delete-packages")
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl(

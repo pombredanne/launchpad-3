@@ -146,7 +146,8 @@ IBuild is also wrapped in a Zope security proxy to prevent unauthorised
 access.  This prevents direct access to the build URL by unauthorised
 users:
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     Traceback (most recent call last):
     ...
@@ -154,10 +155,11 @@ users:
 
 But it is fine for authorised users:
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/+build/...
+    http://launchpad.dev/~cprov/+archive/ppa/+build/...
 
 
 == Builder history page ==
@@ -345,7 +347,7 @@ users:
     >>> from zope.security.interfaces import Unauthorized
     >>> try:
     ...     anon_browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...         random_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -356,7 +358,7 @@ users:
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> try:
     ...     browser.open(
-    ...         "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...         "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...         random_build_id)
     ... except Unauthorized:
     ...     print "Got expected exception"
@@ -408,13 +410,13 @@ Any other logged-in user will also see the build:
 Accessing the build page will now also work:
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print anon_browser.title
     i386 build of iceweasel...
 
     >>> browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     random_build_id)
     >>> print browser.title
     i386 build of iceweasel...
