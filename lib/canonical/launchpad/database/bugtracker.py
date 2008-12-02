@@ -194,7 +194,7 @@ class BugTracker(SQLBase):
         elif self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group id and an an ATID to
             # file a bug, rather than a product name. remote_product
-            # should be a tuple SOURCEFORGE bug trackers.
+            # should be a tuple for SOURCEFORGE bug trackers.
             group_id, at_id = remote_product
 
             # If this bug tracker is the SourceForge celebrity the link
