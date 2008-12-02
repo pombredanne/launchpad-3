@@ -147,6 +147,9 @@ def run_publisher(options, txn, log=None):
     else:
         archives = [distribution.main_archive]
 
+    # Consider only archives that have their "to be published" flag turned on.
+    archives = [archive for archive in archives if archive.publish]
+
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             log.info("Processing %s %s" % (distribution.name, archive.title))
