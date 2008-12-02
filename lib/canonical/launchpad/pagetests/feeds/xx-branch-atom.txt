@@ -11,11 +11,9 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 == Create some specific branches to use for this test ==
 
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.testing import (
-    ...     LaunchpadObjectFactory, time_counter)
+    >>> from canonical.launchpad.testing import time_counter
     >>> from datetime import datetime, timedelta
     >>> import pytz
-    >>> factory = LaunchpadObjectFactory()
     >>> date_generator = time_counter(
     ...     datetime(2007, 12, 1, tzinfo=pytz.UTC), timedelta(days=1))
     >>> def make_branch(owner, product, name):
