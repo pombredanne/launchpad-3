@@ -72,8 +72,6 @@ mailing list.
 
 You may not register a mailing list for a person.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> login('foo.bar@canonical.com')
     >>> anne = factory.makePersonByName('Anne')
     >>> login(ANONYMOUS)
