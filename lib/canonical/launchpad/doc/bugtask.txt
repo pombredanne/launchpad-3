@@ -891,8 +891,8 @@ in the result.
     product_id=5 count=1
     product_id=20 count=2
 
-A Launchpad admin will get a higher count for product with id=20
-because it can see the private bug.
+A Launchpad admin will get a higher count for the product with id=20
+because he can see the private bug.
 
     >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
     ...     foobar, products)
