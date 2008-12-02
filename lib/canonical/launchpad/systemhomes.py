@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IWebServiceApplication)
 from canonical.launchpad.interfaces.codehosting import (
     IBranchFileSystemApplication, IBranchPullerApplication)
+from canonical.launchpad.interfaces.hwdb import IHWDeviceSet
 from canonical.lazr.rest import ServiceRootResource
 
 
@@ -239,7 +240,15 @@ class RosettaApplication:
 
 
 class HWDBApplication:
+    """See `IHWDBApplication`."""
     implements(IHWDBApplication)
+
+    link_name = 'hwdb'
+    entry_type = IHWDBApplication
+
+    def devices(self, bus, vendor_id, product_id=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWDeviceSet).search(bus, vendor_id, product_id)
 
 
 class WebServiceApplication(ServiceRootResource):
