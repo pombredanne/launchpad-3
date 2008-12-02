@@ -7,7 +7,7 @@ import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
@@ -27,11 +27,11 @@ from canonical.launchpad.testing import (
 class TestMergeProposalMailing(TestCase):
     """Test that reasonable mailings are generated"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
-        login('foo.bar@canonical.com')
+        login('admin@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
     def makeProposalWithSubscriber(self, diff_text=None):
@@ -53,14 +53,15 @@ class TestMergeProposalMailing(TestCase):
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
+        bmp.source_branch.owner.name = 'bob'
         bmp.source_branch.name = 'fix-foo-for-bar'
+        bmp.target_branch.owner.name = 'mary'
         bmp.target_branch.name = 'bar'
         return bmp, subscriber
 
     def test_generateCreationEmail(self):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
-        bmp.whiteboard = "I think this would be good."
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         assert mailer.message_id is not None, 'Message-id should be set'
         mailer.message_id = '<foobar-example-com>'
@@ -69,18 +70,16 @@ class TestMergeProposalMailing(TestCase):
         bmp.root_message_id = None
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual("""\
-Baz Qux has proposed merging lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar.
+Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
 
-Whiteboard:
-I think this would be good.
 
 --\x20
 %s
 %s
 """ % (canonical_url(bmp), reason.getReason()), ctrl.body)
         self.assertEqual('Proposed merge of '
-            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
-            'lp://dev/~person-name9/super-product/bar', ctrl.subject)
+            'lp://dev/~bob/super-product/fix-foo-for-bar into '
+            'lp://dev/~mary/super-product/bar', ctrl.subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',
@@ -177,13 +176,13 @@ I think this would be good.
         mailer, subscriber = self.makeMergeProposalMailerModification()
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('Proposed merge of '
-            'lp://dev/~person-name13/super-product/fix-foo-for-bar into '
-            'lp://dev/~person-name9/super-product/bar updated', ctrl.subject)
+            'lp://dev/~bob/super-product/fix-foo-for-bar into '
+            'lp://dev/~mary/super-product/bar updated', ctrl.subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
-The proposal to merge lp://dev/~person-name13/super-product/fix-foo-for-bar into lp://dev/~person-name9/super-product/bar has been updated.
+The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
 
     Status: Work in progress => Needs review
 
@@ -256,7 +255,7 @@ new commit message
 class TestRecipientReason(TestCaseWithFactory):
     """Test the RecipientReason class."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Need to set target_branch.date_last_modified.
@@ -270,7 +269,7 @@ class TestRecipientReason(TestCaseWithFactory):
         target_branch = self.factory.makeBranch(product=source_branch.product,
                 title='bar')
         merge_proposal = source_branch.addLandingTarget(
-            subscriber, target_branch)
+            source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
@@ -333,7 +332,7 @@ class TestRecipientReason(TestCaseWithFactory):
 class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     """Tests for `BranchMergeProposalRequestReviewView`."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)

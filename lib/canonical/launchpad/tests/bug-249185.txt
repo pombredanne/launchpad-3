@@ -2,7 +2,6 @@
 
 Create some teams.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> person = factory.makePerson()
     >>> beta_testers = factory.makeTeam(person)
     >>> devs = factory.makeTeam(person)

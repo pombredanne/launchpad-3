@@ -11,7 +11,6 @@ Because of this, we warn users about to rename their account of the risks.
 
     >>> from zope.app.pagetemplate.viewpagetemplatefile import (
     ...     ViewPageTemplateFile)
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.browser.person import PersonEditView
     >>> from canonical.launchpad.ftests import (
     ...     LaunchpadFormHarness, login_person)
@@ -23,7 +22,7 @@ Because of this, we warn users about to rename their account of the risks.
     ...     def _abort(self):
     ...         pass
 
-    >>> joe = LaunchpadObjectFactory().makePerson(name='joe')
+    >>> joe = factory.makePerson(name='joe')
     >>> login_person(joe)
     >>> form_data = {}
     >>> for name in PersonEditView.field_names:
