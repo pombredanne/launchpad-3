@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.locals import Join
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -1071,13 +1072,17 @@ class ArchiveSet:
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        origin = (
+            Archive,
+            Join(SourcePackagePublishingHistory,
+                 SourcePackagePublishingHistory.archive == Archive.id),)
+        results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
             Archive.enabled == True)
         results.order_by(Archive.date_created)
-        return results
+        return results.config(distinct=True)
 
     def getLatestPPASourcePublicationsForDistribution(self, distribution):
         """See `IArchiveSet`."""
