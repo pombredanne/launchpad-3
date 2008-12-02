@@ -283,18 +283,18 @@ class PillarName(SQLBase):
 
     @property
     def pillar(self):
-        obj = self
+        pillar_name = self
         if self.alias_for is not None:
-            obj = self.alias_for
+            pillar_name = self.alias_for
 
-        if obj.distribution is not None:
-            return obj.distribution
-        elif obj.project is not None:
-            return obj.project
-        elif obj.product is not None:
-            return obj.product
+        if pillar_name.distribution is not None:
+            return pillar_name.distribution
+        elif pillar_name.project is not None:
+            return pillar_name.project
+        elif pillar_name.product is not None:
+            return pillar_name.product
         else:
-            raise AssertionError("Unknown pillar type: %s" % obj.name)
+            raise AssertionError("Unknown pillar type: %s" % pillar_name.name)
 
 
 class HasAliasMixin:
