@@ -13,16 +13,17 @@ from canonical.launchpad.interfaces.gpg import IGPGKeySet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ppakeygenerator import PPAKeyGenerator
+from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestPPAKeyGenerator(unittest.TestCase):
+class TestPPAKeyGenerator(TestCase):
     layer = LaunchpadZopelessLayer
 
     def _getFakeZTM(self):
         """Return an instrumented `ZopeTransactionManager`-like object.
 
-        I does nothing apart counting the number of commits issues.
+        I does nothing apart counting the number of commits issued.
 
         The result is stored in the 'number_of_commits'.
         """
@@ -76,14 +77,18 @@ class TestPPAKeyGenerator(unittest.TestCase):
     def testPersonNotFound(self):
         """Raises an error if the specified person does not exist."""
         key_generator = self._getKeyGenerator(ppa_owner_name='biscuit')
-        self.assertRaises(
-            LaunchpadScriptFailure, key_generator.main)
+        self.assertRaisesWithContent(
+            LaunchpadScriptFailure,
+            "No person named 'biscuit' could be found.",
+            key_generator.main)
 
     def testPersonHasNoPPA(self):
         """Raises an error if the specified person does not have a PPA. """
         key_generator = self._getKeyGenerator(ppa_owner_name='name16')
-        self.assertRaises(
-            LaunchpadScriptFailure, key_generator.main)
+        self.assertRaisesWithContent(
+            LaunchpadScriptFailure,
+            "Person named 'name16' has no PPA.",
+            key_generator.main)
 
     def testPPAAlreadyHasSigningKey(self):
         """Raises an error if the specified PPA already has a signing_key."""
@@ -92,8 +97,11 @@ class TestPPAKeyGenerator(unittest.TestCase):
         cprov.archive.signing_key = a_key
 
         key_generator = self._getKeyGenerator(ppa_owner_name='cprov')
-        self.assertRaises(
-            LaunchpadScriptFailure, key_generator.main)
+        self.assertRaisesWithContent(
+            LaunchpadScriptFailure,
+            ("PPA for Celso Providelo already has a signing_key (%s)" %
+             cprov.archive.signing_key.fingerprint) ,
+            key_generator.main)
 
     def testGenerateKeyForASinglePPA(self):
         """Signing key generation for a single PPA.
