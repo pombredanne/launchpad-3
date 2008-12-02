@@ -220,7 +220,8 @@ class IBugTracker(Interface):
             an ATID in order to be able to file a bug. These are passed
             in as a tuple of (group_id, at_id).
         :return: The absolute URL of the bug filing form for
-            `remote_product` on the remote tracker.
+            `remote_product` on the remote tracker or None if one doesn't
+            exist for the current BugTrackerType.
         """
 
     def getBugsWatching(remotebug):

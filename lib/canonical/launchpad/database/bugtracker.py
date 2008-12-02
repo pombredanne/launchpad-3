@@ -191,7 +191,7 @@ class BugTracker(SQLBase):
         if url_pattern is None:
             return None
 
-        if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
+        elif self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group id and an an ATID to
             # file a bug, rather than a product name. remote_product
             # should be a tuple SOURCEFORGE bug trackers.
@@ -212,10 +212,11 @@ class BugTracker(SQLBase):
                 'at_id': at_id,
                 })
 
-        return url_pattern % ({
-            'base_url': base_url,
-            'remote_product': remote_product,
-            })
+        else:
+            return url_pattern % ({
+                'base_url': base_url,
+                'remote_product': remote_product,
+                })
 
     def getBugsWatching(self, remotebug):
         """See `IBugTracker`."""
