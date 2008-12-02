@@ -1139,8 +1139,39 @@ class QuestionTargetMixin:
         return self.direct_answer_contacts
 
     @property
+    def answer_contacts_with_languages(self):
+        """Answer contacts with their languages pre-filled.
+
+        Same as answer_contacts but with each of them having its languages
+        pre-filled so that we don't need to hit the DB again to get them.
+        """
+        return self.direct_answer_contacts_with_languages
+
+    @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
+        from canonical.launchpad.database.person import Person
+        origin = [AnswerContact,
+                  LeftJoin(Person, AnswerContact.person == Person.id)]
+        conditions = []
+        for key, value in self.getTargetTypes().items():
+            if value is None:
+                constraint = "AnswerContact.%s IS NULL" % key
+            else:
+                constraint = "AnswerContact.%s = %s" % (key, value.id)
+            conditions.append(constraint)
+        conditions = " AND ".join(conditions)
+        results = self._store.using(*origin).find(Person, conditions)
+        return list(results.order_by(Person.displayname))
+
+    @property
+    def direct_answer_contacts_with_languages(self):
+        """Direct answer contacts with their languages pre-filled.
+
+        Same as direct_answer_contacts but with each of them having its
+        languages pre-filled so that we don't need to hit the DB again to get
+        them.
+        """
         from canonical.launchpad.database.person import (
             Person, PersonLanguage)
         origin = [
@@ -1160,11 +1191,11 @@ class QuestionTargetMixin:
             conditions.append(constraint)
         conditions = " AND ".join(conditions)
         results = self._store.using(*origin).find(tuple(columns), conditions)
-        people = []
+        people = set()
         for person, language in results:
             if person not in people:
                 person._languages_cache = []
-                people.append(person)
+                people.add(person)
             if language is not None:
                 person._languages_cache.append(language)
         return sorted(people, key=operator.attrgetter('displayname'))
@@ -1226,7 +1257,6 @@ class QuestionTargetMixin:
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
         if language is None:
-            # XXX: Don't need a person's languages here.
             contacts = self.answer_contacts
         else:
             contacts = self.getAnswerContactsForLanguage(language)
@@ -1248,7 +1278,6 @@ class QuestionTargetMixin:
 
     def removeAnswerContact(self, person):
         """See `IQuestionTarget`."""
-        # XXX: Don't need a person's languages here.
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
@@ -1263,8 +1292,7 @@ class QuestionTargetMixin:
     def getSupportedLanguages(self):
         """See `IQuestionTarget`."""
         languages = set()
-        # XXX: Absolutely need a person's languages here.
-        for contact in self.answer_contacts:
+        for contact in self.answer_contacts_with_languages:
             languages |= set(contact.languages)
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(

@@ -118,6 +118,20 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         answer_contacts.update(self.distribution.answer_contacts)
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
+    @property
+    def answer_contacts_with_languages(self):
+        """Answer contacts with their languages pre-filled.
+
+        Same as answer_contacts but with each answer contact having its
+        languages pre-filled so that we don't need to hit the DB again to get
+        them.
+        """
+        answer_contacts = set()
+        answer_contacts.update(self.direct_answer_contacts_with_languages)
+        answer_contacts.update(
+            self.distribution.answer_contacts_with_languages)
+        return sorted(answer_contacts, key=attrgetter('displayname'))
+
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin):
