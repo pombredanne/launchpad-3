@@ -4582,7 +4582,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
         pillarnames = self._related_projects()[:max_projects]
         products = [pillarname.pillar for pillarname in pillarnames
                     if IProduct.providedBy(pillarname.pillar)]
-        open_bugtask_dict = self.context.getOpenBugTasksPerProduct(
+        bugtask_set = getUtility(IBugTaskSet)
+        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
             user, products)
         for pillarname in pillarnames:
             pillar = pillarname.pillar
@@ -4590,7 +4591,8 @@ class PersonRelatedSoftwareView(LaunchpadView):
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
             if IProduct.providedBy(pillar):
-                project['bug_count'] = open_bugtask_dict.get(pillar.id, 0)
+                project['bug_count'] = product_bugtask_counts.get(pillar.id,
+                                                                  0)
             else:
                 project['bug_count'] = pillar.open_bugtasks.count()
             project['spec_count'] = pillar.specifications().count()

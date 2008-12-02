@@ -24,7 +24,8 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import Alias, AutoTables, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, Join, LeftJoin, SQL
+
 from storm.sqlobject import SQLObjectResultSet
 
 import pytz
@@ -1932,6 +1933,33 @@ class BugTaskSet:
 
         return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def getOpenBugTasksPerProduct(self, user, products):
+        """See `IBugTaskSet`."""
+        # Local import of Bug to avoid import loop.
+        from canonical.launchpad.database.bug import Bug
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = [
+            Bug,
+            Join(BugTask, BugTask.bug == Bug.id),
+            ]
+
+        product_ids = [product.id for product in products]
+        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+                         Bug.duplicateof == None,
+                         BugTask.productID.is_in(product_ids))
+
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter != '':
+            conditions = And(conditions, privacy_filter)
+        result = store.using(*origin).find(
+            (BugTask.productID, SQL('COUNT(*)')),
+            conditions)
+
+        result = result.group_by(BugTask.productID)
+        # The result will return a list of product ids and counts,
+        # which will be converted into key-value pairs in the dictionary.
+        return dict(result)
 
     def getOrderByColumnDBName(self, col_name):
         """See `IBugTaskSet`."""
