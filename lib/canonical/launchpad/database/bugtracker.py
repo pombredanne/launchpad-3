@@ -163,8 +163,11 @@ class BugTracker(SQLBase):
         """See IBugTracker"""
         return self.watches[:10]
 
+    def getBugFilingLink(self, remote_product):
+        """See `IBugTracker`."""
+
     def getBugsWatching(self, remotebug):
-        """See IBugTracker"""
+        """See `IBugTracker`."""
         # We special-case email address bug trackers. Since we don't
         # record a remote bug id for them we can never know which bugs
         # are already watching a remote bug.
@@ -178,7 +181,7 @@ class BugTracker(SQLBase):
                                     orderBy=['datecreated']))
 
     def getBugWatchesNeedingUpdate(self, hours_since_last_check):
-        """See IBugTracker."""
+        """See `IBugTracker`."""
         query = (
             """bugtracker = %s AND
                (lastchecked < (now() at time zone 'UTC' - interval '%s hours')

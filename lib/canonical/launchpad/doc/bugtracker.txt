@@ -316,25 +316,32 @@ URL will be returned.
 
     >>> example_roundup = factory.makeBugTracker(BugTrackerType.ROUNDUP)
     >>> print example_roundup.getBugFilingLink('testproduct')
-
-    >>> example_trac = factory.makeBugTracker(BugTrackerType.TRAC)
-    >>> print example_trac.getBugFilingLink('testproduct')
-
-    >>> example_sourceforge = factory.makeBugTracker(
-    ...     BugTrackerType.SOURCEFORGE)
-    >>> print example_sourceforge.getBugFilingLink('testproduct')
+    http://bugs.python.org/issue?@template=item
 
     >>> example_mantis = factory.makeBugTracker(BugTrackerType.MANTIS)
     >>> print example_mantis.getBugFilingLink('testproduct')
+    http://example.com/bug_report_advanced_page.php
+
+RT (queues).
 
     >>> example_rt = factory.makeBugTracker(BugTrackerType.RT)
     >>> print example_rt.getBugFilingLink('testproduct')
+    http://rt.easter-eggs.org/demos/testing/Ticket/Create.html?Queue=9
+
+Sourceforge and kin.
+
+    >>> example_sourceforge = factory.makeBugTracker(
+    ...     BugTrackerType.SOURCEFORGE)
+    >>> print example_sourceforge.getBugFilingLink((123, 456))
+    http://sourceforge.net/tracker/?func=add&group_id=123&atid=456
 
     >>> example_savane = factory.makeBugTracker(BugTrackerType.SAVANE)
     >>> print example_savane.getBugFilingLink('testproduct')
+    http://example.com/bugs/?func=additem&group=testproduct
 
-    >>> example_phpproject = factory.makeBugTracker(BugTrackerType.PHPPROJECT)
-    >>> print example_phpproject.getBugFilingLink('testproduct')
+    >>> sourceforge = getUtility(IBugTrackerSet).getByName('sf')
+    >>> print sourceforge.getBugFilingLink((123, 456))
+    http://sourceforge.net/tracker2/?func=add&group_id=123&atid=456
 
 The EMAILADDRESS BugTrackerType is a special case and returns None.
 
@@ -342,3 +349,13 @@ The EMAILADDRESS BugTrackerType is a special case and returns None.
     ...     BugTrackerType.EMAILADDRESS)
     >>> print example_emailaddress.getBugFilingLink('testproduct')
     None
+
+Static URLS
+
+    >>> example_phpproject = factory.makeBugTracker(BugTrackerType.PHPPROJECT)
+    >>> print example_phpproject.getBugFilingLink('testproduct')
+
+    >>> example_trac = factory.makeBugTracker(BugTrackerType.TRAC)
+    >>> print example_trac.getBugFilingLink('testproduct')
+    http://trac.example.com/testproject
+
