@@ -1346,8 +1346,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 

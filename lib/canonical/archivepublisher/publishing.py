@@ -515,8 +515,8 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        # If this file is released from a PPA then modify the origin to
-        # indicate so (Bug #140412)
+        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
+        # from a copy archive then modify the origin to indicate so.
         if self.archive.purpose == ArchivePurpose.PPA:
             origin = "LP-PPA-%s" % self.archive.owner.name
         else:

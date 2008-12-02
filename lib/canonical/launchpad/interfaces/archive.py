@@ -20,6 +20,8 @@ __all__ = [
     'IDistributionArchive',
     'IPPA',
     'IPPAActivateForm',
+    'MAIN_ARCHIVE_PURPOSES',
+    'ALLOW_RELEASE_BUILDS',
     'PocketNotFound',
     'SourceNotFound',
     ]
@@ -172,6 +174,8 @@ class IArchive(IHasOwner):
     archive_url = Attribute("External archive URL.")
 
     is_ppa = Attribute("True if this archive is a PPA.")
+
+    is_copy = Attribute("True if this archive is a copy archive.")
 
     title = exported(
         Text(title=_("Archive Title."), required=False))
@@ -826,6 +830,17 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
+
+MAIN_ARCHIVE_PURPOSES = (
+    ArchivePurpose.PRIMARY,
+    ArchivePurpose.PARTNER,
+    )
+
+ALLOW_RELEASE_BUILDS = (
+    ArchivePurpose.PARTNER,
+    ArchivePurpose.PPA,
+    ArchivePurpose.COPY,
+    )
 
 # MONKEY PATCH TIME!
 # Fix circular dependency issues.

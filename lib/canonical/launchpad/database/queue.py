@@ -21,8 +21,8 @@ from email.MIMEText import MIMEText
 
 from zope.component import getUtility
 from zope.interface import implements
-from sqlobject import (
-    ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
+
+from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
@@ -30,25 +30,28 @@ from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
-from canonical.encoding import (
-    guess as guess_encoding, ascii_smash)
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
+    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
-    IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
-    IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
-    QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError,QueueSourceAcceptError,
-    SourcePackageFileType)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.package import (
+    PackageUploadStatus, PackageUploadCustomFormat)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from canonical.launchpad.interfaces.queue import (
+    IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
+    IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
+    NonBuildableSourceUploadError, QueueBuildAcceptError,
+    QueueInconsistentStateError, QueueSourceAcceptError,
+    QueueStateWriteProtectedError)
+from canonical.launchpad.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -56,6 +59,7 @@ from canonical.launchpad.scripts.processaccepted import (
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -474,7 +478,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See `IPackageUpload`."""
-        return self.archive.purpose == ArchivePurpose.PPA
+        return self.archive.is_ppa
 
     def _stripPgpSignature(self, changes_lines):
         """Strip any PGP signature from the supplied changes lines."""
@@ -988,8 +992,7 @@ class PackageUpload(SQLBase):
 
         # Include the 'X-Launchpad-PPA' header for PPA upload notfications
         # containing the PPA owner name.
-        if (self.archive.purpose == ArchivePurpose.PPA and
-            self.archive.owner):
+        if (self.archive.is_ppa and self.archive.owner is not None):
             extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
         # Include a 'X-Launchpad-Component' header with the component and
