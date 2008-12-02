@@ -173,6 +173,8 @@ class IArchive(IHasOwner):
 
     is_ppa = Attribute("True if this archive is a PPA.")
 
+    is_copy = Attribute("True if this archive as a COPY archive.")
+
     title = exported(
         Text(title=_("Archive Title."), required=False))
 
@@ -789,6 +791,22 @@ class IArchiveSet(Interface):
         :param distroarchseries: target `IDistroArchSeries`.
 
         :return a dictionary with the 4 keys specified above.
+        """
+
+    def getArchivesForDistribution(distribution, name=None, purposes=[]):
+        """Return a list of all the archives for a distribution.
+        
+        This will return all the archives for the given distribution, with
+        the following parameters:
+        
+        :param distribution: target `IDistribution`
+        :param name: An optional archive name which will further restrict
+            the results to only those archives with this name.
+        :param purposes: An optional list of purposes with which to filter
+            the results.
+
+        :return A queryset of all the archives for the given
+            distribution matching the given params.
         """
 
 class ArchivePurpose(DBEnumeratedType):

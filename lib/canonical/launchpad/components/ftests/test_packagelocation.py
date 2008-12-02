@@ -9,18 +9,23 @@ from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
-
 
 class TestPackageLocation(unittest.TestCase):
     """Test the `PackageLocation` class."""
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        """Initialises the object factory used for creating test data."""
+        self.factory = LaunchpadObjectFactory()
+
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
-                           purpose=None, person_name=None):
+                           purpose=None, person_name=None,
+                           archive_name=None):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
-            distribution_name, suite, purpose, person_name)
+            distribution_name, suite, purpose, person_name, archive_name)
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
@@ -49,6 +54,20 @@ class TestPackageLocation(unittest.TestCase):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.title,
                          'Partner Archive for Ubuntu Linux')
+
+    def testSetupLocationForCOPY(self):
+        """`PackageLocation` for COPY archives."""
+        # First create a copy archive for the default Ubuntu primary
+        source = self.getPackageLocation()
+        cpr = self.factory.makePackageCopyRequest(source=source)
+        copy_archive = cpr.target_archive
+        location = self.getPackageLocation(purpose=ArchivePurpose.COPY,
+                                           archive_name=copy_archive.name)
+        self.assertEqual(location.distribution.name, 'ubuntu')
+        self.assertEqual(location.distroseries.name, 'hoary')
+        self.assertEqual(location.pocket.name, 'RELEASE')
+        self.assertEqual(location.archive.title,
+                         'Generalized copy archive for Ubuntu Linux')
 
     def testSetupLocationUnknownDistribution(self):
         """`PackageLocationError` is raised on unknown distribution."""

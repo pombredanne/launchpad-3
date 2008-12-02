@@ -13,6 +13,7 @@ import re
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import alsoProvides, implements
 
@@ -33,6 +34,8 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.database.packagecopyrequest import (
+    PackageCopyRequest)
 from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
@@ -154,6 +157,11 @@ class Archive(SQLBase):
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
+
+    @property
+    def is_copy(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.COPY
 
     @property
     def title(self):
@@ -1164,3 +1172,20 @@ class ArchiveSet:
                     status_and_counters[key] += status_counter
 
         return status_and_counters
+
+    def getArchivesForDistribution(self, distribution, name=None,
+        purposes=[]):
+        """See `IArchiveSet`."""
+        extra_exprs = []
+        if len(purposes) > 0:
+            extra_exprs.append(Archive.purpose.is_in(purposes))
+
+        if name is not None:
+            extra_exprs.append(Archive.name == name)
+
+        query = Store.of(distribution).find(
+            Archive,
+            Archive.distribution == distribution,
+            *extra_exprs)
+
+        return query

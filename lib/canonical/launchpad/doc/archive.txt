@@ -1521,6 +1521,44 @@ archive.
     total      1
 
 
+IArchiveSet also includes the helper method `getArchivesForDistribution`
+which can be used to get archives of a specific purpose for a distribution
+(note: the sample data currently contains one copy archive for ubuntu):
+
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> ubuntu_copy_archives.count()
+    1
+
+
+After we create two copy archives from hoary, and one from warty, the
+`getArchivesForDistribution` finds the relevant archives:
+
+    >>> from canonical.launchpad.components.packagelocation import (
+    ...     build_package_location)
+    >>> src_warty = build_package_location('ubuntu', suite='warty-updates')
+    >>> src_hoary = build_package_location('ubuntu', suite='hoary-updates')
+    >>> pcr = factory.makePackageCopyRequest(source=src_hoary)
+    >>> pcr = factory.makePackageCopyRequest(source=src_hoary)
+    >>> pcr = factory.makePackageCopyRequest(source=src_warty)
+
+    >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    >>> ubuntu_copy_archives.count()
+    4
+
+The `getArchivesForDistribution` method can also be used to get an
+archive using an archive name:
+
+    >>> primary_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, name='primary')
+    >>> primary_archives.count()
+    1
+    >>> primary_archives[0].name
+    u'primary'
+
+
 == Archive Permission Checking ==
 
 IArchive has two public methods, canUpload() and canAdministerQueue()
