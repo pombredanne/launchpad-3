@@ -7,7 +7,8 @@ import transaction
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
@@ -27,7 +28,7 @@ from canonical.launchpad.testing import (
 class TestMergeProposalMailing(TestCase):
     """Test that reasonable mailings are generated"""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
