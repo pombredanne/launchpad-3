@@ -356,18 +356,15 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
-        path_expression="string:standardoptions/${id}"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         rootsite="shipit" />
 
-    <browser:editform
+    <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
         facet="overview"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
-        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
-        fields="flavour quantityx86 quantityamd64 user_description isdefault"
-        label="Edit standard option"
+        class="canonical.launchpad.browser.StandardShipItRequestEditView"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
         />
@@ -384,6 +381,12 @@
     <class class="canonical.launchpad.database.StandardShipItRequestSet">
         <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
     </class>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        path_expression="string:standardoptions"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="shipit" />
 
     <securedutility
         class="canonical.launchpad.database.StandardShipItRequestSet"

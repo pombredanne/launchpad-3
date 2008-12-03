@@ -14,7 +14,7 @@ to bazaar. Also changes the name of the productseries to 'newname'.
   ...
   ... newname
   ... -----------------------------10572808480422220968425074
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ...
   ... Change
   ... -----------------------------10572808480422220968425074--

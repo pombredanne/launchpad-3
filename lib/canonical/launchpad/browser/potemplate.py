@@ -28,8 +28,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad import helpers, _
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import ProductSeriesFacets
 from canonical.launchpad.browser.translations import TranslationsMixin
@@ -39,8 +38,9 @@ from canonical.launchpad.interfaces import (
     ITranslationImporter, ITranslationImportQueue, IProductSeries,
     ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    GetitemNavigation, LaunchpadView, LaunchpadEditFormView, Link, Navigation,
+    StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
@@ -387,44 +387,42 @@ class POTemplateViewPreferred(POTemplateView):
     def pofiles(self):
         return POTemplateView.pofiles(self, preferred_only=True)
 
-class POTemplateEditView(SQLObjectEditView):
+class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
-    def __init__(self, context, request):
-        self.old_description = context.description
-        self.old_translation_domain = context.translation_domain
-        self.user = getUtility(ILaunchBag).user
+    schema = IPOTemplate
+    field_names = ['description', 'priority', 'owner']
+    label = 'Change PO template information'
 
-        SQLObjectEditView.__init__(self, context, request)
-
-    def changed(self):
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
         context = self.context
-        if self.old_description != context.description:
+        old_description = context.description
+        old_translation_domain = context.translation_domain
+        self.updateContextFromData(data)
+        if old_description != context.description:
             self.user.assignKarma(
                 'translationtemplatedescriptionchanged',
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
-        if self.old_translation_domain != context.translation_domain:
+        if old_translation_domain != context.translation_domain:
             # We only update date_last_updated when translation_domain field
             # is changed because is the only significative change that,
             # somehow, affects the content of the potemplate.
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 
-        # We need this because when potemplate name changes, canonical_url
-        # for it changes as well.
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
 
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
-
-    def changed(self):
-        """Redirect to the template view page."""
-
-        # We need this because when potemplate name changes, canonical_url
-        # for it changes as well.
-        self.request.response.redirect(canonical_url(self.context))
+    field_names = [
+        'name', 'translation_domain', 'description', 'header', 'iscurrent',
+        'owner', 'productseries', 'distroseries', 'sourcepackagename',
+        'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
+        'languagepack', 'path', 'source_file_format', 'priority',
+        'date_last_updated']
 
 
 class POTemplateExportView(BaseExportView):
