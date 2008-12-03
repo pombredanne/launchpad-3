@@ -50,6 +50,8 @@ from canonical.launchpad.interfaces import (
     MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
@@ -965,7 +967,10 @@ class BranchSet:
 
         # Make sure that the new branch has a unique name if not a junk
         # branch.
-        if not self.isBranchNameAvailable(owner, product, name):
+        namespace = get_branch_namespace(
+            owner, product=product, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
+        if namespace.isNameUsed(name):
             params = {'name': name}
             if product is None:
                 params['maybe_junk'] = 'junk '

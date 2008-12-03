@@ -1212,17 +1212,6 @@ class IBranchSet(Interface):
         # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
         # to change for source package branches.
 
-    def isBranchNameAvailable(owner, product, branch_name):
-        """Is the specified branch_name valid for the owner and product.
-
-        :param owner: A `Person` who may be an individual or team.
-        :param product: A `Product` or None for a junk branch.
-        :param branch_name: The proposed branch name.
-        """
-        # XXX: JonathanLange 2008-11-27 spec=package-branches: This API needs
-        # to change for source package branches.
-
-
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered.
