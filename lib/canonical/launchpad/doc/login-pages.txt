@@ -6,7 +6,7 @@ operates within the Launchpad workflows.
 
 == Deactivated accounts cannot login ==
 
-A deactivated account cannot use the the LoginOrRegister view to login.
+A deactivated account cannot use the LoginOrRegister view to login.
 The login_error message explains the situation to the user. Former User
 is an example of a user with a DEACTIVATED account.
 

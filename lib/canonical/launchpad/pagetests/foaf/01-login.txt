@@ -72,6 +72,9 @@ his password.
     >>> browser.title
     'Log in or register with Launchpad'
 
+But he cannot log in. He sees a error message that states he needs to
+contact a Launchpad admin.
+
     >>> for tag in find_tags_by_class(
     ...     browser.contents, 'error'):
     ...     print tag
