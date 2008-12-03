@@ -148,8 +148,8 @@ class IProductPublic(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
-            description=_("Project owner, it can either a valid Person or "
-                          "Team inside Launchpad context.")))
+            description=_("The person or team who maintains the project "
+                          "information in Launchpad.")))
 
     registrant = exported(
         PublicPersonChoice(
@@ -157,8 +157,8 @@ class IProductPublic(
             required=True,
             readonly=True,
             vocabulary='ValidPersonOrTeam',
-            description=_("Project registrant, a valid Person "
-                          "within Launchpad context.")))
+            description=_("This person registered the project in "
+                          "Launchpad.")))
 
     driver = exported(
         PublicPersonChoice(
@@ -253,7 +253,7 @@ class IProductPublic(
 
     programminglang = exported(
         TextLine(
-            title=_('Programming Language'),
+            title=_('Programming Languages'),
             required=False,
             description=_("""A comma delimited list of programming
                 languages used for this project.""")),
@@ -526,11 +526,11 @@ class IProductSet(Interface):
         raised.
         """
 
-    def getByName(name, default=None, ignore_inactive=False):
+    def getByName(name, ignore_inactive=False):
         """Return the product with the given name, ignoring inactive products
         if ignore_inactive is True.
 
-        Return the default value if there is no such product.
+        Return None if there is no such product.
         """
 
     def getProductsWithBranches(num_products=None):

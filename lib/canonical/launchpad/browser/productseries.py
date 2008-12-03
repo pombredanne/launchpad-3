@@ -25,14 +25,13 @@ __all__ = [
 import cgi
 import os.path
 from zope.component import getUtility
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
@@ -521,17 +520,19 @@ class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
         return canonical_url(self.context.product, rootsite="code")
 
 
-class ProductSeriesReviewView(SQLObjectEditView):
+class ProductSeriesReviewView(LaunchpadEditFormView):
 
-    def changed(self):
-        """Redirect to the productseries page.
+    schema = IProductSeries
+    field_names = ['product', 'name']
+    label = 'Review product series details'
+    custom_widget('name', TextWidget, width=20)
 
-        We need this because people can now change productseries'
-        product and name, and this will make the canonical_url change too.
-        """
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             _('This Series has been changed'))
-        self.request.response.redirect(canonical_url(self.context))
+        self.next_url = canonical_url(self.context)
 
 
 class ProductSeriesRdfView(object):
