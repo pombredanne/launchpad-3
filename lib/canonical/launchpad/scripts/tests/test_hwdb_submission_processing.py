@@ -2,6 +2,7 @@
 """Tests of the HWDB submissions parser."""
 
 import bz2
+from copy import deepcopy
 from cStringIO import StringIO
 from datetime import datetime
 import logging
@@ -33,6 +34,8 @@ class TestCaseHWDB(TestCase):
 
     layer = BaseLayer
 
+    PCI_SUBCLASS_STORAGE_SCSI = 0
+
     UDI_COMPUTER = '/org/freedesktop/Hal/devices/computer'
     UDI_SATA_CONTROLLER = '/org/freedesktop/Hal/devices/pci_8086_27c5'
     UDI_SATA_CONTROLLER_SCSI = ('/org/freedesktop/Hal/devices/'
@@ -59,12 +62,18 @@ class TestCaseHWDB(TestCase):
     UDI_PCI_PCCARD_BRIDGE = '/org/freedesktop/Hal/devices/pci_1217_7134'
     UDI_PCCARD_DEVICE = '/org/freedesktop/Hal/devices/pci_9004_6075'
 
+    UDI_SCSI_CONTROLLER_PCI_SIDE = (
+        '/org/freedesktop/Hal/devices/pci_9004_6075')
+    UDI_SCSI_CONTROLLER_SCSI_SIDE = (
+        '/org/freedesktop/Hal/devices/pci_9004_6075_scsi_host')
     UDI_SCSI_DISK = '/org/freedesktop/Hal/devices/scsi_disk'
 
     PCI_VENDOR_ID_INTEL = 0x8086
+    PCI_VENDOR_ID_ADAPTEC = 0x9004
     PCI_PROD_ID_PCI_PCCARD_BRIDGE = 0x7134
     PCI_PROD_ID_PCCARD_DEVICE = 0x6075
     PCI_PROD_ID_USB_CONTROLLER = 0x27cc
+    PCI_PROD_ID_AIC1480 = 0x6075
 
     USB_VENDOR_ID_NEC = 0x0409
     USB_PROD_ID_NEC_HUB = 0x005a
@@ -279,6 +288,40 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertEqual(num_warnings, len(self.handler.records),
             'Warning for missing HAL property system.kernel.version '
             'repeated.')
+
+    def testKernelPackageNameNoPackageData(self):
+        """Test of SubmissionParser.getKernelPackageName.
+
+        Test without any package data. getKernelPackageName returns
+        the property system.kernel.version without any further checking.
+        """
+        parser = SubmissionParser(self.log)
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'system.kernel.version': (self.KERNEL_VERSION, 'str'),
+                    },
+                },
+            ]
+        parser.parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            'software': {
+                'packages': {},
+                },
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.getKernelPackageName()
+        self.assertEqual(kernel_package, self.KERNEL_PACKAGE,
+            'Unexpected result of SubmissionParser.getKernelPackageName, '
+            'test without any package data. Expected None, got %r'
+            % kernel_package)
 
     def testHALDeviceConstructor(self):
         """Test of the HALDevice constructor."""
@@ -1125,9 +1168,19 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         devices = [
             {
                 'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
                 'udi': self.UDI_SATA_CONTROLLER,
                 'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
                     'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
                     },
                 },
             ]
@@ -1141,11 +1194,12 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
-        self.failUnless(device.has_reliable_data,
-                        'Regular device treated as not having reliable data.')
+        self.failUnless(
+            device.has_reliable_data,
+            'Regular device treated as not having reliable data.')
 
     def testHasReliableDataNotProcessible(self):
-        """Test of HALDevice.has_reliable_data, no reliable data."""
+        """Test of HALDevice.has_reliable_data, bus without reliable data."""
         devices = [
             {
                 'id': 1,
@@ -1162,12 +1216,286 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
+        for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia', 'mmc', 'misc',
+                    'unknown'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
             device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
             self.failIf(device.has_reliable_data,
                 'Device with bus=%s treated as having reliable data.' % bus)
+
+    def testHasReliableDataRootDevice(self):
+        """Test of HALDevice.has_reliable_data, root device.
+
+        The root device has the info.subsystem or info.bus property set
+        to 'unknown'. While we treat other devices with ths bus value
+        as useless, the root device is real.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'info.subsystem': ('unknown', 'str'),
+                    'system.hardware.vendor': ('FUJITSU SIEMENS', 'str'),
+                    'system.hardware.product': ('LIFEBOOK E8210', 'str'),
+                },
+            },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        properties = devices[0]['properties']
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_COMPUTER]
+        self.failUnless(device.has_reliable_data,
+                        'Root device not treated as having reliable data.')
+
+    def testHasReliableDataForInsuffientData(self):
+        """Test of HALDevice.has_reliable_data, insufficent device data.
+
+        Test for a HAL device that should be processible but does
+        not provide enough data. Aside from a bus, we need a vendor ID,
+        a product ID and a product name.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTROLLER,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        missing_data_log_message = (
+            ('pci.vendor_id',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: <DBItem "
+             "HWBus.PCI, (1) PCI> None 28980 'Intel PCCard bridge 1234' "
+             "/org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            ('pci.product_id',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: "
+             "<DBItem HWBus.PCI, (1) PCI> 32902 None 'Intel PCCard bridge "
+             "1234' /org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            ('info.product',
+             "A HALDevice that is supposed to be a real device does not "
+             "provide bus, vendor ID, product ID or product name: "
+             "<DBItem HWBus.PCI, (1) PCI> 32902 28980 None "
+             "/org/freedesktop/Hal/devices/pci_8086_27c5"
+             ),
+            )
+
+        for (missing_data, expected_log_message) in missing_data_log_message:
+            test_parsed_data = deepcopy(parsed_data)
+            test_device = test_parsed_data['hardware']['hal']['devices'][1]
+            del test_device['properties'][missing_data]
+
+            parser = SubmissionParser(self.log)
+            submission_key = 'test_missing_%s' % missing_data
+            parser.submission_key = submission_key
+            parser.buildDeviceList(test_parsed_data)
+            device = parser.hal_devices[self.UDI_SATA_CONTROLLER]
+            self.failIf(
+                device.has_reliable_data,
+                'Device with missing property %s treated as having reliable'
+                'data.' % missing_data)
+            self.assertWarningMessage(submission_key, expected_log_message)
+
+    def testHasReliableDataIDEDevice(self):
+        """Test of HALDevice.has_reliable_data, for IDE devices.
+
+        Many IDE devices do not provide vendor and product IDs. This is
+        a known problem and hence not worth a log message.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {}
+                },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTROLLER,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.vendor_id': (self.PCI_VENDOR_ID_INTEL, 'int'),
+                    'pci.product_id': (self.PCI_PROD_ID_PCI_PCCARD_BRIDGE,
+                                       'int'),
+                    'info.product': ('Intel PCCard bridge 1234', 'str'),
+                    },
+                },
+            {
+                'id': 3,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.parent': (self.UDI_SATA_CONTROLLER, 'str'),
+                    'info.bus': ('ide', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SATA_DISK]
+        self.failIf(
+            device.has_reliable_data,
+            'IDE Device with missing properties vendor ID, product ID, '
+            'product name treated as having reliabledata.')
+        self.assertEqual(
+            len(self.handler.records), 0,
+            'Warning messages exist for processing an IDE device where '
+            'no messages are expected.')
+
+    def testHALDeviceSCSIVendorModelNameRegularCase(self):
+        """Test of HALDevice.getScsiVendorAndModelName, regular case."""
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('SHARP', 'str'),
+                    'scsi.model': ('JX250 SCSI', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'SHARP',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a regular SCSI device. Expected vendor name SHARP, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'JX250 SCSI',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a regular SCSI device. Expected model name JX250 SCSI , '
+            'got %r.'
+            % model)
+
+    def testHALDeviceSCSIVendorModelNameATADiskShortModelName(self):
+        """Test of HALDevice.getScsiVendorAndModelName, ATA disk (1).
+
+        Test of an ATA disk with a short model name. The Linux kenrel
+        sets the vendor name to "ATA" and inserts the real vendor
+        name into the model string.
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('ATA', 'str'),
+                    'scsi.model': ('Hitachi HTS54161', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'Hitachi',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for an ATA SCSI device. Expected vendor name Hitachi, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'HTS54161',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name HTS54161, '
+            'got %r.'
+            % model)
+
+    def testHALDeviceSCSIVendorModelNameATADiskLongModelName(self):
+        """Test of HALDevice.getScsiVendorAndModelName, ATA disk (2).
+
+        Test of an ATA disk with a short model name. The Linux kenrel
+        sets the vendor name to "ATA" and ignores the real vendor name,
+        """
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_SCSI_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'scsi.vendor': ('ATA', 'str'),
+                    'scsi.model': ('HTC426060G9AT00', 'str'),
+                    },
+                },
+            ]
+        parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            }
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(parsed_data)
+        device = parser.hal_devices[self.UDI_SCSI_DISK]
+        vendor, model = device.getScsiVendorAndModelName()
+        self.assertEqual(
+            vendor, 'ATA',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name ATA, got %r.'
+            % vendor)
+        self.assertEqual(
+            model, 'HTC426060G9AT00',
+            'Unexpected result of HWDevice.getScsiVendorAndModelName '
+            'for a reguale SCSI device. Expected vendor name '
+            'HTC426060G9AT00 , got %r.'
+            % model)
 
     def testHALDeviceVendorFromInfoVendor(self):
         """Test of HALDevice.vendor, regular case.
@@ -2083,6 +2411,45 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             },
         }
 
+    HAL_SCSI_CONTROLLER_PCI_SIDE = {
+        'id': 7,
+        'udi': TestCaseHWDB.UDI_SCSI_CONTROLLER_PCI_SIDE,
+        'properties': {
+            'info.bus': ('pci', 'str'),
+            'info.linux.driver': ('aic7xxx', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_COMPUTER, 'str'),
+            'info.product': ('AIC-1480 / APA-1480', 'str'),
+            'pci.device_class': (PCI_CLASS_STORAGE, 'int'),
+            'pci.device_subclass': (TestCaseHWDB.PCI_SUBCLASS_STORAGE_SCSI,
+                                    'int'),
+            'pci.vendor_id': (TestCaseHWDB.PCI_VENDOR_ID_ADAPTEC, 'int'),
+            'pci.product_id': (TestCaseHWDB.PCI_PROD_ID_AIC1480, 'int'),
+            },
+        }
+
+    HAL_SCSI_CONTROLLER_SCSI_SIDE = {
+        'id': 8,
+        'udi': TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE,
+        'properties': {
+            'info.bus': ('scsi_host', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_PCI_SIDE, 'str'),
+            'info.linux.driver': ('sd', 'str'),
+            }
+        }
+
+    HAL_SCSI_STORAGE_DEVICE = {
+        'id': 9,
+        'udi': TestCaseHWDB.UDI_SCSI_DISK,
+        'properties': {
+            'info.bus': ('scsi', 'str'),
+            'info.linux.driver': ('sd', 'str'),
+            'info.parent': (TestCaseHWDB.UDI_SCSI_CONTROLLER_SCSI_SIDE,
+                            'str'),
+            'scsi.vendor': ('WDC', 'str'),
+            'scsi.model': ('WD12345678', 'str'),
+            },
+        }
+
     parsed_data = {
         'hardware': {
             'hal': {},
@@ -2238,6 +2605,56 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             ]
         self.runTestEnsureVendorIDVendorNameExistsVendorNameUnknown(
             devices, HWBus.USB, '0x1307', self.UDI_USB_STORAGE)
+
+    def testEnsureVendorIDVendorNameExistVendorSCSI(self):
+        """Test of ensureVendorIDVendorNameExists(self), SCSI bus."""
+        devices = [
+            self.HAL_COMPUTER,
+            self.HAL_SCSI_CONTROLLER_PCI_SIDE,
+            self.HAL_SCSI_CONTROLLER_SCSI_SIDE,
+            self.HAL_SCSI_STORAGE_DEVICE,
+            ]
+
+        self.setHALDevices(devices)
+        parser = SubmissionParser(self.log)
+        parser.parsed_data = self.parsed_data
+        parser.buildDeviceList(self.parsed_data)
+
+        # The database does not know yet about the vendor name
+        # 'WDC'...
+        vendor_name_set = getUtility(IHWVendorNameSet)
+        vendor_name = vendor_name_set.getByName('WDC')
+        self.assertEqual(vendor_name, None,
+                         'Expected None looking up vendor name "WDC" in '
+                         'HWVendorName, got %r.' % vendor_name)
+
+        # ...as well as the vendor ID (which is identical to the vendor
+        # name for SCSI devices).
+        vendor_id_set = getUtility(IHWVendorIDSet)
+        # Note that we must provide a string with exactly 8 characters
+        # as the vendor ID of a SCSI device.
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'WDC     ')
+        self.assertEqual(vendor_id, None,
+                         'Expected None looking up vendor ID "WDC     " in '
+                         'HWVendorID for the SCSI bus, got %r.' % vendor_id)
+
+        # HALDevice.ensureVendorIDVendorNameExists() creates these
+        # records.
+        scsi_disk = parser.hal_devices[self.UDI_SCSI_DISK]
+        scsi_disk.ensureVendorIDVendorNameExists()
+
+        vendor_name = vendor_name_set.getByName('WDC')
+        self.assertEqual(vendor_name.name, 'WDC',
+                         'Expected to find vendor name "WDC" in '
+                         'HWVendorName, got %r.' % vendor_name.name)
+
+        vendor_id = vendor_id_set.getByBusAndVendorID(HWBus.SCSI, 'WDC     ')
+        self.assertEqual(vendor_id.vendor_id_for_bus, 'WDC     ',
+                         'Expected "WDC     " as vendor_id_for_bus, '
+                         'got %r.' % vendor_id.vendor_id_for_bus)
+        self.assertEqual(vendor_id.bus, HWBus.SCSI,
+                         'Expected HWBUS.SCSI as bus, got %s.'
+                         % vendor_id.bus.title)
 
     def testCreateDBDataForSimpleDevice(self):
         """Test of HALDevice.createDBData.
@@ -2704,9 +3121,9 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         Run process_pending_submissions with three submissions; one
         of the submisisons contains invalid data.
         """
-        # We have already one submisson in the DB sample data;
-        # let's fill the associated Librarian file with some
-        # test data.
+        # We have already one submisson with the status SUBMITTED in the
+        # DB sample data; let's fill the associated Librarian file with
+        # some test data.
         submission_set = getUtility(IHWSubmissionSet)
         submission = submission_set.getBySubmissionKey(
             'test_submission_id_1')
@@ -2733,7 +3150,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             submission.submission_key for submission in valid_submissions]
         self.assertEqual(
             valid_submission_keys,
-            [u'test_submission_id_1', u'submission-6'],
+            [u'test_submission_id_1', u'sample-submission', u'submission-6'],
             'Unexpected set of valid submissions: %r' % valid_submission_keys)
 
         invalid_submissions = submission_set.getByStatus(

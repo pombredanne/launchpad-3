@@ -60,6 +60,21 @@ The iterator has a count of 0 if there are no matches.
     >>> rp_summary_set.getByIdentifier('never-used').count()
     0
 
+The method accepts an only_unknown_trust_roots parameter that will
+restrict the list to records for trust roots for which there is no
+IOpenIDRPConfig entry.
+
+    >>> from canonical.launchpad.interfaces.openidserver import (
+    ...     IOpenIDRPConfigSet)
+    >>> shop = getUtility(IOpenIDRPConfigSet).new(
+    ...     'https://shop.canonical.com/', 'The Shop', 'For our fans.')
+    >>> print_openid_rp_summaries(
+    ...     rp_summary_set.getByIdentifier(
+    ...         'http://openid.launchpad.dev/+id/no-priv_oid', True))
+    No Privileges Person
+      identifier: http://openid.launchpad.dev/+id/no-priv_oid
+      trust_root: http://moodle.org
+
 
 == IOpenIDRPSummary ==
 

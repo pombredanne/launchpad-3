@@ -12,27 +12,10 @@
 
 <body>
 
-
-<metal:heading fill-slot="pageheading">
-  <h1>Upload and build queue</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="setup view/setupQueueList;
                  message view/performQueueAction;
                  error view/error|nothing">
-
-  <p class="informational message"
-     tal:condition="message"
-     tal:content="structure message">
-     This call to view/performQueueAction actually parses the form and does
-     the database queries based on actions posted (packages accepted or
-     rejected), and shows the status of those actions here.
-  </p>
-
-  <p class="error message"
-      tal:condition="error"
-      tal:content="error"/>
 
   <div class="queue_list" tal:condition="not: error">
 
@@ -314,52 +297,6 @@
 </metal:macro>
 
 </metal:macros>
-
-
-<div metal:fill-slot="help">
-  <p>
-    The packages incorporation work-flow within a distroseries is
-    represented as a pipeline.
-  </p>
-  <p>
-    The pipeline can process three types of packages: Sources, which
-    contain one uploaded source package each submitted by the
-    developers; Builds, which can contain, at least, one binary packages
-    and optionally, one or more custom packages, it's resulted of the
-    build of a published source; and Customs, a single custom package.
-  </p>
-  <p>
-    Custom uploads are special files, usually a tarball, that are not
-    targeted to be build normally (i.e, they are not sources, neither
-    binaries), instead they have specific contents to be directly
-    processed by one of the available custom processors in
-    Launchpad. Currently, the following custom processors are offered:
-    Installer, Dist-Upgrader, DDTP and Translations.
-  </p>
-  <p>
-    All incoming packages tend to go for the stable states, DONE or
-    REJECTED, the end of the pipeline, which means that the package
-    was completely incorporated or excluded, respectively, in the
-    distroseries in question.
-  </p>
-  <p>
-    All incoming packages, essentially, start in NEW stage. Already
-    known packages, which previous versions are already incorporated,
-    are automatically moved to ACCEPTED stage, the remaining ones
-    need manual approval of the archive administrators for this
-    distroseries to continue.
-  </p>
-  <p>
-    Packages with some policy restrictions, like post-release updates
-    and security updates, also wait manual approval as UNAPPROVED.
-  </p>
-  <p>
-    Once a package is in ACCEPTED stage, it waits the distroseries
-    periodic publication cycle to happen, then sources will get
-    published and will start building and builds and customs will be
-    published in the archive appropriately, ending up in DONE.
-  </p>
-</div>
 
 </body>
 </html>

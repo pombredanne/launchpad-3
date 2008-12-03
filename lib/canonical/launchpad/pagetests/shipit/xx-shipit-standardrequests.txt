@@ -30,10 +30,9 @@ We can change any existing one.
     >>> browser.getControl(name='field.quantityx86').value = '5'
     >>> browser.getControl(name='field.quantityamd64').value = '1'
     >>> browser.getControl('Change').click()
-    >>> browser.getControl(name='field.quantityamd64').value
-    '1'
 
-    >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
+    >>> browser.url
+    'http://shipit.ubuntu.dev/standardoptions'
     >>> browser.getLink('5 Ubuntu CDs (5 PC Edition)')
     Traceback (most recent call last):
     ...

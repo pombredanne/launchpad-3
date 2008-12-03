@@ -31,6 +31,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements, alsoProvides
+from zope.interface.interfaces import IMethod
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
@@ -289,30 +290,24 @@ class NullBugTask(BugTaskMixin):
         else:
             raise AssertionError('Unknown NullBugTask: %r.' % self)
 
-        # Set a bunch of attributes to None, because it doesn't make
+        # Make us provide the interface by setting all required attributes
+        # to None, and define the methods as raising NotImplementedError.
+        # The attributes are set to None because it doesn't make
         # sense for these attributes to have a value when there is no
         # real task there. (In fact, it may make sense for these
         # values to be non-null, but I haven't yet found a use case
         # for it, and I don't think there's any point on designing for
         # that until we've encountered one.)
-        self.id = None
-        self.age = None
-        self.milestone = None
-        self.status = None
-        self.statusexplanation = None
-        self.importance = None
-        self.assignee = None
-        self.bugwatch = None
-        self.owner = None
-        self.conjoined_master = None
-        self.conjoined_slave = None
+        def this_is_a_null_bugtask_method(*args, **kwargs):
+            raise NotImplementedError
 
-        self.datecreated = None
-        self.date_assigned = None
-        self.date_confirmed = None
-        self.date_last_updated = None
-        self.date_inprogress = None
-        self.date_closed = None
+        for name, spec in INullBugTask.namesAndDescriptions(True):
+            if not hasattr(self, name):
+                if IMethod.providedBy(spec):
+                    value = this_is_a_null_bugtask_method
+                else:
+                    value = None
+                setattr(self, name, value)
 
     @property
     def title(self):
@@ -424,7 +419,8 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete", "date_left_new",
-        "date_triaged", "date_fix_committed", "date_fix_released")
+        "date_triaged", "date_fix_committed", "date_fix_released",
+        "date_left_closed")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -487,6 +483,8 @@ class BugTask(SQLBase, BugTaskMixin):
     date_fix_committed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
     date_fix_released = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_left_closed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
@@ -817,6 +815,10 @@ class BugTask(SQLBase, BugTaskMixin):
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = when
+
+        if ((old_status in RESOLVED_BUGTASK_STATUSES) and
+            (new_status in UNRESOLVED_BUGTASK_STATUSES)):
+            self.date_left_closed = when
 
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier

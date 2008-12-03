@@ -3,12 +3,12 @@
 For archives we publish a subset of their attributes.
 This works for PPAs:
 
-    >>> archive = webservice.get("/~cprov/+archive").jsonBody()
-    >>> print archive['self_link']
+    >>> cprov_archive = webservice.get("/~cprov/+archive").jsonBody()
+    >>> print cprov_archive['self_link']
     http://.../~cprov/+archive
 
     >>> from canonical.lazr.testing.webservice import pprint_entry
-    >>> pprint_entry(archive)
+    >>> pprint_entry(cprov_archive)
     description: u'packages to help my friends.'
     distribution_link: u'http://.../ubuntu'
     name: u'default'
@@ -179,6 +179,14 @@ upload a particular package.
     >>> show_mozilla_permissions()
     Archive Upload Rights ...~carlos None mozilla-firefox
 
+Passing a bad package name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
+    ...     source_package_name="badpackage").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
+
 newPackageUploader() is a factory function that adds a new permission for
 a person to upload a package.
 
@@ -225,6 +233,14 @@ upload to a particular component:
 
     >>> show_component_permissions("main")
     Archive Upload Rights ...~ubuntu-team main None
+
+Passing a bad component name results in an error:
+
+    >>> print webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
+    ...     component_name="badcomponent").getOutput()
+    HTTP/1.1 400 Bad Request
+    ...
 
 If you don't specify the component, you get all the uploaders for
 all components.
@@ -338,3 +354,85 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
+
+
+== Package copying/synchronisation ==
+
+IArchive contains 2 custom operations to copy packages from another archive.
+These are syncSource() and syncSources().
+
+syncSource() copies a single package with a specific version from another
+archive.
+
+    >>> print webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'syncSource', {},
+    ...     source_name='cdrkit', version='1.0',
+    ...     from_archive=cprov_archive['self_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: cdrkit 1.0 in breezy-autotest
+        (same version already has published binaries in the destination archive)
+    <BLANKLINE>
+
+That one failed because cdrkit is already published in the same context in
+the main archive.  Let's add some more test publications that we can copy
+around:
+
+    >>> login("foo.bar@canonical.com")
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> ubuntu_distro = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> main_archive = ubuntu_distro.main_archive
+    >>> hoary = ubuntu_distro.getSeries('hoary')
+    >>> test_publisher.addFakeChroots(hoary)
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.0", archive=main_archive)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package1", version="1.1", archive=main_archive)
+    >>> ignore = test_publisher.getPubSource(
+    ...     sourcename="package2", version="1.0", archive=main_archive)
+    >>> logout()
+
+Now copy "package1" version 1.0 from the main archive into cprov's PPA:
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSource', {},
+    ...     source_name='package1', version='1.0',
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 200 Ok
+    ...
+
+syncSources() allows the caller to specify a list of sources to copy all at
+once.  The latest versions that are found in the from_archive are
+"synchronised" to the context archive.  If a particular version already
+exists then nothing is copied.  The list of packages that were copied is
+returned from the function call.
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 200 Ok
+    ...
+    ["package1", "package2"]
+
+If there's nothing to copy at all, an error is returned.  Repeating the copy
+above will give this effect.
+
+    >>> print webservice.named_post(
+    ...     cprov_archive['self_link'], 'syncSources', {},
+    ...     source_names=['package1', 'package2'],
+    ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
+    ...     to_series="breezy-autotest")
+    HTTP/1.1 400 Bad Request
+    ...
+    CannotCopy: Packages already copied.
+    <BLANKLINE>

@@ -93,6 +93,7 @@ import urllib
 from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
+from textwrap import dedent
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -105,6 +106,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.lazr import decorates
@@ -121,6 +123,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.components.openidserver import CurrentOpenIDEndPoint
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
     BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
@@ -142,9 +145,10 @@ from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
-from canonical.launchpad.interfaces.message import IDirectEmailAuthorization
+from canonical.launchpad.interfaces.message import (
+    IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.openidserver import (
-    IOpenIDPersistentIdentity)
+    IOpenIDPersistentIdentity, IOpenIDRPSummarySet)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
@@ -189,6 +193,7 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -290,6 +295,11 @@ class BranchTraversalMixin:
                 # addition to the user) to identify the branch, and as such
                 # the product isnt't being added to the bag by the internals.
                 getUtility(IOpenLaunchBag).add(branch.product)
+
+                if branch.product.name != product_name:
+                    # This branch was accessed through one of its product's
+                    # aliases, so we must redirect to its canonical URL.
+                    return self.redirectSubTree(canonical_url(branch))
             return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
@@ -1168,7 +1178,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     def gpgkeys(self):
         target = '+editpgpkeys'
-        text = 'GPG Keys'
+        text = 'OpenPGP Keys'
         return Link(target, text)
 
     def passwords(self):
@@ -2362,9 +2372,22 @@ class PersonView(LaunchpadView, FeedsMixin):
         return False
 
     @cachedproperty
+    def is_delegated_identity(self):
+        """Should the page delegate identity to the OpenId identitier.
+
+        We only do this if it's enabled for the vhost.
+        """
+        return (self.context.is_valid_person
+                and config.vhost.mainsite.openid_delegate_profile)
+
+    @cachedproperty
     def openid_identity_url(self):
-        """The identity URL for the person."""
-        return IOpenIDPersistentIdentity(self.context).openid_identity_url
+        """The public OpenID identity URL. That's the profile page."""
+        profile_url = URI(canonical_url(self.context))
+        if not config.vhost.mainsite.openid_delegate_profile:
+            # Change the host to point to the production site.
+            profile_url.host = config.launchpad.non_restricted_hostname
+        return str(profile_url)
 
     @property
     def subscription_policy_description(self):
@@ -2434,15 +2457,50 @@ class PersonView(LaunchpadView, FeedsMixin):
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
 
-    def getBugsInProgress(self):
+
+    @cachedproperty
+    def assigned_bugs_in_progress(self):
         """Return up to 5 assigned bugs that are In Progress."""
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
         return self.context.searchTasks(params)[:5]
 
-    def viewingOwnPage(self):
+    @cachedproperty
+    def assigned_specs_in_progress(self):
+        """Return up to 5 assigned specs that are being worked on."""
+        return self.context.assigned_specs_in_progress
+
+    @property
+    def has_assigned_bugs_or_specs_in_progress(self):
+        """Does the user have any bugs or specs that are being worked on?"""
+        bugtasks = self.assigned_bugs_in_progress
+        specs = self.assigned_specs_in_progress
+        return bugtasks.count() > 0 or specs.count() > 0
+
+    @property
+    def viewing_own_page(self):
         return self.user == self.context
+
+    @property
+    def contactuser_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        if self.context.is_team:
+            return 'Send an email to this team through Launchpad'
+        elif self.viewing_own_page:
+            return 'Send an email to yourself through Launchpad'
+        else:
+            return 'Send an email to this user through Launchpad'
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate link text."""
+        if self.context.is_team:
+            return 'Contact this team'
+        else:
+            # Note that we explicitly do not change the text to "Contact
+            # yourself" when viewing your own page.
+            return 'Contact this user'
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -2681,7 +2739,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
-        "../templates/openidapplication-xrds.pt")
+        "../templates/person-xrds.pt")
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
@@ -2694,7 +2752,17 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
-        return self.context.is_openid_enabled
+        return self.is_delegated_identity
+
+    @cachedproperty
+    def openid_server_url(self):
+        """The OpenID Server endpoint URL for Launchpad."""
+        return CurrentOpenIDEndPoint.getOldServiceURL()
+
+    @cachedproperty
+    def openid_identity_url(self):
+        return IOpenIDPersistentIdentity(
+            self.context).old_openid_identity_url
 
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
@@ -2810,7 +2878,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
 
-        for w in context.allwikis:
+        for w in context.wiki_names:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
@@ -3051,6 +3119,11 @@ class PersonTranslationView(LaunchpadView):
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    @cachedproperty
+    def person_filter_querystring(self):
+        """Return person's name appropriate for including in links."""
+        return urllib.urlencode({'person': self.context.name})
 
     def should_display_message(self, translationmessage):
         """Should a certain `TranslationMessage` be displayed.
@@ -3371,6 +3444,10 @@ class PersonEditView(BasePersonEditView):
 
     implements(IPersonEditMenu)
 
+    # Will contain an hidden input when the user is renaming his
+    # account with full knowledge of the consequences.
+    i_know_this_is_an_openid_security_issue_input = None
+
     @property
     def cancel_url(self):
         """The URL that the 'Cancel' link should return to."""
@@ -3385,6 +3462,59 @@ class PersonEditView(BasePersonEditView):
         """
         return [convertToHtmlCode(jabber.jabberid)
                 for jabber in self.context.jabberids]
+
+    def validate(self, data):
+        """If the name changed, warn the user about the implications."""
+        new_name = data.get('name')
+        bypass_check = self.request.form_ng.getOne(
+            'i_know_this_is_an_openid_security_issue', 0)
+        if (new_name and new_name != self.context.name and
+            len(self.unknown_trust_roots_user_logged_in) > 0
+            and not bypass_check):
+            # Warn the user that they might shoot themselves in the foot.
+            self.setFieldError('name', structured(dedent("""
+            <div class="inline-warning">
+              <p>Changing your name will change your
+                  public OpenID identifier. This means that you might be
+                  locked out of certain sites where you used it, or that
+                  somebody could create a new profile with the same name and
+                  log in as you on these third-party sites. See
+                  <a href="https://help.launchpad.net/OpenID#rename-account"
+                    >https://help.launchpad.net/OpenID#rename-account</a>
+                  for more information.
+              </p>
+              <p> You may have used your identifier on the following
+                  sites:<br> %s.
+              </p>
+              <p>If you click 'Save' again, we will rename your account
+                 anyway.
+              </p>
+            </div>"""),
+             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            self.i_know_this_is_an_openid_security_issue_input = dedent("""\
+                <input type="hidden"
+                       id="i_know_this_is_an_openid_security_issue"
+                       name="i_know_this_is_an_openid_security_issue"
+                       value="1">""")
+
+    @cachedproperty
+    def unknown_trust_roots_user_logged_in(self):
+        """The unknown trust roots the user has logged in using OpenID.
+
+        We assume that they logged in using their delegated profile OpenID,
+        since that's the one we advertise.
+        """
+        identifier = IOpenIDPersistentIdentity(self.context)
+        unknown_trust_root_login_records = list(
+            getUtility(IOpenIDRPSummarySet).getByIdentifier(
+                identifier.old_openid_identity_url, True))
+        if identifier.new_openid_identifier is not None:
+            unknown_trust_root_login_records.extend(list(
+                getUtility(IOpenIDRPSummarySet).getByIdentifier(
+                    identifier.new_openid_identity_url, True)))
+        return sorted([
+            record.trust_root
+            for record in unknown_trust_root_login_records])
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
@@ -4928,12 +5058,51 @@ class EmailToPersonView(LaunchpadFormView):
         sender_email = data['field.from_'].email
         subject = data['subject']
         message = data['message']
-        recipient_email = self.context.preferredemail.email
-        message = send_direct_contact_email(
-            sender_email, recipient_email, subject, message)
-        self.request.response.addInfoNotification(
-            _('Message sent to $name',
-              mapping=dict(name=self.context.displayname)))
+        # When the recipient is hiding her email addresses, the security proxy
+        # will prevent direct access to the .email attribute of the preferred
+        # email.  Bypass this restriction.
+        recipient_email = removeSecurityProxy(self.context.preferredemail)
+        # recipient_email will be None in the case where we're contacting a
+        # team, but that team has no contact address.  In that case, we send a
+        # message to each team member individually.
+        if recipient_email is None:
+            # It's possible that we're on a person's page and that person has
+            # no preferred email address.  This should never happen in
+            # practice, but it's possible that old data may not satisfy the
+            # constraint that all users must have a preferred email address.
+            # Because of that, we don't assert the condition here, we just do
+            # nothing but issue an error notice.
+            if not self.context.is_team:
+                self.request.response.addErrorNotification(
+                    _('Your message was not sent because the recipient '
+                      'does not have a preferred email address.'))
+                self.next_url = canonical_url(self.context)
+                return
+            recipients_email = []
+            for person in self.context.allmembers:
+                if not person.is_team and person.preferredemail is not None:
+                    # This is either a team or a person without a preferred
+                    # email, so don't send a notification.
+                    recipients_email.append(
+                        removeSecurityProxy(person.preferredemail).email)
+        else:
+            recipients_email = [recipient_email.email]
+        try:
+            send_direct_contact_email(
+                sender_email, recipients_email, subject, message)
+        except QuotaReachedError, error:
+            fmt_date = DateTimeFormatterAPI(self.next_try)
+            self.request.response.addErrorNotification(
+                _('Your message was not sent because you have exceeded your '
+                  'daily quota of $quota messages to contact users. '
+                  'Try again $when.', mapping=dict(
+                      quota=error.authorization.message_quota,
+                      when=fmt_date.approximatedate(),
+                      )))
+        else:
+            self.request.response.addInfoNotification(
+                _('Message sent to $name',
+                  mapping=dict(name=self.context.displayname)))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -4952,3 +5121,13 @@ class EmailToPersonView(LaunchpadFormView):
         interval = as_timedelta(
             config.launchpad.user_to_user_throttle_interval)
         return throttle_date + interval
+
+    @property
+    def specific_contact_title_text(self):
+        """Return the appropriate pagetitle."""
+        if self.context.is_team:
+            return 'Contact this team'
+        elif self.context == self.user:
+            return 'Contact yourself'
+        else:
+            return 'Contact this user'

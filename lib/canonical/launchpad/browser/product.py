@@ -60,7 +60,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lazr import decorates
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort, IBranchSet, IBugTracker,
     ICountry, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
@@ -150,7 +150,6 @@ class ProductSetNavigation(Navigation):
     usedfor = IProductSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid product name
         product = self.context.getByName(name)
         if product is None:
             raise NotFoundError(name)
@@ -365,7 +364,7 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change maintainer'
-        return Link('+reassign', text, icon='edit')
+        return Link('+edit-people', text, icon='edit')
 
     def top_contributors(self):
         text = u'\u00BB More contributors'
@@ -494,16 +493,16 @@ class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     def active_reviews(self):
         if self.active_review_count == 1:
-            text = 'active review'
+            text = 'pending proposal'
         else:
-            text = 'active reviews'
+            text = 'pending proposals'
         return Link('+activereviews', text)
 
     def approved_merges(self):
         if self.approved_merge_count == 1:
-            text = 'approved merge'
+            text = 'unmerged proposal'
         else:
-            text = 'approved merges'
+            text = 'unmerged proposals'
         return Link('+approvedmerges', text)
 
     @enabled_with_permission('launchpad.Admin')
@@ -1180,6 +1179,7 @@ class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Select a new translation group"
     field_names = ["translationgroup", "translationpermission"]
 
+
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
@@ -1193,7 +1193,18 @@ class ProductAdminView(ProductEditView):
         need the ability to change it.
         """
         super(ProductAdminView, self).setUpFields()
-        self.form_fields += self._createRegistrantField()
+        self.form_fields = (self._createAliasesField() + self.form_fields
+                            + self._createRegistrantField())
+
+    def _createAliasesField(self):
+        """Return a PillarAliases field for IProduct.aliases."""
+        return form.Fields(
+            PillarAliases(
+                __name__='aliases', title=_('Aliases'),
+                description=_('Other names (separated by space) under which '
+                              'this project is known.'),
+                required=False, readonly=False),
+            render_context=self.render_context)
 
     def _createRegistrantField(self):
         """Return a popup widget person selector for the registrant.
@@ -1213,8 +1224,8 @@ class ProductAdminView(ProductEditView):
                 vocabulary='ValidPersonOrTeam',
                 required=True,
                 readonly=False,
-                default=self.context.registrant
-                )
+                ),
+            render_context=self.render_context
             )
 
     def validate(self, data):
@@ -1641,7 +1652,7 @@ class ProductBranchListingView(BranchListingView):
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @property
+    @cachedproperty
     def branch_count(self):
         """The number of total branches the user can see."""
         return getUtility(IBranchSet).getBranchesForContext(

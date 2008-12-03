@@ -34,8 +34,6 @@ give karma for it.
 Karma is added for registering a branch.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> fooix = factory.makeProduct(name='fooix')
     >>> eric = factory.makePerson(name='eric', password='test')
     >>> branch = factory.makeBranch(owner=eric, product=fooix)

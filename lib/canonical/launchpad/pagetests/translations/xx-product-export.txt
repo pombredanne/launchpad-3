@@ -38,8 +38,10 @@ it for source packages (tested and documented separately).
 The Download link is not shown if the product does not use Launchpad
 Translations.
 
-    >>> from canonical.launchpad.database import ProductSet
-    >>> product = ProductSet().getByName('evolution')
+    # Use the DB classes directly to avoid having to setup a zope interaction
+    # (i.e. login()) and bypass the security proxy.
+    >>> from canonical.launchpad.database import Product
+    >>> product = Product.byName('evolution')
     >>> product.official_rosetta = False
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')

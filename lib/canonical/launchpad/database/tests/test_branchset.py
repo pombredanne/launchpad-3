@@ -26,8 +26,7 @@ from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
 from canonical.launchpad.validators import LaunchpadValidationError
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing import DatabaseFunctionalLayer
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -35,7 +34,7 @@ from zope.security.proxy import removeSecurityProxy
 
 class TestBranchSet(TestCase):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -108,22 +107,17 @@ class TestBranchSet(TestCase):
             logout()
 
 
-class TestBranchSetNewNameValidation(TestCase):
-    """Test of the validation of the branch name done by BranchSet.new()."""
+class TestBranchSetNew(TestCaseWithFactory):
+    """Tests for BranchSet.new()."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
+        TestCaseWithFactory.setUp(self)
         # This person should be considered to be wholly arbitrary.
-        self.person = getUtility(IPersonSet).getByName('name12')
+        self.person = self.factory.makePerson()
         assert self.person is not None, "Sample Person not found."
         self.branch_set = getUtility(IBranchSet)
-
-    def tearDown(self):
-        logout()
-        TestCase.tearDown(self)
 
     def makeNewBranchWithName(self, name):
         """Attempt to create a new branch with name 'name'.
@@ -134,7 +128,7 @@ class TestBranchSetNewNameValidation(TestCase):
         return self.branch_set.new(
             BranchType.HOSTED, name, self.person, self.person, None, None)
 
-    def testPermittedFirstCharacter(self):
+    def test_permitted_first_character(self):
         # The first character of a branch name must be a letter or a number.
         for c in [chr(i) for i in range(128)]:
             if c.isalnum():
@@ -143,7 +137,7 @@ class TestBranchSetNewNameValidation(TestCase):
                 self.assertRaises(
                     LaunchpadValidationError, self.makeNewBranchWithName, c)
 
-    def testPermittedSubsequentCharacter(self):
+    def test_permitted_subsequent_character(self):
         # After the first character, letters, numbers and certain punctuation
         # is permitted.
         for c in [chr(i) for i in range(128)]:
@@ -153,6 +147,18 @@ class TestBranchSetNewNameValidation(TestCase):
                 self.assertRaises(
                     LaunchpadValidationError,
                     self.makeNewBranchWithName, 'a' + c)
+
+    def test_source_package_branch(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        owner = self.factory.makePerson()
+        new_branch = self.branch_set.new(
+            BranchType.HOSTED, name=self.factory.getUniqueString(),
+            registrant=owner, owner=owner, product=None, url=None,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(distroseries, new_branch.distroseries)
+        self.assertEqual(sourcepackagename, new_branch.sourcepackagename)
+        self.assertIs(None, new_branch.product)
 
 
 class TestMirroringForHostedBranches(TestCaseWithFactory):
@@ -415,7 +421,7 @@ class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
 class BranchVisibilityPolicyTestCase(TestCase):
     """Base class for tests to make testing of branch visibility easier."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Setup some sample people and teams.
@@ -1047,7 +1053,7 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
 class TestBranchSetGetBranches(TestCase):
     """Make sure that the branch set gets the correct branches."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -1076,7 +1082,7 @@ class TestBranchSetGetBranches(TestCase):
 class TestBranchSetIsBranchNameAvailable(TestCase):
     """Make sure that isBranchNameAvailable enforces uniqueness."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)

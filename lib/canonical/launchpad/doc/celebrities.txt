@@ -170,3 +170,13 @@ Gnome Bugzilla instance by the checkwatches script.
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugs')
     >>> celebs.gnome_bugzilla == gnome_bugzilla
     True
+
+
+== PPA key guard ==
+
+There is a 'PPA key guard' celebrity which owns all PPA
+'signing_keys'.
+
+    >>> ppa_key_guard = personset.getByName('ppa-key-guard')
+    >>> celebs.ppa_key_guard == ppa_key_guard
+    True

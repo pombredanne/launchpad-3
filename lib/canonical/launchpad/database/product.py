@@ -47,6 +47,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.pillar import HasAliasMixin
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -72,6 +73,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import (
     IProduct, IProductSet, License, LicenseStatus)
 from canonical.launchpad.interfaces.questioncollection import (
@@ -146,7 +148,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
-              StructuralSubscriptionTargetMixin):
+              HasAliasMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
@@ -285,7 +287,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CommercialSubscription.selectOneBy(product=self)
 
     def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
-                                  subscription_months, whiteboard=None):
+                                  subscription_months, whiteboard=None,
+                                  current_datetime=None):
         """See `IProduct`."""
 
         def add_months(start, num_months):
@@ -297,7 +300,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             including leap years, where th 28th-31st maps to the 28th or
             29th.
             """
-            years, new_month = divmod(start.month + num_months, 12)
+            # The months are 1-indexed but the divmod calculation will only
+            # work if it is 0-indexed.  Subtract 1 from the months and then
+            # add it back to the new_month later.
+            years, new_month = divmod(start.month - 1 + num_months, 12)
+            new_month += 1
             new_year = start.year + years
             # If the day is not valid for the new month, make it the last day
             # of that month, e.g. 20080131 + 1 month = 20080229.
@@ -308,9 +315,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                                      day=new_day)
             return new_date
 
-        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if current_datetime is None:
+            current_datetime = datetime.datetime.now(pytz.timezone('UTC'))
+
         if self.commercial_subscription is None:
-            date_starts = now
+            date_starts = current_datetime
             date_expires = add_months(date_starts, subscription_months)
             subscription = CommercialSubscription(
                 product=self,
@@ -322,15 +331,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 whiteboard=whiteboard)
             self._commercial_subscription_cached = subscription
         else:
-            if (now <= self.commercial_subscription.date_expires):
+            if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
                 self.commercial_subscription.date_expires = (
                     add_months(self.commercial_subscription.date_expires,
                                subscription_months))
             else:
-                self.commercial_subscription.date_starts = now
+                # Start the new subscription now and extend for the new
+                # period.
+                self.commercial_subscription.date_starts = current_datetime
                 self.commercial_subscription.date_expires = (
-                    add_months(date_starts, subscription_months))
+                    add_months(current_datetime, subscription_months))
             self.commercial_subscription.sales_system_id = voucher
             self.commercial_subscription.registrant = registrant
             self.commercial_subscription.purchaser = purchaser
@@ -933,14 +944,14 @@ class ProductSet:
         self.title = "Projects in Launchpad"
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name, active=True)
-        if item is None:
+        """See `IProductSet`."""
+        product = self.getByName(name=name, ignore_inactive=True)
+        if product is None:
             raise NotFoundError(name)
-        return item
+        return product
 
     def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         return iter(self.all_active)
 
     @property
@@ -961,22 +972,19 @@ class ProductSet:
         return results.prejoin(["owner"])
 
     def get(self, productid):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See `IProductSet`."""
         try:
             return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
 
-    def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        if ignore_inactive:
-            product = Product.selectOneBy(name=name, active=True)
-        else:
-            product = Product.selectOneBy(name=name)
-        if product is None:
-            return default
-        return product
+    def getByName(self, name, ignore_inactive=False):
+        """See `IProductSet`."""
+        pillar = getUtility(IPillarNameSet).getByName(name, ignore_inactive)
+        if not IProduct.providedBy(pillar):
+            return None
+        return pillar
 
     def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""

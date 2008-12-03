@@ -323,13 +323,13 @@ don't have much to say.
     taking 1 second &mdash; see the log
     ------------------------------
     Build for superseded Source
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
     i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
-    i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
+    i386 build of at 0.00 in ubuntu warty RELEASE
     ------------------------------
 
 Finally anonymous user goes to the next batch to see how a build with

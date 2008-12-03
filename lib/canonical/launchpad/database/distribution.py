@@ -12,6 +12,8 @@ from sqlobject import (
     BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.locals import SQL, Join
+from storm.store import Store
 
 from canonical.cachedproperty import cachedproperty
 
@@ -22,37 +24,42 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.database.bugtarget import BugTargetBase
-
-from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.archive import Archive
+from canonical.launchpad.database.binarypackagename import (
+    BinaryPackageName)
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
+from canonical.launchpad.database.distributionbounty import DistributionBounty
+from canonical.launchpad.database.distributionmirror import DistributionMirror
+from canonical.launchpad.database.distributionsourcepackage import (
+    DistributionSourcePackage)
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.distroseries import DistroSeries
 from canonical.launchpad.database.faq import FAQ, FAQSearch
+from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.announcement import MakesAnnouncements
+from canonical.launchpad.database.pillar import HasAliasMixin
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing, BinaryPackageFilePublishing,
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
-from canonical.launchpad.database.distroseries import DistroSeries
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.binarypackagename import (
-    BinaryPackageName)
-from canonical.launchpad.database.binarypackagerelease import (
-    BinaryPackageRelease)
-from canonical.launchpad.database.distributionbounty import DistributionBounty
-from canonical.launchpad.database.distributionmirror import DistributionMirror
-from canonical.launchpad.database.distributionsourcepackage import (
-    DistributionSourcePackage)
-from canonical.launchpad.database.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from canonical.launchpad.database.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
@@ -60,9 +67,6 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing,
-    SourcePackagePublishingHistory)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
@@ -79,6 +83,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.publishing import active_publishing_status
 
 from canonical.archivepublisher.debversion import Version
@@ -87,7 +92,7 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
-                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
@@ -903,16 +908,45 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
         # be short like "at", both things which users do search for.
-        dspcaches = DistributionSourcePackageCache.select("""
-            distribution = %s AND
+        store = Store.of(self)
+        find_spec = (
+            DistributionSourcePackageCache,
+            SourcePackageName,
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            )
+        origin = [
+            DistributionSourcePackageCache,
+            Join(
+                SourcePackageName,
+                DistributionSourcePackageCache.sourcepackagename ==
+                    SourcePackageName.id
+                )
+            ]
+
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
+        dsp_caches = store.using(*origin).find(
+            find_spec,
+            """distribution = %s AND
             archive IN %s AND
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
-            orderBy=[SQLConstant('rank(fti, ftq(%s)) DESC' % quote(text))],
-            prejoins=["sourcepackagename"])
-        return [dspc.distributionsourcepackage for dspc in dspcaches]
+                   quote(text), quote_like(text))
+            ).order_by('rank DESC')
+
+        # Create a function that will decorate the results, converting
+        # them from the find_spec above into DSPs:
+        def result_to_dsp((cache, source_package_name, rank)):
+            return DistributionSourcePackage(
+                self,
+                source_package_name
+                )
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSPs
+        return DecoratedResultSet(dsp_caches, result_to_dsp)
 
     def guessPackageNames(self, pkgname):
         """See `IDistribution`"""
@@ -961,11 +995,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status = %s
+                SourcePackagePublishingHistory.status IN %s
                 ''' % sqlvalues(self,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
-                                PackagePublishingStatus.PUBLISHED),
+                                (PackagePublishingStatus.PUBLISHED,
+                                 PackagePublishingStatus.PENDING)),
                 clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
@@ -1195,7 +1230,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cur = cursor()
         cur.execute("""
             SELECT SPN.id, SPN.name,
-            COUNT(DISTINCT Bugtask.bug) AS total_bugs,
+            COUNT(DISTINCT Bugtask.bug) AS open_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
             COUNT(DISTINCT CASE WHEN Bugtask.status IN %(unresolved)s THEN
@@ -1227,7 +1262,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND spn.name NOT IN %(excluded_packages)s
             GROUP BY SPN.id, SPN.name
             HAVING COUNT(DISTINCT Bugtask.bug) > 0
-            ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
+            ORDER BY open_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
@@ -1281,7 +1316,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
         results = []
-        for (spn_id, spn_name, total_bugs, bugs_triaged,
+        for (spn_id, spn_name, open_bugs, bugs_triaged,
              bugs_affecting_upstream, bugs_with_upstream_bugwatch) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
@@ -1291,7 +1326,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             else:
                 product = None
             results.append(
-                (dsp, product, total_bugs, bugs_triaged,
+                (dsp, product, open_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
@@ -1361,12 +1396,12 @@ class DistributionSet:
         return sorted(
             shortlist(distros, 100), key=lambda distro: distro._sort_key)
 
-    def getByName(self, distroname):
+    def getByName(self, name):
         """See `IDistributionSet`."""
-        try:
-            return Distribution.byName(distroname)
-        except SQLObjectNotFound:
+        pillar = getUtility(IPillarNameSet).getByName(name)
+        if not IDistribution.providedBy(pillar):
             return None
+        return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):

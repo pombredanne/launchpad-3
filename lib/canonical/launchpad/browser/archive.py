@@ -41,7 +41,7 @@ from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.archivesourcepublication import (
     ArchiveSourcePublications)
 from canonical.launchpad.interfaces.archive import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageCopyingForm, IArchivePackageDeletionForm,
     IArchiveSet, IArchiveSourceSelectionForm, IPPAActivateForm)
 from canonical.launchpad.interfaces.archivepermission import (
@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import (
     stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.scripts.packagecopier import (
-    CannotCopy, check_copy, do_copy)
+    check_copy, do_copy)
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -565,6 +565,9 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
+
+    # Maximum number of 'sources' presented.
+    max_sources_presented = 20
 
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
 

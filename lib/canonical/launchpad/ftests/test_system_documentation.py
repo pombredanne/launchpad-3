@@ -88,6 +88,13 @@ def uploaderTearDown(test):
     # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
+
+def archivepublisherSetUp(test):
+    """Setup the archive publisher script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+
+
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
@@ -128,8 +135,10 @@ def cveSetUp(test):
     setUp(test)
 
 def statisticianSetUp(test):
+    test_dbuser = config.statistician.dbuser
+    test.globs['test_dbuser'] = test_dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
     tearDown(test)
@@ -362,6 +371,10 @@ special = {
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer,
+            ),
+    'archive-signing.txt': LayeredDocFileSuite(
+            '../doc/archive-signing.txt',
+            setUp=archivepublisherSetUp, layer=LaunchpadZopelessLayer,
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
@@ -780,14 +793,6 @@ special = {
             setUp=zopelessLaunchpadSecuritySetUp,
             tearDown=zopelessLaunchpadSecurityTearDown,
             layer=LaunchpadZopelessLayer,
-            ),
-    # Also run the pillar.txt doctest under the Zopeless layer.
-    # This exposed bug #149632.
-    'pillar.txt-zopeless': LayeredDocFileSuite(
-            '../doc/pillar.txt',
-            setUp=setUp, tearDown=tearDown,
-            #layer=ExperimentalLaunchpadZopelessLayer
-            layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': LayeredDocFileSuite(
             '../doc/openid-fetcher.txt',
