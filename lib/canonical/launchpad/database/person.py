@@ -378,16 +378,22 @@ class Person(
         return list(results)
 
     def getLanguagesCache(self):
-        """See `IPerson`."""
+        """Return this person's cached languages.
+
+        :raises AttributeError: If the cache doesn't exist.
+        """
         return self._languages_cache
 
     def setLanguagesCache(self, languages):
-        """See `IPerson`."""
+        """Set this person's cached languages.
+
+        Order them by name if necessary.
+        """
         self._languages_cache = sorted(
             languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
-        """See `IPerson`."""
+        """Delete this person's cached languages, if it exists."""
         if safe_hasattr(self, '_languages_cache'):
             del self._languages_cache
 

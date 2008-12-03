@@ -29,42 +29,46 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         self.answer_contact.addLanguage(lang_set['en'])
 
     def test_Product_implementation_should_prefill_cache(self):
+        # Remove the answer contact's security proxy because we need to call
+        # some non public methods to change its language cache.
+        answer_contact = removeSecurityProxy(self.answer_contact)
         product = self.factory.makeProduct()
-        product.addAnswerContact(self.answer_contact)
+        product.addAnswerContact(answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
-        self.answer_contact.deleteLanguagesCache()
-        self.assertRaises(
-            AttributeError, self.answer_contact.getLanguagesCache)
+        answer_contact.deleteLanguagesCache()
+        self.assertRaises(AttributeError, answer_contact.getLanguagesCache)
 
         # Need to remove the product's security proxy because
         # answer_contacts_with_languages is not part of its public API.
         answer_contacts = removeSecurityProxy(
             product).answer_contacts_with_languages
-        self.failUnlessEqual(answer_contacts, [self.answer_contact])
-        langs = [lang.englishname
-                 for lang in self.answer_contact.getLanguagesCache()]
+        self.failUnlessEqual(answer_contacts, [answer_contact])
+        langs = [
+            lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
 
     def test_SourcePackage_implementation_should_prefill_cache(self):
+        # Remove the answer contact's security proxy because we need to call
+        # some non public methods to change its language cache.
+        answer_contact = removeSecurityProxy(self.answer_contact)
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.factory.makeSourcePackageName(name='test-pkg')
         source_package = ubuntu.getSourcePackage('test-pkg')
-        source_package.addAnswerContact(self.answer_contact)
+        source_package.addAnswerContact(answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
-        self.answer_contact.deleteLanguagesCache()
-        self.assertRaises(
-            AttributeError, self.answer_contact.getLanguagesCache)
+        answer_contact.deleteLanguagesCache()
+        self.assertRaises(AttributeError, answer_contact.getLanguagesCache)
 
         # Need to remove the sourcepackage's security proxy because
         # answer_contacts_with_languages is not part of its public API.
         answer_contacts = removeSecurityProxy(
             source_package).answer_contacts_with_languages
-        self.failUnlessEqual(answer_contacts, [self.answer_contact])
-        langs = [lang.englishname
-                 for lang in self.answer_contact.getLanguagesCache()]
+        self.failUnlessEqual(answer_contacts, [answer_contact])
+        langs = [
+            lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
 
