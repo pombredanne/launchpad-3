@@ -34,7 +34,8 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, ALLOW_RELEASE_BUILDS)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
@@ -141,8 +142,8 @@ def get_sources_list_for_building(build):
                 (archive_dependency.dependency, pocket, components)
                 )
 
-    # Add implicit self-dependency for PPA & PARTNER contexts.
-    if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
+    # Add implicit self-dependency for non-primary contexts.
+    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
         deps.append(
             (build.archive, PackagePublishingPocket.RELEASE,
              get_components_for_building(build))
@@ -216,7 +217,7 @@ def _get_default_primary_dependencies(build):
     :return: a list containing the the default dependencies to primary
         archive.
     """
-    if build.archive.purpose in (ArchivePurpose.PARTNER, ArchivePurpose.PPA):
+    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
         # Although partner and PPA builds are always in the release
         # pocket, they depend on the same pockets as though they
         # were in the updates pocket.

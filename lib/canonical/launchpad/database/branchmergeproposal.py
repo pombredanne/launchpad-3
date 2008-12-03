@@ -134,6 +134,10 @@ class BranchMergeProposal(SQLBase):
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
+
+    review_diff = ForeignKey(
+        foreignKey='StaticDiff', notNull=False, default=None)
+
     reviewed_revision_id = StringCol(default=None)
 
     commit_message = StringCol(default=None)

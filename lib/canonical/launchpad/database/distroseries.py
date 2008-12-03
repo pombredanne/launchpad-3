@@ -16,23 +16,24 @@ from cStringIO import StringIO
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
+
 from storm.locals import SQL, Join
 from storm.store import Store
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (cursor, flush_database_caches,
-    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
+from canonical.database.sqlbase import (
+    cursor, flush_database_caches, flush_database_updates, quote_like,
+    quote, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.packagelocation import PackageLocation
-from canonical.launchpad.database.binarypackagename import (
-    BinaryPackageName)
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
 from canonical.launchpad.database.bug import (
@@ -72,24 +73,35 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
-
 from canonical.launchpad.helpers import shortlist
-
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
-    IBuildSet, ICanPublishPackages, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, IHasTranslationTemplates,
-    ILibraryFileAliasSet, IPublishedPackageSet, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, IStructuralSubscriptionTarget,
-    LanguagePackType, NotFoundError, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
-from canonical.launchpad.interfaces.publishing import active_publishing_status
-
+from canonical.launchpad.interfaces.archive import (
+    ALLOW_RELEASE_BUILDS, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+from canonical.launchpad.interfaces.build import IBuildSet, IHasBuildRecords
+from canonical.launchpad.interfaces.binarypackagename import (
+    IBinaryPackageName)
+from canonical.launchpad.interfaces.distroseries import (
+    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet)
+from canonical.launchpad.interfaces.languagepack import LanguagePackType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from canonical.launchpad.interfaces.publishedpackage import (
+    IPublishedPackageSet)
+from canonical.launchpad.interfaces.publishing import (
+    active_publishing_status, ICanPublishPackages, PackagePublishingPocket,
+    PackagePublishingStatus)
+from canonical.launchpad.interfaces.queue import IHasQueueItems
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName, ISourcePackageNameSet)
+from canonical.launchpad.interfaces.specification import (
+    SpecificationFilter, SpecificationGoalStatus,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.mail import signed_message_from_string
-
 from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -796,12 +808,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             # XXX: Julian 2007-09-14: this should come from a single
             # location where this is specified, not sprinkled around the code.
-            allow_release_builds = (
-                ArchivePurpose.PPA, ArchivePurpose.PARTNER)
-
             query += ("""AND (Archive.purpose in %s OR
                             SourcePackagePublishingHistory.pocket != %s)""" %
-                      sqlvalues(allow_release_builds,
+                      sqlvalues(ALLOW_RELEASE_BUILDS,
                                 PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
@@ -1451,11 +1460,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
-            allowed_purposes = (
-                ArchivePurpose.PRIMARY,
-                ArchivePurpose.PARTNER,
-                )
-            if archive.purpose not in allowed_purposes:
+            if archive.purpose not in MAIN_ARCHIVE_PURPOSES:
                 continue
 
             # XXX cprov 20080612: Implicitly creating a PARTNER archive for
