@@ -9,4 +9,10 @@
     <allow interface="canonical.launchpad.interfaces.ICodeReviewVoteReference" />
   </class>
 
+  <subscriber
+    for="canonical.launchpad.interfaces.ICodeReviewVoteReference
+         canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_review_requested_notifications" />
+
+
 </configure>

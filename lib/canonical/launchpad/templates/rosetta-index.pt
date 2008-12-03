@@ -12,7 +12,7 @@
     <h1 metal:fill-slot="heading">Software translations</h1>
     <div metal:fill-slot="main">
 
-                        <ul class="rollover buttons">
+                        <ul class="buttons">
                           <li>
                             <a href="/+tour/translation"
                                tal:attributes="href string:${rooturl}+tour/translation">
@@ -20,6 +20,12 @@
                                 alt="Take a tour"
                                 src="/+icing/but-lrg-takeatour.gif"
                               />
+                            </a>
+                          </li>
+                          <li>
+                            <a href="https://help.launchpad.net/Translations"
+                               id="link-to-translations-help">
+                              Help for translations
                             </a>
                           </li>
                         </ul>
@@ -33,6 +39,10 @@
                           language. Translators use this simple web
                           interface to contribute translations in a
                           wiki-style of collaboration.
+                        </p>
+                        <p>New to translating in Launchpad?
+                          <a href="https://help.launchpad.net/Translations"
+                             >Read our guide.</a>
                         </p>
                         <div class="three column left">
 

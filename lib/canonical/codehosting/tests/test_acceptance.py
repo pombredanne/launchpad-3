@@ -32,7 +32,7 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
-from canonical.testing import LayerInvariantError, ZopelessAppServerLayer
+from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
 
@@ -207,7 +207,8 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
             creator_id = authserver.getUser(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
-        branch_id = branchfs.createBranch(creator_id, user, product, branch)
+        branch_id = branchfs.createBranch(
+            creator_id, '/~%s/%s/%s' % (user, product, branch))
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
         self.runInChdir(

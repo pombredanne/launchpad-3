@@ -16,7 +16,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 class TestRecipientReason(TestCaseWithFactory):
     """Test the RecipientReason class."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         # Need to set target_branch.date_last_modified.
@@ -30,7 +30,7 @@ class TestRecipientReason(TestCaseWithFactory):
         target_branch = self.factory.makeBranch(product=source_branch.product,
                 title='bar')
         merge_proposal = source_branch.addLandingTarget(
-            subscriber, target_branch)
+            source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)

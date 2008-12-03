@@ -465,6 +465,8 @@ class PillarAliases(TextLine):
     """A field which takes a list of space-separated aliases for a pillar."""
 
     def _split_input(self, input):
+        if input is None:
+            return []
         return re.sub(r'\s+', ' ', input).split()
 
     def _validate(self, input):

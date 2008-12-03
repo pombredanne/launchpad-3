@@ -10,11 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Binary package search results</h1>
-    </metal:heading>
 
 <div metal:fill-slot="main">
+  <h1>Binary package search results</h1>
 
   <form name="search" method="GET">
   
@@ -25,40 +23,13 @@
       tal:attributes="value request/text|nothing" />
 
     <input type="submit" value="Search"
-        tal:condition="not: view/searchrequested" />
+        tal:condition="not: view/search_requested" />
     <input type="submit" value="Search Again"
-        tal:condition="view/searchrequested" />
+        tal:condition="view/search_requested" />
 
   </form>
 
-  <tal:searching condition="view/searchrequested">
-
-    <tal:has_matches condition="view/searchresults">
-
-      <tal:per_match repeat="drbp view/searchresults">
-        <img src="/@@/package-binary" />
-        <a tal:content="drbp/name"
-           tal:attributes="href drbp/fmt:url">foobar</a>:
-        <div style="margin-left: 30px; font-size: 80%;"
-             tal:content="drbp/summary">
-          Gee whiz special package.
-          <span tal:replace="drbp/description"
-                tal:condition="python:view.matches &lt; 5">
-            Gee whiz special package description goes here if there are
-            fewer than 5 matches.
-          </span>
-        </div>
-      </tal:per_match>
-
-    </tal:has_matches>
-
-      <p tal:condition="not: view/matches">
-        No packages matching "<span tal:replace="view/text">amarok</span>"
-        are published in
-        <span tal:replace="context/displayname">hoary</span>.
-      </p>
-
-  </tal:searching>
+  <metal:package-search use-macro="context/@@+macros/search-results" />
 
 </div>
 

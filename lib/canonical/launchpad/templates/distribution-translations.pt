@@ -18,12 +18,17 @@
       <tal:portlet replace="structure context/@@+portlet-preflangs" />
     </metal:portlets>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Translations</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+  <h1>Translations</h1>
 
+  <ul class="helplinks">
+    <li>
+      <a href="https://help.launchpad.net/Translations"
+         id="link-to-translations-help"
+         >Help for translations
+      </a>
+      </li>
+  </ul>
   <tal:translation_focus condition="view/translation_focus">
     <p>
       The current translation focus for
@@ -47,7 +52,7 @@
       Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
 
-    <ul>
+    <ul id="distroseries-list">
       <li tal:repeat="distroseries view/secondary_translatable_serieses">
         <a tal:attributes="href distroseries/fmt:url"
                  tal:content=
