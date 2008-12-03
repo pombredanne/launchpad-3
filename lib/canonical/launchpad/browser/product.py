@@ -1379,6 +1379,9 @@ class ProductSetView(LaunchpadView):
         if self.search_string is not None:
             self.searchrequested = True
 
+    def all_batched(self):
+        return BatchNavigator(self.context.all_active, self.request)
+
     @cachedproperty
     def matches(self):
         if not self.searchrequested:
