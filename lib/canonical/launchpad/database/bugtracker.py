@@ -191,7 +191,7 @@ class BugTracker(SQLBase):
         # Make sure that we don't put > 1 '/' in returned URLs.
         base_url = self.baseurl.rstrip('/')
 
-        elif self.bugtrackertype == BugTrackerType.SOURCEFORGE:
+        if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
             # SourceForge bug trackers use a group ID and an ATID to
             # file a bug, rather than a product name. remote_product
             # should be a tuple for SOURCEFORGE bug trackers.
