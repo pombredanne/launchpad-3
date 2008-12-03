@@ -61,6 +61,43 @@ def run_as_db_user(username):
     return _run_with_different_user
 
 
+class FakeTransportServer:
+    """Set up a fake transport at a given URL prefix.
+
+    For testing purposes.
+    """
+
+    def __init__(self, transport, url_prefix='lp-mirrored:///'):
+        """Constructor.
+
+        :param transport: The backing transport to store the data with.
+        :param url_prefix: The URL prefix to access this transport.
+        """
+        self._transport = transport
+        self._url_prefix = url_prefix
+        self._chroot_server = None
+
+    def setUp(self):
+        """Activate the transport URL."""
+        # The scanner tests assume that branches live on a Launchpad virtual
+        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
+        # entire virtual filesystem here, we fake it by having a chrooted
+        # transport do the work.
+        register_transport(self._url_prefix, self._transportFactory)
+        self._chroot_server = ChrootServer(self._transport)
+        self._chroot_server.setUp()
+
+    def tearDown(self):
+        """Deactivate the transport URL."""
+        self._chroot_server.tearDown
+        unregister_transport(self._url_prefix, self._transportFactory)
+
+    def _transportFactory(self, url):
+        assert url.startswith(self._url_prefix)
+        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
+        return get_transport(url)
+
+
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
@@ -77,30 +114,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # The lp-mirrored transport is set up by the branch_scanner module.
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
-        self._setUpFakeTransport()
-
-    def _setUpFakeTransport(self):
-        # The scanner tests assume that branches live on a Launchpad virtual
-        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted file
-        # transport do the work.
-        #
-        # The related method `makeBzrBranchAndTree` takes a database branch
-        # and creates the branch in the correct location on our fake
-        # filesystem.
-        self._url_prefix = 'lp-mirrored:///'
-        register_transport(self._url_prefix, self._fakeTransportFactory)
-        self._chroot_server = ChrootServer(self.get_transport())
-        self._chroot_server.setUp()
-        self.addCleanup(self._chroot_server.tearDown)
-        self.addCleanup(
-            lambda: unregister_transport(
-                self._url_prefix, self._fakeTransportFactory))
-
-    def _fakeTransportFactory(self, url):
-        self.assertTrue(url.startswith(self._url_prefix))
-        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
-        return get_transport(url)
+        server = FakeTransportServer(self.get_transport())
+        server.setUp()
+        self.addCleanup(server.tearDown)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""

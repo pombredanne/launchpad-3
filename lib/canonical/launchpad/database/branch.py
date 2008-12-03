@@ -34,6 +34,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.event.branchmergeproposal import (
+    NewBranchMergeProposalEvent)
 from canonical.launchpad.interfaces import (
     BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationException, BranchCreationForbidden,
@@ -46,8 +48,8 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel, ControlFormat,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    NotFoundError, RepositoryFormat)
+    IPersonSet, IProduct, IProductSet, IProject, MAXIMUM_MIRROR_FAILURES,
+    MIRROR_TIME_INCREMENT, NotFoundError, RepositoryFormat)
 from canonical.launchpad.interfaces.branch import (
     bazaar_identity, IBranchNavigationMenu, user_has_special_branch_access)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -55,13 +57,19 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.validators.person import validate_public_person
+from canonical.launchpad.validators.person import (
+    validate_public_person)
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.uri import InvalidURIError, URI
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
 
 class Branch(SQLBase):
@@ -101,6 +109,12 @@ class Branch(SQLBase):
         storm_validator=validate_public_person, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
+
+    distroseries = ForeignKey(
+        dbName='distroseries', foreignKey='DistroSeries', default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        default=None)
 
     lifecycle_status = EnumCol(
         enum=BranchLifecycleStatus, notNull=True,
@@ -166,7 +180,8 @@ class Branch(SQLBase):
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
-                         date_created=None, needs_review=False):
+                         date_created=None, needs_review=False,
+                         initial_comment=None, review_requests=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -218,13 +233,25 @@ class Branch(SQLBase):
             queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
             date_review_requested = None
 
+        if review_requests is None:
+            review_requests = []
+
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status)
-        notify(SQLObjectCreatedEvent(bmp))
+
+        if initial_comment is not None:
+            bmp.createComment(
+                registrant, None, initial_comment, _notify_listeners=False)
+
+        for reviewer, review_type in review_requests:
+            bmp.nominateReviewer(
+                reviewer, registrant, review_type, _notify_listeners=False)
+
+        notify(NewBranchMergeProposalEvent(bmp))
         return bmp
 
     def getStackedBranches(self):
@@ -286,10 +313,21 @@ class Branch(SQLBase):
             return '+junk'
         return self.product.name
 
+    def _getContainerName(self):
+        if self.product is not None:
+            return self.product.name
+        if (self.distroseries is not None
+            and self.sourcepackagename is not None):
+            return '%s/%s/%s' % (
+                self.distroseries.distribution.name,
+                self.distroseries.name, self.sourcepackagename.name)
+        return '+junk'
+
     @property
     def unique_name(self):
         """See `IBranch`."""
-        return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
+        return u'~%s/%s/%s' % (
+            self.owner.name, self._getContainerName(), self.name)
 
     @property
     def displayname(self):
@@ -668,6 +706,11 @@ class Branch(SQLBase):
         if self.canBeDeleted():
             # BranchRevisions are taken care of a cascading delete
             # in the database.
+            # XXX: TimPenhey 28-Nov-2008, bug 302956
+            # cascading delete removed by accident, adding explicit delete
+            # back in temporarily.
+            Store.of(self).find(
+                BranchRevision, BranchRevision.branch == self).remove()
             SQLBase.destroySelf(self)
         else:
             raise CannotDeleteBranch(
@@ -915,11 +958,11 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, registrant, owner, product,
-            url, title=None,
-            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None,
-            branch_format=None, repository_format=None, control_format=None):
+    def new(self, branch_type, name, registrant, owner, product=None,
+            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            author=None, summary=None, whiteboard=None, date_created=None,
+            branch_format=None, repository_format=None, control_format=None,
+            distroseries=None, sourcepackagename=None):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -957,8 +1000,8 @@ class BranchSet:
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
-            control_format=control_format)
-
+            control_format=control_format, distroseries=distroseries,
+            sourcepackagename=sourcepackagename)
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
         # a later date if desired.
@@ -985,9 +1028,26 @@ class BranchSet:
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.codehosting.supermirror_root
-        if url.startswith(prefix):
-            branch = self.getByUniqueName(url[len(prefix):])
+        schemes = ('http', 'sftp', 'bzr+ssh')
+        try:
+            uri = URI(url)
+        except InvalidURIError:
+            return None
+        codehosting_host = URI(config.codehosting.supermirror_root).host
+        if uri.scheme in schemes and uri.host == codehosting_host:
+            branch = self.getByUniqueName(uri.path.lstrip('/'))
+        elif uri.scheme == 'lp':
+            branch = None
+            allowed_hosts = set()
+            for host in config.codehosting.lp_url_hosts.split(','):
+                if host == '':
+                    host = None
+                allowed_hosts.add(host)
+            if uri.host in allowed_hosts:
+                try:
+                    branch = self.getByLPPath(uri.path.lstrip('/'))[0]
+                except NoSuchBranch:
+                    pass
         else:
             branch = Branch.selectOneBy(url=url)
         if branch is None:
@@ -1002,6 +1062,15 @@ class BranchSet:
         if match is None:
             return default
         owner_name, product_name, branch_name = match.groups()
+        branch = self._getByUniqueNameElements(
+            owner_name, product_name, branch_name)
+        if branch is None:
+            return default
+        else:
+            return branch
+
+    @staticmethod
+    def _getByUniqueNameElements(owner_name, product_name, branch_name):
         if product_name == '+junk':
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product IS NULL"
@@ -1015,11 +1084,72 @@ class BranchSet:
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
             tables = ['Person', 'Product']
-        branch = Branch.selectOne(query, clauseTables=tables)
-        if branch is None:
-            return default
+        return Branch.selectOne(query, clauseTables=tables)
+
+    @classmethod
+    def getByLPPath(klass, path):
+        """See `IBranchSet`."""
+        path_segments = path.split('/', 3)
+        series_name = None
+        if len(path_segments) > 3:
+            suffix = path_segments[3]
         else:
-            return branch
+            suffix = None
+        if len(path_segments) < 3:
+            branch, series = klass._getProductBranch(*path_segments)
+        else:
+            series = None
+            owner, product, name = path_segments[:3]
+            if owner[0] != '~':
+                raise InvalidBranchIdentifier(path)
+            owner = owner[1:]
+            branch = klass._getByUniqueNameElements(owner, product, name)
+            if branch is None:
+                klass._checkOwnerProduct(owner, product)
+                raise NoSuchBranch(path)
+        return branch, suffix, series
+
+    @staticmethod
+    def _getProductBranch(product_name, series_name=None):
+        """Return the branch for a product.
+
+        :param product_name: The name of the branch's product.
+        :param series_name: The name of the branch's series.  If not supplied,
+            the product development focus will be used.
+        :return: The branch.
+        :raise: A subclass of LaunchpadFault.
+        """
+        if not valid_name(product_name):
+            raise InvalidProductIdentifier(product_name)
+        product = getUtility(IProductSet).getByName(product_name)
+        if product is None:
+            raise NoSuchProduct(product_name)
+        if series_name is None:
+            series = product.development_focus
+        else:
+            series = product.getSeries(series_name)
+            if series is None:
+                raise NoSuchSeries(series_name, product)
+        branch = series.series_branch
+        if branch is None:
+            raise NoBranchForSeries(series)
+        return branch, series
+
+    @classmethod
+    def _checkOwnerProduct(klass, owner_name, product_name):
+        """Return an appropriate response for a non-existent branch.
+
+        :param unique_name: A string of the form "~user/project/branch".
+        :raise: A _NonexistentBranch object or a Fault if the user or project
+            do not exist.
+        """
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        if owner is None:
+            raise NoSuchPersonWithName(owner_name)
+        if product_name != '+junk':
+            project = getUtility(IProductSet).getByName(product_name)
+            if project is None:
+                raise NoSuchProduct(product_name)
 
     def getRewriteMap(self):
         """See `IBranchSet`."""

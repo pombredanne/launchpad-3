@@ -65,6 +65,51 @@ we only have 3 PPAs in sampledata they are all presented.
 Nothing suitable in the sampledata, check the end of this document for
 further tests.
 
+== Other distributions PPAs ==
+
+Currently we only support PPAs for ubuntu, although the '+ppas' page
+is presented for other distribution.
+
+    >>> anon_browser.open("http://launchpad.dev/debian")
+    >>> anon_browser.getLink("PPAs").click()
+    >>> print anon_browser.title
+    Debian GNU/Linux Personal Package Archives
+
+Those pages present coherent data for a distribution with no PPAs.
+
+PPA supported architectures reflects what we have in sampledata.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'supports_virtualized_archs'))
+    PPA supported series
+    3.1 "Sarge" - frozen
+    3.0 "Woody" - current
+      i386 (official)
+
+Archive and package counter are empty.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
+    Statistics
+    Debian does not have any registered PPA.
+
+'Latest uploads' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    None
+
+'Most active' section is not presented.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    None
+
+The 'search' form is also suppresed.
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Search'
+
 
 == Searching PPAs ==
 
@@ -74,6 +119,8 @@ Description, Sources and Binaries, the latter two being a count.
 The default search shows only active (those with, at least one,
 PENDING or PUBLISHED source record) PPAs.
 
+    >>> anon_browser.open("http://launchpad.dev/ubuntu")
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
@@ -227,15 +274,12 @@ and the select control that lets you update them:
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    3 source packages
-    (9.5 MiB)
-    3 binary packages
-    (3 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -501,15 +545,12 @@ properly.
     >>> anon_browser.title
     'PPA for Mark Shuttleworth'
 
+XXX cprov 20081126: The 'package counters' page section is disabled
+due to bad performance on large PPAs.
+
     >>> results = find_tag_by_id(anon_browser.contents, 'package_counters')
-    >>> text = extract_text(results)
-    >>> print text
-    1 source package
-    (9.5 MiB)
-    1 binary package
-    (0 bytes)
-    Estimated archive size:
-    9.5 MiB
+    >>> print extract_text(results)
+    Package counters and estimated archive size temporarily unavailable.
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:

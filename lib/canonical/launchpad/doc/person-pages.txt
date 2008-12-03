@@ -146,9 +146,6 @@ The +portlet-currentfocus view is responsible for rendering the
 is rendered when the user does not have any assigned bug or specs
 that are not in progress.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-
-    >>> factory = LaunchpadObjectFactory()
     >>> user = factory.makePerson(name='ken', password='test')
     >>> view = create_initialized_view(user, name='+portlet-currentfocus')
     >>> view.has_assigned_bugs_or_specs_in_progress
