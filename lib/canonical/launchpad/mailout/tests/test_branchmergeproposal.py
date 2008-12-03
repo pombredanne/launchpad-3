@@ -67,7 +67,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 %s
 %s
 """ % (canonical_url(bmp), reason.getReason()), body)
-        self.assertEqual('Proposed merge of '
+        self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar', subject)
         self.assertEqual(
@@ -147,7 +147,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Ensure that contents of modification mails are right."""
         mailer, subscriber = self.makeMergeProposalMailerModification()
         headers, subject, body = mailer.generateEmail(subscriber)
-        self.assertEqual('Proposed merge of '
+        self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar updated', subject)
         url = canonical_url(mailer.merge_proposal)
