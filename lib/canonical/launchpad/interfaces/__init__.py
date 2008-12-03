@@ -58,7 +58,6 @@ from canonical.launchpad.interfaces.codeimportjob import *
 from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
-from canonical.launchpad.interfaces.codemailjob import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.codereviewcomment import *
 from canonical.launchpad.interfaces.codereviewvote import *

@@ -9,8 +9,8 @@ __metaclass__ = type
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
-from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
+from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -176,8 +176,16 @@ class BMPMailer(BranchMailer):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
 
-    def _getInReplyTo(self):
-        return self.merge_proposal.root_message_id
+    def _getHeaders(self, email):
+        """Return the mail headers to use."""
+        headers = BranchMailer._getHeaders(self, email)
+        reason, rationale = self._recipients.getReason(email)
+        headers['X-Launchpad-Branch'] = reason.branch.unique_name
+        if reason.branch.product is not None:
+            headers['X-Launchpad-Project'] = reason.branch.product.name
+        if self.merge_proposal.root_message_id is not None:
+            headers['In-Reply-To'] = self.merge_proposal.root_message_id
+        return headers
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""
