@@ -62,22 +62,33 @@ def run_as_db_user(username):
 
 
 class FakeTransportServer:
+    """Set up a fake transport at a given URL prefix.
+
+    For testing purposes.
+    """
 
     def __init__(self, transport, url_prefix='lp-mirrored:///'):
+        """Constructor.
+
+        :param transport: The backing transport to store the data with.
+        :param url_prefix: The URL prefix to access this transport.
+        """
         self._transport = transport
         self._url_prefix = url_prefix
         self._chroot_server = None
 
     def setUp(self):
+        """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted file
+        # entire virtual filesystem here, we fake it by having a chrooted
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
         self._chroot_server.setUp()
 
     def tearDown(self):
+        """Deactivate the transport URL."""
         self._chroot_server.tearDown
         unregister_transport(self._url_prefix, self._transportFactory)
 
@@ -733,11 +744,11 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         sync = self.makeBzrSync(self.db_branch)
 
         revision = self.bzr_branch.repository.get_revision(first_revision)
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.bzr_branch, revision)
         expected = (
             "=== added file 'hello.txt'" '\n'
-            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
-            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "--- a/hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ b/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
             "@@ -0,0 +1,1 @@" '\n'
             "+Hello World" '\n'
             '\n')
@@ -757,8 +768,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
         expected_diff = (
             "=== modified file 'hello.txt'" '\n'
-            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
+            "--- a/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "+++ b/hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
             "@@ -1,1 +1,3 @@" '\n'
             " Hello World" '\n'
             "+" '\n'
@@ -776,7 +787,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "  hello.txt" '\n' % self.bzr_branch.nick)
         revision = self.bzr_branch.repository.get_revision(second_revision)
         self.bzr_branch.lock_read()
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.bzr_branch, revision)
         self.bzr_branch.unlock()
         self.assertEqualDiff(diff, expected_diff)
         message = get_revision_message(self.bzr_branch, revision)
@@ -823,16 +834,16 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
         sync = self.makeBzrSync(self.db_branch)
         revision = self.bzr_branch.repository.get_revision(rev_id)
-        diff = get_diff(self.db_branch, self.bzr_branch, revision)
+        diff = get_diff(self.bzr_branch, revision)
         # The diff must be a unicode object, characters that could not be
         # decoded as utf-8 replaced by the unicode substitution character.
         expected = (
             u"=== added file 'binary'" '\n'
-            u"Binary files binary\t1970-01-01 00:00:00 +0000"
-            u" and binary\t2001-09-09 01:46:40 +0000 differ" '\n'
+            u"Binary files a/binary\t1970-01-01 00:00:00 +0000"
+            u" and b/binary\t2001-09-09 01:46:40 +0000 differ" '\n'
             u"=== added file 'un elephant'" '\n'
-            u"--- un elephant\t1970-01-01 00:00:00 +0000" '\n'
-            u"+++ un elephant\t2001-09-09 01:46:40 +0000" '\n'
+            u"--- a/un elephant\t1970-01-01 00:00:00 +0000" '\n'
+            u"+++ b/un elephant\t2001-09-09 01:46:40 +0000" '\n'
             u"@@ -0,0 +1,1 @@" '\n'
             # \ufffd is the substitution character.
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')

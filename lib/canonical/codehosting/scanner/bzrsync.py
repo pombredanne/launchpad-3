@@ -16,12 +16,12 @@ import urlparse
 import pytz
 from zope.component import getUtility
 from bzrlib.branch import BzrBranchFormat4
+from bzrlib.diff import show_diff_trees
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib import urlutils
-import transaction
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
@@ -36,10 +36,8 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.branchsubscription import (
     BranchSubscriptionDiffSize)
 from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.interfaces.diff import IStaticDiffJobSource
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
-
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -79,31 +77,27 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def get_diff(db_branch, bzr_branch, bzr_revision):
+def get_diff(bzr_branch, bzr_revision):
     """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    :param db_branch: A `canonical.launchpad.databse.Branch` object.
     :param bzr_branch: A `bzrlib.branch.Branch` object.
     :param bzr_revision: A Bazaar `Revision` object.
     :return: A byte string that is the diff of the changes introduced by
         `bzr_revision` on `bzr_branch`.
     """
-    if len(bzr_revision.parent_ids) > 0:
-        basis = bzr_revision.parent_ids[0]
+    repo = bzr_branch.repository
+    if bzr_revision.parent_ids:
+        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
+        tree_new, tree_old = repo.revision_trees(ids)
     else:
-        basis = NULL_REVISION
-    basis_spec = 'revid:%s' % basis
-    revision_spec = 'revid:%s' % bzr_revision.revision_id
-    diff_job = getUtility(IStaticDiffJobSource).create(
-        db_branch, basis_spec, revision_spec)
-    static_diff = diff_job.run()
-    diff_job.destroySelf()
-    transaction.commit()
-    lfa = static_diff.diff.diff_text
-    lfa.open()
-    revision_diff = lfa.read().decode('utf8', 'replace')
-    static_diff.destroySelf()
-    return revision_diff
+        # can't get both trees at once, so one at a time
+        tree_new = repo.revision_tree(bzr_revision.revision_id)
+        tree_old = repo.revision_tree(NULL_REVISION)
+
+    diff_content = StringIO()
+    show_diff_trees(tree_old, tree_new, diff_content)
+    raw_diff = diff_content.getvalue()
+    return raw_diff.decode('utf8', 'replace')
 
 
 def get_revision_message(bzr_branch, bzr_revision):
@@ -290,8 +284,7 @@ class BranchMailer:
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
             if self.generate_diffs:
-                revision_diff = get_diff(
-                    self.db_branch, bzr_branch, bzr_revision)
+                revision_diff = get_diff(bzr_branch, bzr_revision)
             else:
                 revision_diff = ''
             # Use the first (non blank) line of the commit message
