@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Functions to copy translations from parent to child distroseries."""
 
@@ -41,9 +41,10 @@ def _copy_active_translations_to_new_series(
     process of being poured back into its source table.  In that case the
     sensible thing to do is probably to continue pouring it.
     """
+    parent = child.parent_series
     logger.info(
         "Populating blank distroseries %s with translations from %s." %
-        sqlvalues(child, child.parent))
+        sqlvalues(child, parent))
 
     # Because this function only deals with the case where "child" is a new
     # distroseries without any existing translations attached, it can afford
@@ -78,7 +79,7 @@ def _copy_active_translations_to_new_series(
 
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
-    where = 'distroseries = %s AND iscurrent' % quote(child.parent_series)
+    where = 'distroseries = %s AND iscurrent' % quote(parent)
     copier.extract('POTemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,

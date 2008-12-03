@@ -698,9 +698,13 @@ class TranslationTemplateVocabulary(SQLObjectVocabularyBase):
 
     def __init__(self, context):
         if context.productseries != None:
-            self._filter = POTemplate.productseries == context.productseries
+            self._filter = AND(
+                POTemplate.iscurrent == True,
+                POTemplate.productseries == context.productseries
+            )
         else:
             self._filter = AND(
+                POTemplate.iscurrent == True,
                 POTemplate.distroseries == context.distroseries,
                 POTemplate.sourcepackagename == context.sourcepackagename
             )
