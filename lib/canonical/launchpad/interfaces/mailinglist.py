@@ -846,7 +846,28 @@ class IHeldMessageDetails(Interface):
         required=True, readonly=True)
 
 
-class CannotSubscribe(Exception):
+class BaseSubscriptionErrors(Exception):
+    """Base class for subscription exceptions."""
+
+    def __init__(self, error_string):
+        """Instantiate a subscription exception.
+
+        :param error_string: a unicode error string, which may contain
+            non-ascii text (since a person's display name is used here).
+        :type error_string: unicode
+        """
+        assert isinstance(error_string, unicode), 'Unicode expected'
+        Exception.__init__(self, error_string)
+        self._error_string = error_string
+
+    def __unicode__(self):
+        return self._error_string
+
+    def __str__(self):
+        return self._error_string.encode('utf-8')
+
+
+class CannotSubscribe(BaseSubscriptionErrors):
     """The subscriber is not allowed to subscribe to the mailing list.
 
     This is raised when the person is not allowed to subscribe to the mailing
@@ -855,16 +876,8 @@ class CannotSubscribe(Exception):
     a team, or when `person` does not own the given email address.
     """
 
-    # The error string will be a unicode because it contains the person's
-    # displayname which may be non-ascii.
-    def __unicode__(self):
-        return self.args[0]
 
-    def __str__(self):
-        return unicode(self).encode('utf-8')
-
-
-class CannotUnsubscribe(Exception):
+class CannotUnsubscribe(BaseSubscriptionErrors):
     """The person cannot unsubscribe from the mailing list.
 
     This is raised when Person who is not a member of the mailing list tries
@@ -872,7 +885,7 @@ class CannotUnsubscribe(Exception):
     """
 
 
-class CannotChangeSubscription(Exception):
+class CannotChangeSubscription(BaseSubscriptionErrors):
     """The subscription change cannot be fulfilled.
 
     This is raised when the person is not a allowed to change their
