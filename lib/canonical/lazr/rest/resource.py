@@ -615,38 +615,49 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(context, request)
+        self.etags_by_media_type = {}
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
     def getETag(self, media_type):
-        """Calculate an ETag for a representation of this resource.
+        """Calculate the ETag for an entry."""
+        etag = self.etags_by_media_type.get(media_type)
+        if etag is not None:
+            return etag
 
-        We implement a simple (though not terribly efficient) ETag
-        algorithm that concatenates the current values of all the
-        fields that aren't read-only, and calculates a SHA1 hash of
-        the resulting string.
-        """
         etag = super(EntryResource, self).getETag(media_type)
         if etag is not None:
+            self.etags_by_media_type[media_type] = etag
             return etag
 
         if media_type != self.JSON_TYPE:
             return None
 
+        hash_object = sha.new()
+        for ignore in self.whileCalculatingEtag(hash_object):
+            pass
+        self.etags_by_media_type[media_type] = etag
+        return '"%s"' % hash_object.hexdigest()
+
+    def whileCalculatingEtag(self, hash_object):
+        """Yields an entry's fields while calculating an ETag for the entry.
+
+        :arg hash_object: A hash object to feed the data necessary to
+        calculate an ETag for the entry.
+        """
+
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
+            yield (name, field)
             if self.isModifiableField(field, False):
                 ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
-
-        hash_object = sha.new()
         hash_object.update("\0".join(values).encode("utf-8"))
 
         # Append the revision number, because the algorithm for
         # generating the representation might itself change across
         # versions.
         hash_object.update("\0" + str(versioninfo.revno))
-        return '"%s"' % hash_object.hexdigest()
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -657,9 +668,23 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data = {}
         data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
-        for name, field in getFields(self.entry.schema).items():
+        # If the ETag was already calculated, use it. Otherwise, calculate
+        # it while generating the representation.
+        etag = self.etags_by_media_type.get(self.JSON_TYPE)
+        if etag is None:
+            hash_object = sha.new()
+            generator = self.whileCalculatingEtag(hash_object)
+        else:
+            generator = getFieldsInOrder(self.entry.schema)
+
+        for name, field in generator:
             repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
+
+        if etag is None:
+            etag = '"%s"' % hash_object.hexdigest()
+            self.etags_by_media_type[self.JSON_TYPE] = etag
+        data['http_etag'] = etag
         return data
 
     def processAsJSONHash(self, media_type, representation):
@@ -842,6 +867,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 errors.append(modified_read_only_attribute %
                               'resource_type_link')
             del changeset['resource_type_link']
+
+        if '_etag' in changeset:
+            # Ignore any changes to _etag.
+            del changeset['_etag']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.

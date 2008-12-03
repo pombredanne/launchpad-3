@@ -1230,7 +1230,8 @@ but since that is not a required field Launchpad used the default
 value (Brazilian) specified in CookbookFactoryOperation for it.
 
     >>> sorted(feijoada.items())
-    [(u'author_link',
+    [(u'_etag', u'...'),
+     (u'author_link',
       u'http://api.launchpad.dev/beta/authors/Fernando%20Yokota'),
      (u'comments_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/comments'),
@@ -1251,8 +1252,9 @@ You can also traverse from an entry to an item in a scoped collection:
     >>> chicken_recipe_resource = request.traverse(app)
     >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
     >>> sorted(chicken_recipe.items())
-    [(u'comments_collection_link',
-      u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
+    [(u'_etag', u'...'),
+    (u'comments_collection_link',
+     u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
     (u'cookbook_link',
      u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking'),
     (u'dish_link', u'http://api.launchpad.dev/beta/dishes/Roast%20chicken'),
@@ -1276,7 +1278,8 @@ Another example traversing to a comment:
     >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#comment'),
+    [(u'_etag', u'...'),
+     (u'resource_type_link', u'http://api.launchpad.dev/beta/#comment'),
      (u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]

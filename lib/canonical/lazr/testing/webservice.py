@@ -55,7 +55,21 @@ class FakeRequest(object):
 
 
 def pprint_entry(json_body):
-    """Pretty-print a webservice entry JSON representation."""
-    for key, value in sorted(json_body.items()):
-        print '%s: %r' % (key, value)
+    """Pretty-print a webservice entry JSON representation.
 
+    Omits the _etag key, which is always present.
+    """
+    for key, value in sorted(json_body.items()):
+        if key != 'http_etag':
+            print '%s: %r' % (key, value)
+
+
+def pprint_collection(json_body):
+    """Pretty-print a webservice collection JSON representation."""
+    for key, value in sorted(json_body.items()):
+        if key != 'entries':
+            print '%s: %r' % (key, value)
+    print '---'
+    for entry in json_body['entries']:
+        pprint_entry(entry)
+        print '---'
