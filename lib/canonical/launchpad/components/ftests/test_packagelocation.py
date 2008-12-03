@@ -7,8 +7,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
-from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -21,6 +24,29 @@ class TestPackageLocation(unittest.TestCase):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
             distribution_name, suite, purpose, person_name, ppa_name)
+
+    def testSetupLocationForCOPY(self):
+        """`PackageLocation` for COPY archives."""
+        location = self.getPackageLocation()
+
+        # The copy archive in the sample data is associated with the
+        # 'ubuntutest' distribution.
+        location.distribution = getUtility(
+            IDistributionSet).getByName('ubuntutest')
+        # Set a distroseries that's valid for the 'ubuntutest' distribution.
+        location.distroseries = location.distribution['hoary-test']
+        # Now get the sample copy archive.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        copy_archive = getUtility(IArchiveSet).new(
+            owner=sabdfl, purpose=ArchivePurpose.COPY,
+            distribution=ubuntu, name='now-comes-the-mystery')
+        self.assertTrue(copy_archive is not None)
+        location.archive = copy_archive
+        # Make sure the string representation shows both the copy archive
+        # owner name as well as the archive's name.
+        self.assertEqual(
+            str(location), 'sabdfl/now-comes-the-mystery: hoary-test-RELEASE')
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""

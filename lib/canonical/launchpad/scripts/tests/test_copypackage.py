@@ -33,6 +33,7 @@ from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
+from canonical.launchpad.testing import TestCase
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
@@ -98,7 +99,7 @@ class TestCopyPackageScript(unittest.TestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(unittest.TestCase):
+class TestCopyPackage(TestCase):
     """Test the CopyPackageHelper class."""
     layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
@@ -641,23 +642,6 @@ class TestCopyPackage(unittest.TestCase):
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
-
-    def assertRaisesWithContent(self, exception, exception_content,
-                                func, *args):
-        """Check if the given exception is raised with given content.
-
-        If the exception isn't raised or the exception_content doesn't
-        match what was raised an AssertionError is raised.
-        """
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            self.assertEqual(str(err), exception_content)
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
 
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found.
