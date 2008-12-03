@@ -1183,7 +1183,7 @@ the extra three entries.
     38 | evolution       | evolution-2.2      | foo.pot
     39 | evolution       | evolution-2.2      | fr.po
 
-Not specifying the potemplate now is ambiguous and so no update is added or
+Not specifying the potemplate now is ambiguous and so no entry is added or
 updated.
 
     >>> print translationimportqueue.addOrUpdateEntry(
@@ -1202,7 +1202,7 @@ then to a specific template.
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_template)
 
-These files will are put into different entries.
+These files are put into different entries.
 
     >>> print_queue_entries(queue)
      4 | hoary ...
@@ -1211,14 +1211,13 @@ These files will are put into different entries.
     40 | evolution       | None               | bar.pot
     41 | evolution       | evolution-2.2      | bar.pot
 
-When uploading to the prouct now, the most specific entry is matched and
-updated.
+When uploading to the prouct now, the best matching entry is updated.
 
     >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
     ...     "bar.pot", "New bar content", is_published, rosetta_experts,
     ...     productseries=evolution_productseries))
     >>> transaction.commit()
-    >>> entry is removeSecurityProxy(queue[41])
+    >>> entry is removeSecurityProxy(queue[40])
     True
     >>> print entry.content.read()
     New bar content

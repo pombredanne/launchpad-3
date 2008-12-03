@@ -79,7 +79,6 @@ class TranslationImportQueueEntry(SQLBase):
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
         notNull=True, default=DEFAULT)
 
-
     @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
@@ -600,11 +599,26 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
-    def _findMostSpecificEntry(self, entries):
-        """Return the single most specific entry.
-        
-        :param entries: A list of TranslationImportQueueEntry objects.
-        :return: The most specific entry or None if no such entry exists."""
+    def _sameNone(self, entry1, entry2):
+        """Check if the entries have the same None state, meaning if either
+        both are None or both are not None."""
+        return ((entry1 is None and entry2 is None) or
+                (entry1 is not None and entry2 is not None))
+
+    def _findUniquelySpecificEntry(self, entries):
+        """Evaluate the specificness of the entries.
+
+        Check if the first entry is unique in its specificness. If not, an
+        exception is raised. An exception is used because None is needed to
+        indicate an empty list.
+        There are three cases from less to more specific:
+        1. potemplate and pofile are None,
+        2. potemplate is not None but pofile is None,
+        3. potemplate and pofile are both not None.
+
+        :param entries: A list of TranslationImportQueueEntry objects, sorted
+            by specificness.
+        :return: The first entry or None."""
 
         # Deal with the simple cases.
         if entries.count() == 0:
@@ -612,30 +626,13 @@ class TranslationImportQueue:
         if entries.count() == 1:
             return entries[0]
 
-        # Find all entries that have a potemplate set.
-        have_pot = []
-        for entry in entries:
-            if entry.potemplate != None:
-                have_pot.append(entry)
-        if len(have_pot) == 1:
-            return have_pot[0]
-        if len(have_pot) == 0:
-            # No entry has a specific potemplate set, which is ambiguous
-            # and shouldn't actually happen at all.
-            raise TranslationImportQueueConflictError 
-        
-        # Drill down to pofile level.
-        have_po = []
-        for entry in have_pot:
-            if entry.pofile != None:
-                have_po.append(entry)
-        if len(have_po) == 1:
-            return have_po[0]
-        # So we either have multiple entries with pofile or none.
-        # If none that means we have multiple entries with just potemplate.
-        # Either case is ambiguous.
-        raise TranslationImportQueueConflictError 
-        
+        # At least two entries are available, so check if they are equal in
+        # specificness.
+        if self._sameNone(entries[0].pofile, entries[1].pofile):
+            if self._sameNone(entries[0].potemplate, entries[1].potemplate):
+                raise TranslationImportQueueConflictError
+        return entries[0]
+
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
@@ -675,6 +672,12 @@ class TranslationImportQueue:
             contentType=format_importer.content_type)
 
         # Check if we got already this request from this user.
+        # The following query selects entries from the queue that match
+        # this request OR are more specific. There are three cases from
+        # less to more specific:
+        # 1. potemplate and pofile are None,
+        # 2. potemplate is not None but pofile is None,
+        # 3. potemplate and pofile are both not None.
         queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
         queries.append(
             'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
@@ -702,10 +705,13 @@ class TranslationImportQueue:
             queries.append(
                 'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
                     productseries))
-
-        entries = TranslationImportQueueEntry.select(' AND '.join(queries))
+        # Query and order by level of specificness.
+        entries = TranslationImportQueueEntry.select(
+                ' AND '.join(queries),
+                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
+        # Evaluate the result
         try:
-            entry = self._findMostSpecificEntry(entries)
+            entry = self._findUniquelySpecificEntry(entries)
         except TranslationImportQueueConflictError:
             return None
         if entry is not None:
@@ -814,7 +820,6 @@ class TranslationImportQueue:
                 # Empty.  Ignore.
                 continue
 
-            
             entry = self.addOrUpdateEntry(
                 filename, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
@@ -1088,4 +1093,3 @@ class HasTranslationImportsMixin:
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getAllEntries(
             self, import_status=import_status, file_extensions=extensions)
-
