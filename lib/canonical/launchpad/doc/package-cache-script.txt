@@ -19,16 +19,16 @@ contents:
 'cdrkit' source and binary are published but it's not present in
 cache:
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   0
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   0
 
 'foobar' source and binary are removed but still present in cache:
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   1
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   1
 
 Normal operation produces INFO level information about the
@@ -62,13 +62,13 @@ the external script:
 
 Now, search results are up to date:
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   1
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   1
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   0
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   0
 

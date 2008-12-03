@@ -39,7 +39,7 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
 
   <subscriber
@@ -49,18 +49,13 @@
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+         canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
     handler="canonical.launchpad.subscribers.karma.branch_merge_proposed" />
 
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalApprovedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_approved" />
-
-  <subscriber
-    for="canonical.launchpad.interfaces.IBranchMergeProposal
-         canonical.launchpad.interfaces.branchmergeproposal.IBranchMergeProposalRejectedEvent"
-    handler="canonical.launchpad.subscribers.karma.branch_merge_rejected" />
+         canonical.launchpad.event.interfaces.IBranchMergeProposalStatusChangeEvent"
+    handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed" />
 
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
