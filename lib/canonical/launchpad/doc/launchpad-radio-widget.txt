@@ -13,8 +13,7 @@ an enumerated type.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IBranch, IBranchSet, BranchType)
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> branch = LaunchpadObjectFactory().makeBranch()
+    >>> branch = factory.makeBranch()
     >>> branch_type_field = IBranch['branch_type'].bind(branch)
     >>> request = LaunchpadTestRequest()
     >>> radio_widget = LaunchpadRadioWidget(

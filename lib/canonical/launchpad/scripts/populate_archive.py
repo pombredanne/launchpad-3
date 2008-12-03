@@ -17,6 +17,8 @@ from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
@@ -39,58 +41,71 @@ class ArchivePopulator(SoyuzScript):
         'Create a copy archive and populate it with packages and build '
         'records.')
 
-    def populateArchive(self, origin, destination, 
-                        dest_archive_desc, arch_tags=None):
-        """Create archive (if needed), populate it with packages and builds.
+    def populateArchive(
+        self, from_distribution, from_suite, from_component, to_distribution,
+        to_suite, to_component, to_archive, to_user, reason, include_binaries,
+        arch_tags):
+        """Create archive, populate it with packages and builds.
 
-        :type origin: `dict`
-        :param origin: origin data dictionary with the following
-            keys: archive-owner, archive-name, distro, suite
-        :type destination: `dict`
-        :param destination: destination data dictionary with following
-            keys: archive-owner, archive-name, distro, suite
-        :type dest_archive_desc: `str`
-        :param dest_archive_desc: the description of the destination copy
-            archive.
-        :type arch_tags: list of strings
-        :param arch_tags: the list of architecture tags for which to
-            create builds (optional).
+        :param from_distribution: origin distribution.
+        :param from_suite: origin suite.
+        :param from_component: origin component.
+
+        :param to_distribution: destination distribution.
+        :param to_suite: destination suite.
+        :param to_component: destination component.
+
+        :param to_archive: destination copy archive name.
+        :param to_user: destination archive owner name.
+        :param reason: reason for the package copy operation.
+
+        :param include_binaries: whether binaries should be copied as well.
+        :param arch_tags: architecture tags for which to create builds.
         """
-        if origin['suite'] != '':
-            the_origin = build_package_location(
-                origin['distro'], suite=origin['suite'])
-        else:
-            the_origin = build_package_location(origin['distro'])
+        def build_location(distro, suite, component):
+            """Build and return package location."""
+            if suite is not None:
+                location = build_package_location(distro, suite)
+            else:
+                location = build_package_location(distro)
+            if component is not None:
+                location.component = component
+            return location
 
-        the_destination = build_package_location(
-            destination['distro'], suite=destination['suite'])
+        # Build the origin package location.
+        the_origin = build_location(
+            from_distribution, from_suite, from_component)
 
-        registrant = getUtility(IPersonSet).getByName(
-            destination['archive-owner'])
+        # Build the destination package location.
+        the_destination = build_location(
+            to_distribution, to_suite, to_component)
+
+        registrant = getUtility(IPersonSet).getByName(to_user)
         if registrant is None:
-            raise SoyuzScriptError(
-                "Invalid user name: '%s'" % destination['archive-owner'])
+            raise SoyuzScriptError("Invalid user name: '%s'" % to_user)
 
         # First try to access the destination copy archive.
         copy_archive = getUtility(IArchiveSet).getByDistroAndName(
-            the_destination.distribution, destination['archive-name'])
+            the_destination.distribution, to_archive)
 
         # No copy archive with the specified name found, create one.
         if copy_archive is None:
-            if dest_archive_desc is None or dest_archive_desc == '':
-                raise SoyuzScriptError(
-                    "No description provided for new copy archive")
             copy_archive = getUtility(IArchiveSet).new(
-                ArchivePurpose.COPY, registrant, destination['archive-name'],
-                the_destination.distribution, dest_archive_desc)
+                ArchivePurpose.COPY, registrant, to_archive,
+                the_destination.distribution, reason)
             the_destination.archive = copy_archive
         else:
             raise SoyuzScriptError(
-                "A copy archive named '%s' exists already" %
-                destination['archive-name'])
+                "A copy archive named '%s' exists already" % to_archive)
 
+        # Now instantiate the package copy request that will capture the
+        # archive population parameters in the database.
+        pcr = getUtility(IPackageCopyRequestSet).new(
+            the_origin, the_destination, registrant,
+            copy_binaries=include_binaries, reason=unicode(reason))
 
-        # Clone the source packages.
+        # Clone the source packages. We currently do not support the copying
+        # of binary packages. It's a forthcoming feature.
         pkg_cloner = getUtility(IPackageCloner)
         pkg_cloner.clonePackages(the_origin, the_destination)
 
@@ -100,49 +115,39 @@ class ArchivePopulator(SoyuzScript):
 
     def mainTask(self):
         """Main function entry point."""
-        if self.options.origin_spec is None:
+        def not_specified(option):
+            return (option is None or option == '')
+
+        if not_specified(self.options.from_distribution):
             raise SoyuzScriptError(
-                "error: origin of copy operation not specified.")
+                "error: origin distribution not specified.")
 
-        if self.options.destination_spec is None:
+        if not_specified(self.options.to_distribution):
             raise SoyuzScriptError(
-                "error: destination of copy operation not specified.")
+                "error: destination distribution not specified.")
 
-        keys = [
-            'archive-owner', 'archive-name', 'distro', 'suite']
-
-        # Put the origin values into a dictionary. We want 3 splits at a
-        # maximum.
-        origin_data = [value.strip() for value in
-                       self.options.origin_spec.split(':', len(keys)-1)]
-        origin = dict(zip(keys, origin_data))
-
-        # The distro name must be set.
-        if origin['distro'] == '':
+        if not_specified(self.options.to_user):
+            raise SoyuzScriptError("error: copy archive owner not specified.")
+        if not_specified(self.options.to_archive):
             raise SoyuzScriptError(
-                "error: distro name not specified for the origin of the "
-                "copy operation.")
-
-        # Put the destination data in a dictionary.
-        destination_data = [
-            value.strip() for value in
-            self.options.destination_spec.split(':', len(keys)-1)]
-        destination = dict(zip(keys, destination_data))
-
-        # Make sure that the first three elements (archive owner and name,
-        # distro name) were specified.
-        for key in ('archive-owner', 'archive-name', 'distro'):
-            if destination[key] == '':
-                raise SoyuzScriptError(
-                    "error: %s not specified for the destination of the "
-                    "copy operation." % key.replace('-', ' '))
-
-        if not valid_name(destination['archive-name']):
+                "error: destination copy archive not specified.")
+        if not valid_name(self.options.to_archive):
             raise SoyuzScriptError(
-                "Invalid archive name: '%s'" % destination['archive-name'])
+                "Invalid archive name: '%s'" % self.options.to_archive)
+        if not_specified(self.options.reason):
+            raise SoyuzScriptError(
+                "error: reason for copy operation not specified.")
+
+        if self.options.include_binaries == True:
+            raise SoyuzScriptError(
+                "error: copying of binary packages is not supported yet.")
 
         self.populateArchive(
-            origin, destination, self.options.dest_archive_desc,
+            self.options.from_distribution, self.options.from_suite,
+            self.options.from_component, self.options.to_distribution,
+            self.options.to_suite, self.options.to_component,
+            self.options.to_archive, self.options.to_user, 
+            self.options.reason, self.options.include_binaries, 
             self.options.arch_tags)
 
     def add_my_options(self):
@@ -150,40 +155,57 @@ class ArchivePopulator(SoyuzScript):
         """
         SoyuzScript.add_my_options(self)
 
-        # Remove the options defined by the base class since they'll
-        # mean different things to us.
         self.parser.remove_option('-a')
-        self.parser.remove_option('-d')
 
         self.parser.add_option(
             "-a", "--architecture", dest="arch_tags", action="append",
             help="The architecture tag(s) for which to create build "
                  "records, repeat for each architecture required.")
         self.parser.add_option(
-            "-d", "--destination", dest="destination_spec",
-            help = (
-                "The destination of the copy operation, format: "
-                "\"archive-owner:archive-name:distro:suite\". "
-                "Simply omit the items that are not needed."))
+            "-b", "--include-binaries", dest="include_binaries",
+            default=False, action="store_true",
+            help='Whether to copy related binaries or not.')
+
         self.parser.add_option(
-            "-o", "--origin", dest="origin_spec",
-            help = (
-                "The origin of the copy operation, format: "
-                "\"archive-owner:archive-name:distro:suite\". "
-                "Simply omit the items that are not needed."))
+            '--from-distribution', dest='from_distribution',
+            default='ubuntu', action='store',
+            help='Origin distribution name.')
         self.parser.add_option(
-            "-t", "--text", dest="dest_archive_desc",
-            help="The destination archive's description.")
+            '--from-suite', dest='from_suite', default=None,
+            action='store', help='Origin suite name.')
+        self.parser.add_option(
+            '--from-component', dest='from_component', default=None,
+            action='store', help='Origin component name.')
+
+        self.parser.add_option(
+            '--to-distribution', dest='to_distribution',
+            default='ubuntu', action='store',
+            help='Destination distribution name.')
+        self.parser.add_option(
+            '--to-suite', dest='to_suite', default=None,
+            action='store', help='Destination suite name.')
+        self.parser.add_option(
+            '--to-component', dest='to_component', default=None,
+            action='store', help='Destination component name.')
+
+        self.parser.add_option(
+            '--to-archive', dest='to_archive', default=None,
+            action='store', help='Destination archive name.')
+
+        self.parser.add_option(
+            '--to-user', dest='to_user', default=None,
+            action='store', help='Destination user name.')
+
+        self.parser.add_option(
+            "--reason", dest="reason",
+            help="The reason for this packages copy operation.")
 
     def _createMissingBuilds(
         self, distroseries, archive, arch_tags=None):
         """Create builds for all cloned source packages.
 
-        :type distroseries: `DistroSeries`
         :param distroseries: the distro series for which to create builds.
-        :type archive: `Archive`
         :param archive: the archive for which to create builds.
-        :type arch_tags: list of strings
         :param arch_tags: the list of architecture tags for
             which to create builds (optional).
         """

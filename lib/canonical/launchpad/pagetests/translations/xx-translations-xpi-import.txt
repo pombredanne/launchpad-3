@@ -47,9 +47,10 @@ Lets check the import queue to edit this entry and set the name.
 All new entries need to get a template name to identify them in the context
 where will be imported. In this case, it's 'firefox'.
 
-  >>> browser.getControl('Template name').value = 'firefox'
+  >>> browser.getControl('File Type').value = ['POT']
+  >>> browser.getControl('Name').value = 'firefox'
   >>> browser.getControl('Translation domain').value = 'firefox'
-  >>> browser.getControl('Attach').click()
+  >>> browser.getControl('Approve').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports
   >>> browser.getControl(name='field.status_3').value
