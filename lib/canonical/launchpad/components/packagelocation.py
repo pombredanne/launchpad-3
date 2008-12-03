@@ -114,7 +114,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         assert archive_name is not None, (
             "archive_name should be passed for COPY archives")
         archives = getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, name=archive_name, purposes=[purpose])
+            distribution, name=archive_name, purposes=purpose)
         if archives.count() == 0:
             raise PackageLocationError(
                 "Could not find %s archive with the name '%s' for %s" % (

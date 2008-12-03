@@ -1056,6 +1056,24 @@ Then a lookup on Celso's PPA will find it.
     True
 
 
+== Creating a package copy request from an IArchive ==
+
+The IArchive interface includes a convenience method for creating a
+package copy request:
+
+    >>> requestor = factory.makePerson(name='me-copy')
+    >>> target = factory.makeCopyArchiveLocation(distribution=ubuntu,
+    ...     name='my-copy-archive')
+    >>> pcr = ubuntu.main_archive.requestPackageCopy(target, requestor)
+    >>> print pcr
+    Package copy request
+    source = primary/hoary/-/RELEASE
+    target = my-copy-archive/hoary/-/RELEASE
+    copy binaries: False
+    requester: me-copy
+    status: NEW
+    ...
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -1206,7 +1224,7 @@ including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    14
+    15
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1521,32 +1539,44 @@ archive.
     total      1
 
 
+== A general way to get specific archives for a distribution ==
+
 IArchiveSet also includes the helper method `getArchivesForDistribution`
-which can be used to get archives of a specific purpose for a distribution
-(note: the sample data currently contains one copy archive for ubuntu):
+which can be used to get archives of a specific purpose(s) for a distribution
+(note: the sample data currently contains one copy archive for ubuntu, and
+one has been created above):
 
     >>> archive_set = getUtility(IArchiveSet)
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
-    ...     ubuntu, purposes=[ArchivePurpose.COPY])
+    ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> ubuntu_copy_archives.count()
+    2
+
+The method `getArchivesForDistribution` can also be used with multiple
+purposes. First we'll check how many partner archives are in the DB:
+
+    >>> archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=ArchivePurpose.PARTNER).count()
     1
 
+And then use `getArchivesForDistribution` to get all copy and partner
+archives:
+    >>> copy_n_partner_archives = archive_set.getArchivesForDistribution(
+    ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
+    >>> copy_n_partner_archives.count()
+    3
 
-After we create two copy archives from hoary, and one from warty, the
-`getArchivesForDistribution` finds the relevant archives:
+After we create three copy archives for ubuntu, the
+`getArchivesForDistribution` finds the relevant COPY archives:
 
-    >>> from canonical.launchpad.components.packagelocation import (
-    ...     build_package_location)
-    >>> src_warty = build_package_location('ubuntu', suite='warty-updates')
-    >>> src_hoary = build_package_location('ubuntu', suite='hoary-updates')
-    >>> pcr = factory.makePackageCopyRequest(source=src_hoary)
-    >>> pcr = factory.makePackageCopyRequest(source=src_hoary)
-    >>> pcr = factory.makePackageCopyRequest(source=src_warty)
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
+    >>> copy = factory.makeCopyArchiveLocation(distribution=ubuntu)
 
     >>> ubuntu_copy_archives = archive_set.getArchivesForDistribution(
     ...     ubuntu, purposes=[ArchivePurpose.COPY])
     >>> ubuntu_copy_archives.count()
-    4
+    5
 
 The `getArchivesForDistribution` method can also be used to get an
 archive using an archive name:

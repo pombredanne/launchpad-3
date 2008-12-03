@@ -9,16 +9,12 @@ from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.component import IComponentSet
-from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
-class TestPackageLocation(unittest.TestCase):
+class TestPackageLocation(TestCaseWithFactory):
     """Test the `PackageLocation` class."""
     layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Initialises the object factory used for creating test data."""
-        self.factory = LaunchpadObjectFactory()
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
                            purpose=None, person_name=None,
@@ -58,9 +54,12 @@ class TestPackageLocation(unittest.TestCase):
     def testSetupLocationForCOPY(self):
         """`PackageLocation` for COPY archives."""
         # First create a copy archive for the default Ubuntu primary
-        source = self.getPackageLocation()
-        cpr = self.factory.makePackageCopyRequest(source=source)
-        copy_archive = cpr.target_archive
+        ubuntu = self.getPackageLocation().distribution
+
+        returned_location = self.factory.makeCopyArchiveLocation(
+            distribution=ubuntu)
+        copy_archive = returned_location.archive
+
         location = self.getPackageLocation(purpose=ArchivePurpose.COPY,
                                            archive_name=copy_archive.name)
         self.assertEqual(location.distribution.name, 'ubuntu')

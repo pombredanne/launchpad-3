@@ -24,6 +24,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
 from canonical.launchpad.database.distributionsourcepackagecache import (
@@ -34,8 +35,6 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
-from canonical.launchpad.database.packagecopyrequest import (
-    PackageCopyRequest)
 from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
@@ -55,6 +54,8 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeriesSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.packagecopyrequest import (
+    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.publishing import (
     PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.interfaces.sourcepackagename import (
@@ -860,6 +861,26 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def requestPackageCopy(self, target_location, requestor, suite=None,
+        copy_binaries=False, reason=None):
+        """See `IArchive`."""
+        if suite is not None:
+            # Note: a NotFoundError will be raised if it is not found.
+            # Question for cprov: would it be better to refactor the similar
+            # code in build_package_location into a class method of 
+            # PackageLocation and call that instead?
+            distroseries, pocket = distribution.getDistroSeriesAndPocket(
+                suite)
+        else:
+            distroseries = self.distribution.currentseries
+            pocket = PackagePublishingPocket.RELEASE
+
+        source_location = PackageLocation(self, self.distribution,
+            distroseries, pocket)
+
+        return getUtility(IPackageCopyRequestSet).new(source_location,
+            target_location, requestor, copy_binaries, reason)
+
     def syncSources(self, source_names, from_archive, to_pocket,
                     to_series=None, include_binaries=False):
         """See `IArchive`."""
@@ -1174,10 +1195,17 @@ class ArchiveSet:
         return status_and_counters
 
     def getArchivesForDistribution(self, distribution, name=None,
-        purposes=[]):
+        purposes=None):
         """See `IArchiveSet`."""
         extra_exprs = []
-        if len(purposes) > 0:
+
+        if purposes is not None:
+            try:
+                purposes = tuple(purposes)
+            except TypeError:
+                purposes = (purposes,)
+
+        if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))
 
         if name is not None:

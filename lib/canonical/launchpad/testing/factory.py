@@ -25,7 +25,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.components.packagelocation import (build_package_location)
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.interfaces import (
@@ -56,12 +56,11 @@ from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
-from canonical.launchpad.interfaces.packagecopyrequest import (
-    IPackageCopyRequestSet)
 from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -142,58 +141,19 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    # Reviewer note: wonder whether these soyuz-specific factory methods
-    # should be in a separate object that we mixin?
-    def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose = None):
-        """Create and return a new arbitrary archive"""
-        if distribution is None:
-            distribution = self.makeDistribution()
-        if owner is None:
-            owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString()
-        if purpose is None:
-            purpose = ArchivePurpose.PPA
-
-        return getUtility(IArchiveSet).new(
-            owner=owner, purpose=purpose,
-            distribution=distribution, name=name)
-
-    def makeCopyArchive(self, distribution=None, owner=None, name=None):
-        """Create and return a new arbitrary copy archive."""
-        copy_archive = self.makeArchive(distribution, owner, name,
+    def makeCopyArchiveLocation(self, distribution=None, owner=None,
+        name=None):
+        """Create and return a new arbitrary location for copy packages."""
+        copy_archive = self._makeArchive(distribution, owner, name,
             ArchivePurpose.COPY)
 
-        return copy_archive
+        distribution = copy_archive.distribution
+        distroseries = distribution.currentseries
+        pocket = PackagePublishingPocket.RELEASE
 
-    def makePackageCopyRequest(self, source=None, target=None, owner=None,
-                               reason=None):
-        """Create and return a new arbitrary PackageCopyRequest.
-        
-        The corresponding target copy archive is also created if a target
-        location is not passed in.
-        """
-        if source is None:
-            source_archive = self.makeArchive()
-            source = build_package_location(source_archive.distribution.name)
-        if target is None:
-            # Create a copy archive target for the same distribution as the
-            # source.
-            target_archive = self.makeCopyArchive(
-                distribution=source.distribution)
-            target = build_package_location(
-                target_archive.distribution.name,
-                purpose=ArchivePurpose.COPY,
-                archive_name=target_archive.name)
-        if owner is None:
-            owner = self.makePerson()
-        if reason is None:
-            reason = self.getUniqueString()
-        reason = unicode(reason)
-
-        return getUtility(IPackageCopyRequestSet).new(source, target, owner,
-                                                     reason=reason)
+        location = PackageLocation(copy_archive, distribution, distroseries,
+            pocket)
+        return location
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -1029,6 +989,22 @@ class LaunchpadObjectFactory(ObjectFactory):
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
+
+    def _makeArchive(self, distribution=None, owner=None, name=None,
+                    purpose = None):
+        """Create and return a new arbitrary archive."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString()
+        if purpose is None:
+            purpose = ArchivePurpose.PPA
+
+        return getUtility(IArchiveSet).new(
+            owner=owner, purpose=purpose,
+            distribution=distribution, name=name)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
