@@ -21,6 +21,7 @@ from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.populate_archive import ArchivePopulator
 from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.testing import TestCase
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 
@@ -31,7 +32,7 @@ def get_spn(binary_package):
     return pub.sourcepackagerelease.sourcepackagename
 
 
-class TestPopulateArchiveScript(unittest.TestCase):
+class TestPopulateArchiveScript(TestCase):
     """Test the copy-package.py script."""
 
     layer = LaunchpadZopelessLayer
@@ -43,7 +44,7 @@ class TestPopulateArchiveScript(unittest.TestCase):
         u'alsa-utils 1.0.9a-4ubuntu1 in hoary',
         u'cnews cr.g7-37 in hoary', u'evolution 1.0 in hoary',
         u'libstdc++ b8p in hoary',
-        u'linux-source-2.6.15 2.6.15.3 in hoary', 
+        u'linux-source-2.6.15 2.6.15.3 in hoary',
         u'netapplet 1.0-1 in hoary', u'pmount 0.1-2 in hoary']
     pending_statuses = (
         PackagePublishingStatus.PENDING,
@@ -94,7 +95,8 @@ class TestPopulateArchiveScript(unittest.TestCase):
             '--from-distribution', distro_name, '--from-suite', 'hoary',
             '--to-distribution', distro_name, '--to-suite', 'hoary',
             '--to-archive', name, '--to-user', 'salgado', '--reason',
-            '"copy archive from %s"' % datetime.ctime(datetime.utcnow())
+            '"copy archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '--from-component', 'main', '--to-component', 'main'
             ]
 
         # Start archive population now!
@@ -125,25 +127,6 @@ class TestPopulateArchiveScript(unittest.TestCase):
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
         self.assertEqual(build_spns, self.expected_build_spns)
-
-    def assertRaisesWithContent(self, exception, exception_content,
-                                func, *args):
-        """Check if the given exception is raised with given content.
-
-        If the expection isn't raised or the exception_content doesn't
-        match what was raised an AssertionError is raised.
-        """
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            if not str(err).startswith(exception_content):
-                raise AssertionError(
-                    "'%s' was not the reason expected" % str(err))
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
 
     def runScript(
         self, archive_name=None, suite='hoary',
@@ -235,7 +218,8 @@ class TestPopulateArchiveScript(unittest.TestCase):
         self.runScript(
             archive_name=invalid_archive_name,
             exception_type=SoyuzScriptError,
-            exception_text="Invalid archive name")
+            exception_text=(
+                "Invalid archive name: '%s'" % invalid_archive_name))
 
     def testInvalidSuite(self):
         """Try copy archive creation/population with a non-existent suite.
@@ -250,7 +234,7 @@ class TestPopulateArchiveScript(unittest.TestCase):
         self.runScript(
             suite=invalid_suite,
             exception_type=PackageLocationError,
-            exception_text="Could not find suite")
+            exception_text="Could not find suite '%s'" % invalid_suite)
 
     def testInvalidUserName(self):
         """Try copy archive population with an invalid user name.
@@ -264,7 +248,7 @@ class TestPopulateArchiveScript(unittest.TestCase):
         self.runScript(
             user=invalid_user,
             exception_type=SoyuzScriptError,
-            exception_text="Invalid user name")
+            exception_text="Invalid user name: '%s'" % invalid_user)
 
     def testArchWithoutBuilds(self):
         """Try copy archive population with no builds.
