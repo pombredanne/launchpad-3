@@ -877,11 +877,12 @@ class Person(
                 'owner=%d AND product is NULL AND name=%s'
                 % (self.id, quote(branch_name)))
         else:
-            product = getUtility(IPillarNameSet).getByName(product_name)
-            if product is None:
+            pillar = getUtility(IPillarNameSet).getByName(product_name)
+            if not IProduct.providedBy(pillar):
+                # pillar is either None or not a Product.
                 return None
-            return Branch.selectOneBy(owner=self, product=product,
-                                      name=branch_name)
+            return Branch.selectOneBy(
+                owner=self, product=pillar, name=branch_name)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
