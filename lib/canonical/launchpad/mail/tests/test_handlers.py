@@ -233,7 +233,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Vote: Abstain ebailiwick\n'
+        expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          '%s\n'
