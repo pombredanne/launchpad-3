@@ -103,9 +103,17 @@ asserts the archive is indeed a COPY and if the name is valid.
 We will create a COPY archive and modify its name.
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_owner = factory.makePerson(
+    ...     name='juergen', displayname=u'J\xc3\xbcrgen')
     >>> rebuild_archive = getUtility(IArchiveSet).new(
-    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     owner=rebuild_owner, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='editable-rebuild')
+
+By default, copy archives are created with their 'publish' flag
+turned off, so that the publisher ignores them.
+
+    >>> rebuild_archive.publish == False
+    True
 
 Only 'valid' (traversable) names can be set.
 
@@ -121,6 +129,28 @@ Valid names work as expected.
     there-we-go
 
     >>> login(ANONYMOUS)
+
+Please note that copy archive titles include the owner name as well as
+the archive's name.
+
+    >>> rebuild_archive.title
+    u'Copy archive there-we-go for J\xc3\xbcrgen'
+
+The "is_copy" property allows us to ask an archive whether it's a copy
+archive.
+
+    >>> rebuild_archive.is_copy
+    True
+
+    >>> cprov_archive.is_copy
+    False
+
+Uploads to copy archives are not allowed.
+
+    >>> rebuild_archive.canUpload(cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Uploads to copy archives are not allowed.
 
 
 == Published Source and Binary Lookup ==
@@ -853,6 +883,12 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
+The `IArchiveDependency` object itself implement a 'title'
+property. For PPA dependencies the title defaults to the PPA title.
+
+    >>> print archive_dependency.title
+    PPA for Mark Shuttleworth
+
 The archive dependency is immediately recorded on Celso's PPA.
 
     >>> print_dependencies(cprov.archive)
@@ -911,6 +947,12 @@ COPY.
     ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
     ...     getUtility(IComponentSet)['universe'])
 
+Other dependencies than PPAs have an extended 'title', which includes
+the target 'pocket' and 'component'.
+
+    >>> print primary_dependency.title
+    Primary Archive for Ubuntu Linux - UPDATES - universe
+
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
 
@@ -928,7 +970,6 @@ Thus archive dependency removal can be performed simply by passing the
 dependency target.
 
     >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
-
 
 Non-PPA dependencies can have empty 'component' ...
 
@@ -1200,18 +1241,18 @@ including PPA, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    14
+    15
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
-ArchiveSet utility also offers counters for:
+ArchiveSet utility also offers counters in the distribution context for:
 
  * The number of published sources in public PPAs
-   (number_of_ppa_sources);
+   (getNumberOfPPASourcesForDistribution);
 
  * The number of published binaries in public PPAs
-   (number_of_ppa_binaries)
+   (getNumberOfPPABinariesForDistribution);
 
 Those counters are obtained from the cached package counters for each
 PPA, so they will change when the caches get updated.
@@ -1221,9 +1262,9 @@ Those counters explicity exclude packages in private PPAs.
 The current counters says we only have 1 source and 1 binary published
 in public PPAs.
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     1
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     1
 
 As mentioned caches for private PPAs are not considered.
@@ -1240,9 +1281,9 @@ As mentioned caches for private PPAs are not considered.
     >>> naked_cprov_archive.binaries_cached = 2000
     >>> naked_cprov_archive.syncUpdate()
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     1
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     1
 
 On the other hand, changes in the a public PPA are immediately
@@ -1260,10 +1301,21 @@ considered.
     >>> naked_no_priv_archive.binaries_cached = 2
     >>> naked_no_priv_archive.syncUpdate()
 
-    >>> archive_set.number_of_ppa_sources
+    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
     11
-    >>> archive_set.number_of_ppa_binaries
+    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
     3
+
+Since we currently only create archives for ubuntu distribution, the
+counters for other distributions are always 'zero'.
+
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+
+    >>> archive_set.getNumberOfPPASourcesForDistribution(debian)
+    0
+
+    >>> archive_set.getNumberOfPPABinariesForDistribution(debian)
+    0
 
 'getPPAsForUser' returns all the PPAs a given user participates in. It
 uses `TeamParticipation` relationships to calculate all the PPAs the
@@ -1724,4 +1776,3 @@ Copy package3 1.0 explicitly:
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
-

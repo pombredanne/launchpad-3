@@ -18,6 +18,7 @@ __all__ = [
     'ShippingRequestSetNavigation',
     'ShippingRequestsView',
     'StandardShipItRequestAddView',
+    'StandardShipItRequestEditView',
     'StandardShipItRequestSetNavigation',
     'StandardShipItRequestsView']
 
@@ -38,7 +39,7 @@ from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -49,9 +50,9 @@ from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, IShipItApplication, IShipItReportSet,
     IShipItSurveySet, IShippingRequestSet, IShippingRequestUser,
-    IShippingRunSet, IStandardShipItRequestSet, ShipItArchitecture,
-    ShipItConstants, ShipItDistroSeries, ShipItFlavour, ShipItSurveySchema,
-    ShippingRequestStatus, UnexpectedFormData)
+    IShippingRunSet, IStandardShipItRequest, IStandardShipItRequestSet,
+    ShipItArchitecture, ShipItConstants, ShipItDistroSeries, ShipItFlavour,
+    ShipItSurveySchema, ShippingRequestStatus, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -759,6 +760,20 @@ class StandardShipItRequestAddView(AddView):
             flavour, quantityx86, quantityamd64, quantityppc, isdefault,
             user_description)
         notify(ObjectCreatedEvent(request))
+
+
+class StandardShipItRequestEditView(LaunchpadEditFormView):
+    """Edit an existing Standard ShipIt Request."""
+
+    schema = IStandardShipItRequest
+    field_names = ["flavour", "quantityx86", "quantityamd64",
+                   "user_description", "isdefault"]
+    label = "Edit standard option"
+
+    @action(_("Change"), name="change")
+    def action_change(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(getUtility(IStandardShipItRequestSet))
 
 
 class ShippingRequestAdminMixinView:

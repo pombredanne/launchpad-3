@@ -25,9 +25,13 @@ from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
-    PackagePublishingStatus)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archivesigningkey import (
+    IArchiveSigningKey)
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.publishing import (
+    pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
+
 from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
@@ -251,7 +255,7 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.serieses:
             for pocket, suffix in pocketsuffix.items():
-                if self.canModifySuite(distroseries, pocket):
+                if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
                     # that precede here have dirtied it.
@@ -455,7 +459,7 @@ class Publisher(object):
             self.apt_handler.requestReleaseFile(
                 suite_name, component.name, arch_name)
 
-    def canModifySuite(self, distroseries, pocket):
+    def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
         return (not distroseries.isUnstable() and
                 not self.archive.allowUpdatesToReleasePocket() and
@@ -468,7 +472,7 @@ class Publisher(object):
         in RELEASE pocket (primary archives) we certainly have a problem,
         better stop.
         """
-        if self.canModifySuite(distroseries, pocket):
+        if self.cannotModifySuite(distroseries, pocket):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
@@ -511,8 +515,8 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        # If this file is released from a PPA then modify the origin to
-        # indicate so (Bug #140412)
+        # XXX al-maisan, 2008-11-19, bug=299981. If this file is released
+        # from a copy archive then modify the origin to indicate so.
         if self.archive.purpose == ArchivePurpose.PPA:
             origin = "LP-PPA-%s" % self.archive.owner.name
         else:
@@ -541,6 +545,15 @@ class Publisher(object):
             self._writeSumLine(full_name, f, file_name, sha256)
 
         f.close()
+
+        # Skip signature if the archive signing key is undefined.
+        if self.archive.signing_key is None:
+            self.log.debug("No signing key available, skipping signature.")
+            return
+
+        # Sign the repository.
+        archive_signer = IArchiveSigningKey(self.archive)
+        archive_signer.signRepository(full_name)
 
     def _writeDistroArchSeries(self, distroseries, pocket, component,
                                 architecture, all_files):

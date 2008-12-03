@@ -125,6 +125,7 @@ The elements of a collection can be looked up by unique identifier:
   >>> for key, value in sorted(admins_team.items()):
   ...     print "%s: %s" % (key, value)
   admins_collection_link: http://.../~admins/admins
+  archive_link: None
   confirmed_email_addresses_collection_link:
       http://.../~admins/confirmed_email_addresses
   date_created: 2005-06-06T08:59:51.571899+00:00

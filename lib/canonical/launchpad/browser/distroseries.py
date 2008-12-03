@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesFacets',
     'DistroSeriesFullLanguagePackRequestView',
     'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesPackageSearchView',
     'DistroSeriesNavigation',
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesView',
@@ -31,6 +32,7 @@ from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.browser.queue import QueueItemsView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces.country import ICountry
@@ -289,17 +291,17 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
             'Request a full language pack export')
 
 
+class DistroSeriesPackageSearchView(PackageSearchViewBase):
+    """Customised PackageSearchView for DistroSeries"""
+
+    def contextSpecificSearch(self):
+        """See `AbstractPackageSearchView`."""
+        return self.context.searchPackages(self.text)
+
+
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
-        self.text = self.request.form.get('text')
-        self.matches = 0
-        self._results = None
-
-        self.searchrequested = False
-        if self.text:
-            self.searchrequested = True
-
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
@@ -324,15 +326,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
             unused_language_packs.remove(self.context.language_pack_proposed)
 
         return unused_language_packs
-
-    def searchresults(self):
-        """Try to find the packages in this distro series that match
-        the given text, then present those as a list.
-        """
-        if self._results is None:
-            self._results = self.context.searchPackages(self.text)
-        self.matches = len(self._results)
-        return self._results
 
     def requestDistroLangs(self):
         """Produce a set of DistroSeriesLanguage and

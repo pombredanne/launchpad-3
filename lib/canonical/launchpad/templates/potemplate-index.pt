@@ -12,21 +12,27 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:leftportlets>
 
-<metal:heading fill-slot="pageheading">
+<div metal:fill-slot="main">
   <h1>
     Translation status for
     <tal:title replace="context/name">
       foo-dev
     </tal:title>
   </h1>
-</metal:heading>
 
-<div metal:fill-slot="main">
+    <ul class="helplinks">
+      <li>
+        <a href="https://help.launchpad.net/Translations/StartingToTranslate"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        </li>
+    </ul>
 
     <p tal:condition="context/description">
       <tal:description content="context/description">A brief paragraph

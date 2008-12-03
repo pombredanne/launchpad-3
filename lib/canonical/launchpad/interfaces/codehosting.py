@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_TRANSPORT',
+    'CONTROL_TRANSPORT',
     'IBranchPuller',
     'IBranchPullerApplication',
     'IBranchFileSystem',
@@ -32,6 +34,11 @@ assert not valid_name(LAUNCHPAD_SERVICES), (
 # These are used as permissions for getBranchInformation.
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+# Indicates that a path's real location is on a branch transport.
+BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
+# Indicates that a path points to a control directory.
+CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 
 
 class IBranchPullerApplication(ILaunchpadApplication):
@@ -177,22 +184,21 @@ class IBranchFileSystem(Interface):
         # method will need to change to support source package
         # branches.
 
-    def createBranch(loginID, personName, productName, branchName):
+    def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user
         pushes a new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param loginID: the person ID of the user creating the branch.
-        :param personName: the unique name of the owner of the branch.
-        :param productName: the unique name of the product that the branch
-            belongs to.
-        :param branchName: the name for this branch, to be used in URLs.
+        :param login_id: the person ID of the user creating the branch.
+        :param branch_path: the path of the branch to be created. This should
+            be a URL-escaped string representing an absolute path.
         :returns: the ID for the new branch or a Fault if the branch cannot be
             created. The faultCode will be PERMISSION_DENIED_FAULT_CODE or
             NOT_FOUND_FAULT_CODE and the faultString will be a description
-            suitable to display to the user.
+            suitable to display to the user. The Fault InvalidPath is returned
+            if the caller tries to create a branch at a non-absolute path.
         """
         # XXX: MichaelHudson 2008-08-05 spec=package-branches: This
         # method will need to change to support source package
@@ -203,4 +209,23 @@ class IBranchFileSystem(Interface):
 
         :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
+        """
+
+    def translatePath(requester_id, path):
+        """Translate 'path' so that the codehosting transport can access it.
+
+        :param requester_id: the database ID of the person requesting the
+            path translation.
+        :param path: the path being translated. This should be a URL escaped
+            string representing an absolute path.
+
+        :raise `PathTranslationError`: if 'path' cannot be translated.
+        :raise `InvalidPath`: if 'path' is known to be invalid.
+
+        :returns: (transport_type, transport_parameters, path_in_transport)
+            where 'transport_type' is one of BRANCH_TRANSPORT or
+            CONTROL_TRANSPORT, 'transport_parameters' is a dict of data that
+            the client can use to construct the transport and
+            'path_in_transport' is a path relative to that transport. e.g.
+            (BRANCH_TRANSPORT, {'id': 3, 'writable': False}, '.bzr/README').
         """

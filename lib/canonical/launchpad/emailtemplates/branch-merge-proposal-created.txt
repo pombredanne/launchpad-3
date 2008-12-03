@@ -1,8 +1,6 @@
 %(proposal_registrant)s has proposed merging %(source_branch)s into %(target_branch)s.
 
-Whiteboard:
-%(whiteboard)s
-
+%(reviews)s%(gap)s%(comment)s
 -- 
 %(proposal_url)s
 %(reason)s%(edit_subscription)s
