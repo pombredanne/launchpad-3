@@ -57,7 +57,8 @@ class FakeRequest(object):
 def pprint_entry(json_body):
     """Pretty-print a webservice entry JSON representation.
 
-    Omits the _etag key, which is always present.
+    Omits the http_etag key, which is always present and never
+    interesting for a test.
     """
     for key, value in sorted(json_body.items()):
         if key != 'http_etag':
