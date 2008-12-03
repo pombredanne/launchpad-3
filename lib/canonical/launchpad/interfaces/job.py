@@ -54,7 +54,7 @@ class IJob(Interface):
 
     date_started = Datetime(title=_('Time when the IJob started.'))
 
-    date_ended = Datetime(title=_('Time when the IJob ended.'))
+    date_finished = Datetime(title=_('Time when the IJob ended.'))
 
     lease_expires = Datetime(title=_('Time when the lease expires.'))
 
