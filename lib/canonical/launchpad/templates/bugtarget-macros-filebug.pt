@@ -164,8 +164,8 @@
               against that specific distribution. 
 
               <tal:XXX condition="nothing">
-                # XXX: Graham Binns 2007-07-12 bug=125574: 
-                # The formatting of this next paragraph seems a little 
+                # XXX: Graham Binns 2007-07-12 bug=125574:
+                # The formatting of this next paragraph seems a little
                 # odd when seen in the context of a product that does not
                 # use Malone and does not specify another bug tracker.
                 # For an example of this, see
@@ -206,7 +206,7 @@
           </ul>
 
           <tal:XXX condition="nothing">
-            # XXX: kiko 2007-03-14: 
+            # XXX: kiko 2007-03-14:
             # We shouldn't be using feedback@launchpad.net, but we have no
             # way of allowing people to go around changing product bugtracker
             # details, so for now it will have to do.

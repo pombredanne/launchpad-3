@@ -65,7 +65,7 @@
                     # We are using here
                     # condition="entry/import_into/title|nothing" because,
                     # sometimes, entry/import_into evaluates as false because
-                    # __len__ method returns 0. 
+                    # __len__ method returns 0.
                   </tal:XXX>
                   <td tal:condition="entry/import_into/title|nothing" rowspan="3">
                     <img alt="" src="/@@/download" />
@@ -114,7 +114,7 @@
                   # We are using here
                   # condition="entry/import_into/title|nothing" because,
                   # sometimes, entry/import_into evaluates as false because
-                  # __len__ method returns 0. 
+                  # __len__ method returns 0.
                 </tal:XXX>
                 <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
                   <td colspan="3">

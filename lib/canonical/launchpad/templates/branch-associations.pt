@@ -27,7 +27,7 @@
   <h1>Branch associations</h1>
 
   <tal:XXX condition="nothing">
-    # XXX: thumper 2007-07-13
+    # XXX: thumper 2007-07-13 bug=119208:
     # This page needs to be updated with fmt:link when bug 119208 has
     # been fully implemented.
   </tal:XXX>
