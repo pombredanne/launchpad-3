@@ -49,7 +49,7 @@ class TestRecipientReason(TestCaseWithFactory):
     def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        login_person(merge_proposal.registrant)
+        login(merge_proposal.registrant.preferredemail.email)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         return vote_reference, subscriber
@@ -74,7 +74,7 @@ class TestRecipientReason(TestCaseWithFactory):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, '', merge_proposal)
+            subscription, subscription.person, merge_proposal, '')
         self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
@@ -85,7 +85,7 @@ class TestRecipientReason(TestCaseWithFactory):
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, '', bmp)
+            subscription, team_member, bmp, '')
         self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
