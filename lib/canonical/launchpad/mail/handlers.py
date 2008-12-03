@@ -591,7 +591,8 @@ class CodeHandler:
         content = get_main_body(message)
         if content is None:
             return None, None
-        commands = parse_commands(content, ['vote'])
+        commands = parse_commands(content,
+            ['vote', 'vote:', 'review', 'review:'])
         if len(commands) == 0:
             return None, None
         args = commands[0][1]
