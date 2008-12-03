@@ -47,17 +47,13 @@
         for="canonical.launchpad.interfaces.IKarmaAction"
         name="+index" />
 
-    <browser:editform
+    <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IKarmaAction"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
-        schema="canonical.launchpad.interfaces.IKarmaAction"
-        fields="name category points title summary"
-        label="Edit karma action information"
+        class="canonical.launchpad.browser.KarmaActionEditView"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
-        >
-    </browser:editform>
+        />
 
     <!-- KarmaCacheManager -->
     <class class="canonical.launchpad.database.KarmaCacheManager">

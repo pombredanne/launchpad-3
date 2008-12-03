@@ -34,21 +34,25 @@ Check the behavior of the provided search method, which returns a
 list of IDARBPR instances containing the matching packages.
 
    >>> results = hoary_i386.searchBinaryPackages(text='pmount')
-   >>> len(results)
+   >>> results.count()
    1
    >>> pmount = results[0]
 
 The method works even when we are searching for packages whose names are
 not fti-matchable, such as "linux-2.6.12", and substrings:
 
-   >>> warty = ubuntu.getSeries('warty')
-   >>> warty_i386 = warty['i386']
-   >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
-   >>> len(results)
-   1
-   >>> results = hoary_i386.searchBinaryPackages(text='moun')
-   >>> len(results)
-   1
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty_i386 = warty['i386']
+    >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
+    >>> results.count()
+    1
+    >>> results = warty_i386.searchBinaryPackages(text='a')
+    >>> for dasbp in results:
+    ...     print "%s: %s" % (dasbp.__class__.__name__, dasbp.name)
+    DistroArchSeriesBinaryPackageRelease: at
+    DistroArchSeriesBinaryPackageRelease: mozilla-firefox
+    DistroArchSeriesBinaryPackageRelease: mozilla-firefox
+    DistroArchSeriesBinaryPackageRelease: mozilla-firefox-data
 
    # XXX cprov 2006-03-21: Broken implementation, missing enhances attribute.
    verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)

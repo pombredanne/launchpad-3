@@ -963,8 +963,6 @@ Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
 number of users not affected by it.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> test_bug = factory.makeBug()
     >>> affected_user = factory.makePerson()
     >>> unaffected_user = factory.makePerson()

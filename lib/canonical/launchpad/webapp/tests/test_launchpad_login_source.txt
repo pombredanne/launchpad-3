@@ -13,8 +13,6 @@ person is found with the given e-mail address, None is returned
 Giving getPrincipalByLogin() an existing e-mail address, returns a
 ILaunchpadPrincipal with the same id as the corresponding Person record.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> person = factory.makePerson(email='existing@example.com')
     >>> principal = login_source.getPrincipalByLogin('existing@example.com')
 

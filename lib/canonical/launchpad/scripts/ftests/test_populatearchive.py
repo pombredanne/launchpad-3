@@ -91,16 +91,18 @@ class TestPopulateArchiveScript(unittest.TestCase):
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
         extra_args = [
-            '-o', '::%s:hoary' % distro_name,
-            '-d', 'salgado:%s:%s:hoary' % (name, distro_name),
-            '-t', '"copy archive from %s"' % datetime.ctime(datetime.utcnow())
+            '--from-distribution', distro_name, '--from-suite', 'hoary',
+            '--to-distribution', distro_name, '--to-suite', 'hoary',
+            '--to-archive', name, '--to-user', 'salgado', '--reason',
+            '"copy archive from %s"' % datetime.ctime(datetime.utcnow())
             ]
 
         # Start archive population now!
         (return_code, out, err) = self.runWrapperScript(extra_args)
 
         # Check for zero exit code.
-        self.assertEqual(return_code, 0)
+        self.assertEqual(
+            return_code, 0, "=> %s\n=> %s\n=> %s\n" % (return_code, out, err))
 
         # Make sure the copy archive with the desired name was
         # created
@@ -189,9 +191,10 @@ class TestPopulateArchiveScript(unittest.TestCase):
         # Command line arguments required for the invocation of the
         # 'populate-archive.py' script.
         script_args = [
-            '-o', '::%s:' % distro_name,
-            '-d', '%s:%s:%s:%s' % (user, archive_name, distro_name, suite),
-            '-t', '"copy archive from %s"' % datetime.ctime(datetime.utcnow())
+            '--from-distribution', distro_name,
+            '--to-distribution', distro_name, '--to-suite', suite,
+            '--to-archive', archive_name, '--to-user', user, '--reason',
+            '"copy archive from %s"' % datetime.ctime(datetime.utcnow())
             ]
 
         if extra_args is not None:
