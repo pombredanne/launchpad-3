@@ -16,6 +16,7 @@ from canonical.launchpad.components.packagelocation import (
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet)
@@ -23,6 +24,7 @@ from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class ArchivePopulator(SoyuzScript):
@@ -69,7 +71,12 @@ class ArchivePopulator(SoyuzScript):
             else:
                 location = build_package_location(distro)
             if component is not None:
-                location.component = component
+                try:
+                    the_component = getUtility(IComponentSet)[component]
+                except NotFoundError, e:
+                    raise SoyuzScriptError(
+                        "Invalid component name: '%s'" % component)
+                location.component = the_component
             return location
 
         # Build the origin package location.
