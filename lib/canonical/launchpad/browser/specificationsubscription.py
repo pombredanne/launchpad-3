@@ -9,10 +9,12 @@ __all__ = [
     ]
 
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.specificationsubscription import (
+    ISpecificationSubscription)
 from canonical.launchpad.webapp import (
-    canonical_url, GeneralFormView)
+    action, canonical_url, GeneralFormView, LaunchpadEditFormView)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 
 
 class SpecificationSubscriptionAddView(GeneralFormView):
@@ -22,9 +24,13 @@ class SpecificationSubscriptionAddView(GeneralFormView):
         return self.context.subscribe(person, self.user, essential)
 
 
-class SpecificationSubscriptionEditView(SQLObjectEditView):
+class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(
-            canonical_url(self.context.specification))
+    schema = ISpecificationSubscription
+    field_names = ['essential']
+    label = 'Edit subscription'
 
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context.specification)

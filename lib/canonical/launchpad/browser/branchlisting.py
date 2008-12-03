@@ -28,6 +28,7 @@ from canonical.launchpad.browser.feeds import (
     ProductBranchesFeedLink, ProductRevisionsFeedLink,
     ProjectBranchesFeedLink, ProjectRevisionsFeedLink)
 from canonical.launchpad.interfaces import (
+    bazaar_identity,
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
     BranchListingSort,
@@ -65,6 +66,13 @@ class BranchListingItem(BranchBadges):
         self._now = now
         self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+
+    @property
+    def bzr_identity(self):
+        """Produce the bzr identity from our known associated series."""
+        return bazaar_identity(
+            self.context, self.associated_product_series,
+            self.is_development_focus)
 
     @property
     def since_updated(self):

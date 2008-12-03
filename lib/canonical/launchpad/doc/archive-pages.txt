@@ -75,10 +75,10 @@ We query the available PUBLISHED sources and use them to build the
 The 'selected_sources' widget has a limit controlled via a hard-coded
 view attribute. We only present up to 'max_sources_presented' options
 and if the available number options exceed this number, we present a
-warning message to the user. By default the limit is 50.
+warning message to the user. The local limit is 20.
 
     >>> view.max_sources_presented
-    50
+    20
 
     >>> view.has_undisplayed_sources
     False

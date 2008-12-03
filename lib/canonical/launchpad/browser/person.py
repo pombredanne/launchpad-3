@@ -295,6 +295,11 @@ class BranchTraversalMixin:
                 # addition to the user) to identify the branch, and as such
                 # the product isnt't being added to the bag by the internals.
                 getUtility(IOpenLaunchBag).add(branch.product)
+
+                if branch.product.name != product_name:
+                    # This branch was accessed through one of its product's
+                    # aliases, so we must redirect to its canonical URL.
+                    return self.redirectSubTree(canonical_url(branch))
             return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
@@ -2873,7 +2878,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context = self.context
         wikinameset = getUtility(IWikiNameSet)
 
-        for w in context.allwikis:
+        for w in context.wiki_names:
             # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to

@@ -16,17 +16,21 @@ from cStringIO import StringIO
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
+from storm.locals import SQL, Join
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, flush_database_caches,
     flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet)
+from canonical.launchpad.components.packagelocation import PackageLocation
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
@@ -1087,22 +1091,49 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-        package_caches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND
-            archive IN %s AND
+
+        store = Store.of(self)
+        find_spec = (
+            DistroSeriesPackageCache,
+            BinaryPackageName,
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
+            )
+        origin = [
+            DistroSeriesPackageCache,
+            Join(
+                BinaryPackageName,
+                DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id
+                )
+            ]
+
+        # Note: When attempting to convert the query below into straight
+        # Storm expressions, a 'tuple index out-of-range' error was always
+        # raised.
+        package_caches = store.using(*origin).find(
+            find_spec,
+            """DistroSeriesPackageCache.distroseries = %s AND
+            DistroSeriesPackageCache.archive IN %s AND
             (fti @@ ftq(%s) OR
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text)),
-            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
-            orderBy=['-rank'],
-            prejoins=['binarypackagename'],
-            distinct=True)
-        return [DistroSeriesBinaryPackage(
-            distroseries=self,
-            binarypackagename=cache.binarypackagename, cache=cache)
-            for cache in package_caches]
+                   quote(text), quote_like(text))
+            ).config(distinct=True)
+
+        ranked_package_caches = package_caches.order_by('rank DESC')
+
+        # Create a function that will decorate the results, converting
+        # them from the find_spec above into a DSBP:
+        def result_to_dsbp((cache, binary_package_name, rank)):
+            return DistroSeriesBinaryPackage(
+                distroseries=cache.distroseries,
+                binarypackagename=binary_package_name,
+                cache=cache)
+
+        # Return the decorated result set so the consumer of these
+        # results will only see DSBPs
+        return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 supports_virtualized=False):

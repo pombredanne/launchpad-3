@@ -30,6 +30,7 @@ class MockBug:
     duplicateof = None
     private = False
     security_related = False
+    messages = []
 
     def __init__(self, id, owner):
         self.id = id
