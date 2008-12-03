@@ -65,6 +65,10 @@ class CodeReviewCommentMailer(BMPMailer):
             prefix = 'Vote: %s%s\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         main = self.message.text_contents
+        if '\n-- \n' in main:
+            footer_separator = '\n'
+        else:
+            footer_separator = '\n-- \n'
 
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
@@ -75,8 +79,10 @@ class CodeReviewCommentMailer(BMPMailer):
         return ''.join((
             prefix, append_footer(main, footer)))
 
-    def _getInReplyTo(self):
+    def _getHeaders(self, email):
+        """Return the mail headers to use."""
+        headers = BMPMailer._getHeaders(self, email)
+        headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
-            return self.message.parent.rfc822msgid
-        else:
-            return BMPMailer._getInReplyTo(self)
+            headers['In-Reply-To'] = self.message.parent.rfc822msgid
+        return headers

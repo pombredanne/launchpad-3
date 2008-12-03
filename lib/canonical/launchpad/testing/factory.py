@@ -59,7 +59,6 @@ from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.ftests import syncUpdate
-from canonical.launchpad.database import CodeMailJob
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.database.constants import DEFAULT
 
@@ -138,33 +137,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     When this is done, the returned object should have unique references
     for any other required objects.
     """
-
-    def makeCodeMailJob(self, to_address=None, from_address=None,
-        subject=None, body=None, footer=None, msgid=None, rationale=None,
-        branch_url=None, branch_project_name=None, in_reply_to=None,
-        reply_to_address=None, date_created=DEFAULT):
-        if to_address is None:
-            to_address = self.getUniqueEmailAddress()
-        if from_address is None:
-            from_address = self.getUniqueEmailAddress()
-        if subject is None:
-            subject = self.getUniqueString('subject')
-        if body is None:
-            body = self.getUniqueString('body')
-        if footer is None:
-            footer = self.getUniqueString('footer')
-        if msgid is None:
-            msgid = make_msgid('launchpad')
-        if rationale is None:
-            rationale = self.getUniqueString('rationale')
-        if branch_url is None:
-            branch_url = self.getUniqueURL()
-        return CodeMailJob(
-            to_address=to_address, from_address=from_address,
-            reply_to_address=reply_to_address, subject=subject, body=body,
-            footer=footer, rationale=rationale, branch_url=branch_url,
-            branch_project_name=branch_project_name, rfc822msgid=msgid,
-            in_reply_to=in_reply_to, date_created=date_created)
 
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, hide_email_addresses=False,
@@ -661,12 +633,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
+
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
+        if bugtrackertype is None:
+            bugtrackertype = BugTrackerType.BUGZILLA
+
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, BugTrackerType.BUGZILLA)
+            base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""

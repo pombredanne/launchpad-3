@@ -139,7 +139,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
                     'Reply-To': mailer._getReplyToAddress(),
                     'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
-            self.assertEqual(value, ctrl.headers[header])
+            self.assertEqual(value, ctrl.headers[header], header)
         self.assertEqual(expected, ctrl.headers)
 
     def test_useRootMessageId(self):

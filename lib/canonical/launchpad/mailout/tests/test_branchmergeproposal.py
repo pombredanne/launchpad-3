@@ -137,26 +137,6 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                          attachment['Content-Disposition'])
         self.assertEqual('Fake diff', attachment.get_payload(decode=True))
 
-    def test_queue(self):
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        mailer.from_address = 'from@example.com'
-        (job,) = [
-            removeSecurityProxy(j) for j in mailer.queue([subscriber])]
-        self.assertEqual(
-            bmp.source_branch.unique_name, job.branch_url)
-        self.assertEqual('Subscriber', job.rationale)
-        self.assertEqual('from@example.com', job.from_address)
-        self.assertEqual('Baz Quxx <baz.quxx@example.com>', job.to_address)
-        self.assertEqual(
-            mailer._getSubject('baz.quxx@example.com'), job.subject)
-        self.assertEqual(
-            mailer._getBody('baz.quxx@example.com'), job.body)
-        self.assertEqual('', job.footer)
-        self.assertEqual(bmp.source_branch.product.name,
-                         job.branch_project_name)
-        self.assertEqual(bmp.address, job.reply_to_address)
-
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
