@@ -153,14 +153,11 @@ def run_publisher(options, txn, log=None):
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             log.info("Processing %s %s" % (distribution.name, archive.title))
-        else:
-            log.info("Processing %s" % archive.archive_url)
-
-        # Only let the primary/partner archives override the distsroot.
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
+            # Only let the primary/partner archives override the distsroot.
             publisher = getPublisher(
                 archive, allowed_suites, log, options.distsroot)
         else:
+            log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
