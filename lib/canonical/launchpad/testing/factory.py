@@ -433,7 +433,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None):
+                                product=None, review_diff=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -446,7 +446,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch)
+            registrant, target_branch, dependent_branch=dependent_branch,
+            review_diff=review_diff)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
