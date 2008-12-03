@@ -165,6 +165,23 @@ class TestCase(unittest.TestCase):
         self.assertFalse(
             needle in haystack, '%r in %r' % (needle, haystack))
 
+    def assertRaisesWithContent(self, exception, exception_content,
+                                func, *args):
+        """Check if the given exception is raised with given content.
+
+        If the exception isn't raised or the exception_content doesn't
+        match what was raised an AssertionError is raised.
+        """
+        exception_name = str(exception).split('.')[-1]
+
+        try:
+            func(*args)
+        except exception, err:
+            self.assertEqual(str(err), exception_content)
+        else:
+            raise AssertionError(
+                "'%s' was not raised" % exception_name)
+
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 

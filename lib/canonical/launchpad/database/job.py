@@ -3,7 +3,7 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['InvalidTransition', 'Job', 'JobDependency', 'LeaseHeld']
+__all__ = ['InvalidTransition', 'Job', 'LeaseHeld']
 
 
 import datetime
@@ -50,7 +50,7 @@ class Job(SQLBase):
 
     date_started = UtcDateTimeCol()
 
-    date_ended = UtcDateTimeCol()
+    date_finished = UtcDateTimeCol()
 
     lease_expires = UtcDateTimeCol()
 
@@ -84,55 +84,22 @@ class Job(SQLBase):
     def start(self):
         self._set_status(JobStatus.RUNNING)
         self.date_started = datetime.datetime.now(UTC)
-        self.date_ended = None
+        self.date_finished = None
         self.attempt_count += 1
 
     def complete(self):
         self._set_status(JobStatus.COMPLETED)
-        self.date_ended = datetime.datetime.now(UTC)
+        self.date_finished = datetime.datetime.now(UTC)
 
     def fail(self):
         self._set_status(JobStatus.FAILED)
-        self.date_ended = datetime.datetime.now(UTC)
+        self.date_finished = datetime.datetime.now(UTC)
 
     def queue(self):
         self._set_status(JobStatus.WAITING)
-        self.date_ended = datetime.datetime.now(UTC)
+        self.date_finished = datetime.datetime.now(UTC)
 
     def destroySelf(self):
         self.dependants.clear()
         self.prerequisites.clear()
         SQLBase.destroySelf(self)
-
-    def addPrerequisite(self, prerequisite):
-        """See IJob."""
-        self.prerequisites.add(prerequisite)
-
-
-class JobDependency(SQLBase):
-
-    __storm_primary__ = "prerequisite", "dependant"
-    prerequisite = IntCol()
-    dependant = IntCol()
-
-Job.prerequisites = ReferenceSet(
-    Job.id, JobDependency.dependant, JobDependency.prerequisite, Job.id)
-
-Job.dependants = ReferenceSet(
-    Job.id, JobDependency.prerequisite, JobDependency.dependant, Job.id)
-
-PrerequisiteJob = ClassAlias(Job)
-
-Job.incomplete = Not(
-    PrerequisiteJob.status.is_in((JobStatus.COMPLETED, JobStatus.FAILED)))
-
-Job.blocked_jobs = Select(
-    Job.id, And(Job.id == JobDependency.dependant,
-    PrerequisiteJob.id == JobDependency.prerequisite,
-    Job.incomplete), distinct=True)
-
-Job.ready_jobs = Select(
-    Job.id, And(Job.status == JobStatus.WAITING,
-    Not(Job.id.is_in(Job.blocked_jobs)),
-    Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW)
-    ))
