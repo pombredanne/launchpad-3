@@ -166,6 +166,16 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
         self.assertEqual('ebailiwick', bmp.all_comments[0].vote_tag)
 
+    def test_processReview(self):
+        """Process respects the review command."""
+        mail = self.factory.makeSignedMessage(body=' review Abstain ROAR!')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('roar!', bmp.all_comments[0].vote_tag)
+
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
