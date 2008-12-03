@@ -8,10 +8,8 @@ import unittest
 
 from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
-from bzrlib import errors
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import (
-    RepositoryFormatKnitPack1, RepositoryFormatKnitPack5)
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
 try:
     from bzrlib.tests.repository_implementations.test_repository import (
@@ -22,6 +20,7 @@ except ImportError:
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.tests.helpers import LoomTestMixin
+from canonical.launchpad.webapp.uri import URI
 from canonical.testing import reset_logging
 
 
@@ -103,7 +102,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertMirrored(stacked_branch, mirrored_branch)
         orig = stacked_branch.get_stacked_on_url()
         mirrored = mirrored_branch.get_stacked_on_url()
-        self.assertEqual(orig, mirrored)
+        self.assertEqual(URI(orig).path, mirrored)
 
     def test_reStackedBranch(self):
         # When we re-mirror a stacked branch we propagate any change of
@@ -132,7 +131,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.assertMirrored(stacked_branch, mirrored_branch)
         orig = stacked_branch.get_stacked_on_url()
         mirrored = mirrored_branch.get_stacked_on_url()
-        self.assertEqual(orig, mirrored)
+        self.assertEqual(URI(orig).path, mirrored)
 
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time, the mirrored loom
