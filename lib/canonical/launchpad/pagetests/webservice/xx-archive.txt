@@ -297,8 +297,8 @@ can administer distroseries queues in a particular component.
     ...     show_permission_entries(permissions)
 
     >>> show_admins_for_component("main")
-    Queue Administration Rights ...~name12 main None
     Queue Administration Rights ...~ubuntu-team main None
+    Queue Administration Rights ...~name12 main None
 
 getComponentsForQueueAdmin returns all the permissions relating to components
 where the user is able to administer distroseries queues.

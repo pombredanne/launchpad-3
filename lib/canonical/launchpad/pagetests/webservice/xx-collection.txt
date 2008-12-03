@@ -127,8 +127,8 @@ The elements of a collection can be looked up by unique identifier:
   admins_collection_link: u'http://.../~admins/admins'
   archive_link: None
   confirmed_email_addresses_collection_link:
-      http://.../~admins/confirmed_email_addresses
-  date_created: U'2005-06-06T08:59:51.571899+00:00'
+      u'http://.../~admins/confirmed_email_addresses'
+  date_created: u'2005-06-06T08:59:51.571899+00:00'
   deactivated_members_collection_link: u'http://.../~admins/deactivated_members'
   default_membership_period: None
   default_renewal_period: None

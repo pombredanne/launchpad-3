@@ -868,9 +868,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                               'resource_type_link')
             del changeset['resource_type_link']
 
-        if '_etag' in changeset:
-            # Ignore any changes to _etag.
-            del changeset['_etag']
+        if 'http_etag' in changeset:
+            if changeset['http_etag'] != self.getETag(self.JSON_TYPE):
+                errors.append(modified_read_only_attribute %
+                              'http_etag')
+            del changeset['http_etag']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
