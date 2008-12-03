@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'LaunchpadDropdownWidget',
+    'CheckBoxMatrixWidget',
     'LabeledMultiCheckBoxWidget',
+    'LaunchpadDropdownWidget',
     'LaunchpadRadioWidget',
     'LaunchpadRadioWidgetWithDescription',
-    'CheckBoxMatrixWidget',
+    'PlainMultiCheckBoxWidget',
     ]
 
 import math
@@ -28,13 +29,10 @@ class LaunchpadDropdownWidget(DropdownWidget):
         return contents
 
 
-class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
-    """MultiCheckBoxWidget which wraps option labels with proper
-    <label> elements.
-    """
+class PlainMultiCheckBoxWidget(MultiCheckBoxWidget):
+    """MultiCheckBoxWidget that copes with CustomWidgetFacotry."""
 
-    _joinButtonToMessageTemplate = (
-        u'<label for="%s" style="font-weight: normal">%s&nbsp;%s</label> ')
+    _joinButtonToMessageTemplate = u'%s&nbsp;%s '
 
     def __init__(self, field, vocabulary, request):
         # XXX flacoste 2006-07-23 Workaround Zope3 bug #545:
@@ -42,6 +40,26 @@ class LabeledMultiCheckBoxWidget(MultiCheckBoxWidget):
         if IChoice.providedBy(vocabulary):
             vocabulary = vocabulary.vocabulary
         MultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render a checkbox and text without without label."""
+        kw = {}
+        if checked:
+            kw['checked'] = 'checked'
+        id = '%s.%s' % (name, index)
+        element = renderElement(
+            u'input', value=value, name=name, id=id,
+            cssClass=cssClass, type='checkbox', **kw)
+        return self._joinButtonToMessageTemplate % (element, text)
+
+
+class LabeledMultiCheckBoxWidget(PlainMultiCheckBoxWidget):
+    """MultiCheckBoxWidget which wraps option labels with proper
+    <label> elements.
+    """
+
+    _joinButtonToMessageTemplate = (
+        u'<label for="%s" style="font-weight: normal">%s&nbsp;%s</label> ')
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
         """Render a checkbox and text in a label with a style attribute."""
