@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_branch_namespace',
     'IBranchNamespace',
+    'IBranchNamespaceSet',
     ]
 
 from zope.component import getUtility
