@@ -73,7 +73,7 @@ class Importer:
             try:
                 self.mailing_list.subscribe(person, email)
             except CannotSubscribe, error:
-                self.log.error(str(error))
+                self.log.error('%s', error)
 
     def importFromFile(self, filename):
         """Import all addresses given in the named file.

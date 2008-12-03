@@ -6,19 +6,25 @@ __metaclass__ = type
 
 
 import os
+import sys
 import errno
 import tempfile
 import unittest
 
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
+from subprocess import Popen, PIPE
+
+import transaction
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.mailman.testing.layers import MailmanLayer
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LayerProcessController)
 
 
 factory = LaunchpadObjectFactory()
@@ -33,10 +39,8 @@ class CapturingLogger(FakeLogger):
         print >> self.io, prefix, fmt % stuff[1:]
 
 
-class TestMailingListImports(unittest.TestCase):
-    """Test mailing list imports."""
-
-    layer = DatabaseFunctionalLayer
+class BaseMailingListImportTest(unittest.TestCase):
+    """Common base class for mailing list import tests."""
 
     def setUp(self):
         # Create a team and a mailing list for the team to test.
@@ -76,6 +80,12 @@ class TestMailingListImports(unittest.TestCase):
             email.email for email in self.mailing_list.getSubscribedAddresses())
         expected = set(addresses)
         self.assertEqual(subscribers, expected)
+
+
+class TestMailingListImports(BaseMailingListImportTest):
+    """Test mailing list imports."""
+
+    layer = DatabaseFunctionalLayer
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership, where all email
@@ -323,6 +333,68 @@ class TestMailingListImports(unittest.TestCase):
         self.assertEqual(
             self.logger.io.getvalue(),
             'ERROR No valid email for address: anne.x.person@example.net\n')
+
+    def test_import_existing_with_nonascii_name(self):
+        # Make sure that a person with a non-ascii name, who's already a
+        # member of the list, gets a proper log message.
+        self.anne.displayname = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
+        importer = Importer('aardvarks', self.logger)
+        self.anne.join(self.team)
+        self.mailing_list.subscribe(self.anne)
+        importer.importAddresses((
+            'anne.person@example.com',
+            'bperson@example.org',
+            ))
+        self.assertEqual(
+            self.logger.io.getvalue(),
+            'ERROR \xe1\xba\xa2nn\xe1\xba\xbf '
+            'P\xe1\xbb\x85rs\xe1\xbb\x91n is already subscribed '
+            'to list Aardvarks\n')
+
+
+class TestMailingListImportScript(BaseMailingListImportTest):
+    """Test end-to-end `mlist-import.py` script."""
+
+    layer = MailmanLayer
+
+    def setUp(self):
+        # Since these tests involve two processes, the setup transaction must
+        # be committed, otherwise the script won't see the changes.
+        BaseMailingListImportTest.setUp(self)
+        transaction.commit()
+
+    def test_import(self):
+        # Test that a simple invocation of the script works.
+        #
+        # Write the addresses to import to a file.  Use various
+        # combinations of formats supported by parseaddr().
+        out_file = open(self.filename, 'w')
+        try:
+            print >> out_file, 'Anne Person <anne.person@example.com>'
+            print >> out_file, 'bart.person@example.com (Bart Q. Person)'
+            print >> out_file, 'cperson@example.org'
+            print >> out_file, 'dperson@example.org (Dave Person)'
+            print >> out_file, 'Elly Q. Person <eperson@example.org'
+        finally:
+            out_file.close()
+        # Create the subprocess and invoke the script.
+        process = Popen(
+            ('scripts/mlist-import.py', '--filename', self.filename,
+             self.team.name),
+            stdout=PIPE, stderr=PIPE,
+            cwd=LayerProcessController.appserver_config.root,
+            env=dict(LPCONFIG='testrunner-appserver',
+                     PYTHONPATH=os.pathsep.join(sys.path))
+            )
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0, stderr + stdout)
+        # Make sure we hit the database.
+        transaction.abort()
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
+        self.assertAddresses(
+            u'anne.person@example.com', u'bart.person@example.com',
+            u'cperson@example.org', u'dperson@example.org',
+            u'eperson@example.org')
 
 
 def test_suite():

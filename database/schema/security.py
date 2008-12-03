@@ -50,7 +50,7 @@ class DbSchema(dict):
     def __init__(self, con):
         cur = con.cursor()
         cur.execute('''
-            SELECT 
+            SELECT
                 n.nspname as "Schema",
                 c.relname as "Name",
                 CASE c.relkind
@@ -194,7 +194,7 @@ def main(options):
             cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
                 quote_identifier(group), quote_identifier(user)
                 ))
-            
+
     # Change ownership of all objects to OWNER
     for obj in schema.values():
         if obj.type in ("function", "sequence"):
@@ -332,4 +332,3 @@ if __name__ == '__main__':
     log = logger(options)
 
     main(options)
-

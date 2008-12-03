@@ -855,6 +855,14 @@ class CannotSubscribe(Exception):
     a team, or when `person` does not own the given email address.
     """
 
+    # The error string will be a unicode because it contains the person's
+    # displayname which may be non-ascii.
+    def __unicode__(self):
+        return self.args[0]
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
 
 class CannotUnsubscribe(Exception):
     """The person cannot unsubscribe from the mailing list.
