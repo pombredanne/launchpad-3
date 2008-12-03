@@ -1047,20 +1047,34 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
 
+    def getLanguagesCache():
+        """Return this person's cached languages.
+
+        :raises AttributeError: If the cache doesn't exist.
+        """
+
+    def setLanguagesCache(languages):
+        """Set this person's cached languages.
+
+        Order them by name if necessary.
+        """
+
+    def deleteLanguagesCache():
+        """Delete this person's cached languages, if it exists."""
+
     def addLanguage(language):
         """Add a language to this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
-        If the given language is already present, and IntegrityError will be
-        raised. This will be fixed soon; here's the discussion on this topic:
-        https://launchpad.ubuntu.com/malone/bugs/1317.
+        If the given language is one of the user's preferred languages
+        already, nothing will happen.
         """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
-        :language: An object providing ILanguage.
+        :param language: An object providing ILanguage.
 
         If the given language is not present, nothing  will happen.
         """

@@ -21,6 +21,7 @@ __all__ = [
     'WikiNameSet']
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 import pytz
 import random
 import re
@@ -369,22 +370,48 @@ class Person(
 
     @cachedproperty('_languages_cache')
     def languages(self):
-        return list(Store.of(self).find(
+        """See `IPerson`."""
+        results = Store.of(self).find(
             Language, And(Language.id == PersonLanguage.languageID,
-                          PersonLanguage.personID == self.id)))
+                          PersonLanguage.personID == self.id))
+        results.order_by(Language.englishname)
+        return list(results)
 
-    def addLanguage(self, language):
-        PersonLanguage(person=self, language=language)
+    def getLanguagesCache(self):
+        """See `IPerson`."""
+        return self._languages_cache
+
+    def setLanguagesCache(self, languages):
+        """See `IPerson`."""
+        self._languages_cache = sorted(
+            languages, key=attrgetter('englishname'))
+
+    def deleteLanguagesCache(self):
+        """See `IPerson`."""
         if safe_hasattr(self, '_languages_cache'):
             del self._languages_cache
 
-    def removeLanguage(self, language):
+    def addLanguage(self, language):
+        """See `IPerson`."""
         person_language = Store.of(self).find(
             PersonLanguage, And(PersonLanguage.languageID == language.id,
                                 PersonLanguage.personID == self.id)).one()
+        if person_language is not None:
+            # Nothing to do.
+            return
+        PersonLanguage(person=self, language=language)
+        self.deleteLanguagesCache()
+
+    def removeLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is None:
+            # Nothing to do.
+            return
         PersonLanguage.delete(person_language.id)
-        if safe_hasattr(self, '_languages_cache'):
-            del self._languages_cache
+        self.deleteLanguagesCache()
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""

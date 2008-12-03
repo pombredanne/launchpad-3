@@ -1147,12 +1147,8 @@ class QuestionTargetMixin:
         """
         return self.direct_answer_contacts_with_languages
 
-    @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        from canonical.launchpad.database.person import Person
-        origin = [AnswerContact,
-                  LeftJoin(Person, AnswerContact.person == Person.id)]
+    def _getConditionsToQueryAnswerContacts(self):
+        """The SQL conditions to query this target's answer contacts."""
         conditions = []
         for key, value in self.getTargetTypes().items():
             if value is None:
@@ -1160,7 +1156,15 @@ class QuestionTargetMixin:
             else:
                 constraint = "AnswerContact.%s = %s" % (key, value.id)
             conditions.append(constraint)
-        conditions = " AND ".join(conditions)
+        return " AND ".join(conditions)
+
+    @property
+    def direct_answer_contacts(self):
+        """See `IQuestionTarget`."""
+        from canonical.launchpad.database.person import Person
+        origin = [AnswerContact,
+                  LeftJoin(Person, AnswerContact.person == Person.id)]
+        conditions = self._getConditionsToQueryAnswerContacts()
         results = self._store.using(*origin).find(Person, conditions)
         return list(results.order_by(Person.displayname))
 
@@ -1182,23 +1186,17 @@ class QuestionTargetMixin:
             LeftJoin(Language,
                      PersonLanguage.language == Language.id)]
         columns = [Person, Language]
-        conditions = []
-        for key, value in self.getTargetTypes().items():
-            if value is None:
-                constraint = "AnswerContact.%s IS NULL" % key
-            else:
-                constraint = "AnswerContact.%s = %s" % (key, value.id)
-            conditions.append(constraint)
-        conditions = " AND ".join(conditions)
+        conditions = self._getConditionsToQueryAnswerContacts()
         results = self._store.using(*origin).find(tuple(columns), conditions)
-        people = set()
+        D = {}
         for person, language in results:
-            if person not in people:
-                person._languages_cache = []
-                people.add(person)
+            if person not in D:
+                D[person] = []
             if language is not None:
-                person._languages_cache.append(language)
-        return sorted(people, key=operator.attrgetter('displayname'))
+                D[person].append(language)
+        for person, languages in D.items():
+            person.setLanguagesCache(languages)
+        return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
