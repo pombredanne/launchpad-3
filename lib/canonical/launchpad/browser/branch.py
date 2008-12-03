@@ -69,6 +69,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     UICreatableBranchType,
     )
+from canonical.launchpad.interfaces.branchnamespace import (
+    get_branch_namespace)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -532,8 +534,8 @@ class BranchNameValidationMixin:
         # XXX: JonathanLange 2008-11-27 spec=package-branches: Don't look
         # before you leap. Instead try to create the branch and then populate
         # the error field.
-        if not getUtility(IBranchSet).isBranchNameAvailable(
-            owner, product, branch_name):
+        namespace = get_branch_namespace(owner, product=product)
+        if namespace.isNameUsed(branch_name):
             # There is a branch that has the branch_name specified already.
             if owner == self.user:
                 prefix = "You already have"
