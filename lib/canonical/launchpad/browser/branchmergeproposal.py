@@ -44,7 +44,6 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
@@ -57,8 +56,6 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.mailout.branch import RecipientReason
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
@@ -505,18 +502,6 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         """Request a `review_type` review from `candidate` and email them."""
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
-        reason = RecipientReason.forReviewer(vote_reference, candidate)
-        # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
-        # email.  This is to stop the abuse of a user spamming all members of
-        # a team by requesting them to review a (possibly unrelated) branch.
-        # Ideally we'd come up with a better solution, but I can't think of
-        # one yet.  In all other places we are emailing subscribers directly
-        # rather than people that haven't subscribed.
-        # See bug #281056. (affects IBranchMergeProposal)
-        if not candidate.is_team:
-            mailer = BMPMailer.forReviewRequest(
-                reason, self.context, self.user)
-            mailer.sendAll()
 
     @action('Request Review', name='review')
     @notify

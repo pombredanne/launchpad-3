@@ -959,11 +959,11 @@ class TestScanFormatKnit(BzrSyncTestCase):
 
 
 class TestScanBranchFormat7(BzrSyncTestCase):
-    """Test scanning of development format branchs."""
+    """Test scanning of format 7 (i.e. stacking-supporting) branches."""
 
     def makeBzrBranchAndTree(self, db_branch):
         return BzrSyncTestCase.makeBzrBranchAndTree(
-            self, db_branch, 'development1')
+            self, db_branch, '1.6')
 
     def testRecognizeDevelopment(self):
         """Ensure scanner records correct format for development branches."""
@@ -1059,10 +1059,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
-        # The source branch is also marked as merged.
-        self.assertEqual(
-            BranchLifecycleStatus.MERGED,
-            proposal.source_branch.lifecycle_status)
 
     def test_autoMergeProposals_real_merge_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
@@ -1075,10 +1071,6 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
-        # The source branch is also marked as merged.
-        self.assertEqual(
-            BranchLifecycleStatus.MERGED,
-            proposal.source_branch.lifecycle_status)
 
     def test_autoMergeProposals_rejected_proposal(self):
         # If there is a merge proposal where the tip of the source is in the
@@ -1233,7 +1225,9 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
     def test_mergeProposalMergeDetected(self):
         # A merge proposal that is merged has the proposal itself marked as
         # merged, and the source branch lifecycle status set as merged.
-        proposal = self.factory.makeBranchMergeProposal()
+        product = self.factory.makeProduct()
+        proposal = self.factory.makeBranchMergeProposal(product=product)
+        product.development_focus.user_branch = proposal.target_branch
         self.assertNotEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertNotEqual(
@@ -1243,6 +1237,23 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED, proposal.queue_status)
         self.assertEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+
+    def test_mergeProposalMergeDetected_not_series(self):
+        # If the target branch is not a series branch, then the merge proposal
+        # is still marked as merged, but the lifecycle status of the source
+        # branch is not updated.
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertNotEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        self.assertNotEqual(
+            BranchLifecycleStatus.MERGED,
+            proposal.source_branch.lifecycle_status)
+        self.handler.mergeProposalMerge(proposal)
+        self.assertEqual(
+            BranchMergeProposalStatus.MERGED, proposal.queue_status)
+        self.assertNotEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
 
@@ -1266,7 +1277,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 
-    def test_mergeOfTwoBranches_source_seriec_branch(self):
+    def test_mergeOfTwoBranches_source_series_branch(self):
         # If the source branch is associated with a series, its lifecycle
         # status is not updated.
         product = self.factory.makeProduct()

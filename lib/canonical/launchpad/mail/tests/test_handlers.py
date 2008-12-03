@@ -322,7 +322,8 @@ class TestCodeHandler(TestCaseWithFactory):
                 target_branch.unique_name)
         return MergeDirective2(
             'revid', 'sha', 0, 0, target_branch_url,
-            source_branch=source_branch_url, base_revision_id='base-revid')
+            source_branch=source_branch_url, base_revision_id='base-revid',
+            patch='booga')
 
     def test_acquireBranchesForProposal(self):
         """Ensure CodeHandler._acquireBranchesForProposal works."""
@@ -441,6 +442,7 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source_branch, bmp.source_branch)
         self.assertEqual(target_branch, bmp.target_branch)
+        self.assertEqual('booga', bmp.review_diff.diff.text)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
 

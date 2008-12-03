@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.branch import (
     BranchLifecycleStatus,
     DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.codehosting import LAUNCHPAD_SERVICES
 from canonical.launchpad.database.branch import (BranchSet,
     BranchSubscription, ClearDependentBranch, ClearSeriesBranch,
      DeleteCodeImport, DeletionCallable, DeletionOperation)
@@ -34,15 +35,16 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
-from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
     SpecificationBranch,
     )
 from canonical.launchpad.testing import (
     LaunchpadObjectFactory, TestCaseWithFactory)
+from canonical.launchpad.xmlrpc.faults import (
+    InvalidBranchIdentifier, InvalidProductIdentifier, NoBranchForSeries,
+    NoSuchBranch, NoSuchPersonWithName, NoSuchProduct, NoSuchSeries)
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -68,7 +70,7 @@ class TestCodeImport(TestCase):
 class TestBranchGetRevision(TestCaseWithFactory):
     """Make sure that `Branch.getBranchRevision` works as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -124,7 +126,7 @@ class TestBranchGetRevision(TestCaseWithFactory):
 class TestBranch(TestCaseWithFactory):
     """Test basic properties about Launchpad database branches."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_pullURLHosted(self):
         # Hosted branches are pulled from internal Launchpad URLs.
@@ -152,14 +154,38 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeBranch(branch_type=BranchType.REMOTE)
         self.assertRaises(AssertionError, branch.getPullURL)
 
+    def test_unique_name_product(self):
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            '~%s/%s/%s' % (
+                branch.owner.name, branch.product.name, branch.name),
+            branch.unique_name)
 
-class TestBranchDeletion(TestCase):
+    def test_unique_name_junk(self):
+        branch = self.factory.makeBranch(product=None)
+        self.assertEqual(
+            '~%s/+junk/%s' % (branch.owner.name, branch.name),
+            branch.unique_name)
+
+    def test_unique_name_source_package(self):
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        branch = self.factory.makeBranch(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.assertEqual(
+            '~%s/%s/%s/%s/%s' % (
+                branch.owner.name, distroseries.distribution.name,
+                distroseries.name, sourcepackagename.name, branch.name),
+            branch.unique_name)
+
+
+class TestBranchDeletion(TestCaseWithFactory):
     """Test the different cases that makes a branch deletable or not."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        login('test@canonical.com')
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -248,22 +274,18 @@ class TestBranchDeletion(TestCase):
 
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
-        # We want the changes done in the setup to stay around, and by
-        # default the switchDBUser aborts the transaction.
-        transaction.commit()
-        launchpad_dbuser = config.launchpad.dbuser
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        revision = RevisionSet().new(
-            revision_id='some-unique-id', log_body='commit message',
-            revision_date=None, revision_author='ddaa@localhost',
-            parent_ids=[], properties=None)
+        revision = self.factory.makeRevision()
         self.branch.createBranchRevision(0, revision)
+        # Need to commit the addition to make sure that the branch revisions
+        # are recorded as there and that the appropriate deferred foreign keys
+        # are set up.
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
         self.branch.destroySelf()
+        # Commit again to trigger the deferred indices.
+        transaction.commit()
         self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
@@ -684,7 +706,7 @@ class StackedBranches(TestCaseWithFactory):
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -1043,6 +1065,200 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         # This is just "assertNotRaises"
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
+
+
+class TestGetByUrl(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBranch(self):
+        """Create a branch with aa/b/c as its unique name."""
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        return self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+
+    def test_getByUrl_with_http(self):
+        """getByUrl recognizes LP branches for http URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('http://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ssh(self):
+        """getByUrl recognizes LP branches for bzr+ssh URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl(
+            'bzr+ssh://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_sftp(self):
+        """getByUrl recognizes LP branches for sftp URLs."""
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('sftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+    def test_getByUrl_with_ftp(self):
+        """getByUrl does not recognize LP branches for ftp URLs.
+
+        This is because Launchpad doesn't currently support ftp.
+        """
+        branch = self.makeBranch()
+        branch_set = getUtility(IBranchSet)
+        branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
+        self.assertIs(None, branch2)
+
+    def test_getByURL_with_lp_prefix(self):
+        """lp: URLs for the configured prefix are supported."""
+        branch_set = getUtility(IBranchSet)
+        url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
+        self.assertRaises(NoSuchPersonWithName, branch_set.getByUrl, url)
+        owner = self.factory.makePerson(name='aa')
+        product = self.factory.makeProduct('b')
+        branch2 = branch_set.getByUrl(url)
+        self.assertIs(None, branch2)
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        branch2 = branch_set.getByUrl(url)
+        self.assertEqual(branch, branch2)
+
+    def test_getByURL_for_production(self):
+        """test_getByURL works with production values."""
+        branch_set = getUtility(IBranchSet)
+        branch = self.makeBranch()
+        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
+        self.assertIs(None, branch2)
+        branch2 = branch_set.getByUrl('lp:~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
+        self.assertEqual(branch, branch2)
+        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
+        self.assertEqual(branch, branch2)
+
+
+class TestGetByLPPath(TestCaseWithFactory):
+    """Ensure URLs are correctly expanded."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getByLPPath_with_three_parts(self):
+        """Test the behaviour with three-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidBranchIdentifier, branch_set.getByLPPath, 'a/b/c')
+        self.assertRaises(
+            NoSuchPersonWithName, branch_set.getByLPPath, '~aa/bb/c')
+        owner = self.factory.makePerson(name='aa')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, '~aa/bb/c')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/bb/c')
+        branch = self.factory.makeBranch(
+            owner=owner, product=product, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/bb/c'))
+
+    def test_getByLPPath_with_junk_branch(self):
+        """Test the behaviour with junk branches."""
+        owner = self.factory.makePerson(name='aa')
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchBranch, branch_set.getByLPPath, '~aa/+junk/c')
+        branch = self.factory.makeBranch(owner=owner, product=None, name='c')
+        self.assertEqual(
+            (branch, None, None), branch_set.getByLPPath('~aa/+junk/c'))
+
+    def test_getByLPPath_with_two_parts(self):
+        """Test the behaviour with two-part names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb/dd')
+        product = self.factory.makeProduct('bb')
+        self.assertRaises(NoSuchSeries, branch_set.getByLPPath, 'bb/dd')
+        series = self.factory.makeSeries(name='dd', product=product)
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb/dd')
+        series.user_branch = self.factory.makeBranch()
+        self.assertEqual(
+            (series.user_branch, None, series),
+            branch_set.getByLPPath('bb/dd'))
+
+    def test_getByLPPath_with_one_part(self):
+        """Test the behaviour with one names."""
+        branch_set = getUtility(IBranchSet)
+        self.assertRaises(
+            InvalidProductIdentifier, branch_set.getByLPPath, 'b')
+        self.assertRaises(NoSuchProduct, branch_set.getByLPPath, 'bb')
+        # We are not testing the security proxy here, so remove it.
+        product = removeSecurityProxy(self.factory.makeProduct('bb'))
+        self.assertRaises(NoBranchForSeries, branch_set.getByLPPath, 'bb')
+        branch = self.factory.makeBranch()
+        product.development_focus.user_branch = branch
+        self.assertEqual(
+            (branch, None, product.development_focus),
+            branch_set.getByLPPath('bb'))
+
+
+class TestGetBranchForContextVisibleUser(TestCaseWithFactory):
+    """Tests the visible_by_user checks for getBranchesForContext."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user to set branch privacy easily.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.product = self.factory.makeProduct()
+        self.public_branch = self.factory.makeBranch(product=self.product)
+        self.private_branch_1 = self.factory.makeBranch(
+            product=self.product, private=True)
+        # Need a second private branch by another owner.
+        self.private_branch_2 = self.factory.makeBranch(
+            product=self.product, private=True)
+        self.public_only = set([self.public_branch])
+        self.all_branches = set(
+            [self.public_branch, self.private_branch_1,
+             self.private_branch_2])
+
+    def _getBranches(self, visible_by_user=None):
+        branches = getUtility(IBranchSet).getBranchesForContext(
+            context=self.product, visible_by_user=visible_by_user)
+        return set(branches)
+
+    def test_anonymous_only_sees_public(self):
+        # An anonymous user will only see public branches.
+        self.assertEqual(self.public_only, self._getBranches())
+
+    def test_normal_user_only_sees_public(self):
+        # A user who is not the owner nor special only sees public branches.
+        self.assertEqual(self.public_only, self._getBranches())
+
+    def test_private_owner_sees_public_and_own(self):
+        # A private branch owner can see their private branches and the public
+        # branches.
+        self.assertEqual(set([self.public_branch, self.private_branch_1]),
+                         self._getBranches(self.private_branch_1.owner))
+
+    def test_launchpad_services_sees_all(self):
+        # The special launchpad services identity can see all branches.
+        self.assertEqual(self.all_branches,
+                         self._getBranches(LAUNCHPAD_SERVICES))
+
+    def test_admins_see_all(self):
+        # Launchpad admins see all.
+        admin_user = self.factory.makePerson()
+        celebs = getUtility(ILaunchpadCelebrities)
+        celebs.admin.addMember(admin_user, celebs.admin.teamowner)
+
+        self.assertEqual(self.all_branches, self._getBranches(admin_user))
+
+    def test_bazaar_experts_see_all(self):
+        # Bazaar experts see all.
+        expert = self.factory.makePerson()
+        celebs = getUtility(ILaunchpadCelebrities)
+        celebs.bazaar_experts.addMember(
+            expert, celebs.bazaar_experts.teamowner)
+
+        self.assertEqual(self.all_branches, self._getBranches(expert))
 
 
 def test_suite():
