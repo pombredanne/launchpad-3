@@ -11,7 +11,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from storm.locals import Store
 
-from canonical.launchpad.database.job import InvalidTransition, Job
+from canonical.launchpad.database.job import (
+    InvalidTransition, Job, LeaseHeld)
 from canonical.launchpad.interfaces import IJob, JobStatus
 from canonical.launchpad.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
@@ -114,6 +115,48 @@ class TestJob(TestCase):
     def test_queue_failed(self):
         job = Job(status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.queue)
+
+
+class TestReadiness(TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_ready_jobs(self):
+        job = Job()
+        self.assertEqual(
+            [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_started(self):
+        job = Job(status=JobStatus.RUNNING)
+        self.assertEqual(
+            [], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_lease_expired(self):
+        UNIX_EPOCH=datetime.datetime.fromtimestamp(0, pytz.timezone('UTC'))
+        job = Job(lease_expires=UNIX_EPOCH)
+        self.assertEqual(
+            [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_lease_in_future(self):
+        future=datetime.datetime.fromtimestamp(
+            time.time() + 1000, pytz.timezone('UTC'))
+        job = Job(lease_expires=future)
+        self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_acquireLease(self):
+        job = Job()
+        job.acquireLease()
+        self.assertIsNot(None, job.lease_expires)
+
+    def test_acquireHeldLease(self):
+        job = Job()
+        job.acquireLease()
+        self.assertRaises(LeaseHeld, job.acquireLease)
+
+    def test_acquireStaleLease(self):
+        job = Job()
+        job.acquireLease(-1)
+        job.acquireLease()
 
 
 def test_suite():

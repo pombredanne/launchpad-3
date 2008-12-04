@@ -98,3 +98,9 @@ class Job(SQLBase):
     def queue(self):
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+
+
+Job.ready_jobs = Select(
+    Job.id, And(Job.status == JobStatus.WAITING,
+    Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW)
+    ))
