@@ -64,10 +64,8 @@ we'll have to authenticate the user manually:
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
-    >>> factory = LaunchpadObjectFactory()
     >>> def process_email(raw_mail):
     ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):

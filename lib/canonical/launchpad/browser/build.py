@@ -18,7 +18,6 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm, IHasBuildRecords)
 from canonical.launchpad.interfaces.buildqueue import IBuildQueueSet
@@ -52,8 +51,10 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.archive.purpose == ArchivePurpose.PPA:
+        if self.context.archive.is_ppa:
             return self.context.archive
+        elif self.context.archive.is_copy:
+            raise NotImplementedError("Copy archives are not supported yet.")
         else:
             return self.context.distributionsourcepackagerelease
 
@@ -82,7 +83,7 @@ class BuildContextMenu(ContextMenu):
     @property
     def is_ppa_build(self):
         """Some links are only displayed on PPA."""
-        return self.context.archive.purpose == ArchivePurpose.PPA
+        return self.context.archive.is_ppa
 
     def ppa(self):
         return Link(

@@ -9,12 +9,10 @@ notifications.
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> factory = LaunchpadObjectFactory()
     >>> login('test@canonical.com')
     >>> bmp = factory.makeBranchMergeProposal()
     >>> source_subscriber = factory.makePerson(

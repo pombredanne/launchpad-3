@@ -25,7 +25,6 @@ Creating CodeImportResult objects is usually done by the finishJob()
 method of the CodeImportWorkflow utility, but here we use the object
 factory.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> log_data = 'several\nlines\nof\nlog data'
     >>> log_excerpt = log_data.splitlines()[-1]
     >>> log_alias = factory.makeLibraryFileAlias(log_data)
