@@ -98,8 +98,3 @@ class Job(SQLBase):
     def queue(self):
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
-
-    def destroySelf(self):
-        self.dependants.clear()
-        self.prerequisites.clear()
-        SQLBase.destroySelf(self)

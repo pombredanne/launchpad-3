@@ -21,8 +21,7 @@
                        getUsersVoteReference"/>
     <require
         permission="launchpad.Edit"
-        set_attributes="whiteboard merged_revno commit_message root_message_id
-                        review_diff"
+        set_attributes="whiteboard merged_revno commit_message review_diff"
         attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit

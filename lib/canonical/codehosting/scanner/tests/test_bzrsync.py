@@ -62,22 +62,33 @@ def run_as_db_user(username):
 
 
 class FakeTransportServer:
+    """Set up a fake transport at a given URL prefix.
+
+    For testing purposes.
+    """
 
     def __init__(self, transport, url_prefix='lp-mirrored:///'):
+        """Constructor.
+
+        :param transport: The backing transport to store the data with.
+        :param url_prefix: The URL prefix to access this transport.
+        """
         self._transport = transport
         self._url_prefix = url_prefix
         self._chroot_server = None
 
     def setUp(self):
+        """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted file
+        # entire virtual filesystem here, we fake it by having a chrooted
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
         self._chroot_server.setUp()
 
     def tearDown(self):
+        """Deactivate the transport URL."""
         self._chroot_server.tearDown()
         unregister_transport(self._url_prefix, self._transportFactory)
 
@@ -854,10 +865,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.commitRevision()
         sync = self.makeBzrSync(self.db_branch)
         sync.syncBranchAndClose()
-        self.assertEqual(1, len(sync._branch_mailer.queued_mail_jobs))
-        mail_job = sync._branch_mailer.queued_mail_jobs[0]
-        self.assertEqual(0, mail_job.job.prerequisites.count())
-        self.assertTrue(mail_job.static_diff is None)
+        self.assertEqual(1, len(sync._branch_mailer.pending_emails))
+        self.assertEqual('', sync._branch_mailer.pending_emails[0][1])
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
@@ -871,7 +880,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def assertNoPendingEmails(self, bzrsync):
         self.assertEqual(
-            len(bzrsync._branch_mailer.queued_mail_jobs), 0,
+            len(bzrsync._branch_mailer.pending_emails), 0,
             "There should be no pending emails.")
 
     def test_no_subscribers(self):

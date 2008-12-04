@@ -4,7 +4,7 @@
 
 from unittest import TestLoader
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces import (
@@ -41,7 +41,7 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscriber, merge_proposal, '')
+            subscription, subscriber, '', merge_proposal)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(merge_proposal.source_branch, reason.branch)
@@ -49,7 +49,7 @@ class TestRecipientReason(TestCaseWithFactory):
     def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        login(merge_proposal.registrant.preferredemail.email)
+        login_person(merge_proposal.registrant)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         return vote_reference, subscriber
@@ -74,7 +74,7 @@ class TestRecipientReason(TestCaseWithFactory):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, merge_proposal, '')
+            subscription, subscription.person, '', merge_proposal)
         self.assertEqual('You are subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
@@ -85,7 +85,7 @@ class TestRecipientReason(TestCaseWithFactory):
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
         reason = RecipientReason.forBranchSubscriber(
-            subscription, team_member, bmp, '')
+            subscription, team_member, '', bmp)
         self.assertEqual('Your team Qux is subscribed to branch lp://dev/~person-name5/product-name11/branch7.',
             reason.getReason())
 
