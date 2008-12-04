@@ -11,7 +11,7 @@ __all__ = [
 
 
 from canonical.lazr import DBEnumeratedType, DBItem
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Text
 
 from canonical.launchpad import _
@@ -66,7 +66,3 @@ class IJob(Interface):
 
     attempt_count = Int(title=_(
         'The number of attempts to perform this job that have been made.'))
-
-    prerequisites = Attribute(_('Jobs that should run before this job.'))
-    dependants = Attribute(_('Jobs that should run after this job.'))
-
