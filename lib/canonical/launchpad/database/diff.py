@@ -35,23 +35,6 @@ class BranchJobType(DBEnumeratedType):
         This job runs against a branch to produce a diff that cannot change.
         """)
 
-    RUNNING = DBItem(1, """
-        Running
-
-        The job is currently running.
-        """)
-
-    COMPLETED = DBItem(2, """
-        Completed
-
-        The job has run to successful completion.
-        """)
-
-    FAILED = DBItem(3, """
-        Failed
-
-        The job was run, but failed.  Will not be run again.
-        """)
 
 class Diff(SQLBase):
     """See `IDiff`."""
@@ -183,6 +166,7 @@ class BranchJob(SQLBase):
 class StaticDiffJob(BranchJob):
 
     implements(IStaticDiffJob)
+    classProvides(IStaticDiffJobSource)
 
     def __init__(self, branch, from_revision_spec, to_revision_spec):
         metadata = {
@@ -216,10 +200,6 @@ class StaticDiffJob(BranchJob):
         self.job.complete()
         return static_diff
 
-
-class StaticDiffJobSource:
-
-    implements(IStaticDiffJobSource)
     @staticmethod
     def create(branch, from_revision_spec, to_revision_spec):
         return StaticDiffJob(
