@@ -259,8 +259,6 @@ at once, without making a separate HTTP request for each.
 
   >>> people = webservice.get('/people').jsonBody()
   >>> etags = [person['http_etag'] for person in people['entries']]
-  >>> len(etags) == len(people['entries'])
-  True
 
 The ETag provided with an entry of a collection is the same as the
 ETag you'd get if you got that entry individually.

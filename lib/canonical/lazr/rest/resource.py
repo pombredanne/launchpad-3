@@ -43,7 +43,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields, getFieldsInOrder
+from zope.schema import ValidationError, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -619,38 +619,37 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         self.entry = IEntry(context)
         self._unmarshalled_field_cache = {}
 
-    def getETag(self, media_type):
-        """Calculate the ETag for an entry."""
+    def getETag(self, media_type, unmarshalled_field_values=None):
+        """Calculate the ETag for an entry.
+
+        :arg unmarshalled_field_values: A dict mapping field names to
+        unmarshalled values, obtained during some other operation such
+        as the construction of a representation.
+        """
+        # Try to find a cached value.
         etag = self.etags_by_media_type.get(media_type)
         if etag is not None:
             return etag
 
+        # Try to make the superclass handle it.
         etag = super(EntryResource, self).getETag(media_type)
         if etag is not None:
             self.etags_by_media_type[media_type] = etag
             return etag
 
+        # Calculate the ETag for a JSON representation only.
         if media_type != self.JSON_TYPE:
             return None
 
         hash_object = sha.new()
-        for ignore in self.whileCalculatingEtag(hash_object):
-            pass
-        self.etags_by_media_type[media_type] = etag
-        return '"%s"' % hash_object.hexdigest()
-
-    def whileCalculatingEtag(self, hash_object):
-        """Yields an entry's fields while calculating an ETag for the entry.
-
-        :arg hash_object: A hash object to feed the data necessary to
-        calculate an ETag for the entry.
-        """
-
         values = []
         for name, field in getFieldsInOrder(self.entry.schema):
-            yield (name, field)
             if self.isModifiableField(field, False):
-                ignored, value = self._unmarshallField(name, field)
+                if (unmarshalled_field_values is not None
+                    and unmarshalled_field_values.get(name)):
+                    value = unmarshalled_field_values[name]
+                else:
+                    ignored, value = self._unmarshallField(name, field)
                 values.append(unicode(value))
         hash_object.update("\0".join(values).encode("utf-8"))
 
@@ -658,6 +657,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         # generating the representation might itself change across
         # versions.
         hash_object.update("\0" + str(versioninfo.revno))
+
+        etag = '"%s"' % hash_object.hexdigest()
+        self.etags_by_media_type[media_type] = etag
+        return etag
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -668,22 +671,13 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data = {}
         data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
-        # If the ETag was already calculated, use it. Otherwise, calculate
-        # it while generating the representation.
-        etag = self.etags_by_media_type.get(self.JSON_TYPE)
-        if etag is None:
-            hash_object = sha.new()
-            generator = self.whileCalculatingEtag(hash_object)
-        else:
-            generator = getFieldsInOrder(self.entry.schema)
-
-        for name, field in generator:
+        unmarshalled_field_values = {}
+        for name, field in getFieldsInOrder(self.entry.schema):
             repr_name, repr_value = self._unmarshallField(name, field)
             data[repr_name] = repr_value
+            unmarshalled_field_values[name] =  repr_value
 
-        if etag is None:
-            etag = '"%s"' % hash_object.hexdigest()
-            self.etags_by_media_type[self.JSON_TYPE] = etag
+        etag = self.getETag(self.JSON_TYPE, unmarshalled_field_values)
         data['http_etag'] = etag
         return data
 
