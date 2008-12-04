@@ -971,6 +971,9 @@ class BranchSet:
             owner, product=product, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         if namespace.isNameUsed(name):
+            # XXX: JonathanLange 2008-12-04 spec=package-branches: This error
+            # message logic is incorrect, but the exact text is being tested
+            # in branch-xmlrpc.txt.
             params = {'name': name}
             if product is None:
                 params['maybe_junk'] = 'junk '
