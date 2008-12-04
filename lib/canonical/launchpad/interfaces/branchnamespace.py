@@ -36,6 +36,12 @@ class IBranchNamespace(Interface):
     def getBranchName(name):
         """Get the potential unique name for a branch called 'name'."""
 
+    def getByName(name, default=None):
+        """Find the branch in this namespace called 'name'.
+
+        :return: `IBranch` if found, 'default' if not.
+        """
+
     def isNameUsed(name):
         """Is 'name' already used in this namespace?"""
 
