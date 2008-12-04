@@ -744,11 +744,11 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         sync = self.makeBzrSync(self.db_branch)
 
         revision = self.bzr_branch.repository.get_revision(first_revision)
-        diff = get_diff(self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, self.bzr_branch, revision)
         expected = (
             "=== added file 'hello.txt'" '\n'
-            "--- a/hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
-            "+++ b/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "--- hello.txt" '\t' "1970-01-01 00:00:00 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
             "@@ -0,0 +1,1 @@" '\n'
             "+Hello World" '\n'
             '\n')
@@ -768,8 +768,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
         expected_diff = (
             "=== modified file 'hello.txt'" '\n'
-            "--- a/hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "+++ b/hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
+            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
+            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
             "@@ -1,1 +1,3 @@" '\n'
             " Hello World" '\n'
             "+" '\n'
@@ -787,7 +787,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "  hello.txt" '\n' % self.bzr_branch.nick)
         revision = self.bzr_branch.repository.get_revision(second_revision)
         self.bzr_branch.lock_read()
-        diff = get_diff(self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, self.bzr_branch, revision)
         self.bzr_branch.unlock()
         self.assertEqualDiff(diff, expected_diff)
         message = get_revision_message(self.bzr_branch, revision)
@@ -834,16 +834,16 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
         sync = self.makeBzrSync(self.db_branch)
         revision = self.bzr_branch.repository.get_revision(rev_id)
-        diff = get_diff(self.bzr_branch, revision)
+        diff = get_diff(self.db_branch, self.bzr_branch, revision)
         # The diff must be a unicode object, characters that could not be
         # decoded as utf-8 replaced by the unicode substitution character.
         expected = (
             u"=== added file 'binary'" '\n'
-            u"Binary files a/binary\t1970-01-01 00:00:00 +0000"
-            u" and b/binary\t2001-09-09 01:46:40 +0000 differ" '\n'
+            u"Binary files binary\t1970-01-01 00:00:00 +0000"
+            u" and binary\t2001-09-09 01:46:40 +0000 differ" '\n'
             u"=== added file 'un elephant'" '\n'
-            u"--- a/un elephant\t1970-01-01 00:00:00 +0000" '\n'
-            u"+++ b/un elephant\t2001-09-09 01:46:40 +0000" '\n'
+            u"--- un elephant\t1970-01-01 00:00:00 +0000" '\n'
+            u"+++ un elephant\t2001-09-09 01:46:40 +0000" '\n'
             u"@@ -0,0 +1,1 @@" '\n'
             # \ufffd is the substitution character.
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
