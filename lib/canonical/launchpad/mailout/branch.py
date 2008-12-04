@@ -176,7 +176,7 @@ class BranchMailer(BaseMailer):
 
     def _diffText(self, max_diff):
         if self.diff is None:
-            return self.contents
+            return self.contents or ''
         diff_size = self.diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
@@ -192,6 +192,14 @@ class BranchMailer(BaseMailer):
         else:
             contents = "%s\n%s" % (self.contents, self.diff)
         return contents
+
+    def _getHeaders(self, email):
+        headers = BaseMailer._getHeaders(self, email)
+        reason, rationale = self._recipients.getReason(email)
+        headers['X-Launchpad-Branch'] = reason.branch.unique_name
+        if reason.branch.product is not None:
+            headers['X-Launchpad-Project'] = reason.branch.product.name
+        return headers
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
