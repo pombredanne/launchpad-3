@@ -377,6 +377,8 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         # be committed, otherwise the script won't see the changes.
         BaseMailingListImportTest.setUp(self)
         transaction.commit()
+        # Make sure the mailbox is empty.
+        LayerProcessController.smtp_controller.reset()
 
     def makeProcess(self, *extra_args):
         args = ['scripts/mlist-import.py', '--filename', self.filename]
