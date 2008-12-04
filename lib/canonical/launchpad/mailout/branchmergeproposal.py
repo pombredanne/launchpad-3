@@ -63,11 +63,10 @@ class BMPMailer(BranchMailer):
         self.comment = comment
         self.review_diff = review_diff
 
-    def queue(self, recipient_people=None):
-        result = BranchMailer.queue(self, recipient_people)
+    def sendAll(self):
+        BranchMailer.sendAll(self)
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
-        return result
 
     @classmethod
     def forCreation(klass, merge_proposal, from_user):

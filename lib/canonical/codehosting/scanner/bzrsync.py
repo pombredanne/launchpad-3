@@ -78,8 +78,8 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-def _get_static_diff_job(db_branch, bzr_branch, bzr_revision):
-    """Return a StaticDiffJob for `bzr_revision` on `bzr_branch`.
+def get_diff(db_branch, bzr_branch, bzr_revision):
+    """Return the diff for `bzr_revision` on `bzr_branch`.
 
     :param db_branch: A `canonical.launchpad.databse.Branch` object.
     :param bzr_branch: A `bzrlib.branch.Branch` object.
@@ -93,20 +93,8 @@ def _get_static_diff_job(db_branch, bzr_branch, bzr_revision):
         basis = NULL_REVISION
     basis_spec = 'revid:%s' % basis
     revision_spec = 'revid:%s' % bzr_revision.revision_id
-    return getUtility(IStaticDiffJobSource).create(
+    diff_job = getUtility(IStaticDiffJobSource).create(
         db_branch, basis_spec, revision_spec)
-
-
-def get_diff(db_branch, bzr_branch, bzr_revision):
-    """Return the diff for `bzr_revision` on `bzr_branch`.
-
-    :param db_branch: A `canonical.launchpad.databse.Branch` object.
-    :param bzr_branch: A `bzrlib.branch.Branch` object.
-    :param bzr_revision: A Bazaar `Revision` object.
-    :return: A byte string that is the diff of the changes introduced by
-        `bzr_revision` on `bzr_branch`.
-    """
-    diff_job = _get_static_diff_job(db_branch, bzr_branch, bzr_revision)
     static_diff = diff_job.run()
     diff_job.destroySelf()
     transaction.commit()
@@ -232,7 +220,7 @@ class BranchMailer:
     def __init__(self, trans_manager, db_branch):
         self.trans_manager = trans_manager
         self.db_branch = db_branch
-        self.queued_mail_jobs = []
+        self.pending_emails = []
         self.subscribers_want_notification = False
         self.generate_diffs = False
         self.initial_scan = None
@@ -248,6 +236,7 @@ class BranchMailer:
         See XXX comment in `sendRevisionNotificationEmails` for the reason
         behind the queue itself.
         """
+        self.pending_emails = []
         self.subscribers_want_notification = False
 
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
@@ -283,10 +272,7 @@ class BranchMailer:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.queued_mail_jobs.extend(
-                MailoutMailer.forRevision(
-                    self.db_branch, self.email_from, contents, None,
-                    None).queue())
+            self.pending_emails.append((contents, '', None))
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
         """Generate an email for a revision for later sending.
@@ -301,10 +287,10 @@ class BranchMailer:
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
             if self.generate_diffs:
-                diff_job = _get_static_diff_job(
+                revision_diff = get_diff(
                     self.db_branch, bzr_branch, bzr_revision)
             else:
-                diff_job = None
+                revision_diff = ''
             # Use the first (non blank) line of the commit message
             # as part of the subject, limiting it to 100 characters
             # if it is longer.
@@ -320,10 +306,8 @@ class BranchMailer:
                     first_line = first_line[:offset] + '...'
             subject = '[Branch %s] Rev %s: %s' % (
                 self.db_branch.unique_name, sequence, first_line)
-            self.queued_mail_jobs.extend(MailoutMailer.forRevision(
-                self.db_branch, self.email_from, message, diff_job,
-                subject).queue()
-            )
+            self.pending_emails.append(
+                (message, revision_diff, subject))
 
     def sendRevisionNotificationEmails(self, bzr_history):
         """Send out the pending emails.
@@ -346,7 +330,7 @@ class BranchMailer:
         self.trans_manager.begin()
 
         if self.initial_scan:
-            assert len(self.queued_mail_jobs) == 0, (
+            assert len(self.pending_emails) == 0, (
                 'Unexpected pending emails on new branch.')
             revision_count = len(bzr_history)
             if revision_count == 1:
@@ -360,9 +344,10 @@ class BranchMailer:
                 self.db_branch, self.email_from, message, None, None)
             mailer.sendAll()
         else:
-            for job in self.queued_mail_jobs:
-                job.run()
-                job.destroySelf()
+            for message, diff, subject in self.pending_emails:
+                mailer = MailoutMailer.forRevision(
+                    self.db_branch, self.email_from, message, diff, subject)
+                mailer.sendAll()
         self.trans_manager.commit()
 
 

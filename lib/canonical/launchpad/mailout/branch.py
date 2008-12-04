@@ -148,7 +148,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, contents, diff_job,
+    def forRevision(klass, db_branch, from_address, contents, diff,
                     subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
@@ -162,18 +162,8 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
-        if diff_job is None:
-            revision_diff = ''
-        else:
-            static_diff = diff_job.run()
-            diff_job.destroySelf()
-            transaction.commit()
-            lfa = static_diff.diff.diff_text
-            lfa.open()
-            revision_diff = lfa.read().decode('utf8', 'replace')
-            static_diff.destroySelf()
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, contents=contents, diff=revision_diff)
+            from_address, contents=contents, diff=diff)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -186,7 +176,7 @@ class BranchMailer(BaseMailer):
 
     def _diffText(self, max_diff):
         if self.diff is None:
-            return ''
+            return self.contents
         diff_size = self.diff.count('\n') + 1
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
