@@ -286,6 +286,30 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, 'DB TAG')
 
+    def test_getVoteWithColon(self):
+        """getVote should return the same whether vote or vote: is used."""
+        mail = self.factory.makeSignedMessage(body=' vote: apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
+
+    def test_getVoteUseReview(self):
+        """getVote checks for the review command as well as vote."""
+        mail = self.factory.makeSignedMessage(body=' review apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
+
+    def test_getVoteUseReviewWithColon(self):
+        """getVote checks for the review command as well as vote."""
+        mail = self.factory.makeSignedMessage(body=' review: apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
+        vote, vote_tag = self.code_handler._getVote(mail)
+        self.assertEqual(vote, CodeReviewVote.APPROVE)
+        self.assertEqual(vote_tag, None)
+
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
         bmp = self.factory.makeBranchMergeProposal()
