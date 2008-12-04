@@ -74,6 +74,10 @@ class Importer:
                 self.mailing_list.subscribe(person, email)
             except CannotSubscribe, error:
                 self.log.error('%s', error)
+            # It's okay to str()-ify these because addresses and person names
+            # are guaranteed to be in the ASCII range.
+            self.log.info('%s (%s) joined and subscribed',
+                          str(address), str(person.name))
 
     def importFromFile(self, filename):
         """Import all addresses given in the named file.
