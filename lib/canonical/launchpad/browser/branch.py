@@ -942,6 +942,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(data['product'])
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch)
         else:
             self.next_url = canonical_url(self.branch)
 
@@ -957,9 +959,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def validate(self, data):
         owner = data['owner']
-        if 'name' in data:
-            self.validate_branch_name(
-                owner, data.get('product'), data['name'])
 
         if not self.user.inTeam(owner):
             self.setFieldError(
