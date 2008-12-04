@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet, ICodeImportMachineSet, ICodeImportResultSet,
     ICodeImportSet, ICountrySet, IDistributionSet, IEmailAddressSet,
     ILibraryFileAliasSet, IPOTemplateSet, IPersonSet, IProductSet,
-    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
-    IStandardShipItRequestSet, ITranslationGroupSet, License,
-    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISourcePackageNameSet,
+    ISpecificationSet, IStandardShipItRequestSet, ITranslationGroupSet,
+    License, PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
     ShippingRequestStatus, SpecificationDefinitionStatus,
     TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
@@ -51,6 +51,8 @@ from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.poll import (
     IPollSet, PollAlgorithm, PollSecrecy)
 from canonical.launchpad.interfaces.product import IProduct
@@ -193,6 +195,74 @@ class LaunchpadObjectFactory(ObjectFactory):
         syncUpdate(email)
         return person
 
+    def makePersonByName(self, first_name, set_preferred_email=True,
+                         use_default_autosubscribe_policy=False):
+        """Create a new person with the given first name.
+
+        The person will be given two email addresses, with the 'long form'
+        (e.g. anne.person@example.com) as the preferred address.  Return
+        the new person object.
+
+        The person will also have their mailing list auto-subscription
+        policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
+        set to True. (This requires the Launchpad.Edit permission).  This
+        is useful for testing, where we often want precise control over
+        when a person gets subscribed to a mailing list.
+
+        :param first_name: First name of the person, capitalized.
+        :type first_name: string
+        :param set_preferred_email: Flag specifying whether
+            <name>.person@example.com should be set as the user's
+            preferred email address.
+        :type set_preferred_email: bool
+        :param use_default_autosubscribe_policy: Flag specifying whether
+            the person's `mailing_list_auto_subscribe_policy` should be set.
+        :type use_default_autosubscribe_policy: bool
+        :return: The newly created person.
+        :rtype: `IPerson`
+        """
+        variable_name = first_name.lower()
+        full_name = first_name + ' Person'
+        # E.g. firstname.person@example.com will be an alternative address.
+        preferred_address = variable_name + '.person@example.com'
+        # E.g. aperson@example.org will be the preferred address.
+        alternative_address = variable_name[0] + 'person@example.org'
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            preferred_address,
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            name=variable_name, displayname=full_name)
+        if set_preferred_email:
+            person.setPreferredEmail(email)
+
+        if not use_default_autosubscribe_policy:
+            # Shut off list auto-subscription so that we have direct control
+            # over subscriptions in the doctests.
+            person.mailing_list_auto_subscribe_policy = \
+                MailingListAutoSubscribePolicy.NEVER
+        getUtility(IEmailAddressSet).new(alternative_address, person,
+                                         EmailAddressStatus.VALIDATED,
+                                         person.account)
+        return person
+
+    def makeEmail(self, address, person, email_status=None):
+        """Create a new email address for a person.
+
+        :param address: The email address to create.
+        :type address: string
+        :param person: The person to assign the email address to.
+        :type person: `IPerson`
+        :param email_status: The default status of the email address,
+            if given.  If not given, `EmailAddressStatus.VALIDATED`
+            will be used.
+        :type email_status: `EmailAddressStatus`
+        :return: The newly created email address.
+        :rtype: `IEmailAddress`
+        """
+        if email_status is None:
+            email_status = EmailAddressStatus.VALIDATED
+        return getUtility(IEmailAddressSet).new(
+            address, person, email_status, person.account)
+
     def makeTeam(self, owner, displayname=None, email=None, name=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN):
         """Create and return a new, arbitrary Team.
@@ -317,7 +387,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=_DEFAULT, url=_DEFAULT, registrant=None,
-                   private=False, stacked_on=None, **optional_branch_args):
+                   private=False, stacked_on=None, distroseries=None,
+                   sourcepackagename=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -331,8 +402,16 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is _DEFAULT:
-            product = self.makeProduct()
+        if distroseries is None and sourcepackagename is None:
+            if product is _DEFAULT:
+                product = self.makeProduct()
+        elif distroseries is not None and sourcepackagename is not None:
+            assert product is _DEFAULT, (
+                "Passed source package AND product details")
+            product = None
+        else:
+            raise AssertionError(
+                "Must pass both sourcepackagename and distroseries.")
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
@@ -344,6 +423,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 'Unrecognized branch type: %r' % (branch_type,))
         branch = getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
             **optional_branch_args)
         if private:
             removeSecurityProxy(branch).private = True
@@ -353,7 +433,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None):
+                                product=None, review_diff=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -366,7 +446,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch)
+            registrant, target_branch, dependent_branch=dependent_branch,
+            review_diff=review_diff)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
@@ -395,15 +476,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch_title=None,
-                               person_displayname=None):
+    def makeBranchSubscription(self, branch=None, person=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
         :param person_displayname: The displayname for the created Person
         """
-        branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname)
+        if branch is None:
+            branch = self.makeBranch()
+        if person is None:
+            person = self.makePerson()
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
@@ -550,12 +632,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
+
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
+        if bugtrackertype is None:
+            bugtrackertype = BugTrackerType.BUGZILLA
+
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, BugTrackerType.BUGZILLA)
+            base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
@@ -935,7 +1022,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,
-                               translation=None):
+                               translations=None):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -943,10 +1030,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
         if translator is None:
             translator = self.makePerson()
-        if translation is None:
-            translation = self.getUniqueString()
+        if translations is None:
+            translations = [self.getUniqueString()]
 
-        return potmsgset.updateTranslation(pofile, translator, [translation],
+        return potmsgset.updateTranslation(pofile, translator, translations,
                                            is_imported=False,
                                            lock_timestamp=None)
 
@@ -987,3 +1074,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         while Message.selectBy(rfc822msgid=msg_id).count() > 0:
             msg_id = make_msgid('launchpad')
         return msg_id
+
+    def makeSourcePackageName(self, name=None):
+        """Make an `ISourcePackageName`."""
+        if name is None:
+            name = self.getUniqueString()
+        return getUtility(ISourcePackageNameSet).new(name)

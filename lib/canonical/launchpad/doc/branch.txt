@@ -78,7 +78,6 @@ registered as an utility.
 
 The 'get' method on the branch set fetches branches by ID.
 
-    >>> factory = LaunchpadObjectFactory()
     >>> branch = factory.makeBranch(name='foobar')
     >>> print branchset.get(branch.id).name
     foobar
@@ -268,7 +267,7 @@ existing branches.
 Now we create a few branches that we pretend were updated in a
 definite order.
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from canonical.launchpad.testing import time_counter
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -359,18 +358,6 @@ navigation purposes as if they were associated to a magic product named
 
 
 == Branch names ==
-
-Branches have a unique name, that is based on the names of the owner, product
-and branch.
-
-    >>> new_branch = factory.makeBranch(
-    ...     owner=user, product=product, name='name')
-    >>> new_branch.unique_name
-    u'~user/product/name'
-    >>> junk_branch = factory.makeBranch(
-    ...     owner=user, product=None, name='name')
-    >>> junk_branch.unique_name
-    u'~user/+junk/name'
 
 Branches have a display name that is the Branch.title if it's provided, and the
 unique_name otherwise.

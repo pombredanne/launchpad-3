@@ -75,13 +75,13 @@ versions are not the same across architectures.
 Building these caches we can reach good performance on full and
 partial term searching.
 
-  >>> len(ubuntu.searchSourcePackages('mozilla'))
+  >>> ubuntu.searchSourcePackages('mozilla').count()
   1
 
-  >>> len(ubuntu.searchSourcePackages('moz'))
+  >>> ubuntu.searchSourcePackages('moz').count()
   1
 
-  >>> len(ubuntu.searchSourcePackages('biscoito'))
+  >>> ubuntu.searchSourcePackages('biscoito').count()
   0
 
 The cache update procedure is done by cronscripts/update-pkgcache.py,
@@ -102,7 +102,7 @@ cache when it's updated.
   >>> foobar_pub.status.name
   'DELETED'
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   1
 
   >>> from canonical.launchpad.database import (
@@ -129,7 +129,7 @@ Let's use a fake logger object:
   >>> import transaction
   >>> transaction.commit()
 
-  >>> len(ubuntu.searchSourcePackages('foobar'))
+  >>> ubuntu.searchSourcePackages('foobar').count()
   0
 
   >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
@@ -147,7 +147,7 @@ cache when it's updated the next time.
   >>> cdrkit_pub.status.name
   'PUBLISHED'
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   0
 
   >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
@@ -186,7 +186,7 @@ after issuing a commit(), bug #3989
 Now we see that the 'cdrkit' source is part of the caches and can be
 reached via searches:
 
-  >>> len(ubuntu.searchSourcePackages('cdrkit'))
+  >>> ubuntu.searchSourcePackages('cdrkit').count()
   1
 
   >>> cdrkit_cache = DistributionSourcePackageCache.selectOneBy(
@@ -207,7 +207,7 @@ cache when it's updated.
   >>> foobar_bin_pub.status.name
   'DELETED'
 
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   1
 
   >>> from canonical.launchpad.database import (
@@ -227,7 +227,7 @@ instance offers a method for removing obsolete records in cache:
 
   >>> transaction.commit()
 
-  >>> len(warty.searchPackages('foobar'))
+  >>> warty.searchPackages('foobar').count()
   0
 
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -244,7 +244,7 @@ cache will be added to it.
   >>> cdrkit_bin_pub.status.name
   'PUBLISHED'
 
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   0
 
   >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -279,7 +279,7 @@ XXX cprov 20061201: see above, same than Source cache interface), bug #3989
 Now we see that the 'cdrkit' binary is part of the caches and can be
 reached via searches:
 
-  >>> len(warty.searchPackages('cdrkit'))
+  >>> warty.searchPackages('cdrkit').count()
   1
 
   >>> cdrkit_bin_cache = DistroSeriesPackageCache.selectOneBy(

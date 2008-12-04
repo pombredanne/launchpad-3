@@ -655,6 +655,10 @@ class LaunchpadRootNavigation(Navigation):
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=False)
         if pillar is not None and check_permission('launchpad.View', pillar):
+            if pillar.name != name:
+                # This pillar was accessed through one of its aliases, so we
+                # must redirect to its canonical URL.
+                return self.redirectSubTree(canonical_url(pillar), status=301)
             return pillar
         return None
 
