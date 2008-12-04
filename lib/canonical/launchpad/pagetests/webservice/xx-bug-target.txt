@@ -21,7 +21,7 @@ All bug targets have a read/write bug_reporting_guidelines property.
 
     >>> product = webservice.get(product_url).jsonBody()
     >>> product['bug_reporting_guidelines']
-    u'ubuntu-bug -p firefox'
+    u'Please run `ubuntu-bug -p firefox`.'
 
 Not everyone can modify it however:
 
@@ -35,7 +35,7 @@ Not everyone can modify it however:
     Content-Type: text/plain
     X-Lazr-Oopsid: OOPS-...
     <BLANKLINE>
-    (<Product at 0xa853210>, 'bug_reporting_guidelines', 'launchpad.Edit')
+    (<Product at 0x...>, 'bug_reporting_guidelines', 'launchpad.Edit')
     <BLANKLINE>
     Traceback (most recent call last):
     ...
