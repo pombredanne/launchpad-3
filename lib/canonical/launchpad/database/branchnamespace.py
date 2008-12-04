@@ -10,6 +10,8 @@ __all__ = [
     'ProductNamespace',
     ]
 
+from storm.locals import And
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -41,9 +43,24 @@ class _BaseNamespace:
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
+    def getBranches(self):
+        """See `IBranchNamespace`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(Branch, self._getBranchesClause())
+
     def getBranchName(self, branch_name):
         """See `IBranchNamespace`."""
         return '%s/%s' % (self.name, branch_name)
+
+    def getByName(self, branch_name, default=None):
+        """See `IBranchNamespace`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        match = store.find(
+            Branch, self._getBranchesClause(),
+            Branch.name == branch_name).one()
+        if match is None:
+            match = default
+        return match
 
     def isNameUsed(self, branch_name):
         return self.getByName(branch_name) is not None
@@ -60,23 +77,10 @@ class PersonalNamespace(_BaseNamespace):
     def __init__(self, person):
         self.owner = person
 
-    def getBranches(self):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.owner == self.owner, Branch.product == None,
+    def _getBranchesClause(self):
+        return And(
+            Branch.owner == self.owner, Branch.product == None,
             Branch.distroseries == None, Branch.sourcepackagename == None)
-
-    def getByName(self, branch_name, default=None):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        match = store.find(
-            Branch, Branch.owner == self.owner, Branch.product == None,
-            Branch.distroseries == None, Branch.sourcepackagename == None,
-            Branch.name == branch_name).one()
-        if match is None:
-            match = default
-        return match
 
     @property
     def name(self):
@@ -97,22 +101,8 @@ class ProductNamespace(_BaseNamespace):
         self.owner = person
         self.product = product
 
-    def getBranches(self):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.owner == self.owner,
-            Branch.product == self.product)
-
-    def getByName(self, branch_name, default=None):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        match = store.find(
-            Branch, Branch.owner == self.owner,
-            Branch.product == self.product, Branch.name == branch_name).one()
-        if match is None:
-            match = default
-        return match
+    def _getBranchesClause(self):
+        return And(Branch.owner == self.owner, Branch.product == self.product)
 
     @property
     def name(self):
@@ -134,25 +124,11 @@ class PackageNamespace(_BaseNamespace):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
 
-    def getBranches(self):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            Branch, Branch.owner == self.owner,
+    def _getBranchesClause(self):
+        return And(
+            Branch.owner == self.owner,
             Branch.distroseries == self.distroseries,
             Branch.sourcepackagename == self.sourcepackagename)
-
-    def getByName(self, branch_name, default=None):
-        """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        match = store.find(
-            Branch, Branch.owner == self.owner,
-            Branch.distroseries == self.distroseries,
-            Branch.sourcepackagename == self.sourcepackagename,
-            Branch.name == branch_name).one()
-        if match is None:
-            match = default
-        return match
 
     @property
     def name(self):
