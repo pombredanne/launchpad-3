@@ -103,6 +103,14 @@
         <strong>Part of:</strong> <tal:link replace="structure context/project/fmt:link" />
       </p>
 
+      <p id="aliases" tal:condition="context/aliases">
+        <strong>Also known as:</strong>
+        <tal:aliases repeat="alias context/aliases">
+          <tal:alias replace="alias">something</tal:alias
+            ><tal:comma condition="not:repeat/alias/end">,</tal:comma>
+        </tal:aliases>
+      </p>
+
       <tal:launchpad_usage define="uses_launchpad view/uses_launchpad_for">
         <p id="uses">
           <tal:uses_launchpad condition="uses_launchpad">

@@ -24,11 +24,11 @@
       tal:content="string:@import url(${request/icing_url}/print.css);" />
     <style type="text/css" media="all"
       tal:content="string:@import url(${request/icing_url}/lp-extra.css);" />
-    <tal:comment condition="nothing">
-      XXX: We cannot use tal inside the comment below (which is only
-      interpreted by IE), so we have to use /+icing-ubuntu/ie.css rather
-      than using request/icing_url.
-    </tal:comment>
+    <tal:XXX condition="nothing">
+      # XXX: salgado 20080415 We cannot use tal inside the comment below
+      # (which is only interpreted by IE), so we have to use
+      # /+icing-ubuntu/ie.css rather than using request/icing_url.
+    </tal:XXX>
 		<!--[if lt IE 7]>
     <style type="text/css" media="all">
       @import url(/+icing-ubuntu/ie.css);</style>
