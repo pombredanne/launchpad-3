@@ -17,8 +17,9 @@ from canonical.codehosting.scanner.tests.test_bzrsync import (
     FakeTransportServer)
 from canonical.launchpad.database.diff import Diff, StaticDiff, StaticDiffJob
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob, JobStatus,
-)
+    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob)
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -124,7 +125,8 @@ class TestStaticDiffJob(BzrTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        verifyObject(IStaticDiffJob, StaticDiffJob())
+        verifyObject(IStaticDiffJob, StaticDiffJob(
+            from_revision_spec='0', to_revision_spec='1'))
 
     def test_run_revision_ids(self):
         self.useBzrBranches()

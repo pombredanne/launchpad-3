@@ -10,11 +10,14 @@ from cStringIO import StringIO
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.revisionspec import RevisionSpec
+import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad.interfaces.diff import (
     IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob,
@@ -22,6 +25,33 @@ from canonical.launchpad.interfaces.diff import (
 from canonical.launchpad.database.job import Job
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
+
+class BranchJobType(DBEnumeratedType):
+    """Values that ICodeImportJob.state can take."""
+
+    STATIC_DIFF = DBItem(0, """
+        Static Diff
+
+        This job runs against a branch to produce a diff that cannot change.
+        """)
+
+    RUNNING = DBItem(1, """
+        Running
+
+        The job is currently running.
+        """)
+
+    COMPLETED = DBItem(2, """
+        Completed
+
+        The job has run to successful completion.
+        """)
+
+    FAILED = DBItem(3, """
+        Failed
+
+        The job was run, but failed.  Will not be run again.
+        """)
 
 class Diff(SQLBase):
     """See `IDiff`."""
@@ -125,18 +155,36 @@ class StaticDiff(SQLBase):
 
 class StaticDiffJob(SQLBase):
 
+    _table = 'BranchJob'
     implements(IStaticDiffJob)
 
     job = ForeignKey(foreignKey='Job', notNull=True)
 
     branch = ForeignKey(foreignKey='Branch', notNull=True)
 
-    from_revision_spec = StringCol(notNull=True)
+    _json_data = StringCol(dbName='json_data')
 
-    to_revision_spec = StringCol(notNull=True)
+    job_type = EnumCol(enum=BranchJobType, notNull=True)
+
+    @property
+    def metadata(self):
+        return simplejson.loads(self._json_data)
+
+    @property
+    def from_revision_spec(self):
+        return self.metadata['from_revision_spec']
+
+    @property
+    def to_revision_spec(self):
+        return self.metadata['to_revision_spec']
 
     def __init__(self, **kwargs):
         kwargs['job']=Job()
+        kwargs['job_type'] = BranchJobType.STATIC_DIFF
+        kwargs['_json_data'] = simplejson.dumps({
+            'from_revision_spec': kwargs.pop('from_revision_spec'),
+            'to_revision_spec': kwargs.pop('to_revision_spec'),
+        })
         SQLBase.__init__(self, **kwargs)
 
     def destroySelf(self):
