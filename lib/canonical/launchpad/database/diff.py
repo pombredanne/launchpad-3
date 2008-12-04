@@ -42,7 +42,10 @@ class Diff(SQLBase):
             return ''
         else:
             self.diff_text.open()
-            return self.diff_text.read()
+            try:
+                return self.diff_text.read()
+            finally:
+                self.diff_text.close()
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree):

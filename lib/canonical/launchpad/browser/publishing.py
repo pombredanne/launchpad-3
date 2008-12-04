@@ -124,6 +124,14 @@ class BasePublishingRecordView(LaunchpadView):
         </script>
         """ % (self.context.id, self.context.id)
 
+    @property
+    def removal_comment(self):
+        """Return the removal comment or 'None provided'."""
+        removal_comment = self.context.removal_comment
+        if removal_comment is None or not removal_comment.strip():
+            removal_comment = u'None provided.'
+
+        return removal_comment
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""

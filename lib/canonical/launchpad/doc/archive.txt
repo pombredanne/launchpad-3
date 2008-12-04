@@ -112,8 +112,8 @@ We will create a COPY archive and modify its name.
 By default, copy archives are created with their 'publish' flag
 turned off, so that the publisher ignores them.
 
-    >>> rebuild_archive.publish == False
-    True
+    >>> rebuild_archive.publish
+    False
 
 Only 'valid' (traversable) names can be set.
 
@@ -883,6 +883,12 @@ The `IArchiveDependency` object simply maps the desired relationship.
     >>> print archive_dependency.dependency.title
     PPA for Mark Shuttleworth
 
+The `IArchiveDependency` object itself implement a 'title'
+property. For PPA dependencies the title defaults to the PPA title.
+
+    >>> print archive_dependency.title
+    PPA for Mark Shuttleworth
+
 The archive dependency is immediately recorded on Celso's PPA.
 
     >>> print_dependencies(cprov.archive)
@@ -941,6 +947,12 @@ COPY.
     ...     ubuntu.main_archive, PackagePublishingPocket.UPDATES,
     ...     getUtility(IComponentSet)['universe'])
 
+Other dependencies than PPAs have an extended 'title', which includes
+the target 'pocket' and 'component'.
+
+    >>> print primary_dependency.title
+    Primary Archive for Ubuntu Linux - UPDATES - universe
+
 See further implications of archive dependencies in
 doc/archive-dependencies.txt.
 
@@ -958,7 +970,6 @@ Thus archive dependency removal can be performed simply by passing the
 dependency target.
 
     >>> no_priv.archive.removeArchiveDependency(ubuntu.main_archive)
-
 
 Non-PPA dependencies can have empty 'component' ...
 
@@ -1765,3 +1776,36 @@ Copy package3 1.0 explicitly:
     >>> [sabdfl_three] = sabdfl.archive.getPublishedSources(name="package3")
     >>> print sabdfl_three.sourcepackagerelease.version
     1.0
+
+
+== Publish flag ==
+
+Every archive has a "publish" flag that governs whether it should be
+published or not. Upon creation that flag is false for copy archives but
+true for all other archive types.
+
+    >>> gentoo = getUtility(IDistributionSet)['gentoo']
+    >>> gentoo_primary = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PRIMARY,
+    ...     distribution=gentoo, name='gentoo-primary')
+    >>> gentoo_primary.publish
+    True
+
+    >>> gentoo_partner = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.PARTNER,
+    ...     distribution=gentoo, name='gentoo-partner')
+    >>> gentoo_partner.publish
+    True
+
+The 'sandbox archive' is a PPA that was newly created above.
+
+    >>> sandbox_archive.is_ppa
+    True
+    >>> sandbox_archive.publish
+    True
+
+    >>> gentoo_copy = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.COPY,
+    ...     distribution=gentoo, name='gentoo-copy')
+    >>> gentoo_copy.publish
+    False

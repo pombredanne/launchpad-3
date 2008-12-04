@@ -682,7 +682,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages, only English is added to the preferred languages. When
         languages are added, a notification is added to the response.
         """
-        if person_or_team.languages.count() > 0:
+        if len(person_or_team.languages) > 0:
             return
 
         response = self.request.response
