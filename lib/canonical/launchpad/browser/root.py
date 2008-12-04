@@ -16,6 +16,8 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.interfaces import ILaunchpadStatisticSet
+from canonical.launchpad.interfaces.branch import IBranchSet
 from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
@@ -64,6 +66,14 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def featured_projects_col_b(self):
         """Return a list of featured projects."""
         return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+    @property
+    def branch_count(self):
+        return getUtility(IBranchSet).count()
+
+    @property
+    def bug_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('bug_count')
+
 
 
 class LaunchpadSearchFormView(LaunchpadView):

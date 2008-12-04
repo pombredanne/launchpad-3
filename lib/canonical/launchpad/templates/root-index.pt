@@ -125,6 +125,8 @@
       </div>
 
       <div class="three column right">
+      <strong tal:content="view/branch_count">123</strong> 
+      <strong tal:content="view/bug_count">123</strong>
       <div id="portlets" style="margin-left: 5em;">
         <div class="portlet portlet-home">
             <a href="/projects/+new-guided">Create a Project</a><br/>
