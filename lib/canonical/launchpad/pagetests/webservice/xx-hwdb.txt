@@ -96,7 +96,7 @@ Single device records can be accessed too.
     vendor_id: u'0x10de'
     vendor_name: u'nVidia Corporation'
 
-A 404 error is returned, when a non-existing ID is passed in the URL...
+A 404 error is returned, when a non-existent ID is passed in the URL...
 
     >>> print webservice.get('/+hwdb/+device/1000000')
     HTTP/1.1 404 Not Found
