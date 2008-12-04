@@ -745,7 +745,7 @@ A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
     >>> [date_closed] = [param for param in full_params
-    ...                if param.attrib['name'] == 'date_closed']
+    ...                  if param.attrib['name'] == 'date_closed']
     >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
