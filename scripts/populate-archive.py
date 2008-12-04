@@ -19,7 +19,7 @@ from canonical.launchpad.scripts.ftpmaster import (
 
 if __name__ == '__main__':
     script = ArchivePopulator(
-        'populate-archive', dbuser=config.uploader.dbuser)
+        'populate-archive', dbuser=config.archivepublisher.dbuser)
     try:
         script.lock_and_run()
     except (SoyuzScriptError, PackageLocationError), e:

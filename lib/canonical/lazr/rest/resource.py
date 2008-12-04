@@ -205,12 +205,28 @@ class HTTPResource:
         generated ETag, it sets the response code to 412
         ("Precondition Failed").
 
+        If the PUT or PATCH request is being tunneled through POST
+        with X-HTTP-Method-Override, the media type of the incoming
+        representation will be obtained from X-Content-Type-Override
+        instead of Content-Type, should X-C-T-O be provided.
+
         :return: The media type of the incoming representation. If
             this value is None, the incoming ETag didn't match the
             generated ETag and the incoming representation should be
             ignored.
         """
-        media_type = self.request.headers.get('Content-Type', self.JSON_TYPE)
+        media_type = self.request.headers.get('X-Content-Type-Override')
+        if media_type is not None:
+            if self.request.method != 'POST':
+                # X-C-T-O should not be used unless the underlying
+                # method is POST. Set response code 400 ("Bad
+                # Request").
+                self.request.response.setStatus(400)
+                return None
+        else:
+            media_type = self.request.headers.get(
+                'Content-Type', self.JSON_TYPE)
+
         incoming_etags = self._parseETags('If-Match')
         if len(incoming_etags) == 0:
             # This is not a conditional write.
@@ -639,7 +655,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         the resource interface.
         """
         data = {}
-        data['self_link'] = canonical_url(self.context)
+        data['self_link'] = canonical_url(self.context, self.request)
         data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
             repr_name, repr_value = self._unmarshallField(name, field)
@@ -746,7 +762,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
-                    self.request)),
+                    self.request), self.request),
             adapter.singular_type)
 
     def isModifiableField(self, field, is_external_client):
@@ -816,7 +832,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         modified_read_only_attribute = ("%s: You tried to modify a "
                                         "read-only attribute.")
         if 'self_link' in changeset:
-            if changeset['self_link'] != canonical_url(self.context):
+            if changeset['self_link'] != canonical_url(self.context,
+                                                       self.request):
                 errors.append(modified_read_only_attribute % 'self_link')
             del changeset['self_link']
 
@@ -975,7 +992,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             self.entry.context, providing=providedBy(self.entry.context))
 
         # Store the entry's current URL so we can see if it changes.
-        original_url = canonical_url(self.context)
+        original_url = canonical_url(self.context, self.request)
         # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.entry, name, value)
@@ -990,7 +1007,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
-        new_url = canonical_url(self.context)
+        new_url = canonical_url(self.context, self.request)
         if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
@@ -1104,7 +1121,7 @@ class ServiceRootResource(HTTPResource):
         """Handle a GET request."""
         method = self.getRequestMethod(REQUEST)
         if method is None:
-            result = HTTP_METHOD_OVERRIDE_ERROR
+            result = self.HTTP_METHOD_OVERRIDE_ERROR
         elif method == "GET":
             result = self.do_GET()
         else:
@@ -1194,12 +1211,14 @@ class ServiceRootResource(HTTPResource):
         """
         type_url = "%s#%s" % (
             canonical_url(
-                self.request.publication.getApplication(self.request)),
+                self.request.publication.getApplication(self.request),
+                self.request),
             "service-root")
         data_for_json = {'resource_type_link' : type_url}
         publications = self.getTopLevelPublications()
         for link_name, publication in publications.items():
-            data_for_json[link_name] = canonical_url(publication)
+            data_for_json[link_name] = canonical_url(publication,
+                                                     self.request)
         return data_for_json
 
     def getTopLevelPublications(self):

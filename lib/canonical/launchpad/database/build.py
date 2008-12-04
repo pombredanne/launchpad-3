@@ -758,13 +758,12 @@ class BuildSet:
 
         self._handleOptionalParams(queries, status, name)
 
+        # This code MUST match the logic in the Build security adapter,
+        # otherwise users are likely to get 403 errors, or worse.
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-                    or
-                    user.inTeam(
-                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 queries.append("""
                 (Archive.private = FALSE
                  OR %s IN (SELECT TeamParticipation.person
@@ -775,23 +774,10 @@ class BuildSet:
         else:
             queries.append("Archive.private = FALSE")
 
-        # Ordering according status
-        # * SUPERSEDED & All by -datecreated
-        # * FULLYBUILT & FAILURES by -datebuilt
-        # It should present the builds in a more natural order.
-        if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
-        else:
-            orderBy = ["-Build.datebuilt"]
-
-        # all orders fallback to id if the primary order doesn't succeed
-        orderBy.append("id")
-
-
         queries.append("builder=%s" % builder_id)
 
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=orderBy)
+                            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None):

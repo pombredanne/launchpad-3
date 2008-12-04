@@ -54,8 +54,7 @@ status is returned.
 ...         print output
 
 >>> login('test@canonical.com')
->>> from canonical.launchpad.testing import factory
->>> factory.LaunchpadObjectFactory().makeBugAttachment(1)
+>>> factory.makeBugAttachment(1)
 <BugAttachment at ...>
 >>> logout()
 

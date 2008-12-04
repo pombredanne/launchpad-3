@@ -228,22 +228,14 @@
         permission="launchpad.Edit"
         />
 
-    <browser:editform
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesReviewView"
         facet="overview"
-        label="Review product series details"
-        fields="product name"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        >
-        <browser:widget
-            field="name"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20" />
-    </browser:editform>
+        template="../templates/productseries-review.pt"
+        />
 
     <browser:generalform
         name="+addpackage"

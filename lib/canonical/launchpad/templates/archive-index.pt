@@ -33,8 +33,15 @@
           replace="structure link/render" />
       </div>
 
-      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url">url</a></h2>
+      <h2 style="margin-top: 0">
+        URL:
+        <a tal:condition="ppa_active"
+           tal:attributes="href context/archive_url"
+           tal:content="context/archive_url">url</a>
+        <tal:no-link
+           condition="not: ppa_active"
+           content="context/archive_url">url</tal:no-link>
+      </h2>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -50,18 +57,17 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <h2>apt sources.list entries</h2>
+      <div tal:condition="ppa_active">
 
-      <tal:entries replace="structure view/sources_list_entries" />
+        <h2>apt sources.list entries</h2>
+
+        <tal:entries replace="structure view/sources_list_entries" />
+
+      </div>
 
       <div id="ppa-dependencies" tal:condition="context/dependencies">
 
         <h3>PPA dependencies</h3>
-
-        <p class="warning message">When installing packages from
-          this PPA you may need to enable one or more of the following
-          PPAs, which have been considered for building packages in
-          this context.</p>
 
         <ul>
            <li tal:repeat="dependency context/dependencies">
@@ -82,10 +88,15 @@
 
       <tal:active_ppa condition="ppa_active">
 
-      <tal:contents tal:define="archive context">
+      <!--Disabled section due to performance issues. -->
+      <tal:contents tal:define="archive context"
+                    tal:condition="python: False">
         <metal:package-counters
           use-macro="context/@@+macros/package-counters" />
       </tal:contents>
+      <p id="package_counters" class="discreet">
+        Package counters and estimated archive size temporarily unavailable.
+      </p>
 
       <div class="actions" style="float:right;">
         <tal:builds
@@ -128,7 +139,7 @@
             <th>Status</th>
             <th>Series</th>
             <th>Section</th>
-            <th>Built</th>
+            <th>Build Status</th>
           </tr>
         </thead>
         <tbody>

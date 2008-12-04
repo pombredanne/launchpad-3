@@ -270,6 +270,22 @@ the browser is redirected to the first batch.
     134: '<samp> </samp>caratas'
 
 
+== Invalid show option values ==
+
+There was once a filter option called need_review.  It no longer exists,
+but is quietly accepted.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate'
+    ...     '?show=need_review')
+
+The page will actually show the "all" filter.
+
+    >>> user_browser.getControl(name='show', index=1).displayValue
+    ['all items']
+
+
 == Batch parameters when changing filters ==
 
 When the filter changes, the batch is reset to the start of the set of

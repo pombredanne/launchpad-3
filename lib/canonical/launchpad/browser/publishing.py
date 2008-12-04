@@ -124,6 +124,14 @@ class BasePublishingRecordView(LaunchpadView):
         </script>
         """ % (self.context.id, self.context.id)
 
+    @property
+    def removal_comment(self):
+        """Return the removal comment or 'None provided'."""
+        removal_comment = self.context.removal_comment
+        if removal_comment is None or not removal_comment.strip():
+            removal_comment = u'None provided.'
+
+        return removal_comment
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
@@ -224,15 +232,20 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         Finally, if all builds have quiesced and none of them failed, return
         the 'yes' icon.
         """
-        def content_template(alt, image, builds=None):
-            icon = '<img alt="%s" src="%s" /> ' % (alt, image)
+        def content_template(desc, image, builds=None):
+            icon = ('<img alt="%(desc)s" title="%(desc)s" '
+                    'src="%(image)s" /> ') % {
+                'desc': desc, 'image': image}
             if builds is None:
                 return icon
             arch_links = []
             for build in builds:
                 arch_tag = build.distroarchseries.architecturetag
                 arch_links.append(
-                    '<a href="%s">%s</a>' % (canonical_url(build), arch_tag))
+                    '<a href="%(url)s" title="%(title)s">%(arch_tag)s</a>' % {
+                        'url': canonical_url(build),
+                        'arch_tag': arch_tag,
+                        'title': desc})
             return icon + " ".join(arch_links)
 
         def collect_builds(states):

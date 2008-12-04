@@ -27,6 +27,7 @@ __all__ = [
 
 import operator
 
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
@@ -43,7 +44,6 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
@@ -56,10 +56,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.mailout.branchmergeproposal import (
-    BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
+    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -385,6 +383,13 @@ class DecoratedCodeReviewVoteReference:
         return self.context.date_created
 
     @property
+    def review_type_str(self):
+        """We want '' not 'None' if no type set."""
+        if self.context.review_type is None:
+            return ''
+        return self.context.review_type
+
+    @property
     def date_of_comment(self):
         """The date of the comment, not the date_created of the vote."""
         return self.context.comment.message.datecreated
@@ -497,18 +502,6 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         """Request a `review_type` review from `candidate` and email them."""
         vote_reference = self.context.nominateReviewer(
             candidate, self.user, review_type)
-        reason = RecipientReason.forReviewer(vote_reference, candidate)
-        # XXX: rockstar - 9 Oct 2008 - If the reviewer is a team, don't send
-        # email.  This is to stop the abuse of a user spamming all members of
-        # a team by requesting them to review a (possibly unrelated) branch.
-        # Ideally we'd come up with a better solution, but I can't think of
-        # one yet.  In all other places we are emailing subscribers directly
-        # rather than people that haven't subscribed.
-        # See bug #281056. (affects IBranchMergeProposal)
-        if not candidate.is_team:
-            mailer = BMPMailer.forReviewRequest(
-                reason, self.context, self.user)
-            mailer.sendAll()
 
     @action('Request Review', name='review')
     @notify
@@ -999,6 +992,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
+    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+
     @cachedproperty
     def initial_values(self):
         """The initial values are used to populate the form fields."""
@@ -1056,9 +1051,13 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         if claim_review and self.users_vote_ref is None:
             team = getUtility(IPersonSet).getByName(claim_review)
             if team is not None and self.user.inTeam(team):
-                # Disable the review_type field
-                self.reviewer = team.name
-                self.form_fields['review_type'].for_display = True
+                # If the review type is None, then don't show the field.
+                if self.initial_values['review_type'] == '':
+                    self.form_fields = self.form_fields.omit('review_type')
+                else:
+                    # Disable the review_type field
+                    self.reviewer = team.name
+                    self.form_fields['review_type'].for_display = True
 
     @property
     def label(self):
@@ -1076,6 +1075,10 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         review_type = data.get(
             'review_type',
             self.request.form.get('review_type'))
+        # Translate the request parameter back into what our object model
+        # needs.
+        if review_type == '':
+            review_type = None
         # Get the reviewer from the hidden input.
         reviewer_name = self.request.form.get('reviewer')
         reviewer = getUtility(IPersonSet).getByName(reviewer_name)
