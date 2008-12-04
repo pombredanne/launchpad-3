@@ -153,22 +153,43 @@ class StaticDiff(SQLBase):
         diff.destroySelf()
 
 
-class StaticDiffJob(SQLBase):
+class BranchJob(SQLBase):
 
     _table = 'BranchJob'
-    implements(IStaticDiffJob)
 
     job = ForeignKey(foreignKey='Job', notNull=True)
 
     branch = ForeignKey(foreignKey='Branch', notNull=True)
 
-    _json_data = StringCol(dbName='json_data')
-
     job_type = EnumCol(enum=BranchJobType, notNull=True)
+
+    _json_data = StringCol(dbName='json_data')
 
     @property
     def metadata(self):
         return simplejson.loads(self._json_data)
+
+    def __init__(self, branch, job_type, metadata):
+        json_data = simplejson.dumps(metadata)
+        SQLBase.__init__(
+            self, job=Job(), branch=branch, job_type=job_type,
+            _json_data=json_data)
+
+    def destroySelf(self):
+        SQLBase.destroySelf(self)
+        self.job.destroySelf()
+
+
+class StaticDiffJob(BranchJob):
+
+    implements(IStaticDiffJob)
+
+    def __init__(self, branch, from_revision_spec, to_revision_spec):
+        metadata = {
+            'from_revision_spec': from_revision_spec,
+            'to_revision_spec': to_revision_spec,
+        }
+        BranchJob.__init__(self, branch, BranchJobType.STATIC_DIFF, metadata)
 
     @property
     def from_revision_spec(self):
@@ -177,19 +198,6 @@ class StaticDiffJob(SQLBase):
     @property
     def to_revision_spec(self):
         return self.metadata['to_revision_spec']
-
-    def __init__(self, **kwargs):
-        kwargs['job']=Job()
-        kwargs['job_type'] = BranchJobType.STATIC_DIFF
-        kwargs['_json_data'] = simplejson.dumps({
-            'from_revision_spec': kwargs.pop('from_revision_spec'),
-            'to_revision_spec': kwargs.pop('to_revision_spec'),
-        })
-        SQLBase.__init__(self, **kwargs)
-
-    def destroySelf(self):
-        SQLBase.destroySelf(self)
-        self.job.destroySelf()
 
     def _get_revision_id(self, bzr_branch, spec_string):
         spec = RevisionSpec.from_string(spec_string)

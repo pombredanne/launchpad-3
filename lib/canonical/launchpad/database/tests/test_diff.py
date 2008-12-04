@@ -126,7 +126,7 @@ class TestStaticDiffJob(BzrTestCase):
 
     def test_providesInterface(self):
         verifyObject(IStaticDiffJob, StaticDiffJob(
-            from_revision_spec='0', to_revision_spec='1'))
+            1, from_revision_spec='0', to_revision_spec='1'))
 
     def test_run_revision_ids(self):
         self.useBzrBranches()
