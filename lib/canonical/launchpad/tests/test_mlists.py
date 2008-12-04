@@ -13,7 +13,7 @@ import unittest
 
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 import transaction
 
@@ -373,9 +373,9 @@ class TestMailingListImportScript(BaseMailingListImportTest):
     layer = AppServerLayer
 
     def setUp(self):
+        super(TestMailingListImportScript, self).setUp()
         # Since these tests involve two processes, the setup transaction must
         # be committed, otherwise the script won't see the changes.
-        BaseMailingListImportTest.setUp(self)
         transaction.commit()
         # Make sure the mailbox is empty.
         LayerProcessController.smtp_controller.reset()
@@ -384,7 +384,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         args = ['scripts/mlist-import.py', '--filename', self.filename]
         args.extend(extra_args)
         args.append(self.team.name)
-        return Popen(args, stdout=PIPE, stderr=PIPE,
+        return Popen(args, stdout=PIPE, stderr=STDOUT,
                      cwd=LayerProcessController.appserver_config.root,
                      env=dict(LPCONFIG='testrunner-appserver',
                               PYTHONPATH=os.pathsep.join(sys.path)))
@@ -402,7 +402,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         # Create the subprocess and invoke the script.
         process = self.makeProcess()
         stdout, stderr = process.communicate()
-        self.assertEqual(process.returncode, 0, stderr + stdout)
+        self.assertEqual(process.returncode, 0, stdout)
         # Make sure we hit the database.
         transaction.abort()
         self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
