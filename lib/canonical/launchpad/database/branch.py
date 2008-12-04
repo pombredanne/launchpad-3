@@ -181,7 +181,8 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None):
+                         initial_comment=None, review_requests=None,
+                         review_diff=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -241,7 +242,7 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status)
+            queue_status=queue_status, review_diff=review_diff)
 
         if initial_comment is not None:
             bmp.createComment(

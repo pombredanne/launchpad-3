@@ -60,14 +60,13 @@
             <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
                 <tr>
-                  <tal:comment replace="nothing">
-                    XXX: CarlosPerelloMarin 2006-03-09:
-                    We are using here
-                    condition="entry/import_into/title|nothing" because,
-                    sometimes, entry/import_into evaluates as false because
-                    __len__ method returns 0. See bug #34213 for more
-                    information.
-                  </tal:comment>
+                  <tal:XXX replace="nothing">
+                    # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
+                    # We are using here
+                    # condition="entry/import_into/title|nothing" because,
+                    # sometimes, entry/import_into evaluates as false because
+                    # __len__ method returns 0.
+                  </tal:XXX>
                   <td tal:condition="entry/import_into/title|nothing" rowspan="3">
                     <img alt="" src="/@@/download" />
                   </td>
@@ -110,14 +109,13 @@
                     on <span tal:content="entry/dateimported/fmt:datetime">date</span>
                   </td>
                 </tr>
-                <tal:comment replace="nothing">
-                  XXX: CarlosPerelloMarin 2006-03-09:
-                  We are using here
-                  condition="entry/import_into/title|nothing" because,
-                  sometimes, entry/import_into evaluates as false because
-                  __len__ method returns 0. See bug #34213 for more
-                  information.
-                </tal:comment>
+                <tal:XXX condition="nothing">
+                  # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
+                  # We are using here
+                  # condition="entry/import_into/title|nothing" because,
+                  # sometimes, entry/import_into evaluates as false because
+                  # __len__ method returns 0.
+                </tal:XXX>
                 <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
                   <td colspan="3">
                     Will be imported into 

@@ -688,8 +688,7 @@ class IArchiveEditDependenciesForm(Interface):
     """Schema used to edit dependencies settings within a archive."""
 
     dependency_candidate = Choice(
-        title=_('PPA Dependency'), required=False, vocabulary='PPA',
-        description=_("Add a new PPA dependency."))
+        title=_('Add PPA dependency'), required=False, vocabulary='PPA')
 
 
 class IArchiveSet(Interface):

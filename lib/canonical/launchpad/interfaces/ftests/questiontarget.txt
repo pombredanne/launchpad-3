@@ -400,7 +400,7 @@ An answer contact must have at least one language among his
 preferred languages.
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> sample_person.languages.count()
+    >>> len(sample_person.languages)
     0
     >>> target.addAnswerContact(sample_person)
     Traceback (most recent call last):

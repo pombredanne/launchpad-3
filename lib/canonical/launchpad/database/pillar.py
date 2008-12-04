@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from storm.expr import LeftJoin, NamedFunc, Select
+from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
 from sqlobject import ForeignKey, StringCol, BoolCol
@@ -130,22 +131,19 @@ class PillarNameSet:
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.project import Project
         from canonical.launchpad.database.distribution import Distribution
+        OtherPillarName = ClassAlias(PillarName)
         origin = [
             PillarName,
+            LeftJoin(
+                OtherPillarName, PillarName.alias_for == OtherPillarName.id),
             LeftJoin(Product, PillarName.product == Product.id),
             LeftJoin(Project, PillarName.project == Project.id),
-            LeftJoin(Distribution,
-                     PillarName.distribution == Distribution.id),
+            LeftJoin(
+                Distribution, PillarName.distribution == Distribution.id),
             ]
         conditions = SQL('''
             PillarName.active = TRUE
-            AND PillarName.alias_for IS NULL
-            AND ((PillarName.id IN (
-                    SELECT alias_for
-                    FROM PillarName
-                    WHERE name=lower(%(text)s))
-                  OR PillarName.name = lower(%(text)s)
-                 ) OR
+            AND (PillarName.name = lower(%(text)s) OR
 
                  Product.fti @@ ftq(%(text)s) OR
                  lower(Product.title) = lower(%(text)s) OR
@@ -158,7 +156,8 @@ class PillarNameSet:
                 )
             ''' % sqlvalues(text=text))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        columns = [PillarName, Product, Project, Distribution]
+        columns = [
+            PillarName, OtherPillarName, Product, Project, Distribution]
         for column in extra_columns:
             columns.append(column)
         return store.using(*origin).find(tuple(columns), conditions)
@@ -196,11 +195,9 @@ class PillarNameSet:
         # so the coalesce() is necessary to find the rank() which
         # is not null.
         result.order_by(SQL('''
-            (CASE WHEN Product.name = lower(%(text)s)
+            (CASE WHEN PillarName.name = lower(%(text)s)
                       OR lower(Product.title) = lower(%(text)s)
-                      OR Project.name = lower(%(text)s)
                       OR lower(Project.title) = lower(%(text)s)
-                      OR Distribution.name = lower(%(text)s)
                       OR lower(Distribution.title) = lower(%(text)s)
                 THEN 9999999
                 ELSE coalesce(rank(Product.fti, ftq(%(text)s)),
@@ -218,17 +215,18 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for pillar_name, product, project, distro, license_ids in (
+        for pillar_name, other, product, project, distro, license_ids in (
             result[:limit]):
-            if pillar_name.product is None:
-                pillars.append(pillar_name.pillar)
-            else:
+            pillar = pillar_name.pillar
+            if IProduct.providedBy(pillar):
                 licenses = [
                     License.items[license_id]
                     for license_id in license_ids]
                 product_with_licenses = ProductWithLicenses(
-                    pillar_name.product, tuple(sorted(licenses)))
+                    pillar, tuple(sorted(licenses)))
                 pillars.append(product_with_licenses)
+            else:
+                pillars.append(pillar)
         return pillars
 
     def add_featured_project(self, project):
@@ -283,14 +281,18 @@ class PillarName(SQLBase):
 
     @property
     def pillar(self):
-        if self.distribution is not None:
-            return self.distribution
-        elif self.project is not None:
-            return self.project
-        elif self.product is not None:
-            return self.product
+        pillar_name = self
+        if self.alias_for is not None:
+            pillar_name = self.alias_for
+
+        if pillar_name.distribution is not None:
+            return pillar_name.distribution
+        elif pillar_name.project is not None:
+            return pillar_name.project
+        elif pillar_name.product is not None:
+            return pillar_name.product
         else:
-            raise AssertionError("Unknown pillar type: %s" % self.name)
+            raise AssertionError("Unknown pillar type: %s" % pillar_name.name)
 
 
 class HasAliasMixin:
