@@ -90,8 +90,7 @@
             # XXX: GavinPanella 2008-02-13 bug=201793: This will be
             # uncommented in a later branch.
             # <tr>
-            #   <td colspan="2"
-            #       tal:content="structure link_items/EMAIL_UPSTREAM" />
+            #   <td colspan="2" tal:content="structure link_items/EMAIL_UPSTREAM" />
             # </tr>
           </tal:XXX>
           <tr>
