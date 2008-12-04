@@ -103,12 +103,10 @@ Private bugs are not matched if the user does not have permission to
 see them. For example, Sample Person can see a private bug that he
 created because he is the owner.
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
-    >>> factory = LaunchpadObjectFactory()
     >>> private_bug = factory.makeBug(owner=sample_person, private=True)
 
     >>> search_view = getSearchView(
@@ -215,6 +213,23 @@ with a hyphen.
     >>> print search_view.person_or_team
     None
 
+Since our pillars can have aliases, it's also possible to look up a pillar
+by any of its aliases.
+
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.setAliases(['iceweasel'])
+    >>> login(ANONYMOUS)
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'iceweasel'})
+    >>> search_view._getNameToken(search_view.text)
+    u'iceweasel'
+    >>> search_view.has_matches
+    True
+    >>> search_view.pillar.displayname
+    u'Mozilla Firefox'
+
 This is a harder example that illustrates that text that is clearly not
 the name of a pillar will none-the-less be tried. See the `Page searches`
 section for how this kind of search can return matches.
@@ -263,7 +278,6 @@ matches. For example, the python-gnome2-dev product will not match a
 pillar, nor will nsv match Nicolas Velin's unclaimed account.
 
     >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.product import IProductSet
 
     >>> python_gnome2 = getUtility(IProductSet).getByName('python-gnome2-dev')
     >>> python_gnome2.active

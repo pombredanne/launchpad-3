@@ -15,13 +15,13 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from storm.expr import And
+from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
-from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -107,6 +107,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return recipients
 
     @property
+    def _store(self):
+        return Store.of(self.sourcepackagename)
+
+    @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
         answer_contacts = set()
@@ -115,12 +119,18 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
     @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
-        return sorted(
-            [contact.person for contact in answer_contacts],
-            key=attrgetter('displayname'))
+    def answer_contacts_with_languages(self):
+        """Answer contacts with their languages pre-filled.
+
+        Same as answer_contacts but with each answer contact having its
+        languages pre-filled so that we don't need to hit the DB again to get
+        them.
+        """
+        answer_contacts = set()
+        answer_contacts.update(self.direct_answer_contacts_with_languages)
+        answer_contacts.update(
+            self.distribution.answer_contacts_with_languages)
+        return sorted(answer_contacts, key=attrgetter('displayname'))
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,

@@ -18,11 +18,12 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, List, Text
+from zope.schema import Choice, Datetime, Int, List, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces.diff import IStaticDiff
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.fields import Reference
@@ -186,6 +187,9 @@ class IBranchMergeProposal(Interface):
             readonly=True, vocabulary='ValidPersonOrTeam',
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
+
+    review_diff = Object(
+        title=_('The diff to be used for reviews.'), schema=IStaticDiff)
 
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
