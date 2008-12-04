@@ -21,6 +21,7 @@ from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
+from bzrlib import urlutils
 
 from canonical.codehosting.puller.worker import BranchMirrorer, BranchPolicy
 from canonical.config import config
@@ -403,6 +404,14 @@ class WarehouseBranchPolicy(BranchPolicy):
         uri = URI(url)
         if uri.scheme != 'lp-mirrored':
             raise InvalidStackedBranchURL(url)
+
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchPolicy.transformFallbackLocation`.
+
+        We're happy to open stacked branches in the usual manner, but want to
+        go on checking the URLs of any branches we then open.
+        """
+        return urlutils.join(branch.base, url), True
 
 
 def iter_list_chunks(a_list, size):

@@ -266,9 +266,7 @@ message and the bug to which the watch belongs.
 The list of imported messages can be retrieved using
 getImportedBugMessages().
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> factory = LaunchpadObjectFactory()
     >>> bug_watch2 = factory.makeBugWatch('42')
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
