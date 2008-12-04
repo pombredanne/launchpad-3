@@ -12,6 +12,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'Person',
+    'PersonLanguage',
     'PersonSet',
     'SSHKey',
     'SSHKeySet',
@@ -20,6 +21,7 @@ __all__ = [
     'WikiNameSet']
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 import pytz
 import random
 import re
@@ -46,6 +48,8 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -336,12 +340,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = SQLRelatedJoin('Language', joinColumn='person',
-                            otherColumn='language',
-                            intermediateTable='PersonLanguage',
-                            orderBy='englishname')
-
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
@@ -369,6 +367,57 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty('_languages_cache')
+    def languages(self):
+        """See `IPerson`."""
+        results = Store.of(self).find(
+            Language, And(Language.id == PersonLanguage.languageID,
+                          PersonLanguage.personID == self.id))
+        results.order_by(Language.englishname)
+        return list(results)
+
+    def getLanguagesCache(self):
+        """Return this person's cached languages.
+
+        :raises AttributeError: If the cache doesn't exist.
+        """
+        return self._languages_cache
+
+    def setLanguagesCache(self, languages):
+        """Set this person's cached languages.
+
+        Order them by name if necessary.
+        """
+        self._languages_cache = sorted(
+            languages, key=attrgetter('englishname'))
+
+    def deleteLanguagesCache(self):
+        """Delete this person's cached languages, if it exists."""
+        if safe_hasattr(self, '_languages_cache'):
+            del self._languages_cache
+
+    def addLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is not None:
+            # Nothing to do.
+            return
+        PersonLanguage(person=self, language=language)
+        self.deleteLanguagesCache()
+
+    def removeLanguage(self, language):
+        """See `IPerson`."""
+        person_language = Store.of(self).find(
+            PersonLanguage, And(PersonLanguage.languageID == language.id,
+                                PersonLanguage.personID == self.id)).one()
+        if person_language is None:
+            # Nothing to do.
+            return
+        PersonLanguage.delete(person_language.id)
+        self.deleteLanguagesCache()
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""

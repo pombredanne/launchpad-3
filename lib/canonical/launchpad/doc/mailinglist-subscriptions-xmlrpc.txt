@@ -22,8 +22,6 @@ create and populate some teams to demonstrate.
     >>> login('foo.bar@canonical.com')
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne = factory.makePersonByName('Anne')

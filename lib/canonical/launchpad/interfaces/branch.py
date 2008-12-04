@@ -775,9 +775,11 @@ class IBranch(IHasOwner):
         "The BranchMergeProposals where this branch is the dependent branch. "
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
+
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None,
-                         needs_review=False):
+                         needs_review=False, initial_comment=None,
+                         review_requests=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the dependent_branch, if it is there,
@@ -796,6 +798,9 @@ class IBranch(IHasOwner):
             merge request.
         :param needs_review: Used to specify the the proposal is ready for
             review right now.
+        :param initial_comment: An optional initial comment can be added
+            when adding the new target.
+        :param review_requests: An optional list of (`Person`, review_type).
         """
 
     def getStackedBranches():

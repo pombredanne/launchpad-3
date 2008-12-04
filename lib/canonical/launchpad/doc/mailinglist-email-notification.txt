@@ -11,8 +11,6 @@ via email.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...		new_team, new_list_for_team)
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
     # login() as an admin so that we can call IPerson.join() on any
     # person/team we want.
