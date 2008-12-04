@@ -110,9 +110,7 @@ def get_diff(db_branch, bzr_branch, bzr_revision):
     static_diff = diff_job.run()
     diff_job.destroySelf()
     transaction.commit()
-    lfa = static_diff.diff.diff_text
-    lfa.open()
-    revision_diff = lfa.read().decode('utf8', 'replace')
+    revision_diff = static_diff.diff.text.decode('utf8', 'replace')
     static_diff.destroySelf()
     return revision_diff
 
