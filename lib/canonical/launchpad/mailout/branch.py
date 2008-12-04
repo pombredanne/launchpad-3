@@ -11,9 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.components.branch import BranchDelta
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ICodeMailJobSource)
-from canonical.launchpad.mail import (get_msgid, format_address)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -136,11 +135,11 @@ class BranchMailer(BaseMailer):
     """Send email notifications about a branch."""
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, contents=None, diff_job=None, message_id=None):
+                 delta=None, contents=None, diff=None, message_id=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id)
         self.contents = contents
-        self.diff_job = diff_job
+        self.diff = diff
 
     @classmethod
     def forBranchModified(klass, branch, recipients, from_address, delta):
@@ -149,7 +148,7 @@ class BranchMailer(BaseMailer):
                             from_address, delta=delta)
 
     @classmethod
-    def forRevision(klass, db_branch, from_address, contents, diff_job,
+    def forRevision(klass, db_branch, from_address, contents, diff,
                     subject):
         recipients = db_branch.getNotificationRecipients()
         interested_levels = (
@@ -164,7 +163,7 @@ class BranchMailer(BaseMailer):
                 recipient_dict[recipient] = subscriber_reason
         subject = klass._branchSubject(db_branch, subject)
         return klass(subject, 'branch-modified.txt', recipient_dict,
-            from_address, contents=contents, diff_job=diff_job)
+            from_address, contents=contents, diff=diff)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -174,6 +173,25 @@ class BranchMailer(BaseMailer):
         if branch_title is None:
             branch_title = ''
         return '[Branch %s] %s' % (db_branch.unique_name, branch_title)
+
+    def _diffText(self, max_diff):
+        if self.diff is None:
+            return ''
+        diff_size = self.diff.count('\n') + 1
+        if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
+            if max_diff == BranchSubscriptionDiffSize.NODIFF:
+                contents = self.contents
+            elif diff_size > max_diff.value:
+                diff_msg = (
+                    '\nThe size of the diff (%d lines) is larger than your '
+                    'specified limit of %d lines' % (
+                    diff_size, max_diff.value))
+                contents = diff_msg
+            else:
+                contents = '\n' + self.diff
+        else:
+            contents = '\n' + self.diff
+        return contents
 
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
@@ -191,68 +209,10 @@ class BranchMailer(BaseMailer):
         else:
             params['unsubscribe'] = ''
         params['contents'] = self.contents
-        params['diff'] = '%s'
+        params['diff'] = self._diffText(reason.max_diff_lines)
         params.setdefault('delta', '')
         return params
-
-    def sendAll(self):
-        for job in self.queue():
-            job.run()
-            job.destroySelf()
-
-    def generateEmail(self, subscriber):
-        """Rather roundabout.  Best not to use..."""
-        job = self.queue([subscriber])[0]
-        message = removeSecurityProxy(job.toMessage())
-        job.destroySelf()
-        headers = dict(message.items())
-        del headers['Date']
-        del headers['From']
-        del headers['To']
-        del headers['Subject']
-        del headers['MIME-Version']
-        del headers['Content-Transfer-Encoding']
-        del headers['Content-Type']
-        for key in headers:
-            if not isinstance(headers[key], basestring):
-                headers[key] = str(headers[key])
-        return (headers, message['Subject'], message.get_payload(decode=True))
 
     @staticmethod
     def _format_user_address(user):
         return format_address(user.displayname, user.preferredemail.email)
-
-    def queue(self, recipient_people=None):
-        jobs = []
-        source = getUtility(ICodeMailJobSource)
-        for email, to_address in self.iterRecipients(recipient_people):
-            message_id = self.message_id
-            if message_id is None:
-                message_id = get_msgid()
-            reason, rationale = self._recipients.getReason(email)
-            if reason.branch.product is not None:
-                branch_project_name = reason.branch.product.name
-            else:
-                branch_project_name = None
-            if reason.max_diff_lines is None:
-                max_diff_lines_value = None
-            else:
-                max_diff_lines_value = reason.max_diff_lines.value
-            mail = source.create(
-                from_address=self.from_address,
-                to_address=to_address,
-                rationale=rationale,
-                branch_url=reason.branch.unique_name,
-                subject=self._getSubject(email),
-                body=self._getBody(email),
-                footer='',
-                message_id=message_id,
-                in_reply_to=self._getInReplyTo(),
-                reply_to_address = self._getReplyToAddress(),
-                branch_project_name = branch_project_name,
-                max_diff_lines=max_diff_lines_value
-                )
-            if self.diff_job is not None:
-                mail.job.addPrerequisite(self.diff_job.job)
-            jobs.append(mail)
-        return jobs

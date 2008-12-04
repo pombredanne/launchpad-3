@@ -17,8 +17,9 @@ from canonical.codehosting.scanner.tests.test_bzrsync import (
     FakeTransportServer)
 from canonical.launchpad.database.diff import Diff, StaticDiff, StaticDiffJob
 from canonical.launchpad.interfaces.diff import (
-    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob, JobStatus,
-)
+    IDiff, IStaticDiff, IStaticDiffSource, IStaticDiffJob)
+from canonical.launchpad.database.job import Job
+from canonical.launchpad.interfaces.job import JobStatus
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
 
@@ -124,7 +125,8 @@ class TestStaticDiffJob(BzrTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        verifyObject(IStaticDiffJob, StaticDiffJob())
+        verifyObject(IStaticDiffJob, StaticDiffJob(
+            1, from_revision_spec='0', to_revision_spec='1'))
 
     def test_run_revision_ids(self):
         self.useBzrBranches()
@@ -183,25 +185,6 @@ class TestStaticDiffJob(BzrTestCase):
         job_id = static_diff_job.job.id
         static_diff_job.destroySelf()
         self.assertRaises(SQLObjectNotFound, Job.get, job_id)
-
-    def test_dependant_CodeMessages(self):
-        static_diff_job = self.factory.makeStaticDiffJob()
-        code_mail_job = self.factory.makeCodeMailJob()
-        static_diff_job.job.dependants.add(code_mail_job.job)
-        self.assertEqual(
-            [code_mail_job], list(static_diff_job.dependant_code_mail_jobs))
-
-    def test_run_set_diff_on_dependants(self):
-        self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit')
-        static_diff_job = StaticDiffJob(
-            branch=branch, from_revision_spec='0', to_revision_spec='1')
-        code_mail_job = self.factory.makeCodeMailJob()
-        static_diff_job.job.dependants.add(code_mail_job.job)
-        self.assertEqual(None, code_mail_job.static_diff)
-        static_diff = static_diff_job.run()
-        self.assertEqual(static_diff, code_mail_job.static_diff)
 
 
 def test_suite():

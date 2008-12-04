@@ -9,6 +9,8 @@ __metaclass__ = type
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.mail import get_msgid
+from canonical.launchpad.mailout.branch import RecipientReason
+from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mailout.branch import BranchMailer
 from canonical.launchpad.webapp import canonical_url
 
@@ -61,11 +63,10 @@ class BMPMailer(BranchMailer):
         self.comment = comment
         self.review_diff = review_diff
 
-    def queue(self, recipient_people=None):
-        result = BranchMailer.queue(self, recipient_people)
+    def sendAll(self):
+        BranchMailer.sendAll(self)
         if self.merge_proposal.root_message_id is None:
             self.merge_proposal.root_message_id = self.message_id
-        return result
 
     @classmethod
     def forCreation(klass, merge_proposal, from_user):
