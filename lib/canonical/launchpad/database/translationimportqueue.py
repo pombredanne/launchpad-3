@@ -599,16 +599,10 @@ class TranslationImportQueue:
             status=RosettaImportStatus.NEEDS_REVIEW,
             orderBy=['dateimported']))
 
-    def _sameNone(self, entry1, entry2):
-        """Check if the entries have the same None state, meaning if either
-        both are None or both are not None."""
-        return ((entry1 is None and entry2 is None) or
-                (entry1 is not None and entry2 is not None))
+    def _findMostExactMatch(self, entries):
+        """Evaluate the specificity of the entries.
 
-    def _findUniquelySpecificEntry(self, entries):
-        """Evaluate the specificness of the entries.
-
-        Check if the first entry is unique in its specificness. If not, an
+        Check if the first entry is unique in its specificity. If not, an
         exception is raised. An exception is used because None is needed to
         indicate an empty list.
         There are three cases from less to more specific:
@@ -617,7 +611,7 @@ class TranslationImportQueue:
         3. potemplate and pofile are both not None.
 
         :param entries: A list of TranslationImportQueueEntry objects, sorted
-            by specificness.
+            by specificity.
         :return: The first entry or None."""
 
         # Deal with the simple cases.
@@ -627,9 +621,10 @@ class TranslationImportQueue:
             return entries[0]
 
         # At least two entries are available, so check if they are equal in
-        # specificness.
-        if self._sameNone(entries[0].pofile, entries[1].pofile):
-            if self._sameNone(entries[0].potemplate, entries[1].potemplate):
+        # specificity.
+        if (entries[0].pofile is None) == (entries[1].pofile is None):
+            if ((entries[0].potemplate is None) ==
+                (entries[1].potemplate is None)):
                 raise TranslationImportQueueConflictError
         return entries[0]
 
@@ -705,16 +700,23 @@ class TranslationImportQueue:
             queries.append(
                 'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
                     productseries))
-        # Query and order by level of specificness.
+        # Query and order by level of specificity.
         entries = TranslationImportQueueEntry.select(
                 ' AND '.join(queries),
                 orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
         # Evaluate the result
         try:
-            entry = self._findUniquelySpecificEntry(entries)
+            entry = self._findMostExactMatch(entries)
         except TranslationImportQueueConflictError:
             return None
-        if entry is not None:
+        if entry is None:
+            # It's a new row.
+            entry = TranslationImportQueueEntry(path=path, content=alias,
+                importer=importer, sourcepackagename=sourcepackagename,
+                distroseries=distroseries, productseries=productseries,
+                is_published=is_published, potemplate=potemplate,
+                pofile=pofile, format=format)
+        else:
             # It's an update.
             entry.content = alias
             entry.is_published = is_published
@@ -743,13 +745,6 @@ class TranslationImportQueue:
             entry.date_status_changed = UTC_NOW
             entry.format = format
             entry.sync()
-        else:
-            # It's a new row.
-            entry = TranslationImportQueueEntry(path=path, content=alias,
-                importer=importer, sourcepackagename=sourcepackagename,
-                distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
-                pofile=pofile, format=format)
 
         return entry
 

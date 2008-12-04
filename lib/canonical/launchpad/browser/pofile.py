@@ -279,6 +279,9 @@ class POFileUploadView(POFileView):
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
+        # XXX henninge 20008-12-03 bug=192925: This code is doubled for
+        # productseries and potemplate and should be unified into one.
+
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return

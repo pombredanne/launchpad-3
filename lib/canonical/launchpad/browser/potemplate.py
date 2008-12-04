@@ -261,7 +261,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def upload(self):
         """Handle a form submission to change the contents of the template."""
-
+        # XXX henninge 20008-12-03 bug=192925: This code is doubled for
+        # productseries and pofile and should be unified into one.
         file = self.request.form.get('file')
         if not isinstance(file, FileUpload):
             if not file:
@@ -314,7 +315,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 self.request.response.addInfoNotification(
                     structured(
                     'Thank you for your upload.  It will be automatically '
-                    'reviewed in the next hours.  If that is not '
+                    'reviewed in the next few hours.  If that is not '
                     'enough to determine whether and where your file '
                     'should be imported, it will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
@@ -337,7 +338,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     structured(
                     'Thank you for your upload. %d files from the tarball '
                     'will be automatically '
-                    'reviewed in the next hours.  If that is not enough '
+                    'reviewed in the next few hours.  If that is not enough '
                     'to determine whether and where your files should '
                     'be imported, they will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '

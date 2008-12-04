@@ -383,6 +383,9 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
         """
+        # XXX henninge 20008-12-03 bug=192925: This code is doubled for
+        # potemplate and pofile and should be unified into one.
+
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
             if file == '':
@@ -432,7 +435,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 self.request.response.addInfoNotification(
                     structured(
                     'Thank you for your upload.  It will be automatically '
-                    'reviewed in the next hours.  If that is not '
+                    'reviewed in the next few hours.  If that is not '
                     'enough to determine whether and where your file '
                     'should be imported, it will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
@@ -452,7 +455,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                     structured(
                     'Thank you for your upload. %d files from the tarball '
                     'will be automatically '
-                    'reviewed in the next hours.  If that is not enough '
+                    'reviewed in the next few hours.  If that is not enough '
                     'to determine whether and where your files should '
                     'be imported, they will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
