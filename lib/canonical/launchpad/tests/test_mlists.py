@@ -13,7 +13,7 @@ import unittest
 
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 import transaction
 
@@ -359,9 +359,9 @@ class TestMailingListImportScript(BaseMailingListImportTest):
     layer = MailmanLayer
 
     def setUp(self):
+        super(TestMailingListImportScript, self).setUp()
         # Since these tests involve two processes, the setup transaction must
         # be committed, otherwise the script won't see the changes.
-        BaseMailingListImportTest.setUp(self)
         transaction.commit()
 
     def test_import(self):
@@ -382,13 +382,13 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         process = Popen(
             ('scripts/mlist-import.py', '--filename', self.filename,
              self.team.name),
-            stdout=PIPE, stderr=PIPE,
+            stdout=PIPE, stderr=STDOUT,
             cwd=LayerProcessController.appserver_config.root,
             env=dict(LPCONFIG='testrunner-appserver',
                      PYTHONPATH=os.pathsep.join(sys.path))
             )
         stdout, stderr = process.communicate()
-        self.assertEqual(process.returncode, 0, stderr + stdout)
+        self.assertEqual(process.returncode, 0, stdout)
         # Make sure we hit the database.
         transaction.abort()
         self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
