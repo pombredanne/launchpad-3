@@ -433,7 +433,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None,
-                                product=None):
+                                product=None, review_diff=None):
         """Create a proposal to merge based on anonymous branches."""
         if not product:
             product = _DEFAULT
@@ -446,7 +446,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch, dependent_branch=dependent_branch)
+            registrant, target_branch, dependent_branch=dependent_branch,
+            review_diff=review_diff)
 
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
@@ -475,15 +476,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch_title=None,
-                               person_displayname=None):
+    def makeBranchSubscription(self, branch=None, person=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
         :param person_displayname: The displayname for the created Person
         """
-        branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname)
+        if branch is None:
+            branch = self.makeBranch()
+        if person is None:
+            person = self.makePerson()
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
@@ -630,12 +632,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTaskSet).createTask(
             bug=bug, owner=owner, **target_params)
 
-    def makeBugTracker(self):
+    def makeBugTracker(self, base_url=None, bugtrackertype=None):
         """Make a new bug tracker."""
-        base_url = 'http://%s.example.com/' % self.getUniqueString()
         owner = self.makePerson()
+
+        if base_url is None:
+            base_url = 'http://%s.example.com/' % self.getUniqueString()
+        if bugtrackertype is None:
+            bugtrackertype = BugTrackerType.BUGZILLA
+
         return getUtility(IBugTrackerSet).ensureBugTracker(
-            base_url, owner, BugTrackerType.BUGZILLA)
+            base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None):
         """Make a new bug watch."""
@@ -1015,7 +1022,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeTranslationMessage(self, pofile=None, potmsgset=None,
                                translator=None, reviewer=None,
-                               translation=None):
+                               translations=None):
         """Make a new `TranslationMessage` in the given PO file."""
         if pofile is None:
             pofile = self.makePOFile('sr')
@@ -1023,10 +1030,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             potmsgset = self.makePOTMsgSet(pofile.potemplate)
         if translator is None:
             translator = self.makePerson()
-        if translation is None:
-            translation = self.getUniqueString()
+        if translations is None:
+            translations = [self.getUniqueString()]
 
-        return potmsgset.updateTranslation(pofile, translator, [translation],
+        return potmsgset.updateTranslation(pofile, translator, translations,
                                            is_imported=False,
                                            lock_timestamp=None)
 

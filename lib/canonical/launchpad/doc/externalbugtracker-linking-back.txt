@@ -28,11 +28,9 @@ about the bug.
 
 The methods are called by the BugWatchUpdater class:
 
-    >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
 
-    >>> factory = LaunchpadObjectFactory()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bug_watch = factory.makeBugWatch('42')

@@ -80,8 +80,6 @@ terminal states (merged, rejected, superseded) that are of interest.
 The landing_candidates only returns unmerged proposals, with the most
 recent branch merge proposals first.
 
-    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
     >>> proposal = factory.makeBranchMergeProposal(
     ...     target_branch=target_branch, dependent_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)

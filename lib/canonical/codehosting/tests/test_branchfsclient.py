@@ -116,6 +116,23 @@ class TestBranchFileSystemClient(TestCase):
             self.client._getFromCache('/' + branch.unique_name))
         return deferred
 
+    def test_translatePath_control_branch_cache_interaction(self):
+        # We don't want the caching to make us mis-interpret paths in the
+        # branch as paths into the control transport.
+        branch = self.factory.makeBranch()
+        dev_focus = self.factory.makeBranch(product=branch.product)
+        branch.product.development_focus.user_branch = dev_focus
+        deferred = self.client.translatePath(
+            '/~' + branch.owner.name + '/' + branch.product.name +
+            '/.bzr/format')
+        def call_translatePath_again(ignored):
+            return self.client.translatePath('/' + branch.unique_name)
+        def check_results((transport_type, data, trailing_path)):
+            self.assertEqual(BRANCH_TRANSPORT, transport_type)
+        deferred.addCallback(call_translatePath_again)
+        deferred.addCallback(check_results)
+        return deferred
+
     def test_errors_not_cached(self):
         # Don't cache failed translations. What would be the point?
         deferred = self.client.translatePath('/foo/bar/baz')
