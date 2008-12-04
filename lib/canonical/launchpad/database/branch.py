@@ -1414,11 +1414,6 @@ class BranchSet:
             clauseTables=['BranchMergeProposal'],
             orderBy=['owner', 'name'], distinct=True)
 
-    def isBranchNameAvailable(self, owner, product, branch_name):
-        """See `IBranchSet`."""
-        branch = self.getBranch(owner, product, branch_name)
-        return branch is None
-
 
 class BranchQueryBuilder:
     """A utility class to help build branch query strings."""
