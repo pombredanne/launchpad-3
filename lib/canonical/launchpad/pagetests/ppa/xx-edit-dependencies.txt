@@ -405,8 +405,8 @@ PPA context page and the action won't be executed.
     >>> admin_browser.getControl(
     ...     name="field.selected_dependencies").value = ['sabdfl']
     >>> admin_browser.getControl(
-    ...     "Default (security dependencies and tested "
-    ...     "updates).").selected = True
+    ...     "Default (security dependencies and recommended updates)."
+    ...     ).selected = True
 
     >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.title
