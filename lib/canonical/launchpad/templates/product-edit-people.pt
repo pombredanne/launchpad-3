@@ -53,13 +53,13 @@
           </th>
           <td tal:attributes="class error_class" width="100%">
             <div>
-              <tal:comment condition="nothing">
-                XXX Edwin Grubbs 2008-07-22 bug=250955
-                This custom widget layout can be removed as soon
-                as the widget for the person or team is changed to
-                add a popup which allows you to create a team without
-                being redirected to another page.
-              </tal:comment>
+              <tal:XXX condition="nothing">
+                # XXX Edwin Grubbs 2008-07-22 bug=250955
+                # This custom widget layout can be removed as soon
+                # as the widget for the person or team is changed to
+                # add a popup which allows you to create a team without
+                # being redirected to another page.
+              </tal:XXX>
               <input tal:replace="structure widget" />
               or (<a href="/people/+newteam">Create a new team&hellip;</a>)
             </div>

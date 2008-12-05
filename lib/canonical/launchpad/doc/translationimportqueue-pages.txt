@@ -145,7 +145,40 @@ The potemplate entry for the new template is also created.
     ...     'translation_domain': 'demo-domain'}
     >>> view.validate(data)
     >>> view._change_action(data)
-    >>> view.context.status == RosettaImportStatus.APPROVED
+    >>> pot_entry.status == RosettaImportStatus.APPROVED
     True
-    >>> view.context.potemplate != None
+    >>> pot_entry.potemplate != None
     True
+
+When importing po files, only the relevant templates should be made
+available for selection.
+
+    >>> po_entry = queue.addOrUpdateEntry(
+    ...     'demo.po', '# foo', False,
+    ...     importer, productseries=productseries)
+    >>> print po_entry.path
+    demo.po
+
+The drop-down list is fed from a vocabulary.
+
+    >>> from canonical.launchpad.vocabularies import (
+    ...     TranslationTemplateVocabulary)
+    >>> vocab = TranslationTemplateVocabulary(po_entry)
+    >>> for term in vocab:
+    ...     print term.title
+    demo-name
+    evolution-2.2
+    evolution-2.2-test
+
+But templates may be obsoleted by setting "iscurrent" to False.
+
+    >>> pot_entry.potemplate.iscurrent = False
+
+Only templates marked as "iscurrent" are available in the view when
+importing po files.
+
+    >>> vocab = TranslationTemplateVocabulary(po_entry)
+    >>> for term in vocab:
+    ...     print term.title
+    evolution-2.2
+    evolution-2.2-test

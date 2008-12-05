@@ -203,6 +203,49 @@ memberships in the team.
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
 
+You can also change a TeamMembership through its custom operations.
+
+To change its expiration date, use setExpirationDate(date).
+
+    >>> print salgado_landscape['date_expires']
+    None
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> someday = datetime(2058, 8, 1, tzinfo=pytz.UTC)
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setExpirationDate', {},
+    ...     date=str(someday))
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['date_expires']
+    2058-08-01...
+
+To change its status, use setStatus(status).
+
+    >>> print salgado_landscape['status']
+    Approved
+
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Deactivated')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['status']
+    Deactivated
+
+    # Now revert the change to salgado's membership to not break other tests
+    # further down.
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Approved')
+    HTTP/1.1 200 Ok
+    ...
+
 
 === Members ===
 
