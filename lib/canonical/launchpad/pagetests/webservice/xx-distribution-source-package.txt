@@ -2,18 +2,18 @@
 
 Source packages can be obtained from the context of a distribution.
 
-    >>> ubuntu = webservice.get('/ubuntu').jsonBody()
+    >>> debian = webservice.get('/debian').jsonBody()
 
-    >>> alsa_utils = webservice.named_get(
-    ...     ubuntu['self_link'], 'getSourcePackage',
-    ...     name='alsa-utils').jsonBody()
+    >>> mozilla_firefox = webservice.named_get(
+    ...     debian['self_link'], 'getSourcePackage',
+    ...     name='mozilla-firefox').jsonBody()
 
-    >>> print pretty(alsa_utils)
-    {u'binary_package_names': u'',
+    >>> print pretty(mozilla_firefox)
+    {u'binary_package_names': None,
      u'bug_reporting_guidelines': None,
-     u'display_name': u'alsa-utils in ubuntu',
-     u'distribution_link': u'http://.../ubuntu',
-     u'name': u'alsa-utils',
+     u'display_name': u'mozilla-firefox in debian',
+     u'distribution_link': u'http://.../debian',
+     u'name': u'mozilla-firefox',
      u'resource_type_link': u'http://.../#distribution_source_package',
-     u'self_link': u'http://.../ubuntu/+source/alsa-utils',
-     u'title': u'\u201calsa-utils\u201d source package in Ubuntu'}
+     u'self_link': u'http://.../debian/+source/mozilla-firefox',
+     u'title': u'\u201cmozilla-firefox\u201d source package in Debian'}
