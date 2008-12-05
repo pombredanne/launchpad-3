@@ -78,6 +78,7 @@ add_missing_from=false
 log_statement='all'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
+max_fsm_relations=2000
 
 EOF
 
