@@ -380,7 +380,7 @@ processed.
 
 == Primary dependencies in the PPA index page ==
 
-Primary dependencies as listed with pocket information in the PPA
+Primary dependencies are presented with pocket information in the PPA
 index page (see `IArchivedependency.title`).
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')

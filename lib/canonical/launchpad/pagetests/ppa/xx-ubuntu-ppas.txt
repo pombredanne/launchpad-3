@@ -540,7 +540,7 @@ for more information).
 
 Now that 'No privileges' PPA has a signing key, a text with the key
 reference (fingerprint) and a pointer to the setup instructions in the
-help wiki.
+help wiki are presented in the PPA index page.
 
     >>> anon_browser.reload()
 
@@ -549,8 +549,8 @@ help wiki.
 
     >>> print extract_text(signing_key_section)
     This repository is signed with
-    ABCDEF0123456789ABCDDCBA0000111112345678 GPG key.
-    Please follow the instructions to configure your system here.
+    ABCDEF0123456789ABCDDCBA0000111112345678 OpenPGP key.
+    Follow these instructions if you want to install packages from this PPA.
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
@@ -562,7 +562,7 @@ keyserver.
 Another link in this section point users to the expanded instructions
 about how to use the signing_key.
 
-    >>> print anon_browser.getLink('here').url
+    >>> print anon_browser.getLink('these instructions').url
     https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories
 
 

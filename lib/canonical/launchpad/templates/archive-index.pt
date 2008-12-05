@@ -71,9 +71,9 @@
             <code tal:content="signing_key/fingerprint">
               0123456789012345678901234567890123456789
             </code>
-          </a> GPG key.
-	  Please follow the instructions to configure your system
-          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">here</a>.
+          </a> OpenPGP key.
+          Follow <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">these instructions</a> if you want to
+	  install packages from this PPA.
         </p>
 
       </div>
