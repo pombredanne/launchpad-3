@@ -485,6 +485,17 @@ See `google-searchservice.txt` for more information about the
 GoogleSearchService and PageMatch objects.
 
 
+== No page matches ==
+
+When an empty PageMatches object is by the GoogleSearchService to the
+view, there are no matches to show.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'no-meaningful'})
+    >>> search_view.has_matches
+    False
+
+
 == Bad Google response handling ==
 
 Connectivity problems can cause missing or incomplete responses from

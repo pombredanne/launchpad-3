@@ -297,9 +297,9 @@ class GoogleSearchService:
                 continue
             summary = summary.replace('<br>', '')
             page_matches.append(PageMatch(title, url, summary))
-        if len(page_matches) == 0:
-            # No viable page matches could be found in the set; the
-            # XML may be the wrong version.
+        if len(page_matches) == 0 and total > 20:
+            # No viable page matches could be found in the set and there
+            # are more possible matches; the XML may be the wrong version.
             raise GoogleWrongGSPVersion(
                 "Could not get any PageMatches from the GSP XML response.")
         return PageMatches(page_matches, start, total)

@@ -379,7 +379,7 @@ class LaunchpadSearchView(LaunchpadFormView):
             error_utility.raising(sys.exc_info(), self.request)
             self.no_page_service = True
             return None
-        if page_matches.total == 0:
+        if len(page_matches) == 0:
             return None
         navigator = GoogleBatchNavigator(
             page_matches, self.request, start=start)
