@@ -67,9 +67,11 @@
 	   tal:define="signing_key context/signing_key"
 	   tal:condition="signing_key">
           This repository is signed with
-          <a tal:attributes="href signing_key/keyserverURL"
-             tal:content="signing_key/fingerprint"
-             >0123456789012345678901234567890123456789</a> GPG key.
+          <a tal:attributes="href signing_key/keyserverURL">
+            <code tal:content="signing_key/fingerprint">
+              0123456789012345678901234567890123456789
+            </code>
+          </a> GPG key.
 	  Please follow the instructions to configure your system
           <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">here</a>.
         </p>
