@@ -63,6 +63,17 @@
 
         <tal:entries replace="structure view/sources_list_entries" />
 
+        <p id="signing-key"
+	   tal:define="signing_key context/signing_key"
+	   tal:condition="signing_key">
+          This repository is signed with
+          <a tal:attributes="href signing_key/keyserverURL"
+             tal:content="signing_key/fingerprint"
+             >0123456789012345678901234567890123456789</a> GPG key.
+	  Please follow the instructions to configure your system
+          <a href="https://help.launchpad.net/Packaging/PPA#Adding%20a%20PPA%20to%20your%20Ubuntu%20repositories">here</a>.
+        </p>
+
       </div>
 
       <div id="ppa-dependencies" tal:condition="context/dependencies">
@@ -72,7 +83,7 @@
         <ul>
            <li tal:repeat="dependency context/dependencies">
              <a tal:attributes="href dependency/dependency/fmt:url"
-                tal:content="dependency/dependency/title" />
+                tal:content="dependency/title" />
              (included <span
                tal:replace="dependency/date_created/fmt:displaydate" />)
            </li>
