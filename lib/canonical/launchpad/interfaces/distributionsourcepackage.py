@@ -10,14 +10,16 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
-from zope.schema import TextLine
+from zope.schema import Int, TextLine
 
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
-   export_as_webservice_entry, exported)
+    export_as_webservice_entry, export_operation_as, export_read_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
@@ -113,6 +115,12 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         on how this criteria will be centrally encoded.
         """)
 
+    @operation_parameters(
+        quantity=Int(
+            title=_("The maximum number of bug tasks to return"), min=1))
+    @operation_returns_collection_of(IBugTask)
+    @export_operation_as(name="getBugTasks")
+    @export_read_operation()
     def bugtasks(quantity=None):
         """Bug tasks on this source package, sorted newest first.
 
