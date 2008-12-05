@@ -15,7 +15,8 @@ from zope.schema import Int, TextLine
 from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+    exported, operation_parameters, operation_returns_collection_of,
+    rename_parameters_as)
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -115,6 +116,7 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         on how this criteria will be centrally encoded.
         """)
 
+    @rename_parameters_as(quantity='limit')
     @operation_parameters(
         quantity=Int(
             title=_("The maximum number of bug tasks to return"), min=1))

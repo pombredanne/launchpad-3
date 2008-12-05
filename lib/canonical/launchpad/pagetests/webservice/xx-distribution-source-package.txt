@@ -48,6 +48,17 @@ package using the "getBugTasks" method.
        Fix Released, Medium, <http://api.launchpad.dev/beta/bugs/8>
        <http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/8>
 
+A number can be passed to limit the number of bug tasks returned:
+
+    >>> bug_task_collection = webservice.named_get(
+    ...     mozilla_firefox['self_link'],
+    ...     'getBugTasks', limit=1).jsonBody()
+
+    >>> print_bug_tasks(bug_task_collection['entries'])
+    0. Bug #8 in mozilla-firefox (Debian): "Printing doesn't work"
+       Fix Released, Medium, <http://api.launchpad.dev/beta/bugs/8>
+       <http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/8>
+
 It's also possible to search for tasks with the "searchTasks" method:
 
     >>> bug_task_collection = webservice.named_get(
