@@ -73,7 +73,7 @@ name.
     >>> for key, value in sorted(alsa_utils.items()):
     ...     print "%s: %s" % (key, value)
     binary_pacakge_names:
-    bug_reporting_guidelines:
+    bug_reporting_guidelines: None
     bug_tasks_collection_link: http://.../
     display_name: alsa-utils in ubuntu
     distribution_link: http://.../ubuntu
