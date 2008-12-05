@@ -1033,7 +1033,8 @@ class BugTaskSearchParams:
         search_params.distribution = distribution
         if has_patch:
             # Import this here to avoid circular imports
-            from canonical.launchpad.interfaces.bugattachment import BugAttachmentType
+            from canonical.launchpad.interfaces.bugattachment import (
+                BugAttachmentType)
             search_params.attachmenttype = BugAttachmentType.PATCH
             search_params.has_patch = has_patch
         search_params.has_cve = has_cve
@@ -1224,6 +1225,9 @@ class IBugTaskSet(Interface):
             'open_unassigned': The number of open unassigned bugs.
             'open_inprogress': The number of open bugs that are In Progress.
         """
+
+    def getOpenBugTasksPerProduct(user, products):
+        """Return open bugtask count for multiple products."""
 
 
 def valid_remote_bug_url(value):
