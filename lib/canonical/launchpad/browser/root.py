@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.searchservice import ISearchService
 from canonical.launchpad.interfaces.shipit import ShipItConstants
@@ -73,6 +74,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def bug_count(self):
         return getUtility(ILaunchpadStatisticSet).value('bug_count')
+
+    @property
+    def project_count(self):
+        return getUtility(IProductSet).count_all()
 
 
 

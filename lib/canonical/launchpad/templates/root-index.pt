@@ -127,10 +127,12 @@
       <div class="three column right">
       <strong tal:content="view/branch_count">123</strong> 
       <strong tal:content="view/bug_count">123</strong>
+      <strong tal:content="view/project_count">123</strong>
+      <h2>Get started</h2>
       <div id="portlets" style="margin-left: 5em;">
         <div class="portlet portlet-home">
-            <a href="/projects/+new-guided">Create a Project</a><br/>
-            <a href="/people/+newteam">Create a Team</a>
+            <a href="/projects/+new-guided">Create a new Project</a><br/>
+            <a href="/people/+newteam">Create a new Team</a>
         </div>
         <div class="portlet portlet-home">
             <a href="/projects">Browse Projects</a><br/>
