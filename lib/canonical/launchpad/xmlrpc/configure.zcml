@@ -185,4 +185,12 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.PathTranslationError">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidPath">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
 </configure>

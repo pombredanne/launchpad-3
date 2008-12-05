@@ -9,6 +9,7 @@ for teams (as they're defined in the ITeam interface).
     >>> for key, value in sorted(salgado.items()):
     ...     print "%s: %s" % (key, value)
     admins_collection_link: http://.../~salgado/admins
+    archive_link: None
     confirmed_email_addresses_collection_link: http://.../~salgado/confirmed_email_addresses
     date_created: 2005-06-06T08:59:51.596025+00:00
     deactivated_members_collection_link: http://.../~salgado/deactivated_members
@@ -48,6 +49,7 @@ for teams (as they're defined in the ITeam interface).
     >>> for key, value in sorted(ubuntu_team.items()):
     ...     print "%s: %s" % (key, value)
     admins_collection_link: http://.../~ubuntu-team/admins
+    archive_link: None
     confirmed_email_addresses_collection_link: http://.../~ubuntu-team/confirmed_email_addresses
     date_created: 2005-06-06T08:59:51.605760+00:00
     deactivated_members_collection_link: http://.../~ubuntu-team/deactivated_members
@@ -205,6 +207,49 @@ memberships in the team.
     ...     "/~landscape-developers/members_details").jsonBody())
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
+
+You can also change a TeamMembership through its custom operations.
+
+To change its expiration date, use setExpirationDate(date).
+
+    >>> print salgado_landscape['date_expires']
+    None
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> someday = datetime(2058, 8, 1, tzinfo=pytz.UTC)
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setExpirationDate', {},
+    ...     date=str(someday))
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['date_expires']
+    2058-08-01...
+
+To change its status, use setStatus(status).
+
+    >>> print salgado_landscape['status']
+    Approved
+
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Deactivated')
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['status']
+    Deactivated
+
+    # Now revert the change to salgado's membership to not break other tests
+    # further down.
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Approved')
+    HTTP/1.1 200 Ok
+    ...
 
 
 === Members ===
@@ -417,6 +462,18 @@ to, obviously.
     >>> print webservice.get("/~salgado/+ircnick/1")
     HTTP/1.1 404 Not Found
     ...
+
+=== PPAs ===
+
+We can get to the person's PPA via the archive property:
+
+    >>> sabdfl_archive_link = sabdfl['archive_link']
+    >>> print sabdfl_archive_link
+    http://.../~sabdfl/+archive
+
+    >>> sabdfl_archive = webservice.get(sabdfl_archive_link).jsonBody()
+    >>> print sabdfl_archive['description']
+    packages to help the humanity (you know, ubuntu)
 
 
 == Custom operations ==

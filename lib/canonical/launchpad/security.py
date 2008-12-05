@@ -14,7 +14,8 @@ from canonical.launchpad.interfaces.announcement import IAnnouncement
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
-from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branch import (
+    IBranch, user_has_special_branch_access)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from canonical.launchpad.interfaces.branchsubscription import (
@@ -1345,8 +1346,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
 
-        # If it's a PPA only allow its owner.
-        if self.obj.archive.is_ppa:
+        # If it's a PPA or a copy archive only allow its owner.
+        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
             return (self.obj.archive.owner and
                     user.inTeam(self.obj.archive.owner))
 
@@ -1362,6 +1363,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
 
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
+
+    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
+    # otherwise users are likely to get 403 errors, or worse.
 
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
@@ -1495,8 +1499,7 @@ class AccessBranch(AuthorizationBase):
         for subscriber in branch.subscribers:
             if user.inTeam(subscriber):
                 return True
-        celebs = getUtility(ILaunchpadCelebrities)
-        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+        return user_has_special_branch_access(user)
 
     def checkAuthenticated(self, user, checked_branches=None):
         if checked_branches is None:
@@ -1531,10 +1534,8 @@ class EditBranch(AuthorizationBase):
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebs.admin) or
-                user.inTeam(celebs.bazaar_experts))
+                user_has_special_branch_access(user))
 
 
 class AdminBranch(AuthorizationBase):

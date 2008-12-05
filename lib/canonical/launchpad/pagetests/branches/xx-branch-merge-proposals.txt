@@ -307,13 +307,12 @@ bugs and urls.
     >>> comment = find_tag_by_id(sample_browser.contents, 'comment1')
     >>> print comment.find('div',
     ...     {'class': 'boardCommentBody codereviewcomment'}).contents[1]
-    <p>This fixes
-    <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></p>
+    <pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">This fixes <a href="/bugs/1" title="Firefox does not support SVG">bug #1</a></pre>
 
 
-Consume notification.
+Consume notifications.
 
-    >>> [_unused] = pop_notifications()
+    >>> _unused = pop_notifications()
 
 == Marking as merged ==
 
@@ -356,9 +355,16 @@ The proposal is now shown as have being merged.
     Status: Merged
     ...
 
-An email notification is also created.
+An email notification is also created and sent to both the subscribers
+and the reviewers.
 
-    >>> [notification] = pop_notifications()
+    >>> notifications = pop_notifications()
+    >>> for notification in notifications:
+    ...     print notification['To']
+    Foo Bar <foo.bar@canonical.com>
+    Mark Shuttleworth <mark@hbd.com>
+    Sample Person <test@canonical.com>
+    >>> notification = notifications[0]
     >>> print notification['Subject']
     Proposed merge of lp://dev/~name12/gnome-terminal/klingon into
       lp://dev/~name12/gnome-terminal/main updated
@@ -396,6 +402,9 @@ next to the heading "Merged at revision".
 
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'landing-targets'))
+    &raquo; Merged into lp://dev/~name12/gnome-terminal/main
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -414,6 +423,10 @@ next to the heading "Merged at revision".
     ...
     Merged at revision: 42
     ...
+    >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'landing-targets'))
+    &raquo; Merged into lp://dev/~name12/gnome-terminal/main at revision 42
 
 No email notification is triggered.
 

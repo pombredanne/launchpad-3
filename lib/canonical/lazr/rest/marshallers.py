@@ -221,7 +221,8 @@ class BytesFieldMarshaller(SimpleFieldMarshaller):
 
         Marshall as a link to the byte storage resource.
         """
-        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+        return "%s/%s" % (canonical_url(entry.context, self.request),
+                          self.field.__name__)
 
     def _marshall_from_request(self, value):
         """See `SimpleFieldMarshaller`.
@@ -407,7 +408,8 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
         This returns a link to the scoped collection.
         """
-        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+        return "%s/%s" % (canonical_url(entry.context, self.request),
+                          self.field.__name__)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -474,7 +476,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         """
         repr_value = None
         if value is not None:
-            repr_value = canonical_url(value)
+            repr_value = canonical_url(value, self.request)
         return repr_value
 
     def _marshall_from_json_data(self, value):
