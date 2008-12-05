@@ -28,10 +28,6 @@ class IArchiveSigningKey(Interface):
     archive = Object(
         title=_('Corresponding IArchive'), required=True, schema=IArchive)
 
-    public_key_path = Attribute(
-        "Absolute disk path of an export of the corresponding public "
-        "signing key.")
-
     def getPathForSecretKey(key):
         """Return the absolute path to access a secret key export.
 
@@ -54,20 +50,13 @@ class IArchiveSigningKey(Interface):
         :raises: `AssertionError` if the given key is public.
         """
 
-    def exportPublicKey(key):
-        """Export the given public key into the corresponding repository.
-
-        Place a ASCII armored export of the given public key into the
-        repository location, specified by `public_key_path`. E.g:
-
-        /<ppa_repository_root>/key.gpg
-
-        :param key: a public `PymeKey` object to be exported.
-        :raises: `AssertionError` if the given key is secret.
-        """
-
     def generateSigningKey():
         """Generate a new GPG secret/public key pair.
+
+         * Export the secret key in the configuration disk location;
+         * Upload the public key to the configuration keyserver;
+         * Store a reference for the public key in GPGKey table, which
+           is set as the context archive 'signing_key'.
 
         :raises: `AssertionError` if the context archive already has a
             `signing_key`.
