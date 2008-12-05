@@ -262,7 +262,7 @@ class WebServiceApplication(ServiceRootResource):
         'apidoc', 'wadl-%s.xml' % config.instance_name)
 
     if os.path.exists(_wadl_filename):
-        cached_wadl = open(_wadl_filename).read()
+        cached_wadl = open(_wadl_filename).read().decode('UTF-8')
     else:
         cached_wadl = None
 

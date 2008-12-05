@@ -31,7 +31,7 @@ Not everyone can modify it however:
     ...     product['self_link'], 'application/json', dumps(patch))
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
-    Content-Length: 1476
+    Content-Length: ...
     Content-Type: text/plain
     X-Lazr-Oopsid: OOPS-...
     <BLANKLINE>

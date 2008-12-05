@@ -258,6 +258,7 @@ utilities/create-lp-wadl.py does: clear out the cache on the class.
 
     >>> wadl = webservice.get(
     ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    >>> wadl = wadl.decode('UTF-8')
 
     >>> len(wadl) > len(test_wadl)
     True
@@ -273,7 +274,8 @@ We can examine the real wadl now.
 
     # We need to replace the nbsp entity, because the validator
     # doesn't support embedded definition.
-    >>> wadl_schema.validate(wadl.replace('&nbsp;', '&#160;'))
+    >>> wadl_schema.validate(
+    ...     wadl.replace('&nbsp;', '&#160;').encode('UTF-8'))
     True
     >>> wadl_schema.error_log
     ''
