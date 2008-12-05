@@ -1,0 +1,20 @@
+= Distribution Source Packages =
+
+Source packages can be obtained from the context of a distribution.
+
+    >>> ubuntu = webservice.get('/ubuntu').jsonBody()
+
+    >>> alsa_utils = webservice.named_get(
+    ...     ubuntu['self_link'], 'getSourcePackage',
+    ...     name='alsa-utils').jsonBody()
+
+    >>> for key, value in sorted(alsa_utils.items()):
+    ...     print "%s: %s" % (key, value)
+    binary_package_names:
+    bug_reporting_guidelines: None
+    display_name: alsa-utils in ubuntu
+    distribution_link: http://.../ubuntu
+    name: alsa-utils
+    resource_type_link: http://.../#distribution_source_package
+    self_link: http://.../ubuntu/+source/alsa-utils
+    title: “alsa-utils” source package in Ubuntu
