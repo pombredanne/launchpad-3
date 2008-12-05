@@ -424,7 +424,8 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         process = self.makeProcess()
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0, stderr + stdout)
-        # There should be no messages sitting in the smtp controller.
+        # There should be no messages sitting in the smtp controller, because
+        # all notifications were suppressed.
         messages = LayerProcessController.smtp_controller.getMessages()
         self.assertEqual(len(messages), 0)
 
@@ -442,7 +443,8 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         process = self.makeProcess('--notifications')
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0, stderr + stdout)
-        # There should be no messages sitting in the smtp controller.
+        # There should be five messages sitting in the smtp controller, one
+        # for each added new member, all sent to the team owner.
         messages = LayerProcessController.smtp_controller.getMessages()
         self.assertEqual(len(messages), 5)
         # The messages are all being sent to the team owner.
