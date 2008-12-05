@@ -16,6 +16,7 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
+from storm.expr import Not
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase
@@ -245,10 +246,13 @@ class BugWatch(SQLBase):
     def getImportedBugMessages(self):
         """See `IBugWatch`."""
         store = Store.of(self)
-        # If a comment is linked to a bug watch, it means it's imported.
+        # If a comment is linked to a bug watch and has a
+        # remote_comment_id, it means it's imported.
         return store.find(
             BugMessage,
-            BugMessage.bug == self.bug.id, BugMessage.bugwatch == self.id)
+            BugMessage.bug == self.bug.id,
+            BugMessage.bugwatch == self.id,
+            Not(BugMessage.remote_comment_id == None))
 
 
 class BugWatchSet(BugSetBase):

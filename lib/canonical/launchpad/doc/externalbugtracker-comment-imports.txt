@@ -272,7 +272,8 @@ getImportedBugMessages().
     >>> bug_watch2 = factory.makeBugWatch('42')
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
-    ...     content='Imported comment', bugwatch=bug_watch2)
+    ...     content='Imported comment', bugwatch=bug_watch2,
+    ...     remote_comment_id='test')
     <Message at ...>
     >>> bug_watch2.bug.newMessage(
     ...     owner=bug_watch2.bug.owner, subject='None',
