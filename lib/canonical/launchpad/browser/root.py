@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
-from canonical.launchpad.interfaces.searchservice import ISearchService
+from canonical.launchpad.interfaces.searchservice import (
+    GoogleResponseError, ISearchService)
 from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
@@ -144,6 +145,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         Set the state of the search_params and matches.
         """
         super(LaunchpadSearchView, self).__init__(context, request)
+        self.no_page_service = False
         self._bug = None
         self._question = None
         self._person_or_team = None
@@ -366,7 +368,14 @@ class LaunchpadSearchView(LaunchpadFormView):
         if query_terms in [None , '']:
             return None
         google_search = getUtility(ISearchService)
-        page_matches = google_search.search(terms=query_terms, start=start)
+        try:
+            page_matches = google_search.search(terms=query_terms, start=start)
+        except GoogleResponseError:
+            #globalErrorUtility = getUtility(IErrorReportingUtility)
+            #globalErrorUtility.raising(sys.exc_info(), view.request)
+            #page_matches = PageMatches([], start, 0)
+            self.no_page_service = True
+            return None
         if page_matches.total == 0:
             return None
         navigator = GoogleBatchNavigator(

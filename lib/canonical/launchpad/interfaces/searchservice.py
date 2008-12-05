@@ -9,6 +9,7 @@ __all__ = [
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
+    'GoogleResponseError',
     'GoogleWrongGSPVersion',
     ]
 
@@ -59,6 +60,10 @@ class ISearchResults(Interface):
 
 class GoogleWrongGSPVersion(ValueError):
     """Raised when the content is not parsable Google Search Protocol XML."""
+
+
+class GoogleResponseError(SyntaxError):
+    """Raised when Google's response is not contain valid XML."""
 
 
 class ISearchService(Interface):

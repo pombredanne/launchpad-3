@@ -185,6 +185,7 @@
         </div>
 
         <p id="no-results" tal:condition="not:view/has_matches">
+          <!-- # XXX sinzui 2008-11-22: Add a message for no_page_service. -->
           Your search for
           &ldquo;<span
             class="text"

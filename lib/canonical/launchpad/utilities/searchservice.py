@@ -19,7 +19,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleWrongGSPVersion)
+    ISearchResult, ISearchResults, ISearchService, GoogleResponseError,
+    GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.uri import URI
 
@@ -249,9 +250,14 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
+        :raise: `GoogleResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
-        gsp_doc = ET.fromstring(gsp_xml)
+        try:
+            gsp_doc = ET.fromstring(gsp_xml)
+        except SyntaxError:
+            raise GoogleResponseError(
+                "The response was incomplete, no xml.")
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
         try:
