@@ -145,7 +145,7 @@ object.
     >>> print archive_signing_key.archive.title
     PPA for Celso Providelo
 
-It also implements exportSecretKey() with receive a `PymeKey` and
+It also implements exportSecretKey() which receive a `PymeKey` and
 export it in the appropriate location.
 
 We will create MockKey objects implementing only the methods required
@@ -232,8 +232,8 @@ If called against a PPA which already has a 'signing_key'
     ...
     AssertionError: Cannot override signing_keys.
 
-Let's reset the gpg local key ring, so we can verify if the public is
-available in the keyserver.
+Let's reset the gpg local key ring, so we can check that the public
+key is available in the keyserver.
 
     >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
@@ -263,9 +263,13 @@ the expected file.
 It produces a detached signature for the repository Release current
 file contents.
 
+    XXX cprov 20081205: PublishingConfig doesn't implement any
+    interfaces, when it's returned from a content class no attributes
+    can be accessed.
+
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_pub_config = removeSecurityProxy(cprov.archive.getPubConfig())
-    >>> archive_root = naked_pub_config.archiveroot
+    >>> archive_root = removeSecurityProxy(
+    ...     cprov.archive.getPubConfig()).archiveroot
 
     >>> import os
     >>> suite_path = os.path.join(archive_root, 'dists', test_suite)

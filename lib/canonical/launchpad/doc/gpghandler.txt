@@ -279,7 +279,7 @@ keyserver web interface.
 == Keyserver uploads ==
 
 IGPGHandler also allow callsites to upload the public part of a local
-to the configuration keyserver.
+key to the configuration keyserver.
 
 We will setup and use the test-keyserver (zeca).
 
@@ -287,11 +287,10 @@ We will setup and use the test-keyserver (zeca).
     >>> z = ZecaTestSetup()
     >>> z.setUp()
 
-We will upload the just-generated key to the keyserver.
+Upload the just-generated key to the keyserver so that we can reset
+the local keyring.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
-
-It's uploaded, now we can reset the local keyring.
 
     >>> gpghandler.resetLocalState()
     >>> len(list(gpghandler.localKeys()))

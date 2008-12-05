@@ -81,7 +81,7 @@ class ArchiveSigningKey:
     def _setupSigningKey(self, secret_key):
         """Mandatory setup for signing keys.
 
-        * Export the secret key into the protect disk location.
+        * Export the secret key into the protected disk location.
         * Upload public key to the keyserver.
         * Store the public GPGKey reference in the database and update
           the context archive.signing_key.

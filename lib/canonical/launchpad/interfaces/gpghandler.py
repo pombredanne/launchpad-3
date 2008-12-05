@@ -92,7 +92,7 @@ class IGPGHandler(Interface):
         :param signature: The signature as string (or None if content is
             clearsigned)
 
-        :raise: GPGVerificationError if the signature cannot be verified.
+        :raise GPGVerificationError: if the signature cannot be verified.
         :return: a `PymeSignature` object.
         """
 
@@ -131,7 +131,7 @@ class IGPGHandler(Interface):
 
         :param name: string to be included in the key paramenters, 'comment'
             and 'email' will be empty.
-        :raise: AssertionError if the key generation is not exaclty what
+        :raise AssertionError: if the key generation is not exaclty what
             we expect.
 
         :return: a `PymeKey` object for the just-generated secret key.
@@ -179,21 +179,21 @@ class IGPGHandler(Interface):
 
         :param fingerprint: The key fingerprint, which must be an hexadecimal
             string.
-        :raise: GPGKeyNotFoundError, if the key is not found neither in the
+        :raise GPGKeyNotFoundError: if the key is not found neither in the
             local keyring nor in the key server.
         :return: a `PymeKey`object containing the key information.
         """
 
     def uploadPublicKey(fingerprint):
-        """Upload the specified public key to the configuration keyserver.
+        """Upload the specified public key to a keyserver.
 
-        User `retrieveKey` to get the public key content and upload an
+        Use `retrieveKey` to get the public key content and upload an
         ASCII-armored export chunk.
 
         :param fingerprint: The key fingerprint, which must be an hexadecimal
             string.
-        :raise: GPGUploadFailure, if the keyserver could not be reaches.
-        :raise: AssertionError, if the POST request doesn't succeed.
+        :raise GPGUploadFailure: if the keyserver could not be reaches.
+        :raise AssertionError: if the POST request doesn't succeed.
         """
 
     def checkTrustDb():

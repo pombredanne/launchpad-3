@@ -47,7 +47,7 @@ class IArchiveSigningKey(Interface):
         location specified by `getPathForSecretKey`.
 
         :param key: a secret `PymeKey` object to be exported.
-        :raises: `AssertionError` if the given key is public.
+        :raises AssertionError: if the given key is public.
         """
 
     def generateSigningKey():
@@ -58,23 +58,25 @@ class IArchiveSigningKey(Interface):
          * Store a reference for the public key in GPGKey table, which
            is set as the context archive 'signing_key'.
 
-        :raises: `AssertionError` if the context archive already has a
+        :raises AssertionError: if the context archive already has a
             `signing_key`.
+        :raises GPGUploadFailure: if the just-generated key could not be
+            upload to the keyserver.
         """
 
     def setSigningKey(key_path):
         """Set a given secret key export as the context archive signing key.
 
-        :raises: `AssertionError` if the context archive already has a
+        :raises AssertionError: if the context archive already has a
             `signing_key`.
-        :raises: `AssertionError` if the given 'key_path' does not exist.
+        :raises AssertionError: if the given 'key_path' does not exist.
         """
 
     def signRepository(suite):
         """Sign the corresponding repository.
 
         :param suite: suite name to be signed.
-        :raises: `AssertionError` if the context archive has no `signing_key`
+        :raises AssertionError: if the context archive has no `signing_key`
             or there is no Release file in the given suite.
         """
 
