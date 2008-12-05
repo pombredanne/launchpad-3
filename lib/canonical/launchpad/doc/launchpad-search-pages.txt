@@ -489,7 +489,7 @@ GoogleSearchService and PageMatch objects.
 
 Connectivity problems can cause missing or incomplete responses from
 Google. The LaunchpadSearchView will display the other searches and
-show a message explaining that they user can search again to find
+show a message explaining that the user can search again to find
 matching pages.
 
     >>> search_view = getSearchView(

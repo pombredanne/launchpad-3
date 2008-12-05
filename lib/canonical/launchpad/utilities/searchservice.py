@@ -256,8 +256,7 @@ class GoogleSearchService:
         try:
             gsp_doc = ET.fromstring(gsp_xml)
         except SyntaxError:
-            raise GoogleResponseError(
-                "The response was incomplete, no xml.")
+            raise GoogleResponseError("The response was incomplete, no xml.")
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
         try:
