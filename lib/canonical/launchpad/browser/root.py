@@ -7,9 +7,12 @@ __all__ = [
     'LaunchpadSearchView',
     ]
 
+
 import re
+import sys
 
 from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -369,11 +372,11 @@ class LaunchpadSearchView(LaunchpadFormView):
             return None
         google_search = getUtility(ISearchService)
         try:
-            page_matches = google_search.search(terms=query_terms, start=start)
+            page_matches = google_search.search(
+                terms=query_terms, start=start)
         except GoogleResponseError:
-            #globalErrorUtility = getUtility(IErrorReportingUtility)
-            #globalErrorUtility.raising(sys.exc_info(), view.request)
-            #page_matches = PageMatches([], start, 0)
+            error_utility = getUtility(IErrorReportingUtility)
+            error_utility.raising(sys.exc_info(), self.request)
             self.no_page_service = True
             return None
         if page_matches.total == 0:

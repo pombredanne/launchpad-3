@@ -240,8 +240,19 @@ search.
     <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
-# XXX sinzui 2008-11-22: Add a test to verify a nice message is presented
-# for no_page_service.
+
+== Searches when there is no page service ==
+
+Google may not be available when the search is performed. This is often
+caused by temporary connectivity problems. A message is displayed that
+explain that the search can be performed again to find matching pages.
+
+    >>> search_for('gnomebaker')
+    >>> print find_tag_by_id(anon_browser.contents, 'no-page-service')
+    <p id="no-page-service">
+    The page search service was not available when this search was
+    performed. <a href="">Search again</a> to see the matching pages.
+    </p>
 
 
 == Searches for the empty string ==

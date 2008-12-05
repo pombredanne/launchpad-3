@@ -501,6 +501,17 @@ matching pages.
     >>> search_view.no_page_service
     True
 
+An oops was reported by the view so that GoogleResponseError can be
+tracked.
+
+    >>> from zope.error.interfaces import IErrorReportingUtility
+
+    >>> error_utility = getUtility(IErrorReportingUtility)
+    >>> oops = error_utility.getLastOopsReport()
+    >>> oops.type
+    'GoogleResponseError'
+    >>> oops.value
+    'The response was incomplete, no xml.'
 
 
 == SearchFormView and SearchFormPrimaryView ==
