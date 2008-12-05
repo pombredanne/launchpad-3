@@ -934,8 +934,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
          || Release   || RELEASE   ||
          || Security  || SECURITY  ||
          || Default   || UPDATES   ||
-         || Backports || BACKPORTS ||
          || Proposed  || PROPOSED  ||
+         || Backports || BACKPORTS ||
 
         When omitted in the form, this widget defaults for 'Default'
         option when rendered.
@@ -945,18 +945,18 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             _('Basic (only released packages).'))
         security = SimpleTerm(
             PackagePublishingPocket.SECURITY, 'SECURITY',
-            _('Security (basic dependencies and security fixes).'))
+            _('Security (basic dependencies and important security updates).'))
         updates = SimpleTerm(
             PackagePublishingPocket.UPDATES, 'UPDATES',
-            _('Default (security dependencies and tested updates).'))
-        backports = SimpleTerm(
-            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
-            _('Backports (default dependencies and backports).'))
+            _('Default (security dependencies and recommended updates).'))
         proposed = SimpleTerm(
             PackagePublishingPocket.PROPOSED, 'PROPOSED',
-            _('Proposed (backports dependencies and proposed binaries).'))
+            _('Proposed (default dependencies and proposed updates).'))
+        backports = SimpleTerm(
+            PackagePublishingPocket.BACKPORTS, 'BACKPORTS',
+            _('Backports (default dependencies and unsupported updates).'))
 
-        terms = [release, security, updates, backports, proposed]
+        terms = [release, security, updates, proposed, backports]
 
         primary_dependency = self.context.getArchiveDependency(
             self.context.distribution.main_archive)
