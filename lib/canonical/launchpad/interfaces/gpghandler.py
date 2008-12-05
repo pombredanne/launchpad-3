@@ -5,6 +5,7 @@ from zope.interface import Interface, Attribute
 
 __all__ = [
     'GPGKeyNotFoundError',
+    'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
     'IPymeSignature',
@@ -28,6 +29,13 @@ class GPGKeyNotFoundError(Exception):
 
 class SecretGPGKeyImportDetected(Exception):
     """An attempt to import a secret GPG key."""
+
+
+class GPGUploadFailure(Exception):
+    """Raised when a key upload failed.
+
+    Typically when a keyserver is not reachable.
+    """
 
 
 class GPGVerificationError(Exception):
@@ -174,6 +182,18 @@ class IGPGHandler(Interface):
         :raise: GPGKeyNotFoundError, if the key is not found neither in the
             local keyring nor in the key server.
         :return: a `PymeKey`object containing the key information.
+        """
+
+    def uploadPublicKey(fingerprint):
+        """Upload the specified public key to the configuration keyserver.
+
+        User `retrieveKey` to get the public key content and upload an
+        ASCII-armored export chunk.
+
+        :param fingerprint: The key fingerprint, which must be an hexadecimal
+            string.
+        :raise: GPGUploadFailure, if the keyserver could not be reaches.
+        :raise: AssertionError, if the POST request doesn't succeed.
         """
 
     def checkTrustDb():
