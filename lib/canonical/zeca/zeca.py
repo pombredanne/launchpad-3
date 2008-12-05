@@ -37,13 +37,14 @@ __all__ = [
 import os
 import cgi
 
-from twisted.web import server
 from twisted.web.resource import Resource
-from twisted.internet import reactor
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyNotFoundError, IGPGHandler, MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected)
+
 
 GREETING = 'Copyright 2004-2008 Canonical Ltd.\n'
 
@@ -146,7 +147,8 @@ class SubmitKey(Resource):
         gpghandler = getUtility(IGPGHandler)
         try:
             key = gpghandler.importPublicKey(keytext)
-        except Exception, err:
+        except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
+                MoreThanOneGPGKeyFound), err:
             return SUBMIT_KEY_PAGE % {'banner': str(err)}
 
         filename = '0x%s.get' % key.fingerprint

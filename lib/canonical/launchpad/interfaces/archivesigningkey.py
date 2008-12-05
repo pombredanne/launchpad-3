@@ -9,7 +9,7 @@ __all__ = [
     'IArchiveSigningKey',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Object
 
 from canonical.launchpad import _

@@ -2,13 +2,16 @@
 
 __metaclass__ = type
 
-import os, os.path, shutil
-from canonical.config import config
-import canonical
+import os
+import shutil
 
+import canonical
+from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
+
 keysdir = os.path.join(os.path.dirname(__file__), 'keys')
+
 
 class ZecaTestSetup(TacTestSetup):
     r"""Setup a zeca for use by functional tests
