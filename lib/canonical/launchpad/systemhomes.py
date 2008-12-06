@@ -265,15 +265,16 @@ class WebServiceApplication(ServiceRootResource):
     cached_wadl = None
 
     # Attempt to load the WADL.
-    _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+    _wadl_fd = None
     try:
+        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
         try:
             cached_wadl = _wadl_fd.read()
-        except IOError:
-            pass
-    finally:
-        _wadl_fd.close()
-        del _wadl_fd
+        finally:
+            _wadl_fd.close()
+    except IOError:
+        pass
+    del _wadl_fd
 
     def toWADL(self):
         """See `IWebServiceApplication`."""
