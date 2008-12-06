@@ -346,7 +346,6 @@ The JSON representation contains a link for each collection resource
 exposed at the top level. The WADL representation has a <param> tag
 for every link in the JSON representation.
 
-
     >>> def name_attrib(tag):
     ...     return tag.attrib['name']
 
@@ -745,13 +744,23 @@ look up the element called "bug_link".
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
 
-    >>> doc = full_params[2][0]
+    >>> [date_closed] = [param for param in full_params
+    ...                  if param.attrib['name'] == 'date_closed']
+    >>> doc = date_closed[0]
     >>> doc.tag
     '...doc'
     >>> print "\n".join([node.text for node in doc])
     Date Closed
     The date on which this task was marked either Fix Committed or Fix
     Released.
+
+Every entry resource has the 'http_etag' parameter, which includes the
+current value used in the 'ETag' HTTP header for the entry.
+
+    >>> [etag] = [param for param in full_params
+    ...           if param.attrib['name'] == 'http_etag']
+    >>> etag.attrib['path']
+    "$['http_etag']"
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
