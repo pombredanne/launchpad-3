@@ -24,19 +24,6 @@ from canonical.launchpad.interfaces.gpg import IGPGKeySet, GPGKeyAlgorithm
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
-def export_key(key, export_path):
-    """Export the given key in the given export_path.
-
-    Create full path if it doesn't exist.
-    """
-    if not os.path.exists(os.path.dirname(export_path)):
-        os.makedirs(os.path.dirname(export_path))
-
-    export_file = open(export_path, 'w')
-    export_file.write(key.export())
-    export_file.close()
-
-
 class ArchiveSigningKey:
     """`IArchive` adapter for manipulating its GPG key."""
 
@@ -59,20 +46,17 @@ class ArchiveSigningKey:
             config.personalpackagearchive.signing_keys_root,
             "%s.gpg" % key.fingerprint)
 
-    @property
-    def public_key_path(self):
-        """See `IArchiveSigningKey`."""
-        return os.path.join(self._archive_root_path, 'key.pub')
-
     def exportSecretKey(self, key):
         """See `IArchiveSigningKey`."""
         assert key.secret, "Only secret keys should be exported."
-        export_key(key, self.getPathForSecretKey(key))
+        export_path = self.getPathForSecretKey(key)
 
-    def exportPublicKey(self, key):
-        """See `IArchiveSigningKey`."""
-        assert not key.secret, "Only public keys should be exported."
-        export_key(key, self.public_key_path)
+        if not os.path.exists(os.path.dirname(export_path)):
+            os.makedirs(os.path.dirname(export_path))
+
+        export_file = open(export_path, 'w')
+        export_file.write(key.export())
+        export_file.close()
 
     def generateSigningKey(self):
         """See `IArchiveSigningKey`."""
@@ -97,15 +81,16 @@ class ArchiveSigningKey:
     def _setupSigningKey(self, secret_key):
         """Mandatory setup for signing keys.
 
-        * Export the secret key into the protect disk location.
-        * Export the public key in the repository root.
+        * Export the secret key into the protected disk location.
+        * Upload public key to the keyserver.
         * Store the public GPGKey reference in the database and update
           the context archive.signing_key.
         """
         self.exportSecretKey(secret_key)
 
-        pub_key = getUtility(IGPGHandler).retrieveKey(secret_key.fingerprint)
-        self.exportPublicKey(pub_key)
+        gpghandler = getUtility(IGPGHandler)
+        pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
+        gpghandler.uploadPublicKey(pub_key.fingerprint)
 
         algorithm = GPGKeyAlgorithm.items[pub_key.algorithm]
         key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
