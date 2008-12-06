@@ -119,7 +119,8 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     @rename_parameters_as(quantity='limit')
     @operation_parameters(
         quantity=Int(
-            title=_("The maximum number of bug tasks to return"), min=1))
+            title=_("The maximum number of bug tasks to return"),
+            min=1))
     @operation_returns_collection_of(IBugTask)
     @export_operation_as(name="getBugTasks")
     @export_read_operation()

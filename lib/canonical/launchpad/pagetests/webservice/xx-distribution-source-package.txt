@@ -28,7 +28,7 @@ package using the "getBugTasks" method.
     >>> def print_bug_tasks(bug_tasks):
     ...     bug_tasks = sorted(bug_tasks, key=itemgetter('self_link'))
     ...     for index, bug_task in enumerate(bug_tasks):
-    ...         print '%d. %s' % (index, bug_task['title'],)
+    ...         print '%d. %s' % (index, bug_task['title'])
     ...         print '   %s, %s, <%s>' % (
     ...             bug_task['status'], bug_task['importance'],
     ...             bug_task['bug_link'])
